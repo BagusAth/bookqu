@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('idtenant');
+            $table->foreignId('idtenant');
             $table->enum('tipe', ['booking', 'subscription']);
             $table->decimal('jumlah', 12, 2);
             $table->enum('status', ['pending', 'sukses', 'gagal']);

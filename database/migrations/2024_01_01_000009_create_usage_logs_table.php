@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('usage_logs', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('idtenant');
+            $table->foreignId('idtenant');
             $table->enum('jenis', ['booking', 'layanan']);
             $table->integer('jumlah');
             $table->date('periode');

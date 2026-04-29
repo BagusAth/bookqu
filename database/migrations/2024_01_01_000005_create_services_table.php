@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('services', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('idtenant');
+            $table->foreignId('idtenant');
             $table->string('namalayanan', 150);
             $table->decimal('harga', 12, 2);
             $table->integer('durasi');

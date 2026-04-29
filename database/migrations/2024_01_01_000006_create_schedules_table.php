@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('schedules', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('idtenant');
-            $table->bigInteger('idlayanan');
+            $table->foreignId('idtenant');
+            $table->foreignId('idlayanan');
             $table->date('tanggal');
             $table->time('jam_mulai');
             $table->time('jam_selesai');

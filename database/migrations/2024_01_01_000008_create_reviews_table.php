@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('reviews', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('idtenant');
-            $table->bigInteger('idbooking');
+            $table->foreignId('idtenant');
+            $table->foreignId('idbooking');
             $table->tinyInteger('rating');
             $table->text('komentar')->nullable();
             $table->timestamps();

@@ -13,16 +13,16 @@ return new class extends Migration
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('idtenant');
-            $table->bigInteger('idlayanan');
-            $table->bigInteger('idschedule');
+            $table->foreignId('idtenant');
+            $table->foreignId('idlayanan');
+            $table->foreignId('idschedule');
             $table->string('namapelanggan', 150);
             $table->string('nomorhp', 20);
             $table->string('email', 100);
             $table->date('tanggalbooking');
             $table->time('jam');
             $table->enum('status', ['pending', 'paid', 'cancelled', 'completed']);
-            $table->bigInteger('idpayment')->nullable();
+            $table->foreignId('idpayment')->nullable();
             $table->text('catatan')->nullable();
             $table->timestamps();
 

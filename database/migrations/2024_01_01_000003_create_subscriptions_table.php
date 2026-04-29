@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('idtenant');
-            $table->bigInteger('idplan');
+            $table->foreignId('idtenant');
+            $table->foreignId('idplan');
             $table->enum('status', ['trial', 'active', 'expired', 'cancelled']);
             $table->dateTime('trial_berakhir')->nullable();
             $table->dateTime('langganan_mulai')->nullable();
