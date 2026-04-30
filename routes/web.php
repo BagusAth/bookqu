@@ -1,14 +1,36 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('home');
 });
 
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::get('/login', function () {
+    return view('auth.login');
+})->name('login');
+
+Route::post('/login', function () {
+    $credentials = request()->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required'],
+    ]);
+
+    if (Auth::attempt($credentials)) {
+        request()->session()->regenerate();
+
+        return redirect()->intended(route('admin.dashboard'));
+    }
+
+    return back()->withErrors([
+        'email' => 'Email atau password tidak valid.',
+    ])->onlyInput('email');
+});
+
+Route::middleware(['role:superadmin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', function () {
         return redirect()->route('admin.dashboard');
     });
