@@ -6,6 +6,32 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* ── shadcn-style design tokens ── */
+    --color-bq-primary: oklch(54.6% 0.245 262.881);
+    --color-bq-primary-light: oklch(93% 0.034 272.788);
+    --color-bq-primary-hover: oklch(48.8% 0.243 264.376);
+    --color-bq-background: oklch(98.8% 0.002 247.839);
+    --color-bq-surface: oklch(100% 0 0);
+    --color-bq-border: oklch(92.9% 0.013 255.508);
+    --color-bq-border-strong: oklch(86.9% 0.022 252.894);
+    --color-bq-text: oklch(21% 0.034 264.665);
+    --color-bq-text-muted: oklch(55.1% 0.027 264.364);
+    --color-bq-text-subtle: oklch(70.7% 0.022 261.325);
+    --color-bq-success: oklch(62.7% 0.194 149.214);
+    --color-bq-success-bg: oklch(96.2% 0.044 156.743);
+    --color-bq-warning: oklch(76.9% 0.188 70.08);
+    --color-bq-warning-bg: oklch(96.2% 0.059 95.617);
+    --color-bq-danger: oklch(63.7% 0.237 25.331);
+    --color-bq-danger-bg: oklch(93.6% 0.032 17.717);
+    --color-bq-info: oklch(68.5% 0.169 237.323);
+    --color-bq-info-bg: oklch(95.1% 0.026 236.824);
+
+    /* Sidebar */
+    --color-bq-sidebar: oklch(100% 0 0);
+    --color-bq-sidebar-active: oklch(93% 0.034 272.788);
+    --color-bq-sidebar-text: oklch(44.6% 0.043 257.281);
+    --color-bq-sidebar-active-text: oklch(54.6% 0.245 262.881);
 }
