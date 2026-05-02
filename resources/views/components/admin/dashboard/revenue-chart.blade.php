@@ -1,7 +1,12 @@
 @props([
     'periods' => [],
+    'series' => [],
     'activePeriod' => 'Monthly',
 ])
+
+@php
+    $maxValue = !empty($series) ? max($series) : 0;
+@endphp
 
 <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col">
     <div class="flex items-center justify-between mb-8">
@@ -15,10 +20,19 @@
         </div>
     </div>
 
-    <div class="flex-1 min-h-[200px] flex items-end">
-        <div class="w-full flex justify-between px-8 text-xs font-medium text-slate-400">
-            @foreach ($periods as $period)
-                <span>{{ $period }}</span>
+    <div class="flex-1 min-h-[200px] flex flex-col justify-end">
+        <div class="w-full flex items-end justify-between px-8 gap-2 h-44">
+            @foreach ($periods as $index => $period)
+                @php
+                    $value = $series[$index] ?? 0;
+                    $height = $maxValue > 0 ? intval(($value / $maxValue) * 100) : 0;
+                @endphp
+                <div class="flex flex-col items-center flex-1">
+                    <div class="w-full max-w-[20px] bg-indigo-100 rounded-t-md overflow-hidden h-full flex items-end">
+                        <div class="w-full bg-indigo-500" style="height: {{ $height }}%"></div>
+                    </div>
+                    <span class="mt-3 text-xs font-medium text-slate-400">{{ $period }}</span>
+                </div>
             @endforeach
         </div>
     </div>

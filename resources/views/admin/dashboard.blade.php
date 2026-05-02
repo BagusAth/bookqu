@@ -25,7 +25,7 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <x-admin.dashboard.revenue-chart :periods="$revenuePeriods" active-period="Monthly" />
+            <x-admin.dashboard.revenue-chart :periods="$revenuePeriods" :series="$revenueSeries" active-period="Monthly" />
             <x-admin.dashboard.daily-trends :items="$dailyTrends" />
         </div>
 
