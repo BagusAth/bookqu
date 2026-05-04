@@ -1,9 +1,7 @@
-<section class="px-6 pb-20 pt-16 lg:px-8">
+<section id="hero" class="px-6 pb-20 pt-16 lg:px-8">
     <div class="mx-auto max-w-6xl">
         <div class="mx-auto max-w-3xl text-center">
-            <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-blue-600 shadow-sm">
-                BARU: INTEGRASI PEMBAYARAN OTOMATIS
-            </span>
+
             <h1 class="mt-5 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
                 Kelola Booking Bisnis Anda Lebih Mudah
             </h1>

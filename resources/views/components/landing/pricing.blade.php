@@ -1,61 +1,93 @@
-<section id="pricing" class="py-20">
-    <div class="mx-auto max-w-6xl px-6 lg:px-8">
-        <div class="mx-auto max-w-2xl text-center">
-            <h2 class="text-3xl font-semibold text-slate-900">Pilih Paket Sesuai Kebutuhan</h2>
-            <p class="mt-3 text-sm text-slate-600">
+<section id="pricing" class="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header Section -->
+        <div class="text-center mb-16 animate-fade-in">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+                Pilih Paket Sesuai Kebutuhan
+            </h2>
+            <p class="text-base md:text-lg text-gray-500 max-w-2xl mx-auto">
                 Transparan tanpa biaya tersembunyi. Tingkatkan paket Anda seiring berkembangnya bisnis.
             </p>
         </div>
 
-        <div class="mt-12 grid gap-6 lg:grid-cols-3">
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-sm font-semibold text-slate-600">Small</h3>
-                <div class="mt-2 text-3xl font-semibold">Rp49k <span class="text-sm font-medium text-slate-500">/bulan</span></div>
-                <ul class="mt-6 space-y-3 text-sm text-slate-600">
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Halaman booking dengan URL</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Maksimal 2 layanan/program</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Maksimal 50 booking/bulan</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Manajemen jadwal & slot</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Notifikasi email</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Dashboard sederhana</li>
-                </ul>
-                <a href="/dummy-register" class="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300">
+        <!-- Pricing Cards Container -->
+        <div class="pricing-container grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 lg:gap-8 max-w-5xl mx-auto mt-12" id="pricing-grid">
+            <!-- CARD 1: Small -->
+            <div class="pricing-card rounded-[2rem] p-8 md:p-10 flex flex-col justify-between" data-index="0">
+                <div>
+                    <h3 class="text-gray-500 font-medium mb-4">Small</h3>
+                    <div class="flex items-baseline mb-8">
+                        <span class="text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tight">Rp49k</span>
+                        <span class="text-gray-500 ml-1">/bulan</span>
+                    </div>
+
+                    <ul class="feature-list mb-8">
+                        <li>Halaman booking dengan URL</li>
+                        <li>Maksimal 2 layanan/program</li>
+                        <li>Maksimal 50 booking/bulan</li>
+                        <li>Manajemen jadwal & slot</li>
+                        <li>Notifikasi email</li>
+                        <li>Dashboard sederhana</li>
+                    </ul>
+                </div>
+
+                <a href="/dummy-register" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
                     Pilih Paket
                 </a>
             </div>
 
-            <div class="relative rounded-2xl border-2 border-blue-600 bg-white p-6 shadow-lg">
-                <span class="absolute right-4 top-4 rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white">POPULER</span>
-                <h3 class="text-sm font-semibold text-slate-600">Medium</h3>
-                <div class="mt-2 text-3xl font-semibold">Rp129k <span class="text-sm font-medium text-slate-500">/bulan</span></div>
-                <ul class="mt-6 space-y-3 text-sm text-slate-600">
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Semua fitur small</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Maksimal 10 layanan/program</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Maksimal 300 booking/bulan</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Notifikasi email + whatsapp</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Dashboard lengkap</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Sistem review & rating</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Prioritas support</li>
-                </ul>
-                <a href="/dummy-register" class="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
-                    Mulai Sekarang
+            <!-- CARD 2: Medium (Popular) - Default Active -->
+            <div class="pricing-card is-active rounded-[2rem] p-8 md:p-10 flex flex-col justify-between relative" data-index="1">
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-gray-500 font-medium">Medium</h3>
+                        <span class="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                            Populer
+                        </span>
+                    </div>
+                    <div class="flex items-baseline mb-8">
+                        <span class="text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tight">Rp129k</span>
+                        <span class="text-gray-500 ml-1">/bulan</span>
+                    </div>
+
+                    <ul class="feature-list mb-8">
+                        <li>Semua fitur small</li>
+                        <li>Maksimal 10 layanan/program</li>
+                        <li>Maksimal 300 booking/bulan</li>
+                        <li>Notifikasi email + whatsapp</li>
+                        <li>Dashboard lengkap</li>
+                        <li>Sistem review & rating</li>
+                        <li>Prioritas support</li>
+                    </ul>
+                </div>
+
+                <a href="/dummy-register" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                    Pilih Paket
                 </a>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-sm font-semibold text-slate-600">Pro</h3>
-                <div class="mt-2 text-3xl font-semibold">Rp299k <span class="text-sm font-medium text-slate-500">/bulan</span></div>
-                <ul class="mt-6 space-y-3 text-sm text-slate-600">
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Semua fitur medium</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Unlimited layanan dan booking</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Bisa pakai domain sendiri</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Custom tampilan landing page</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Multi-admin</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Advanced analytics</li>
-                    <li class="flex items-center gap-2"><span class="text-blue-600">●</span> Dedicated support</li>
-                </ul>
-                <a href="/dummy-register" class="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300">
-                    Hubungi Sales
+            <!-- CARD 3: Pro -->
+            <div class="pricing-card rounded-[2rem] p-8 md:p-10 flex flex-col justify-between" data-index="2">
+                <div>
+                    <h3 class="text-gray-500 font-medium mb-4">Pro</h3>
+                    <div class="flex items-baseline mb-8">
+                        <span class="text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tight">Rp299k</span>
+                        <span class="text-gray-500 ml-1">/bulan</span>
+                    </div>
+
+                    <ul class="feature-list mb-8">
+                        <li>Semua fitur medium</li>
+                        <li>Unlimited layanan dan booking</li>
+                        <li>Bisa pakai domain sendiri</li>
+                        <li>Custom tampilan landing page</li>
+                        <li>Multi-admin</li>
+                        <li>Advanced analytics</li>
+                        <li>Dedicated support</li>
+                    </ul>
+                </div>
+
+                <a href="/dummy-register" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                    Pilih Paket
                 </a>
             </div>
         </div>

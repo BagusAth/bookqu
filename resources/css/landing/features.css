@@ -1,0 +1,240 @@
+/* =========================================
+   Base Layout & Fluid Animation Config
+   ========================================= */
+
+/* Container utama: Ukuran diperkecil agar lebih kompak */
+.features-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    transition: all 0.5s ease-in-out;
+    min-height: 700px; /* Buffer untuk Mobile */
+}
+
+@media (min-width: 768px) {
+    .features-container { min-height: 460px; /* Buffer untuk Tablet */ }
+}
+
+@media (min-width: 1024px) {
+    .features-container { min-height: 380px; /* Buffer untuk Desktop (Sangat kompak) */ }
+}
+
+.feature-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@media (min-width: 768px) {
+    .feature-row {
+        flex-direction: row;
+        align-items: stretch;
+    }
+}
+
+.feature-card {
+    position: relative;
+    flex: 1; /* Ukuran menyusut (tertutup) */
+    background-color: #ffffff;
+    border-radius: 1.5rem;
+    border: 1px solid #f3f4f6;
+    transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+    cursor: pointer;
+    overflow: hidden;
+}
+
+/* State Tertutup/Tidak Aktif: Sedikit redup agar fokus ke yang aktif */
+.feature-card:not(.is-expanded) {
+    opacity: 0.6;
+    background-color: #fafafa;
+}
+.feature-card:not(.is-expanded):hover {
+    opacity: 1;
+    background-color: #ffffff;
+}
+
+/* Styling saat Card Berekspansi (Global Active) */
+@media (min-width: 768px) {
+    .feature-card.is-expanded {
+        flex: 2.5; /* Proporsi lebih lebar saat mendominasi */
+        box-shadow: 0 25px 50px -12px rgb(59 130 246 / 0.15);
+        border-color: #dbeafe;
+        background: linear-gradient(to bottom right, #ffffff, #f8fafc);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 767px) {
+    .feature-card.is-expanded {
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        border-color: #dbeafe;
+        background: #f8fafc;
+        opacity: 1;
+    }
+}
+
+/* =========================================
+   Struktur Dalam Card Baru (Vertical Center)
+   ========================================= */
+
+.card-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Memastikan konten berada persis di tengah secara vertikal */
+    height: 100%;
+}
+
+@media (min-width: 1024px) {
+    .card-content {
+        padding: 2rem;
+        flex-direction: row; /* Berdampingan: Teks Kiri, Gambar Kanan */
+        align-items: center; /* Center Vertikal di Desktop */
+    }
+}
+
+/* Kolom Teks (Kiri) */
+.card-text-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* Selalu mengambil sisa ruang */
+    justify-content: center;
+}
+
+/* CSS GRID HACK untuk Deskripsi (Menyatu dengan kolom kiri) */
+.card-desc-container {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.is-expanded .card-desc-container {
+    grid-template-rows: 1fr;
+}
+
+.card-desc-inner {
+    overflow: hidden;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.4s ease;
+}
+
+.is-expanded .card-desc-inner {
+    opacity: 1;
+    transform: translateX(0);
+    transition-delay: 0.2s;
+}
+
+/* Kolom Gambar (Kanan) - Menyusut ke ukuran 0 saat tertutup */
+.card-image-container {
+    flex: 0; /* Saat tertutup, lebar dan tinggi 0 */
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.is-expanded .card-image-container {
+    flex: 1; /* Saat terbuka, mengambil lebar sama besar dengan teks */
+    opacity: 1;
+}
+
+@media (max-width: 1023px) {
+    .is-expanded .card-image-container {
+        margin-top: 1.5rem;
+        width: 100%;
+    }
+}
+
+@media (min-width: 1024px) {
+    .is-expanded .card-image-container {
+        margin-left: 2rem;
+    }
+}
+
+/* Pembungkus spesifik untuk animasi muncul gambar */
+.card-image-wrapper {
+    transform: translateY(15px) scale(0.95);
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.is-expanded .card-image-wrapper {
+    transform: translateY(0) scale(1);
+    transition-delay: 0.3s;
+}
+
+/* Gambar ukuran lebih kompak (Max 220px) */
+.card-image-wrapper img {
+    max-width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+    background-color: transparent;
+}
+
+/* Detail Visual (Judul & Ikon) */
+.card-title {
+    transition: color 0.3s ease;
+}
+
+.is-expanded .card-title {
+    color: #1e3a8a;
+}
+
+.card-icon {
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    color: #94a3b8;
+    background-color: #f1f5f9;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    display: inline-flex;
+    width: max-content;
+    margin-bottom: 1rem;
+}
+
+.is-expanded .card-icon {
+    color: #2563eb;
+    background-color: #eff6ff;
+    transform: scale(1.1);
+}
+
+/* Progress Bar (6 Detik) */
+.progress-bar {
+    height: 3px;
+    width: 0%;
+    background-color: #3b82f6;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.is-expanded .progress-bar.animating {
+    opacity: 1;
+    animation: loadProgress 6s linear forwards;
+}
+
+@keyframes loadProgress {
+    0% { width: 0%; }
+    100% { width: 100%; }
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+    animation: fadeUp 0.8s ease-out forwards;
+}

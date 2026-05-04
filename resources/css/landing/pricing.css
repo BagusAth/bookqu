@@ -1,0 +1,102 @@
+/* =========================================
+   Custom CSS & Pricing Animations
+   ========================================= */
+
+.pricing-container {
+    perspective: 1000px;
+}
+
+.pricing-card {
+    transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    transform-origin: center bottom;
+    background-color: #ffffff;
+    will-change: transform, opacity, box-shadow;
+}
+
+/* Default Layout */
+.pricing-card {
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* Active State (Yang sedang difokuskan/di-hover) */
+.pricing-card.is-active {
+    transform: scale(1.05);
+    box-shadow: 0 25px 50px -12px rgb(37 99 235 / 0.15);
+    border-color: #2563eb;
+    z-index: 10;
+}
+
+/* Inactive State (Yang sedang tidak di-hover saat ada card lain yang aktif) */
+.pricing-container.has-hover .pricing-card:not(.is-active) {
+    transform: scale(0.98);
+    opacity: 0.6;
+    box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.05);
+    border-color: #f3f4f6;
+}
+
+/* Custom Bullet Point (Titik Biru sesuai gambar) */
+.feature-list li {
+    position: relative;
+    padding-left: 1.5rem;
+    color: #4b5563;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    transition: color 0.3s ease;
+}
+
+.feature-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.45rem;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #2563eb;
+    transition: transform 0.3s ease;
+}
+
+/* Hover efek pada list item */
+.feature-list li:hover {
+    color: #111827;
+}
+
+.feature-list li:hover::before {
+    transform: scale(1.5);
+}
+
+/* Button Hover Effects */
+.btn-paket {
+    transition: all 0.3s ease;
+    background-color: #ffffff;
+}
+
+/* Tombol otomatis menyala saat Card di-hover/aktif */
+.pricing-card.is-active .btn-paket {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 10px 15px -3px rgb(37 99 235 / 0.3);
+}
+
+/* Efek pop-up tipis jika tombolnya sendiri secara spesifik diarahkan kursor */
+.btn-paket:hover {
+    transform: translateY(-2px);
+}
+
+.pricing-card.is-active .btn-paket:hover {
+    background-color: #1d4ed8;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+}
