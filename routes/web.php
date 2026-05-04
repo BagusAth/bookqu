@@ -7,11 +7,16 @@ use App\Http\Controllers\OwnerProgramController;
 use App\Http\Controllers\OwnerScheduleController;
 use App\Http\Controllers\OwnerSettingController;
 use App\Http\Controllers\OwnerSubscriptionController;
+use App\Http\Controllers\DummyRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Dummy registration module (isolated for slug testing)
+Route::get('/dummy-register', [DummyRegistrationController::class, 'showForm'])->name('dummy-register.form');
+Route::post('/dummy-register', [DummyRegistrationController::class, 'processForm'])->name('dummy-register.process');
 
 // ── Owner Dashboard Routes ──
 Route::prefix('owner')->group(function () {
@@ -25,3 +30,8 @@ Route::prefix('owner')->group(function () {
     Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
     Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
 });
+
+// NOTE: Wildcard route MUST be the last route in this file.
+Route::get('/{slug}', [DummyRegistrationController::class, 'welcomePage'])
+    ->where('slug', '[A-Za-z0-9\-]+')
+    ->name('tenant.welcome');
