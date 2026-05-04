@@ -14,6 +14,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let resumeTimeout;
     const AUTO_PLAY_DELAY = 6000;
     const RESUME_DELAY = 1000;
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+
+    const showProgressBars = () => {
+        cards.forEach((card) => {
+            const progressBar = card.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.display = 'block';
+            }
+        });
+    };
+
+    const hideProgressBars = () => {
+        cards.forEach((card) => {
+            const progressBar = card.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.display = 'none';
+            }
+        });
+    };
 
     const activateCard = (indexToActivate) => {
         cards.forEach((card, index) => {
@@ -38,6 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const startAutoPlay = () => {
         clearInterval(autoPlayInterval);
+        if (!mediaQuery.matches) {
+            return;
+        }
         autoPlayInterval = setInterval(() => {
             const nextIndex = (activeIndex + 1) % cards.length;
             activateCard(nextIndex);
@@ -47,20 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const stopAutoPlay = () => {
         clearInterval(autoPlayInterval);
         clearTimeout(resumeTimeout);
-        cards.forEach((card) => {
-            const progressBar = card.querySelector('.progress-bar');
-            if (progressBar) {
-                progressBar.style.display = 'none';
-            }
-        });
+        hideProgressBars();
     };
 
-    cards.forEach((card) => {
-        const progressBar = card.querySelector('.progress-bar');
-        if (progressBar) {
-            progressBar.style.display = 'block';
-        }
-    });
+    showProgressBars();
 
     activateCard(0);
     startAutoPlay();
@@ -87,15 +99,18 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(resumeTimeout);
 
         resumeTimeout = setTimeout(() => {
-            cards.forEach((card) => {
-                const progressBar = card.querySelector('.progress-bar');
-                if (progressBar) {
-                    progressBar.style.display = 'block';
-                }
-            });
-
+            showProgressBars();
             activateCard(activeIndex);
             startAutoPlay();
         }, RESUME_DELAY);
+    });
+
+    mediaQuery.addEventListener('change', () => {
+        if (mediaQuery.matches) {
+            showProgressBars();
+            startAutoPlay();
+        } else {
+            stopAutoPlay();
+        }
     });
 });
