@@ -31,6 +31,13 @@ Route::prefix('owner')->group(function () {
     Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
 });
 
+Route::get('/test-isolasi/{slug}', function () {
+    $services = \App\Models\Service::all();
+
+    // Query all() ini akan otomatis terfilter sesuai tenant dari slug URL.
+    return response()->json($services);
+})->middleware('tenant');
+
 // NOTE: Wildcard route MUST be the last route in this file.
 Route::get('/{slug}', [DummyRegistrationController::class, 'welcomePage'])
     ->where('slug', '[A-Za-z0-9\-]+')
