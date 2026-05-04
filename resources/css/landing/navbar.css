@@ -1,0 +1,15 @@
+/* Sticky navbar blur + transparency when scrolled */
+.landing-navbar {
+    transition: background-color 0.25s ease, box-shadow 0.25s ease, backdrop-filter 0.25s ease;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+.landing-navbar.is-scrolled {
+    background-color: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    border-bottom-color: rgba(226, 232, 240, 0.7);
+}
