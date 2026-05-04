@@ -3,6 +3,7 @@
 use App\Http\Controllers\OwnerAnalyticsController;
 use App\Http\Controllers\OwnerBookingController;
 use App\Http\Controllers\OwnerDashboardController;
+use App\Http\Controllers\OwnerLandingPageController;
 use App\Http\Controllers\OwnerProgramController;
 use App\Http\Controllers\OwnerScheduleController;
 use App\Http\Controllers\OwnerSettingController;
@@ -23,5 +24,7 @@ Route::prefix('owner')->group(function () {
     Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
     Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics');
     Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
+    Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page');
     Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
 });
+
