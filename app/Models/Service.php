@@ -10,19 +10,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Service extends Model
 {
     use BelongsToTenant;
-
     protected $fillable = [
         'idtenant',
         'namalayanan',
         'harga',
         'durasi',
         'deskripsi',
+        'is_active',
+        'is_popular',
+        'image_url',
+        'kapasitas',
+        'satuan_harga',
+        'satuan_durasi',
     ];
 
     protected function casts(): array
     {
         return [
             'harga' => 'decimal:2',
+            'is_active' => 'boolean',
+            'is_popular' => 'boolean',
+            'kapasitas' => 'integer',
         ];
     }
 

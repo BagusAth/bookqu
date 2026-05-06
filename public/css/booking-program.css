@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --primary: #4F46E5;
+    --primary-hover: #4338CA;
+    --soft-bg: #EEF2FF;
+    --border: #E5E7EB;
+    --text-dark: #111827;
+    --text-muted: #6B7280;
+    --white: #FFFFFF;
+}
+
+.booking-page {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text-dark);
+    background: #EEF2FF;
+    min-height: 100vh;
+}
+
+.booking-shell {
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+.booking-step {
+    margin-bottom: 2rem;
+}
+
+.booking-card {
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    background: var(--white);
+    box-shadow: 0 12px 24px -20px rgba(15, 23, 42, 0.3);
+}
+
+.booking-card__media {
+    min-height: 180px;
+    background: linear-gradient(145deg, #EEF2FF 0%, #FFFFFF 55%, #E0E7FF 100%);
+}
+
+.booking-card--selected {
+    box-shadow: 0 18px 32px -24px rgba(79, 70, 229, 0.6);
+}
+
+.booking-badge {
+    box-shadow: 0 10px 18px -12px rgba(79, 70, 229, 0.7);
+}
+
+.booking-select-btn {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.booking-select-btn--active {
+    box-shadow: 0 10px 16px -12px rgba(79, 70, 229, 0.7);
+}
+
+.booking-gradient-card {
+    background: linear-gradient(135deg, #4F46E5 0%, #6366F1 55%, #4338CA 100%);
+    box-shadow: 0 18px 40px -26px rgba(67, 56, 202, 0.6);
+}
+
+.booking-muted {
+    color: var(--text-muted);
+}
+
+.booking-shadow {
+    box-shadow: 0 12px 24px -18px rgba(15, 23, 42, 0.25);
+}
+
+.booking-summary {
+    box-shadow: 0 18px 30px -26px rgba(15, 23, 42, 0.3);
+}
+
+[x-cloak] {
+    display: none !important;
+}

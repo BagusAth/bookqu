@@ -21,7 +21,6 @@ class Tenant extends Model
     {
         return $this->belongsTo(User::class, 'iduser');
     }
-
     public function services(): HasMany
     {
         return $this->hasMany(Service::class, 'idtenant');

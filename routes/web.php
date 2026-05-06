@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\DummyRegistrationController;
 use App\Http\Controllers\OwnerAnalyticsController;
 use App\Http\Controllers\OwnerBookingController;
 use App\Http\Controllers\OwnerDashboardController;
@@ -8,7 +10,6 @@ use App\Http\Controllers\OwnerProgramController;
 use App\Http\Controllers\OwnerScheduleController;
 use App\Http\Controllers\OwnerSettingController;
 use App\Http\Controllers\OwnerSubscriptionController;
-use App\Http\Controllers\DummyRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -40,7 +41,5 @@ Route::get('/test-isolasi/{slug}', function () {
     return response()->json($services);
 })->middleware('tenant');
 
-// NOTE: Wildcard route MUST be the last route in this file.
-Route::get('/{slug}', [DummyRegistrationController::class, 'welcomePage'])
-    ->where('slug', '[A-Za-z0-9\-]+')
-    ->name('tenant.welcome');
+Route::get('/{slug_usaha}', [BookingController::class, 'showProgramSelection'])
+    ->name('customer.booking.program');
