@@ -80,6 +80,33 @@
                 {{ $item['label'] }}
             </a>
         @endforeach
+
+        {{-- Landing Page — hanya muncul untuk paket Pro --}}
+        @if ($adalahpro ?? false)
+            @php
+                $aktiflandingpage = str_contains($halamanaktif, 'owner/landing-page');
+            @endphp
+            <div class="mt-3 pt-3 border-t border-bq-border/50">
+                <p class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-bq-text-subtle">Pro Features</p>
+                <a
+                    href="/owner/landing-page"
+                    class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200
+                        {{ $aktiflandingpage
+                            ? 'bg-bq-sidebar-active text-bq-sidebar-active-text shadow-sm'
+                            : 'text-bq-sidebar-text hover:bg-bq-background hover:text-bq-text'
+                        }}"
+                    id="nav-landing-page"
+                >
+                    <svg class="h-[18px] w-[18px] {{ $aktiflandingpage ? 'text-bq-primary' : 'text-bq-text-subtle group-hover:text-bq-text-muted' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                    </svg>
+                    Landing Page
+                    <span class="ml-auto inline-flex items-center rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-400">
+                        Pro
+                    </span>
+                </a>
+            </div>
+        @endif
     </nav>
 
     <!-- Bottom: Settings -->
@@ -93,3 +120,4 @@
         </a>
     </div>
 </aside>
+
