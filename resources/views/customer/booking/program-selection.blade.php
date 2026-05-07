@@ -53,7 +53,14 @@
             </header>
 
             <main class="booking-shell mx-auto w-full max-w-[1280px] px-6 pb-12 pt-10">
-                <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <form
+                    class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]"
+                    method="POST"
+                    action="{{ route('customer.booking.select-program', $tenant->slug) }}"
+                    x-ref="confirmForm"
+                >
+                    @csrf
+                    <input type="hidden" name="service_id" x-model="selectedServiceId" />
                     <section>
                         <div class="booking-step">
                             <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-[#6B7280]">
@@ -88,9 +95,7 @@
                                 @endphp
                                 <article
                                     class="booking-card group flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition"
-                                    :class="selectedServiceId === {{ $service->id }}
-                                        ? 'booking-card--selected border-[#4F46E5] bg-[#EEF2FF]/60 shadow-md ring-1 ring-[#4F46E5]/15'
-                                        : 'border-[#E5E7EB] hover:shadow-md'"
+                                    :class="selectedServiceId === {{ $service->id }} ? 'booking-card--selected' : ''"
                                 >
                                     <div class="relative">
                                         <div class="booking-card__media aspect-[16/9] w-full overflow-hidden bg-[#EEF2FF]">
@@ -146,10 +151,7 @@
                                         <button
                                             type="button"
                                             class="booking-select-btn mt-5 w-full rounded-xl border px-4 py-2 text-sm font-semibold transition"
-                                            :class="selectedServiceId === {{ $service->id }}
-                                                ? 'booking-select-btn--active border-[#4F46E5] bg-[#4F46E5] text-white shadow-sm'
-                                                : 'border-[#E5E7EB] text-[#4F46E5] hover:border-[#4F46E5] hover:bg-[#4F46E5] hover:text-white'
-                                            "
+                                            :class="selectedServiceId === {{ $service->id }} ? 'booking-select-btn--active' : ''"
                                             @click="selectServiceById({{ $service->id }})"
                                             :aria-pressed="selectedServiceId === {{ $service->id }}"
                                         >
@@ -270,7 +272,7 @@
                             </button>
                         </div>
                     </aside>
-                </div>
+                </form>
             </main>
 
             <section class="booking-shell mx-auto w-full max-w-[1280px] px-6 pb-12">
@@ -348,7 +350,7 @@
         </div>
 
         <script type="application/json" id="booking-services-data">@json($servicesPayload)</script>
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         <script defer src="{{ asset('js/booking-program.js') }}"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     </body>
 </html>
