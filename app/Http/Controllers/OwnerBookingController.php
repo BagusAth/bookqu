@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class OwnerBookingController extends Controller
 {
@@ -14,7 +15,8 @@ class OwnerBookingController extends Controller
      */
     public function index(Request $request)
     {
-        $tenant = Tenant::with('user')->first();
+        $iduser = Auth::id();
+        $tenant = Tenant::with('user')->where('iduser', $iduser)->first();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }

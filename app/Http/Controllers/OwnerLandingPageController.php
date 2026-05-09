@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class OwnerLandingPageController extends Controller
 {
@@ -13,7 +14,8 @@ class OwnerLandingPageController extends Controller
      */
     public function index()
     {
-        $tenant = Tenant::with('user')->first();
+        $iduser = Auth::id();
+        $tenant = Tenant::with('user')->where('iduser', $iduser)->first();
 
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');

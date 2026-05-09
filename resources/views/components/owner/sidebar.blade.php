@@ -118,6 +118,15 @@
             </svg>
             Settings
         </a>
+        <form method="POST" action="{{ route('owner.logout') }}" class="mt-2">
+            @csrf
+            <button type="submit" class="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-bq-sidebar-text transition-all duration-200 hover:bg-bq-background hover:text-bq-text" id="nav-logout">
+                <svg class="h-[18px] w-[18px] text-bq-text-subtle group-hover:text-bq-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+                </svg>
+                Logout
+            </button>
+        </form>
     </div>
 </aside>
 

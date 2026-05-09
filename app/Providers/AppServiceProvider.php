@@ -6,6 +6,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Auth;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,7 +25,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Share Pro subscription status with the sidebar
         View::composer('components.owner.sidebar', function ($view) {
-            $tenant = Tenant::first();
+            $iduser = Auth::id();
+            $tenant = $iduser ? Tenant::where('iduser', $iduser)->first() : null;
             $adalahpro = false;
 
             if ($tenant) {

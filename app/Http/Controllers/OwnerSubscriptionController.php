@@ -10,6 +10,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class OwnerSubscriptionController extends Controller
 {
@@ -18,7 +19,8 @@ class OwnerSubscriptionController extends Controller
      */
     public function index()
     {
-        $tenant = Tenant::with('user')->first();
+        $iduser = Auth::id();
+        $tenant = Tenant::with('user')->where('iduser', $iduser)->first();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }

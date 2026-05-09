@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class OwnerProgramController extends Controller
 {
@@ -15,7 +16,8 @@ class OwnerProgramController extends Controller
      */
     public function index(Request $request)
     {
-        $tenant = Tenant::with('user')->first();
+        $iduser = Auth::id();
+        $tenant = Tenant::with('user')->where('iduser', $iduser)->first();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
@@ -60,7 +62,8 @@ class OwnerProgramController extends Controller
      */
     public function store(Request $request)
     {
-        $tenant = Tenant::first();
+        $iduser = Auth::id();
+        $tenant = Tenant::where('iduser', $iduser)->first();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
