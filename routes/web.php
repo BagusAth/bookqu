@@ -13,8 +13,35 @@ use App\Http\Controllers\OwnerSubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('home');
+    return view('welcome');
 });
+
+// ── Authentication Routes ──
+Route::middleware('guest')->group(function () {
+    Route::get('/login', function () {
+        return view('auth.login');
+    })->name('login');
+    
+    Route::post('/login', function (\Illuminate\Http\Request $request) {
+        // Handle login here
+    })->name('login.store');
+    
+    Route::get('/register', function () {
+        return view('auth.register');
+    })->name('register');
+    
+    Route::post('/register', function (\Illuminate\Http\Request $request) {
+        // Handle registration here
+    })->name('register.store');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', function (\Illuminate\Support\Facades\Auth $auth) {
+        $auth::logout();
+        return redirect('/');
+    })->name('logout');
+});
+
 // Dummy registration module (isolated for slug testing)
 Route::get('/dummy-register', [DummyRegistrationController::class, 'showForm'])->name('dummy-register.form');
 Route::post('/dummy-register', [DummyRegistrationController::class, 'processForm'])->name('dummy-register.process');
