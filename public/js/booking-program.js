@@ -64,19 +64,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         handleConfirm() {
-            if (!this.selectedServiceId || !this.tenantSlug) {
+            if (!this.selectedServiceId) {
                 return;
             }
 
-            window.location.href = this.confirmUrl;
-        },
-
-        get confirmUrl() {
-            if (!this.selectedServiceId || !this.tenantSlug) {
-                return '#';
+            if (this.$refs?.confirmForm) {
+                this.$refs.confirmForm.submit();
             }
-
-            return `/${this.tenantSlug}/booking/date?service=${this.selectedServiceId}`;
         },
 
         get totalLabel() {

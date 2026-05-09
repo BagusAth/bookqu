@@ -13,9 +13,8 @@ use App\Http\Controllers\OwnerSubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('home');
 });
-
 // Dummy registration module (isolated for slug testing)
 Route::get('/dummy-register', [DummyRegistrationController::class, 'showForm'])->name('dummy-register.form');
 Route::post('/dummy-register', [DummyRegistrationController::class, 'processForm'])->name('dummy-register.process');
@@ -40,6 +39,26 @@ Route::get('/test-isolasi/{slug}', function () {
     // Query all() ini akan otomatis terfilter sesuai tenant dari slug URL.
     return response()->json($services);
 })->middleware('tenant');
+Route::prefix('{slug_usaha}')
+    ->group(function () {
+        Route::get('/', [BookingController::class, 'showProgramSelection'])
+            ->name('customer.booking.program');
 
-Route::get('/{slug_usaha}', [BookingController::class, 'showProgramSelection'])
-    ->name('customer.booking.program');
+        Route::post('/booking/select-program', [BookingController::class, 'selectProgram'])
+            ->name('customer.booking.select-program');
+
+        Route::get('/booking/date', [BookingController::class, 'showDateSelection'])
+            ->name('customer.booking.date');
+
+        Route::post('/booking/select-date', [BookingController::class, 'selectDate'])
+            ->name('customer.booking.select-date');
+
+        Route::get('/booking/time', [BookingController::class, 'showTimeSelection'])
+            ->name('customer.booking.time');
+
+        Route::post('/booking/select-time', [BookingController::class, 'selectTime'])
+            ->name('customer.booking.select-time');
+
+        Route::get('/booking/checkout', [BookingController::class, 'showCheckout'])
+            ->name('customer.booking.checkout');
+    });

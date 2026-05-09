@@ -1,0 +1,144 @@
+:root {
+    --primary: #4F46E5;
+    --primary-hover: #4338CA;
+    --soft-bg: #EEF2FF;
+    --border: #E5E7EB;
+    --text-dark: #111827;
+    --text-muted: #6B7280;
+    --white: #FFFFFF;
+}
+
+.booking-date-card {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    border: 1px solid var(--border);
+    background: #F9FAFB;
+    box-shadow: 0 12px 24px -18px rgba(15, 23, 42, 0.2);
+}
+
+.booking-date-card__media {
+    width: 150px;
+    height: 110px;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+    background: var(--soft-bg);
+}
+
+.booking-calendar {
+    background: var(--white);
+}
+
+.booking-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.booking-calendar__nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border);
+    color: var(--text-dark);
+    background: var(--white);
+    transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.booking-calendar__nav-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.booking-calendar__nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.booking-calendar__cell {
+    min-height: 72px;
+    border-radius: 1rem;
+    border: 1px solid transparent;
+    background: #F9FAFB;
+    color: var(--text-dark);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.booking-calendar__cell--inactive {
+    background: #F9FAFB;
+    color: #9CA3AF;
+    cursor: not-allowed;
+}
+
+.booking-calendar__cell--available {
+    background: var(--white);
+    border-color: var(--border);
+}
+
+.booking-calendar__cell--available:hover {
+    border-color: var(--primary);
+    background: rgba(79, 70, 229, 0.1);
+}
+
+.booking-calendar__cell--selected {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+    box-shadow: 0 12px 20px -16px rgba(79, 70, 229, 0.8);
+}
+
+.booking-calendar__cell--disabled {
+    background: #F3F4F6;
+    color: #9CA3AF;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.booking-calendar__cell--disabled .booking-calendar__date {
+    text-decoration: line-through;
+}
+
+.booking-calendar__cell--today {
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.booking-calendar__cell--full {
+    background: #F3F4F6;
+}
+
+.booking-calendar__slots {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.booking-calendar__cell--selected .booking-calendar__slots {
+    color: #E0E7FF;
+}
+
+@media (max-width: 1024px) {
+    .booking-date-card {
+        flex-direction: column;
+    }
+
+    .booking-date-card__media {
+        width: 100%;
+        height: 160px;
+    }
+}
+
+@media (max-width: 640px) {
+    .booking-calendar__cell {
+        min-height: 58px;
+    }
+}
