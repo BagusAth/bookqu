@@ -110,7 +110,7 @@
     </nav>
 
     <!-- Bottom: Settings -->
-    <div class="border-t border-bq-border px-3 py-3">
+    <div class="border-t border-bq-border px-3 py-3 space-y-2">
         <a href="/owner/settings" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-bq-sidebar-text transition-all duration-200 hover:bg-bq-background hover:text-bq-text {{ str_contains($halamanaktif, 'owner/settings') ? 'bg-bq-sidebar-active text-bq-sidebar-active-text shadow-sm' : '' }}" id="nav-settings">
             <svg class="h-[18px] w-[18px] text-bq-text-subtle group-hover:text-bq-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
@@ -118,6 +118,16 @@
             </svg>
             Settings
         </a>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="group flex w-full items-center gap-3 rounded-lg border border-rose-500/60 px-3 py-2.5 text-sm font-medium text-rose-600 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600" id="nav-logout">
+                <svg class="h-[18px] w-[18px] text-rose-500/80 group-hover:text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 8V6a2 2 0 012-2h7a2 2 0 012 2v12a2 2 0 01-2 2H9a2 2 0 01-2-2v-2" />
+                </svg>
+                Logout
+            </button>
+        </form>
     </div>
 </aside>
 

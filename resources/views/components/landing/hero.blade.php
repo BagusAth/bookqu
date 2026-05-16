@@ -10,7 +10,7 @@
                 Tingkatkan efisiensi dan kurangi no-show pelanggan.
             </p>
             <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <a href="/dummy-register" class="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700">
+                <a href="{{ route('register') }}" class="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700">
                     Mulai Gratis 7 Hari
                 </a>
                 <a href="#features" class="rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300">
