@@ -17,6 +17,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@bookqu.com'],
+            [
+                'namalengkap' => 'Admin BookQu',
+                'password' => 'password',
+                'nomorhp' => '080000000000',
+                'role' => 'admin',
+            ]
+        );
+
         $ownerBadminton = User::updateOrCreate(
             ['email' => 'badminton.owner@bookqu.test'],
             [

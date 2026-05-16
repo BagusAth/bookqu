@@ -10,7 +10,12 @@ use App\Http\Controllers\OwnerProgramController;
 use App\Http\Controllers\OwnerScheduleController;
 use App\Http\Controllers\OwnerSettingController;
 use App\Http\Controllers\OwnerSubscriptionController;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rules\Password;
 
 Route::get('/', function () {
     return view('welcome');
@@ -22,22 +27,64 @@ Route::middleware('guest')->group(function () {
         return view('auth.login');
     })->name('login');
     
-    Route::post('/login', function (\Illuminate\Http\Request $request) {
-        // Handle login here
+    Route::post('/login', function (Request $request) {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+            return back()
+                ->withErrors(['email' => 'Email atau password salah.'])
+                ->onlyInput('email');
+        }
+
+        $request->session()->regenerate();
+
+        $user = $request->user();
+
+        if ($user?->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if ($user?->isOwner()) {
+            return redirect()->route('owner.dashboard');
+        }
+
+        return redirect('/');
     })->name('login.store');
     
     Route::get('/register', function () {
         return view('auth.register');
     })->name('register');
     
-    Route::post('/register', function (\Illuminate\Http\Request $request) {
-        // Handle registration here
+    Route::post('/register', function (Request $request) {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:100', 'unique:users,email'],
+            'nomorhp' => ['required', 'string', 'max:20'],
+            'password' => ['required', 'confirmed', Password::min(8)],
+            'terms' => ['accepted'],
+        ]);
+
+        $user = User::create([
+            'namalengkap' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'nomorhp' => $validated['nomorhp'],
+            'role' => 'owner',
+        ]);
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route('owner.dashboard');
     })->name('register.store');
 });
 
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', function (\Illuminate\Support\Facades\Auth $auth) {
-        $auth::logout();
+    Route::post('/logout', function () {
+        Auth::logout();
         return redirect('/');
     })->name('logout');
 });
@@ -47,7 +94,9 @@ Route::get('/dummy-register', [DummyRegistrationController::class, 'showForm'])-
 Route::post('/dummy-register', [DummyRegistrationController::class, 'processForm'])->name('dummy-register.process');
 
 // ── Owner Dashboard Routes ──
-Route::prefix('owner')->group(function () {
+Route::prefix('owner')
+    ->middleware(['auth', 'role:owner', 'tenant'])
+    ->group(function () {
     Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
     Route::get('/programs', [OwnerProgramController::class, 'index'])->name('owner.programs');
     Route::post('/programs', [OwnerProgramController::class, 'store'])->name('owner.programs.store');
@@ -59,6 +108,14 @@ Route::prefix('owner')->group(function () {
     Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page');
     Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
 });
+
+Route::prefix('admin')
+    ->middleware(['auth', 'role:admin'])
+    ->group(function () {
+        Route::get('/dashboard', function () {
+            return view('admin.dashboard');
+        })->name('admin.dashboard');
+    });
 
 Route::get('/test-isolasi/{slug}', function () {
     $services = \App\Models\Service::all();

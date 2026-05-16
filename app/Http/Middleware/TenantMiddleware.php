@@ -13,19 +13,26 @@ class TenantMiddleware
 {
     public function handle(Request $request, Closure $next): mixed
     {
-        $tenant = null;
-        $slug = $request->route('slug');
+        if (Auth::check()) {
+            $tenant = Tenant::where('iduser', Auth::id())->first();
+
+            if ($tenant) {
+                session()->put('current_tenant_id', $tenant->id);
+                return $next($request);
+            }
+        }
+
+        $slug = $request->route('slug') ?? $request->route('slug_usaha');
 
         if (is_string($slug) && $slug !== '') {
             $tenant = Tenant::where('slug', $slug)->first();
-        }
 
-        if (!$tenant && Auth::check()) {
-            $tenant = Tenant::where('iduser', Auth::id())->first();
-        }
+            if ($tenant) {
+                session()->put('current_tenant_id', $tenant->id);
+                return $next($request);
+            }
 
-        if ($tenant) {
-            session()->put('current_tenant_id', $tenant->id);
+            abort(404, 'Bisnis tidak ditemukan');
         }
 
         return $next($request);
