@@ -16,6 +16,17 @@
                     <p class="mt-2 text-sm text-slate-600">Kelola booking bisnis Anda dengan mudah melalui dashboard BookQu.</p>
                 </div>
 
+                @if ($errors->any())
+                    <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        <p class="font-semibold">Login gagal</p>
+                        <ul class="mt-2 list-disc space-y-1 pl-5">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <form method="POST" action="{{ route('login.store') }}" class="space-y-4">
                     @csrf
 
@@ -26,26 +37,38 @@
                             type="email" 
                             name="email" 
                             placeholder="nama@email.com"
-                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            value="{{ old('email') }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('email') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
                             required
                         />
+                        @error('email')
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
                         <label for="password" class="block text-sm font-medium text-slate-700 mb-2">Password</label>
-                        <input 
-                            id="password" 
-                            type="password" 
-                            name="password" 
-                            placeholder="Masukkan password"
-                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            required
-                        />
+                        <div class="relative">
+                            <input 
+                                id="password" 
+                                type="password" 
+                                name="password" 
+                                placeholder="Masukkan password"
+                                class="w-full px-4 py-2 border rounded-lg pr-12 focus:ring-2 focus:border-transparent {{ $errors->has('password') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                                required
+                            />
+                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-700" data-toggle="password">
+                                Lihat
+                            </button>
+                        </div>
+                        @error('password')
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex items-center justify-between">
                         <label class="flex items-center">
-                            <input type="checkbox" name="remember" class="rounded border-slate-300" />
+                            <input type="checkbox" name="remember" class="rounded border-slate-300" @checked(old('remember')) />
                             <span class="ml-2 text-sm text-slate-600">Ingat saya</span>
                         </label>
                         <a href="#" class="text-sm text-blue-600 hover:text-blue-700">Lupa password?</a>
@@ -75,5 +98,18 @@
             </div>
         </div>
     </div>
+    <script>
+        document.querySelectorAll('[data-toggle="password"]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const input = document.getElementById('password');
+                if (!input) {
+                    return;
+                }
+                const isHidden = input.type === 'password';
+                input.type = isHidden ? 'text' : 'password';
+                button.textContent = isHidden ? 'Sembunyikan' : 'Lihat';
+            });
+        });
+    </script>
 </body>
 </html>

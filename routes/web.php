@@ -124,6 +124,7 @@ Route::get('/test-isolasi/{slug}', function () {
     return response()->json($services);
 })->middleware('tenant');
 Route::prefix('{slug_usaha}')
+    ->middleware('tenant')
     ->group(function () {
         Route::get('/', [BookingController::class, 'showProgramSelection'])
             ->name('customer.booking.program');
