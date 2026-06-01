@@ -8,17 +8,67 @@ use App\Models\Service;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OwnerAnalyticsController extends Controller
 {
+    private function resolveTenant(): ?Tenant
+    {
+        $tenantId = session('current_tenant_id');
+
+        if (is_numeric($tenantId)) {
+            return Tenant::with('user')->find($tenantId);
+        }
+
+        $userId = auth()->id();
+
+        if ($userId) {
+            return Tenant::with('user')->where('iduser', $userId)->first();
+        }
+
+        return null;
+    }
+
     /**
      * Halaman analytics.
      */
     public function index()
     {
-        $tenant = Tenant::with('user')->first();
+        $tenant = $this->resolveTenant();
+        $user = auth()->user();
         if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
+            $tenant = new Tenant();
+            if ($user) {
+                $tenant->setRelation('user', $user);
+            }
+
+            $labelbulanpanjang = [];
+            $revenueperbulan = [];
+            $bookingperbulan = [];
+            for ($i = 11; $i >= 0; $i--) {
+                $labelbulanpanjang[] = Carbon::now()->subMonths($i)->startOfMonth()->format('M Y');
+                $revenueperbulan[] = 0;
+                $bookingperbulan[] = 0;
+            }
+
+            return view('owner.owner-analytics', [
+                'tenant' => $tenant,
+                'revenueperbulan' => $revenueperbulan,
+                'bookingperbulan' => $bookingperbulan,
+                'labelbulanpanjang' => $labelbulanpanjang,
+                'revenuebulanini' => 0,
+                'persenperubahanrevenue' => 0,
+                'totalrevenuesetahun' => 0,
+                'bookingbulanini' => 0,
+                'persenbooking' => 0,
+                'toplayanan' => collect(),
+                'distribusistatus' => ['completed' => 0, 'paid' => 0, 'pending' => 0, 'cancelled' => 0],
+                'revenueperLayanan' => collect(),
+                'bookingperhari' => array_fill(0, 30, 0),
+                'labelhari' => array_map(fn($i) => Carbon::now()->subDays(29 - $i)->format('d M'), range(0, 29)),
+                'ratarataharian' => 0,
+                'tingkatkonversi' => 0,
+            ]);
         }
 
         $idtenant = $tenant->id;
@@ -124,5 +174,53 @@ class OwnerAnalyticsController extends Controller
             'ratarataharian',
             'tingkatkonversi',
         ));
+    }
+
+    public function export(): StreamedResponse
+    {
+        $tenant = $this->resolveTenant();
+        if (!$tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        $filename = 'analytics-' . $tenant->slug . '-' . now()->format('Ymd-His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        return response()->streamDownload(function () use ($tenant) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, [
+                'Tanggal',
+                'Nama Program',
+                'Nama Pelanggan',
+                'Email',
+                'Nomor HP',
+                'Status',
+                'Harga',
+            ]);
+
+            Booking::where('idtenant', $tenant->id)
+                ->with('layanan')
+                ->orderByDesc('tanggalbooking')
+                ->chunk(500, function ($bookings) use ($handle) {
+                    foreach ($bookings as $booking) {
+                        $harga = $booking->layanan->harga ?? 0;
+                        fputcsv($handle, [
+                            optional($booking->tanggalbooking)->format('Y-m-d'),
+                            $booking->layanan->namalayanan ?? '-',
+                            $booking->namapelanggan,
+                            $booking->email,
+                            $booking->nomorhp,
+                            $booking->status,
+                            $harga,
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, $headers);
     }
 }

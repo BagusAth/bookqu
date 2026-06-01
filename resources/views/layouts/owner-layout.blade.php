@@ -53,6 +53,11 @@
             </div>
 
             <div class="p-4 sm:p-6 lg:p-8">
+                @if (session('pesan'))
+                    <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        <p class="font-semibold">{{ session('pesan') }}</p>
+                    </div>
+                @endif
                 @yield('content')
             </div>
         </main>

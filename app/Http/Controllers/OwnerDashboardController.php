@@ -13,13 +13,63 @@ use Illuminate\Support\Facades\DB;
 
 class OwnerDashboardController extends Controller
 {
+    private function resolveTenant(): ?Tenant
+    {
+        $tenantId = session('current_tenant_id');
+
+        if (is_numeric($tenantId)) {
+            return Tenant::with('user')->find($tenantId);
+        }
+
+        $userId = auth()->id();
+
+        if ($userId) {
+            return Tenant::with('user')->where('iduser', $userId)->first();
+        }
+
+        return null;
+    }
+
     public function index()
     {
-        // Untuk sementara tanpa auth, ambil tenant pertama
-        $tenant = Tenant::with('user')->first();
+        $tenant = $this->resolveTenant();
+        $user = auth()->user();
+
+        if (!$user) {
+            abort(403, 'User tidak ditemukan.');
+        }
+
+        $showProfilePrompt = false;
+        $showPaymentPrompt = false;
 
         if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan. Silakan jalankan: php artisan db:seed --class=DashboardSeeder');
+            $tenant = new Tenant();
+            $tenant->setRelation('user', $user);
+            $showProfilePrompt = true;
+
+            $labelbulan = [];
+            $datarevenueperbulan = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $labelbulan[] = Carbon::now()->subMonths($i)->startOfMonth()->format('M');
+                $datarevenueperbulan[] = 0;
+            }
+
+            return view('owner.owner-dashboard', [
+                'tenant' => $tenant,
+                'totalbooking' => 0,
+                'persenperubahanboking' => 0,
+                'totalrevenue' => 0,
+                'persenperubahanrevenue' => 0,
+                'programaktif' => 0,
+                'datarevenueperbulan' => $datarevenueperbulan,
+                'labelbulan' => $labelbulan,
+                'trendlayanan' => collect(),
+                'aktivitasterbaru' => collect(),
+                'statustrial' => false,
+                'sisahari' => 0,
+                'showProfilePrompt' => $showProfilePrompt,
+                'showPaymentPrompt' => $showPaymentPrompt,
+            ]);
         }
 
         $idtenant = $tenant->id;
@@ -132,6 +182,10 @@ class OwnerDashboardController extends Controller
             $sisahari = (int) max(0, ceil(Carbon::now()->diffInDays($langganan->trial_berakhir, false)));
         }
 
+        $showProfilePrompt = !$tenant->namabisnis || !$tenant->slug || !$tenant->jenisbisnis || !$tenant->nomorhp;
+        $showPaymentPrompt = ($tenant->payment_mode ?? 'platform') === 'owner'
+            && ($tenant->midtrans_status ?? 'pending') !== 'approved';
+
         return view('owner.owner-dashboard', compact(
             'tenant',
             'totalbooking',
@@ -145,6 +199,8 @@ class OwnerDashboardController extends Controller
             'aktivitasterbaru',
             'statustrial',
             'sisahari',
+            'showProfilePrompt',
+            'showPaymentPrompt',
         ));
     }
 }

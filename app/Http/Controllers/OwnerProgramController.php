@@ -7,15 +7,33 @@ use App\Models\Service;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class OwnerProgramController extends Controller
 {
+    private function resolveTenant(): ?Tenant
+    {
+        $tenantId = session('current_tenant_id');
+
+        if (is_numeric($tenantId)) {
+            return Tenant::with('user')->find($tenantId);
+        }
+
+        $userId = auth()->id();
+
+        if ($userId) {
+            return Tenant::with('user')->where('iduser', $userId)->first();
+        }
+
+        return null;
+    }
+
     /**
      * Halaman daftar program/layanan.
      */
     public function index(Request $request)
     {
-        $tenant = Tenant::with('user')->first();
+        $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
@@ -60,7 +78,7 @@ class OwnerProgramController extends Controller
      */
     public function store(Request $request)
     {
-        $tenant = Tenant::first();
+        $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
@@ -81,5 +99,53 @@ class OwnerProgramController extends Controller
         ]);
 
         return redirect('/owner/programs')->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil ditambahkan!');
+    }
+
+    /**
+     * Update program.
+     */
+    public function update(Request $request, int $id)
+    {
+        $tenant = $this->resolveTenant();
+        if (!$tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
+
+        $datavalid = $request->validate([
+            'namalayanan' => 'required|string|max:255',
+            'harga' => 'required|numeric|min:0',
+            'durasi' => 'required|integer|min:5|max:480',
+            'deskripsi' => 'nullable|string|max:1000',
+            'is_active' => 'required|boolean',
+        ]);
+
+        $layanan->update([
+            'namalayanan' => $datavalid['namalayanan'],
+            'harga' => $datavalid['harga'],
+            'durasi' => $datavalid['durasi'],
+            'deskripsi' => $datavalid['deskripsi'] ?? null,
+            'is_active' => (bool) $datavalid['is_active'],
+        ]);
+
+        return redirect('/owner/programs')->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil diperbarui!');
+    }
+
+    /**
+     * Hapus program.
+     */
+    public function destroy(int $id)
+    {
+        $tenant = $this->resolveTenant();
+        if (!$tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
+        $namalayanan = $layanan->namalayanan;
+        $layanan->delete();
+
+        return redirect('/owner/programs')->with('sukses', 'Program "' . $namalayanan . '" berhasil dihapus!');
     }
 }

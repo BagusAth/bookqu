@@ -14,7 +14,21 @@ class Tenant extends Model
         'slug',
         'jenisbisnis',
         'alamat',
+        'deskripsi',
+        'logo_path',
         'nomorhp',
+        'payment_mode',
+        'midtrans_status',
+        'midtrans_environment',
+        'midtrans_sandbox_merchant_id',
+        'midtrans_sandbox_client_key',
+        'midtrans_sandbox_server_key',
+        'midtrans_prod_merchant_id',
+        'midtrans_prod_client_key',
+        'midtrans_prod_server_key',
+        'saldo_platform',
+        'weekend_price_type',
+        'weekend_price_value',
     ];
 
     public function user(): BelongsTo
@@ -39,5 +53,15 @@ class Tenant extends Model
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class, 'idtenant');
+    }
+
+    public function blockedDates(): HasMany
+    {
+        return $this->hasMany(OwnerBlockedDate::class, 'idtenant');
+    }
+
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(OwnerPayout::class, 'idtenant');
     }
 }

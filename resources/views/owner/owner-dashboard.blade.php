@@ -28,6 +28,35 @@
         </div>
     </div>
 
+    {{-- ── Profile Completion Prompt --}}
+    @if ($showProfilePrompt)
+        <div class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4" id="profile-completion-banner">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-amber-900">Lengkapi profil bisnis Anda</p>
+                    <p class="text-xs text-amber-800">Isi data bisnis agar akun Anda siap digunakan dan URL bisnis bisa dibuat.</p>
+                </div>
+                <button @click="$dispatch('open-complete-profile')" class="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-amber-700" id="btn-complete-profile">
+                    Lengkapi Profil
+                </button>
+            </div>
+        </div>
+    @endif
+
+    @if ($showPaymentPrompt)
+        <div class="rounded-xl border border-sky-200 bg-sky-50 px-5 py-4" id="payment-verification-banner">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-sky-900">Pengaturan pembayaran belum diverifikasi</p>
+                    <p class="text-xs text-sky-800">Lengkapi kredensial Midtrans dan tunggu verifikasi admin.</p>
+                </div>
+                <a href="/owner/settings" class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-sky-700" id="btn-payment-settings">
+                    Buka Settings
+                </a>
+            </div>
+        </div>
+    @endif
+
     {{-- ── Trial Banner ── --}}
     @if ($statustrial)
         @include('components.owner.trial-banner', ['sisahari' => $sisahari])
@@ -139,7 +168,7 @@
             </div>
             @if ($trendlayanan->count() > 0)
                 <div class="mt-5 border-t border-bq-border pt-4">
-                    <a href="#" class="text-sm font-medium text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-full-report">
+                    <a href="/owner/analytics" class="text-sm font-medium text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-full-report">
                         View Full Report →
                     </a>
                 </div>
@@ -151,7 +180,7 @@
     <div class="rounded-xl border border-bq-border bg-bq-surface" id="recent-activity-card">
         <div class="flex items-center justify-between border-b border-bq-border px-5 py-4">
             <h2 class="text-base font-semibold text-bq-text">Recent Activity</h2>
-            <a href="#" class="text-sm font-medium text-bq-text-muted transition-colors hover:text-bq-primary" id="link-all-activity">
+            <a href="/owner/bookings" class="text-sm font-medium text-bq-text-muted transition-colors hover:text-bq-primary" id="link-all-activity">
                 View All Activity →
             </a>
         </div>
@@ -198,6 +227,11 @@
     </div>
 
 </div>
+
+{{-- Complete Profile Modal --}}
+@if ($showProfilePrompt)
+    @include('components.owner.modal-complete-profile')
+@endif
 
 {{-- ── Revenue Chart Script ── --}}
 <script>

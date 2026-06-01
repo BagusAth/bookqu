@@ -3,7 +3,7 @@
 @section('title', 'Programs')
 
 @section('content')
-<div class="mx-auto max-w-7xl space-y-6">
+<div class="mx-auto max-w-7xl space-y-6" x-data>
 
     {{-- ── Flash Message ── --}}
     @if (session('sukses'))
@@ -62,11 +62,43 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                         </svg>
                     </div>
-                    <button class="rounded-lg p-1.5 text-bq-text-subtle opacity-0 transition-all hover:bg-bq-background hover:text-bq-text group-hover:opacity-100">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01"/>
-                        </svg>
-                    </button>
+                    @php
+                        $editPayload = [
+                            'id' => $layanan->id,
+                            'namalayanan' => $layanan->namalayanan,
+                            'harga' => $layanan->harga,
+                            'durasi' => $layanan->durasi,
+                            'deskripsi' => $layanan->deskripsi ?: '',
+                            'is_active' => (int) ($layanan->is_active ?? 1),
+                        ];
+                    @endphp
+                    <div class="flex items-center gap-1">
+                        <button
+                            class="rounded-lg p-1.5 text-bq-text-subtle opacity-0 transition-all hover:bg-bq-background hover:text-bq-text group-hover:opacity-100"
+                            @click="$dispatch('open-edit-program', @json($editPayload))"
+                            aria-label="Edit program"
+                            id="btn-edit-program-{{ $layanan->id }}"
+                        >
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4h6a2 2 0 012 2v6m-10 6H6a2 2 0 01-2-2v-6m12-4L8 18l-4 1 1-4 10-10z"/>
+                            </svg>
+                        </button>
+                        <form method="POST" action="/owner/programs/{{ $layanan->id }}" class="opacity-0 transition-all group-hover:opacity-100">
+                            @csrf
+                            @method('DELETE')
+                            <button
+                                type="submit"
+                                class="rounded-lg p-1.5 text-bq-text-subtle transition-all hover:bg-rose-50 hover:text-rose-600"
+                                onclick="return confirm('Hapus program ini?');"
+                                aria-label="Delete program"
+                                id="btn-delete-program-{{ $layanan->id }}"
+                            >
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
                 </div>
                 <div class="mt-3">
                     <h3 class="text-sm font-semibold text-bq-text">{{ $layanan->namalayanan }}</h3>
@@ -77,12 +109,17 @@
                         <span class="text-sm font-bold text-bq-primary">Rp {{ number_format($layanan->harga, 0, ',', '.') }}</span>
                         <span class="text-xs text-bq-text-subtle">{{ $layanan->durasi }} min</span>
                     </div>
-                    <span class="inline-flex items-center gap-1 rounded-full bg-bq-background px-2 py-0.5 text-xs font-medium text-bq-text-muted">
-                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                        {{ $layanan->bookings_count }} bookings
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1 rounded-full bg-bq-background px-2 py-0.5 text-xs font-medium text-bq-text-muted">
+                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            {{ $layanan->bookings_count }} bookings
+                        </span>
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ ($layanan->is_active ?? true) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                            {{ ($layanan->is_active ?? true) ? 'Active' : 'Non-Active' }}
+                        </span>
+                    </div>
                 </div>
             </div>
         @empty
@@ -107,4 +144,6 @@
 
 {{-- Add Program Modal --}}
 @include('components.owner.modal-add-program')
+{{-- Edit Program Modal --}}
+@include('components.owner.modal-edit-program')
 @endsection

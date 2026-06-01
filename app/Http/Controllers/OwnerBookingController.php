@@ -9,14 +9,52 @@ use Illuminate\Http\Request;
 
 class OwnerBookingController extends Controller
 {
+    private function resolveTenant(): ?Tenant
+    {
+        $tenantId = session('current_tenant_id');
+
+        if (is_numeric($tenantId)) {
+            return Tenant::with('user')->find($tenantId);
+        }
+
+        $userId = auth()->id();
+
+        if ($userId) {
+            return Tenant::with('user')->where('iduser', $userId)->first();
+        }
+
+        return null;
+    }
+
     /**
      * Halaman daftar booking.
      */
     public function index(Request $request)
     {
-        $tenant = Tenant::with('user')->first();
+        $tenant = $this->resolveTenant();
+        $user = auth()->user();
         if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
+            $tenant = new Tenant();
+            if ($user) {
+                $tenant->setRelation('user', $user);
+            }
+
+            $filterstatus = $request->input('status', 'semua');
+            $katakunci = $request->input('katakunci', '');
+            $daftarbooking = Booking::whereRaw('1 = 0')->paginate(15);
+
+            return view('owner.owner-bookings', [
+                'tenant' => $tenant,
+                'daftarbooking' => $daftarbooking,
+                'totalbooking' => 0,
+                'bookingpending' => 0,
+                'bookingkonfirmasi' => 0,
+                'bookingselesai' => 0,
+                'bookingbatal' => 0,
+                'bookinghariini' => 0,
+                'filterstatus' => $filterstatus,
+                'katakunci' => $katakunci,
+            ]);
         }
 
         $idtenant = $tenant->id;

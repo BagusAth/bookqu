@@ -20,6 +20,8 @@ class TenantMiddleware
                 session()->put('current_tenant_id', $tenant->id);
                 return $next($request);
             }
+
+            session()->forget('current_tenant_id');
         }
 
         $slug = $request->route('slug') ?? $request->route('slug_usaha');

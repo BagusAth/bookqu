@@ -27,6 +27,12 @@
                     </div>
                 @endif
 
+                @if (session('status'))
+                    <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        <p class="font-semibold">{{ session('status') }}</p>
+                    </div>
+                @endif
+
                 <form method="POST" action="{{ route('login.store') }}" class="space-y-4">
                     @csrf
 

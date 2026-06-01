@@ -90,10 +90,10 @@
                 <p class="mt-1 text-3xl font-bold text-bq-primary">Rp {{ number_format($totalrevenuesetahun, 0, ',', '.') }}</p>
                 <p class="mt-1 text-sm text-bq-text-muted">Total revenue in the last 12 months</p>
             </div>
-            <button class="inline-flex items-center gap-2 rounded-lg border border-bq-primary/30 bg-bq-surface px-4 py-2.5 text-sm font-medium text-bq-primary hover:bg-bq-primary hover:text-white transition-all" id="btn-export">
+            <a href="/owner/analytics/export" class="inline-flex items-center gap-2 rounded-lg border border-bq-primary/30 bg-bq-surface px-4 py-2.5 text-sm font-medium text-bq-primary hover:bg-bq-primary hover:text-white transition-all" id="btn-export">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M7 20h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v13a2 2 0 002 2z"/></svg>
                 Export Report
-            </button>
+            </a>
         </div>
     </div>
 </div>

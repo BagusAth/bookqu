@@ -22,11 +22,17 @@
             <p class="mt-1 text-sm text-bq-text-muted">Manage your weekly availability and pricing per slot.</p>
         </div>
         <div class="flex items-center gap-3">
-            <button class="inline-flex items-center gap-2 rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm font-medium text-bq-text transition-all hover:border-bq-border-strong hover:shadow-sm" id="btn-default-pricing">
+            <button @click="$dispatch('open-default-pricing')" class="inline-flex items-center gap-2 rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm font-medium text-bq-text transition-all hover:border-bq-border-strong hover:shadow-sm" id="btn-default-pricing">
                 <svg class="h-4 w-4 text-bq-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 Set Default Pricing
+            </button>
+            <button @click="$dispatch('open-configure-availability')" class="inline-flex items-center gap-2 rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm font-medium text-bq-text transition-all hover:border-bq-border-strong hover:shadow-sm" id="btn-configure-availability">
+                <svg class="h-4 w-4 text-bq-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6m-7 5h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                Configure
             </button>
             <button @click="$dispatch('open-add-bulk-slots')" class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5" id="btn-add-slots">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -128,19 +134,37 @@
                                 $adabooking = $slot->bookings->where('status', '!=', 'cancelled')->count() > 0;
                                 $bookingnya = $slot->bookings->where('status', '!=', 'cancelled')->first();
                             @endphp
-                            <div class="rounded-lg border p-2 text-xs transition-all hover:shadow-sm
+                            <div class="group rounded-lg border p-2 text-xs transition-all hover:shadow-sm
                                 {{ $adabooking
                                     ? 'border-bq-border-strong bg-bq-background'
                                     : 'border-bq-primary/30 bg-bq-primary/5 hover:border-bq-primary/50'
                                 }}
                             ">
                                 <p class="font-bold {{ $adabooking ? 'text-bq-text-muted' : 'text-bq-primary' }}">
-                                    Rp {{ number_format($slot->layanan->harga ?? 0, 0, ',', '.') }}
+                                    Rp {{ number_format($slot->harga_override ?? $slot->layanan->harga ?? 0, 0, ',', '.') }}
                                 </p>
                                 <p class="mt-0.5 truncate {{ $adabooking ? 'text-bq-text-subtle' : 'text-bq-text-muted' }}">
                                     {{ $adabooking ? 'Booked: ' . ($bookingnya->namapelanggan ?? '') : 'Available' }}
                                 </p>
-                                <p class="mt-0.5 text-bq-text-subtle">{{ $slot->jam_mulai }} - {{ $slot->jam_selesai }}</p>
+                                <div class="mt-0.5 flex items-center justify-between gap-2 text-bq-text-subtle">
+                                    <span>{{ $slot->jam_mulai }} - {{ $slot->jam_selesai }}</span>
+                                    @if (!$adabooking)
+                                        <form method="POST" action="/owner/schedule/slots/{{ $slot->id }}" class="opacity-0 transition-all group-hover:opacity-100">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button
+                                                type="submit"
+                                                class="rounded-md p-1 text-bq-text-subtle transition-all hover:bg-rose-50 hover:text-rose-600"
+                                                onclick="return confirm('Hapus slot ini?');"
+                                                aria-label="Delete slot"
+                                            >
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </div>
                         @empty
                             <div class="flex h-full items-center justify-center text-xs text-bq-text-subtle">
@@ -178,7 +202,7 @@
                             <p class="text-xs text-bq-text-muted">Apply +20% during peak weekend hours</p>
                         </div>
                     </div>
-                    <button class="rounded-lg border border-bq-border bg-bq-surface px-3.5 py-1.5 text-xs font-medium text-bq-text transition-all hover:border-bq-border-strong hover:shadow-sm">Configure</button>
+                    <button @click="$dispatch('open-configure-availability')" class="rounded-lg border border-bq-border bg-bq-surface px-3.5 py-1.5 text-xs font-medium text-bq-text transition-all hover:border-bq-border-strong hover:shadow-sm">Configure</button>
                 </div>
                 <div class="flex items-center justify-between rounded-lg border border-bq-border bg-bq-background/50 p-4">
                     <div class="flex items-center gap-3">
@@ -190,7 +214,7 @@
                             <p class="text-xs text-bq-text-muted">Apply -15% for slots booked 30 days in advance</p>
                         </div>
                     </div>
-                    <button class="rounded-lg border border-bq-border bg-bq-surface px-3.5 py-1.5 text-xs font-medium text-bq-text transition-all hover:border-bq-border-strong hover:shadow-sm">Configure</button>
+                    <button @click="$dispatch('open-configure-availability')" class="rounded-lg border border-bq-border bg-bq-surface px-3.5 py-1.5 text-xs font-medium text-bq-text transition-all hover:border-bq-border-strong hover:shadow-sm">Configure</button>
                 </div>
             </div>
         </div>
@@ -221,4 +245,8 @@
 
 {{-- Add Bulk Slots Modal --}}
 @include('components.owner.modal-add-bulk-slots', ['daftarlayanan' => $daftarlayanan])
+{{-- Default Pricing Modal --}}
+@include('components.owner.modal-default-pricing', ['daftarlayanan' => $daftarlayanan])
+{{-- Configure Availability Modal --}}
+@include('components.owner.modal-configure-availability', ['blockedDates' => $blockedDates, 'tenant' => $tenant])
 @endsection

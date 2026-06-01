@@ -7,6 +7,7 @@
         sedangkirim: false,
         jenisslot: 'harian',
         jumlahslotditambah: 0,
+        intervalslot: '60',
     }"
     @open-add-bulk-slots.window="buka = true"
     x-cloak
@@ -78,11 +79,17 @@
                             name="idlayanan"
                             id="input-idlayanan"
                             required
+                            @change="
+                                const durasi = $event.target.selectedOptions[0]?.dataset?.durasi;
+                                if (durasi && ['30','45','60','90','120'].includes(durasi)) {
+                                    intervalslot = durasi;
+                                }
+                            "
                             class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
                         >
                             <option value="">Select a program</option>
                             @foreach ($daftarlayanan as $layanan)
-                                <option value="{{ $layanan->id }}">{{ $layanan->namalayanan }} — Rp {{ number_format($layanan->harga, 0, ',', '.') }}</option>
+                                <option value="{{ $layanan->id }}" data-durasi="{{ (int) $layanan->durasi }}">{{ $layanan->namalayanan }} — Rp {{ number_format($layanan->harga, 0, ',', '.') }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -129,7 +136,7 @@
                     {{-- Slot Interval --}}
                     <div>
                         <label for="input-intervalslot" class="mb-1.5 block text-sm font-medium text-bq-text">Slot Duration (minutes) <span class="text-rose-500">*</span></label>
-                        <select name="intervalslot" id="input-intervalslot" required
+                        <select name="intervalslot" id="input-intervalslot" x-model="intervalslot" required
                             class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
                             <option value="30">30 minutes</option>
                             <option value="45">45 minutes</option>

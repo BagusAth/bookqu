@@ -10,6 +10,9 @@
             <p class="mt-1 text-sm text-bq-text-muted">Buat dan kelola landing page untuk bisnis Anda</p>
         </div>
         <div class="flex items-center gap-2">
+            <button class="rounded-lg border border-bq-border bg-bq-surface px-4 py-2 text-xs font-semibold text-bq-text-muted cursor-not-allowed" id="btn-landing-builder" disabled>
+                Akses Builder (Coming Soon)
+            </button>
             <span class="inline-flex items-center rounded-full bg-violet-500/15 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-400">
                 <svg class="mr-1.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>

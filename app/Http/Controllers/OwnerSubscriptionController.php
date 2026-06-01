@@ -13,14 +13,51 @@ use Illuminate\Http\Request;
 
 class OwnerSubscriptionController extends Controller
 {
+    private function resolveTenant(): ?Tenant
+    {
+        $tenantId = session('current_tenant_id');
+
+        if (is_numeric($tenantId)) {
+            return Tenant::with('user')->find($tenantId);
+        }
+
+        $userId = auth()->id();
+
+        if ($userId) {
+            return Tenant::with('user')->where('iduser', $userId)->first();
+        }
+
+        return null;
+    }
+
     /**
      * Halaman subscription management.
      */
     public function index()
     {
-        $tenant = Tenant::with('user')->first();
+        $tenant = $this->resolveTenant();
+        $user = auth()->user();
         if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
+            $tenant = new Tenant();
+            if ($user) {
+                $tenant->setRelation('user', $user);
+            }
+
+            return view('owner.owner-subscription', [
+                'tenant' => $tenant,
+                'langgananaktif' => null,
+                'semuapaket' => Plan::all(),
+                'jumlahlayanan' => 0,
+                'jumlahbookingbulanini' => 0,
+                'maxlayanan' => 0,
+                'maxbooking' => 0,
+                'isunlimited' => false,
+                'persenlayanan' => 0,
+                'persenbooking' => 0,
+                'statustrial' => false,
+                'sisahari' => 0,
+                'riwayatpembayaran' => collect(),
+            ]);
         }
 
         $idtenant = $tenant->id;
