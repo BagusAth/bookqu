@@ -96,7 +96,7 @@
 
         <form method="POST" action="{{ route('dummy-register.process') }}">
             @csrf
-            <label for="namabisnis">Nama Bisnis</label>
+            <label for="namabisnis">Nama Bisnissss</label>
             <input
                 type="text"
                 id="namabisnis"
