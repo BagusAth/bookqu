@@ -99,10 +99,16 @@
                         {{ $paket->namapaket === 'pro' ? 'Priority support' : 'Email support' }}
                     </li>
                 </ul>
-                <button class="mt-5 w-full rounded-lg py-2.5 text-sm font-semibold transition-all
-                    {{ $adalahaktif ? 'border border-bq-border bg-bq-background text-bq-text-muted cursor-default' : 'bg-bq-primary text-white shadow-md shadow-bq-primary/25 hover:bg-bq-primary-hover hover:shadow-lg' }}">
-                    {{ $adalahaktif ? 'Current Plan' : 'Select Plan' }}
-                </button>
+                @if ($adalahaktif)
+                    <button class="mt-5 w-full rounded-lg py-2.5 text-sm font-semibold transition-all border border-bq-border bg-bq-background text-bq-text-muted cursor-default" disabled>
+                        Current Plan
+                    </button>
+                @else
+                    <a href="{{ route('owner.checkout', $paket->id) }}"
+                        class="mt-5 block w-full rounded-lg py-2.5 text-sm font-semibold text-center transition-all bg-bq-primary text-white shadow-md shadow-bq-primary/25 hover:bg-bq-primary-hover hover:shadow-lg">
+                        Select Plan
+                    </a>
+                @endif
             </div>
         @endforeach
     </div>

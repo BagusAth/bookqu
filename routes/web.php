@@ -4,6 +4,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DummyRegistrationController;
 use App\Http\Controllers\OwnerAnalyticsController;
 use App\Http\Controllers\OwnerBookingController;
+use App\Http\Controllers\OwnerCheckoutController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerLandingPageController;
 use App\Http\Controllers\OwnerProgramController;
@@ -131,6 +132,14 @@ Route::prefix('owner')
     Route::post('/settings/payment', [OwnerSettingController::class, 'updatePaymentSettings'])->name('owner.settings.payment');
     Route::post('/payouts', [OwnerSettingController::class, 'requestPayout'])->name('owner.payouts.request');
 
+    // ── Checkout Routes (tanpa owner.profile middleware, karena ini billing) ──
+    Route::get('/checkout/{plan}', [OwnerCheckoutController::class, 'showCheckout'])->name('owner.checkout');
+    Route::post('/checkout', [OwnerCheckoutController::class, 'processCheckout'])->name('owner.checkout.process');
+    Route::get('/checkout/{payment}/payment', [OwnerCheckoutController::class, 'showPayment'])->name('owner.checkout.payment');
+    Route::post('/checkout/{payment}/check-status', [OwnerCheckoutController::class, 'checkPaymentStatus'])->name('owner.checkout.check-status');
+    Route::post('/checkout/{payment}/callback', [OwnerCheckoutController::class, 'handleCallback'])->name('owner.checkout.callback');
+    Route::get('/checkout/{payment}/invoice', [OwnerCheckoutController::class, 'showInvoice'])->name('owner.checkout.invoice');
+
     Route::middleware('owner.profile')->group(function () {
         Route::get('/programs', [OwnerProgramController::class, 'index'])->name('owner.programs');
         Route::post('/programs', [OwnerProgramController::class, 'store'])->name('owner.programs.store');
@@ -149,6 +158,10 @@ Route::prefix('owner')
         Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page');
     });
 });
+
+// ── Midtrans Webhook (tanpa auth & CSRF, dipanggil oleh Midtrans) ──
+Route::post('/midtrans/webhook', [OwnerCheckoutController::class, 'handleWebhook'])
+    ->name('midtrans.webhook');
 
 Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])

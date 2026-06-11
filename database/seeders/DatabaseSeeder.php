@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Plan;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
@@ -17,6 +18,37 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $plans = [
+            [
+                'namapaket' => 'small',
+                'hargabulanan' => 149000,
+                'maxlayanan' => 5,
+                'maxbooking' => 300,
+                'isunlimited' => false,
+            ],
+            [
+                'namapaket' => 'medium',
+                'hargabulanan' => 299000,
+                'maxlayanan' => 0,
+                'maxbooking' => 0,
+                'isunlimited' => true,
+            ],
+            [
+                'namapaket' => 'pro',
+                'hargabulanan' => 799000,
+                'maxlayanan' => 0,
+                'maxbooking' => 0,
+                'isunlimited' => true,
+            ],
+        ];
+
+        foreach ($plans as $plan) {
+            Plan::updateOrCreate(
+                ['namapaket' => $plan['namapaket']],
+                $plan
+            );
+        }
+
         $admin = User::updateOrCreate(
             ['email' => 'admin@bookqu.com'],
             [
@@ -24,6 +56,7 @@ class DatabaseSeeder extends Seeder
                 'password' => 'password',
                 'nomorhp' => '080000000000',
                 'role' => 'admin',
+                'email_verified_at' => now(),
             ]
         );
 
@@ -34,6 +67,7 @@ class DatabaseSeeder extends Seeder
                 'password' => 'password',
                 'nomorhp' => '081234567891',
                 'role' => 'owner',
+                'email_verified_at' => now(),
             ]
         );
 
@@ -44,6 +78,7 @@ class DatabaseSeeder extends Seeder
                 'password' => 'password',
                 'nomorhp' => '081234567892',
                 'role' => 'owner',
+                'email_verified_at' => now(),
             ]
         );
 
