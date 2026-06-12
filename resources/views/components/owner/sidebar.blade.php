@@ -25,7 +25,10 @@
             </svg>
         </div>
         <div>
-            <h1 class="text-sm font-bold text-bq-text">BookQu Admin</h1>
+            <div class="flex items-center gap-2">
+                <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-8 w-auto" />
+                <span class="text-sm font-bold text-bq-text">Admin</span>
+            </div>
             <p class="text-xs text-bq-text-subtle">Owner Portal</p>
         </div>
     </div>

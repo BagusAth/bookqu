@@ -11,7 +11,9 @@
 		<div class="page-wrap">
 			<header class="sticky top-0 z-50 border-b border-base bg-white/90 backdrop-blur">
 				<nav class="mx-auto flex w-full max-w-[1280px] items-center justify-between px-6 py-4">
-					<a href="#" class="text-lg font-extrabold text-primary">BookQu</a>
+					<a href="#" class="flex items-center">
+						<img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-8 w-auto" />
+					</a>
 					<div class="hidden items-center gap-8 text-sm font-medium lg:flex">
 						<a class="nav-link" href="#features">Features</a>
 						<a class="nav-link" href="#solutions">Solutions</a>
@@ -326,8 +328,10 @@
 			<footer class="footer">
 				<div class="mx-auto w-full max-w-[1280px] px-6">
 					<div class="grid gap-10 py-16 md:grid-cols-2 lg:grid-cols-4">
-						<div>
-							<h3 class="footer-logo">BookQu</h3>
+						<div class="footer-col brand">
+							<a href="#" class="flex items-center mb-4">
+								<img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-8 w-auto" />
+							</a>
 							<p class="footer-text mt-4">
 								Platform manajemen booking terbaik di Indonesia untuk membantu digitalisasi bisnis jasa dan
 								profesional.

@@ -11,7 +11,9 @@
         <div class="w-full max-w-md">
             <div class="bg-white rounded-lg shadow-md p-8">
                 <div class="text-center mb-6">
-                    <a href="/" class="text-2xl font-extrabold text-blue-600">BookQu</a>
+                    <a href="/" class="flex items-center justify-center">
+                        <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-10 w-auto" />
+                    </a>
                     <h1 class="mt-4 text-2xl font-bold text-slate-900">Verifikasi Email</h1>
                     <p class="mt-2 text-sm text-slate-600">Kami sudah mengirim link aktivasi ke email Anda. Silakan cek inbox dan klik link tersebut.</p>
                 </div>

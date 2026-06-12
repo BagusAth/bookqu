@@ -1,9 +1,11 @@
 <footer id="about" class="bg-slate-100">
     <div class="mx-auto max-w-6xl px-6 py-12 lg:px-8">
         <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-            <div>
-                <div class="text-lg font-extrabold text-blue-600">BookQu</div>
-                <p class="mt-3 text-sm text-slate-500">
+            <div class="col-span-1 md:col-span-2">
+                <a href="/" class="flex items-center mb-4">
+                    <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-8 w-auto" />
+                </a>
+                <p class="mt-4 text-sm text-slate-400 max-w-xs">
                     Platform manajemen booking terintegrasi untuk membantu digitalisasi bisnis jasa Anda.
                 </p>
             </div>

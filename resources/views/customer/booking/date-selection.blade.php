@@ -20,7 +20,11 @@
         >
             <header class="border-b border-[#E5E7EB] bg-white/95 backdrop-blur">
                 <nav class="booking-shell mx-auto flex w-full max-w-[1280px] items-center justify-between px-6 py-4" x-data="{ navOpen: false }">
-                    <a href="/" class="text-lg font-extrabold text-[#4F46E5]">BookQu</a>
+                    <div class="flex items-center gap-2">
+                        <a href="/" class="flex items-center">
+                            <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-8 w-auto" />
+                        </a>
+                    </div>
                     <div class="hidden items-center gap-8 text-sm font-medium text-[#6B7280] lg:flex">
                         <a class="transition hover:text-[#111827]" href="#">Features</a>
                         <a class="transition hover:text-[#111827]" href="#">Solutions</a>
@@ -187,12 +191,11 @@
             <footer class="border-t border-[#E5E7EB] bg-[#EDEBFA]">
                 <div class="booking-shell mx-auto w-full max-w-[1280px] px-6 py-10">
                     <div class="grid gap-8 md:grid-cols-4">
-                        <div>
-                            <h4 class="text-lg font-semibold text-[#4F46E5]">BookQu</h4>
-                            <p class="mt-3 text-sm text-[#6B7280]">
-                                Platform manajemen booking terjangkau di Indonesia untuk membantu bisnis jasa dan profesional
-                                tampil digital.
-                            </p>
+                        <div class="md:col-span-1">
+                            <a href="/" class="flex items-center mb-4">
+                                <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-8 w-auto" />
+                            </a>
+                            <p class="text-sm text-slate-500 mt-2">Platform booking online terpercaya untuk berbagai layanan profesional.</p>
                             <div class="mt-4 flex items-center gap-3 text-[#6B7280]">
                                 <span class="h-8 w-8 rounded-full border border-[#E5E7EB] bg-white"></span>
                                 <span class="h-8 w-8 rounded-full border border-[#E5E7EB] bg-white"></span>

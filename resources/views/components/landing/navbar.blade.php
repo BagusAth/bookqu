@@ -1,6 +1,8 @@
 <header class="landing-navbar sticky top-0 z-50 border-b border-slate-200 bg-white">
     <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 lg:px-8">
-        <a href="/" class="text-lg font-extrabold text-blue-600">BookQu</a>
+        <a href="/" class="flex items-center">
+            <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-8 w-auto" />
+        </a>
         <nav class="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
             <a href="#hero" data-scroll-target="hero" class="nav-link text-slate-600">Solutions</a>
             <a href="#features" data-scroll-target="features" class="nav-link text-slate-600">Features</a>

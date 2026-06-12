@@ -56,7 +56,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-xs font-medium text-white/70 uppercase tracking-wider">Invoice</p>
-                            <p class="text-lg font-bold">BookQu</p>
+                            <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-6 w-auto mt-1" />
                         </div>
                         <div class="text-right">
                             <p class="text-xs font-medium text-white/70 uppercase tracking-wider">Kode Booking</p>
