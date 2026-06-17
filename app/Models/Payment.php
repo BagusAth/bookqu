@@ -13,6 +13,7 @@ class Payment extends Model
     protected $fillable = [
         'idtenant',
         'idplan',
+        'idbooking',
         'tipe',
         'jumlah',
         'status',
@@ -43,6 +44,11 @@ class Payment extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class, 'idplan');
+    }
+
+    public function booking(): BelongsTo
+    {
+        return $this->belongsTo(Booking::class, 'idbooking');
     }
 
     /**

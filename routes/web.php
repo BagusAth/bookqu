@@ -200,4 +200,15 @@ Route::prefix('{slug_usaha}')
 
         Route::get('/booking/checkout', [BookingController::class, 'showCheckout'])
             ->name('customer.booking.checkout');
+
+        Route::post('/booking/payment', [BookingController::class, 'createPayment'])
+            ->name('customer.booking.payment');
+
+        Route::get('/booking/success', [BookingController::class, 'paymentSuccess'])
+            ->name('customer.booking.success');
+
+        Route::get('/booking/failed', [BookingController::class, 'paymentFailed'])
+            ->name('customer.booking.failed');
     });
+
+Route::post('/midtrans/notification', [\App\Http\Controllers\MidtransWebhookController::class, 'handle']);
