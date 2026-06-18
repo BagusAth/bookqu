@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingManageController;
 use App\Http\Controllers\DummyRegistrationController;
 use App\Http\Controllers\OwnerAnalyticsController;
 use App\Http\Controllers\OwnerBookingController;
@@ -160,8 +161,24 @@ Route::prefix('owner')
 });
 
 // ── Midtrans Webhook (tanpa auth & CSRF, dipanggil oleh Midtrans) ──
-Route::post('/midtrans/webhook', [OwnerCheckoutController::class, 'handleWebhook'])
+Route::post('/midtrans/webhook', [OwnerCheckoutController::class, 'handleCallback'])
     ->name('midtrans.webhook');
+
+// ── Booking Management Without Account (tokenized URLs) ──
+Route::prefix('manage')->group(function () {
+    Route::get('/{booking_code}', [BookingManageController::class, 'show'])
+        ->name('booking.manage');
+    Route::post('/{booking_code}/cancel', [BookingManageController::class, 'cancel'])
+        ->name('booking.manage.cancel');
+    Route::get('/{booking_code}/reschedule', [BookingManageController::class, 'showReschedule'])
+        ->name('booking.manage.reschedule.show');
+    Route::post('/{booking_code}/reschedule', [BookingManageController::class, 'reschedule'])
+        ->name('booking.manage.reschedule.store');
+    Route::get('/{booking_code}/reschedule/slots', [BookingManageController::class, 'getTimeSlots'])
+        ->name('booking.manage.reschedule.slots');
+    Route::get('/{booking_code}/invoice', [BookingManageController::class, 'invoice'])
+        ->name('booking.manage.invoice');
+});
 
 Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])

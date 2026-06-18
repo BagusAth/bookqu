@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\BookingLog;
 use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\BookingConfirmedMail;
 
 class MidtransWebhookController extends Controller
 {
@@ -96,12 +99,41 @@ class MidtransWebhookController extends Controller
                 if ($booking) {
                     $booking->update(['status' => 'paid']);
 
+                    // ── Generate management tokens after payment success ──
+                    if (!$booking->booking_code) {
+                        $booking->assignManagementTokens();
+                        $booking->refresh();
+                    }
+
+                    // ── Audit log: payment_success ──
+                    BookingLog::record(
+                        $booking->id,
+                        'payment_success',
+                        'Pembayaran berhasil dikonfirmasi oleh Midtrans.',
+                        [
+                            'payment_id'   => $payment->id,
+                            'order_id'     => $payment->order_id,
+                            'payment_type' => $paymentType,
+                        ]
+                    );
+
                     // ── Clear relevant caches ──
                     $this->clearBookingCaches(
                         $booking->idtenant,
                         $booking->idlayanan,
                         $booking->tanggalbooking->toDateString()
                     );
+
+                    // ── Send booking confirmation email with manage link ──
+                    try {
+                        $booking->load(['tenant', 'layanan', 'payment']);
+                        Mail::to($booking->email)->send(new BookingConfirmedMail($booking));
+                    } catch (\Throwable $e) {
+                        Log::warning('MidtransWebhook: Failed to send confirmation email', [
+                            'booking_id' => $booking->id,
+                            'error'      => $e->getMessage(),
+                        ]);
+                    }
                 }
             }
         });

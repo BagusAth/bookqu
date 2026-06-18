@@ -29,6 +29,8 @@ class Tenant extends Model
         'saldo_platform',
         'weekend_price_type',
         'weekend_price_value',
+        'cancel_before_hours',
+        'reschedule_before_hours',
     ];
 
     public function user(): BelongsTo
