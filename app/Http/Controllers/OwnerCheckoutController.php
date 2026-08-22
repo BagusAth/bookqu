@@ -6,6 +6,8 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Models\UsageLog;
+use App\Notifications\NewBookingOwnerNotification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -37,13 +39,16 @@ class OwnerCheckoutController extends Controller
      */
     private function resolveTenant(): ?Tenant
     {
+        $userId = auth()->id();
         $tenantId = session('current_tenant_id');
 
         if (is_numeric($tenantId)) {
-            return Tenant::with('user')->find($tenantId);
+            $tenant = Tenant::with('user')->find($tenantId);
+            if ($tenant && $tenant->iduser === $userId) {
+                return $tenant;
+            }
         }
 
-        $userId = auth()->id();
         if ($userId) {
             return Tenant::with('user')->where('iduser', $userId)->first();
         }
@@ -377,9 +382,6 @@ class OwnerCheckoutController extends Controller
         return response()->json(['message' => 'OK']);
     }
 
-    /**
-     * Handle sukses pembayaran: update Payment & aktifkan Subscription.
-     */
     private function handleSuccessPayment(Payment $payment, ?string $paymentType): void
     {
         // Jangan proses jika sudah sukses
@@ -394,19 +396,52 @@ class OwnerCheckoutController extends Controller
                 'metode' => $paymentType ?? 'midtrans',
             ]);
 
-            // Nonaktifkan subscription lama
-            Subscription::where('idtenant', $payment->idtenant)
-                ->whereIn('status', ['trial', 'active'])
-                ->update(['status' => 'expired']);
+            if ($payment->tipe === 'subscription') {
+                // Nonaktifkan subscription lama
+                Subscription::where('idtenant', $payment->idtenant)
+                    ->whereIn('status', ['trial', 'active'])
+                    ->update(['status' => 'expired']);
 
-            // Buat subscription baru
-            Subscription::create([
-                'idtenant' => $payment->idtenant,
-                'idplan' => $payment->idplan,
-                'status' => 'active',
-                'langganan_mulai' => now(),
-                'langganan_berakhir' => now()->addMonth(),
-            ]);
+                // Buat subscription baru
+                Subscription::create([
+                    'idtenant' => $payment->idtenant,
+                    'idplan' => $payment->idplan,
+                    'status' => 'active',
+                    'langganan_mulai' => now(),
+                    'langganan_berakhir' => now()->addMonth(),
+                ]);
+            } elseif ($payment->tipe === 'booking') {
+                $booking = \App\Models\Booking::with(['layanan', 'tenant.user', 'payment'])
+                    ->where('idpayment', $payment->id)
+                    ->first();
+
+                if ($booking) {
+                    $booking->update(['status' => 'paid']);
+
+                    // FS-029: Kirim notifikasi email ke owner bisnis
+                    $owner = $booking->tenant?->user;
+                    if ($owner && $owner->email) {
+                        try {
+                            $owner->notify(new NewBookingOwnerNotification($booking));
+                        } catch (\Exception $e) {
+                            Log::error('Gagal kirim notif booking ke owner: ' . $e->getMessage());
+                        }
+                    }
+
+                    // FS-030: Catat penggunaan booking ke usage_logs
+                    try {
+                        UsageLog::record($booking->idtenant, 'booking');
+                    } catch (\Exception $e) {
+                        Log::error('Gagal catat usage log booking: ' . $e->getMessage());
+                    }
+
+                    // Kirim notifikasi email ke pelanggan (jika email pelanggan tersedia)
+                    if ($payment->email_pembayar) {
+                        \Illuminate\Support\Facades\Notification::route('mail', $payment->email_pembayar)
+                            ->notify(new \App\Notifications\BookingPaidNotification($booking));
+                    }
+                }
+            }
         });
     }
 

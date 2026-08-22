@@ -82,7 +82,16 @@
                         <x-customer.progress-header step="3" total="3" label="Select Time Slot" progress="100" />
 
                         <div class="mt-8">
-                            <h1 class="text-2xl font-bold text-[#111827] sm:text-3xl">When would you like to start?</h1>
+                            <a
+                                href="{{ route('customer.booking.date', $tenant->slug) }}"
+                                class="inline-flex items-center gap-1.5 text-sm font-medium text-[#6B7280] transition hover:text-[#4F46E5]"
+                            >
+                                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                                Back to Date Selection
+                            </a>
+                            <h1 class="mt-3 text-2xl font-bold text-[#111827] sm:text-3xl">When would you like to start?</h1>
                             <p class="mt-2 text-sm text-[#6B7280] sm:text-base">Available time slots for {{ $selectedDateLabel }}.</p>
                         </div>
 
@@ -134,6 +143,8 @@
                         :service="$service"
                         button-label="Confirm Selection"
                         button-enabled-when="selectedTime"
+                        back-url="{{ route('customer.booking.date', $tenant->slug) }}"
+                        back-label="Back to Date Selection"
                     />
                 </form>
             </main>

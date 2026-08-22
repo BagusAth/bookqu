@@ -55,26 +55,40 @@
     {{-- ── Program Cards Grid ── --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" id="programs-grid">
         @forelse ($daftarlayanan as $layanan)
-            <div class="group rounded-xl border border-bq-border bg-bq-surface p-5 transition-all duration-300 hover:border-bq-border-strong hover:shadow-md">
-                <div class="flex items-start justify-between">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            <div class="group rounded-xl border border-bq-border bg-bq-surface transition-all duration-300 hover:border-bq-border-strong hover:shadow-md overflow-hidden">
+                {{-- Cover Image / Placeholder --}}
+                <div class="relative h-36 bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center">
+                    @if ($layanan->image_url)
+                        @php
+                            $cardImageUrl = \Illuminate\Support\Str::startsWith($layanan->image_url, ['http://', 'https://', '/'])
+                                ? $layanan->image_url
+                                : \Illuminate\Support\Facades\Storage::url($layanan->image_url);
+                        @endphp
+                        <img src="{{ $cardImageUrl }}" alt="{{ $layanan->namalayanan }}" class="h-full w-full object-cover">
+                    @else
+                        <svg class="h-10 w-10 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
-                    </div>
+                    @endif
+                    {{-- Action buttons overlay --}}
                     @php
                         $editPayload = [
-                            'id' => $layanan->id,
+                            'id'          => $layanan->id,
                             'namalayanan' => $layanan->namalayanan,
-                            'harga' => $layanan->harga,
-                            'durasi' => $layanan->durasi,
-                            'deskripsi' => $layanan->deskripsi ?: '',
-                            'is_active' => (int) ($layanan->is_active ?? 1),
+                            'harga'       => $layanan->harga,
+                            'durasi'      => $layanan->durasi,
+                            'deskripsi'   => $layanan->deskripsi ?: '',
+                            'is_active'   => (int) ($layanan->is_active ?? 1),
+                            'image_url'   => $layanan->image_url
+                                ? (\Illuminate\Support\Str::startsWith($layanan->image_url, ['http://', 'https://', '/'])
+                                    ? $layanan->image_url
+                                    : \Illuminate\Support\Facades\Storage::url($layanan->image_url))
+                                : null,
                         ];
                     @endphp
-                    <div class="flex items-center gap-1">
+                    <div class="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                         <button
-                            class="rounded-lg p-1.5 text-bq-text-subtle opacity-0 transition-all hover:bg-bq-background hover:text-bq-text group-hover:opacity-100"
+                            class="rounded-lg p-1.5 bg-white/90 shadow text-bq-text-subtle transition-all hover:bg-white hover:text-bq-text"
                             @click="$dispatch('open-edit-program', @json($editPayload))"
                             aria-label="Edit program"
                             id="btn-edit-program-{{ $layanan->id }}"
@@ -83,12 +97,12 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4h6a2 2 0 012 2v6m-10 6H6a2 2 0 01-2-2v-6m12-4L8 18l-4 1 1-4 10-10z"/>
                             </svg>
                         </button>
-                        <form method="POST" action="/owner/programs/{{ $layanan->id }}" class="opacity-0 transition-all group-hover:opacity-100">
+                        <form method="POST" action="/owner/programs/{{ $layanan->id }}">
                             @csrf
                             @method('DELETE')
                             <button
                                 type="submit"
-                                class="rounded-lg p-1.5 text-bq-text-subtle transition-all hover:bg-rose-50 hover:text-rose-600"
+                                class="rounded-lg p-1.5 bg-white/90 shadow text-bq-text-subtle transition-all hover:bg-rose-50 hover:text-rose-600"
                                 onclick="return confirm('Hapus program ini?');"
                                 aria-label="Delete program"
                                 id="btn-delete-program-{{ $layanan->id }}"
@@ -100,28 +114,32 @@
                         </form>
                     </div>
                 </div>
-                <div class="mt-3">
+
+                {{-- Body --}}
+                <div class="p-5">
                     <h3 class="text-sm font-semibold text-bq-text">{{ $layanan->namalayanan }}</h3>
                     <p class="mt-1 text-xs text-bq-text-muted line-clamp-2">{{ $layanan->deskripsi ?? 'No description' }}</p>
-                </div>
-                <div class="mt-4 flex items-center justify-between border-t border-bq-border pt-3">
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm font-bold text-bq-primary">Rp {{ number_format($layanan->harga, 0, ',', '.') }}</span>
-                        <span class="text-xs text-bq-text-subtle">{{ $layanan->durasi }} min</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="inline-flex items-center gap-1 rounded-full bg-bq-background px-2 py-0.5 text-xs font-medium text-bq-text-muted">
-                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
-                            {{ $layanan->bookings_count }} bookings
-                        </span>
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ ($layanan->is_active ?? true) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
-                            {{ ($layanan->is_active ?? true) ? 'Active' : 'Non-Active' }}
-                        </span>
+
+                    <div class="mt-4 flex items-center justify-between border-t border-bq-border pt-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-bold text-bq-primary">Rp {{ number_format($layanan->harga, 0, ',', '.') }}</span>
+                            <span class="text-xs text-bq-text-subtle">{{ $layanan->durasi }} min</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1 rounded-full bg-bq-background px-2 py-0.5 text-xs font-medium text-bq-text-muted">
+                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                                {{ $layanan->bookings_count }} bookings
+                            </span>
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ ($layanan->is_active ?? true) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                {{ ($layanan->is_active ?? true) ? 'Active' : 'Non-Active' }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
+
         @empty
             <div class="col-span-full rounded-xl border border-dashed border-bq-border-strong bg-bq-surface p-12 text-center">
                 <svg class="mx-auto h-12 w-12 text-bq-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">

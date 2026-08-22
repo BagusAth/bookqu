@@ -14,13 +14,15 @@ class OwnerSettingController extends Controller
 {
     private function resolveTenant(): ?Tenant
     {
+        $userId = auth()->id();
         $tenantId = session('current_tenant_id');
 
         if (is_numeric($tenantId)) {
-            return Tenant::with('user')->find($tenantId);
+            $tenant = Tenant::with('user')->find($tenantId);
+            if ($tenant && $tenant->iduser === $userId) {
+                return $tenant;
+            }
         }
-
-        $userId = auth()->id();
 
         if ($userId) {
             return Tenant::with('user')->where('iduser', $userId)->first();
@@ -101,6 +103,8 @@ class OwnerSettingController extends Controller
                 ->withInput();
         }
 
+        $isNewTenant = !Tenant::where('iduser', $user->id)->exists();
+
         $tenant = Tenant::updateOrCreate(
             ['iduser' => $user->id],
             [
@@ -112,9 +116,28 @@ class OwnerSettingController extends Controller
             ]
         );
 
+        if ($isNewTenant) {
+            $proPlan = \App\Models\Plan::firstOrCreate(
+                ['namapaket' => 'pro'],
+                [
+                    'hargabulanan' => 100000,
+                    'maxlayanan' => 10,
+                    'maxbooking' => 500,
+                    'isunlimited' => false,
+                ]
+            );
+
+            \App\Models\Subscription::create([
+                'idtenant' => $tenant->id,
+                'idplan' => $proPlan->id,
+                'status' => 'trial',
+                'trial_berakhir' => now()->addDays(7),
+            ]);
+        }
+
         session()->put('current_tenant_id', $tenant->id);
 
-        return redirect()->route('owner.dashboard')->with('sukses', 'Profil bisnis berhasil dibuat.');
+        return redirect()->route('owner.dashboard')->with('sukses', 'Profil bisnis berhasil dibuat. Anda mendapatkan Free Trial 7 Hari paket Pro!');
     }
 
     public function updateBusinessProfile(Request $request)

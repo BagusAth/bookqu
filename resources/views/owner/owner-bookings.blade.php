@@ -11,16 +11,28 @@
         'subjudul' => 'View and manage all customer bookings.',
     ])
 
+    {{-- ── Flash Messages ── --}}
+    @if (session('sukses'))
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {{ session('sukses') }}
+        </div>
+    @endif
+    @if ($errors->has('error'))
+        <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {{ $errors->first('error') }}
+        </div>
+    @endif
+
     {{-- ── Stats ── --}}
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         @php
             $statbooking = [
-                ['label' => 'All', 'nilai' => $totalbooking, 'warna' => 'bg-slate-50 text-slate-700', 'filter' => 'semua'],
-                ['label' => 'Today', 'nilai' => $bookinghariini, 'warna' => 'bg-blue-50 text-blue-700', 'filter' => null],
-                ['label' => 'Pending', 'nilai' => $bookingpending, 'warna' => 'bg-amber-50 text-amber-700', 'filter' => 'pending'],
+                ['label' => 'All',       'nilai' => $totalbooking,      'warna' => 'bg-slate-50 text-slate-700',   'filter' => 'semua'],
+                ['label' => 'Today',     'nilai' => $bookinghariini,    'warna' => 'bg-blue-50 text-blue-700',     'filter' => null],
+                ['label' => 'Pending',   'nilai' => $bookingpending,    'warna' => 'bg-amber-50 text-amber-700',   'filter' => 'pending'],
                 ['label' => 'Confirmed', 'nilai' => $bookingkonfirmasi, 'warna' => 'bg-indigo-50 text-indigo-700', 'filter' => 'paid'],
-                ['label' => 'Completed', 'nilai' => $bookingselesai, 'warna' => 'bg-emerald-50 text-emerald-700', 'filter' => 'completed'],
-                ['label' => 'Cancelled', 'nilai' => $bookingbatal, 'warna' => 'bg-rose-50 text-rose-700', 'filter' => 'cancelled'],
+                ['label' => 'Completed', 'nilai' => $bookingselesai,    'warna' => 'bg-emerald-50 text-emerald-700','filter' => 'completed'],
+                ['label' => 'Cancelled', 'nilai' => $bookingbatal,      'warna' => 'bg-rose-50 text-rose-700',    'filter' => 'cancelled'],
             ];
         @endphp
         @foreach ($statbooking as $stat)
@@ -92,9 +104,9 @@
                                 @php
                                     $warnastatus = match($booking->status) {
                                         'completed', 'paid' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-                                        'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
-                                        'cancelled' => 'bg-rose-50 text-rose-700 ring-rose-600/20',
-                                        default => 'bg-gray-50 text-gray-700 ring-gray-600/20',
+                                        'pending'           => 'bg-amber-50 text-amber-700 ring-amber-600/20',
+                                        'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-600/20',
+                                        default             => 'bg-gray-50 text-gray-700 ring-gray-600/20',
                                     };
                                 @endphp
                                 <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset {{ $warnastatus }}">
@@ -102,9 +114,48 @@
                                 </span>
                             </td>
                             <td class="whitespace-nowrap px-5 py-3.5 text-center">
-                                <button class="rounded-lg p-1.5 text-bq-text-subtle transition-colors hover:bg-bq-background hover:text-bq-text">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                </button>
+                                {{-- FS-010: Dropdown aksi ubah status booking --}}
+                                @if (in_array($booking->status, ['paid', 'pending']))
+                                    <div class="relative inline-block text-left" x-data="{ open: false }">
+                                        <button @click="open = !open"
+                                            class="inline-flex items-center gap-1 rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-xs font-medium text-bq-text-muted transition hover:border-bq-border-strong hover:text-bq-text"
+                                            id="action-btn-{{ $booking->id }}">
+                                            Ubah Status
+                                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+                                        <div x-show="open" @click.outside="open = false"
+                                            class="absolute right-0 z-20 mt-1 w-44 origin-top-right rounded-lg border border-bq-border bg-white shadow-lg"
+                                            style="display: none;">
+                                            @if ($booking->status === 'paid')
+                                                <form method="POST" action="{{ route('owner.bookings.status', $booking->id) }}">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="status" value="completed">
+                                                    <button type="submit"
+                                                        class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium text-emerald-700 hover:bg-emerald-50 rounded-t-lg"
+                                                        id="mark-completed-{{ $booking->id }}">
+                                                        ✓ Tandai Selesai
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            <form method="POST" action="{{ route('owner.bookings.status', $booking->id) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="status" value="cancelled">
+                                                <button type="submit"
+                                                    class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium text-rose-700 hover:bg-rose-50 {{ $booking->status === 'paid' ? 'rounded-b-lg' : 'rounded-lg' }}"
+                                                    id="cancel-booking-{{ $booking->id }}"
+                                                    onclick="return confirm('Yakin ingin membatalkan booking ini?')">
+                                                    ✕ Batalkan Booking
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="text-xs text-bq-text-muted">—</span>
+                                @endif
                             </td>
                         </tr>
                     @empty

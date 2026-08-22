@@ -1,7 +1,9 @@
 @props([
     'service',
-    'buttonLabel' => 'Continue to Time Selection',
+    'buttonLabel'       => 'Continue to Time Selection',
     'buttonEnabledWhen' => 'selectedDate',
+    'backUrl'           => null,
+    'backLabel'         => 'Back',
 ])
 
 <aside class="lg:sticky lg:top-24">
@@ -74,6 +76,18 @@
         >
             {{ $buttonLabel }}
         </button>
+
+        @if ($backUrl)
+            <a
+                href="{{ $backUrl }}"
+                class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 py-2.5 text-sm font-medium text-[#6B7280] transition hover:border-[#4F46E5] hover:text-[#4F46E5]"
+            >
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+                {{ $backLabel }}
+            </a>
+        @endif
 
         <p class="mt-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-[#6B7280]">Secure checkout enabled</p>
     </div>

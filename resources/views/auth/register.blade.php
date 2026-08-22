@@ -81,6 +81,54 @@
                     </div>
 
                     <div>
+                        <label for="nama_bisnis" class="block text-sm font-medium text-slate-700 mb-2">Nama Bisnis</label>
+                        <input 
+                            id="nama_bisnis" 
+                            type="text" 
+                            name="nama_bisnis" 
+                            placeholder="Contoh: Studio Yoga Sehat"
+                            value="{{ old('nama_bisnis') }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('nama_bisnis') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                            required
+                        />
+                        @error('nama_bisnis')
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="jenis_bisnis" class="block text-sm font-medium text-slate-700 mb-2">Jenis Bisnis</label>
+                        <input 
+                            id="jenis_bisnis" 
+                            type="text" 
+                            name="jenis_bisnis" 
+                            placeholder="Contoh: Fitness, Salon, Studio Musik"
+                            value="{{ old('jenis_bisnis') }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('jenis_bisnis') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                            required
+                        />
+                        @error('jenis_bisnis')
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="alamat" class="block text-sm font-medium text-slate-700 mb-2">Alamat Bisnis</label>
+                        <input 
+                            id="alamat" 
+                            type="text" 
+                            name="alamat" 
+                            placeholder="Jl. Contoh No. 1, Kota"
+                            value="{{ old('alamat') }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('alamat') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                            required
+                        />
+                        @error('alamat')
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
                         <label for="password" class="block text-sm font-medium text-slate-700 mb-2">Password</label>
                         <div class="relative">
                             <input 

@@ -6,6 +6,20 @@
         <title>{{ $tenant->namabisnis }} - Program Selection</title>
         @vite('resources/css/app.css')
         <link rel="stylesheet" href="{{ asset('css/booking-program.css') }}" />
+        @if(isset($tenant) && $tenant->theme_color)
+            <style>
+                :root {
+                    --color-primary-600: {{ $tenant->theme_color }};
+                    --color-primary-700: {{ $tenant->theme_color }};
+                }
+                .bg-\[\#4F46E5\] { background-color: var(--color-primary-600) !important; }
+                .hover\:bg-\[\#4338CA\]:hover { background-color: var(--color-primary-700) !important; filter: brightness(0.9); }
+                .text-\[\#4F46E5\] { color: var(--color-primary-600) !important; }
+                .hover\:text-\[\#4F46E5\]:hover { color: var(--color-primary-600) !important; }
+                .border-\[\#4F46E5\] { border-color: var(--color-primary-600) !important; }
+                .hover\:border-\[\#4F46E5\]:hover { border-color: var(--color-primary-600) !important; }
+            </style>
+        @endif
     </head>
     <body class="booking-page">
         <div id="booking-program-root" data-tenant-slug="{{ $tenant->slug }}" x-data="bookingProgram()">
@@ -56,6 +70,12 @@
                 </nav>
             </header>
 
+            @if($tenant->banner_path)
+                <div class="w-full">
+                    <img src="{{ Storage::url($tenant->banner_path) }}" alt="Banner {{ $tenant->namabisnis }}" class="w-full h-48 md:h-64 object-cover">
+                </div>
+            @endif
+
             <main class="booking-shell mx-auto w-full max-w-[1280px] px-6 pb-12 pt-10">
                 <form
                     class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]"
@@ -92,9 +112,9 @@
                                     $imageUrl = null;
 
                                     if (!empty($service->image_url)) {
-                                        $imageUrl = \Illuminate\Support\Str::startsWith($service->image_url, ['http://', 'https://'])
+                                        $imageUrl = \Illuminate\Support\Str::startsWith($service->image_url, ['http://', 'https://', '/'])
                                             ? $service->image_url
-                                            : asset('storage/' . $service->image_url);
+                                            : \Illuminate\Support\Facades\Storage::url($service->image_url);
                                     }
                                 @endphp
                                 <article
@@ -169,33 +189,7 @@
                                 </div>
                             @endforelse
 
-                            @php
-                                $promoOffset = $services->count() % 2 === 1 ? 'sm:col-start-2' : '';
-                            @endphp
-                            <article class="booking-gradient-card {{ $promoOffset }} flex h-full flex-col justify-between rounded-2xl px-6 py-8 text-white">
-                                <div class="space-y-4 text-center">
-                                    <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
-                                        <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 9h16v11H4z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 9l8-5 8 5" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 22V12m6 10V12" />
-                                        </svg>
-                                    </span>
-                                    <div>
-                                        <h3 class="text-lg font-semibold">All-Access Pass</h3>
-                                        <p class="mt-2 text-sm text-white/80">
-                                            Unlock everything with our monthly subscription. Unlimited studio and field time.
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <span class="text-3xl font-bold">Rp299K</span>
-                                        <span class="text-sm font-semibold text-white/70">/mo</span>
-                                    </div>
-                                </div>
-                                <button type="button" class="mt-6 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#4F46E5]">
-                                    Upgrade Now
-                                </button>
-                            </article>
+
                         </div>
                     </section>
 

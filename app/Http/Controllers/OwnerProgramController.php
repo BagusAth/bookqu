@@ -5,21 +5,26 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Models\UsageLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class OwnerProgramController extends Controller
 {
     private function resolveTenant(): ?Tenant
     {
+        $userId = auth()->id();
         $tenantId = session('current_tenant_id');
 
         if (is_numeric($tenantId)) {
-            return Tenant::with('user')->find($tenantId);
+            $tenant = Tenant::with('user')->find($tenantId);
+            if ($tenant && $tenant->iduser === $userId) {
+                return $tenant;
+            }
         }
-
-        $userId = auth()->id();
 
         if ($userId) {
             return Tenant::with('user')->where('iduser', $userId)->first();
@@ -84,19 +89,45 @@ class OwnerProgramController extends Controller
         }
 
         $datavalid = $request->validate([
-            'namalayanan' => 'required|string|max:255',
-            'harga' => 'required|numeric|min:0',
-            'durasi' => 'required|integer|min:5|max:480',
-            'deskripsi' => 'nullable|string|max:1000',
+            'namalayanan'  => 'required|string|max:255',
+            'harga'        => 'required|numeric|min:0',
+            'durasi'       => 'required|integer|min:5|max:480',
+            'deskripsi'    => 'nullable|string|max:1000',
+            'cover_image'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
+        $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+        if ($subscription && $subscription->plan) {
+            $currentServices = Service::where('idtenant', $tenant->id)->count();
+            if ($currentServices >= $subscription->plan->maxlayanan) {
+                return back()->withErrors(['namalayanan' => 'Batas maksimum layanan (' . $subscription->plan->maxlayanan . ') telah tercapai. Silakan upgrade paket Anda.'])->withInput();
+            }
+        }
+
+        // Handle cover image upload
+        $imageUrl = null;
+        if ($request->hasFile('cover_image')) {
+            $imageUrl = $request->file('cover_image')->store('programs', 'public');
+        }
+
         Service::create([
-            'idtenant' => $tenant->id,
+            'idtenant'    => $tenant->id,
             'namalayanan' => $datavalid['namalayanan'],
-            'harga' => $datavalid['harga'],
-            'durasi' => $datavalid['durasi'],
-            'deskripsi' => $datavalid['deskripsi'] ?? null,
+            'harga'       => $datavalid['harga'],
+            'durasi'      => $datavalid['durasi'],
+            'deskripsi'   => $datavalid['deskripsi'] ?? null,
+            'image_url'   => $imageUrl,
         ]);
+
+        // FS-030: Catat penambahan layanan ke usage_logs
+        try {
+            UsageLog::record($tenant->id, 'layanan');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal catat usage log layanan: ' . $e->getMessage());
+        }
+
+        // Invalidate customer-facing cache
+        Cache::forget("tenant:{$tenant->id}:services:active");
 
         return redirect('/owner/programs')->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil ditambahkan!');
     }
@@ -114,20 +145,43 @@ class OwnerProgramController extends Controller
         $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
 
         $datavalid = $request->validate([
-            'namalayanan' => 'required|string|max:255',
-            'harga' => 'required|numeric|min:0',
-            'durasi' => 'required|integer|min:5|max:480',
-            'deskripsi' => 'nullable|string|max:1000',
-            'is_active' => 'required|boolean',
+            'namalayanan'  => 'required|string|max:255',
+            'harga'        => 'required|numeric|min:0',
+            'durasi'       => 'required|integer|min:5|max:480',
+            'deskripsi'    => 'nullable|string|max:1000',
+            'is_active'    => 'required|boolean',
+            'cover_image'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'remove_image' => 'nullable|in:0,1',
         ]);
+
+        // Handle cover image
+        $imageUrl = $layanan->image_url;
+
+        if ($request->hasFile('cover_image')) {
+            // Delete old image if exists
+            if ($layanan->image_url) {
+                Storage::disk('public')->delete($layanan->image_url);
+            }
+            $imageUrl = $request->file('cover_image')->store('programs', 'public');
+        } elseif ($request->input('remove_image') === '1') {
+            // Owner explicitly removed the image
+            if ($layanan->image_url) {
+                Storage::disk('public')->delete($layanan->image_url);
+            }
+            $imageUrl = null;
+        }
 
         $layanan->update([
             'namalayanan' => $datavalid['namalayanan'],
-            'harga' => $datavalid['harga'],
-            'durasi' => $datavalid['durasi'],
-            'deskripsi' => $datavalid['deskripsi'] ?? null,
-            'is_active' => (bool) $datavalid['is_active'],
+            'harga'       => $datavalid['harga'],
+            'durasi'      => $datavalid['durasi'],
+            'deskripsi'   => $datavalid['deskripsi'] ?? null,
+            'is_active'   => (bool) $datavalid['is_active'],
+            'image_url'   => $imageUrl,
         ]);
+
+        // Invalidate customer-facing cache
+        Cache::forget("tenant:{$tenant->id}:services:active");
 
         return redirect('/owner/programs')->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil diperbarui!');
     }
@@ -145,6 +199,9 @@ class OwnerProgramController extends Controller
         $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
         $namalayanan = $layanan->namalayanan;
         $layanan->delete();
+
+        // Invalidate customer-facing cache
+        Cache::forget("tenant:{$tenant->id}:services:active");
 
         return redirect('/owner/programs')->with('sukses', 'Program "' . $namalayanan . '" berhasil dihapus!');
     }
