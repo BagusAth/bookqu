@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Tenant;
+use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class OwnerBookingController extends Controller
 {
+    use ClearsBookingCache;
+
     private function resolveTenant(): ?Tenant
     {
         $userId   = auth()->id();
@@ -138,6 +141,19 @@ class OwnerBookingController extends Controller
         }
 
         $booking->update(['status' => $statusBaru]);
+
+        // Invalidate availability cache when a cancellation or completion frees/affects a slot
+        if (in_array($statusBaru, ['cancelled', 'completed']) && $booking->idlayanan && $booking->tanggalbooking) {
+            $tanggal = $booking->tanggalbooking instanceof Carbon
+                ? $booking->tanggalbooking->toDateString()
+                : Carbon::parse($booking->tanggalbooking)->toDateString();
+
+            $this->clearBookingAvailabilityCache(
+                (int) $booking->idtenant,
+                (int) $booking->idlayanan,
+                $tanggal
+            );
+        }
 
         $label = match ($statusBaru) {
             'completed' => 'selesai',

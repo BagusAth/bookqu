@@ -72,8 +72,8 @@
                     action="{{ route('customer.booking.select-time', $tenant->slug) }}"
                 >
                     @csrf
-                    <input type="hidden" name="schedule_id" x-model="selectedScheduleId" />
-                    <input type="hidden" name="jam" x-model="selectedTime" />
+                    <input type="hidden" name="schedule_id" :value="selectedScheduleId" />
+                    <input type="hidden" name="jam" :value="selectedTime" />
                     @if ($simulate)
                         <input type="hidden" name="simulate" value="1" />
                     @endif

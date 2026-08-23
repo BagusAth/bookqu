@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
+use App\Services\MidtransPaymentService;
+use App\Traits\ClearsBookingCache;
 use Illuminate\Support\Facades\Log;
 use Midtrans\Config as MidtransConfig;
 use Midtrans\Snap;
@@ -19,6 +21,7 @@ use Midtrans\Transaction as MidtransTransaction;
 
 class BookingController extends Controller
 {
+    use ClearsBookingCache;
     public function __construct()
     {
         MidtransConfig::$serverKey = config('midtrans.server_key');
@@ -40,7 +43,7 @@ class BookingController extends Controller
             abort(404);
         }
 
-        $servicesData = Cache::remember("tenant:{$tenant->id}:services:active", now()->addSeconds(3600), function () use ($tenant) {
+        $servicesData = Cache::remember($this->getActiveServicesCacheKey($tenant->id), now()->addSeconds(3600), function () use ($tenant) {
             return Service::query()
                 ->where('idtenant', $tenant->id)
                 ->where('is_active', true)
@@ -134,13 +137,7 @@ class BookingController extends Controller
         $minDate = Carbon::today();
         $maxDate = Carbon::today()->addDays(30);
 
-        $availabilityKey = sprintf(
-            'tenant:%s:service:%s:availability:%s:%s',
-            $tenant->id,
-            $service->id,
-            $minDate->toDateString(),
-            $maxDate->toDateString()
-        );
+        $availabilityKey = $this->getAvailabilityCacheKey($tenant->id, $service->id);
 
         $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(3600), function () use ($tenant, $service, $minDate, $maxDate) {
             $rows = DB::table('schedules')
@@ -327,7 +324,7 @@ class BookingController extends Controller
         session()->put('booking.tenant_id', $tenant->id);
 
         $selectedDate = Carbon::parse($selectedDate)->toDateString();
-        $scheduleCacheKey = "tenant:{$tenant->id}:service:{$service->id}:schedules:{$selectedDate}";
+        $scheduleCacheKey = $this->getSchedulesCacheKey($tenant->id, $service->id, $selectedDate);
 
         $scheduleRows = Cache::remember($scheduleCacheKey, now()->addSeconds(3600), function () use ($tenant, $service, $selectedDate) {
             return DB::table('schedules')
@@ -576,13 +573,8 @@ class BookingController extends Controller
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
-        $schedule = Schedule::where('idtenant', $tenant->id)
-            ->where('idlayanan', $service->id)
-            ->whereDate('tanggal', $selectedDate)
-            ->where('jam_mulai', $selectedTime . ':00')
-            ->first();
 
-        if (!$service || !$schedule) {
+        if (!$service) {
             return redirect()->route('customer.booking.program', $slug_usaha);
         }
 
@@ -593,80 +585,138 @@ class BookingController extends Controller
             'catatan' => 'nullable|string|max:500',
         ]);
 
-        $hargaAkhir = $schedule->harga_override ? $schedule->harga_override : $service->harga;
+        // Wrap slot availability check + booking creation in a transaction to prevent double-booking
+        $result = DB::transaction(function () use ($tenant, $service, $selectedDate, $selectedTime, $request) {
+            // Lock the schedule row so concurrent requests cannot claim the same slot simultaneously
+            $schedule = DB::table('schedules')
+                ->where('idtenant', $tenant->id)
+                ->where('idlayanan', $service->id)
+                ->whereDate('tanggal', $selectedDate)
+                ->where('jam_mulai', $selectedTime . ':00')
+                ->where('status', 'tersedia')
+                ->lockForUpdate()
+                ->first();
 
-        // Jika gratis, langsung sukses
-        if ($hargaAkhir <= 0) {
-            Booking::create([
-                'idtenant' => $tenant->id,
-                'idlayanan' => $service->id,
-                'idschedule' => $schedule->id,
-                'namapelanggan' => $request->namapelanggan,
-                'nomorhp' => $request->nomorhp,
-                'email' => $request->email,
-                'tanggalbooking' => $selectedDate,
-                'jam' => $selectedTime . ':00',
-                'status' => 'paid', // Langsung paid karena gratis
-                'catatan' => $request->catatan,
+            if (!$schedule) {
+                return ['error' => 'Jadwal tidak ditemukan atau tidak tersedia.'];
+            }
+
+            // Check if slot already has an active booking (pending/paid/completed)
+            $isBooked = DB::table('bookings')
+                ->where('idschedule', $schedule->id)
+                ->whereIn('status', ['pending', 'paid', 'completed'])
+                ->exists();
+
+            if ($isBooked) {
+                return ['error' => 'Slot waktu ini sudah dibooking oleh pelanggan lain. Silakan pilih waktu lain.'];
+            }
+
+            $hargaAkhir = $schedule->harga_override ? $schedule->harga_override : $service->harga;
+
+            // Free booking path
+            if ($hargaAkhir <= 0) {
+                $booking = Booking::create([
+                    'idtenant'       => $tenant->id,
+                    'idlayanan'      => $service->id,
+                    'idschedule'     => $schedule->id,
+                    'namapelanggan'  => $request->namapelanggan,
+                    'nomorhp'        => $request->nomorhp,
+                    'email'          => $request->email,
+                    'tanggalbooking' => $selectedDate,
+                    'jam'            => $selectedTime . ':00',
+                    'status'         => 'paid', // Langsung paid karena gratis
+                    'catatan'        => $request->catatan,
+                ]);
+
+                return ['free' => true, 'booking' => $booking, 'schedule' => $schedule, 'hargaAkhir' => 0];
+            }
+
+            // Paid booking path: create payment first, then booking
+            $orderId  = 'BKG-' . $tenant->id . '-' . time() . '-' . rand(100, 999);
+
+            $payment = Payment::create([
+                'idtenant'       => $tenant->id,
+                'tipe'           => 'booking',
+                'jumlah'         => $hargaAkhir,
+                'status'         => 'pending',
+                'metode'         => 'midtrans',
+                'order_id'       => $orderId,
+                'expired_at'     => now()->addMinutes(15),
+                'nama_pembayar'  => $request->namapelanggan,
+                'email_pembayar' => $request->email,
+                'hp_pembayar'    => $request->nomorhp,
+                'catatan'        => $request->catatan,
             ]);
 
+            $newBooking = Booking::create([
+                'idtenant'       => $tenant->id,
+                'idlayanan'      => $service->id,
+                'idschedule'     => $schedule->id,
+                'namapelanggan'  => $request->namapelanggan,
+                'nomorhp'        => $request->nomorhp,
+                'email'          => $request->email,
+                'tanggalbooking' => $selectedDate,
+                'jam'            => $selectedTime . ':00',
+                'status'         => 'pending',
+                'idpayment'      => $payment->id,
+                'catatan'        => $request->catatan,
+            ]);
+
+            return [
+                'free'       => false,
+                'booking'    => $newBooking,
+                'payment'    => $payment,
+                'schedule'   => $schedule,
+                'orderId'    => $orderId,
+                'hargaAkhir' => $hargaAkhir,
+            ];
+        });
+
+        // Handle slot conflict or schedule not found
+        if (isset($result['error'])) {
+            return redirect()->route('customer.booking.time', $slug_usaha)
+                ->withErrors(['jam' => $result['error']]);
+        }
+
+        // Free booking: clear cache and redirect
+        if ($result['free']) {
+            $this->clearBookingAvailabilityCache(
+                $tenant->id,
+                $service->id,
+                Carbon::parse($selectedDate)->toDateString()
+            );
             session()->forget('booking');
             return redirect()->route('customer.booking.program', $slug_usaha)->with('success', 'Booking berhasil!');
         }
 
-        // Midtrans Flow
-        $orderId = 'BKG-' . $tenant->id . '-' . time() . '-' . rand(100, 999);
-
-        $payment = Payment::create([
-            'idtenant' => $tenant->id,
-            'tipe' => 'booking',
-            'jumlah' => $hargaAkhir,
-            'status' => 'pending',
-            'metode' => 'midtrans',
-            'order_id' => $orderId,
-            'expired_at' => now()->addMinutes(15),
-            'nama_pembayar' => $request->namapelanggan,
-            'email_pembayar' => $request->email,
-            'hp_pembayar' => $request->nomorhp,
-            'catatan' => $request->catatan,
-        ]);
-
-        $newBooking = Booking::create([
-            'idtenant' => $tenant->id,
-            'idlayanan' => $service->id,
-            'idschedule' => $schedule->id,
-            'namapelanggan' => $request->namapelanggan,
-            'nomorhp' => $request->nomorhp,
-            'email' => $request->email,
-            'tanggalbooking' => $selectedDate,
-            'jam' => $selectedTime . ':00',
-            'status' => 'pending',
-            'idpayment' => $payment->id,
-            'catatan' => $request->catatan,
-        ]);
+        // Paid booking: get Midtrans snap token
+        $payment    = $result['payment'];
+        $newBooking = $result['booking'];
+        $hargaAkhir = $result['hargaAkhir'];
+        $orderId    = $result['orderId'];
 
         $params = [
             'transaction_details' => [
-                'order_id' => $orderId,
+                'order_id'    => $orderId,
                 'gross_amount' => (int) $hargaAkhir,
             ],
             'customer_details' => [
                 'first_name' => $request->namapelanggan,
-                'email' => $request->email,
-                'phone' => $request->nomorhp,
+                'email'      => $request->email,
+                'phone'      => $request->nomorhp,
             ],
             'item_details' => [
                 [
-                    'id' => 'SRV-' . $service->id,
-                    'price' => (int) $hargaAkhir,
+                    'id'       => 'SRV-' . $service->id,
+                    'price'    => (int) $hargaAkhir,
                     'quantity' => 1,
-                    'name' => 'Booking: ' . $service->namalayanan,
+                    'name'     => 'Booking: ' . $service->namalayanan,
                 ],
             ],
             'expiry' => [
                 'start_time' => now()->format('Y-m-d H:i:s O'),
-                'unit' => 'minute',
-                'duration' => 15,
+                'unit'       => 'minute',
+                'duration'   => 15,
             ],
         ];
 
@@ -675,8 +725,16 @@ class BookingController extends Controller
             $payment->update(['snap_token' => $snapToken]);
         } catch (\Exception $e) {
             Log::error('Midtrans Snap Error (Booking): ' . $e->getMessage());
+            // Snap token failed — cancel both payment and booking, release the slot
             $payment->update(['status' => 'gagal']);
             $newBooking->update(['status' => 'cancelled']);
+
+            // Invalidate cache so slot is free again
+            $this->clearBookingAvailabilityCache(
+                $tenant->id,
+                $service->id,
+                Carbon::parse($selectedDate)->toDateString()
+            );
 
             return back()->with('error', 'Gagal memproses pembayaran. Error: ' . $e->getMessage());
         }
@@ -697,8 +755,25 @@ class BookingController extends Controller
         }
 
         if ($payment->isExpired() && $payment->status === 'pending') {
+            // Load booking before cancelling so we can get idlayanan + tanggalbooking for cache invalidation
+            $expiredBooking = Booking::where('idpayment', $payment->id)->first();
+
             $payment->update(['status' => 'gagal']);
             Booking::where('idpayment', $payment->id)->update(['status' => 'cancelled']);
+
+            // Invalidate availability cache so slot is immediately available to other customers
+            if ($expiredBooking && $expiredBooking->idlayanan && $expiredBooking->tanggalbooking) {
+                $tanggal = $expiredBooking->tanggalbooking instanceof \Carbon\Carbon
+                    ? $expiredBooking->tanggalbooking->toDateString()
+                    : Carbon::parse($expiredBooking->tanggalbooking)->toDateString();
+
+                $this->clearBookingAvailabilityCache(
+                    (int) $expiredBooking->idtenant,
+                    (int) $expiredBooking->idlayanan,
+                    $tanggal
+                );
+            }
+
             return redirect()->route('customer.booking.program', $slug_usaha)
                 ->with('error', 'Waktu pembayaran telah habis.');
         }
@@ -712,72 +787,79 @@ class BookingController extends Controller
         ]);
     }
 
-    public function checkPaymentStatus(string $slug_usaha, Payment $payment)
+    public function checkPaymentStatus(string $slug_usaha, Payment $payment, MidtransPaymentService $paymentService)
     {
         $tenant = $this->resolveTenant($slug_usaha);
         if (!$tenant || $payment->idtenant !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        try {
-            $status = MidtransTransaction::status($payment->order_id);
-            $transactionStatus = $status->transaction_status ?? null;
-            $fraudStatus = $status->fraud_status ?? null;
-            $paymentType = $status->payment_type ?? null;
+        $syncResult = $paymentService->verifyAndSync($payment);
 
-            if ($transactionStatus === 'capture' || $transactionStatus === 'settlement') {
-                if ($transactionStatus === 'capture' && $fraudStatus === 'challenge') {
-                    return response()->json(['status' => 'pending', 'message' => 'Pembayaran direview.']);
-                }
-
-                if ($payment->status !== 'sukses') {
-                    DB::transaction(function () use ($payment, $paymentType) {
-                        $payment->update(['status' => 'sukses', 'metode' => $paymentType ?? 'midtrans']);
-                        Booking::where('idpayment', $payment->id)->update(['status' => 'paid']);
-                    });
-                }
-
-                return response()->json([
-                    'status' => 'sukses',
-                    'message' => 'Pembayaran berhasil!',
-                    'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment->id]),
-                ]);
-            }
-
-            if (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
-                if ($payment->status !== 'gagal') {
-                    DB::transaction(function () use ($payment, $paymentType) {
-                        $payment->update(['status' => 'gagal', 'metode' => $paymentType ?? 'midtrans']);
-                        Booking::where('idpayment', $payment->id)->update(['status' => 'cancelled']);
-                    });
-                }
-                return response()->json(['status' => 'gagal', 'message' => 'Pembayaran gagal/dibatalkan.']);
-            }
-
-            return response()->json(['status' => 'pending', 'message' => 'Pembayaran belum diselesaikan (status: pending). Silakan selesaikan pembayaran sesuai instruksi.']);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => 'Gagal periksa status.']);
+        if ($syncResult['status'] === 'sukses') {
+            return response()->json([
+                'status' => 'sukses',
+                'message' => 'Pembayaran berhasil!',
+                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment->id]),
+            ]);
         }
+
+        if ($syncResult['status'] === 'gagal') {
+            return response()->json([
+                'status' => 'gagal',
+                'message' => $syncResult['message'] ?? 'Pembayaran gagal/dibatalkan.',
+            ]);
+        }
+
+        if ($syncResult['status'] === 'error') {
+            return response()->json([
+                'status' => 'error',
+                'message' => $syncResult['message'] ?? 'Gagal periksa status.',
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'pending',
+            'message' => $syncResult['message'] ?? 'Pembayaran belum diselesaikan. Silakan selesaikan pembayaran sesuai instruksi.',
+        ]);
     }
 
-    public function handleCallback(string $slug_usaha, Payment $payment, Request $request)
+    public function handleCallback(string $slug_usaha, Payment $payment, Request $request, MidtransPaymentService $paymentService)
     {
         $tenant = $this->resolveTenant($slug_usaha);
         if (!$tenant || $payment->idtenant !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $result = $request->input('result');
-        if (!$result) return response()->json(['error' => 'No result'], 400);
+        // Lakukan server-side verification ke Midtrans
+        $syncResult = $paymentService->verifyAndSync($payment);
 
-        $transactionStatus = $result['transaction_status'] ?? null;
-        if (in_array($transactionStatus, ['capture', 'settlement'])) {
-            return response()->json(['status' => 'sukses', 'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment->id])]);
+        // Fallback jika API call gagal, periksa payload client
+        if ($syncResult['status'] === 'error') {
+            $result = $request->input('result');
+            if ($result) {
+                $syncResult = $paymentService->syncStatus($payment, $result);
+            }
         }
-        if (in_array($transactionStatus, ['pending'])) {
-            return response()->json(['status' => 'pending']);
+
+        if ($syncResult['status'] === 'sukses') {
+            return response()->json([
+                'status' => 'sukses',
+                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment->id]),
+            ]);
         }
-        return response()->json(['status' => 'gagal']);
+
+        if ($syncResult['status'] === 'pending') {
+            return response()->json([
+                'status' => 'pending',
+                'message' => $syncResult['message'] ?? 'Pembayaran sedang diproses.',
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'gagal',
+            'message' => $syncResult['message'] ?? 'Pembayaran gagal.',
+        ]);
     }
 
     public function showInvoice(string $slug_usaha, Payment $payment)
@@ -808,7 +890,7 @@ class BookingController extends Controller
 
     private function resolveService(int $tenantId, int $serviceId): ?Service
     {
-        $serviceData = Cache::remember("tenant:{$tenantId}:service:{$serviceId}", now()->addSeconds(3600), function () use ($tenantId, $serviceId) {
+        $serviceData = Cache::remember($this->getServiceCacheKey($tenantId, $serviceId), now()->addSeconds(3600), function () use ($tenantId, $serviceId) {
             return Service::query()
                 ->where('id', $serviceId)
                 ->where('idtenant', $tenantId)

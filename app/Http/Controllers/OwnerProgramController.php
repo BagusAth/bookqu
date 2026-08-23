@@ -11,9 +11,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Traits\ClearsBookingCache;
 
 class OwnerProgramController extends Controller
 {
+    use ClearsBookingCache;
     private function resolveTenant(): ?Tenant
     {
         $userId = auth()->id();
@@ -110,7 +112,7 @@ class OwnerProgramController extends Controller
             $imageUrl = $request->file('cover_image')->store('programs', 'public');
         }
 
-        Service::create([
+        $service = Service::create([
             'idtenant'    => $tenant->id,
             'namalayanan' => $datavalid['namalayanan'],
             'harga'       => $datavalid['harga'],
@@ -127,7 +129,7 @@ class OwnerProgramController extends Controller
         }
 
         // Invalidate customer-facing cache
-        Cache::forget("tenant:{$tenant->id}:services:active");
+        $this->clearServiceCache($tenant->id, $service->id);
 
         return redirect('/owner/programs')->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil ditambahkan!');
     }
@@ -181,7 +183,7 @@ class OwnerProgramController extends Controller
         ]);
 
         // Invalidate customer-facing cache
-        Cache::forget("tenant:{$tenant->id}:services:active");
+        $this->clearServiceCache($tenant->id, $layanan->id);
 
         return redirect('/owner/programs')->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil diperbarui!');
     }
@@ -201,7 +203,7 @@ class OwnerProgramController extends Controller
         $layanan->delete();
 
         // Invalidate customer-facing cache
-        Cache::forget("tenant:{$tenant->id}:services:active");
+        $this->clearServiceCache($tenant->id, $id);
 
         return redirect('/owner/programs')->with('sukses', 'Program "' . $namalayanan . '" berhasil dihapus!');
     }

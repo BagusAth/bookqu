@@ -73,7 +73,7 @@
                     x-ref="dateForm"
                 >
                     @csrf
-                    <input type="hidden" name="tanggal" x-model="selectedDate" />
+                    <input type="hidden" name="tanggal" :value="selectedDate" />
                     @if ($simulate)
                         <input type="hidden" name="simulate" value="1" />
                     @endif

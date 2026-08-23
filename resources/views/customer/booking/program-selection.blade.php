@@ -84,7 +84,7 @@
                     x-ref="confirmForm"
                 >
                     @csrf
-                    <input type="hidden" name="service_id" x-model="selectedServiceId" />
+                    <input type="hidden" name="service_id" :value="selectedServiceId" />
                     <section>
                         <div class="booking-step">
                             <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-[#6B7280]">

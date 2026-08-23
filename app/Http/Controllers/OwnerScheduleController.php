@@ -10,9 +10,11 @@ use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Traits\ClearsBookingCache;
 
 class OwnerScheduleController extends Controller
 {
+    use ClearsBookingCache;
     private function resolveTenant(): ?Tenant
     {
         $userId = auth()->id();
@@ -207,6 +209,10 @@ class OwnerScheduleController extends Controller
             }
         }
 
+        if ($jumlahslot > 0) {
+            $this->clearScheduleCache($tenant->id, $datavalid['idlayanan'], $daftartanggal);
+        }
+
         return redirect('/owner/schedule')->with('sukses', $jumlahslot . ' slot jadwal berhasil dibuat untuk ' . count($daftartanggal) . ' hari!');
     }
 
@@ -227,7 +233,11 @@ class OwnerScheduleController extends Controller
             abort(403, 'Slot memiliki booking aktif.');
         }
 
+        $idlayanan = $slot->idlayanan;
+        $tanggal = $slot->tanggal->format('Y-m-d');
         $slot->delete();
+
+        $this->clearScheduleCache($tenant->id, $idlayanan, [$tanggal]);
 
         return redirect('/owner/schedule')->with('sukses', 'Slot berhasil dihapus.');
     }
@@ -250,6 +260,8 @@ class OwnerScheduleController extends Controller
         Service::where('idtenant', $tenant->id)
             ->where('id', $data['idlayanan'])
             ->update(['harga' => $data['harga']]);
+
+        $this->clearServiceCache($tenant->id, $data['idlayanan']);
 
         return redirect('/owner/schedule')->with('sukses', 'Harga default berhasil diperbarui.');
     }
@@ -280,6 +292,8 @@ class OwnerScheduleController extends Controller
             ? null
             : ($data['weekend_price_value'] ?? null);
         $tenant->save();
+
+        \Illuminate\Support\Facades\Cache::forget("tenant:slug:{$tenant->slug}");
 
         return redirect('/owner/schedule')->with('sukses', 'Pengaturan availability berhasil disimpan.');
     }
