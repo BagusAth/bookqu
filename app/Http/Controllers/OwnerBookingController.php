@@ -11,13 +11,15 @@ class OwnerBookingController extends Controller
 {
     private function resolveTenant(): ?Tenant
     {
+        $userId   = auth()->id();
         $tenantId = session('current_tenant_id');
 
         if (is_numeric($tenantId)) {
-            return Tenant::with('user')->find($tenantId);
+            $tenant = Tenant::with('user')->find($tenantId);
+            if ($tenant && $tenant->iduser === $userId) {
+                return $tenant;
+            }
         }
-
-        $userId = auth()->id();
 
         if ($userId) {
             return Tenant::with('user')->where('iduser', $userId)->first();
@@ -32,34 +34,34 @@ class OwnerBookingController extends Controller
     public function index(Request $request)
     {
         $tenant = $this->resolveTenant();
-        $user = auth()->user();
+        $user   = auth()->user();
         if (!$tenant) {
             $tenant = new Tenant();
             if ($user) {
                 $tenant->setRelation('user', $user);
             }
 
-            $filterstatus = $request->input('status', 'semua');
-            $katakunci = $request->input('katakunci', '');
+            $filterstatus  = $request->input('status', 'semua');
+            $katakunci     = $request->input('katakunci', '');
             $daftarbooking = Booking::whereRaw('1 = 0')->paginate(15);
 
             return view('owner.owner-bookings', [
-                'tenant' => $tenant,
-                'daftarbooking' => $daftarbooking,
-                'totalbooking' => 0,
-                'bookingpending' => 0,
+                'tenant'            => $tenant,
+                'daftarbooking'     => $daftarbooking,
+                'totalbooking'      => 0,
+                'bookingpending'    => 0,
                 'bookingkonfirmasi' => 0,
-                'bookingselesai' => 0,
-                'bookingbatal' => 0,
-                'bookinghariini' => 0,
-                'filterstatus' => $filterstatus,
-                'katakunci' => $katakunci,
+                'bookingselesai'    => 0,
+                'bookingbatal'      => 0,
+                'bookinghariini'    => 0,
+                'filterstatus'      => $filterstatus,
+                'katakunci'         => $katakunci,
             ]);
         }
 
-        $idtenant = $tenant->id;
+        $idtenant     = $tenant->id;
         $filterstatus = $request->input('status', 'semua');
-        $katakunci = $request->input('katakunci', '');
+        $katakunci    = $request->input('katakunci', '');
 
         $daftarbooking = Booking::where('bookings.idtenant', $idtenant)
             ->with(['layanan', 'payment'])
@@ -77,11 +79,11 @@ class OwnerBookingController extends Controller
             ->paginate(15);
 
         // Statistik
-        $totalbooking = Booking::where('idtenant', $idtenant)->count();
-        $bookingpending = Booking::where('idtenant', $idtenant)->where('status', 'pending')->count();
+        $totalbooking      = Booking::where('idtenant', $idtenant)->count();
+        $bookingpending    = Booking::where('idtenant', $idtenant)->where('status', 'pending')->count();
         $bookingkonfirmasi = Booking::where('idtenant', $idtenant)->where('status', 'paid')->count();
-        $bookingselesai = Booking::where('idtenant', $idtenant)->where('status', 'completed')->count();
-        $bookingbatal = Booking::where('idtenant', $idtenant)->where('status', 'cancelled')->count();
+        $bookingselesai    = Booking::where('idtenant', $idtenant)->where('status', 'completed')->count();
+        $bookingbatal      = Booking::where('idtenant', $idtenant)->where('status', 'cancelled')->count();
 
         // Booking hari ini
         $bookinghariini = Booking::where('idtenant', $idtenant)
@@ -100,5 +102,49 @@ class OwnerBookingController extends Controller
             'filterstatus',
             'katakunci',
         ));
+    }
+
+    /**
+     * FS-010: Update status booking oleh owner.
+     * Transisi status yang diizinkan:
+     *   paid    → completed | cancelled
+     *   pending → cancelled
+     */
+    public function updateStatus(Request $request, Booking $booking)
+    {
+        $tenant = $this->resolveTenant();
+
+        // Pastikan booking milik tenant yang sedang login
+        if (!$tenant || $booking->idtenant !== $tenant->id) {
+            return back()->withErrors(['error' => 'Akses tidak diizinkan.']);
+        }
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:completed,cancelled'],
+        ]);
+
+        $statusLama = $booking->status;
+        $statusBaru = $validated['status'];
+
+        $transisi = [
+            'paid'    => ['completed', 'cancelled'],
+            'pending' => ['cancelled'],
+        ];
+
+        if (!in_array($statusBaru, $transisi[$statusLama] ?? [])) {
+            return back()->withErrors([
+                'error' => "Status tidak dapat diubah dari '{$statusLama}' ke '{$statusBaru}'.",
+            ]);
+        }
+
+        $booking->update(['status' => $statusBaru]);
+
+        $label = match ($statusBaru) {
+            'completed' => 'selesai',
+            'cancelled'  => 'dibatalkan',
+            default      => $statusBaru,
+        };
+
+        return back()->with('sukses', "Booking atas nama {$booking->namapelanggan} berhasil ditandai sebagai {$label}.");
     }
 }

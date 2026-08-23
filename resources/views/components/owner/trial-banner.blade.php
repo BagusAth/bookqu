@@ -14,7 +14,7 @@
             <span class="font-bold">{{ $sisahari }}-day Free Trial</span> remaining. Upgrade now to keep all premium features.
         </p>
     </div>
-    <a href="#" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-bq-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all duration-200 hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0" id="btn-upgrade-plan">
+    <a href="/owner/subscription" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-bq-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all duration-200 hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0" id="btn-upgrade-plan">
         Upgrade Plan
     </a>
 </div>

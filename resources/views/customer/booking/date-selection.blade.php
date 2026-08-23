@@ -82,7 +82,16 @@
                         <x-customer.progress-header step="2" total="3" label="Date Selection" progress="66" />
 
                         <div class="mt-8">
-                            <h1 class="text-2xl font-bold text-[#111827] sm:text-3xl">Select Date</h1>
+                            <a
+                                href="{{ route('customer.booking.program', $tenant->slug) }}"
+                                class="inline-flex items-center gap-1.5 text-sm font-medium text-[#6B7280] transition hover:text-[#4F46E5]"
+                            >
+                                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                                Back to Programs
+                            </a>
+                            <h1 class="mt-3 text-2xl font-bold text-[#111827] sm:text-3xl">Select Date</h1>
                             <p class="mt-2 text-sm text-[#6B7280] sm:text-base">Choose your preferred booking date.</p>
                         </div>
 
@@ -99,9 +108,9 @@
                             $imageUrl = null;
 
                             if (!empty($service->image_url)) {
-                                $imageUrl = \Illuminate\Support\Str::startsWith($service->image_url, ['http://', 'https://'])
+                                $imageUrl = \Illuminate\Support\Str::startsWith($service->image_url, ['http://', 'https://', '/'])
                                     ? $service->image_url
-                                    : asset('storage/' . $service->image_url);
+                                    : \Illuminate\Support\Facades\Storage::url($service->image_url);
                             }
                         @endphp
 
@@ -160,7 +169,13 @@
                         </div>
                     </section>
 
-                    <x-customer.booking-sidebar :service="$service" />
+                    <x-customer.booking-sidebar
+                        :service="$service"
+                        button-label="Continue to Time Selection"
+                        button-enabled-when="selectedDate"
+                        back-url="{{ route('customer.booking.program', $tenant->slug) }}"
+                        back-label="Back to Programs"
+                    />
                 </form>
             </main>
 

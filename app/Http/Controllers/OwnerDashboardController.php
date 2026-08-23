@@ -15,13 +15,15 @@ class OwnerDashboardController extends Controller
 {
     private function resolveTenant(): ?Tenant
     {
+        $userId = auth()->id();
         $tenantId = session('current_tenant_id');
 
         if (is_numeric($tenantId)) {
-            return Tenant::with('user')->find($tenantId);
+            $tenant = Tenant::with('user')->find($tenantId);
+            if ($tenant && $tenant->iduser === $userId) {
+                return $tenant;
+            }
         }
-
-        $userId = auth()->id();
 
         if ($userId) {
             return Tenant::with('user')->where('iduser', $userId)->first();

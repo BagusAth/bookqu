@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingManageController;
 use App\Http\Controllers\DummyRegistrationController;
@@ -69,28 +70,67 @@ Route::middleware('guest')->group(function () {
     
     Route::post('/register', function (Request $request) {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:100', 'unique:users,email'],
-            'nomorhp' => ['required', 'string', 'max:20'],
-            'password' => ['required', 'confirmed', Password::min(8)],
-            'terms' => ['accepted'],
+            'name'         => ['required', 'string', 'max:100'],
+            'email'        => ['required', 'email', 'max:100', 'unique:users,email'],
+            'nomorhp'      => ['required', 'string', 'max:20'],
+            'nama_bisnis'  => ['required', 'string', 'max:150'],
+            'jenis_bisnis' => ['required', 'string', 'max:150'],
+            'alamat'       => ['required', 'string', 'max:255'],
+            'password'     => ['required', 'confirmed', Password::min(8)],
+            'terms'        => ['accepted'],
         ]);
 
         $user = User::create([
             'namalengkap' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'nomorhp' => $validated['nomorhp'],
-            'role' => 'owner',
+            'email'       => $validated['email'],
+            'password'    => Hash::make($validated['password']),
+            'nomorhp'     => $validated['nomorhp'],
+            'role'        => 'owner',
+        ]);
+
+        // FS-002 & FS-003: Buat Tenant dengan auto-generate slug dari nama bisnis
+        $slug     = \Illuminate\Support\Str::slug($validated['nama_bisnis']);
+        $slugBase = $slug;
+        $counter  = 1;
+        while (\App\Models\Tenant::where('slug', $slug)->exists()) {
+            $slug = $slugBase . '-' . $counter++;
+        }
+
+        $tenant = \App\Models\Tenant::create([
+            'iduser'      => $user->id,
+            'namabisnis'  => $validated['nama_bisnis'],
+            'jenisbisnis' => $validated['jenis_bisnis'],
+            'alamat'      => $validated['alamat'],
+            'nomorhp'     => $validated['nomorhp'],
+            'slug'        => $slug,
+        ]);
+
+        // FS-018: Buat Subscription trial 7 hari setara paket Pro
+        $proPlan = \App\Models\Plan::firstOrCreate(
+            ['namapaket' => 'pro'],
+            [
+                'hargabulanan' => 100000,
+                'maxlayanan'   => 10,
+                'maxbooking'   => 500,
+                'isunlimited'  => false,
+            ]
+        );
+
+        \App\Models\Subscription::create([
+            'idtenant'      => $tenant->id,
+            'idplan'        => $proPlan->id,
+            'status'        => 'trial',
+            'trial_berakhir' => now()->addDays(7),
         ]);
 
         Auth::login($user);
         $request->session()->regenerate();
-        $request->session()->forget('current_tenant_id');
+        $request->session()->put('current_tenant_id', $tenant->id);
         $user->sendEmailVerificationNotification();
 
         return redirect()->route('verification.notice');
     })->name('register.store');
+
 });
 
 Route::get('/email/verify', function () {
@@ -153,10 +193,12 @@ Route::prefix('owner')
         Route::post('/schedule/availability', [OwnerScheduleController::class, 'updateAvailability'])->name('owner.schedule.availability');
         Route::delete('/schedule/blocked-dates/{blockedDate}', [OwnerScheduleController::class, 'deleteBlockedDate'])->name('owner.schedule.blocked-dates.delete');
         Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
-        Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics');
-        Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export');
+        Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
+        Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('subscription:pro');
+        Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware('subscription:pro');
         Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
-        Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page');
+        Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page')->middleware('subscription:pro');
+        Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware('subscription:pro');
     });
 });
 
@@ -183,9 +225,7 @@ Route::prefix('manage')->group(function () {
 Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])
     ->group(function () {
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('admin.dashboard');
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     });
 
 Route::get('/test-isolasi/{slug}', function () {
@@ -194,8 +234,54 @@ Route::get('/test-isolasi/{slug}', function () {
     // Query all() ini akan otomatis terfilter sesuai tenant dari slug URL.
     return response()->json($services);
 })->middleware('tenant');
+$customerRoutes = function () {
+    Route::get('/', [BookingController::class, 'showProgramSelection'])
+        ->name('customer.booking.program');
+
+    Route::post('/booking/select-program', [BookingController::class, 'selectProgram'])
+        ->name('customer.booking.select-program');
+
+    Route::get('/booking/date', [BookingController::class, 'showDateSelection'])
+        ->name('customer.booking.date');
+
+    Route::post('/booking/select-date', [BookingController::class, 'selectDate'])
+        ->name('customer.booking.select-date');
+
+    Route::get('/booking/time', [BookingController::class, 'showTimeSelection'])
+        ->name('customer.booking.time');
+
+    Route::post('/booking/select-time', [BookingController::class, 'selectTime'])
+        ->name('customer.booking.select-time');
+
+    Route::get('/booking/checkout', [BookingController::class, 'showCheckout'])
+        ->name('customer.booking.checkout');
+
+    Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])
+        ->name('customer.booking.process-checkout');
+
+    Route::get('/booking/payment/{payment}', [BookingController::class, 'showPayment'])
+        ->name('customer.booking.payment');
+
+    Route::post('/booking/payment/{payment}/check-status', [BookingController::class, 'checkPaymentStatus'])
+        ->name('customer.booking.check-status');
+
+    Route::post('/booking/payment/{payment}/callback', [BookingController::class, 'handleCallback'])
+        ->name('customer.booking.callback');
+
+    Route::get('/booking/payment/{payment}/invoice', [BookingController::class, 'showInvoice'])
+        ->name('customer.booking.invoice');
+};
+
+// Custom domain routing
+$host = request()->getHost();
+if ($host !== '127.0.0.1' && $host !== 'localhost' && !str_contains($host, 'bookqu.test')) {
+    Route::middleware('tenant')->group($customerRoutes);
+}
+
+// Subdirectory routing (default)
 Route::prefix('{slug_usaha}')
     ->middleware('tenant')
+<<<<<<< HEAD
     ->group(function () {
         Route::get('/', [BookingController::class, 'showProgramSelection'])
             ->name('customer.booking.program');
@@ -229,3 +315,6 @@ Route::prefix('{slug_usaha}')
     });
 
 Route::post('/midtrans/notification', [\App\Http\Controllers\MidtransWebhookController::class, 'handle']);
+=======
+    ->group($customerRoutes);
+>>>>>>> 6a13f203747615a9225aa2afecb9fa6d553ad20e

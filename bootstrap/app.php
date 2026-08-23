@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => \App\Http\Middleware\TenantMiddleware::class,
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'owner.profile' => \App\Http\Middleware\EnsureOwnerProfileComplete::class,
+            'subscription' => \App\Http\Middleware\CheckSubscription::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

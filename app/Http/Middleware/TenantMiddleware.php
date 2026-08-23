@@ -37,6 +37,18 @@ class TenantMiddleware
             abort(404, 'Bisnis tidak ditemukan');
         }
 
+        // Cek custom domain jika tidak ada slug
+        $host = $request->getHost();
+        if ($host !== '127.0.0.1' && $host !== 'localhost' && !str_contains($host, 'bookqu.test')) {
+            $tenant = Tenant::where('custom_domain', $host)->first();
+            if ($tenant) {
+                session()->put('current_tenant_id', $tenant->id);
+                // Agar controller yang membutuhkan route('slug_usaha') tidak error, kita bisa mensetnya
+                $request->route()->setParameter('slug_usaha', $tenant->slug);
+                return $next($request);
+            }
+        }
+
         return $next($request);
     }
 }
