@@ -67,14 +67,14 @@ class ScheduleManagementTest extends TestCase
 
         $response->assertRedirect('/owner/schedule');
         
-        // 09:00 - 10:00, 10:00 - 11:00, 11:00 - 12:00 -> 3 slots
+        // 09:00 - 09:59, 10:00 - 10:59, 11:00 - 11:59 -> 3 slots
         $this->assertDatabaseCount('schedules', 3);
         $this->assertDatabaseHas('schedules', [
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
             'tanggal' => $today . ' 00:00:00', // SQLite date formatting
             'jam_mulai' => '09:00:00',
-            'jam_selesai' => '10:00:00',
+            'jam_selesai' => '09:59:00',
             'status' => 'tersedia',
         ]);
     }
@@ -86,7 +86,7 @@ class ScheduleManagementTest extends TestCase
             'idlayanan' => $this->service->id,
             'tanggal' => Carbon::tomorrow()->format('Y-m-d'),
             'jam_mulai' => '08:00:00',
-            'jam_selesai' => '09:00:00',
+            'jam_selesai' => '08:59:00',
             'status' => 'tersedia',
         ]);
 

@@ -70,6 +70,7 @@
             'nilai' => number_format($totalbooking),
             'perubahan' => abs($persenperubahanboking),
             'tipeperubahan' => $persenperubahanboking > 0 ? 'naik' : ($persenperubahanboking < 0 ? 'turun' : 'stabil'),
+            'idPrefix' => 'stat-booking',
         ])
 
         @include('components.owner.stat-card', [
@@ -78,6 +79,7 @@
             'nilai' => 'Rp ' . number_format($totalrevenue, 0, ',', '.'),
             'perubahan' => abs($persenperubahanrevenue),
             'tipeperubahan' => $persenperubahanrevenue > 0 ? 'naik' : ($persenperubahanrevenue < 0 ? 'turun' : 'stabil'),
+            'idPrefix' => 'stat-revenue',
         ])
 
         @include('components.owner.stat-card', [
@@ -194,7 +196,7 @@
                         <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Status</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-bq-border">
+                <tbody class="divide-y divide-bq-border" id="activity-tbody">
                     @foreach ($aktivitasterbaru as $aktivitas)
                         <tr class="transition-colors hover:bg-bq-background/50">
                             <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">
@@ -316,6 +318,92 @@
                 }
             }
         });
+    });
+</script>
+
+{{-- ── Dashboard Polling Script ── --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function fetchDashboardData() {
+            fetch('{{ route('owner.dashboard.polling') }}', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.data) {
+                    updateDashboardUI(data.data);
+                }
+            })
+            .catch(error => {
+                console.error('Dashboard Polling error:', error);
+            });
+        }
+
+        function updateDashboardUI(data) {
+            // Update Stat Cards
+            const bookingVal = document.getElementById('stat-booking-value');
+            if (bookingVal) bookingVal.textContent = new Intl.NumberFormat('id-ID').format(data.total_bookings);
+            
+            const bookingChange = document.getElementById('stat-booking-change');
+            if (bookingChange) {
+                bookingChange.textContent = (data.persen_perubahan_booking > 0 ? '+' : '') + data.persen_perubahan_booking + '%';
+                updateChangeColor(bookingChange, data.persen_perubahan_booking);
+            }
+
+            const revVal = document.getElementById('stat-revenue-value');
+            if (revVal) revVal.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.total_revenue);
+
+            const revChange = document.getElementById('stat-revenue-change');
+            if (revChange) {
+                revChange.textContent = (data.persen_perubahan_revenue > 0 ? '+' : '') + data.persen_perubahan_revenue + '%';
+                updateChangeColor(revChange, data.persen_perubahan_revenue);
+            }
+
+            // Update Recent Activity
+            const tbody = document.getElementById('activity-tbody');
+            if (tbody && data.recent_activities) {
+                tbody.innerHTML = '';
+                data.recent_activities.forEach(item => {
+                    const statusText = item.status === 'paid' ? 'confirmed' : item.status;
+                    let colorClass = 'bg-gray-50 text-gray-700 ring-gray-600/20';
+                    if (item.status === 'completed' || item.status === 'paid') colorClass = 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
+                    else if (item.status === 'pending') colorClass = 'bg-amber-50 text-amber-700 ring-amber-600/20';
+                    else if (item.status === 'cancelled') colorClass = 'bg-rose-50 text-rose-700 ring-rose-600/20';
+
+                    const row = `
+                        <tr class="transition-colors hover:bg-bq-background/50">
+                            <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">${item.program_name}</td>
+                            <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.customer_name}</td>
+                            <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.date}</td>
+                            <td class="whitespace-nowrap px-5 py-3.5 text-center">
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset ${colorClass}">
+                                    ${statusText}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            }
+        }
+
+        function updateChangeColor(el, val) {
+            el.classList.remove('text-emerald-600', 'text-rose-500', 'text-bq-text-subtle');
+            if (val > 0) el.classList.add('text-emerald-600');
+            else if (val < 0) el.classList.add('text-rose-500');
+            else el.classList.add('text-bq-text-subtle');
+        }
+
+        if (!window.dashboardPollingInitialized) {
+            window.dashboardPollingInitialized = true;
+            setInterval(fetchDashboardData, 30000);
+        }
     });
 </script>
 @endsection

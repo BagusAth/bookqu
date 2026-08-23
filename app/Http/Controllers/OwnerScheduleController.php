@@ -192,7 +192,8 @@ class OwnerScheduleController extends Controller
 
             while ($jamcursor->copy()->addMinutes($intervalslot)->lte($jamakhir)) {
                 $jammulainya = $jamcursor->format('H:i:s');
-                $jamselesainya = $jamcursor->copy()->addMinutes($intervalslot)->format('H:i:s');
+                // Subtract 1 minute to meet the requirement (e.g. 11:00 - 11:59 instead of 12:00)
+                $jamselesainya = $jamcursor->copy()->addMinutes($intervalslot)->subMinute()->format('H:i:s');
 
                 Schedule::create([
                     'idtenant' => $tenant->id,
