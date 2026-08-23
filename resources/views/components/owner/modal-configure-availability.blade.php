@@ -107,10 +107,13 @@
                                         <p class="font-semibold text-bq-text">{{ $blocked->tanggal->format('d M Y') }}</p>
                                         <p class="text-bq-text-muted">{{ $blocked->alasan ?? 'No reason' }}</p>
                                     </div>
-                                    <form method="POST" action="/owner/schedule/blocked-dates/{{ $blocked->id }}">
+                                    <form id="form-remove-blocked-{{ $blocked->id }}" method="POST" action="/owner/schedule/blocked-dates/{{ $blocked->id }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="rounded-md px-2 py-1 text-rose-600 hover:bg-rose-50" onclick="return confirm('Buka tanggal ini?');">Remove</button>
+                                        <button type="button" class="rounded-md px-2 py-1 text-rose-600 hover:bg-rose-50" 
+                                            @click="$dispatch('open-confirm', { title: 'Buka Tanggal?', message: 'Apakah Anda yakin ingin menghapus blokir untuk tanggal ini?', formId: 'form-remove-blocked-{{ $blocked->id }}' })">
+                                            Remove
+                                        </button>
                                     </form>
                                 </div>
                             @empty

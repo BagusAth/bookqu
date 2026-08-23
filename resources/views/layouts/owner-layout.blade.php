@@ -63,5 +63,9 @@
         </main>
     </div>
 
+    <!-- Reusable UI Components -->
+    @include('components.owner.toast')
+    @include('components.owner.confirm-modal')
+
 </body>
 </html>

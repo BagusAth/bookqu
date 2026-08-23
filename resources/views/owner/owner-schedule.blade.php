@@ -5,15 +5,6 @@
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6">
 
-    {{-- ── Flash Message ── --}}
-    @if (session('sukses'))
-        <div x-data="{ tampil: true }" x-show="tampil" x-init="setTimeout(() => tampil = false, 4000)"
-            x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-            class="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3" id="flash-success">
-            <svg class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <p class="text-sm font-medium text-emerald-800">{{ session('sukses') }}</p>
-        </div>
-    @endif
 
     {{-- ── Header ── --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -149,13 +140,13 @@
                                 <div class="mt-0.5 flex items-center justify-between gap-2 text-bq-text-subtle">
                                     <span>{{ $slot->jam_mulai }} - {{ $slot->jam_selesai }}</span>
                                     @if (!$adabooking)
-                                        <form method="POST" action="/owner/schedule/slots/{{ $slot->id }}" class="opacity-0 transition-all group-hover:opacity-100">
+                                        <form method="POST" action="/owner/schedule/slots/{{ $slot->id }}" class="opacity-0 transition-all group-hover:opacity-100" id="form-delete-slot-{{ $slot->id }}">
                                             @csrf
                                             @method('DELETE')
                                             <button
-                                                type="submit"
+                                                type="button"
                                                 class="rounded-md p-1 text-bq-text-subtle transition-all hover:bg-rose-50 hover:text-rose-600"
-                                                onclick="return confirm('Hapus slot ini?');"
+                                                @click="$dispatch('open-confirm', { title: 'Hapus Slot?', message: 'Apakah Anda yakin ingin menghapus slot jadwal ini?', formId: 'form-delete-slot-{{ $slot->id }}' })"
                                                 aria-label="Delete slot"
                                             >
                                                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
