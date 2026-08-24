@@ -24,7 +24,21 @@ class AppServiceProvider extends ServiceProvider
     {
         // Share Pro subscription status with the sidebar
         View::composer('components.owner.sidebar', function ($view) {
-            $tenant = Tenant::first();
+            $userId = auth()->id();
+            $tenantId = session('current_tenant_id');
+            $tenant = null;
+
+            if (is_numeric($tenantId)) {
+                $tenant = Tenant::find($tenantId);
+                if ($tenant && $tenant->iduser !== $userId) {
+                    $tenant = null;
+                }
+            }
+
+            if (!$tenant && $userId) {
+                $tenant = Tenant::where('iduser', $userId)->first();
+            }
+
             $adalahpro = false;
 
             if ($tenant) {
@@ -34,7 +48,9 @@ class AppServiceProvider extends ServiceProvider
                     ->latest()
                     ->first();
 
-                $adalahpro = $langganan?->plan?->namapaket === 'pro';
+                if ($langganan && $langganan->plan) {
+                    $adalahpro = str_contains(strtolower($langganan->plan->namapaket), 'pro');
+                }
             }
 
             $view->with('adalahpro', $adalahpro);

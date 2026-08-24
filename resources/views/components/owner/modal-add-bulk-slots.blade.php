@@ -7,7 +7,9 @@
         sedangkirim: false,
         jenisslot: 'harian',
         jumlahslotditambah: 0,
-        intervalslot: '60',
+        intervalslot: '',
+        durasiDariProgram: null,
+        namaProgram: '',
     }"
     @open-add-bulk-slots.window="buka = true"
     x-cloak
@@ -80,9 +82,16 @@
                             id="input-idlayanan"
                             required
                             @change="
-                                const durasi = $event.target.selectedOptions[0]?.dataset?.durasi;
-                                if (durasi && ['30','45','60','90','120'].includes(durasi)) {
+                                const opt = $event.target.selectedOptions[0];
+                                const durasi = opt?.dataset?.durasi;
+                                if (durasi) {
+                                    durasiDariProgram = parseInt(durasi);
                                     intervalslot = durasi;
+                                    namaProgram = opt.text;
+                                } else {
+                                    durasiDariProgram = null;
+                                    intervalslot = '';
+                                    namaProgram = '';
                                 }
                             "
                             class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
@@ -133,24 +142,41 @@
                         </div>
                     </div>
 
-                    {{-- Slot Interval --}}
+                    {{-- Slot Duration (read-only, synced from program) --}}
                     <div>
-                        <label for="input-intervalslot" class="mb-1.5 block text-sm font-medium text-bq-text">Slot Duration (minutes) <span class="text-rose-500">*</span></label>
-                        <select name="intervalslot" id="input-intervalslot" x-model="intervalslot" required
-                            class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
-                            <option value="30">30 minutes</option>
-                            <option value="45">45 minutes</option>
-                            <option value="60" selected>60 minutes (1 hour)</option>
-                            <option value="90">90 minutes</option>
-                            <option value="120">120 minutes (2 hours)</option>
-                        </select>
+                        <label class="mb-1.5 block text-sm font-medium text-bq-text">Slot Duration <span class="text-rose-500">*</span></label>
+                        <input type="hidden" name="intervalslot" :value="intervalslot">
+                        <div class="relative">
+                            <input
+                                type="text"
+                                readonly
+                                :value="durasiDariProgram ? durasiDariProgram + ' menit' : 'Pilih program terlebih dahulu'"
+                                class="w-full rounded-lg border px-4 py-2.5 text-sm transition-all focus:outline-none"
+                                :class="durasiDariProgram
+                                    ? 'border-bq-primary/30 bg-bq-primary/5 text-bq-text font-semibold cursor-not-allowed'
+                                    : 'border-bq-border bg-bq-background text-bq-text-muted cursor-not-allowed'"
+                                id="input-intervalslot-display"
+                            >
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                <svg class="h-4 w-4" :class="durasiDariProgram ? 'text-bq-primary' : 'text-bq-text-subtle'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="mt-1 text-xs text-bq-text-muted" x-show="durasiDariProgram">
+                            <svg class="mr-0.5 inline h-3 w-3 text-bq-primary" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                            Durasi otomatis dari program yang dipilih. Ubah durasi melalui menu <strong>Program</strong>.
+                        </p>
                     </div>
 
                     {{-- Preview --}}
                     <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
                         <p class="text-xs font-medium text-blue-800">
                             <svg class="mr-1 inline h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
-                            Slots will be generated automatically from start to end time using the selected interval.
+                            <span x-show="!durasiDariProgram">Pilih program untuk melihat estimasi slot yang akan dibuat.</span>
+                            <span x-show="durasiDariProgram">
+                                Slot akan dibuat otomatis dengan durasi <strong x-text="durasiDariProgram + ' menit'"></strong> per slot, dari jam mulai hingga jam selesai.
+                            </span>
                         </p>
                     </div>
                 </div>
@@ -162,8 +188,8 @@
                     </button>
                     <button
                         type="submit"
-                        :disabled="sedangkirim"
-                        :class="sedangkirim ? 'opacity-60 cursor-not-allowed' : 'hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5'"
+                        :disabled="sedangkirim || !durasiDariProgram"
+                        :class="(sedangkirim || !durasiDariProgram) ? 'opacity-60 cursor-not-allowed' : 'hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5'"
                         class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all"
                         id="btn-submit-slots"
                     >

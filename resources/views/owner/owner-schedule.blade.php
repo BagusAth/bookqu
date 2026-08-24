@@ -163,6 +163,18 @@
                                                 </svg>
                                             </button>
                                         </form>
+                                    @else
+                                        <button 
+                                            type="button" 
+                                            class="rounded-md p-1 text-bq-primary opacity-0 transition-all group-hover:opacity-100 hover:bg-bq-primary/10" 
+                                            @click="$dispatch('open-view-booking', { booking: {{ json_encode($bookingnya) }} })"
+                                            title="View Details"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
                                     @endif
                                 </div>
                             </div>
@@ -249,4 +261,6 @@
 @include('components.owner.modal-default-pricing', ['daftarlayanan' => $daftarlayanan])
 {{-- Configure Availability Modal --}}
 @include('components.owner.modal-configure-availability', ['blockedDates' => $blockedDates, 'tenant' => $tenant])
+{{-- View Booking Modal --}}
+@include('components.owner.modal-view-booking')
 @endsection

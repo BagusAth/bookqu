@@ -61,6 +61,11 @@ document.addEventListener('alpine:init', () => {
             if (this.storageKey) {
                 localStorage.setItem(this.storageKey, JSON.stringify({ id: service.id }));
             }
+
+            // Auto submit to next step
+            setTimeout(() => {
+                this.handleConfirm();
+            }, 50);
         },
 
         handleConfirm() {
