@@ -123,18 +123,26 @@
 
                 {{-- Time slots per day --}}
                 @foreach ($daftarhari as $hari)
-                    <div class="min-h-[260px] space-y-1.5 p-2">
+                    <div class="min-h-[260px] space-y-1.5 p-2" x-data="{ expanded: false }">
                         @php
                             $tanggalkey = $hari->format('Y-m-d');
                             $slothari = $jadwalminggu->get($tanggalkey, collect());
                         @endphp
 
-                        @forelse ($slothari->take(5) as $slot)
+                        @forelse ($slothari as $index => $slot)
                             @php
                                 $adabooking = $slot->bookings->where('status', '!=', 'cancelled')->count() > 0;
                                 $bookingnya = $slot->bookings->where('status', '!=', 'cancelled')->first();
                             @endphp
-                            <div class="group rounded-lg border p-2 text-xs transition-all hover:shadow-sm
+                            <div
+                                x-show="{{ $index }} < 5 || expanded"
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 -translate-y-1"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 -translate-y-1"
+                                class="group rounded-lg border p-2 text-xs transition-all hover:shadow-sm
                                 {{ $adabooking
                                     ? 'border-bq-border-strong bg-bq-background'
                                     : 'border-bq-primary/30 bg-bq-primary/5 hover:border-bq-primary/50'
@@ -185,7 +193,14 @@
                         @endforelse
 
                         @if ($slothari->count() > 5)
-                            <p class="text-center text-xs font-medium text-bq-primary">+{{ $slothari->count() - 5 }} more</p>
+                            <button
+                                type="button"
+                                @click="expanded = !expanded"
+                                class="mt-1 w-full cursor-pointer rounded-md py-1.5 text-center text-xs font-medium text-bq-primary transition-all hover:bg-bq-primary/10"
+                            >
+                                <span x-show="!expanded">+{{ $slothari->count() - 5 }} more</span>
+                                <span x-show="expanded" x-cloak>Show less</span>
+                            </button>
                         @endif
                     </div>
                 @endforeach
