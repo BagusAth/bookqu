@@ -147,8 +147,21 @@ class OwnerScheduleController extends Controller
             'tanggalselesai' => 'nullable|date|after_or_equal:tanggalmulai',
             'jammulai' => 'required|date_format:H:i',
             'jamselesai' => 'required|date_format:H:i|after:jammulai',
-            'intervalslot' => 'required|integer|in:30,45,60,90,120',
+            'intervalslot' => 'required|integer|min:5|max:480',
         ]);
+
+        // Validasi silang: intervalslot harus sama dengan durasi layanan
+        $layanan = Service::where('idtenant', $tenant->id)->find($datavalid['idlayanan']);
+
+        if (!$layanan) {
+            return redirect('/owner/schedule')->withErrors(['idlayanan' => 'Program tidak ditemukan.']);
+        }
+
+        if ((int) $datavalid['intervalslot'] !== (int) $layanan->durasi) {
+            return redirect('/owner/schedule')->withErrors([
+                'intervalslot' => 'Durasi slot harus sesuai dengan durasi program (' . $layanan->durasi . ' menit).',
+            ]);
+        }
 
         // Tentukan daftar tanggal
         $daftartanggal = [];
@@ -174,8 +187,6 @@ class OwnerScheduleController extends Controller
         // Generate slots per tanggal
         $jumlahslot = 0;
         $intervalslot = (int) $datavalid['intervalslot'];
-
-        $layanan = Service::where('idtenant', $tenant->id)->find($datavalid['idlayanan']);
 
         foreach ($daftartanggal as $tanggalnya) {
             $jamcursor = Carbon::parse($tanggalnya . ' ' . $datavalid['jammulai']);

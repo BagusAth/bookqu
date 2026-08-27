@@ -114,18 +114,26 @@
 
                 {{-- Time slots per day --}}
                 @foreach ($daftarhari as $hari)
-                    <div class="min-h-[260px] space-y-1.5 p-2">
+                    <div class="min-h-[260px] space-y-1.5 p-2" x-data="{ expanded: false }">
                         @php
                             $tanggalkey = $hari->format('Y-m-d');
                             $slothari = $jadwalminggu->get($tanggalkey, collect());
                         @endphp
 
-                        @forelse ($slothari->take(5) as $slot)
+                        @forelse ($slothari as $index => $slot)
                             @php
                                 $adabooking = $slot->bookings->where('status', '!=', 'cancelled')->count() > 0;
                                 $bookingnya = $slot->bookings->where('status', '!=', 'cancelled')->first();
                             @endphp
-                            <div class="group rounded-lg border p-2 text-xs transition-all hover:shadow-sm
+                            <div
+                                x-show="{{ $index }} < 5 || expanded"
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 -translate-y-1"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 -translate-y-1"
+                                class="group rounded-lg border p-2 text-xs transition-all hover:shadow-sm
                                 {{ $adabooking
                                     ? 'border-bq-border-strong bg-bq-background'
                                     : 'border-bq-primary/30 bg-bq-primary/5 hover:border-bq-primary/50'
@@ -154,6 +162,18 @@
                                                 </svg>
                                             </button>
                                         </form>
+                                    @else
+                                        <button 
+                                            type="button" 
+                                            class="rounded-md p-1 text-bq-primary opacity-0 transition-all group-hover:opacity-100 hover:bg-bq-primary/10" 
+                                            @click="$dispatch('open-view-booking', { booking: {{ json_encode($bookingnya) }} })"
+                                            title="View Details"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
                                     @endif
                                 </div>
                             </div>
@@ -164,7 +184,14 @@
                         @endforelse
 
                         @if ($slothari->count() > 5)
-                            <p class="text-center text-xs font-medium text-bq-primary">+{{ $slothari->count() - 5 }} more</p>
+                            <button
+                                type="button"
+                                @click="expanded = !expanded"
+                                class="mt-1 w-full cursor-pointer rounded-md py-1.5 text-center text-xs font-medium text-bq-primary transition-all hover:bg-bq-primary/10"
+                            >
+                                <span x-show="!expanded">+{{ $slothari->count() - 5 }} more</span>
+                                <span x-show="expanded" x-cloak>Show less</span>
+                            </button>
                         @endif
                     </div>
                 @endforeach
@@ -240,4 +267,6 @@
 @include('components.owner.modal-default-pricing', ['daftarlayanan' => $daftarlayanan])
 {{-- Configure Availability Modal --}}
 @include('components.owner.modal-configure-availability', ['blockedDates' => $blockedDates, 'tenant' => $tenant])
+{{-- View Booking Modal --}}
+@include('components.owner.modal-view-booking')
 @endsection

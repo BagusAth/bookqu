@@ -30,14 +30,14 @@
             <div>
                 <h4 class="text-sm font-semibold text-slate-700">Kontak</h4>
                 <ul class="mt-3 space-y-2 text-sm text-slate-500">
-                    <li>support@bookqu.com</li>
-                    <li>+62 21 4567 8910</li>
-                    <li>Sudirman CBD, Jakarta Selatan, Indonesia</li>
+                    <li>[EMAIL_ADDRESS]</li>
+                    <li>+62 895416023108</li>
+                    <li>Tembalang, Semarang, Indonesia</li>
                 </ul>
             </div>
         </div>
         <div class="mt-10 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-6 text-xs text-slate-400 md:flex-row">
-            <span>Copyright (c) 2024 BookQu. Hak Cipta Dilindungi Undang-Undang.</span>
+            <span>Copyright (c) 2026 BookQu. Hak Cipta Dilindungi Undang-Undang.</span>
             <div class="flex items-center gap-4">
                 <a href="#" class="hover:text-slate-600">Kebijakan Privasi</a>
                 <a href="#" class="hover:text-slate-600">Syarat & Ketentuan</a>
