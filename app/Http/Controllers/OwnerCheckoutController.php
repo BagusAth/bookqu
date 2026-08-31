@@ -6,8 +6,7 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
-use App\Models\UsageLog;
-use App\Notifications\NewBookingOwnerNotification;
+use App\Services\MidtransPaymentService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -237,7 +236,7 @@ class OwnerCheckoutController extends Controller
     /**
      * Cek status pembayaran secara manual ke Midtrans.
      */
-    public function checkPaymentStatus(Payment $payment)
+    public function checkPaymentStatus(Payment $payment, MidtransPaymentService $paymentService)
     {
         $tenant = $this->resolveTenant();
 
@@ -245,56 +244,34 @@ class OwnerCheckoutController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        try {
-            $status = MidtransTransaction::status($payment->order_id);
+        $syncResult = $paymentService->verifyAndSync($payment);
 
-            $transactionStatus = $status->transaction_status ?? null;
-            $fraudStatus = $status->fraud_status ?? null;
-            $paymentType = $status->payment_type ?? null;
-
-            if ($transactionStatus === 'capture' || $transactionStatus === 'settlement') {
-                if ($transactionStatus === 'capture' && $fraudStatus === 'challenge') {
-                    // Tantangan fraud, tunggu
-                    return response()->json([
-                        'status' => 'pending',
-                        'message' => 'Pembayaran sedang dalam review.',
-                    ]);
-                }
-
-                // Sukses
-                $this->handleSuccessPayment($payment, $paymentType);
-
-                return response()->json([
-                    'status' => 'sukses',
-                    'message' => 'Pembayaran berhasil!',
-                    'redirect' => route('owner.checkout.invoice', $payment->id),
-                ]);
-            }
-
-            if (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
-                $payment->update([
-                    'status' => 'gagal',
-                    'metode' => $paymentType ?? 'midtrans',
-                ]);
-
-                return response()->json([
-                    'status' => 'gagal',
-                    'message' => 'Pembayaran gagal atau dibatalkan.',
-                ]);
-            }
-
+        if ($syncResult['status'] === 'sukses') {
             return response()->json([
-                'status' => 'pending',
-                'message' => 'Pembayaran belum diterima. Silakan selesaikan pembayaran.',
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Midtrans Status Check Error: ' . $e->getMessage());
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Gagal memeriksa status. Silakan coba beberapa saat lagi.',
+                'status' => 'sukses',
+                'message' => 'Pembayaran berhasil!',
+                'redirect' => route('owner.checkout.invoice', $payment->id),
             ]);
         }
+
+        if ($syncResult['status'] === 'gagal') {
+            return response()->json([
+                'status' => 'gagal',
+                'message' => $syncResult['message'] ?? 'Pembayaran gagal atau dibatalkan.',
+            ]);
+        }
+
+        if ($syncResult['status'] === 'error') {
+            return response()->json([
+                'status' => 'error',
+                'message' => $syncResult['message'] ?? 'Gagal memeriksa status. Silakan coba beberapa saat lagi.',
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'pending',
+            'message' => $syncResult['message'] ?? 'Pembayaran belum diterima. Silakan selesaikan pembayaran.',
+        ]);
     }
 
     /**
@@ -329,7 +306,7 @@ class OwnerCheckoutController extends Controller
     /**
      * Handle Midtrans webhook notification.
      */
-    public function handleWebhook(Request $request)
+    public function handleWebhook(Request $request, MidtransPaymentService $paymentService)
     {
         $payload = $request->all();
 
@@ -358,98 +335,16 @@ class OwnerCheckoutController extends Controller
             return response()->json(['message' => 'Payment not found'], 404);
         }
 
-        $transactionStatus = $payload['transaction_status'] ?? null;
-        $fraudStatus = $payload['fraud_status'] ?? null;
-        $paymentType = $payload['payment_type'] ?? null;
-
-        if ($transactionStatus === 'capture') {
-            if ($fraudStatus === 'accept') {
-                $this->handleSuccessPayment($payment, $paymentType);
-            }
-        } elseif ($transactionStatus === 'settlement') {
-            $this->handleSuccessPayment($payment, $paymentType);
-        } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
-            $payment->update([
-                'status' => 'gagal',
-                'metode' => $paymentType ?? 'midtrans',
-            ]);
-        } elseif ($transactionStatus === 'pending') {
-            $payment->update([
-                'metode' => $paymentType ?? 'midtrans',
-            ]);
-        }
+        $paymentService->syncStatus($payment, $payload);
 
         return response()->json(['message' => 'OK']);
-    }
-
-    private function handleSuccessPayment(Payment $payment, ?string $paymentType): void
-    {
-        // Jangan proses jika sudah sukses
-        if ($payment->status === 'sukses') {
-            return;
-        }
-
-        DB::transaction(function () use ($payment, $paymentType) {
-            // Update payment
-            $payment->update([
-                'status' => 'sukses',
-                'metode' => $paymentType ?? 'midtrans',
-            ]);
-
-            if ($payment->tipe === 'subscription') {
-                // Nonaktifkan subscription lama
-                Subscription::where('idtenant', $payment->idtenant)
-                    ->whereIn('status', ['trial', 'active'])
-                    ->update(['status' => 'expired']);
-
-                // Buat subscription baru
-                Subscription::create([
-                    'idtenant' => $payment->idtenant,
-                    'idplan' => $payment->idplan,
-                    'status' => 'active',
-                    'langganan_mulai' => now(),
-                    'langganan_berakhir' => now()->addMonth(),
-                ]);
-            } elseif ($payment->tipe === 'booking') {
-                $booking = \App\Models\Booking::with(['layanan', 'tenant.user', 'payment'])
-                    ->where('idpayment', $payment->id)
-                    ->first();
-
-                if ($booking) {
-                    $booking->update(['status' => 'paid']);
-
-                    // FS-029: Kirim notifikasi email ke owner bisnis
-                    $owner = $booking->tenant?->user;
-                    if ($owner && $owner->email) {
-                        try {
-                            $owner->notify(new NewBookingOwnerNotification($booking));
-                        } catch (\Exception $e) {
-                            Log::error('Gagal kirim notif booking ke owner: ' . $e->getMessage());
-                        }
-                    }
-
-                    // FS-030: Catat penggunaan booking ke usage_logs
-                    try {
-                        UsageLog::record($booking->idtenant, 'booking');
-                    } catch (\Exception $e) {
-                        Log::error('Gagal catat usage log booking: ' . $e->getMessage());
-                    }
-
-                    // Kirim notifikasi email ke pelanggan (jika email pelanggan tersedia)
-                    if ($payment->email_pembayar) {
-                        \Illuminate\Support\Facades\Notification::route('mail', $payment->email_pembayar)
-                            ->notify(new \App\Notifications\BookingPaidNotification($booking));
-                    }
-                }
-            }
-        });
     }
 
     /**
      * Handle callback dari Midtrans Snap (client-side).
      * Dipanggil setelah user selesai di pop-up Midtrans.
      */
-    public function handleCallback(Payment $payment, Request $request)
+    public function handleCallback(Payment $payment, Request $request, MidtransPaymentService $paymentService)
     {
         $tenant = $this->resolveTenant();
 
@@ -457,31 +352,33 @@ class OwnerCheckoutController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $result = $request->input('result');
+        // Lakukan server-side verification ke Midtrans
+        $syncResult = $paymentService->verifyAndSync($payment);
 
-        if (!$result) {
-            return response()->json(['error' => 'No result'], 400);
+        if ($syncResult['status'] === 'error') {
+            $result = $request->input('result');
+            if ($result) {
+                $syncResult = $paymentService->syncStatus($payment, $result);
+            }
         }
 
-        $transactionStatus = $result['transaction_status'] ?? null;
-
-        if (in_array($transactionStatus, ['capture', 'settlement'])) {
+        if ($syncResult['status'] === 'sukses') {
             return response()->json([
                 'status' => 'sukses',
                 'redirect' => route('owner.checkout.invoice', $payment->id),
             ]);
         }
 
-        if (in_array($transactionStatus, ['pending'])) {
+        if ($syncResult['status'] === 'pending') {
             return response()->json([
                 'status' => 'pending',
-                'message' => 'Pembayaran pending. Silakan selesaikan pembayaran.',
+                'message' => $syncResult['message'] ?? 'Pembayaran pending. Silakan selesaikan pembayaran.',
             ]);
         }
 
         return response()->json([
             'status' => 'gagal',
-            'message' => 'Pembayaran gagal.',
+            'message' => $syncResult['message'] ?? 'Pembayaran gagal.',
         ]);
     }
 }

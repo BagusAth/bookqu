@@ -5,16 +5,6 @@
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6" x-data>
 
-    {{-- ── Flash Message ── --}}
-    @if (session('sukses'))
-        <div x-data="{ tampil: true }" x-show="tampil" x-init="setTimeout(() => tampil = false, 4000)"
-            x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-            class="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3" id="flash-success">
-            <svg class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <p class="text-sm font-medium text-emerald-800">{{ session('sukses') }}</p>
-        </div>
-    @endif
-
     {{-- ── Header ── --}}
     @include('components.owner.page-header', [
         'judul' => 'Program Management',
@@ -88,22 +78,22 @@
                     @endphp
                     <div class="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                         <button
-                            class="rounded-lg p-1.5 bg-white/90 shadow text-bq-text-subtle transition-all hover:bg-white hover:text-bq-text"
-                            @click="$dispatch('open-edit-program', @json($editPayload))"
+                            class="rounded-lg p-1.5 bg-white/90 shadow text-bq-text-subtle transition-all hover:bg-white hover:text-bq-primary"
+                            @click='$dispatch("open-edit-program", @json($editPayload))'
                             aria-label="Edit program"
                             id="btn-edit-program-{{ $layanan->id }}"
                         >
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4h6a2 2 0 012 2v6m-10 6H6a2 2 0 01-2-2v-6m12-4L8 18l-4 1 1-4 10-10z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                             </svg>
                         </button>
-                        <form method="POST" action="/owner/programs/{{ $layanan->id }}">
+                        <form method="POST" action="/owner/programs/{{ $layanan->id }}" id="form-delete-program-{{ $layanan->id }}">
                             @csrf
                             @method('DELETE')
                             <button
-                                type="submit"
+                                type="button"
                                 class="rounded-lg p-1.5 bg-white/90 shadow text-bq-text-subtle transition-all hover:bg-rose-50 hover:text-rose-600"
-                                onclick="return confirm('Hapus program ini?');"
+                                @click="$dispatch('open-confirm', { title: 'Hapus Program?', message: 'Program yang sudah dihapus tidak dapat dikembalikan. Yakin ingin menghapus program ini?', formId: 'form-delete-program-{{ $layanan->id }}' })"
                                 aria-label="Delete program"
                                 id="btn-delete-program-{{ $layanan->id }}"
                             >

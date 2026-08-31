@@ -10,19 +10,49 @@
         <div class="h-32 bg-gradient-to-r from-primary-500 to-primary-600 absolute top-0 left-0 right-0 z-0"></div>
         
         <div class="relative z-10 p-8 flex flex-col items-center">
-            <!-- Success Icon -->
-            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mb-6">
-                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                    <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                    </svg>
+            @if ($payment->status === 'sukses')
+                <!-- Success Icon -->
+                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mb-6">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
                 </div>
-            </div>
-            
-            <h1 class="text-3xl font-bold text-gray-900 text-center mb-2">Booking Berhasil!</h1>
-            <p class="text-gray-600 text-center max-w-md">
-                Terima kasih, pembayaran Anda telah kami terima dan jadwal Anda sudah dikonfirmasi.
-            </p>
+                
+                <h1 class="text-3xl font-bold text-gray-900 text-center mb-2">Booking Berhasil!</h1>
+                <p class="text-gray-600 text-center max-w-md">
+                    Terima kasih, pembayaran Anda telah kami terima dan jadwal Anda sudah dikonfirmasi.
+                </p>
+            @elseif ($payment->status === 'pending')
+                <!-- Pending Icon -->
+                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mb-6">
+                    <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <h1 class="text-3xl font-bold text-gray-900 text-center mb-2">Menunggu Pembayaran</h1>
+                <p class="text-gray-600 text-center max-w-md">
+                    Mohon selesaikan pembayaran Anda agar booking ini dapat dikonfirmasi.
+                </p>
+            @else
+                <!-- Failed/Cancelled Icon -->
+                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mb-6">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <h1 class="text-3xl font-bold text-gray-900 text-center mb-2">Booking Dibatalkan</h1>
+                <p class="text-gray-600 text-center max-w-md">
+                    Maaf, pembayaran gagal atau waktu pembayaran telah habis.
+                </p>
+            @endif
         </div>
 
         <div class="px-8 pb-8">
@@ -39,9 +69,19 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Status</p>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Lunas
-                        </span>
+                        @if ($payment->status === 'sukses')
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Lunas
+                            </span>
+                        @elseif ($payment->status === 'pending')
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Menunggu Pembayaran
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                Dibatalkan
+                            </span>
+                        @endif
                     </div>
                     
                     <div class="md:col-span-2 mt-2">

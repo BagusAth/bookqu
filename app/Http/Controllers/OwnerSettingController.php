@@ -205,6 +205,8 @@ class OwnerSettingController extends Controller
 
         session()->put('current_tenant_id', $tenant->id);
 
+        \Illuminate\Support\Facades\Cache::forget("tenant:slug:{$tenant->slug}");
+
         return redirect()->route('owner.settings')->with('sukses', 'Profil bisnis berhasil diperbarui.');
     }
 
@@ -272,6 +274,8 @@ class OwnerSettingController extends Controller
         }
 
         $tenant->save();
+
+        \Illuminate\Support\Facades\Cache::forget("tenant:slug:{$tenant->slug}");
 
         return redirect()->route('owner.settings')->with('sukses', 'Pengaturan pembayaran berhasil diperbarui.');
     }

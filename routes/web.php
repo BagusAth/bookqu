@@ -166,6 +166,7 @@ Route::prefix('owner')
     ->middleware(['auth', 'verified', 'role:owner', 'tenant'])
     ->group(function () {
     Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
+    Route::get('/dashboard/polling', [OwnerDashboardController::class, 'pollingData'])->name('owner.dashboard.polling');
     Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
     Route::post('/profile/complete', [OwnerSettingController::class, 'storeProfile'])->name('owner.profile.complete');
     Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');

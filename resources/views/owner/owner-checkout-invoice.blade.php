@@ -229,7 +229,7 @@ async function saveInvoiceAsImage() {
         link.click();
     } catch (e) {
         console.error('Failed to save invoice as image:', e);
-        alert('Gagal menyimpan gambar. Silakan coba screenshot secara manual.');
+        window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Gagal menyimpan gambar. Silakan coba screenshot secara manual.' } }));
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;

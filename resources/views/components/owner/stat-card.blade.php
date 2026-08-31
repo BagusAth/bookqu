@@ -5,6 +5,7 @@
     'nilai' => '0',
     'perubahan' => 0,
     'tipeperubahan' => 'naik',
+    'idPrefix' => '',
 ])
 
 @php
@@ -50,13 +51,13 @@
             @endswitch
         </div>
 
-        <span class="text-xs font-semibold {{ $warnaperubahan }}">
+        <span class="text-xs font-semibold {{ $warnaperubahan }}" {!! $idPrefix ? 'id="' . $idPrefix . '-change"' : '' !!}>
             {{ $labelperubahan }}
         </span>
     </div>
 
     <div class="mt-4">
         <p class="text-xs font-medium tracking-wide text-bq-text-muted uppercase">{{ $label }}</p>
-        <p class="mt-1 text-2xl font-bold text-bq-text">{{ $nilai }}</p>
+        <p class="mt-1 text-2xl font-bold text-bq-text" {!! $idPrefix ? 'id="' . $idPrefix . '-value"' : '' !!}>{{ $nilai }}</p>
     </div>
 </div>
