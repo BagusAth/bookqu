@@ -43,12 +43,13 @@ class TenantMiddleware
             }
 
             // P0-01: Owner context (based on authenticated user)
-            if (Auth::check()) {
-                $tenant = Tenant::where('iduser', Auth::id())->first();
-
-                if ($tenant) {
-                    app(\App\Support\TenantContext::class)->setTenantId($tenant->id);
-                    return $next($request);
+            if ($isOwnerRoute) {
+                $user = auth()->user();
+                if ($user) {
+                    $ownerTenant = \App\Models\Tenant::where('iduser', $user->id)->first();
+                    if ($ownerTenant) {
+                        app(\App\Support\TenantContext::class)->setTenantId($ownerTenant->id);
+                    }
                 }
             }
 

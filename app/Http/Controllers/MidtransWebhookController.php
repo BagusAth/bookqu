@@ -45,17 +45,26 @@ class MidtransWebhookController extends Controller
             return response()->json(['message' => 'Invalid signature'], 403);
         }
 
-        // ── Find Payment ──
-        $payment = Payment::where('order_id', $orderId)->first();
+        // ── Find Payment (without TenantScope since context is not set yet) ──
+        $payment = Payment::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where('order_id', $orderId)
+            ->first();
 
         if (!$payment) {
             Log::warning('Midtrans Webhook: Payment not found', ['order_id' => $orderId]);
             return response()->json(['message' => 'Payment not found'], 404);
         }
 
-        // P0-03 & P0-04: Delegate to MidtransPaymentService
-        $paymentService = app(\App\Services\MidtransPaymentService::class);
-        $paymentService->syncStatus($payment, $payload);
+        // Set TenantContext based on the payment's tenant so all subsequent queries work correctly
+        app(\App\Support\TenantContext::class)->setTenantId($payment->idtenant);
+
+        try {
+            // P0-03 & P0-04: Delegate to MidtransPaymentService
+            $paymentService = app(\App\Services\MidtransPaymentService::class);
+            $paymentService->syncStatus($payment, $payload);
+        } finally {
+            app(\App\Support\TenantContext::class)->clear();
+        }
 
         return response()->json(['message' => 'OK']);
     }
