@@ -157,9 +157,11 @@ Route::middleware('auth')->group(function () {
     })->name('logout');
 });
 
-// Dummy registration module (isolated for slug testing)
-Route::get('/dummy-register', [DummyRegistrationController::class, 'showForm'])->name('dummy-register.form');
-Route::post('/dummy-register', [DummyRegistrationController::class, 'processForm'])->name('dummy-register.process');
+// Dummy registration module (isolated for slug testing, only in local)
+if (app()->environment('local', 'staging', 'testing')) {
+    Route::get('/dummy-register', [DummyRegistrationController::class, 'showForm'])->name('dummy-register.form');
+    Route::post('/dummy-register', [DummyRegistrationController::class, 'processForm'])->name('dummy-register.process');
+}
 
 // ── Owner Dashboard Routes ──
 Route::prefix('owner')
@@ -177,10 +179,10 @@ Route::prefix('owner')
     // ── Checkout Routes (tanpa owner.profile middleware, karena ini billing) ──
     Route::get('/checkout/{plan}', [OwnerCheckoutController::class, 'showCheckout'])->name('owner.checkout');
     Route::post('/checkout', [OwnerCheckoutController::class, 'processCheckout'])->name('owner.checkout.process');
-    Route::get('/checkout/{payment}/payment', [OwnerCheckoutController::class, 'showPayment'])->name('owner.checkout.payment');
-    Route::post('/checkout/{payment}/check-status', [OwnerCheckoutController::class, 'checkPaymentStatus'])->name('owner.checkout.check-status');
-    Route::post('/checkout/{payment}/callback', [OwnerCheckoutController::class, 'handleCallback'])->name('owner.checkout.callback');
-    Route::get('/checkout/{payment}/invoice', [OwnerCheckoutController::class, 'showInvoice'])->name('owner.checkout.invoice');
+    Route::get('/checkout/{payment:order_id}/payment', [OwnerCheckoutController::class, 'showPayment'])->name('owner.checkout.payment');
+    Route::post('/checkout/{payment:order_id}/check-status', [OwnerCheckoutController::class, 'checkPaymentStatus'])->name('owner.checkout.check-status');
+    Route::post('/checkout/{payment:order_id}/callback', [OwnerCheckoutController::class, 'handleCallback'])->name('owner.checkout.callback');
+    Route::get('/checkout/{payment:order_id}/invoice', [OwnerCheckoutController::class, 'showInvoice'])->name('owner.checkout.invoice');
 
     Route::middleware('owner.profile')->group(function () {
         Route::get('/programs', [OwnerProgramController::class, 'index'])->name('owner.programs');
@@ -204,7 +206,7 @@ Route::prefix('owner')
 });
 
 // ── Midtrans Webhook (tanpa auth & CSRF, dipanggil oleh Midtrans) ──
-Route::post('/midtrans/webhook', [OwnerCheckoutController::class, 'handleCallback'])
+Route::post('/midtrans/webhook', [\App\Http\Controllers\MidtransWebhookController::class, 'handle'])
     ->name('midtrans.webhook');
 
 // ── Booking Management Without Account (tokenized URLs) ──
@@ -229,12 +231,12 @@ Route::prefix('admin')
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     });
 
-Route::get('/test-isolasi/{slug}', function () {
-    $services = \App\Models\Service::all();
+if (app()->environment('local', 'staging', 'testing')) {
+    Route::get('/test-isolasi/{slug}', function () {
+        return "Route Test Isolasi Tenant";
+    });
+}
 
-    // Query all() ini akan otomatis terfilter sesuai tenant dari slug URL.
-    return response()->json($services);
-})->middleware('tenant');
 $customerRoutes = function () {
     Route::get('/', [BookingController::class, 'showProgramSelection'])
         ->name('customer.booking.program');
@@ -260,16 +262,16 @@ $customerRoutes = function () {
     Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])
         ->name('customer.booking.process-checkout');
 
-    Route::get('/booking/payment/{payment}', [BookingController::class, 'showPayment'])
+    Route::get('/booking/payment/{payment:order_id}', [BookingController::class, 'showPayment'])
         ->name('customer.booking.payment');
 
-    Route::post('/booking/payment/{payment}/check-status', [BookingController::class, 'checkPaymentStatus'])
+    Route::post('/booking/payment/{payment:order_id}/check-status', [BookingController::class, 'checkPaymentStatus'])
         ->name('customer.booking.check-status');
 
-    Route::post('/booking/payment/{payment}/callback', [BookingController::class, 'handleCallback'])
+    Route::post('/booking/payment/{payment:order_id}/callback', [BookingController::class, 'handleCallback'])
         ->name('customer.booking.callback');
 
-    Route::get('/booking/payment/{payment}/invoice', [BookingController::class, 'showInvoice'])
+    Route::get('/booking/payment/{payment:order_id}/invoice', [BookingController::class, 'showInvoice'])
         ->name('customer.booking.invoice');
 };
 

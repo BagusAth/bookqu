@@ -24,36 +24,22 @@ class OwnerCheckoutController extends Controller
         MidtransConfig::$isSanitized = config('midtrans.is_sanitized');
         MidtransConfig::$is3ds = config('midtrans.is_3ds');
         
-        // Bypass SSL Verification untuk mengatasi error cURL di lokal/Laragon
-        // Tambahkan CURLOPT_HTTPHEADER => [] untuk mengakali bug bawaan dari Midtrans SDK (Undefined array key 10023)
-        MidtransConfig::$curlOptions = [
-            CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_SSL_VERIFYPEER => 0,
-            CURLOPT_HTTPHEADER => [],
-        ];
+        // P0-17: SSL Hardening
+        $curlOptions = [CURLOPT_HTTPHEADER => []];
+        if (app()->environment('local')) {
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 0;
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = 0;
+        } else {
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
+        }
+        MidtransConfig::$curlOptions = $curlOptions;
     }
 
     /**
      * Resolve tenant dari session / auth user.
      */
-    private function resolveTenant(): ?Tenant
-    {
-        $userId = auth()->id();
-        $tenantId = session('current_tenant_id');
-
-        if (is_numeric($tenantId)) {
-            $tenant = Tenant::with('user')->find($tenantId);
-            if ($tenant && $tenant->iduser === $userId) {
-                return $tenant;
-            }
-        }
-
-        if ($userId) {
-            return Tenant::with('user')->where('iduser', $userId)->first();
-        }
-
-        return null;
-    }
+    use \App\Traits\ResolvesOwnerTenant;
 
     /**
      * Generate unique order ID format: BQ-YYYYMMDD-XXXX
@@ -194,7 +180,7 @@ class OwnerCheckoutController extends Controller
                 ->with('pesan', 'Gagal memproses pembayaran. Silakan coba lagi. Error: ' . $e->getMessage());
         }
 
-        return redirect()->route('owner.checkout.payment', $payment->id);
+        return redirect()->route('owner.checkout.payment', $payment);
     }
 
     /**
@@ -211,7 +197,7 @@ class OwnerCheckoutController extends Controller
 
         // Jika sudah sukses, redirect ke invoice
         if ($payment->status === 'sukses') {
-            return redirect()->route('owner.checkout.invoice', $payment->id);
+            return redirect()->route('owner.checkout.invoice', $payment);
         }
 
         // Jika expired, kembali ke subscription
@@ -250,7 +236,7 @@ class OwnerCheckoutController extends Controller
             return response()->json([
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil!',
-                'redirect' => route('owner.checkout.invoice', $payment->id),
+                'redirect' => route('owner.checkout.invoice', $payment),
             ]);
         }
 
@@ -303,42 +289,7 @@ class OwnerCheckoutController extends Controller
         ]);
     }
 
-    /**
-     * Handle Midtrans webhook notification.
-     */
-    public function handleWebhook(Request $request, MidtransPaymentService $paymentService)
-    {
-        $payload = $request->all();
 
-        Log::info('Midtrans Webhook Received:', $payload);
-
-        // Validasi signature
-        $serverKey = config('midtrans.server_key');
-        $orderId = $payload['order_id'] ?? null;
-        $statusCode = $payload['status_code'] ?? null;
-        $grossAmount = $payload['gross_amount'] ?? null;
-        $signatureKey = $payload['signature_key'] ?? null;
-
-        $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
-
-        if ($signatureKey !== $expectedSignature) {
-            Log::warning('Midtrans Webhook: Signature mismatch', [
-                'order_id' => $orderId,
-            ]);
-            return response()->json(['message' => 'Invalid signature'], 403);
-        }
-
-        $payment = Payment::where('order_id', $orderId)->first();
-
-        if (!$payment) {
-            Log::warning('Midtrans Webhook: Payment not found', ['order_id' => $orderId]);
-            return response()->json(['message' => 'Payment not found'], 404);
-        }
-
-        $paymentService->syncStatus($payment, $payload);
-
-        return response()->json(['message' => 'OK']);
-    }
 
     /**
      * Handle callback dari Midtrans Snap (client-side).
@@ -365,7 +316,7 @@ class OwnerCheckoutController extends Controller
         if ($syncResult['status'] === 'sukses') {
             return response()->json([
                 'status' => 'sukses',
-                'redirect' => route('owner.checkout.invoice', $payment->id),
+                'redirect' => route('owner.checkout.invoice', $payment),
             ]);
         }
 

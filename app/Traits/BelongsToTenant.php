@@ -14,8 +14,9 @@ trait BelongsToTenant
         static::addGlobalScope(new TenantScope());
 
         static::creating(function (Model $model): void {
-            if (session()->has('current_tenant_id') && $model->getAttribute('idtenant') === null) {
-                $model->setAttribute('idtenant', session('current_tenant_id'));
+            // P0-01: Use TenantContext
+            if (app(\App\Support\TenantContext::class)->hasTenant() && $model->getAttribute('idtenant') === null) {
+                $model->setAttribute('idtenant', app(\App\Support\TenantContext::class)->getTenantId());
             }
         });
     }

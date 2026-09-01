@@ -12,24 +12,7 @@ use Illuminate\Validation\Rule;
 
 class OwnerSettingController extends Controller
 {
-    private function resolveTenant(): ?Tenant
-    {
-        $userId = auth()->id();
-        $tenantId = session('current_tenant_id');
-
-        if (is_numeric($tenantId)) {
-            $tenant = Tenant::with('user')->find($tenantId);
-            if ($tenant && $tenant->iduser === $userId) {
-                return $tenant;
-            }
-        }
-
-        if ($userId) {
-            return Tenant::with('user')->where('iduser', $userId)->first();
-        }
-
-        return null;
-    }
+    use \App\Traits\ResolvesOwnerTenant;
 
     /**
      * Halaman pengaturan bisnis.
@@ -262,12 +245,18 @@ class OwnerSettingController extends Controller
 
         $tenant->payment_mode = $data['payment_mode'];
         $tenant->midtrans_environment = $data['midtrans_environment'];
-        $tenant->midtrans_sandbox_merchant_id = $data['midtrans_sandbox_merchant_id'] ?? null;
-        $tenant->midtrans_sandbox_client_key = $data['midtrans_sandbox_client_key'] ?? null;
-        $tenant->midtrans_sandbox_server_key = $data['midtrans_sandbox_server_key'] ?? null;
-        $tenant->midtrans_prod_merchant_id = $data['midtrans_prod_merchant_id'] ?? null;
-        $tenant->midtrans_prod_client_key = $data['midtrans_prod_client_key'] ?? null;
-        $tenant->midtrans_prod_server_key = $data['midtrans_prod_server_key'] ?? null;
+        
+        if (isset($data['midtrans_sandbox_merchant_id'])) $tenant->midtrans_sandbox_merchant_id = $data['midtrans_sandbox_merchant_id'];
+        if (isset($data['midtrans_sandbox_client_key'])) $tenant->midtrans_sandbox_client_key = $data['midtrans_sandbox_client_key'];
+        if (isset($data['midtrans_sandbox_server_key']) && $data['midtrans_sandbox_server_key'] !== '********') {
+            $tenant->midtrans_sandbox_server_key = $data['midtrans_sandbox_server_key'];
+        }
+        
+        if (isset($data['midtrans_prod_merchant_id'])) $tenant->midtrans_prod_merchant_id = $data['midtrans_prod_merchant_id'];
+        if (isset($data['midtrans_prod_client_key'])) $tenant->midtrans_prod_client_key = $data['midtrans_prod_client_key'];
+        if (isset($data['midtrans_prod_server_key']) && $data['midtrans_prod_server_key'] !== '********') {
+            $tenant->midtrans_prod_server_key = $data['midtrans_prod_server_key'];
+        }
 
         if ($tenant->payment_mode === 'owner') {
             $tenant->midtrans_status = 'pending';

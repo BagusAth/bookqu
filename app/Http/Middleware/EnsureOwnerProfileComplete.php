@@ -12,7 +12,7 @@ class EnsureOwnerProfileComplete
 {
     public function handle(Request $request, Closure $next): mixed
     {
-        $tenantId = session('current_tenant_id');
+        $tenantId = app(\App\Support\TenantContext::class)->getTenantId();
         $tenant = null;
 
         if (is_numeric($tenantId)) {

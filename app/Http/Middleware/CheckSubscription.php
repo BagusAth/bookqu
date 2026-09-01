@@ -15,7 +15,7 @@ class CheckSubscription
      */
     public function handle(Request $request, Closure $next, ...$features): Response
     {
-        $tenantId = session('current_tenant_id');
+        $tenantId = app(\App\Support\TenantContext::class)->getTenantId();
         if (!$tenantId) {
             $tenantId = auth()->user()?->tenant?->id;
         }

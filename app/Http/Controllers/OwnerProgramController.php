@@ -16,24 +16,7 @@ use App\Traits\ClearsBookingCache;
 class OwnerProgramController extends Controller
 {
     use ClearsBookingCache;
-    private function resolveTenant(): ?Tenant
-    {
-        $userId = auth()->id();
-        $tenantId = session('current_tenant_id');
-
-        if (is_numeric($tenantId)) {
-            $tenant = Tenant::with('user')->find($tenantId);
-            if ($tenant && $tenant->iduser === $userId) {
-                return $tenant;
-            }
-        }
-
-        if ($userId) {
-            return Tenant::with('user')->where('iduser', $userId)->first();
-        }
-
-        return null;
-    }
+    use \App\Traits\ResolvesOwnerTenant;
 
     /**
      * Halaman daftar program/layanan.
