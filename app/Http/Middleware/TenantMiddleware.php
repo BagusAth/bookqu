@@ -32,29 +32,29 @@ class TenantMiddleware
             }
         }
 
-        if ($resolvedTenant && !$isOwnerRoute) {
-            \App\Support\TenantContext::setTenantId($resolvedTenant->id);
-            session()->put('current_tenant_id', $resolvedTenant->id); // keep for backward compatibility
-            return $next($request);
-        }
-
-        if (is_string($slug) && $slug !== '' && !$resolvedTenant) {
-            abort(404, 'Bisnis tidak ditemukan');
-        }
-
-        // P0-01: Owner context (based on authenticated user)
-        if (Auth::check()) {
-            $tenant = Tenant::where('iduser', Auth::id())->first();
-
-            if ($tenant) {
-                \App\Support\TenantContext::setTenantId($tenant->id);
-                session()->put('current_tenant_id', $tenant->id); // keep for backward compatibility
+        try {
+            if ($resolvedTenant && !$isOwnerRoute) {
+                app(\App\Support\TenantContext::class)->setTenantId($resolvedTenant->id);
                 return $next($request);
             }
 
-            session()->forget('current_tenant_id');
-        }
+            if (is_string($slug) && $slug !== '' && !$resolvedTenant) {
+                abort(404, 'Bisnis tidak ditemukan');
+            }
 
-        return $next($request);
+            // P0-01: Owner context (based on authenticated user)
+            if (Auth::check()) {
+                $tenant = Tenant::where('iduser', Auth::id())->first();
+
+                if ($tenant) {
+                    app(\App\Support\TenantContext::class)->setTenantId($tenant->id);
+                    return $next($request);
+                }
+            }
+
+            return $next($request);
+        } finally {
+            app(\App\Support\TenantContext::class)->clear();
+        }
     }
 }

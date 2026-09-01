@@ -15,8 +15,8 @@ trait BelongsToTenant
 
         static::creating(function (Model $model): void {
             // P0-01: Use TenantContext
-            if (\App\Support\TenantContext::hasTenant() && $model->getAttribute('idtenant') === null) {
-                $model->setAttribute('idtenant', \App\Support\TenantContext::getTenantId());
+            if (app(\App\Support\TenantContext::class)->hasTenant() && $model->getAttribute('idtenant') === null) {
+                $model->setAttribute('idtenant', app(\App\Support\TenantContext::class)->getTenantId());
             }
         });
     }

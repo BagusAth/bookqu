@@ -12,9 +12,15 @@ class TenantScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
-        // P0-01: Use TenantContext instead of session('current_tenant_id')
-        if (\App\Support\TenantContext::hasTenant()) {
-            $builder->where('idtenant', \App\Support\TenantContext::getTenantId());
+        $tenantContext = app(\App\Support\TenantContext::class);
+
+        // P0-03: TenantScope FAIL-OPEN BEHAVIOR FIX
+        // If TenantContext is empty, we must NOT return all tenant data.
+        if (!$tenantContext->hasTenant()) {
+            $builder->whereRaw('1 = 0');
+            return;
         }
+
+        $builder->where($builder->getModel()->getTable() . '.idtenant', $tenantContext->getTenantId());
     }
 }

@@ -8,46 +8,34 @@ use Illuminate\Support\Facades\Log;
 
 class TenantContext
 {
-    /**
-     * @var int|null
-     */
-    private static ?int $tenantId = null;
+    private ?int $tenantId = null;
 
-    /**
-     * Set the current tenant context.
-     *
-     * @param int|null $tenantId
-     */
-    public static function setTenantId(?int $tenantId): void
+    public function setTenantId(?int $tenantId): void
     {
-        self::$tenantId = $tenantId;
+        $this->tenantId = $tenantId;
     }
 
-    /**
-     * Get the current tenant context.
-     *
-     * @return int|null
-     */
-    public static function getTenantId(): ?int
+    public function getTenantId(): ?int
     {
-        return self::$tenantId;
+        return $this->tenantId;
     }
 
-    /**
-     * Check if a tenant context is active.
-     *
-     * @return bool
-     */
-    public static function hasTenant(): bool
+    public function hasTenant(): bool
     {
-        return self::$tenantId !== null;
+        return $this->tenantId !== null;
     }
 
-    /**
-     * Clear the current tenant context.
-     */
-    public static function clear(): void
+    public function clear(): void
     {
-        self::$tenantId = null;
+        $this->tenantId = null;
+    }
+
+    public function tenant(): ?\App\Models\Tenant
+    {
+        if ($this->tenantId === null) {
+            return null;
+        }
+
+        return \App\Models\Tenant::withoutGlobalScopes()->find($this->tenantId);
     }
 }

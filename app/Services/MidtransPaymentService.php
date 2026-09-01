@@ -180,47 +180,52 @@ class MidtransPaymentService
 
                 // P0-09: Ensure Tenant Relationship consistency
                 if ($booking && $booking->idtenant === $payment->idtenant) {
-                    $wasPaid = ($booking->status === 'paid' || $booking->status === 'completed');
-
-                    if (!$wasPaid) {
+                    if ($booking->status === 'cancelled') {
+                        Log::warning('Late Webhook: Settlement received for cancelled booking', [
+                            'payment_id' => $payment->id,
+                            'booking_id' => $booking->id,
+                        ]);
+                    } elseif ($booking->status === 'pending') {
                         $booking->update(['status' => 'paid']);
 
-                        // Kirim notifikasi email ke owner bisnis
-                        $owner = $booking->tenant?->user;
-                        if ($owner && $owner->email) {
-                            try {
-                                $owner->notify(new NewBookingOwnerNotification($booking));
-                            } catch (\Exception $e) {
-                                Log::error('Gagal kirim notif booking ke owner: ' . $e->getMessage());
-                            }
-                        }
-
-                        // Catat penggunaan booking ke usage_logs
+                        // Catat penggunaan booking ke usage_logs (inside transaction)
                         try {
                             UsageLog::record($booking->idtenant, 'booking');
                         } catch (\Exception $e) {
                             Log::error('Gagal catat usage log booking: ' . $e->getMessage());
                         }
 
-                        // Kirim notifikasi email ke pelanggan
-                        if ($payment->email_pembayar) {
-                            try {
-                                Notification::route('mail', $payment->email_pembayar)
-                                    ->notify(new BookingPaidNotification($booking));
-                            } catch (\Exception $e) {
-                                Log::error('Gagal kirim notif booking ke pelanggan: ' . $e->getMessage());
+                        DB::afterCommit(function () use ($booking, $payment) {
+                            // Kirim notifikasi email ke owner bisnis
+                            $owner = $booking->tenant?->user;
+                            if ($owner && $owner->email) {
+                                try {
+                                    $owner->notify(new NewBookingOwnerNotification($booking));
+                                } catch (\Exception $e) {
+                                    Log::error('Gagal kirim notif booking ke owner: ' . $e->getMessage());
+                                }
                             }
-                        }
 
-                        // Invalidate cache ketersediaan jadwal
-                        if ($booking->idlayanan && $booking->tanggalbooking) {
-                            $tanggal = is_string($booking->tanggalbooking) 
-                                ? $booking->tanggalbooking 
-                                : $booking->tanggalbooking->format('Y-m-d');
-                            $this->clearScheduleCache($booking->idtenant, $booking->idlayanan, [$tanggal]);
-                        }
-                        // Invalidate availability cache for the service
-                        $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
+                            // Kirim notifikasi email ke pelanggan
+                            if ($payment->email_pembayar) {
+                                try {
+                                    Notification::route('mail', $payment->email_pembayar)
+                                        ->notify(new BookingPaidNotification($booking));
+                                } catch (\Exception $e) {
+                                    Log::error('Gagal kirim notif booking ke pelanggan: ' . $e->getMessage());
+                                }
+                            }
+
+                            // Invalidate cache ketersediaan jadwal
+                            if ($booking->idlayanan && $booking->tanggalbooking) {
+                                $tanggal = is_string($booking->tanggalbooking) 
+                                    ? $booking->tanggalbooking 
+                                    : $booking->tanggalbooking->format('Y-m-d');
+                                $this->clearScheduleCache($booking->idtenant, $booking->idlayanan, [$tanggal]);
+                            }
+                            // Invalidate availability cache for the service
+                            $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
+                        });
                     }
                 }
             }
@@ -262,15 +267,17 @@ class MidtransPaymentService
                 if ($booking && $booking->status !== 'cancelled' && $booking->idtenant === $payment->idtenant) {
                     $booking->update(['status' => 'cancelled']);
 
-                    // Invalidate cache agar jadwal kembali tersedia bagi pelanggan lain
-                    if ($booking->idlayanan && $booking->tanggalbooking) {
-                        $tanggal = is_string($booking->tanggalbooking) 
-                            ? $booking->tanggalbooking 
-                            : $booking->tanggalbooking->format('Y-m-d');
-                        $this->clearScheduleCache($booking->idtenant, $booking->idlayanan, [$tanggal]);
-                    }
-                    // Invalidate availability cache after cancellation
-                    $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
+                    DB::afterCommit(function () use ($booking) {
+                        // Invalidate cache agar jadwal kembali tersedia bagi pelanggan lain
+                        if ($booking->idlayanan && $booking->tanggalbooking) {
+                            $tanggal = is_string($booking->tanggalbooking) 
+                                ? $booking->tanggalbooking 
+                                : $booking->tanggalbooking->format('Y-m-d');
+                            $this->clearScheduleCache($booking->idtenant, $booking->idlayanan, [$tanggal]);
+                        }
+                        // Invalidate availability cache after cancellation
+                        $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
+                    });
                 }
             }
 

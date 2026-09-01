@@ -22,7 +22,7 @@ trait ResolvesOwnerTenant
         }
 
         // P0-02: Use TenantContext instead of session
-        $tenantId = TenantContext::getTenantId();
+        $tenantId = app(TenantContext::class)->getTenantId();
 
         if (is_numeric($tenantId)) {
             $tenant = Tenant::with('user')->find($tenantId);
@@ -36,7 +36,7 @@ trait ResolvesOwnerTenant
         $tenant = Tenant::with('user')->where('iduser', $userId)->first();
         
         if ($tenant) {
-            TenantContext::setTenantId($tenant->id);
+            app(TenantContext::class)->setTenantId($tenant->id);
             return $tenant;
         }
 

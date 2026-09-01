@@ -33,6 +33,9 @@ class BookingController extends Controller
         if (app()->environment('local')) {
             $curlOptions[CURLOPT_SSL_VERIFYHOST] = 0;
             $curlOptions[CURLOPT_SSL_VERIFYPEER] = 0;
+        } else {
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
         }
         MidtransConfig::$curlOptions = $curlOptions;
     }
