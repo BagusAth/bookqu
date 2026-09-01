@@ -127,9 +127,19 @@ class MidtransPaymentService
      */
     private function processSuccess(Payment $payment, ?string $paymentType, ?string $transactionStatus): array
     {
-        DB::transaction(function () use ($payment, $paymentType) {
-            // Reload payment untuk mencegah race condition
-            $payment->refresh();
+        return DB::transaction(function () use ($payment, $paymentType, $transactionStatus) {
+            // P0-06: Concurrency & Idempotency
+            $payment = Payment::lockForUpdate()->find($payment->id);
+
+            // P0-05: State Machine check
+            if ($payment->status === 'sukses') {
+                return [
+                    'status' => 'sukses',
+                    'transaction_status' => $transactionStatus,
+                    'message' => 'Pembayaran sudah dikonfirmasi sebelumnya.',
+                    'payment' => $payment,
+                ];
+            }
 
             // 1. Update Payment status
             $payment->update([
@@ -162,12 +172,15 @@ class MidtransPaymentService
 
             // 3. Jika tipe pembayaran adalah booking
             if ($payment->tipe === 'booking') {
+                // P0-06: Lock the booking to prevent race condition with other hooks or users
                 $booking = Booking::with(['layanan', 'tenant.user', 'payment'])
+                    ->lockForUpdate()
                     ->where('idpayment', $payment->id)
                     ->first();
 
-                if ($booking) {
-                    $wasPaid = ($booking->status === 'paid');
+                // P0-09: Ensure Tenant Relationship consistency
+                if ($booking && $booking->idtenant === $payment->idtenant) {
+                    $wasPaid = ($booking->status === 'paid' || $booking->status === 'completed');
 
                     if (!$wasPaid) {
                         $booking->update(['status' => 'paid']);
@@ -211,16 +224,14 @@ class MidtransPaymentService
                     }
                 }
             }
+
+            return [
+                'status' => 'sukses',
+                'transaction_status' => $transactionStatus,
+                'message' => 'Pembayaran berhasil dikonfirmasi.',
+                'payment' => $payment,
+            ];
         });
-
-        $payment->refresh();
-
-        return [
-            'status' => 'sukses',
-            'transaction_status' => $transactionStatus,
-            'message' => 'Pembayaran berhasil dikonfirmasi.',
-            'payment' => $payment,
-        ];
     }
 
     /**
@@ -228,12 +239,17 @@ class MidtransPaymentService
      */
     private function processFailed(Payment $payment, ?string $paymentType, ?string $transactionStatus): array
     {
-        DB::transaction(function () use ($payment, $paymentType) {
-            $payment->refresh();
+        return DB::transaction(function () use ($payment, $paymentType, $transactionStatus) {
+            $payment = Payment::lockForUpdate()->find($payment->id);
 
             // Jika sudah sukses sebelumnya, jangan ubah menjadi gagal
-            if ($payment->status === 'sukses') {
-                return;
+            if ($payment->status === 'sukses' || $payment->status === 'gagal') {
+                return [
+                    'status' => $payment->status,
+                    'transaction_status' => $transactionStatus,
+                    'message' => 'Pembayaran gagal/batal atau sudah selesai.',
+                    'payment' => $payment,
+                ];
             }
 
             $payment->update([
@@ -242,8 +258,8 @@ class MidtransPaymentService
             ]);
 
             if ($payment->tipe === 'booking') {
-                $booking = Booking::where('idpayment', $payment->id)->first();
-                if ($booking && $booking->status !== 'cancelled') {
+                $booking = Booking::lockForUpdate()->where('idpayment', $payment->id)->first();
+                if ($booking && $booking->status !== 'cancelled' && $booking->idtenant === $payment->idtenant) {
                     $booking->update(['status' => 'cancelled']);
 
                     // Invalidate cache agar jadwal kembali tersedia bagi pelanggan lain
@@ -257,16 +273,14 @@ class MidtransPaymentService
                     $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
                 }
             }
+
+            return [
+                'status' => 'gagal',
+                'transaction_status' => $transactionStatus,
+                'message' => 'Pembayaran gagal atau dibatalkan.',
+                'payment' => $payment,
+            ];
         });
-
-        $payment->refresh();
-
-        return [
-            'status' => 'gagal',
-            'transaction_status' => $transactionStatus,
-            'message' => 'Pembayaran gagal atau dibatalkan.',
-            'payment' => $payment,
-        ];
     }
 
     /**

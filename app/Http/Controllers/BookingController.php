@@ -28,12 +28,13 @@ class BookingController extends Controller
         MidtransConfig::$isProduction = config('midtrans.is_production');
         MidtransConfig::$isSanitized = config('midtrans.is_sanitized');
         MidtransConfig::$is3ds = config('midtrans.is_3ds');
-        
-        MidtransConfig::$curlOptions = [
-            CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_SSL_VERIFYPEER => 0,
-            CURLOPT_HTTPHEADER => [],
-        ];
+        // P0-17: SSL Hardening
+        $curlOptions = [CURLOPT_HTTPHEADER => []];
+        if (app()->environment('local')) {
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 0;
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = 0;
+        }
+        MidtransConfig::$curlOptions = $curlOptions;
     }
     public function showProgramSelection(string $slug_usaha)
     {
@@ -740,7 +741,7 @@ class BookingController extends Controller
         }
 
         session()->forget('booking');
-        return redirect()->route('customer.booking.payment', [$slug_usaha, $payment->id]);
+        return redirect()->route('customer.booking.payment', [$slug_usaha, $payment]);
     }
 
     public function showPayment(string $slug_usaha, Payment $payment)
@@ -751,7 +752,7 @@ class BookingController extends Controller
         }
 
         if ($payment->status === 'sukses') {
-            return redirect()->route('customer.booking.invoice', [$slug_usaha, $payment->id]);
+            return redirect()->route('customer.booking.invoice', [$slug_usaha, $payment]);
         }
 
         if ($payment->isExpired() && $payment->status === 'pending') {
@@ -800,7 +801,7 @@ class BookingController extends Controller
             return response()->json([
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil!',
-                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment->id]),
+                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
             ]);
         }
 
@@ -845,7 +846,7 @@ class BookingController extends Controller
         if ($syncResult['status'] === 'sukses') {
             return response()->json([
                 'status' => 'sukses',
-                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment->id]),
+                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
             ]);
         }
 

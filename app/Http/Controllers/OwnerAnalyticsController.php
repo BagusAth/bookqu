@@ -12,24 +12,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OwnerAnalyticsController extends Controller
 {
-    private function resolveTenant(): ?Tenant
-    {
-        $userId = auth()->id();
-        $tenantId = session('current_tenant_id');
-
-        if (is_numeric($tenantId)) {
-            $tenant = Tenant::with('user')->find($tenantId);
-            if ($tenant && $tenant->iduser === $userId) {
-                return $tenant;
-            }
-        }
-
-        if ($userId) {
-            return Tenant::with('user')->where('iduser', $userId)->first();
-        }
-
-        return null;
-    }
+    use \App\Traits\ResolvesOwnerTenant;
 
     /**
      * Halaman analytics.
