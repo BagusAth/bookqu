@@ -83,6 +83,15 @@
                     <p class="mt-2 text-sm text-[#6B7280] sm:text-base">Pilih metode pembayaran dan selesaikan transaksi Anda.</p>
                 </div>
 
+                <!-- Realtime Monitoring Indicator -->
+                <div id="realtime-status-banner" class="mb-4 flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-2.5 text-xs font-medium text-emerald-800 shadow-sm transition-all">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                    </span>
+                    <span id="realtime-status-text">Sistem memantau pembayaran Anda secara otomatis...</span>
+                </div>
+
                 <!-- Payment Detail Card -->
                 <div class="relative overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white p-6 mb-6 booking-shadow">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -114,12 +123,19 @@
                         <p class="mt-3 text-center text-xs font-medium text-[#9CA3AF]">Didukung oleh Midtrans</p>
                     </div>
                     
-                    <!-- Loading Overlay -->
-                    <div id="loading-overlay" class="absolute inset-0 z-10 hidden flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
-                        <div class="loader mb-4"></div>
-                        <p class="text-sm font-semibold text-[#111827] text-center">
-                            Memproses pembayaran...<br>
-                            <span class="text-xs font-normal text-[#6B7280]">Mohon jangan tutup halaman ini.</span>
+                    <!-- Loading / Success Overlay -->
+                    <div id="loading-overlay" class="absolute inset-0 z-10 hidden flex-col items-center justify-center bg-white/95 backdrop-blur-sm p-6 text-center transition-all">
+                        <div id="loading-spinner" class="loader mb-4"></div>
+                        <div id="success-icon" class="hidden mb-4 h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 animate-bounce">
+                            <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h3 id="overlay-title" class="text-base font-bold text-[#111827]">
+                            Memproses Pembayaran...
+                        </h3>
+                        <p id="overlay-desc" class="mt-1 text-xs text-[#6B7280]">
+                            Mohon jangan tutup halaman ini.
                         </p>
                     </div>
                 </div>
@@ -128,12 +144,15 @@
                     <svg class="w-5 h-5 shrink-0 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <p class="leading-relaxed">Jika Anda sudah melakukan pembayaran namun status belum berubah, silakan tunggu beberapa saat atau klik tombol di bawah untuk mengecek ulang.</p>
+                    <p class="leading-relaxed">Setelah membayar lewat QRIS, Virtual Account, atau E-Wallet, website akan <strong>langsung mengonfirmasi otomatis</strong> tanpa perlu menekan tombol apa pun.</p>
                 </div>
                 
                 <div class="mt-6 text-center">
-                    <button id="check-status-btn" class="text-sm font-semibold text-[#4F46E5] transition hover:text-[#4338CA] hover:underline">
-                        Cek Status Pembayaran
+                    <button id="check-status-btn" class="text-sm font-semibold text-[#4F46E5] transition hover:text-[#4338CA] hover:underline inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Cek Status Pembayaran Manual
                     </button>
                 </div>
             </main>
@@ -196,10 +215,24 @@
                 const payButton = document.getElementById('pay-button');
                 const checkStatusBtn = document.getElementById('check-status-btn');
                 const loadingOverlay = document.getElementById('loading-overlay');
+                const loadingSpinner = document.getElementById('loading-spinner');
+                const successIcon = document.getElementById('success-icon');
+                const overlayTitle = document.getElementById('overlay-title');
+                const overlayDesc = document.getElementById('overlay-desc');
                 const countdownEl = document.getElementById('countdown');
+                const realtimeStatusText = document.getElementById('realtime-status-text');
+                const realtimeStatusBanner = document.getElementById('realtime-status-banner');
                 const csrfToken = '{{ csrf_token() }}';
                 
-                // Cek jika expired (pastikan format ISO8601 agar JS tidak salah zona waktu)
+                // Route URLs bound to the actual payment order_id (NOT numerical id)
+                const callbackUrl = '{{ route("customer.booking.callback", [$tenant->slug, $payment]) }}';
+                const checkStatusUrl = '{{ route("customer.booking.check-status", [$tenant->slug, $payment]) }}';
+
+                let isProcessingSuccess = false;
+                let pollInterval = null;
+                let isChecking = false;
+
+                // Cek jika expired (format ISO8601 agar JS tidak salah zona waktu)
                 const expiredAt = new Date('{{ \Carbon\Carbon::parse($payment->expired_at)->toISOString() }}').getTime();
                 
                 // Countdown timer
@@ -209,6 +242,7 @@
                     
                     if (distance < 0) {
                         clearInterval(timer);
+                        stopPolling();
                         countdownEl.innerHTML = "WAKTU HABIS";
                         countdownEl.classList.replace('text-[#EA580C]', 'text-[#EF4444]');
                         payButton.disabled = true;
@@ -216,7 +250,6 @@
                         payButton.classList.replace('hover:bg-[#4338CA]', 'bg-[#9CA3AF]');
                         payButton.innerText = 'Waktu Pembayaran Habis';
                         
-                        // Auto reload to handle expiration server-side
                         setTimeout(() => window.location.reload(), 2000);
                         return;
                     }
@@ -226,16 +259,45 @@
                     
                     countdownEl.innerHTML = minutes + "m " + seconds + "s";
                 }, 1000);
-                
-                const showLoading = () => loadingOverlay.classList.remove('hidden');
-                const hideLoading = () => loadingOverlay.classList.add('hidden');
 
-                // Fungsi untuk mengirim callback result ke backend
+                const showSuccessState = (redirectUrl) => {
+                    if (isProcessingSuccess) return;
+                    isProcessingSuccess = true;
+                    stopPolling();
+
+                    // Tampilkan ikon sukses animasi
+                    loadingOverlay.classList.remove('hidden');
+                    loadingOverlay.classList.add('flex');
+                    loadingSpinner.classList.add('hidden');
+                    successIcon.classList.remove('hidden');
+                    successIcon.classList.add('flex');
+                    overlayTitle.innerText = 'Pembayaran Berhasil Dikonfirmasi!';
+                    overlayTitle.classList.add('text-emerald-600');
+                    overlayDesc.innerText = 'Mengarahkan ke halaman e-ticket invoice...';
+
+                    // Update banner
+                    if (realtimeStatusBanner) {
+                        realtimeStatusBanner.classList.replace('border-emerald-200', 'border-emerald-400');
+                        realtimeStatusBanner.classList.replace('bg-emerald-50/90', 'bg-emerald-100');
+                        realtimeStatusText.innerText = '✓ Pembayaran berhasil diterima!';
+                    }
+
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 1200);
+                };
+
+                // Kirim callback dari Midtrans Snap ke backend
                 const sendCallback = async (result) => {
-                    showLoading();
-                    
+                    if (isProcessingSuccess) return;
+
+                    loadingOverlay.classList.remove('hidden');
+                    loadingOverlay.classList.add('flex');
+                    overlayTitle.innerText = 'Memverifikasi Pembayaran...';
+                    overlayDesc.innerText = 'Mohon tunggu sebentar.';
+
                     try {
-                        const response = await fetch('{{ route("customer.booking.callback", [$tenant->slug, $payment->id]) }}', {
+                        const response = await fetch(callbackUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -247,23 +309,106 @@
                         const data = await response.json();
                         
                         if (data.status === 'sukses' && data.redirect) {
-                            window.location.href = data.redirect;
+                            showSuccessState(data.redirect);
                         } else if (data.status === 'pending') {
-                            hideLoading();
-                            alert(data.message || 'Pembayaran Anda sedang diproses. Silakan cek status secara berkala.');
+                            loadingOverlay.classList.add('hidden');
+                            loadingOverlay.classList.remove('flex');
+                            if (realtimeStatusText) {
+                                realtimeStatusText.innerText = 'Menunggu pembayaran diselesaikan oleh bank...';
+                            }
                         } else {
-                            hideLoading();
-                            alert(data.message || 'Gagal memproses status pembayaran.');
+                            loadingOverlay.classList.add('hidden');
+                            loadingOverlay.classList.remove('flex');
                         }
                     } catch (error) {
-                        console.error('Error:', error);
-                        hideLoading();
-                        alert('Terjadi kesalahan koneksi.');
+                        console.error('Callback error:', error);
+                        loadingOverlay.classList.add('hidden');
+                        loadingOverlay.classList.remove('flex');
                     }
                 };
 
+                // Auto Poller: mengecek status ke backend di background
+                const checkPaymentStatus = async (isSilent = false) => {
+                    if (isProcessingSuccess || isChecking) return;
+                    isChecking = true;
+
+                    if (!isSilent) {
+                        checkStatusBtn.innerText = 'Mengecek...';
+                        checkStatusBtn.disabled = true;
+                    }
+
+                    try {
+                        const response = await fetch(checkStatusUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            }
+                        });
+
+                        const data = await response.json();
+
+                        if (data.status === 'sukses' && data.redirect) {
+                            showSuccessState(data.redirect);
+                            return;
+                        }
+
+                        if (data.status === 'gagal') {
+                            stopPolling();
+                            window.location.reload();
+                            return;
+                        }
+
+                        if (!isSilent && data.message) {
+                            alert(data.message);
+                        }
+                    } catch (error) {
+                        console.error('Status check error:', error);
+                    } finally {
+                        isChecking = false;
+                        if (!isSilent) {
+                            checkStatusBtn.innerHTML = `
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Cek Status Pembayaran Manual
+                            `;
+                            checkStatusBtn.disabled = false;
+                        }
+                    }
+                };
+
+                const startAutoPolling = () => {
+                    if (pollInterval) clearInterval(pollInterval);
+                    // Lakukan polling setiap 2.5 detik
+                    pollInterval = setInterval(() => {
+                        if (!document.hidden) {
+                            checkPaymentStatus(true);
+                        }
+                    }, 2500);
+                };
+
+                const stopPolling = () => {
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                    }
+                };
+
+                // Begitu tab kembali aktif setelah user bayar di HP/aplikasi lain, langsung cek!
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && !isProcessingSuccess) {
+                        checkPaymentStatus(true);
+                    }
+                });
+
                 // Trigger Snap Popup
                 payButton.addEventListener('click', function () {
+                    if (typeof snap === 'undefined') {
+                        alert('Midtrans Snap SDK gagal dimuat. Periksa koneksi internet Anda.');
+                        return;
+                    }
+
                     snap.pay('{{ $snapToken }}', {
                         onSuccess: function (result) {
                             sendCallback(result);
@@ -275,49 +420,15 @@
                             sendCallback(result);
                         },
                         onClose: function () {
-                            // Cek status manual saat popup ditutup
-                            checkPaymentStatus();
+                            checkPaymentStatus(true);
                         }
                     });
                 });
                 
-                // Manual check status
-                const checkPaymentStatus = async () => {
-                    const originalText = checkStatusBtn.innerText;
-                    checkStatusBtn.innerText = 'Mengecek...';
-                    checkStatusBtn.disabled = true;
-                    
-                    try {
-                        const response = await fetch('{{ route("customer.booking.check-status", [$tenant->slug, $payment->id]) }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken
-                            }
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (data.status === 'sukses' && data.redirect) {
-                            showLoading();
-                            window.location.href = data.redirect;
-                        } else {
-                            // Update UI jika gagal atau pending
-                            if (data.status === 'gagal') {
-                                window.location.reload();
-                            } else if (data.message) {
-                                alert(data.message);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                    } finally {
-                        checkStatusBtn.innerText = originalText;
-                        checkStatusBtn.disabled = false;
-                    }
-                };
-                
-                checkStatusBtn.addEventListener('click', checkPaymentStatus);
+                checkStatusBtn.addEventListener('click', () => checkPaymentStatus(false));
+
+                // Start background monitoring immediately
+                startAutoPolling();
             });
         </script>
     </body>

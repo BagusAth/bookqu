@@ -27,6 +27,30 @@ class MidtransPaymentService
         MidtransConfig::$is3ds = true;
     }
 
+    public function configureForPayment(Payment $payment): void
+    {
+        $tenant = $payment->tenant;
+        if ($tenant && $tenant->payment_mode === 'owner' && $payment->tipe === 'booking') {
+            $isProd = $tenant->midtrans_environment === 'production';
+            $serverKey = $isProd
+                ? $tenant->midtrans_prod_server_key
+                : $tenant->midtrans_sandbox_server_key;
+
+            if ($serverKey) {
+                MidtransConfig::$serverKey = $serverKey;
+                MidtransConfig::$isProduction = $isProd;
+                MidtransConfig::$isSanitized = true;
+                MidtransConfig::$is3ds = true;
+                return;
+            }
+        }
+
+        MidtransConfig::$serverKey = config('midtrans.server_key');
+        MidtransConfig::$isProduction = (bool) config('midtrans.is_production', false);
+        MidtransConfig::$isSanitized = true;
+        MidtransConfig::$is3ds = true;
+    }
+
     /**
      * Lakukan server-side verification ke Midtrans API berdasarkan order_id,
      * kemudian sinkronisasikan hasilnya ke database Bookqu.
@@ -44,6 +68,18 @@ class MidtransPaymentService
                 'payment' => $payment,
             ];
         }
+
+        // Fast-path: jika di database status sudah sukses, kembalikan langsung tanpa delay
+        if ($payment->status === 'sukses') {
+            return [
+                'status' => 'sukses',
+                'transaction_status' => 'settlement',
+                'message' => 'Pembayaran berhasil dikonfirmasi.',
+                'payment' => $payment,
+            ];
+        }
+
+        $this->configureForPayment($payment);
 
         try {
             $midtransStatus = MidtransTransaction::status($payment->order_id);
@@ -72,6 +108,10 @@ class MidtransPaymentService
      */
     public function syncStatus(Payment $payment, array|object $midtransPayload): array
     {
+        if ($payment->idtenant && !app(\App\Support\TenantContext::class)->hasTenant()) {
+            app(\App\Support\TenantContext::class)->setTenantId($payment->idtenant);
+        }
+
         $payload = is_object($midtransPayload) ? (array) $midtransPayload : $midtransPayload;
 
         $transactionStatus = $payload['transaction_status'] ?? null;

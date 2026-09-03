@@ -798,12 +798,21 @@ class BookingController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        // Fast-path: jika database sudah sukses
+        if ($payment->status === 'sukses') {
+            return response()->json([
+                'status' => 'sukses',
+                'message' => 'Pembayaran berhasil dikonfirmasi!',
+                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
+            ]);
+        }
+
         $syncResult = $paymentService->verifyAndSync($payment);
 
         if ($syncResult['status'] === 'sukses') {
             return response()->json([
                 'status' => 'sukses',
-                'message' => 'Pembayaran berhasil!',
+                'message' => 'Pembayaran berhasil dikonfirmasi!',
                 'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
             ]);
         }
@@ -811,20 +820,31 @@ class BookingController extends Controller
         if ($syncResult['status'] === 'gagal') {
             return response()->json([
                 'status' => 'gagal',
-                'message' => $syncResult['message'] ?? 'Pembayaran gagal/dibatalkan.',
+                'message' => $syncResult['message'] ?? 'Pembayaran gagal atau dibatalkan.',
             ]);
         }
 
         if ($syncResult['status'] === 'error') {
+            // Periksa ulang database untuk mengantisipasi webhook masuk bersamaan
+            $payment->refresh();
+            if ($payment->status === 'sukses') {
+                return response()->json([
+                    'status' => 'sukses',
+                    'message' => 'Pembayaran berhasil dikonfirmasi!',
+                    'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
+                ]);
+            }
+
+            // Kembalikan pending agar auto-poller terus mencoba tanpa menampilkan error palsu ke user
             return response()->json([
-                'status' => 'error',
-                'message' => $syncResult['message'] ?? 'Gagal periksa status.',
+                'status' => 'pending',
+                'message' => 'Sedang memverifikasi dengan payment gateway...',
             ]);
         }
 
         return response()->json([
             'status' => 'pending',
-            'message' => $syncResult['message'] ?? 'Pembayaran belum diselesaikan. Silakan selesaikan pembayaran sesuai instruksi.',
+            'message' => $syncResult['message'] ?? 'Menunggu pembayaran diselesaikan...',
         ]);
     }
 
@@ -835,10 +855,19 @@ class BookingController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        // Fast-path jika database sudah sukses
+        if ($payment->status === 'sukses') {
+            return response()->json([
+                'status' => 'sukses',
+                'message' => 'Pembayaran berhasil dikonfirmasi!',
+                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
+            ]);
+        }
+
         // Lakukan server-side verification ke Midtrans
         $syncResult = $paymentService->verifyAndSync($payment);
 
-        // Fallback jika API call gagal, periksa payload client
+        // Fallback jika API call gagal, periksa payload client dari Midtrans Snap
         if ($syncResult['status'] === 'error') {
             $result = $request->input('result');
             if ($result) {
@@ -849,6 +878,7 @@ class BookingController extends Controller
         if ($syncResult['status'] === 'sukses') {
             return response()->json([
                 'status' => 'sukses',
+                'message' => 'Pembayaran berhasil dikonfirmasi!',
                 'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
             ]);
         }

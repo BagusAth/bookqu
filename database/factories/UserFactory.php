@@ -26,6 +26,7 @@ class UserFactory extends Factory
         return [
             'namalengkap' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'nomorhp' => fake()->numerify('08##########'),
             'role' => fake()->randomElement(['owner', 'admin', 'customer']),
@@ -37,6 +38,8 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this;
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => null,
+        ]);
     }
 }

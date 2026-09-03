@@ -25,8 +25,8 @@ class BookingManageController extends Controller
      */
     private function resolveBooking(string $bookingCode, ?string $token): Booking
     {
-        $booking = Booking::where('booking_code', $bookingCode)
-            ->with(['tenant', 'layanan', 'payment', 'logs', 'refund'])
+        $booking = Booking::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where('booking_code', $bookingCode)
             ->first();
 
         if (!$booking) {
@@ -42,6 +42,10 @@ class BookingManageController extends Controller
         if (!$validToken) {
             abort(403, 'Token tidak valid. Pastikan Anda menggunakan link yang dikirim ke email Anda.');
         }
+
+        app(\App\Support\TenantContext::class)->setTenantId($booking->idtenant);
+
+        $booking->load(['tenant', 'layanan', 'payment', 'logs', 'refund']);
 
         return $booking;
     }

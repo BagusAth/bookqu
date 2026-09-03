@@ -7,6 +7,7 @@ use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Subscription;
+use App\Services\MidtransPaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -66,18 +67,14 @@ class CheckoutMidtransTest extends TestCase
         ]);
         
         
-        $payment = Payment::where('idtenant', $this->tenant->id)->first();
+        $payment = Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->first();
         $this->assertNotNull($payment);
         $this->assertEquals('pending', $payment->status);
         $this->assertEquals('dummy_snap_token_123', $payment->snap_token);
 
-        $response->assertRedirect(route('owner.checkout.payment', $payment->id));
+        $response->assertRedirect(route('owner.checkout.payment', $payment));
     }
     
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function test_owner_can_check_payment_status_success(): void
     {
         $payment = Payment::create([
@@ -91,17 +88,19 @@ class CheckoutMidtransTest extends TestCase
             'expired_at' => now()->addHour(),
         ]);
         
-        $transactionMock = Mockery::mock('alias:Midtrans\Transaction');
-        $transactionMock->shouldReceive('status')
-            ->with($payment->order_id)
+        $mockService = $this->mock(MidtransPaymentService::class);
+        $mockService->shouldReceive('verifyAndSync')
             ->once()
-            ->andReturn((object) [
-                'transaction_status' => 'settlement',
-                'fraud_status' => 'accept',
-                'payment_type' => 'bank_transfer',
-            ]);
+            ->andReturnUsing(function ($p) use ($payment) {
+                $service = new MidtransPaymentService();
+                return $service->syncStatus($payment, [
+                    'transaction_status' => 'settlement',
+                    'fraud_status' => 'accept',
+                    'payment_type' => 'bank_transfer',
+                ]);
+            });
 
-        $response = $this->actingAs($this->user)->withSession(['current_tenant_id' => $this->tenant->id])->postJson("/owner/checkout/{$payment->id}/check-status");
+        $response = $this->actingAs($this->user)->withSession(['current_tenant_id' => $this->tenant->id])->postJson("/owner/checkout/{$payment->order_id}/check-status");
         
         $response->assertStatus(200);
         $response->assertJson([
@@ -245,6 +244,104 @@ class CheckoutMidtransTest extends TestCase
         $this->assertDatabaseHas('bookings', [
             'id' => $booking->id,
             'status' => 'paid',
+        ]);
+    }
+
+    public function test_owner_payment_page_renders_autodetect_indicator_and_correct_routes(): void
+    {
+        $payment = Payment::create([
+            'idtenant' => $this->tenant->id,
+            'idplan' => $this->plan->id,
+            'tipe' => 'subscription',
+            'jumlah' => 100000,
+            'status' => 'pending',
+            'metode' => 'midtrans',
+            'order_id' => 'BQ-OWNER-TEST-001',
+            'expired_at' => now()->addHour(),
+            'snap_token' => 'mocked-owner-snap-token',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->get("/owner/checkout/{$payment->order_id}/payment");
+
+        $response->assertStatus(200);
+        $response->assertSee('Auto-detect aktif');
+        $response->assertSee('BQ-OWNER-TEST-001');
+        $response->assertSee("/owner/checkout/{$payment->order_id}/callback");
+        $response->assertSee("/owner/checkout/{$payment->order_id}/check-status");
+    }
+
+    public function test_owner_check_payment_status_fast_path_when_already_paid(): void
+    {
+        $payment = Payment::create([
+            'idtenant' => $this->tenant->id,
+            'idplan' => $this->plan->id,
+            'tipe' => 'subscription',
+            'jumlah' => 100000,
+            'status' => 'sukses',
+            'metode' => 'midtrans',
+            'order_id' => 'BQ-OWNER-FASTPATH-001',
+            'expired_at' => now()->addHour(),
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->postJson("/owner/checkout/{$payment->order_id}/check-status");
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'status' => 'sukses',
+            'message' => 'Pembayaran berhasil dikonfirmasi!',
+        ]);
+        $this->assertStringContainsString("/owner/checkout/{$payment->order_id}/invoice", $response->json('redirect'));
+    }
+
+    public function test_midtrans_webhook_validates_signature_with_owner_custom_keys(): void
+    {
+        $customServerKey = 'SB-Mid-server-CUSTOM-SECRET-12345';
+
+        // Set tenant to custom owner payment mode with custom server key
+        $this->tenant->update([
+            'payment_mode' => 'owner',
+            'midtrans_environment' => 'sandbox',
+            'midtrans_sandbox_server_key' => $customServerKey,
+        ]);
+
+        $payment = Payment::create([
+            'idtenant' => $this->tenant->id,
+            'idplan' => $this->plan->id,
+            'tipe' => 'booking',
+            'jumlah' => 75000,
+            'status' => 'pending',
+            'metode' => 'midtrans',
+            'order_id' => 'BKG-CUSTOM-KEY-001',
+            'expired_at' => now()->addHour(),
+        ]);
+
+        $statusCode = '200';
+        $grossAmount = '75000.00';
+
+        // Sign with CUSTOM server key (not platform key)
+        $signatureKey = hash('sha512', $payment->order_id . $statusCode . $grossAmount . $customServerKey);
+
+        $payload = [
+            'order_id' => $payment->order_id,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signatureKey,
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'payment_type' => 'gopay',
+        ];
+
+        $response = $this->postJson('/midtrans/webhook', $payload);
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $payment->id,
+            'status' => 'sukses',
+            'metode' => 'gopay',
         ]);
     }
 }

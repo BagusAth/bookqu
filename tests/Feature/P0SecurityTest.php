@@ -47,11 +47,11 @@ class P0SecurityTest extends TestCase
     {
         $owner1 = User::factory()->create(['role' => 'owner']);
         $tenant1 = Tenant::factory()->create(['iduser' => $owner1->id, 'slug' => 'owner1-tenant']);
-        $booking1 = Booking::factory()->create(['idtenant' => $tenant1->id]);
+        $booking1 = Booking::factory()->create(['idtenant' => $tenant1->id, 'status' => 'paid']);
 
         $owner2 = User::factory()->create(['role' => 'owner']);
         $tenant2 = Tenant::factory()->create(['iduser' => $owner2->id, 'slug' => 'owner2-tenant']);
-        $booking2 = Booking::factory()->create(['idtenant' => $tenant2->id]);
+        $booking2 = Booking::factory()->create(['idtenant' => $tenant2->id, 'status' => 'paid']);
 
         $this->actingAs($owner1);
 
@@ -59,9 +59,8 @@ class P0SecurityTest extends TestCase
         $response = $this->patch("/owner/bookings/{$booking1->id}/status", ['status' => 'completed']);
         $response->assertSessionHasNoErrors();
 
-        // Owner 1 trying to access Owner 2's booking
         $response2 = $this->patch("/owner/bookings/{$booking2->id}/status", ['status' => 'completed']);
-        $response2->assertSessionHasErrors(['error' => 'Akses tidak diizinkan.']);
+        $response2->assertStatus(404);
     }
 
     public function test_customer_payment_idor_is_blocked_using_order_id()
@@ -109,7 +108,12 @@ class P0SecurityTest extends TestCase
         $booking = Booking::factory()->create(['idtenant' => $tenant->id, 'idpayment' => $payment->id, 'status' => 'cancelled']);
 
         $service = new \App\Services\MidtransPaymentService();
-        $service->syncStatus($payment->order_id, 'booking', 'settlement', 'accept', 'bank_transfer');
+        $payload = [
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'payment_type' => 'bank_transfer',
+        ];
+        $service->syncStatus($payment, $payload);
 
         $booking->refresh();
         $payment->refresh();
@@ -124,13 +128,18 @@ class P0SecurityTest extends TestCase
         $booking = Booking::factory()->create(['idtenant' => $tenant->id, 'idpayment' => $payment->id, 'status' => 'pending']);
 
         $service = new \App\Services\MidtransPaymentService();
+        $payload = [
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'payment_type' => 'bank_transfer',
+        ];
         
         // First webhook
-        $service->syncStatus($payment->order_id, 'booking', 'settlement', 'accept', 'bank_transfer');
+        $service->syncStatus($payment, $payload);
         $this->assertEquals('paid', $booking->fresh()->status);
 
         // Second webhook (Duplicate)
-        $service->syncStatus($payment->order_id, 'booking', 'settlement', 'accept', 'bank_transfer');
+        $service->syncStatus($payment, $payload);
         $this->assertEquals('paid', $booking->fresh()->status);
     }
 }

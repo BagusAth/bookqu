@@ -230,12 +230,21 @@ class OwnerCheckoutController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        // Fast-path: jika database sudah sukses
+        if ($payment->status === 'sukses') {
+            return response()->json([
+                'status' => 'sukses',
+                'message' => 'Pembayaran berhasil dikonfirmasi!',
+                'redirect' => route('owner.checkout.invoice', $payment),
+            ]);
+        }
+
         $syncResult = $paymentService->verifyAndSync($payment);
 
         if ($syncResult['status'] === 'sukses') {
             return response()->json([
                 'status' => 'sukses',
-                'message' => 'Pembayaran berhasil!',
+                'message' => 'Pembayaran berhasil dikonfirmasi!',
                 'redirect' => route('owner.checkout.invoice', $payment),
             ]);
         }
@@ -248,15 +257,24 @@ class OwnerCheckoutController extends Controller
         }
 
         if ($syncResult['status'] === 'error') {
+            $payment->refresh();
+            if ($payment->status === 'sukses') {
+                return response()->json([
+                    'status' => 'sukses',
+                    'message' => 'Pembayaran berhasil dikonfirmasi!',
+                    'redirect' => route('owner.checkout.invoice', $payment),
+                ]);
+            }
+
             return response()->json([
-                'status' => 'error',
-                'message' => $syncResult['message'] ?? 'Gagal memeriksa status. Silakan coba beberapa saat lagi.',
+                'status' => 'pending',
+                'message' => 'Sedang memverifikasi dengan payment gateway...',
             ]);
         }
 
         return response()->json([
             'status' => 'pending',
-            'message' => $syncResult['message'] ?? 'Pembayaran belum diterima. Silakan selesaikan pembayaran.',
+            'message' => $syncResult['message'] ?? 'Menunggu pembayaran diselesaikan...',
         ]);
     }
 
@@ -303,6 +321,15 @@ class OwnerCheckoutController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        // Fast-path: jika database sudah sukses
+        if ($payment->status === 'sukses') {
+            return response()->json([
+                'status' => 'sukses',
+                'message' => 'Pembayaran berhasil dikonfirmasi!',
+                'redirect' => route('owner.checkout.invoice', $payment),
+            ]);
+        }
+
         // Lakukan server-side verification ke Midtrans
         $syncResult = $paymentService->verifyAndSync($payment);
 
@@ -316,6 +343,7 @@ class OwnerCheckoutController extends Controller
         if ($syncResult['status'] === 'sukses') {
             return response()->json([
                 'status' => 'sukses',
+                'message' => 'Pembayaran berhasil dikonfirmasi!',
                 'redirect' => route('owner.checkout.invoice', $payment),
             ]);
         }

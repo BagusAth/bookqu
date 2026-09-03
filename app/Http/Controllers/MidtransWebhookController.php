@@ -24,25 +24,15 @@ class MidtransWebhookController extends Controller
 
         Log::info('Midtrans Booking Webhook Received:', $payload);
 
-        // ── Validate Signature ──
-        $serverKey   = config('midtrans.server_key');
-        $orderId     = $payload['order_id'] ?? null;
-        $statusCode  = $payload['status_code'] ?? null;
-        $grossAmount = $payload['gross_amount'] ?? null;
+        // ── Extract Required Fields ──
+        $orderId      = $payload['order_id'] ?? null;
+        $statusCode   = $payload['status_code'] ?? null;
+        $grossAmount  = $payload['gross_amount'] ?? null;
         $signatureKey = $payload['signature_key'] ?? null;
 
         if (!$orderId || !$statusCode || !$grossAmount || !$signatureKey) {
             Log::warning('Midtrans Booking Webhook: Missing required fields', $payload);
             return response()->json(['message' => 'Missing required fields'], 400);
-        }
-
-        $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
-
-        if (!hash_equals($expectedSignature, $signatureKey)) {
-            Log::warning('Midtrans Webhook: Signature mismatch', [
-                'order_id' => $orderId,
-            ]);
-            return response()->json(['message' => 'Invalid signature'], 403);
         }
 
         // ── Find Payment (without TenantScope since context is not set yet) ──
@@ -53,6 +43,29 @@ class MidtransWebhookController extends Controller
         if (!$payment) {
             Log::warning('Midtrans Webhook: Payment not found', ['order_id' => $orderId]);
             return response()->json(['message' => 'Payment not found'], 404);
+        }
+
+        // ── Determine Server Key (Platform vs Owner Tenant) ──
+        $serverKey = config('midtrans.server_key');
+        $tenant = $payment->tenant;
+        if ($tenant && $tenant->payment_mode === 'owner' && $payment->tipe === 'booking') {
+            $isProd = $tenant->midtrans_environment === 'production';
+            $customKey = $isProd
+                ? $tenant->midtrans_prod_server_key
+                : $tenant->midtrans_sandbox_server_key;
+            if (!empty($customKey)) {
+                $serverKey = $customKey;
+            }
+        }
+
+        // ── Validate Signature ──
+        $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+
+        if (!hash_equals($expectedSignature, $signatureKey)) {
+            Log::warning('Midtrans Webhook: Signature mismatch', [
+                'order_id' => $orderId,
+            ]);
+            return response()->json(['message' => 'Invalid signature'], 403);
         }
 
         // Set TenantContext based on the payment's tenant so all subsequent queries work correctly

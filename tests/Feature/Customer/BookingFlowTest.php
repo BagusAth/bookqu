@@ -135,15 +135,96 @@ class BookingFlowTest extends TestCase
             'catatan' => 'Tolong tepat waktu',
         ]);
 
-        $payment = \App\Models\Payment::where('idtenant', $this->tenant->id)->first();
+        $payment = \App\Models\Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->first();
         $this->assertNotNull($payment);
         $this->assertEquals('mocked-snap-token', $payment->snap_token);
 
-        $booking = \App\Models\Booking::where('idpayment', $payment->id)->first();
+        $booking = \App\Models\Booking::withoutGlobalScopes()->where('idpayment', $payment->id)->first();
         $this->assertNotNull($booking);
         $this->assertEquals('John Doe', $booking->namapelanggan);
         $this->assertEquals('pending', $booking->status);
 
-        $response->assertRedirect('/my-business/booking/payment/' . $payment->id);
+        $response->assertRedirect('/my-business/booking/payment/' . $payment->order_id);
+    }
+
+    public function test_customer_payment_page_renders_realtime_indicator_and_correct_routes(): void
+    {
+        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'order_id' => 'BQ-TEST-12345',
+            'tipe' => 'booking',
+            'metode' => 'midtrans',
+            'jumlah' => 100000,
+            'status' => 'pending',
+            'snap_token' => 'mocked-snap-token',
+            'expired_at' => now()->addMinutes(15),
+        ]);
+
+        $response = $this->get('/my-business/booking/payment/' . $payment->order_id);
+        $response->assertStatus(200);
+        $response->assertSee('Sistem memantau pembayaran Anda secara otomatis');
+        $response->assertSee('BQ-TEST-12345');
+        // Ensure the generated route contains the order_id, not a raw numerical id
+        $response->assertSee('/my-business/booking/payment/BQ-TEST-12345/callback');
+        $response->assertSee('/my-business/booking/payment/BQ-TEST-12345/check-status');
+    }
+
+    public function test_customer_check_payment_status_fast_path_when_already_paid(): void
+    {
+        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'order_id' => 'BQ-TEST-FASTPATH',
+            'tipe' => 'booking',
+            'metode' => 'midtrans',
+            'jumlah' => 100000,
+            'status' => 'sukses',
+            'snap_token' => 'mocked-snap-token',
+            'expired_at' => now()->addMinutes(15),
+        ]);
+
+        $response = $this->postJson('/my-business/booking/payment/' . $payment->order_id . '/check-status');
+        $response->assertStatus(200);
+        $response->assertJson([
+            'status' => 'sukses',
+            'message' => 'Pembayaran berhasil dikonfirmasi!',
+        ]);
+        $this->assertStringContainsString('/my-business/booking/payment/' . $payment->order_id . '/invoice', $response->json('redirect'));
+    }
+
+    public function test_customer_handle_callback_success(): void
+    {
+        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'order_id' => 'BQ-TEST-CALLBACK',
+            'tipe' => 'booking',
+            'metode' => 'midtrans',
+            'jumlah' => 100000,
+            'status' => 'pending',
+            'snap_token' => 'mocked-snap-token',
+            'expired_at' => now()->addMinutes(15),
+        ]);
+
+        // Mock MidtransPaymentService to return sukses on verifyAndSync
+        $mockService = \Mockery::mock(\App\Services\MidtransPaymentService::class);
+        $mockService->shouldReceive('verifyAndSync')->once()->andReturn([
+            'status' => 'sukses',
+            'message' => 'Pembayaran berhasil dikonfirmasi!',
+            'payment' => $payment,
+        ]);
+        $this->app->instance(\App\Services\MidtransPaymentService::class, $mockService);
+
+        $response = $this->postJson('/my-business/booking/payment/' . $payment->order_id . '/callback', [
+            'result' => [
+                'status_code' => '200',
+                'transaction_status' => 'settlement',
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'status' => 'sukses',
+            'message' => 'Pembayaran berhasil dikonfirmasi!',
+        ]);
+        $this->assertStringContainsString('/my-business/booking/payment/' . $payment->order_id . '/invoice', $response->json('redirect'));
     }
 }
