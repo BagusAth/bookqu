@@ -207,7 +207,12 @@ body.booking-page {
         color: black !important;
     }
 
-    header, footer, .no-print, .booking-mobile-bar, #pay-button, #check-status-btn {
+    header,
+    footer,
+    .no-print,
+    .booking-mobile-bar,
+    #pay-button,
+    #check-status-btn {
         display: none !important;
     }
 
