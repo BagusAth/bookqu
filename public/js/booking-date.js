@@ -1,4 +1,12 @@
 document.addEventListener('alpine:init', () => {
+    const INDONESIAN_MONTHS = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const INDONESIAN_DAYS = [
+        'Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'
+    ];
+
     Alpine.data('bookingDateSelection', () => ({
         tenantSlug: '',
         service: null,
@@ -12,10 +20,11 @@ document.addEventListener('alpine:init', () => {
         currentMonth: null,
         today: null,
         simulateAvailability: false,
+        isSubmitting: false,
 
         init() {
             const root = document.getElementById('booking-date-root');
-            const serviceEl = document.getElementById('booking-service-data');
+            const serviceEl = document.getElementById('booking-service-data') || document.getElementById('booking-services-data');
             const availabilityEl = document.getElementById('booking-availability-data');
 
             this.tenantSlug = root?.dataset.tenantSlug || '';
@@ -77,16 +86,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         get currentMonthLabel() {
-            return new Date(this.currentYear, this.currentMonth, 1).toLocaleString('en-US', {
-                month: 'long',
-                year: 'numeric',
-            });
+            const monthName = INDONESIAN_MONTHS[this.currentMonth] || '';
+            return `${monthName} ${this.currentYear}`;
         },
 
         get calendarDays() {
             const days = [];
             const firstOfMonth = new Date(this.currentYear, this.currentMonth, 1);
-            const startIndex = (firstOfMonth.getDay() + 6) % 7;
+            const startIndex = (firstOfMonth.getDay() + 6) % 7; // Monday-first index
             const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
 
             for (let i = 0; i < startIndex; i += 1) {
@@ -229,10 +236,10 @@ document.addEventListener('alpine:init', () => {
             }
 
             if (entry.available_slots === 0) {
-                return 'Full';
+                return 'Penuh';
             }
 
-            return entry.available_slots === 1 ? '1 slot' : `${entry.available_slots} slots`;
+            return `${entry.available_slots} slot`;
         },
 
         formatDateString(date) {
@@ -253,24 +260,30 @@ document.addEventListener('alpine:init', () => {
 
         formatDate(dateString) {
             const parsed = this.parseDate(dateString);
-            return parsed.toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-            });
+            const dayName = INDONESIAN_DAYS[parsed.getDay()] || '';
+            const dayNum = parsed.getDate();
+            const monthName = INDONESIAN_MONTHS[parsed.getMonth()] || '';
+            const year = parsed.getFullYear();
+            return `${dayName}, ${dayNum} ${monthName} ${year}`;
         },
 
         get selectedDateLabel() {
-            return this.selectedDate ? this.formatDate(this.selectedDate) : 'Choose a date';
+            return this.selectedDate ? this.formatDate(this.selectedDate) : 'Pilih tanggal terlebih dahulu';
         },
 
         get selectedTimeLabel() {
-            return this.selectedDate ? 'Select time next' : 'Time not selected';
+            return this.selectedDate ? 'Pilih jam di langkah berikutnya' : 'Belum memilih jam';
         },
 
         get totalLabel() {
-            return this.service ? this.service.price_label : 'Rp0.00';
+            return this.service ? this.service.price_label : 'Rp 0';
         },
+
+        handleConfirm() {
+            if (!this.selectedDate || this.isSubmitting) return;
+            this.isSubmitting = true;
+            const form = this.$refs?.confirmForm || document.getElementById('booking-date-form');
+            if (form) form.submit();
+        }
     }));
 });

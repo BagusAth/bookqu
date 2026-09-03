@@ -1,233 +1,156 @@
-<!doctype html>
-<html lang="id">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{{ $tenant->namabisnis }} - Time Selection</title>
-        @vite('resources/css/app.css')
-        <link rel="stylesheet" href="{{ asset('css/booking-program.css') }}" />
-        <link rel="stylesheet" href="{{ asset('css/booking-time.css') }}" />
-    </head>
-    <body class="booking-page">
-        <div
-            id="booking-time-root"
-            data-tenant-slug="{{ $tenant->slug }}"
-            data-selected-date="{{ $selectedDate }}"
-            data-selected-date-label="{{ $selectedDateLabel }}"
-            data-selected-time="{{ $selectedTime ?? '' }}"
-            data-simulate="{{ $simulate ? 'true' : 'false' }}"
-            x-data="bookingTimeSelection()"
-        >
-            <header class="border-b border-[#E5E7EB] bg-white/95 backdrop-blur">
-                <nav class="booking-shell mx-auto flex w-full max-w-[1280px] items-center justify-between px-6 py-4" x-data="{ navOpen: false }">
-                    <div class="flex items-center gap-2">
-                        <a href="/" class="flex items-center">
-                            <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-8 w-auto" />
-                        </a>
-                    </div>
-                    <div class="hidden items-center gap-8 text-sm font-medium text-[#6B7280] lg:flex">
-                        <a class="transition hover:text-[#111827]" href="#">Features</a>
-                        <a class="transition hover:text-[#111827]" href="#">Solutions</a>
-                        <a class="transition hover:text-[#111827]" href="#">Pricing</a>
-                        <a class="transition hover:text-[#111827]" href="#">About</a>
-                    </div>
-                    <div class="hidden items-center gap-4 lg:flex">
-                        <a class="text-sm font-semibold text-[#6B7280] transition hover:text-[#111827]" href="#">Login</a>
-                        <a class="rounded-xl bg-[#4F46E5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#4338CA]" href="#">Get Started</a>
-                    </div>
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-xl border border-[#E5E7EB] p-2 text-[#111827] transition hover:border-[#4F46E5] hover:text-[#4F46E5] lg:hidden"
-                        @click="navOpen = !navOpen"
-                        aria-label="Toggle navigation"
-                    >
-                        <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-                    <div
-                        class="absolute left-0 right-0 top-full border-t border-[#E5E7EB] bg-white px-6 py-4 shadow-sm lg:hidden"
-                        x-cloak
-                        x-show="navOpen"
-                        x-transition
-                    >
-                        <div class="flex flex-col gap-4 text-sm font-medium text-[#6B7280]">
-                            <a class="transition hover:text-[#111827]" href="#">Features</a>
-                            <a class="transition hover:text-[#111827]" href="#">Solutions</a>
-                            <a class="transition hover:text-[#111827]" href="#">Pricing</a>
-                            <a class="transition hover:text-[#111827]" href="#">About</a>
-                            <div class="flex items-center gap-3 pt-2">
-                                <a class="flex-1 rounded-xl border border-[#E5E7EB] px-4 py-2 text-center text-sm font-semibold text-[#111827]" href="#">Login</a>
-                                <a class="flex-1 rounded-xl bg-[#4F46E5] px-4 py-2 text-center text-sm font-semibold text-white" href="#">Get Started</a>
-                            </div>
-                        </div>
-                    </div>
-                </nav>
-            </header>
+@extends('customer.layouts.booking-shell')
 
-            <main class="booking-shell mx-auto w-full max-w-[1280px] px-6 pb-12 pt-10">
-                <form
-                    class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]"
-                    method="POST"
-                    action="{{ route('customer.booking.select-time', $tenant->slug) }}"
+@section('title', 'Pilih Jam')
+@section('current_step', 3)
+@section('back_url', route('customer.booking.date', $tenant->slug))
+@section('back_label', 'Pilih Tanggal')
+
+@section('content')
+<div
+    id="booking-time-root"
+    data-tenant-slug="{{ $tenant->slug }}"
+    data-selected-date="{{ $selectedDate }}"
+    data-selected-date-label="{{ $selectedDateLabel }}"
+    data-selected-time="{{ $selectedTime ?? '' }}"
+    data-simulate="{{ $simulate ? 'true' : 'false' }}"
+    x-data="bookingTimeSelection()"
+>
+    <form
+        id="booking-time-form"
+        class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
+        method="POST"
+        action="{{ route('customer.booking.select-time', $tenant->slug) }}"
+        x-ref="confirmForm"
+    >
+        @csrf
+        <input type="hidden" name="schedule_id" :value="selectedScheduleId" />
+        <input type="hidden" name="jam" :value="selectedTime" />
+        @if ($simulate)
+            <input type="hidden" name="simulate" value="1" />
+        @endif
+
+        {{-- Left Column: Session Slot Choices --}}
+        <section>
+            <div class="mb-6">
+                <a
+                    href="{{ route('customer.booking.date', $tenant->slug) }}"
+                    class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#64748B] hover:text-[#4F46E5] transition-colors mb-2"
                 >
-                    @csrf
-                    <input type="hidden" name="schedule_id" :value="selectedScheduleId" />
-                    <input type="hidden" name="jam" :value="selectedTime" />
-                    @if ($simulate)
-                        <input type="hidden" name="simulate" value="1" />
-                    @endif
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Kembali ke Pemilihan Tanggal
+                </a>
+                <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Pilih Jam Sesi</h1>
+                <p class="mt-1 text-sm text-[#64748B]">
+                    Slot waktu yang tersedia untuk <strong class="text-[#0F172A]">{{ $selectedDateLabel }}</strong>.
+                </p>
+            </div>
 
-                    <section>
-                        <x-customer.progress-header step="3" total="3" label="Select Time Slot" progress="100" />
+            @if ($errors->any())
+                <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-700">
+                    {{ $errors->first() }}
+                </div>
+            @endif
 
-                        <div class="mt-8">
-                            <a
-                                href="{{ route('customer.booking.date', $tenant->slug) }}"
-                                class="inline-flex items-center gap-1.5 text-sm font-medium text-[#6B7280] transition hover:text-[#4F46E5]"
-                            >
-                                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                                </svg>
-                                Back to Date Selection
-                            </a>
-                            <h1 class="mt-3 text-2xl font-bold text-[#111827] sm:text-3xl">When would you like to start?</h1>
-                            <p class="mt-2 text-sm text-[#6B7280] sm:text-base">Available time slots for {{ $selectedDateLabel }}.</p>
-                        </div>
-
-                        @if ($errors->any())
-                            <div class="mt-4 rounded-xl border border-[#FCA5A5] bg-[#FEF2F2] px-4 py-3 text-sm text-[#B91C1C]">
-                                {{ $errors->first() }}
-                            </div>
-                        @endif
-
-                        <div class="mt-8 space-y-8">
-                            <div x-show="groupedSlots.morning.length" x-cloak>
-                                <p class="booking-session-label">Morning Sessions</p>
-                                <div class="booking-time-grid">
-                                    <template x-for="slot in groupedSlots.morning" :key="slot.id">
-                                        <x-customer.time-slot-card slot-var="slot" />
-                                    </template>
-                                </div>
-                            </div>
-
-                            <div x-show="groupedSlots.afternoon.length" x-cloak>
-                                <p class="booking-session-label">Afternoon Sessions</p>
-                                <div class="booking-time-grid">
-                                    <template x-for="slot in groupedSlots.afternoon" :key="slot.id">
-                                        <x-customer.time-slot-card slot-var="slot" />
-                                    </template>
-                                </div>
-                            </div>
-
-                            <div x-show="groupedSlots.evening.length" x-cloak>
-                                <p class="booking-session-label">Evening Sessions</p>
-                                <div class="booking-time-grid">
-                                    <template x-for="slot in groupedSlots.evening" :key="slot.id">
-                                        <x-customer.time-slot-card slot-var="slot" />
-                                    </template>
-                                </div>
-                            </div>
-
-                            <div class="rounded-2xl border border-[#E5E7EB] bg-white p-6 text-center text-sm text-[#6B7280]" x-show="!hasSlots" x-cloak>
-                                No available time slots for this date. Please choose another day.
-                            </div>
-                        </div>
-
-                        <div class="mt-8">
-                            <x-customer.booking-policy />
-                        </div>
-                    </section>
-
-                    <x-customer.booking-sidebar
-                        :service="$service"
-                        button-label="Confirm Selection"
-                        button-enabled-when="selectedTime"
-                        back-url="{{ route('customer.booking.date', $tenant->slug) }}"
-                        back-label="Back to Date Selection"
-                    />
-                </form>
-            </main>
-
-            <section class="booking-shell mx-auto w-full max-w-[1280px] px-6 pb-12">
-                <div class="flex flex-col gap-4 rounded-2xl border border-[#E5E7EB] bg-white p-6 booking-shadow md:flex-row md:items-center md:justify-between">
-                    <div class="flex items-start gap-4">
-                        <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#4F46E5]">
-                            <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7 3.582 7 8 7z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 7V3" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8" />
+            <div class="space-y-6">
+                {{-- Sesi Pagi --}}
+                <div x-show="groupedSlots.morning.length" x-cloak class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-2xs">
+                    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-[#F1F5F9]">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                         </span>
-                        <div>
-                            <h3 class="text-base font-semibold text-[#111827]">Need help choosing?</h3>
-                            <p class="mt-1 text-sm text-[#6B7280]">Our team can guide you to the right choice.</p>
-                        </div>
+                        <h3 class="text-sm font-bold text-[#0F172A]">Sesi Pagi</h3>
+                        <span class="text-xs text-[#64748B]">(05:00 - 11:59 WIB)</span>
                     </div>
-                    <button
-                        type="button"
-                        class="rounded-xl border border-[#E5E7EB] px-4 py-2 text-sm font-semibold text-[#111827] transition hover:border-[#4F46E5] hover:text-[#4F46E5]"
+                    <div class="booking-time-grid">
+                        <template x-for="slot in groupedSlots.morning" :key="slot.id">
+                            <x-customer.time-slot-card slot-var="slot" />
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Sesi Siang & Sore --}}
+                <div x-show="groupedSlots.afternoon.length" x-cloak class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-2xs">
+                    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-[#F1F5F9]">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                        </span>
+                        <h3 class="text-sm font-bold text-[#0F172A]">Sesi Siang &amp; Sore</h3>
+                        <span class="text-xs text-[#64748B]">(12:00 - 17:59 WIB)</span>
+                    </div>
+                    <div class="booking-time-grid">
+                        <template x-for="slot in groupedSlots.afternoon" :key="slot.id">
+                            <x-customer.time-slot-card slot-var="slot" />
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Sesi Malam --}}
+                <div x-show="groupedSlots.evening.length" x-cloak class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-2xs">
+                    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-[#F1F5F9]">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                        </span>
+                        <h3 class="text-sm font-bold text-[#0F172A]">Sesi Malam</h3>
+                        <span class="text-xs text-[#64748B]">(18:00 - 23:59 WIB)</span>
+                    </div>
+                    <div class="booking-time-grid">
+                        <template x-for="slot in groupedSlots.evening" :key="slot.id">
+                            <x-customer.time-slot-card slot-var="slot" />
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Empty State --}}
+                <div class="rounded-2xl border border-dashed border-[#CBD5E1] bg-white p-10 text-center" x-show="!hasSlots" x-cloak>
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F1F5F9] text-[#64748B] mb-3">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h4 class="text-sm font-bold text-[#0F172A]">Tidak Ada Slot Tersedia</h4>
+                    <p class="text-xs text-[#64748B] mt-1">Semua slot pada tanggal ini sudah penuh atau tidak tersedia. Silakan pilih tanggal lain.</p>
+                    <a
+                        href="{{ route('customer.booking.date', $tenant->slug) }}"
+                        class="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-[#CBD5E1] bg-white px-4 py-2 text-xs font-bold text-[#0F172A] hover:bg-[#F8FAFC]"
                     >
-                        Contact Sales
-                    </button>
+                        &larr; Pilih Tanggal Lain
+                    </a>
                 </div>
-            </section>
+            </div>
 
-            <footer class="border-t border-[#E5E7EB] bg-[#EDEBFA]">
-                <div class="booking-shell mx-auto w-full max-w-[1280px] px-6 py-10">
-                    <div class="grid gap-8 md:grid-cols-4">
-                        <div class="md:col-span-1">
-                            <a href="/" class="flex items-center mb-4">
-                                <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-8 w-auto" />
-                            </a>
-                            <p class="mt-3 text-sm text-[#6B7280]">
-                                Platform manajemen booking terjangkau di Indonesia untuk membantu bisnis jasa dan profesional
-                                tampil digital.
-                            </p>
-                            <div class="mt-4 flex items-center gap-3 text-[#6B7280]">
-                                <span class="h-8 w-8 rounded-full border border-[#E5E7EB] bg-white"></span>
-                                <span class="h-8 w-8 rounded-full border border-[#E5E7EB] bg-white"></span>
-                                <span class="h-8 w-8 rounded-full border border-[#E5E7EB] bg-white"></span>
-                            </div>
-                        </div>
-                        <div>
-                            <h5 class="text-sm font-semibold text-[#111827]">Produk</h5>
-                            <ul class="mt-3 space-y-2 text-sm text-[#6B7280]">
-                                <li>Fitur Utama</li>
-                                <li>Integrasi Pembayaran</li>
-                                <li>Mobile App</li>
-                                <li>API Dokumentasi</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h5 class="text-sm font-semibold text-[#111827]">Solusi</h5>
-                            <ul class="mt-3 space-y-2 text-sm text-[#6B7280]">
-                                <li>Salon &amp; Spa</li>
-                                <li>Klinik Kesehatan</li>
-                                <li>Studio Foto</li>
-                                <li>Konsultan Jasa</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h5 class="text-sm font-semibold text-[#111827]">Kontak</h5>
-                            <ul class="mt-3 space-y-2 text-sm text-[#6B7280]">
-                                <li>support@bookqu.com</li>
-                                <li>+62 21 4567 8810</li>
-                                <li>Sudirman CBD, Jakarta Selatan, Indonesia</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="mt-8 flex flex-col gap-3 border-t border-[#E5E7EB] pt-6 text-xs text-[#6B7280] md:flex-row md:items-center md:justify-between">
-                        <span>&copy; 2026 BookQu. Hak Cipta Dilindungi Undang-Undang.</span>
-                        <span>Ketentuan Privasi | Syarat &amp; Ketentuan</span>
-                    </div>
-                </div>
-            </footer>
-        </div>
+            {{-- Booking Policy --}}
+            <div class="mt-6">
+                <x-customer.booking-policy />
+            </div>
+        </section>
 
-        <script type="application/json" id="booking-service-data">@json($servicePayload)</script>
-        <script type="application/json" id="booking-time-slots-data">@json($timeSlotsPayload)</script>
-        <script defer src="{{ asset('js/booking-time.js') }}"></script>
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    </body>
-</html>
+        {{-- Right Column: Sticky Booking Summary --}}
+        <x-customer.booking-sidebar
+            :service="$service"
+            buttonLabel="Lanjut ke Data Diri"
+            buttonEnabledWhen="selectedTime"
+            onButtonClick="handleConfirm()"
+            :backUrl="route('customer.booking.date', $tenant->slug)"
+            backLabel="Kembali ke Tanggal"
+        />
+    </form>
+</div>
+
+{{-- Data Contracts --}}
+<script type="application/json" id="booking-service-data">@json($servicePayload)</script>
+<script type="application/json" id="booking-services-data">@json($servicePayload)</script>
+<script type="application/json" id="booking-time-slots-data">@json($timeSlotsPayload ?? $slotsPayload ?? [])</script>
+@endsection
+
+@section('scripts')
+<script defer src="{{ asset('js/booking-time.js') }}"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+@endsection
