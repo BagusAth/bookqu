@@ -9,6 +9,7 @@ use App\Http\Controllers\OwnerBookingController;
 use App\Http\Controllers\OwnerCheckoutController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerLandingPageController;
+use App\Http\Controllers\OwnerPortalController;
 use App\Http\Controllers\OwnerProgramController;
 use App\Http\Controllers\OwnerScheduleController;
 use App\Http\Controllers\OwnerSettingController;
@@ -202,6 +203,23 @@ Route::prefix('owner')
         Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
         Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page')->middleware('subscription:pro');
         Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware('subscription:pro');
+
+        // ── Extended Sidebar Modules (Frontend Architecture) ──
+        Route::get('/calendar', [OwnerPortalController::class, 'calendar'])->name('owner.calendar');
+        Route::get('/schedule-report', [OwnerPortalController::class, 'scheduleReport'])->name('owner.schedule-report');
+        Route::get('/categories', [OwnerPortalController::class, 'categories'])->name('owner.categories');
+        Route::get('/services', [OwnerProgramController::class, 'index'])->name('owner.services');
+        Route::get('/staff-resources', [OwnerPortalController::class, 'staffResources'])->name('owner.staff-resources');
+        Route::get('/additional-items', [OwnerPortalController::class, 'additionalItems'])->name('owner.additional-items');
+        Route::get('/vouchers', [OwnerPortalController::class, 'vouchers'])->name('owner.vouchers');
+        Route::get('/reviews', [OwnerPortalController::class, 'reviews'])->name('owner.reviews');
+        Route::get('/customers', [OwnerPortalController::class, 'customers'])->name('owner.customers');
+        Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
+        Route::get('/settings/appearance', [OwnerPortalController::class, 'appearance'])->name('owner.settings.appearance');
+        Route::get('/settings/payment-setting', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payment-setting');
+        Route::get('/settings/assets', [OwnerPortalController::class, 'assets'])->name('owner.settings.assets');
+        Route::get('/settings/balance', [OwnerPortalController::class, 'balance'])->name('owner.settings.balance');
+        Route::get('/settings/integrations', [OwnerPortalController::class, 'integrations'])->name('owner.settings.integrations');
     });
 });
 
