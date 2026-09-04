@@ -26,7 +26,7 @@ class OwnerReviewController extends Controller
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('review', 'like', "%{$search}%")
+                $q->where('komentar', 'like', "%{$search}%")
                   ->orWhere('balasan', 'like', "%{$search}%")
                   ->orWhereHas('booking', function ($bq) use ($search) {
                       $bq->where('namapelanggan', 'like', "%{$search}%");
