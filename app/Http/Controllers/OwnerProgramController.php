@@ -32,12 +32,15 @@ class OwnerProgramController extends Controller
         $katakunci = $request->input('katakunci', '');
 
         $daftarlayanan = Service::where('idtenant', $idtenant)
+            ->with('category')
             ->when($katakunci, function ($query) use ($katakunci) {
                 $query->where('namalayanan', 'like', '%' . $katakunci . '%');
             })
             ->withCount('bookings')
             ->orderByDesc('created_at')
             ->paginate(12);
+
+        $kategoriList = \App\Models\Category::where('idtenant', $idtenant)->orderBy('name')->get();
 
         // Statistik program
         $totallayanan = Service::where('idtenant', $idtenant)->count();
@@ -55,6 +58,7 @@ class OwnerProgramController extends Controller
         return view('owner.owner-programs', compact(
             'tenant',
             'daftarlayanan',
+            'kategoriList',
             'totallayanan',
             'ratarataharga',
             'totalbookinglayanan',
@@ -77,6 +81,7 @@ class OwnerProgramController extends Controller
             'namalayanan'  => 'required|string|max:255',
             'harga'        => 'required|numeric|min:0',
             'durasi'       => 'required|integer|min:5|max:480',
+            'idcategory'   => ['nullable', Rule::exists('categories', 'id')->where('idtenant', $tenant->id)],
             'deskripsi'    => 'nullable|string|max:1000',
             'cover_image'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
@@ -100,6 +105,7 @@ class OwnerProgramController extends Controller
             'namalayanan' => $datavalid['namalayanan'],
             'harga'       => $datavalid['harga'],
             'durasi'      => $datavalid['durasi'],
+            'idcategory'  => $datavalid['idcategory'] ?? null,
             'deskripsi'   => $datavalid['deskripsi'] ?? null,
             'image_url'   => $imageUrl,
         ]);
@@ -114,7 +120,8 @@ class OwnerProgramController extends Controller
         // Invalidate customer-facing cache
         $this->clearServiceCache($tenant->id, $service->id);
 
-        return redirect('/owner/programs')->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil ditambahkan!');
+        $redirectRoute = $request->is('*programs*') ? 'owner.programs' : 'owner.services';
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil ditambahkan!');
     }
 
     /**
@@ -133,6 +140,7 @@ class OwnerProgramController extends Controller
             'namalayanan'  => 'required|string|max:255',
             'harga'        => 'required|numeric|min:0',
             'durasi'       => 'required|integer|min:5|max:480',
+            'idcategory'   => ['nullable', Rule::exists('categories', 'id')->where('idtenant', $tenant->id)],
             'deskripsi'    => 'nullable|string|max:1000',
             'is_active'    => 'required|boolean',
             'cover_image'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
@@ -160,6 +168,7 @@ class OwnerProgramController extends Controller
             'namalayanan' => $datavalid['namalayanan'],
             'harga'       => $datavalid['harga'],
             'durasi'      => $datavalid['durasi'],
+            'idcategory'  => $datavalid['idcategory'] ?? null,
             'deskripsi'   => $datavalid['deskripsi'] ?? null,
             'is_active'   => (bool) $datavalid['is_active'],
             'image_url'   => $imageUrl,
@@ -168,7 +177,8 @@ class OwnerProgramController extends Controller
         // Invalidate customer-facing cache
         $this->clearServiceCache($tenant->id, $layanan->id);
 
-        return redirect('/owner/programs')->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil diperbarui!');
+        $redirectRoute = $request->is('*programs*') ? 'owner.programs' : 'owner.services';
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil diperbarui!');
     }
 
     /**
@@ -188,6 +198,29 @@ class OwnerProgramController extends Controller
         // Invalidate customer-facing cache
         $this->clearServiceCache($tenant->id, $id);
 
-        return redirect('/owner/programs')->with('sukses', 'Program "' . $namalayanan . '" berhasil dihapus!');
+        $redirectRoute = request()->is('*programs*') ? 'owner.programs' : 'owner.services';
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $namalayanan . '" berhasil dihapus!');
+    }
+
+    /**
+     * Toggle status aktif program.
+     */
+    public function toggleStatus(int $id)
+    {
+        $tenant = $this->resolveTenant();
+        if (!$tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
+        $layanan->update([
+            'is_active' => !$layanan->is_active,
+        ]);
+
+        $this->clearServiceCache($tenant->id, $layanan->id);
+        $statusText = $layanan->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
+        $redirectRoute = request()->is('*programs*') ? 'owner.programs' : 'owner.services';
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $layanan->namalayanan . '" berhasil ' . $statusText . '!');
     }
 }

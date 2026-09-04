@@ -23,6 +23,7 @@ class Service extends Model
         'kapasitas',
         'satuan_harga',
         'satuan_durasi',
+        'idcategory',
     ];
 
     protected function casts(): array
@@ -40,6 +41,11 @@ class Service extends Model
         return $this->belongsTo(Tenant::class, 'idtenant');
     }
 
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'idcategory');
+    }
+
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class, 'idlayanan');
@@ -48,5 +54,20 @@ class Service extends Model
     public function schedules(): HasMany
     {
         return $this->hasMany(Schedule::class, 'idlayanan');
+    }
+
+    public function staff(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Staff::class, 'service_staff', 'service_id', 'staff_id')->withTimestamps();
+    }
+
+    public function resources(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Resource::class, 'service_resource', 'service_id', 'resource_id')->withTimestamps();
+    }
+
+    public function additionalItems(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(AdditionalItem::class, 'additional_item_service', 'service_id', 'additional_item_id')->withPivot('is_required')->withTimestamps();
     }
 }

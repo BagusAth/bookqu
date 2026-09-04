@@ -4,19 +4,14 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6" x-data="{
-    primaryColor: '#4F46E5',
-    buttonStyle: 'rounded-xl',
-    fontFamily: 'Plus Jakarta Sans',
-    cardStyle: 'elevated',
+    primaryColor: '{{ $tenant->theme_color ?? '#4F46E5' }}',
+    buttonStyle: '{{ $tenant->button_style ?? 'rounded-xl' }}',
+    fontFamily: '{{ $tenant->font_family ?? 'Plus Jakarta Sans' }}',
+    cardStyle: '{{ $tenant->card_style ?? 'elevated' }}',
     layoutStyle: 'grid',
-    businessName: '{{ $tenant->namabisnis ?? 'Brama Beauty Studio' }}',
-    businessDesc: '{{ $tenant->deskripsi ?? 'Reservasi perawatan salon, spa, dan treatment premium dengan terapis profesional.' }}',
-    notification: '',
-    presetColors: ['#4F46E5', '#2563EB', '#0D9488', '#059669', '#E11D48', '#7C3AED', '#111827'],
-    showToast(msg) {
-        this.notification = msg;
-        setTimeout(() => this.notification = '', 3500);
-    }
+    businessName: '{{ addslashes($tenant->namabisnis ?? 'My Business') }}',
+    businessDesc: '{{ addslashes($tenant->deskripsi ?? 'Reservasi online cepat dan mudah.') }}',
+    presetColors: ['#4F46E5', '#2563EB', '#0D9488', '#059669', '#E11D48', '#7C3AED', '#111827']
 }">
 
     {{-- Toast Notification --}}
@@ -41,8 +36,14 @@
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
         {{-- ── LEFT: Settings Controls (7 cols) ── --}}
-        <div class="space-y-6 lg:col-span-7">
-            
+        <form method="POST" action="{{ route('owner.settings.appearance.update') }}" class="space-y-6 lg:col-span-7" id="form-appearance-settings">
+            @csrf
+            <input type="hidden" name="theme_color" :value="primaryColor">
+            <input type="hidden" name="button_style" :value="buttonStyle">
+            <input type="hidden" name="font_family" :value="fontFamily">
+            <input type="hidden" name="card_style" :value="cardStyle">
+            <input type="hidden" name="deskripsi" :value="businessDesc">
+
             {{-- Branding & Colors --}}
             <div class="rounded-2xl border border-bq-border bg-bq-surface p-6 shadow-xs space-y-5">
                 <h3 class="text-base font-bold text-bq-text">Warna Primer &amp; Brand Palette</h3>
@@ -117,14 +118,21 @@
                 </div>
             </div>
 
+            {{-- Business Description --}}
+            <div class="rounded-2xl border border-bq-border bg-bq-surface p-6 shadow-xs space-y-3">
+                <h3 class="text-base font-bold text-bq-text">Deskripsi Publik Bisnis</h3>
+                <p class="text-xs text-bq-text-muted">Teks singkat tentang bisnis Anda yang tampil di header reservasi.</p>
+                <textarea x-model="businessDesc" rows="3" class="w-full rounded-xl border border-bq-border p-3 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"></textarea>
+            </div>
+
             {{-- Save button --}}
             <div class="flex justify-end">
-                <button type="button" @click="showToast('Pengaturan tampilan berhasil disimpan!')" class="rounded-xl bg-bq-primary px-6 py-2.5 text-xs font-semibold text-white hover:bg-bq-primary-hover shadow-sm transition">
+                <button type="submit" class="rounded-xl bg-bq-primary px-6 py-2.5 text-xs font-semibold text-white hover:bg-bq-primary-hover shadow-sm transition">
                     Simpan Tampilan
                 </button>
             </div>
 
-        </div>
+        </form>
 
         {{-- ── RIGHT: Live Preview (5 cols) ── --}}
         <div class="space-y-4 lg:col-span-5">

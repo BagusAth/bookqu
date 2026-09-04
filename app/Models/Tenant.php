@@ -33,6 +33,10 @@ class Tenant extends Model
         'weekend_price_value',
         'cancel_before_hours',
         'reschedule_before_hours',
+        'theme_color',
+        'button_style',
+        'font_family',
+        'card_style',
     ];
 
     public function user(): BelongsTo

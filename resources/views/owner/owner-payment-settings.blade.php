@@ -196,6 +196,81 @@
                     @endforelse
                 </tbody>
             </table>
+    </div>
+
+    {{-- ── Recent Transactions ── --}}
+    <div class="rounded-2xl border border-bq-border bg-bq-surface shadow-xs overflow-hidden">
+        <div class="p-5 border-b border-bq-border flex items-center justify-between">
+            <div>
+                <h3 class="font-bold text-sm text-bq-text">Riwayat Transaksi Pembayaran</h3>
+                <p class="text-xs text-bq-text-muted mt-0.5">Daftar transaksi reservasi pelanggan dan status penerimaan pembayaran gateway</p>
+            </div>
+            <span class="rounded-lg bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700">
+                {{ $transactions->count() }} Transaksi Terakhir
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-bq-border bg-bq-background/60 font-semibold uppercase tracking-wider text-bq-text-muted">
+                        <th class="px-5 py-3.5">Order ID &amp; Waktu</th>
+                        <th class="px-5 py-3.5">Pelanggan</th>
+                        <th class="px-5 py-3.5">Layanan</th>
+                        <th class="px-5 py-3.5">Nominal</th>
+                        <th class="px-5 py-3.5">Metode</th>
+                        <th class="px-5 py-3.5 text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-bq-border">
+                    @forelse ($transactions as $tx)
+                        <tr class="hover:bg-bq-background/40 transition">
+                            <td class="px-5 py-4 whitespace-nowrap">
+                                <span class="font-mono font-bold text-bq-text text-[11px]">{{ $tx->order_id }}</span>
+                                <div class="text-[11px] text-bq-text-muted">{{ $tx->created_at->format('d M Y, H:i') }}</div>
+                            </td>
+                            <td class="px-5 py-4 whitespace-nowrap">
+                                <span class="font-semibold text-bq-text">{{ $tx->nama_pembayar ?: ($tx->booking?->namapelanggan ?: 'Pelanggan') }}</span>
+                                <div class="text-[11px] text-bq-text-muted">{{ $tx->email_pembayar ?: ($tx->booking?->email ?: '-') }}</div>
+                            </td>
+                            <td class="px-5 py-4 whitespace-nowrap text-bq-text">
+                                {{ $tx->booking?->layanan?->namalayanan ?: ($tx->tipe === 'subscription' ? 'Langganan Platform' : 'Layanan Reservasi') }}
+                            </td>
+                            <td class="px-5 py-4 whitespace-nowrap font-bold text-bq-text">
+                                Rp {{ number_format($tx->jumlah, 0, ',', '.') }}
+                            </td>
+                            <td class="px-5 py-4 whitespace-nowrap text-bq-text-muted capitalize">
+                                {{ $tx->metode ?: 'Midtrans Gateway' }}
+                            </td>
+                            <td class="px-5 py-4 whitespace-nowrap text-center">
+                                @if($tx->status === 'sukses')
+                                    <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                                        Lunas
+                                    </span>
+                                @elseif($tx->status === 'pending')
+                                    <span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
+                                        Pending
+                                    </span>
+                                @elseif($tx->status === 'expired')
+                                    <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
+                                        Kedaluwarsa
+                                    </span>
+                                @else
+                                    <span class="rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-700">
+                                        {{ ucfirst($tx->status) }}
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-5 py-10 text-center text-xs text-bq-text-muted">
+                                Belum ada transaksi pembayaran reservasi yang tercatat.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 

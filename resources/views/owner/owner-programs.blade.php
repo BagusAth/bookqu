@@ -65,6 +65,7 @@
                         $editPayload = [
                             'id'          => $layanan->id,
                             'namalayanan' => $layanan->namalayanan,
+                            'idcategory'  => $layanan->idcategory ?? '',
                             'harga'       => $layanan->harga,
                             'durasi'      => $layanan->durasi,
                             'deskripsi'   => $layanan->deskripsi ?: '',
@@ -107,6 +108,11 @@
 
                 {{-- Body --}}
                 <div class="p-5">
+                    @if($layanan->category)
+                        <span class="inline-block rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 mb-1.5">
+                            {{ $layanan->category->name }}
+                        </span>
+                    @endif
                     <h3 class="text-sm font-semibold text-bq-text">{{ $layanan->namalayanan }}</h3>
                     <p class="mt-1 text-xs text-bq-text-muted line-clamp-2">{{ $layanan->deskripsi ?? 'No description' }}</p>
 
@@ -122,9 +128,13 @@
                                 </svg>
                                 {{ $layanan->bookings_count }} bookings
                             </span>
-                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ ($layanan->is_active ?? true) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
-                                {{ ($layanan->is_active ?? true) ? 'Active' : 'Non-Active' }}
-                            </span>
+                            <form method="POST" action="{{ route('owner.services.toggle', $layanan->id) }}">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold transition {{ ($layanan->is_active ?? true) ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200' }}" title="Klik untuk ubah status">
+                                    {{ ($layanan->is_active ?? true) ? 'Active' : 'Non-Active' }}
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

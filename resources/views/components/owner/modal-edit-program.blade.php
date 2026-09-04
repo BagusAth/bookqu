@@ -4,7 +4,7 @@
         buka: false,
         sedangkirim: false,
         preview: null,
-        program: { id: null, namalayanan: '', harga: '', durasi: '', deskripsi: '', is_active: 1, image_url: null },
+        program: { id: null, namalayanan: '', idcategory: '', harga: '', durasi: '', deskripsi: '', is_active: 1, image_url: null },
         handleFile(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -134,6 +134,24 @@
                             required
                             class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
                         >
+                    </div>
+
+                    {{-- Category --}}
+                    <div>
+                        <label for="input-edit-idcategory" class="mb-1.5 block text-sm font-medium text-bq-text">Category <span class="text-bq-text-subtle text-xs font-normal">(optional)</span></label>
+                        <select
+                            name="idcategory"
+                            id="input-edit-idcategory"
+                            x-model="program.idcategory"
+                            class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                        >
+                            <option value="">-- Tanpa Kategori --</option>
+                            @if(isset($kategoriList))
+                                @foreach($kategoriList as $kat)
+                                    <option value="{{ $kat->id }}">{{ $kat->name }}</option>
+                                @endforeach
+                            @endif
+                        </select>
                     </div>
 
                     {{-- Price & Duration --}}

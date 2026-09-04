@@ -244,6 +244,18 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="rounded-xl border border-bq-border p-4 space-y-2">
+                                    <h4 class="text-xs font-bold uppercase tracking-wider text-bq-text-muted">Services Used</h4>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <template x-for="svc in (activeCustomer.services_used || [])" :key="svc">
+                                            <span class="rounded-lg bg-indigo-50 text-indigo-700 px-2.5 py-1 text-xs font-medium" x-text="svc"></span>
+                                        </template>
+                                        <template x-if="!activeCustomer.services_used || activeCustomer.services_used.length === 0">
+                                            <span class="text-bq-text-subtle text-xs">Belum ada layanan</span>
+                                        </template>
+                                    </div>
+                                </div>
                             </div>
 
                             {{-- TAB 2: HISTORY --}}
@@ -274,10 +286,14 @@
                             {{-- TAB 3: NOTES --}}
                             <div x-show="activeTab === 'notes'" style="display: none;" class="space-y-3">
                                 <h4 class="text-xs font-bold uppercase tracking-wider text-bq-text-muted">Internal Preferences &amp; Remarks</h4>
-                                <textarea rows="4" placeholder="Catatan internal tentang preferensi customer ini (misal: alergi tertentu, request instruktur khusus)..." class="w-full rounded-xl border border-bq-border p-3 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"></textarea>
-                                <button type="button" @click="alert('Catatan customer berhasil disimpan.')" class="rounded-xl bg-bq-primary px-3.5 py-2 text-xs font-semibold text-white hover:bg-bq-primary-hover transition">
-                                    Simpan Catatan
-                                </button>
+                                <form method="POST" action="{{ route('owner.customers.note') }}" class="space-y-3">
+                                    @csrf
+                                    <input type="hidden" name="customer_identifier" :value="activeCustomer.identifier">
+                                    <textarea name="notes" x-model="activeCustomer.notes" rows="4" placeholder="Catatan internal tentang preferensi customer ini (misal: alergi tertentu, request instruktur khusus)..." class="w-full rounded-xl border border-bq-border p-3 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"></textarea>
+                                    <button type="submit" class="rounded-xl bg-bq-primary px-3.5 py-2 text-xs font-semibold text-white hover:bg-bq-primary-hover transition">
+                                        Simpan Catatan
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </template>

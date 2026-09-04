@@ -6,27 +6,28 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class Review extends Model
+class Staff extends Model
 {
     use HasFactory, BelongsToTenant;
 
+    protected $table = 'staff';
+
     protected $fillable = [
         'idtenant',
-        'idbooking',
-        'rating',
-        'komentar',
-        'balasan',
-        'dibalas_pada',
-        'is_hidden',
+        'name',
+        'email',
+        'phone',
+        'role',
+        'availability_schedule',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'rating' => 'integer',
-            'is_hidden' => 'boolean',
-            'dibalas_pada' => 'datetime',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -35,8 +36,8 @@ class Review extends Model
         return $this->belongsTo(Tenant::class, 'idtenant');
     }
 
-    public function booking(): BelongsTo
+    public function services(): BelongsToMany
     {
-        return $this->belongsTo(Booking::class, 'idbooking');
+        return $this->belongsToMany(Service::class, 'service_staff', 'idstaff', 'idservice')->withTimestamps();
     }
 }

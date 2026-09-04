@@ -10,10 +10,16 @@ use App\Http\Controllers\OwnerCheckoutController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerLandingPageController;
 use App\Http\Controllers\OwnerPortalController;
+use App\Http\Controllers\OwnerAdditionalItemController;
+use App\Http\Controllers\OwnerAssetController;
+use App\Http\Controllers\OwnerCategoryController;
 use App\Http\Controllers\OwnerProgramController;
+use App\Http\Controllers\OwnerReviewController;
 use App\Http\Controllers\OwnerScheduleController;
 use App\Http\Controllers\OwnerSettingController;
+use App\Http\Controllers\OwnerStaffResourceController;
 use App\Http\Controllers\OwnerSubscriptionController;
+use App\Http\Controllers\OwnerVoucherController;
 use App\Models\User;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -204,21 +210,65 @@ Route::prefix('owner')
         Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page')->middleware('subscription:pro');
         Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware('subscription:pro');
 
-        // ── Extended Sidebar Modules (Frontend Architecture) ──
+        // ── Extended Core Business Modules (Tahap 2) ──
         Route::get('/calendar', [OwnerPortalController::class, 'calendar'])->name('owner.calendar');
         Route::get('/schedule-report', [OwnerPortalController::class, 'scheduleReport'])->name('owner.schedule-report');
-        Route::get('/categories', [OwnerPortalController::class, 'categories'])->name('owner.categories');
+
+        // Services & Programs
         Route::get('/services', [OwnerProgramController::class, 'index'])->name('owner.services');
-        Route::get('/staff-resources', [OwnerPortalController::class, 'staffResources'])->name('owner.staff-resources');
-        Route::get('/additional-items', [OwnerPortalController::class, 'additionalItems'])->name('owner.additional-items');
-        Route::get('/vouchers', [OwnerPortalController::class, 'vouchers'])->name('owner.vouchers');
-        Route::get('/reviews', [OwnerPortalController::class, 'reviews'])->name('owner.reviews');
+        Route::post('/services/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.services.toggle');
+        Route::post('/programs/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.programs.toggle');
+
+        // Categories
+        Route::get('/categories', [OwnerCategoryController::class, 'index'])->name('owner.categories');
+        Route::post('/categories', [OwnerCategoryController::class, 'store'])->name('owner.categories.store');
+        Route::put('/categories/{id}', [OwnerCategoryController::class, 'update'])->name('owner.categories.update');
+        Route::delete('/categories/{id}', [OwnerCategoryController::class, 'destroy'])->name('owner.categories.destroy');
+        Route::post('/categories/{id}/toggle', [OwnerCategoryController::class, 'toggleStatus'])->name('owner.categories.toggle');
+
+        // Staff & Resources
+        Route::get('/staff-resources', [OwnerStaffResourceController::class, 'index'])->name('owner.staff-resources');
+        Route::post('/staff', [OwnerStaffResourceController::class, 'storeStaff'])->name('owner.staff.store');
+        Route::put('/staff/{id}', [OwnerStaffResourceController::class, 'updateStaff'])->name('owner.staff.update');
+        Route::delete('/staff/{id}', [OwnerStaffResourceController::class, 'destroyStaff'])->name('owner.staff.destroy');
+        Route::post('/staff/{id}/toggle', [OwnerStaffResourceController::class, 'toggleStaffStatus'])->name('owner.staff.toggle');
+        Route::post('/resources', [OwnerStaffResourceController::class, 'storeResource'])->name('owner.resources.store');
+        Route::put('/resources/{id}', [OwnerStaffResourceController::class, 'updateResource'])->name('owner.resources.update');
+        Route::delete('/resources/{id}', [OwnerStaffResourceController::class, 'destroyResource'])->name('owner.resources.destroy');
+        Route::post('/resources/{id}/toggle', [OwnerStaffResourceController::class, 'toggleResourceStatus'])->name('owner.resources.toggle');
+
+        // Additional Items
+        Route::get('/additional-items', [OwnerAdditionalItemController::class, 'index'])->name('owner.additional-items');
+        Route::post('/additional-items', [OwnerAdditionalItemController::class, 'store'])->name('owner.additional-items.store');
+        Route::put('/additional-items/{id}', [OwnerAdditionalItemController::class, 'update'])->name('owner.additional-items.update');
+        Route::delete('/additional-items/{id}', [OwnerAdditionalItemController::class, 'destroy'])->name('owner.additional-items.destroy');
+        Route::post('/additional-items/{id}/toggle', [OwnerAdditionalItemController::class, 'toggleStatus'])->name('owner.additional-items.toggle');
+
+        // Vouchers
+        Route::get('/vouchers', [OwnerVoucherController::class, 'index'])->name('owner.vouchers');
+        Route::post('/vouchers', [OwnerVoucherController::class, 'store'])->name('owner.vouchers.store');
+        Route::put('/vouchers/{id}', [OwnerVoucherController::class, 'update'])->name('owner.vouchers.update');
+        Route::delete('/vouchers/{id}', [OwnerVoucherController::class, 'destroy'])->name('owner.vouchers.destroy');
+        Route::post('/vouchers/{id}/toggle', [OwnerVoucherController::class, 'toggleStatus'])->name('owner.vouchers.toggle');
+
+        // Reviews
+        Route::get('/reviews', [OwnerReviewController::class, 'index'])->name('owner.reviews');
+        Route::post('/reviews/{id}/reply', [OwnerReviewController::class, 'reply'])->name('owner.reviews.reply');
+        Route::post('/reviews/{id}/toggle', [OwnerReviewController::class, 'toggleVisibility'])->name('owner.reviews.toggle');
+
+        // Customers CRM
         Route::get('/customers', [OwnerPortalController::class, 'customers'])->name('owner.customers');
+        Route::post('/customers/note', [OwnerPortalController::class, 'saveCustomerNote'])->name('owner.customers.note');
+
+        // Settings & Configurations
         Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
         Route::get('/settings/appearance', [OwnerPortalController::class, 'appearance'])->name('owner.settings.appearance');
+        Route::post('/settings/appearance', [OwnerPortalController::class, 'updateAppearance'])->name('owner.settings.appearance.update');
         Route::get('/settings/payment-setting', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payment-setting');
         Route::get('/settings/payments', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payments');
-        Route::get('/settings/assets', [OwnerPortalController::class, 'assets'])->name('owner.settings.assets');
+        Route::get('/settings/assets', [OwnerAssetController::class, 'index'])->name('owner.settings.assets');
+        Route::post('/settings/assets', [OwnerAssetController::class, 'store'])->name('owner.settings.assets.store');
+        Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->name('owner.settings.assets.destroy');
         Route::get('/settings/balance', [OwnerPortalController::class, 'balance'])->name('owner.settings.balance');
         Route::get('/settings/integrations', [OwnerPortalController::class, 'integrations'])->name('owner.settings.integrations');
     });
