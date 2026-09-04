@@ -1,14 +1,14 @@
 @extends('layouts.owner-layout')
 
-@section('title', 'Programs')
+@section('title', 'Services')
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6" x-data>
 
     {{-- ── Header ── --}}
     @include('components.owner.page-header', [
-        'judul' => 'Program Management',
-        'subjudul' => 'Manage your services and programs offered to customers.',
+        'judul' => 'Services Management',
+        'subjudul' => 'Manage your business services, pricing, and programs offered to customers.',
     ])
 
     {{-- ── Stats ── --}}

@@ -46,10 +46,12 @@ class OwnerDashboardController extends Controller
                 'totalrevenue' => 0,
                 'persenperubahanrevenue' => 0,
                 'programaktif' => 0,
+                'totalpelanggan' => 0,
                 'datarevenueperbulan' => $datarevenueperbulan,
                 'labelbulan' => $labelbulan,
                 'trendlayanan' => collect(),
                 'aktivitasterbaru' => collect(),
+                'upcomingbookings' => collect(),
                 'statustrial' => false,
                 'sisahari' => 0,
                 'showProfilePrompt' => $showProfilePrompt,
@@ -167,6 +169,20 @@ class OwnerDashboardController extends Controller
             $sisahari = (int) max(0, ceil(Carbon::now()->diffInDays($langganan->trial_berakhir, false)));
         }
 
+        $totalpelanggan = Booking::where('idtenant', $idtenant)
+            ->whereNotNull('email')
+            ->distinct('email')
+            ->count('email');
+
+        $upcomingbookings = Booking::where('bookings.idtenant', $idtenant)
+            ->where('tanggalbooking', '>=', Carbon::today())
+            ->whereIn('status', ['paid', 'pending'])
+            ->with('layanan')
+            ->orderBy('tanggalbooking')
+            ->orderBy('jam')
+            ->limit(5)
+            ->get();
+
         $showProfilePrompt = !$tenant->namabisnis || !$tenant->slug || !$tenant->jenisbisnis || !$tenant->nomorhp;
         $showPaymentPrompt = ($tenant->payment_mode ?? 'platform') === 'owner'
             && ($tenant->midtrans_status ?? 'pending') !== 'approved';
@@ -178,10 +194,12 @@ class OwnerDashboardController extends Controller
             'totalrevenue',
             'persenperubahanrevenue',
             'programaktif',
+            'totalpelanggan',
             'datarevenueperbulan',
             'labelbulan',
             'trendlayanan',
             'aktivitasterbaru',
+            'upcomingbookings',
             'statustrial',
             'sisahari',
             'showProfilePrompt',

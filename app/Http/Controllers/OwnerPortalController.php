@@ -12,7 +12,15 @@ class OwnerPortalController extends Controller
     public function calendar()
     {
         $tenant = $this->resolveTenant();
-        return view('owner.owner-calendar', compact('tenant'));
+        $services = \App\Models\Service::where('idtenant', $tenant?->id)->get();
+        $bookings = \App\Models\Booking::where('idtenant', $tenant?->id)
+            ->with('layanan')
+            ->orderBy('tanggalbooking')
+            ->orderBy('jam')
+            ->limit(100)
+            ->get();
+
+        return view('owner.owner-calendar', compact('tenant', 'services', 'bookings'));
     }
 
     public function scheduleReport()
@@ -51,10 +59,64 @@ class OwnerPortalController extends Controller
         return view('owner.owner-reviews', compact('tenant'));
     }
 
-    public function customers()
+    public function customers(Request $request)
     {
         $tenant = $this->resolveTenant();
-        return view('owner.owner-customers', compact('tenant'));
+        if (!$tenant) {
+            return view('owner.owner-customers', [
+                'tenant' => null,
+                'customers' => collect(),
+                'totalCustomers' => 0,
+                'totalSpentAll' => 0,
+                'totalBookingsAll' => 0,
+            ]);
+        }
+
+        $bookings = \App\Models\Booking::where('idtenant', $tenant->id)
+            ->with(['layanan', 'payment'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $grouped = $bookings->groupBy(function ($b) {
+            return strtolower($b->email ?: ($b->nomorhp ?: ('guest-' . $b->id)));
+        });
+
+        $customers = $grouped->map(function ($userBookings) {
+            $first = $userBookings->first();
+            $totalBookings = $userBookings->count();
+            $paidBookings = $userBookings->filter(fn($b) => in_array($b->status, ['paid', 'completed']));
+            $totalSpent = $paidBookings->sum(fn($b) => $b->layanan?->harga ?? 0);
+            $lastBooking = $userBookings->sortByDesc('tanggalbooking')->first();
+            $today = \Carbon\Carbon::today()->toDateString();
+            $upcomingBooking = $userBookings->filter(fn($b) => $b->tanggalbooking && $b->tanggalbooking->toDateString() >= $today && in_array($b->status, ['paid', 'pending']))->sortBy('tanggalbooking')->first();
+
+            return [
+                'name' => $first->namapelanggan ?: 'Customer',
+                'email' => $first->email ?: '-',
+                'phone' => $first->nomorhp ?: '-',
+                'total_bookings' => $totalBookings,
+                'total_spent' => $totalSpent,
+                'formatted_spent' => 'Rp ' . number_format($totalSpent, 0, ',', '.'),
+                'last_booking' => $lastBooking?->tanggalbooking ? $lastBooking->tanggalbooking->format('d M Y') : '-',
+                'upcoming_booking' => $upcomingBooking ? ($upcomingBooking->tanggalbooking->format('d M Y') . ' ' . $upcomingBooking->jam) : '-',
+                'bookings' => $userBookings->map(fn($b) => [
+                    'id' => $b->id,
+                    'code' => $b->booking_code ?? ('BKQ-' . $b->id),
+                    'service' => $b->layanan?->namalayanan ?? 'Service',
+                    'price' => 'Rp ' . number_format($b->layanan?->harga ?? 0, 0, ',', '.'),
+                    'date' => $b->tanggalbooking ? $b->tanggalbooking->format('d M Y') : '-',
+                    'time' => $b->jam,
+                    'status' => $b->status,
+                    'notes' => $b->catatan ?: '-',
+                ])->values(),
+            ];
+        })->values();
+
+        $totalCustomers = $customers->count();
+        $totalSpentAll = $customers->sum('total_spent');
+        $totalBookingsAll = $bookings->count();
+
+        return view('owner.owner-customers', compact('tenant', 'customers', 'totalCustomers', 'totalSpentAll', 'totalBookingsAll'));
     }
 
     public function appearance()
@@ -66,7 +128,9 @@ class OwnerPortalController extends Controller
     public function paymentSettings()
     {
         $tenant = $this->resolveTenant();
-        return view('owner.owner-payment-settings', compact('tenant'));
+        $payouts = \App\Models\OwnerPayout::where('idtenant', $tenant?->id)->orderByDesc('created_at')->limit(10)->get();
+        $transactions = \App\Models\Payment::where('idtenant', $tenant?->id)->with('booking')->orderByDesc('created_at')->limit(10)->get();
+        return view('owner.owner-payment-settings', compact('tenant', 'payouts', 'transactions'));
     }
 
     public function assets()

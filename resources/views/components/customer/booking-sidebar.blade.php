@@ -44,10 +44,10 @@
                 </span>
                 <div class="flex-1 min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-wider text-[#64748B]">Jadwal Sesi</p>
-                    <p class="text-sm font-bold text-[#0F172A] truncate" x-text="selectedDateLabel">
+                    <p class="text-sm font-bold text-[#0F172A] truncate" x-text="typeof selectedDateLabel !== 'undefined' ? selectedDateLabel : '{{ isset($selectedDate) && $selectedDate ? \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d M Y') : 'Pilih tanggal' }}'">
                         {{ isset($selectedDate) && $selectedDate ? \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d M Y') : 'Pilih tanggal' }}
                     </p>
-                    <p class="text-xs text-[#64748B] mt-0.5" x-text="selectedTimeLabel">
+                    <p class="text-xs text-[#64748B] mt-0.5" x-text="typeof selectedTimeLabel !== 'undefined' ? selectedTimeLabel : '{{ isset($selectedTime) && $selectedTime ? 'Pukul ' . $selectedTime . ' WIB' : 'Pilih jam' }}'">
                         {{ isset($selectedTime) && $selectedTime ? 'Pukul ' . $selectedTime . ' WIB' : 'Pilih jam' }}
                     </p>
                 </div>
@@ -58,7 +58,7 @@
         <div class="mt-6 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
             <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-[#64748B]">Total Biaya</span>
-                <span class="text-xl font-extrabold text-[#4F46E5]" x-text="totalLabel">
+                <span class="text-xl font-extrabold text-[#4F46E5]" x-text="typeof totalLabel !== 'undefined' ? totalLabel : '{{ $service ? 'Rp ' . number_format($service->harga, 0, ',', '.') : 'Rp 0' }}'">
                     {{ $service ? 'Rp ' . number_format($service->harga, 0, ',', '.') : 'Rp 0' }}
                 </span>
             </div>

@@ -217,6 +217,7 @@ Route::prefix('owner')
         Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
         Route::get('/settings/appearance', [OwnerPortalController::class, 'appearance'])->name('owner.settings.appearance');
         Route::get('/settings/payment-setting', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payment-setting');
+        Route::get('/settings/payments', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payments');
         Route::get('/settings/assets', [OwnerPortalController::class, 'assets'])->name('owner.settings.assets');
         Route::get('/settings/balance', [OwnerPortalController::class, 'balance'])->name('owner.settings.balance');
         Route::get('/settings/integrations', [OwnerPortalController::class, 'integrations'])->name('owner.settings.integrations');

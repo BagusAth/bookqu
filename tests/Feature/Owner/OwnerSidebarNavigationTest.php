@@ -63,7 +63,7 @@ class OwnerSidebarNavigationTest extends TestCase
             $response->assertSee('BookQu');
             $response->assertSee('Admin Portal');
             $response->assertSee('BOOKING');
-            $response->assertSee('BUSINESS');
+            $response->assertSee('SERVICES');
             $response->assertSee('CUSTOMERS');
             $response->assertSee('MARKETING');
             $response->assertSee('ANALYTICS');

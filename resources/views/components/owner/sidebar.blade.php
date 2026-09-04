@@ -63,7 +63,7 @@
             ],
         ],
         [
-            'title' => 'BUSINESS',
+            'title' => 'SERVICES',
             'items' => [
                 [
                     'label' => 'Services',
