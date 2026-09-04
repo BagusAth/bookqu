@@ -189,17 +189,25 @@ class OwnerScheduleController extends Controller
                 // Subtract 1 minute to meet the requirement (e.g. 11:00 - 11:59 instead of 12:00)
                 $jamselesainya = $jamcursor->copy()->addMinutes($intervalslot)->subMinute()->format('H:i:s');
 
-                Schedule::create([
-                    'idtenant' => $tenant->id,
-                    'idlayanan' => $datavalid['idlayanan'],
-                    'tanggal' => $tanggalnya,
-                    'jam_mulai' => $jammulainya,
-                    'jam_selesai' => $jamselesainya,
-                    'harga_override' => $hargaOverride,
-                    'status' => 'tersedia',
-                ]);
+                $slotConflict = Schedule::where('idtenant', $tenant->id)
+                    ->where('idlayanan', $datavalid['idlayanan'])
+                    ->whereDate('tanggal', $tanggalnya)
+                    ->where('jam_mulai', $jammulainya)
+                    ->exists();
 
-                $jumlahslot++;
+                if (!$slotConflict) {
+                    Schedule::create([
+                        'idtenant' => $tenant->id,
+                        'idlayanan' => $datavalid['idlayanan'],
+                        'tanggal' => $tanggalnya,
+                        'jam_mulai' => $jammulainya,
+                        'jam_selesai' => $jamselesainya,
+                        'harga_override' => $hargaOverride,
+                        'status' => 'tersedia',
+                    ]);
+                    $jumlahslot++;
+                }
+
                 $jamcursor->addMinutes($intervalslot);
             }
         }

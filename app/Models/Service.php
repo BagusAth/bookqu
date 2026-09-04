@@ -58,16 +58,16 @@ class Service extends Model
 
     public function staff(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsToMany(Staff::class, 'service_staff', 'service_id', 'staff_id')->withTimestamps();
+        return $this->belongsToMany(Staff::class, 'service_staff', 'idservice', 'idstaff')->withTimestamps();
     }
 
     public function resources(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsToMany(Resource::class, 'service_resource', 'service_id', 'resource_id')->withTimestamps();
+        return $this->belongsToMany(Resource::class, 'service_resource', 'idservice', 'idresource')->withTimestamps();
     }
 
     public function additionalItems(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsToMany(AdditionalItem::class, 'additional_item_service', 'service_id', 'additional_item_id')->withPivot('is_required')->withTimestamps();
+        return $this->belongsToMany(AdditionalItem::class, 'additional_item_service', 'idservice', 'idadditional_item')->withTimestamps();
     }
 }

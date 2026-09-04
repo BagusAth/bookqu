@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class OwnerCategoryController extends Controller
 {
@@ -41,10 +42,17 @@ class OwnerCategoryController extends Controller
         }
 
         $validated = $request->validate([
-            'name'        => 'required|string|max:100',
+            'name'        => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('categories', 'name')->where('idtenant', $tenant->id),
+            ],
             'description' => 'nullable|string|max:500',
             'color'       => 'nullable|string|max:50',
             'is_active'   => 'nullable|boolean',
+        ], [
+            'name.unique' => 'Kategori dengan nama ini sudah ada.',
         ]);
 
         Category::create([
@@ -68,10 +76,17 @@ class OwnerCategoryController extends Controller
         $category = Category::where('idtenant', $tenant->id)->findOrFail($id);
 
         $validated = $request->validate([
-            'name'        => 'required|string|max:100',
+            'name'        => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('categories', 'name')->where('idtenant', $tenant->id)->ignore($category->id),
+            ],
             'description' => 'nullable|string|max:500',
             'color'       => 'nullable|string|max:50',
             'is_active'   => 'required|boolean',
+        ], [
+            'name.unique' => 'Kategori dengan nama ini sudah ada.',
         ]);
 
         $category->update([

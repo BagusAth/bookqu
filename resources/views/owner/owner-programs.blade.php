@@ -63,14 +63,17 @@
                     {{-- Action buttons overlay --}}
                     @php
                         $editPayload = [
-                            'id'          => $layanan->id,
-                            'namalayanan' => $layanan->namalayanan,
-                            'idcategory'  => $layanan->idcategory ?? '',
-                            'harga'       => $layanan->harga,
-                            'durasi'      => $layanan->durasi,
-                            'deskripsi'   => $layanan->deskripsi ?: '',
-                            'is_active'   => (int) ($layanan->is_active ?? 1),
-                            'image_url'   => $layanan->image_url
+                            'id'                  => $layanan->id,
+                            'namalayanan'         => $layanan->namalayanan,
+                            'idcategory'          => $layanan->idcategory ?? '',
+                            'harga'               => $layanan->harga,
+                            'durasi'              => $layanan->durasi,
+                            'deskripsi'           => $layanan->deskripsi ?: '',
+                            'is_active'           => (int) ($layanan->is_active ?? 1),
+                            'staff_ids'           => $layanan->staff->pluck('id')->toArray(),
+                            'resource_ids'        => $layanan->resources->pluck('id')->toArray(),
+                            'additional_item_ids' => $layanan->additionalItems->pluck('id')->toArray(),
+                            'image_url'           => $layanan->image_url
                                 ? (\Illuminate\Support\Str::startsWith($layanan->image_url, ['http://', 'https://', '/'])
                                     ? $layanan->image_url
                                     : \Illuminate\Support\Facades\Storage::url($layanan->image_url))
@@ -107,14 +110,39 @@
                 </div>
 
                 {{-- Body --}}
-                <div class="p-5">
-                    @if($layanan->category)
-                        <span class="inline-block rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 mb-1.5">
-                            {{ $layanan->category->name }}
-                        </span>
-                    @endif
-                    <h3 class="text-sm font-semibold text-bq-text">{{ $layanan->namalayanan }}</h3>
-                    <p class="mt-1 text-xs text-bq-text-muted line-clamp-2">{{ $layanan->deskripsi ?? 'No description' }}</p>
+                <div class="p-5 flex flex-col justify-between flex-1">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-1.5 mb-2">
+                            @if($layanan->category)
+                                <span class="inline-block rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                                    {{ $layanan->category->name }}
+                                </span>
+                            @endif
+                            @if($layanan->additionalItems->isNotEmpty())
+                                <span class="inline-block rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                    +{{ $layanan->additionalItems->count() }} Add-ons
+                                </span>
+                            @endif
+                        </div>
+                        <h3 class="text-sm font-semibold text-bq-text">{{ $layanan->namalayanan }}</h3>
+                        <p class="mt-1 text-xs text-bq-text-muted line-clamp-2">{{ $layanan->deskripsi ?? 'No description' }}</p>
+
+                        {{-- Hierarchy: Staff & Resources breakdown --}}
+                        <div class="mt-3 space-y-1.5">
+                            @if($layanan->staff->isNotEmpty())
+                                <div class="flex items-center gap-1 text-[11px] text-bq-text-muted">
+                                    <svg class="h-3.5 w-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    <span class="truncate">Staff: {{ $layanan->staff->pluck('name')->join(', ') }}</span>
+                                </div>
+                            @endif
+                            @if($layanan->resources->isNotEmpty())
+                                <div class="flex items-center gap-1 text-[11px] text-bq-text-muted">
+                                    <svg class="h-3.5 w-3.5 text-sky-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                    <span class="truncate">Resource: {{ $layanan->resources->pluck('name')->join(', ') }}</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
 
                     <div class="mt-4 flex items-center justify-between border-t border-bq-border pt-3">
                         <div class="flex items-center gap-3">

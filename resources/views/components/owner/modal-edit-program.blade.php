@@ -4,7 +4,7 @@
         buka: false,
         sedangkirim: false,
         preview: null,
-        program: { id: null, namalayanan: '', idcategory: '', harga: '', durasi: '', deskripsi: '', is_active: 1, image_url: null },
+        program: { id: null, namalayanan: '', idcategory: '', harga: '', durasi: '', deskripsi: '', is_active: 1, image_url: null, staff_ids: [], resource_ids: [], additional_item_ids: [] },
         handleFile(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -18,7 +18,12 @@
         }
     }"
     @open-edit-program.window="
-        program = $event.detail;
+        program = {
+            ...$event.detail,
+            staff_ids: $event.detail.staff_ids || [],
+            resource_ids: $event.detail.resource_ids || [],
+            additional_item_ids: $event.detail.additional_item_ids || [],
+        };
         preview = program.image_url || null;
         buka = true;
     "
@@ -69,7 +74,7 @@
                 {{-- Flag to remove existing image --}}
                 <input type="hidden" name="remove_image" :value="(!preview && !$refs.fileInput?.files?.length) ? '1' : '0'">
 
-                <div class="space-y-4 px-6 py-5">
+                <div class="space-y-4 px-6 py-5 max-h-[72vh] overflow-y-auto">
 
                     {{-- Cover Image Upload --}}
                     <div>
@@ -205,11 +210,83 @@
                         <textarea
                             name="deskripsi"
                             id="input-edit-deskripsi"
-                            rows="3"
+                            rows="2"
                             x-model="program.deskripsi"
                             class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20 resize-none"
                         ></textarea>
                     </div>
+
+                    {{-- Staff Assignment --}}
+                    @if(isset($staffList) && $staffList->isNotEmpty())
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-bq-text">Assign Staff <span class="text-bq-text-subtle text-xs font-normal">(optional)</span></label>
+                            <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto p-2 border border-bq-border rounded-lg bg-bq-background/50">
+                                @foreach($staffList as $stf)
+                                    <label class="flex items-center gap-2 text-xs text-bq-text cursor-pointer hover:text-bq-primary">
+                                        <input type="checkbox" name="staff_ids[]" value="{{ $stf->id }}"
+                                               :checked="program.staff_ids && program.staff_ids.includes({{ $stf->id }})"
+                                               @change="
+                                                   if ($event.target.checked) {
+                                                       if (!program.staff_ids.includes({{ $stf->id }})) program.staff_ids.push({{ $stf->id }});
+                                                   } else {
+                                                       program.staff_ids = program.staff_ids.filter(id => id !== {{ $stf->id }});
+                                                   }
+                                               "
+                                               class="rounded border-bq-border text-bq-primary focus:ring-bq-primary/20">
+                                        <span class="truncate">{{ $stf->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Resource Assignment --}}
+                    @if(isset($resourceList) && $resourceList->isNotEmpty())
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-bq-text">Assign Resource / Room <span class="text-bq-text-subtle text-xs font-normal">(optional)</span></label>
+                            <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto p-2 border border-bq-border rounded-lg bg-bq-background/50">
+                                @foreach($resourceList as $res)
+                                    <label class="flex items-center gap-2 text-xs text-bq-text cursor-pointer hover:text-bq-primary">
+                                        <input type="checkbox" name="resource_ids[]" value="{{ $res->id }}"
+                                               :checked="program.resource_ids && program.resource_ids.includes({{ $res->id }})"
+                                               @change="
+                                                   if ($event.target.checked) {
+                                                       if (!program.resource_ids.includes({{ $res->id }})) program.resource_ids.push({{ $res->id }});
+                                                   } else {
+                                                       program.resource_ids = program.resource_ids.filter(id => id !== {{ $res->id }});
+                                                   }
+                                               "
+                                               class="rounded border-bq-border text-bq-primary focus:ring-bq-primary/20">
+                                        <span class="truncate">{{ $res->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Additional Items Assignment --}}
+                    @if(isset($additionalItemList) && $additionalItemList->isNotEmpty())
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-bq-text">Available Add-ons <span class="text-bq-text-subtle text-xs font-normal">(optional)</span></label>
+                            <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto p-2 border border-bq-border rounded-lg bg-bq-background/50">
+                                @foreach($additionalItemList as $ai)
+                                    <label class="flex items-center gap-2 text-xs text-bq-text cursor-pointer hover:text-bq-primary">
+                                        <input type="checkbox" name="additional_item_ids[]" value="{{ $ai->id }}"
+                                               :checked="program.additional_item_ids && program.additional_item_ids.includes({{ $ai->id }})"
+                                               @change="
+                                                   if ($event.target.checked) {
+                                                       if (!program.additional_item_ids.includes({{ $ai->id }})) program.additional_item_ids.push({{ $ai->id }});
+                                                   } else {
+                                                       program.additional_item_ids = program.additional_item_ids.filter(id => id !== {{ $ai->id }});
+                                                   }
+                                               "
+                                               class="rounded border-bq-border text-bq-primary focus:ring-bq-primary/20">
+                                        <span class="truncate">{{ $ai->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Footer --}}

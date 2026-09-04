@@ -93,6 +93,11 @@
 
                         {{-- Service Details --}}
                         <div class="flex h-full flex-col p-5">
+                            @if($service->category)
+                                <span class="inline-block rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 mb-1.5 w-fit">
+                                    {{ $service->category->name }}
+                                </span>
+                            @endif
                             <div class="flex items-start justify-between gap-3">
                                 <h3 class="text-base font-bold text-[#0F172A] group-hover:text-[#4F46E5] transition-colors leading-snug">
                                     {{ $service->namalayanan }}

@@ -59,6 +59,7 @@ class BookingController extends Controller
         });
 
         $services = Service::hydrate($servicesData ?? []);
+        $services->load('category');
 
         $servicesPayload = $services->map(function (Service $service) {
             $priceLabel = 'Rp ' . number_format($service->harga, 0, ',', '.');
