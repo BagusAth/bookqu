@@ -6,12 +6,12 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\UsageLog;
-use App\Notifications\BookingPaidNotification;
+use App\Mail\BookingInvoiceMail;
 use App\Notifications\NewBookingOwnerNotification;
 use App\Traits\ClearsBookingCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
 use Midtrans\Config as MidtransConfig;
 use Midtrans\Transaction as MidtransTransaction;
 
@@ -206,13 +206,13 @@ class MidtransPaymentService
                                 }
                             }
 
-                            // Kirim notifikasi email ke pelanggan
-                            if ($payment->email_pembayar) {
+                            // Kirim email invoice ke pelanggan
+                            if ($booking->email) {
                                 try {
-                                    Notification::route('mail', $payment->email_pembayar)
-                                        ->notify(new BookingPaidNotification($booking));
+                                    Mail::to($booking->email)
+                                        ->send(new BookingInvoiceMail($booking));
                                 } catch (\Exception $e) {
-                                    Log::error('Gagal kirim notif booking ke pelanggan: ' . $e->getMessage());
+                                    Log::error('Gagal kirim email invoice ke pelanggan: ' . $e->getMessage());
                                 }
                             }
 

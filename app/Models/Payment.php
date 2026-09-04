@@ -66,4 +66,16 @@ class Payment extends Model
     {
         return $this->status === 'pending' && !$this->isExpired();
     }
+
+    /**
+     * Override route model binding to bypass TenantScope.
+     * Binding runs before TenantMiddleware populates the TenantContext,
+     * so we must query globally here. Controllers will verify idtenant.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return static::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->first();
+    }
 }
