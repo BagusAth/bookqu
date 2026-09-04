@@ -53,7 +53,6 @@ class OwnerSidebarNavigationTest extends TestCase
             '/owner/settings/appearance',
             '/owner/settings/payment-setting',
             '/owner/settings/assets',
-            '/owner/settings/balance',
             '/owner/settings/integrations',
             '/owner/subscription',
         ];
@@ -64,9 +63,14 @@ class OwnerSidebarNavigationTest extends TestCase
             $response->assertSee('BookQu');
             $response->assertSee('Admin Portal');
             $response->assertSee('BOOKING');
-            $response->assertSee('MASTER DATA');
-            $response->assertSee('CUSTOMER');
-            $response->assertSee('SETTING');
+            $response->assertSee('BUSINESS');
+            $response->assertSee('CUSTOMERS');
+            $response->assertSee('MARKETING');
+            $response->assertSee('ANALYTICS');
+            $response->assertSee('SETTINGS');
+            $response->assertSee('Landing Page');
+            $response->assertSee('Services');
+            $response->assertSee('Bookings');
         }
     }
 }

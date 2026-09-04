@@ -18,6 +18,12 @@
         if ($trimmed === 'owner/dashboard') {
             return $halamanaktif === 'owner/dashboard';
         }
+        if ($trimmed === 'owner/services' && ($halamanaktif === 'owner/programs' || str_starts_with($halamanaktif, 'owner/programs'))) {
+            return true;
+        }
+        if ($trimmed === 'owner/settings/business' && ($halamanaktif === 'owner/settings' || $halamanaktif === 'owner/settings/business')) {
+            return true;
+        }
         return str_starts_with($halamanaktif, $trimmed);
     };
 
@@ -49,33 +55,27 @@
                     'icon'  => 'schedule',
                 ],
                 [
-                    'label' => 'Booking List',
+                    'label' => 'Bookings',
                     'href'  => '/owner/bookings',
                     'route' => ['owner.bookings', 'owner.bookings.status'],
                     'icon'  => 'bookings',
                 ],
-                [
-                    'label' => 'Schedule Report',
-                    'href'  => '/owner/schedule-report',
-                    'route' => ['owner.schedule-report', 'owner.analytics'],
-                    'icon'  => 'schedule-report',
-                ],
             ],
         ],
         [
-            'title' => 'MASTER DATA',
+            'title' => 'BUSINESS',
             'items' => [
-                [
-                    'label' => 'Categories',
-                    'href'  => '/owner/categories',
-                    'route' => ['owner.categories'],
-                    'icon'  => 'categories',
-                ],
                 [
                     'label' => 'Services',
                     'href'  => '/owner/services',
                     'route' => ['owner.services', 'owner.programs'],
                     'icon'  => 'services',
+                ],
+                [
+                    'label' => 'Categories',
+                    'href'  => '/owner/categories',
+                    'route' => ['owner.categories'],
+                    'icon'  => 'categories',
                 ],
                 [
                     'label' => 'Staff & Resources',
@@ -89,6 +89,22 @@
                     'route' => ['owner.additional-items'],
                     'icon'  => 'additional-items',
                 ],
+            ],
+        ],
+        [
+            'title' => 'CUSTOMERS',
+            'items' => [
+                [
+                    'label' => 'Customers',
+                    'href'  => '/owner/customers',
+                    'route' => ['owner.customers'],
+                    'icon'  => 'customers',
+                ],
+            ],
+        ],
+        [
+            'title' => 'MARKETING',
+            'items' => [
                 [
                     'label' => 'Vouchers',
                     'href'  => '/owner/vouchers',
@@ -104,35 +120,41 @@
             ],
         ],
         [
-            'title' => 'CUSTOMER',
+            'title' => 'ANALYTICS',
             'items' => [
                 [
-                    'label' => 'Customer List',
-                    'href'  => '/owner/customers',
-                    'route' => ['owner.customers'],
-                    'icon'  => 'customers',
+                    'label' => 'Overview',
+                    'href'  => '/owner/analytics',
+                    'route' => ['owner.analytics', 'owner.analytics.export'],
+                    'icon'  => 'analytics',
+                ],
+                [
+                    'label' => 'Schedule Report',
+                    'href'  => '/owner/schedule-report',
+                    'route' => ['owner.schedule-report'],
+                    'icon'  => 'schedule-report',
                 ],
             ],
         ],
         [
-            'title' => 'SETTING',
+            'title' => 'SETTINGS',
             'items' => [
                 [
-                    'label' => 'Business Setting',
+                    'label' => 'Business',
                     'href'  => '/owner/settings/business',
-                    'route' => ['owner.settings.business', 'owner.settings'],
+                    'route' => ['owner.settings.business', 'owner.settings', 'owner.settings.profile', 'owner.settings.account'],
                     'icon'  => 'business-setting',
                 ],
                 [
-                    'label' => 'Appearance Setting',
+                    'label' => 'Appearance',
                     'href'  => '/owner/settings/appearance',
-                    'route' => ['owner.settings.appearance', 'owner.landing-page'],
+                    'route' => ['owner.settings.appearance'],
                     'icon'  => 'appearance-setting',
                 ],
                 [
-                    'label' => 'Payment Setting',
+                    'label' => 'Payments',
                     'href'  => '/owner/settings/payment-setting',
-                    'route' => ['owner.settings.payment-setting'],
+                    'route' => ['owner.settings.payment-setting', 'owner.settings.payment'],
                     'icon'  => 'payment-setting',
                 ],
                 [
@@ -140,12 +162,6 @@
                     'href'  => '/owner/settings/assets',
                     'route' => ['owner.settings.assets'],
                     'icon'  => 'assets',
-                ],
-                [
-                    'label' => 'Balance',
-                    'href'  => '/owner/settings/balance',
-                    'route' => ['owner.settings.balance'],
-                    'icon'  => 'balance',
                 ],
                 [
                     'label' => 'Integrations',
@@ -158,6 +174,18 @@
                     'href'  => '/owner/subscription',
                     'route' => ['owner.subscription'],
                     'icon'  => 'subscription',
+                ],
+            ],
+        ],
+        [
+            'title' => null, // Standalone bottom product feature
+            'items' => [
+                [
+                    'label' => 'Landing Page',
+                    'href'  => '/owner/landing-page',
+                    'route' => ['owner.landing-page', 'owner.landing-page.store'],
+                    'icon'  => 'landing-page',
+                    'badge' => 'PRO',
                 ],
             ],
         ],
@@ -236,6 +264,9 @@
         id="sidebar-scrollable-nav"
     >
         @foreach ($sections as $sectionIndex => $section)
+            @if ($sectionIndex === count($sections) - 1 && !$section['title'])
+                <div class="pt-2 border-t border-[#F1F5F9]"></div>
+            @endif
             <div class="space-y-1">
                 @if ($section['title'])
                     @php
@@ -320,21 +351,15 @@
                                         </svg>
                                         @break
 
-                                    @case('schedule-report')
+                                    @case('services')
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                         </svg>
                                         @break
 
                                     @case('categories')
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                                        </svg>
-                                        @break
-
-                                    @case('services')
-                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                         </svg>
                                         @break
 
@@ -350,6 +375,12 @@
                                         </svg>
                                         @break
 
+                                    @case('customers')
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                                        </svg>
+                                        @break
+
                                     @case('vouchers')
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
@@ -362,9 +393,15 @@
                                         </svg>
                                         @break
 
-                                    @case('customers')
+                                    @case('analytics')
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                        @break
+
+                                    @case('schedule-report')
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                         </svg>
                                         @break
 
@@ -409,9 +446,21 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
                                         </svg>
                                         @break
+
+                                    @case('landing-page')
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                                        </svg>
+                                        @break
                                 @endswitch
                             </span>
                             <span class="truncate">{{ $item['label'] }}</span>
+
+                            @if (!empty($item['badge']))
+                                <span class="ml-auto inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-extrabold tracking-wider uppercase {{ $active ? 'bg-[#4F46E5] text-white' : 'bg-[#EEF2FF] text-[#4F46E5] group-hover:bg-[#E0E7FF]' }}">
+                                    {{ $item['badge'] }}
+                                </span>
+                            @endif
                         </a>
                     @endforeach
                 </div>
@@ -421,7 +470,7 @@
 
     <!-- Bottom Section: Upgrade Card & Account Actions (Fixed at Bottom) -->
     <div class="p-3 border-t border-[#F1F5F9] space-y-2.5 shrink-0 bg-white">
-        {{-- Subscription Status Card (Matches Screenshot) --}}
+        {{-- Subscription Status Card --}}
         <div class="rounded-2xl border border-[#E2E8F0] bg-[#FAFAFC] p-3.5 shadow-2xs">
             <div class="flex items-center gap-2.5">
                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5] shrink-0">
