@@ -96,48 +96,66 @@
         </div>
     </div>
 
-    {{-- ── Staff & Resource Utilization Gauges ── --}}
+    {{-- ── Staff & Resource Workload Allocation ── --}}
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {{-- Staff Utilization --}}
+        {{-- Staff Workload --}}
         <div class="rounded-2xl border border-bq-border bg-bq-surface p-5 shadow-xs space-y-4">
-            <h3 class="text-base font-bold text-bq-text">Staff Utilization Rate</h3>
-            <p class="text-xs text-bq-text-muted">Alokasi reservasi berdasarkan tim staf profesional</p>
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-bq-text">Beban Kerja Staf (Staff Workload)</h3>
+                    <p class="text-xs text-bq-text-muted">Total sesi reservasi yang ditangani berdasarkan penugasan layanan</p>
+                </div>
+            </div>
 
-            <div class="space-y-3 text-xs">
+            <div class="space-y-3 text-xs divide-y divide-bq-border/60">
                 @forelse($staffMembers as $s)
-                    <div>
-                        <div class="flex justify-between font-semibold mb-1">
-                            <span class="text-bq-text">{{ $s['name'] }} ({{ $s['role'] }})</span>
-                            <span class="text-emerald-700 font-bold">{{ $s['rate'] }}% ({{ $s['count'] }} booking)</span>
+                    <div class="pt-3 first:pt-0">
+                        <div class="flex items-start justify-between font-semibold mb-1">
+                            <div>
+                                <span class="text-bq-text font-bold text-xs">{{ $s['name'] }}</span>
+                                <span class="ml-1.5 text-[11px] text-bq-text-muted font-normal">({{ $s['role'] }})</span>
+                            </div>
+                            <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700">
+                                {{ $s['count'] }} Booking Berjalan
+                            </span>
                         </div>
-                        <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
-                            <div class="h-full rounded-full bg-indigo-500" style="width: {{ min(100, $s['rate']) }}%;"></div>
-                        </div>
+                        <p class="text-[11px] text-bq-text-muted truncate">
+                            <span class="font-medium text-slate-700">Layanan:</span> {{ $s['services_names'] ?: 'Belum ditugaskan ke layanan' }}
+                        </p>
                     </div>
                 @empty
-                    <p class="text-xs text-bq-text-subtle py-4 text-center">Belum ada data staff terdaftar.</p>
+                    <p class="text-xs text-bq-text-subtle py-4 text-center">Belum ada staf terdaftar di sistem.</p>
                 @endforelse
             </div>
         </div>
 
-        {{-- Resource Utilization --}}
+        {{-- Resource Allocation --}}
         <div class="rounded-2xl border border-bq-border bg-bq-surface p-5 shadow-xs space-y-4">
-            <h3 class="text-base font-bold text-bq-text">Resource &amp; Room Utilization</h3>
-            <p class="text-xs text-bq-text-muted">Tingkat pemakaian ruangan, lapangan, atau workstation operasional</p>
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-bq-text">Alokasi Resource &amp; Ruangan</h3>
+                    <p class="text-xs text-bq-text-muted">Aktivitas pemakaian ruangan, aset fisik, dan kapasitas sesi</p>
+                </div>
+            </div>
 
-            <div class="space-y-3 text-xs">
+            <div class="space-y-3 text-xs divide-y divide-bq-border/60">
                 @forelse($resourceList as $r)
-                    <div>
-                        <div class="flex justify-between font-semibold mb-1">
-                            <span class="text-bq-text">{{ $r['name'] }} ({{ $r['type'] }})</span>
-                            <span class="text-emerald-700 font-bold">{{ $r['rate'] }}% ({{ $r['count'] }} booking)</span>
+                    <div class="pt-3 first:pt-0">
+                        <div class="flex items-start justify-between font-semibold mb-1">
+                            <div>
+                                <span class="text-bq-text font-bold text-xs">{{ $r['name'] }}</span>
+                                <span class="ml-1.5 text-[11px] text-bq-text-muted font-normal">({{ $r['type'] }} • Kapasitas {{ $r['capacity'] ?: 1 }})</span>
+                            </div>
+                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                                {{ $r['count'] }} Booking Berjalan
+                            </span>
                         </div>
-                        <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
-                            <div class="h-full rounded-full bg-emerald-500" style="width: {{ min(100, $r['rate']) }}%;"></div>
-                        </div>
+                        <p class="text-[11px] text-bq-text-muted truncate">
+                            <span class="font-medium text-slate-700">Layanan:</span> {{ $r['services_names'] ?: 'Belum ditugaskan ke layanan' }}
+                        </p>
                     </div>
                 @empty
-                    <p class="text-xs text-bq-text-subtle py-4 text-center">Belum ada resource atau ruangan terdaftar.</p>
+                    <p class="text-xs text-bq-text-subtle py-4 text-center">Belum ada resource atau ruangan fisik terdaftar.</p>
                 @endforelse
             </div>
         </div>

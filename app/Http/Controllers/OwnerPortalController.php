@@ -117,31 +117,34 @@ class OwnerPortalController extends Controller
         $peakDay = !empty($sortedDays) && reset($sortedDays) > 0 ? array_key_first($sortedDays) : 'Sabtu';
         $lowDay = !empty($sortedDays) ? array_key_last($sortedDays) : 'Senin';
 
-        // Staff utilization
+        // Staff workload based on actual assigned service bookings
         $staffMembers = \App\Models\Staff::where('idtenant', $tenant->id)->with('services')->get()->map(function ($s) use ($bookings) {
             $serviceIds = $s->services->pluck('id')->toArray();
-            $handledBookingsCount = empty($serviceIds)
-                ? $bookings->count()
-                : $bookings->whereIn('idlayanan', $serviceIds)->count();
+            $handledBookingsCount = !empty($serviceIds)
+                ? $bookings->whereIn('idlayanan', $serviceIds)->count()
+                : 0;
             return [
-                'name'  => $s->name,
-                'role'  => $s->role,
-                'count' => $handledBookingsCount,
-                'rate'  => $bookings->count() > 0 ? round(($handledBookingsCount / $bookings->count()) * 100) : 0,
+                'name'           => $s->name,
+                'role'           => $s->role,
+                'services_count' => count($serviceIds),
+                'services_names' => $s->services->pluck('namalayanan')->implode(', '),
+                'count'          => $handledBookingsCount,
             ];
         });
 
-        // Resource utilization
+        // Resource workload based on actual assigned service bookings
         $resourceList = \App\Models\Resource::where('idtenant', $tenant->id)->with('services')->get()->map(function ($r) use ($bookings) {
             $serviceIds = $r->services->pluck('id')->toArray();
-            $handledBookingsCount = empty($serviceIds)
-                ? $bookings->count()
-                : $bookings->whereIn('idlayanan', $serviceIds)->count();
+            $handledBookingsCount = !empty($serviceIds)
+                ? $bookings->whereIn('idlayanan', $serviceIds)->count()
+                : 0;
             return [
-                'name'  => $r->name,
-                'type'  => $r->type,
-                'count' => $handledBookingsCount,
-                'rate'  => $bookings->count() > 0 ? round(($handledBookingsCount / $bookings->count()) * 100) : 0,
+                'name'           => $r->name,
+                'type'           => $r->type,
+                'capacity'       => $r->capacity,
+                'services_count' => count($serviceIds),
+                'services_names' => $r->services->pluck('namalayanan')->implode(', '),
+                'count'          => $handledBookingsCount,
             ];
         });
 

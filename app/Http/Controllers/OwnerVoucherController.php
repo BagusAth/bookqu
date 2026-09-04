@@ -57,18 +57,22 @@ class OwnerVoucherController extends Controller
             'applicable_services.*'=> ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
+        $applicableServices = !empty($validated['applicable_services'])
+            ? implode(',', $validated['applicable_services'])
+            : 'all';
+
         $voucher = Voucher::create([
             'idtenant'            => $tenant->id,
             'code'                => strtoupper($validated['code']),
             'discount_type'       => $validated['discount_type'],
             'discount_value'      => $validated['discount_value'],
-            'min_order_amount'    => $validated['min_order_amount'] ?? 0,
-            'max_discount_amount' => $validated['max_discount_amount'] ?? null,
+            'min_spending'        => $validated['min_order_amount'] ?? 0,
+            'max_discount'        => $validated['max_discount_amount'] ?? null,
             'usage_limit'         => $validated['usage_limit'] ?? null,
             'used_count'          => 0,
             'start_date'          => $validated['start_date'] ?? null,
             'end_date'            => $validated['end_date'] ?? null,
-            'applicable_services' => $validated['applicable_services'] ?? null,
+            'applicable_services' => $applicableServices,
             'is_active'           => $request->has('is_active') ? (bool) $request->input('is_active') : true,
         ]);
 
@@ -99,16 +103,20 @@ class OwnerVoucherController extends Controller
             'applicable_services.*'=> ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
+        $applicableServices = !empty($validated['applicable_services'])
+            ? implode(',', $validated['applicable_services'])
+            : 'all';
+
         $voucher->update([
             'code'                => strtoupper($validated['code']),
             'discount_type'       => $validated['discount_type'],
             'discount_value'      => $validated['discount_value'],
-            'min_order_amount'    => $validated['min_order_amount'] ?? 0,
-            'max_discount_amount' => $validated['max_discount_amount'] ?? null,
+            'min_spending'        => $validated['min_order_amount'] ?? 0,
+            'max_discount'        => $validated['max_discount_amount'] ?? null,
             'usage_limit'         => $validated['usage_limit'] ?? null,
             'start_date'          => $validated['start_date'] ?? null,
             'end_date'            => $validated['end_date'] ?? null,
-            'applicable_services' => $validated['applicable_services'] ?? null,
+            'applicable_services' => $applicableServices,
             'is_active'           => (bool) $validated['is_active'],
         ]);
 

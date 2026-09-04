@@ -66,13 +66,13 @@
                     'code'                => $v->code,
                     'discount_type'       => $v->discount_type,
                     'discount_value'      => (float) $v->discount_value,
-                    'min_order_amount'    => (float) ($v->min_order_amount ?? 0),
-                    'max_discount_amount' => $v->max_discount_amount ? (float) $v->max_discount_amount : null,
+                    'min_order_amount'    => (float) ($v->min_spending ?? $v->min_order_amount ?? 0),
+                    'max_discount_amount' => ($v->max_discount ?? $v->max_discount_amount) ? (float) ($v->max_discount ?? $v->max_discount_amount) : null,
                     'usage_limit'         => $v->usage_limit,
                     'start_date'          => $v->start_date ? \Carbon\Carbon::parse($v->start_date)->format('Y-m-d') : '',
                     'end_date'            => $v->end_date ? \Carbon\Carbon::parse($v->end_date)->format('Y-m-d') : '',
                     'is_active'           => (int) $v->is_active,
-                    'applicable_services' => $v->applicable_services ?? [],
+                    'applicable_services' => is_string($v->applicable_services) ? ($v->applicable_services === 'all' ? [] : explode(',', $v->applicable_services)) : ($v->applicable_services ?? []),
                 ];
             @endphp
             <div class="relative rounded-2xl border border-bq-border bg-bq-surface p-5 shadow-xs transition hover:border-bq-border-strong hover:shadow-md flex flex-col justify-between overflow-hidden">
@@ -96,7 +96,7 @@
                     <div class="mt-4 space-y-2 text-xs">
                         <div class="flex justify-between">
                             <span class="text-bq-text-muted">Min. Order:</span>
-                            <span class="font-medium text-bq-text">Rp {{ number_format($v->min_order_amount ?? 0, 0, ',', '.') }}</span>
+                            <span class="font-medium text-bq-text">Rp {{ number_format($v->min_spending ?? $v->min_order_amount ?? 0, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-bq-text-muted">Penggunaan:</span>
