@@ -171,7 +171,7 @@
                         <div class="flex-1 min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wider text-[#64748B]">Jadwal Terpilih</p>
                             <p class="text-sm font-bold text-[#0F172A] truncate">
-                                {{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d M Y') }}
+                                {{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d F Y') }}
                             </p>
                             <p class="text-xs text-[#64748B] mt-0.5 font-medium">
                                 Pukul {{ $selectedTime }} WIB
@@ -180,12 +180,19 @@
                     </div>
                 </div>
 
+                {{-- Price difference alert if price is overridden --}}
+                @if($hargaAkhir != $service->harga)
+                <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
+                    *Harga pada jadwal ini berbeda dengan harga standar layanan (Rp {{ number_format($service->harga, 0, ',', '.') }}).
+                </div>
+                @endif
+
                 {{-- Total Biaya --}}
-                <div class="mt-6 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                <div class="mt-5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-[#64748B]">Total Bayar</span>
                         <span class="text-xl font-extrabold text-[#4F46E5]">
-                            Rp {{ number_format($service->harga, 0, ',', '.') }}
+                            Rp {{ number_format($hargaAkhir, 0, ',', '.') }}
                         </span>
                     </div>
                     <p class="mt-1 text-[11px] text-[#94A3B8]">Sudah termasuk pajak &amp; biaya layanan</p>
@@ -212,6 +219,13 @@
                     </svg>
                     Kembali ke Pilih Jam
                 </a>
+
+                <div class="mt-4 flex items-center justify-center gap-1.5 text-xs text-[#64748B]">
+                    <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span class="font-medium">Pembayaran aman &amp; terenkripsi</span>
+                </div>
             </div>
         </aside>
 
@@ -221,7 +235,7 @@
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] text-[#64748B] truncate">{{ $service->namalayanan }}</p>
                     <p class="text-base font-black text-[#4F46E5]">
-                        Rp {{ number_format($service->harga, 0, ',', '.') }}
+                        Rp {{ number_format($hargaAkhir, 0, ',', '.') }}
                     </p>
                 </div>
                 <button

@@ -682,8 +682,21 @@ class BookingController extends Controller
                 ->withErrors(['jam' => $result['error']]);
         }
 
-        // Free booking: clear cache and redirect
+        // Free booking: assign tokens, send email, clear cache and redirect
         if ($result['free']) {
+            $freeBooking = $result['booking'];
+            $freeBooking->assignManagementTokens();
+            $freeBooking->load(['tenant', 'layanan', 'payment']);
+
+            if ($freeBooking->email) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($freeBooking->email)
+                        ->send(new \App\Mail\BookingInvoiceMail($freeBooking));
+                } catch (\Exception $e) {
+                    Log::error('Gagal kirim email invoice free booking: ' . $e->getMessage());
+                }
+            }
+
             $this->clearBookingAvailabilityCache(
                 $tenant->id,
                 $service->id,
