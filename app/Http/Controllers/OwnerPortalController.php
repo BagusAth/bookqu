@@ -79,8 +79,9 @@ class OwnerPortalController extends Controller
         // Peak and low demand hours
         $sortedHours = $hourlyCounts;
         arsort($sortedHours);
-        $peakHour = !empty($sortedHours) && reset($sortedHours) > 0 ? array_key_first($sortedHours) : '14:00';
-        $lowHour = !empty($sortedHours) ? array_key_last($sortedHours) : '08:00';
+        $hasHourData = !empty($sortedHours) && reset($sortedHours) > 0;
+        $peakHour = $hasHourData ? array_key_first($sortedHours) : 'Tidak ada data';
+        $lowHour = $hasHourData ? array_key_last($sortedHours) : 'Tidak ada data';
 
         // Daily distribution (1=Monday .. 7=Sunday)
         $dailyCounts = [
@@ -114,8 +115,9 @@ class OwnerPortalController extends Controller
 
         $sortedDays = $dailyCounts;
         arsort($sortedDays);
-        $peakDay = !empty($sortedDays) && reset($sortedDays) > 0 ? array_key_first($sortedDays) : 'Sabtu';
-        $lowDay = !empty($sortedDays) ? array_key_last($sortedDays) : 'Senin';
+        $hasDayData = !empty($sortedDays) && reset($sortedDays) > 0;
+        $peakDay = $hasDayData ? array_key_first($sortedDays) : 'Tidak ada data';
+        $lowDay = $hasDayData ? array_key_last($sortedDays) : 'Tidak ada data';
 
         // Staff workload based on actual assigned service bookings
         $staffMembers = \App\Models\Staff::where('idtenant', $tenant->id)->with('services')->get()->map(function ($s) use ($bookings) {

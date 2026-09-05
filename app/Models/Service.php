@@ -70,4 +70,24 @@ class Service extends Model
     {
         return $this->belongsToMany(AdditionalItem::class, 'additional_item_service', 'idservice', 'idadditional_item')->withTimestamps();
     }
+
+    /**
+     * Checks if this service has active staff and resource fulfillment.
+     * If staff are assigned to this service, at least one must be active.
+     * If resources are assigned to this service, at least one must be active.
+     */
+    public function hasActiveFulfillment(): bool
+    {
+        $staffQuery = $this->staff()->withoutGlobalScopes();
+        if ($staffQuery->exists() && !$this->staff()->withoutGlobalScopes()->where('staff.is_active', true)->exists()) {
+            return false;
+        }
+
+        $resourceQuery = $this->resources()->withoutGlobalScopes();
+        if ($resourceQuery->exists() && !$this->resources()->withoutGlobalScopes()->where('resources.is_active', true)->exists()) {
+            return false;
+        }
+
+        return true;
+    }
 }

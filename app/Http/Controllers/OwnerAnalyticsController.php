@@ -188,11 +188,11 @@ class OwnerAnalyticsController extends Controller
             ]);
 
             Booking::where('idtenant', $tenant->id)
-                ->with('layanan')
+                ->with(['layanan', 'payment'])
                 ->orderByDesc('tanggalbooking')
                 ->chunk(500, function ($bookings) use ($handle) {
                     foreach ($bookings as $booking) {
-                        $harga = $booking->layanan->harga ?? 0;
+                        $harga = $booking->payment?->jumlah ?? $booking->layanan->harga ?? 0;
                         fputcsv($handle, [
                             optional($booking->tanggalbooking)->format('Y-m-d'),
                             $booking->layanan->namalayanan ?? '-',

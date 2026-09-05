@@ -217,6 +217,9 @@ Route::prefix('owner')
 
         // Services & Programs
         Route::get('/services', [OwnerProgramController::class, 'index'])->name('owner.services');
+        Route::post('/services', [OwnerProgramController::class, 'store'])->name('owner.services.store');
+        Route::put('/services/{program}', [OwnerProgramController::class, 'update'])->name('owner.services.update');
+        Route::delete('/services/{program}', [OwnerProgramController::class, 'destroy'])->name('owner.services.destroy');
         Route::post('/services/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.services.toggle');
         Route::post('/programs/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.programs.toggle');
 

@@ -234,15 +234,30 @@
     </div>
 
     {{-- Day View --}}
+    @php
+        $todayBookings = $bookings->filter(fn($b) => \Carbon\Carbon::parse($b->tanggalbooking)->isToday());
+    @endphp
     <div x-show="viewMode === 'day'" x-cloak class="rounded-2xl border border-bq-border bg-white shadow-2xs p-6 space-y-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 class="text-base font-bold text-bq-text">Jadwal Harian — {{ now()->translatedFormat('l, d F Y') }}</h2>
-            <span class="text-xs font-semibold text-slate-500">{{ $bookings->count() }} Sesi Terjadwal</span>
+            <span class="text-xs font-semibold text-slate-500">{{ $todayBookings->count() }} Sesi Terjadwal</span>
         </div>
 
         <div class="divide-y divide-slate-100">
-            @forelse ($bookings->take(8) as $item)
-                <div class="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 hover:bg-slate-50/60 rounded-xl px-2 transition">
+            @forelse ($todayBookings as $item)
+                <div
+                    @click="openDetail({
+                        id: '{{ $item->id }}',
+                        customer: '{{ addslashes($item->namapelanggan) }}',
+                        phone: '{{ $item->nomorhp }}',
+                        email: '{{ $item->email }}',
+                        service: '{{ addslashes($item->layanan->namalayanan ?? 'Layanan') }}',
+                        time: '{{ $item->jam }}',
+                        date: '{{ $item->tanggalbooking }}',
+                        status: '{{ $item->status }}'
+                    })"
+                    class="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 hover:bg-slate-50/60 rounded-xl px-2 transition cursor-pointer"
+                >
                     <div class="flex items-center gap-3">
                         <span class="flex h-10 w-16 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-xs font-extrabold text-[#4F46E5]">
                             {{ substr($item->jam, 0, 5) }}
@@ -253,8 +268,24 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold uppercase {{ $item->status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                            {{ $item->status === 'paid' ? 'Confirmed' : $item->status }}
+                        @php
+                            $badgeClass = match($item->status) {
+                                'paid'      => 'bg-emerald-100 text-emerald-800',
+                                'pending'   => 'bg-amber-100 text-amber-800',
+                                'completed' => 'bg-indigo-100 text-indigo-800',
+                                'cancelled' => 'bg-rose-100 text-rose-800',
+                                default     => 'bg-slate-100 text-slate-800',
+                            };
+                            $badgeLabel = match($item->status) {
+                                'paid'      => 'Confirmed',
+                                'pending'   => 'Pending',
+                                'completed' => 'Completed',
+                                'cancelled' => 'Cancelled',
+                                default     => ucfirst($item->status),
+                            };
+                        @endphp
+                        <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold uppercase {{ $badgeClass }}">
+                            {{ $badgeLabel }}
                         </span>
                     </div>
                 </div>
@@ -267,25 +298,33 @@
     </div>
 
     {{-- Month View --}}
+    @php
+        $startOfMonth = now()->startOfMonth();
+        $daysInMonth = now()->daysInMonth;
+        // Carbon dayOfWeek: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        $startDayOffset = $startOfMonth->dayOfWeek;
+        $totalCells = (int) ceil(($startDayOffset + $daysInMonth) / 7) * 7;
+    @endphp
     <div x-show="viewMode === 'month'" x-cloak class="rounded-2xl border border-bq-border bg-white shadow-2xs p-5">
         <div class="grid grid-cols-7 gap-px rounded-xl border border-bq-border bg-slate-200 overflow-hidden text-center text-xs">
             @foreach (['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] as $dayName)
                 <div class="bg-slate-50 py-2.5 font-bold text-slate-700">{{ $dayName }}</div>
             @endforeach
-            @foreach (range(1, 35) as $cell)
+            @foreach (range(0, $totalCells - 1) as $cell)
                 @php
-                    $dayNum = $cell - 2; // sample offset
-                    $hasBookings = $dayNum > 0 && $dayNum <= 30 && $dayNum % 3 === 0;
+                    $dayNum = $cell - $startDayOffset + 1;
+                    $isValidDay = ($dayNum >= 1 && $dayNum <= $daysInMonth);
+                    $dayBookings = $isValidDay ? ($monthBookings->get($dayNum) ?? collect()) : collect();
                 @endphp
-                <div class="bg-white min-h-[75px] p-2 text-left relative transition hover:bg-slate-50">
-                    @if ($dayNum > 0 && $dayNum <= 30)
-                        <span class="text-xs font-bold {{ $dayNum === (int)now()->format('d') ? 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4F46E5] text-white' : 'text-slate-700' }}">
+                <div class="bg-white min-h-[75px] p-2 text-left relative transition hover:bg-slate-50 {{ !$isValidDay ? 'bg-slate-50/50' : '' }}">
+                    @if ($isValidDay)
+                        <span class="text-xs font-bold {{ $dayNum === (int)now()->format('j') ? 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4F46E5] text-white' : 'text-slate-700' }}">
                             {{ $dayNum }}
                         </span>
-                        @if ($hasBookings)
-                            <div class="mt-1">
+                        @if ($dayBookings->isNotEmpty())
+                            <div class="mt-1 space-y-1">
                                 <span class="block truncate rounded bg-indigo-50 px-1 py-0.5 text-[10px] font-bold text-[#4F46E5]">
-                                    2 Booking
+                                    {{ $dayBookings->count() }} Booking
                                 </span>
                             </div>
                         @endif
@@ -335,7 +374,16 @@
                     </div>
                     <div class="flex items-center justify-between pt-2">
                         <span class="text-xs text-slate-500">Status Sesi:</span>
-                        <span class="rounded-full px-2.5 py-0.5 text-xs font-bold uppercase bg-emerald-100 text-emerald-800" x-text="selectedSlot.status"></span>
+                        <span
+                            class="rounded-full px-2.5 py-0.5 text-xs font-bold uppercase"
+                            :class="{
+                                'bg-emerald-100 text-emerald-800': selectedSlot.status === 'paid',
+                                'bg-amber-100 text-amber-800': selectedSlot.status === 'pending',
+                                'bg-indigo-100 text-indigo-800': selectedSlot.status === 'completed',
+                                'bg-rose-100 text-rose-800': selectedSlot.status === 'cancelled'
+                            }"
+                            x-text="selectedSlot.status === 'paid' ? 'Confirmed' : (selectedSlot.status === 'pending' ? 'Pending' : (selectedSlot.status === 'completed' ? 'Completed' : (selectedSlot.status === 'cancelled' ? 'Cancelled' : selectedSlot.status)))"
+                        ></span>
                     </div>
                 </div>
             </template>

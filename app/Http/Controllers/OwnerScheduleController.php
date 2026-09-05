@@ -171,46 +171,53 @@ class OwnerScheduleController extends Controller
         $jumlahslot = 0;
         $intervalslot = (int) $datavalid['intervalslot'];
 
-        foreach ($daftartanggal as $tanggalnya) {
-            $jamcursor = Carbon::parse($tanggalnya . ' ' . $datavalid['jammulai']);
-            $jamakhir = Carbon::parse($tanggalnya . ' ' . $datavalid['jamselesai']);
+        $jumlahslot = \Illuminate\Support\Facades\DB::transaction(function () use ($daftartanggal, $datavalid, $layanan, $tenant, $intervalslot) {
+            $createdCount = 0;
+            foreach ($daftartanggal as $tanggalnya) {
+                $jamcursor = Carbon::parse($tanggalnya . ' ' . $datavalid['jammulai']);
+                $jamakhir = Carbon::parse($tanggalnya . ' ' . $datavalid['jamselesai']);
 
-            $hargaOverride = null;
-            if ($layanan && Carbon::parse($tanggalnya)->isWeekend()) {
-                if ($tenant->weekend_price_type === 'multiplier' && $tenant->weekend_price_value) {
-                    $hargaOverride = $layanan->harga * $tenant->weekend_price_value;
-                } elseif ($tenant->weekend_price_type === 'fixed' && $tenant->weekend_price_value) {
-                    $hargaOverride = $tenant->weekend_price_value;
-                }
-            }
-
-            while ($jamcursor->copy()->addMinutes($intervalslot)->lte($jamakhir)) {
-                $jammulainya = $jamcursor->format('H:i:s');
-                // Subtract 1 minute to meet the requirement (e.g. 11:00 - 11:59 instead of 12:00)
-                $jamselesainya = $jamcursor->copy()->addMinutes($intervalslot)->subMinute()->format('H:i:s');
-
-                $slotConflict = Schedule::where('idtenant', $tenant->id)
-                    ->where('idlayanan', $datavalid['idlayanan'])
-                    ->whereDate('tanggal', $tanggalnya)
-                    ->where('jam_mulai', $jammulainya)
-                    ->exists();
-
-                if (!$slotConflict) {
-                    Schedule::create([
-                        'idtenant' => $tenant->id,
-                        'idlayanan' => $datavalid['idlayanan'],
-                        'tanggal' => $tanggalnya,
-                        'jam_mulai' => $jammulainya,
-                        'jam_selesai' => $jamselesainya,
-                        'harga_override' => $hargaOverride,
-                        'status' => 'tersedia',
-                    ]);
-                    $jumlahslot++;
+                $hargaOverride = null;
+                if ($layanan && Carbon::parse($tanggalnya)->isWeekend()) {
+                    if ($tenant->weekend_price_type === 'multiplier' && $tenant->weekend_price_value) {
+                        $hargaOverride = $layanan->harga * $tenant->weekend_price_value;
+                    } elseif ($tenant->weekend_price_type === 'fixed' && $tenant->weekend_price_value) {
+                        $hargaOverride = $tenant->weekend_price_value;
+                    }
                 }
 
-                $jamcursor->addMinutes($intervalslot);
+                while ($jamcursor->copy()->addMinutes($intervalslot)->lte($jamakhir)) {
+                    $jammulainya = $jamcursor->format('H:i:s');
+                    // Subtract 1 minute to meet the requirement (e.g. 11:00 - 11:59 instead of 12:00)
+                    $jamselesainya = $jamcursor->copy()->addMinutes($intervalslot)->subMinute()->format('H:i:s');
+
+                    $slotConflict = Schedule::where('idtenant', $tenant->id)
+                        ->where('idlayanan', $datavalid['idlayanan'])
+                        ->whereDate('tanggal', $tanggalnya)
+                        ->where(function ($query) use ($jammulainya, $jamselesainya) {
+                            $query->where('jam_mulai', '<=', $jamselesainya)
+                                  ->where('jam_selesai', '>=', $jammulainya);
+                        })
+                        ->exists();
+
+                    if (!$slotConflict) {
+                        Schedule::create([
+                            'idtenant' => $tenant->id,
+                            'idlayanan' => $datavalid['idlayanan'],
+                            'tanggal' => $tanggalnya,
+                            'jam_mulai' => $jammulainya,
+                            'jam_selesai' => $jamselesainya,
+                            'harga_override' => $hargaOverride,
+                            'status' => 'tersedia',
+                        ]);
+                        $createdCount++;
+                    }
+
+                    $jamcursor->addMinutes($intervalslot);
+                }
             }
-        }
+            return $createdCount;
+        });
 
         if ($jumlahslot > 0) {
             $this->clearScheduleCache($tenant->id, $datavalid['idlayanan'], $daftartanggal);

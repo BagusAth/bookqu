@@ -60,6 +60,7 @@ class BookingController extends Controller
 
         $services = Service::hydrate($servicesData ?? []);
         $services->load('category');
+        $services = $services->filter(fn (Service $service) => $service->hasActiveFulfillment());
 
         $servicesPayload = $services->map(function (Service $service) {
             $priceLabel = 'Rp ' . number_format($service->harga, 0, ',', '.');
@@ -90,8 +91,9 @@ class BookingController extends Controller
 
         $service = $this->resolveService($tenant->id, (int) $validated['service_id']);
 
-        if (!$service) {
-            return redirect()->route('customer.booking.program', $slug_usaha);
+        if (!$service || !$service->hasActiveFulfillment()) {
+            return redirect()->route('customer.booking.program', $slug_usaha)
+                ->withErrors(['service' => 'Layanan ini sedang tidak tersedia karena staf atau sumber daya tidak aktif.']);
         }
 
         session([
@@ -132,7 +134,7 @@ class BookingController extends Controller
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
-        if (!$service) {
+        if (!$service || !$service->hasActiveFulfillment()) {
             session()->forget('booking');
             return redirect()->route('customer.booking.program', $slug_usaha);
         }
@@ -223,7 +225,7 @@ class BookingController extends Controller
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
-        if (!$service) {
+        if (!$service || !$service->hasActiveFulfillment()) {
             session()->forget('booking');
             return redirect()->route('customer.booking.program', $slug_usaha);
         }
@@ -321,7 +323,7 @@ class BookingController extends Controller
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
-        if (!$service) {
+        if (!$service || !$service->hasActiveFulfillment()) {
             session()->forget('booking');
             return redirect()->route('customer.booking.program', $slug_usaha);
         }
@@ -451,7 +453,7 @@ class BookingController extends Controller
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
-        if (!$service) {
+        if (!$service || !$service->hasActiveFulfillment()) {
             session()->forget('booking');
             return redirect()->route('customer.booking.program', $slug_usaha);
         }
@@ -524,6 +526,7 @@ class BookingController extends Controller
         }
 
         session()->put('booking.jam', $selectedTime);
+        session()->put('booking.schedule_id', $schedule->id);
 
         return redirect()->route('customer.booking.checkout', $slug_usaha);
     }
@@ -540,21 +543,30 @@ class BookingController extends Controller
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
         $selectedTime = $booking['jam'] ?? null;
+        $scheduleId = $booking['schedule_id'] ?? null;
 
         if (!$serviceId || !$selectedDate || !$selectedTime) {
             return redirect()->route('customer.booking.program', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
-        if (!$service) {
+        if (!$service || !$service->hasActiveFulfillment()) {
             return redirect()->route('customer.booking.program', $slug_usaha);
         }
 
-        $schedule = Schedule::where('idtenant', $tenant->id)
-            ->where('idlayanan', $service->id)
-            ->whereDate('tanggal', $selectedDate)
-            ->where('jam_mulai', $selectedTime . ':00')
-            ->first();
+        $schedule = null;
+        if ($scheduleId) {
+            $schedule = Schedule::where('idtenant', $tenant->id)
+                ->where('idlayanan', $service->id)
+                ->find($scheduleId);
+        }
+        if (!$schedule) {
+            $schedule = Schedule::where('idtenant', $tenant->id)
+                ->where('idlayanan', $service->id)
+                ->whereDate('tanggal', $selectedDate)
+                ->where('jam_mulai', $selectedTime . ':00')
+                ->first();
+        }
 
         $hargaAkhir = $schedule && $schedule->harga_override ? $schedule->harga_override : $service->harga;
 
@@ -572,6 +584,7 @@ class BookingController extends Controller
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
         $selectedTime = $booking['jam'] ?? null;
+        $scheduleId = $booking['schedule_id'] ?? null;
 
         if (!$serviceId || !$selectedDate || !$selectedTime) {
             return redirect()->route('customer.booking.program', $slug_usaha);
@@ -579,7 +592,7 @@ class BookingController extends Controller
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
-        if (!$service) {
+        if (!$service || !$service->hasActiveFulfillment()) {
             return redirect()->route('customer.booking.program', $slug_usaha);
         }
 
@@ -591,16 +604,21 @@ class BookingController extends Controller
         ]);
 
         // Wrap slot availability check + booking creation in a transaction to prevent double-booking
-        $result = DB::transaction(function () use ($tenant, $service, $selectedDate, $selectedTime, $request) {
+        $result = DB::transaction(function () use ($tenant, $service, $selectedDate, $selectedTime, $scheduleId, $request) {
             // Lock the schedule row so concurrent requests cannot claim the same slot simultaneously
-            $schedule = DB::table('schedules')
+            $scheduleQuery = DB::table('schedules')
                 ->where('idtenant', $tenant->id)
                 ->where('idlayanan', $service->id)
-                ->whereDate('tanggal', $selectedDate)
-                ->where('jam_mulai', $selectedTime . ':00')
-                ->where('status', 'tersedia')
-                ->lockForUpdate()
-                ->first();
+                ->where('status', 'tersedia');
+
+            if ($scheduleId) {
+                $scheduleQuery->where('id', $scheduleId);
+            } else {
+                $scheduleQuery->whereDate('tanggal', $selectedDate)
+                    ->where('jam_mulai', $selectedTime . ':00');
+            }
+
+            $schedule = $scheduleQuery->lockForUpdate()->first();
 
             if (!$schedule) {
                 return ['error' => 'Jadwal tidak ditemukan atau tidak tersedia.'];
