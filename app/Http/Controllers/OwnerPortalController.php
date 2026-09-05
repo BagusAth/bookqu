@@ -132,27 +132,56 @@ class OwnerPortalController extends Controller
         ));
     }
 
-    public function scheduleReport()
+    public function scheduleReport(\Illuminate\Http\Request $request)
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $totalSlots = \App\Models\Schedule::where('idtenant', $tenant->id)->count();
-        $bookedSlots = \App\Models\Schedule::where('idtenant', $tenant->id)
+        $period = $request->query('period', 'all');
+        $now = \Carbon\Carbon::now();
+        $startDate = null;
+        $endDate = null;
+
+        if ($period === 'today') {
+            $startDate = $now->copy()->startOfDay()->toDateString();
+            $endDate = $now->copy()->endOfDay()->toDateString();
+        } elseif ($period === 'this_week') {
+            $startDate = $now->copy()->startOfWeek()->toDateString();
+            $endDate = $now->copy()->endOfWeek()->toDateString();
+        } elseif ($period === 'this_month') {
+            $startDate = $now->copy()->startOfMonth()->toDateString();
+            $endDate = $now->copy()->endOfMonth()->toDateString();
+        } elseif ($period === 'last_30_days') {
+            $startDate = $now->copy()->subDays(30)->toDateString();
+            $endDate = $now->copy()->toDateString();
+        }
+
+        $schedulesQuery = \App\Models\Schedule::where('idtenant', $tenant->id);
+        if ($startDate && $endDate) {
+            $schedulesQuery->whereBetween('tanggal', [$startDate, $endDate]);
+        }
+
+        $totalSlots = (clone $schedulesQuery)->count();
+        $bookedSlots = (clone $schedulesQuery)
             ->whereHas('bookings', fn($q) => $q->whereIn('status', ['paid', 'completed']))
             ->count();
-        $availableSlots = \App\Models\Schedule::where('idtenant', $tenant->id)
+        $availableSlots = (clone $schedulesQuery)
             ->where('status', 'tersedia')
             ->whereDoesntHave('bookings', fn($q) => $q->whereIn('status', ['pending', 'paid', 'completed']))
             ->count();
         $utilizationRate = $totalSlots > 0 ? round(($bookedSlots / $totalSlots) * 100, 1) : 0;
 
-        $bookings = \App\Models\Booking::where('idtenant', $tenant->id)
+        $bookingsQuery = \App\Models\Booking::where('idtenant', $tenant->id)
             ->whereIn('status', ['paid', 'completed'])
-            ->with('layanan')
-            ->get();
+            ->with('layanan');
+
+        if ($startDate && $endDate) {
+            $bookingsQuery->whereBetween('tanggalbooking', [$startDate, $endDate]);
+        }
+
+        $bookings = $bookingsQuery->get();
 
         // Hourly distribution
         $hourlyCounts = [];
@@ -257,8 +286,90 @@ class OwnerPortalController extends Controller
             'peakDay',
             'lowDay',
             'staffMembers',
-            'resourceList'
+            'resourceList',
+            'period'
         ));
+    }
+
+    public function exportScheduleReport(\Illuminate\Http\Request $request)
+    {
+        $tenant = $this->resolveTenant();
+        if (!$tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        $period = $request->query('period', 'all');
+        $now = \Carbon\Carbon::now();
+        $startDate = null;
+        $endDate = null;
+
+        if ($period === 'today') {
+            $startDate = $now->copy()->startOfDay()->toDateString();
+            $endDate = $now->copy()->endOfDay()->toDateString();
+        } elseif ($period === 'this_week') {
+            $startDate = $now->copy()->startOfWeek()->toDateString();
+            $endDate = $now->copy()->endOfWeek()->toDateString();
+        } elseif ($period === 'this_month') {
+            $startDate = $now->copy()->startOfMonth()->toDateString();
+            $endDate = $now->copy()->endOfMonth()->toDateString();
+        } elseif ($period === 'last_30_days') {
+            $startDate = $now->copy()->subDays(30)->toDateString();
+            $endDate = $now->copy()->toDateString();
+        }
+
+        $schedulesQuery = \App\Models\Schedule::where('idtenant', $tenant->id)->with(['layanan', 'bookings']);
+        if ($startDate && $endDate) {
+            $schedulesQuery->whereBetween('tanggal', [$startDate, $endDate]);
+        }
+        $schedules = $schedulesQuery->orderBy('tanggal')->orderBy('jam_mulai')->get();
+
+        $totalSlots = $schedules->count();
+        $bookedSlots = $schedules->filter(fn($s) => $s->bookings->whereIn('status', ['paid', 'completed'])->isNotEmpty())->count();
+        $availableSlots = $schedules->filter(fn($s) => $s->status === 'tersedia' && $s->bookings->whereIn('status', ['pending', 'paid', 'completed'])->isEmpty())->count();
+        $utilizationRate = $totalSlots > 0 ? round(($bookedSlots / $totalSlots) * 100, 1) : 0;
+
+        $filename = 'schedule-report-' . ($tenant->slug ?? 'tenant') . '-' . $period . '-' . date('Ymd') . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($tenant, $schedules, $totalSlots, $bookedSlots, $availableSlots, $utilizationRate, $period) {
+            $file = fopen('php://output', 'w');
+            // BOM for UTF-8
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, ['BOOKQU - SCHEDULE & UTILIZATION REPORT']);
+            fputcsv($file, ['Bisnis', $tenant->namabisnis ?? '-']);
+            fputcsv($file, ['Periode', ucfirst($period)]);
+            fputcsv($file, ['Tanggal Ekspor', date('Y-m-d H:i:s')]);
+            fputcsv($file, []);
+            fputcsv($file, ['METRIK KPI', 'NILAI']);
+            fputcsv($file, ['Total Slots', $totalSlots]);
+            fputcsv($file, ['Booked Slots', $bookedSlots]);
+            fputcsv($file, ['Available Slots', $availableSlots]);
+            fputcsv($file, ['Utilization Rate (%)', $utilizationRate . '%']);
+            fputcsv($file, []);
+            fputcsv($file, ['RINCIAN SLOT OPERASIONAL']);
+            fputcsv($file, ['Tanggal', 'Jam Mulai', 'Jam Selesai', 'Layanan', 'Tarif (Rp)', 'Status Availability', 'Nama Tamu / Pemesan']);
+
+            foreach ($schedules as $s) {
+                $b = $s->bookings->whereIn('status', ['paid', 'completed'])->first();
+                fputcsv($file, [
+                    $s->tanggal,
+                    substr($s->jam_mulai, 0, 5),
+                    substr($s->jam_selesai, 0, 5),
+                    $s->layanan->namalayanan ?? '-',
+                    $s->harga_override ?? $s->layanan->harga ?? 0,
+                    $s->getAvailabilityStatus(),
+                    $b ? $b->namapelanggan : '-',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function categories()

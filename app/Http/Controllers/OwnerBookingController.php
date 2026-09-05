@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\Payment;
+use App\Models\Schedule;
 use App\Models\Tenant;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class OwnerBookingController extends Controller
 {
@@ -145,5 +150,101 @@ class OwnerBookingController extends Controller
         };
 
         return back()->with('sukses', "Booking atas nama {$booking->namapelanggan} berhasil ditandai sebagai {$label}.");
+    }
+
+    /**
+     * Walk-in booking creation by owner (directly from Calendar / Booking module)
+     */
+    public function walkinStore(Request $request)
+    {
+        $tenant = $this->resolveTenant();
+        if (!$tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        $data = $request->all();
+        if (!isset($data['idschedule']) && isset($data['schedule_id'])) {
+            $data['idschedule'] = $data['schedule_id'];
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($data, [
+            'idschedule'    => ['required', 'integer', Rule::exists('schedules', 'id')->where('idtenant', $tenant->id)],
+            'namapelanggan' => ['required', 'string', 'max:150'],
+            'nomorhp'       => ['required', 'string', 'max:30'],
+            'email'         => ['nullable', 'email', 'max:100'],
+            'catatan'       => ['nullable', 'string', 'max:500'],
+            'metode'        => ['nullable', 'string', 'in:cash,transfer,manual,qris'],
+        ]);
+
+        $validated = $validator->validate();
+
+        $booking = DB::transaction(function () use ($tenant, $validated) {
+            $schedule = Schedule::where('id', $validated['idschedule'])
+                ->where('idtenant', $tenant->id)
+                ->where('status', 'tersedia')
+                ->lockForUpdate()
+                ->first();
+
+            if (!$schedule) {
+                return null;
+            }
+
+            // Check if slot already has an active booking
+            $isBooked = Booking::where('idschedule', $schedule->id)
+                ->whereIn('status', ['pending', 'paid', 'completed'])
+                ->exists();
+
+            if ($isBooked) {
+                return null;
+            }
+
+            $service = $schedule->layanan;
+            $amount = $schedule->harga_override ?? ($service ? $service->harga : 0);
+
+            // Create Payment record for Walk-in
+            $orderId = 'WLK-' . strtoupper(Str::random(10));
+            $payment = Payment::create([
+                'idtenant'       => $tenant->id,
+                'tipe'           => 'booking',
+                'jumlah'         => $amount,
+                'status'         => 'sukses',
+                'metode'         => $validated['metode'] ?? 'cash',
+                'order_id'       => $orderId,
+                'nama_pembayar'  => $validated['namapelanggan'],
+                'email_pembayar' => $validated['email'] ?? ($tenant->user->email ?? 'walkin@example.com'),
+                'hp_pembayar'    => $validated['nomorhp'],
+            ]);
+
+            // Create Booking record
+            $booking = Booking::create([
+                'idtenant'       => $tenant->id,
+                'idlayanan'      => $schedule->idlayanan,
+                'idschedule'     => $schedule->id,
+                'idpayment'      => $payment->id,
+                'namapelanggan'  => $validated['namapelanggan'],
+                'nomorhp'        => $validated['nomorhp'],
+                'email'          => $validated['email'] ?? null,
+                'tanggalbooking' => $schedule->tanggal,
+                'jam'            => $schedule->jam_mulai,
+                'status'         => 'paid',
+                'catatan'        => $validated['catatan'] ?? 'Walk-in booking via Owner Calendar',
+            ]);
+
+            $booking->assignManagementTokens();
+
+            return $booking;
+        });
+
+        if (!$booking) {
+            return back()->withErrors(['error' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.']);
+        }
+
+        $this->clearBookingAvailabilityCache(
+            (int) $booking->idtenant,
+            (int) $booking->idlayanan,
+            $booking->tanggalbooking instanceof Carbon ? $booking->tanggalbooking->toDateString() : (string) $booking->tanggalbooking
+        );
+
+        return back()->with('sukses', "Walk-in booking atas nama {$booking->namapelanggan} berhasil dibuat!");
     }
 }

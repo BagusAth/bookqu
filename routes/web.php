@@ -205,6 +205,7 @@ Route::prefix('owner')
         Route::delete('/schedule/blocked-dates/{blockedDate}', [OwnerScheduleController::class, 'deleteBlockedDate'])->name('owner.schedule.blocked-dates.delete');
         Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
         Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
+        Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
         Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('subscription:pro');
         Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware('subscription:pro');
         Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
@@ -214,6 +215,7 @@ Route::prefix('owner')
         // ── Extended Core Business Modules (Tahap 2) ──
         Route::get('/calendar', [OwnerPortalController::class, 'calendar'])->name('owner.calendar');
         Route::get('/schedule-report', [OwnerPortalController::class, 'scheduleReport'])->name('owner.schedule-report');
+        Route::get('/schedule-report/export', [OwnerPortalController::class, 'exportScheduleReport'])->name('owner.schedule-report.export');
 
         // Services & Programs
         Route::get('/services', [OwnerProgramController::class, 'index'])->name('owner.services');

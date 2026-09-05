@@ -30,16 +30,46 @@
 
     {{-- ── Search & Filter ── --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <form method="GET" action="{{ route('owner.categories') }}" class="relative w-full sm:max-w-xs">
-            <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari kategori..."
-                class="w-full rounded-xl border border-bq-border bg-bq-surface py-2.5 pl-10 pr-4 text-xs text-bq-text placeholder-bq-text-subtle transition focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
-                id="input-search-categories">
-        </form>
-        <div class="text-xs text-bq-text-muted">
-            Total <span class="font-bold text-bq-text">{{ $categories->count() }}</span> kategori
+        <div class="flex flex-wrap items-center gap-2">
+            <form method="GET" action="{{ route('owner.categories') }}" class="relative w-full sm:w-64">
+                <input type="hidden" name="status" value="{{ $status ?? 'all' }}">
+                <input type="hidden" name="sort" value="{{ $sort ?? 'newest' }}">
+                <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari kategori..."
+                    class="w-full rounded-xl border border-bq-border bg-bq-surface py-2 pl-9 pr-3 text-xs text-bq-text placeholder-bq-text-subtle transition focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                    id="input-search-categories">
+            </form>
+
+            {{-- Status Filter Pills --}}
+            <div class="flex items-center gap-1 rounded-xl bg-slate-100 p-1 text-xs">
+                <a href="{{ route('owner.categories', ['status' => 'all', 'search' => $search ?? '', 'sort' => $sort ?? 'newest']) }}"
+                    class="rounded-lg px-2.5 py-1 font-semibold transition {{ ($status ?? 'all') === 'all' ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900' }}">
+                    Semua
+                </a>
+                <a href="{{ route('owner.categories', ['status' => 'active', 'search' => $search ?? '', 'sort' => $sort ?? 'newest']) }}"
+                    class="rounded-lg px-2.5 py-1 font-semibold transition {{ ($status ?? 'all') === 'active' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900' }}">
+                    Aktif
+                </a>
+                <a href="{{ route('owner.categories', ['status' => 'inactive', 'search' => $search ?? '', 'sort' => $sort ?? 'newest']) }}"
+                    class="rounded-lg px-2.5 py-1 font-semibold transition {{ ($status ?? 'all') === 'inactive' ? 'bg-white text-slate-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900' }}">
+                    Nonaktif
+                </a>
+            </div>
+        </div>
+
+        {{-- Sort & Count --}}
+        <div class="flex items-center gap-3">
+            <select onchange="location.href = this.value" class="rounded-xl border border-bq-border bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:border-bq-primary shadow-2xs">
+                <option value="{{ route('owner.categories', ['sort' => 'newest', 'status' => $status ?? 'all', 'search' => $search ?? '']) }}" {{ ($sort ?? 'newest') === 'newest' ? 'selected' : '' }}>Terbaru</option>
+                <option value="{{ route('owner.categories', ['sort' => 'name_asc', 'status' => $status ?? 'all', 'search' => $search ?? '']) }}" {{ ($sort ?? '') === 'name_asc' ? 'selected' : '' }}>Nama (A - Z)</option>
+                <option value="{{ route('owner.categories', ['sort' => 'name_desc', 'status' => $status ?? 'all', 'search' => $search ?? '']) }}" {{ ($sort ?? '') === 'name_desc' ? 'selected' : '' }}>Nama (Z - A)</option>
+                <option value="{{ route('owner.categories', ['sort' => 'services', 'status' => $status ?? 'all', 'search' => $search ?? '']) }}" {{ ($sort ?? '') === 'services' ? 'selected' : '' }}>Layanan Terbanyak</option>
+            </select>
+            <div class="text-xs text-bq-text-muted whitespace-nowrap">
+                Total <span class="font-bold text-bq-text">{{ $categories->count() }}</span>
+            </div>
         </div>
     </div>
 

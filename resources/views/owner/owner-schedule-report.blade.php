@@ -5,11 +5,50 @@
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6">
 
-    {{-- ── Header ── --}}
-    @include('components.owner.page-header', [
-        'judul' => 'Schedule Report & Utilization',
-        'subjudul' => 'Analisis komprehensif efisiensi slot jadwal, tingkat okupansi staf, dan utilisasi resource bisnis.',
-    ])
+    {{-- ── Header & Export ── --}}
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-bq-text sm:text-3xl">Schedule Report &amp; Utilization</h1>
+            <p class="mt-1 text-sm text-bq-text-muted">Analisis komprehensif efisiensi slot jadwal, tingkat okupansi staf, dan utilisasi resource bisnis.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a
+                href="{{ route('owner.schedule-report.export', ['period' => $period ?? 'all']) }}"
+                class="inline-flex items-center gap-2 rounded-xl border border-bq-border bg-white px-4 py-2.5 text-xs font-bold text-bq-text hover:bg-slate-50 transition shadow-2xs"
+                id="btn-export-schedule-csv"
+            >
+                <svg class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Export CSV</span>
+            </a>
+        </div>
+    </div>
+
+    {{-- ── Period Filter Bar ── --}}
+    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-bq-border bg-white p-3 shadow-2xs text-xs">
+        <span class="font-bold text-slate-700 px-2">Periode:</span>
+        <a href="{{ route('owner.schedule-report', ['period' => 'all']) }}"
+            class="rounded-xl px-3 py-1.5 font-semibold transition {{ ($period ?? 'all') === 'all' ? 'bg-[#4F46E5] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
+            Semua Waktu
+        </a>
+        <a href="{{ route('owner.schedule-report', ['period' => 'today']) }}"
+            class="rounded-xl px-3 py-1.5 font-semibold transition {{ ($period ?? 'all') === 'today' ? 'bg-[#4F46E5] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
+            Hari Ini
+        </a>
+        <a href="{{ route('owner.schedule-report', ['period' => 'this_week']) }}"
+            class="rounded-xl px-3 py-1.5 font-semibold transition {{ ($period ?? 'all') === 'this_week' ? 'bg-[#4F46E5] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
+            Minggu Ini
+        </a>
+        <a href="{{ route('owner.schedule-report', ['period' => 'this_month']) }}"
+            class="rounded-xl px-3 py-1.5 font-semibold transition {{ ($period ?? 'all') === 'this_month' ? 'bg-[#4F46E5] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
+            Bulan Ini
+        </a>
+        <a href="{{ route('owner.schedule-report', ['period' => 'last_30_days']) }}"
+            class="rounded-xl px-3 py-1.5 font-semibold transition {{ ($period ?? 'all') === 'last_30_days' ? 'bg-[#4F46E5] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
+            30 Hari Terakhir
+        </a>
+    </div>
 
     {{-- ── Metric KPI Cards ── --}}
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">

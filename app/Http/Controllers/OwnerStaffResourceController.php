@@ -61,24 +61,27 @@ class OwnerStaffResourceController extends Controller
         }
 
         $validated = $request->validate([
-            'name'         => 'required|string|max:100',
-            'role'         => 'required|string|max:100',
-            'phone'        => 'nullable|string|max:30',
-            'email'        => 'nullable|email|max:100',
-            'availability' => 'nullable|string|max:255',
-            'is_active'    => 'nullable|boolean',
-            'service_ids'  => 'nullable|array',
-            'service_ids.*'=> ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            'name'                  => 'required|string|max:100',
+            'role'                  => 'required|string|max:100',
+            'phone'                 => 'nullable|string|max:30',
+            'email'                 => 'nullable|email|max:100',
+            'availability'          => 'nullable|string|max:255',
+            'availability_schedule' => 'nullable|string|max:255',
+            'is_active'             => 'nullable|boolean',
+            'service_ids'           => 'nullable|array',
+            'service_ids.*'         => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
+        $avail = $validated['availability_schedule'] ?? $validated['availability'] ?? null;
+
         $staff = Staff::create([
-            'idtenant'     => $tenant->id,
-            'name'         => $validated['name'],
-            'role'         => $validated['role'],
-            'phone'        => $validated['phone'] ?? null,
-            'email'        => $validated['email'] ?? null,
-            'availability' => $validated['availability'] ?? null,
-            'is_active'    => $request->has('is_active') ? (bool) $request->input('is_active') : true,
+            'idtenant'              => $tenant->id,
+            'name'                  => $validated['name'],
+            'role'                  => $validated['role'],
+            'phone'                 => $validated['phone'] ?? null,
+            'email'                 => $validated['email'] ?? null,
+            'availability_schedule' => $avail,
+            'is_active'             => $request->has('is_active') ? (bool) $request->input('is_active') : true,
         ]);
 
         if (!empty($validated['service_ids'])) {
@@ -99,23 +102,26 @@ class OwnerStaffResourceController extends Controller
         $staff = Staff::where('idtenant', $tenant->id)->findOrFail($id);
 
         $validated = $request->validate([
-            'name'         => 'required|string|max:100',
-            'role'         => 'required|string|max:100',
-            'phone'        => 'nullable|string|max:30',
-            'email'        => 'nullable|email|max:100',
-            'availability' => 'nullable|string|max:255',
-            'is_active'    => 'required|boolean',
-            'service_ids'  => 'nullable|array',
-            'service_ids.*'=> ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            'name'                  => 'required|string|max:100',
+            'role'                  => 'required|string|max:100',
+            'phone'                 => 'nullable|string|max:30',
+            'email'                 => 'nullable|email|max:100',
+            'availability'          => 'nullable|string|max:255',
+            'availability_schedule' => 'nullable|string|max:255',
+            'is_active'             => 'required|boolean',
+            'service_ids'           => 'nullable|array',
+            'service_ids.*'         => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
+        $avail = $validated['availability_schedule'] ?? $validated['availability'] ?? null;
+
         $staff->update([
-            'name'         => $validated['name'],
-            'role'         => $validated['role'],
-            'phone'        => $validated['phone'] ?? null,
-            'email'        => $validated['email'] ?? null,
-            'availability' => $validated['availability'] ?? null,
-            'is_active'    => (bool) $validated['is_active'],
+            'name'                  => $validated['name'],
+            'role'                  => $validated['role'],
+            'phone'                 => $validated['phone'] ?? null,
+            'email'                 => $validated['email'] ?? null,
+            'availability_schedule' => $avail,
+            'is_active'             => (bool) $validated['is_active'],
         ]);
 
         $staff->services()->sync($validated['service_ids'] ?? []);

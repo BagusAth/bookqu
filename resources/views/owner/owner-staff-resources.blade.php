@@ -310,7 +310,13 @@
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-bq-text">Ketersediaan / Jam Kerja</label>
-                    <input type="text" name="availability" placeholder="Contoh: Senin - Jumat (09:00 - 17:00)" class="mt-1.5 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
+                    <input type="text" name="availability" x-ref="addStaffAvailability" placeholder="Contoh: Senin - Jumat (09:00 - 17:00)" class="mt-1.5 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
+                    <div class="mt-1.5 flex flex-wrap gap-1">
+                        <button type="button" @click="$refs.addStaffAvailability.value = 'Senin - Jumat (09:00 - 17:00)'" class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700 hover:bg-slate-200 transition">Senin - Jumat (09:00 - 17:00)</button>
+                        <button type="button" @click="$refs.addStaffAvailability.value = 'Shift Pagi (08:00 - 15:00)'" class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700 hover:bg-slate-200 transition">Shift Pagi (08:00 - 15:00)</button>
+                        <button type="button" @click="$refs.addStaffAvailability.value = 'Shift Siang (13:00 - 20:00)'" class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700 hover:bg-slate-200 transition">Shift Siang (13:00 - 20:00)</button>
+                        <button type="button" @click="$refs.addStaffAvailability.value = 'Setiap Hari (08:00 - 21:00)'" class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700 hover:bg-slate-200 transition">Setiap Hari (08:00 - 21:00)</button>
+                    </div>
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-bq-text">Layanan yang Ditangani</label>
@@ -359,7 +365,13 @@
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-bq-text">Ketersediaan / Jam Kerja</label>
-                    <input type="text" name="availability" x-model="activeStaff.availability" class="mt-1.5 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
+                    <input type="text" name="availability" x-model="activeStaff.availability" placeholder="Contoh: Senin - Jumat (09:00 - 17:00)" class="mt-1.5 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
+                    <div class="mt-1.5 flex flex-wrap gap-1">
+                        <button type="button" @click="activeStaff.availability = 'Senin - Jumat (09:00 - 17:00)'" class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700 hover:bg-slate-200 transition">Senin - Jumat (09:00 - 17:00)</button>
+                        <button type="button" @click="activeStaff.availability = 'Shift Pagi (08:00 - 15:00)'" class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700 hover:bg-slate-200 transition">Shift Pagi (08:00 - 15:00)</button>
+                        <button type="button" @click="activeStaff.availability = 'Shift Siang (13:00 - 20:00)'" class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700 hover:bg-slate-200 transition">Shift Siang (13:00 - 20:00)</button>
+                        <button type="button" @click="activeStaff.availability = 'Setiap Hari (08:00 - 21:00)'" class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700 hover:bg-slate-200 transition">Setiap Hari (08:00 - 21:00)</button>
+                    </div>
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-bq-text">Status</label>

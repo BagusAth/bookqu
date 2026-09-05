@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class OwnerCategoryController extends Controller
@@ -19,19 +20,33 @@ class OwnerCategoryController extends Controller
         }
 
         $search = $request->input('search', '');
+        $status = $request->input('status', 'all');
+        $sort   = $request->input('sort', 'newest');
 
-        $categories = Category::where('idtenant', $tenant->id)
+        $query = Category::where('idtenant', $tenant->id)
             ->withCount('services')
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
                 });
             })
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->when($status === 'active', fn($q) => $q->where('is_active', true))
+            ->when($status === 'inactive', fn($q) => $q->where('is_active', false));
 
-        return view('owner.owner-categories', compact('tenant', 'categories', 'search'));
+        if ($sort === 'name_asc') {
+            $query->orderBy('name', 'asc');
+        } elseif ($sort === 'name_desc') {
+            $query->orderBy('name', 'desc');
+        } elseif ($sort === 'services') {
+            $query->orderByDesc('services_count');
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $categories = $query->get();
+
+        return view('owner.owner-categories', compact('tenant', 'categories', 'search', 'status', 'sort'));
     }
 
     public function store(Request $request)
@@ -91,6 +106,7 @@ class OwnerCategoryController extends Controller
 
         $category->update([
             'name'        => $validated['name'],
+            'slug'        => Str::slug($validated['name']),
             'description' => $validated['description'] ?? null,
             'color'       => $validated['color'] ?? $category->color,
             'is_active'   => (bool) $validated['is_active'],

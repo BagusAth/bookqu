@@ -9,9 +9,11 @@
         viewMode: '{{ $view }}',
         selectedSlot: null,
         modalOpen: false,
+        walkinMode: false,
 
         openDetail(slot) {
             this.selectedSlot = slot;
+            this.walkinMode = false;
             this.modalOpen = true;
         }
     }"
@@ -247,6 +249,10 @@
                                                 @endphp
                                                 <div
                                                     @click="openDetail({
+                                                        raw_booking_id: {{ $matchedBooking->id }},
+                                                        raw_schedule_id: {{ $matchedBooking->idschedule ?? 0 }},
+                                                        is_booking: true,
+                                                        raw_status: '{{ $matchedBooking->status }}',
                                                         booking_id: '{{ $matchedBooking->booking_code ?? ('#BKG-' . $matchedBooking->id) }}',
                                                         customer: '{{ addslashes($matchedBooking->namapelanggan) }}',
                                                         phone: '{{ $matchedBooking->nomorhp }}',
@@ -276,6 +282,10 @@
                                                 @if ($schedStatus === \App\Models\Schedule::STATUS_AVAILABLE)
                                                     <div
                                                         @click="openDetail({
+                                                            raw_booking_id: null,
+                                                            raw_schedule_id: {{ $sched->id }},
+                                                            is_booking: false,
+                                                            raw_status: 'available',
                                                             booking_id: 'SCHED-{{ $sched->id }}',
                                                             customer: 'Belum Terisi (Slot Tersedia)',
                                                             phone: '-',
@@ -371,6 +381,10 @@
                             @endphp
                             <div
                                 @click="openDetail({
+                                    raw_booking_id: {{ $item->id }},
+                                    raw_schedule_id: {{ $item->idschedule ?? 0 }},
+                                    is_booking: true,
+                                    raw_status: '{{ $item->status }}',
                                     booking_id: '{{ $item->booking_code ?? ('#BKG-' . $item->id) }}',
                                     customer: '{{ addslashes($item->namapelanggan) }}',
                                     phone: '{{ $item->nomorhp }}',
@@ -422,7 +436,30 @@
                                 $avail = $sched->getAvailabilityStatus();
                                 $hasBooking = $sched->bookings->whereIn('status', ['paid', 'pending', 'completed'])->first();
                             @endphp
-                            <div class="rounded-xl border p-3.5 {{ $avail === \App\Models\Schedule::STATUS_AVAILABLE ? 'border-indigo-200 bg-indigo-50/40' : 'border-bq-border bg-white opacity-85' }}">
+                            <div
+                                @if ($avail === \App\Models\Schedule::STATUS_AVAILABLE)
+                                    @click="openDetail({
+                                        raw_booking_id: null,
+                                        raw_schedule_id: {{ $sched->id }},
+                                        is_booking: false,
+                                        raw_status: 'available',
+                                        booking_id: 'SCHED-{{ $sched->id }}',
+                                        customer: 'Belum Terisi (Slot Tersedia)',
+                                        phone: '-',
+                                        email: '-',
+                                        service: '{{ addslashes($sched->layanan->namalayanan ?? 'Layanan') }}',
+                                        date: '{{ \Carbon\Carbon::parse($sched->tanggal)->translatedFormat('d F Y') }}',
+                                        time: '{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}',
+                                        payment_status: 'Belum Ada Transaksi',
+                                        booking_status: 'Available',
+                                        amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
+                                        notes: 'Slot aktif ini terbuka untuk reservasi pelanggan atau walk-in booking.'
+                                    })"
+                                    class="rounded-xl border p-3.5 border-indigo-200 bg-indigo-50/40 cursor-pointer hover:bg-indigo-100/60 transition shadow-2xs"
+                                @else
+                                    class="rounded-xl border p-3.5 border-bq-border bg-white opacity-85"
+                                @endif
+                            >
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs font-extrabold text-[#4F46E5]">
                                         {{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}
@@ -632,23 +669,111 @@
                         <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Catatan / Notes</p>
                         <p class="text-xs text-slate-700 mt-1 italic" x-text="selectedSlot.notes"></p>
                     </div>
+
+                    {{-- Walk-in Booking Form (When Available slot is selected and walkinMode is active) --}}
+                    <div x-show="walkinMode" class="mt-4 pt-4 border-t border-slate-200">
+                        <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">Form Reservasi Walk-in Langsung</h4>
+                        <form method="POST" action="{{ route('owner.bookings.walkin') }}" class="space-y-3">
+                            @csrf
+                            <input type="hidden" name="idschedule" :value="selectedSlot.raw_schedule_id">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700">Nama Pelanggan <span class="text-rose-500">*</span></label>
+                                <input type="text" name="namapelanggan" required placeholder="Nama tamu walk-in..." class="mt-1 w-full rounded-xl border border-bq-border px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#4F46E5]">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700">No. WhatsApp / HP <span class="text-rose-500">*</span></label>
+                                    <input type="text" name="nomorhp" required placeholder="08..." class="mt-1 w-full rounded-xl border border-bq-border px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#4F46E5]">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700">Email (Opsional)</label>
+                                    <input type="email" name="email" placeholder="email@tamu.com" class="mt-1 w-full rounded-xl border border-bq-border px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#4F46E5]">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700">Metode Pembayaran</label>
+                                <select name="metode" class="mt-1 w-full rounded-xl border border-bq-border px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#4F46E5]">
+                                    <option value="cash">Tunai (Cash di Tempat)</option>
+                                    <option value="transfer">Transfer Bank Manual</option>
+                                    <option value="qris">QRIS Langsung</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700">Catatan Khusus (Opsional)</label>
+                                <input type="text" name="catatan" placeholder="Catatan tamu atau permintaan khusus..." class="mt-1 w-full rounded-xl border border-bq-border px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#4F46E5]">
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pt-2">
+                                <button type="button" @click="walkinMode = false" class="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100">Batal</button>
+                                <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition">Konfirmasi Walk-in</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </template>
 
-            <div class="pt-2 flex items-center justify-end gap-2">
-                <button
-                    type="button"
-                    @click="modalOpen = false"
-                    class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 transition cursor-pointer"
-                >
-                    Tutup
-                </button>
-                <a
-                    href="{{ route('owner.bookings') }}"
-                    class="rounded-xl bg-[#4F46E5] px-4 py-2 text-xs font-bold text-white hover:bg-[#4338CA] transition cursor-pointer"
-                >
-                    Lihat di Daftar Booking
-                </a>
+            <div class="pt-2 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    {{-- Quick Action for Confirmed Booking --}}
+                    <template x-if="selectedSlot && selectedSlot.is_booking && selectedSlot.raw_status === 'paid'">
+                        <div class="flex items-center gap-1.5">
+                            <form method="POST" :action="`/owner/bookings/${selectedSlot.raw_booking_id}/status`" class="inline">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="status" value="completed">
+                                <button type="submit" class="rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-xs font-bold transition cursor-pointer">
+                                    ✓ Selesai
+                                </button>
+                            </form>
+                            <form method="POST" :action="`/owner/bookings/${selectedSlot.raw_booking_id}/status`" class="inline" onsubmit="return confirm('Yakin ingin membatalkan booking ini?')">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="status" value="cancelled">
+                                <button type="submit" class="rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3 py-2 text-xs font-bold transition cursor-pointer">
+                                    Batalkan
+                                </button>
+                            </form>
+                        </div>
+                    </template>
+
+                    {{-- Quick Action for Pending Booking --}}
+                    <template x-if="selectedSlot && selectedSlot.is_booking && selectedSlot.raw_status === 'pending'">
+                        <form method="POST" :action="`/owner/bookings/${selectedSlot.raw_booking_id}/status`" class="inline" onsubmit="return confirm('Yakin ingin membatalkan booking ini?')">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="cancelled">
+                            <button type="submit" class="rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3 py-2 text-xs font-bold transition cursor-pointer">
+                                Batalkan
+                            </button>
+                        </form>
+                    </template>
+
+                    {{-- Walk-in Button for Available Slot --}}
+                    <template x-if="selectedSlot && !selectedSlot.is_booking && selectedSlot.raw_status === 'available' && !walkinMode">
+                        <button
+                            type="button"
+                            @click="walkinMode = true"
+                            class="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white transition cursor-pointer"
+                        >
+                            + Walk-in Booking
+                        </button>
+                    </template>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        @click="modalOpen = false"
+                        class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+                    >
+                        Tutup
+                    </button>
+                    <a
+                        href="{{ route('owner.bookings') }}"
+                        class="rounded-xl bg-[#4F46E5] px-4 py-2 text-xs font-bold text-white hover:bg-[#4338CA] transition cursor-pointer"
+                    >
+                        Lihat di Daftar Booking
+                    </a>
+                </div>
             </div>
         </div>
     </div>

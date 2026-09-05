@@ -570,7 +570,23 @@ class BookingController extends Controller
 
         $hargaAkhir = $schedule && $schedule->harga_override ? $schedule->harga_override : $service->harga;
 
-        return view('customer.booking.checkout', compact('tenant', 'service', 'selectedDate', 'selectedTime', 'hargaAkhir', 'schedule'));
+        $service->load([
+            'additionalItems' => fn($q) => $q->where('is_active', true),
+            'staff'           => fn($q) => $q->where('is_active', true),
+        ]);
+        $availableAddons = $service->additionalItems;
+        $availableStaff  = $service->staff;
+
+        return view('customer.booking.checkout', compact(
+            'tenant',
+            'service',
+            'selectedDate',
+            'selectedTime',
+            'hargaAkhir',
+            'schedule',
+            'availableAddons',
+            'availableStaff'
+        ));
     }
 
     public function processCheckout(Request $request, string $slug_usaha)
@@ -597,10 +613,13 @@ class BookingController extends Controller
         }
 
         $request->validate([
-            'namapelanggan' => 'required|string|max:150',
-            'nomorhp' => 'required|string|max:20',
-            'email' => 'required|email|max:100',
-            'catatan' => 'nullable|string|max:500',
+            'namapelanggan'     => 'required|string|max:150',
+            'nomorhp'           => 'required|string|max:20',
+            'email'             => 'required|email|max:100',
+            'catatan'           => 'nullable|string|max:500',
+            'selected_addons'   => 'nullable|array',
+            'selected_addons.*' => 'integer',
+            'staff_id'          => 'nullable|integer',
         ]);
 
         // Wrap slot availability check + booking creation in a transaction to prevent double-booking
@@ -634,7 +653,47 @@ class BookingController extends Controller
                 return ['error' => 'Slot waktu ini sudah dibooking oleh pelanggan lain. Silakan pilih waktu lain.'];
             }
 
-            $hargaAkhir = $schedule->harga_override ? $schedule->harga_override : $service->harga;
+            // Add-ons calculation
+            $addonTotal = 0;
+            $addonNames = [];
+            if (!empty($request->selected_addons)) {
+                $addons = \App\Models\AdditionalItem::where('idtenant', $tenant->id)
+                    ->where('is_active', true)
+                    ->whereIn('id', $request->selected_addons)
+                    ->whereHas('services', fn($q) => $q->where('services.id', $service->id))
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($addons as $addon) {
+                    $addonTotal += (float) $addon->price;
+                    $addonNames[] = $addon->name . ' (+Rp ' . number_format($addon->price, 0, ',', '.') . ')';
+                    if ($addon->stock !== null && $addon->stock > 0) {
+                        $addon->decrement('stock');
+                    }
+                }
+            }
+
+            // Staff preference
+            $staffPref = null;
+            if ($request->filled('staff_id')) {
+                $chosenStaff = \App\Models\Staff::where('idtenant', $tenant->id)
+                    ->where('is_active', true)
+                    ->where('id', $request->staff_id)
+                    ->first();
+                if ($chosenStaff) {
+                    $staffPref = 'Staf: ' . $chosenStaff->name . ' (' . ($chosenStaff->role ?? 'Staf') . ')';
+                }
+            }
+
+            $hargaAkhir = ($schedule->harga_override ? $schedule->harga_override : $service->harga) + $addonTotal;
+
+            $fullCatatan = trim($request->catatan ?? '');
+            if (!empty($addonNames)) {
+                $fullCatatan .= ($fullCatatan ? ' | ' : '') . 'Add-ons: ' . implode(', ', $addonNames);
+            }
+            if ($staffPref) {
+                $fullCatatan .= ($fullCatatan ? ' | ' : '') . $staffPref;
+            }
 
             // Free booking path
             if ($hargaAkhir <= 0) {
@@ -648,7 +707,7 @@ class BookingController extends Controller
                     'tanggalbooking' => $selectedDate,
                     'jam'            => $selectedTime . ':00',
                     'status'         => 'paid', // Langsung paid karena gratis
-                    'catatan'        => $request->catatan,
+                    'catatan'        => $fullCatatan ?: null,
                 ]);
 
                 return ['free' => true, 'booking' => $booking, 'schedule' => $schedule, 'hargaAkhir' => 0];
@@ -668,7 +727,7 @@ class BookingController extends Controller
                 'nama_pembayar'  => $request->namapelanggan,
                 'email_pembayar' => $request->email,
                 'hp_pembayar'    => $request->nomorhp,
-                'catatan'        => $request->catatan,
+                'catatan'        => $fullCatatan ?: null,
             ]);
 
             $newBooking = Booking::create([
@@ -682,7 +741,7 @@ class BookingController extends Controller
                 'jam'            => $selectedTime . ':00',
                 'status'         => 'pending',
                 'idpayment'      => $payment->id,
-                'catatan'        => $request->catatan,
+                'catatan'        => $fullCatatan ?: null,
             ]);
 
             return [
