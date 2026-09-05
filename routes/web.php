@@ -220,45 +220,45 @@ Route::prefix('owner')
         Route::post('/services', [OwnerProgramController::class, 'store'])->name('owner.services.store');
         Route::put('/services/{program}', [OwnerProgramController::class, 'update'])->name('owner.services.update');
         Route::delete('/services/{program}', [OwnerProgramController::class, 'destroy'])->name('owner.services.destroy');
-        Route::post('/services/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.services.toggle');
-        Route::post('/programs/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.programs.toggle');
+        Route::match(['post', 'patch'], '/services/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.services.toggle');
+        Route::match(['post', 'patch'], '/programs/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.programs.toggle');
 
         // Categories
         Route::get('/categories', [OwnerCategoryController::class, 'index'])->name('owner.categories');
         Route::post('/categories', [OwnerCategoryController::class, 'store'])->name('owner.categories.store');
         Route::put('/categories/{id}', [OwnerCategoryController::class, 'update'])->name('owner.categories.update');
         Route::delete('/categories/{id}', [OwnerCategoryController::class, 'destroy'])->name('owner.categories.destroy');
-        Route::post('/categories/{id}/toggle', [OwnerCategoryController::class, 'toggleStatus'])->name('owner.categories.toggle');
+        Route::match(['post', 'patch'], '/categories/{id}/toggle', [OwnerCategoryController::class, 'toggleStatus'])->name('owner.categories.toggle');
 
         // Staff & Resources
         Route::get('/staff-resources', [OwnerStaffResourceController::class, 'index'])->name('owner.staff-resources');
         Route::post('/staff', [OwnerStaffResourceController::class, 'storeStaff'])->name('owner.staff.store');
         Route::put('/staff/{id}', [OwnerStaffResourceController::class, 'updateStaff'])->name('owner.staff.update');
         Route::delete('/staff/{id}', [OwnerStaffResourceController::class, 'destroyStaff'])->name('owner.staff.destroy');
-        Route::post('/staff/{id}/toggle', [OwnerStaffResourceController::class, 'toggleStaffStatus'])->name('owner.staff.toggle');
+        Route::match(['post', 'patch'], '/staff/{id}/toggle', [OwnerStaffResourceController::class, 'toggleStaffStatus'])->name('owner.staff.toggle');
         Route::post('/resources', [OwnerStaffResourceController::class, 'storeResource'])->name('owner.resources.store');
         Route::put('/resources/{id}', [OwnerStaffResourceController::class, 'updateResource'])->name('owner.resources.update');
         Route::delete('/resources/{id}', [OwnerStaffResourceController::class, 'destroyResource'])->name('owner.resources.destroy');
-        Route::post('/resources/{id}/toggle', [OwnerStaffResourceController::class, 'toggleResourceStatus'])->name('owner.resources.toggle');
+        Route::match(['post', 'patch'], '/resources/{id}/toggle', [OwnerStaffResourceController::class, 'toggleResourceStatus'])->name('owner.resources.toggle');
 
         // Additional Items
         Route::get('/additional-items', [OwnerAdditionalItemController::class, 'index'])->name('owner.additional-items');
         Route::post('/additional-items', [OwnerAdditionalItemController::class, 'store'])->name('owner.additional-items.store');
         Route::put('/additional-items/{id}', [OwnerAdditionalItemController::class, 'update'])->name('owner.additional-items.update');
         Route::delete('/additional-items/{id}', [OwnerAdditionalItemController::class, 'destroy'])->name('owner.additional-items.destroy');
-        Route::post('/additional-items/{id}/toggle', [OwnerAdditionalItemController::class, 'toggleStatus'])->name('owner.additional-items.toggle');
+        Route::match(['post', 'patch'], '/additional-items/{id}/toggle', [OwnerAdditionalItemController::class, 'toggleStatus'])->name('owner.additional-items.toggle');
 
         // Vouchers
         Route::get('/vouchers', [OwnerVoucherController::class, 'index'])->name('owner.vouchers');
         Route::post('/vouchers', [OwnerVoucherController::class, 'store'])->name('owner.vouchers.store');
         Route::put('/vouchers/{id}', [OwnerVoucherController::class, 'update'])->name('owner.vouchers.update');
         Route::delete('/vouchers/{id}', [OwnerVoucherController::class, 'destroy'])->name('owner.vouchers.destroy');
-        Route::post('/vouchers/{id}/toggle', [OwnerVoucherController::class, 'toggleStatus'])->name('owner.vouchers.toggle');
+        Route::match(['post', 'patch'], '/vouchers/{id}/toggle', [OwnerVoucherController::class, 'toggleStatus'])->name('owner.vouchers.toggle');
 
         // Reviews
         Route::get('/reviews', [OwnerReviewController::class, 'index'])->name('owner.reviews');
         Route::post('/reviews/{id}/reply', [OwnerReviewController::class, 'reply'])->name('owner.reviews.reply');
-        Route::post('/reviews/{id}/toggle', [OwnerReviewController::class, 'toggleVisibility'])->name('owner.reviews.toggle');
+        Route::match(['post', 'patch'], '/reviews/{id}/toggle', [OwnerReviewController::class, 'toggleVisibility'])->name('owner.reviews.toggle');
 
         // Customers CRM
         Route::get('/customers', [OwnerCustomerController::class, 'index'])->name('owner.customers');
