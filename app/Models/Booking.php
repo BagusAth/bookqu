@@ -77,6 +77,16 @@ class Booking extends Model
         return $this->hasOne(Refund::class, 'booking_id');
     }
 
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class, 'idbooking');
+    }
+
+    public function hasReview(): bool
+    {
+        return $this->review !== null;
+    }
+
     // ── Token Generation ──────────────────────────────────────────────────────
 
     /**

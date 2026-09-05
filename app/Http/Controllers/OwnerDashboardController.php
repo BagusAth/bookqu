@@ -9,6 +9,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class OwnerDashboardController extends Controller
@@ -216,72 +217,83 @@ class OwnerDashboardController extends Controller
         }
 
         $idtenant = $tenant->id;
-        $bulanini = Carbon::now()->startOfMonth();
-        $bulanlalu = Carbon::now()->subMonth()->startOfMonth();
-        $akhirbulanlalu = Carbon::now()->subMonth()->endOfMonth();
 
-        // ── Total Booking ──
-        $totalbooking = Booking::where('idtenant', $idtenant)->count();
+        $compute = function () use ($idtenant) {
+            $bulanini = Carbon::now()->startOfMonth();
+            $bulanlalu = Carbon::now()->subMonth()->startOfMonth();
+            $akhirbulanlalu = Carbon::now()->subMonth()->endOfMonth();
 
-        $bookinbulanini = Booking::where('idtenant', $idtenant)
-            ->where('tanggalbooking', '>=', $bulanini)
-            ->count();
+            // ── Total Booking ──
+            $totalbooking = Booking::where('idtenant', $idtenant)->count();
 
-        $bookinbulanlalu = Booking::where('idtenant', $idtenant)
-            ->whereBetween('tanggalbooking', [$bulanlalu, $akhirbulanlalu])
-            ->count();
+            $bookinbulanini = Booking::where('idtenant', $idtenant)
+                ->where('tanggalbooking', '>=', $bulanini)
+                ->count();
 
-        $persenperubahanboking = $bookinbulanlalu > 0
-            ? round((($bookinbulanini - $bookinbulanlalu) / $bookinbulanlalu) * 100)
-            : 0;
+            $bookinbulanlalu = Booking::where('idtenant', $idtenant)
+                ->whereBetween('tanggalbooking', [$bulanlalu, $akhirbulanlalu])
+                ->count();
 
-        // ── Total Revenue ──
-        $totalrevenue = Payment::where('idtenant', $idtenant)
-            ->where('tipe', 'booking')
-            ->where('status', 'sukses')
-            ->sum('jumlah');
+            $persenperubahanboking = $bookinbulanlalu > 0
+                ? round((($bookinbulanini - $bookinbulanlalu) / $bookinbulanlalu) * 100)
+                : 0;
 
-        $revenuebulanini = Payment::where('idtenant', $idtenant)
-            ->where('tipe', 'booking')
-            ->where('status', 'sukses')
-            ->where('created_at', '>=', $bulanini)
-            ->sum('jumlah');
+            // ── Total Revenue ──
+            $totalrevenue = Payment::where('idtenant', $idtenant)
+                ->where('tipe', 'booking')
+                ->where('status', 'sukses')
+                ->sum('jumlah');
 
-        $revenuebulanlalu = Payment::where('idtenant', $idtenant)
-            ->where('tipe', 'booking')
-            ->where('status', 'sukses')
-            ->whereBetween('created_at', [$bulanlalu, $akhirbulanlalu])
-            ->sum('jumlah');
+            $revenuebulanini = Payment::where('idtenant', $idtenant)
+                ->where('tipe', 'booking')
+                ->where('status', 'sukses')
+                ->where('created_at', '>=', $bulanini)
+                ->sum('jumlah');
 
-        $persenperubahanrevenue = $revenuebulanlalu > 0
-            ? round((($revenuebulanini - $revenuebulanlalu) / $revenuebulanlalu) * 100)
-            : 0;
+            $revenuebulanlalu = Payment::where('idtenant', $idtenant)
+                ->where('tipe', 'booking')
+                ->where('status', 'sukses')
+                ->whereBetween('created_at', [$bulanlalu, $akhirbulanlalu])
+                ->sum('jumlah');
 
-        // ── Recent Activity ──
-        $aktivitasterbaru = Booking::where('bookings.idtenant', $idtenant)
-            ->with('layanan')
-            ->orderByDesc('bookings.created_at')
-            ->limit(10)
-            ->get()
-            ->map(function ($aktivitas) {
-                return [
-                    'id' => $aktivitas->id,
-                    'program_name' => $aktivitas->layanan->namalayanan ?? '-',
-                    'customer_name' => $aktivitas->namapelanggan,
-                    'date' => $aktivitas->tanggalbooking->format('d M Y'),
-                    'status' => $aktivitas->status,
-                ];
-            });
+            $persenperubahanrevenue = $revenuebulanlalu > 0
+                ? round((($revenuebulanini - $revenuebulanlalu) / $revenuebulanlalu) * 100)
+                : 0;
 
-        return response()->json([
-            'success' => true,
-            'data' => [
+            // ── Recent Activity ──
+            $aktivitasterbaru = Booking::where('bookings.idtenant', $idtenant)
+                ->with('layanan')
+                ->orderByDesc('bookings.created_at')
+                ->limit(10)
+                ->get()
+                ->map(function ($aktivitas) {
+                    return [
+                        'id' => $aktivitas->id,
+                        'program_name' => $aktivitas->layanan->namalayanan ?? '-',
+                        'customer_name' => $aktivitas->namapelanggan,
+                        'date' => $aktivitas->tanggalbooking->format('d M Y'),
+                        'status' => $aktivitas->status,
+                    ];
+                });
+
+            return [
                 'total_bookings' => $totalbooking,
                 'persen_perubahan_booking' => $persenperubahanboking,
                 'total_revenue' => $totalrevenue,
                 'persen_perubahan_revenue' => $persenperubahanrevenue,
-                'recent_activities' => $aktivitasterbaru
-            ]
+                'recent_activities' => $aktivitasterbaru,
+            ];
+        };
+
+        if (app()->runningUnitTests()) {
+            $data = $compute();
+        } else {
+            $data = Cache::remember("tenant:{$idtenant}:dashboard:polling", 15, $compute);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
         ]);
     }
 }

@@ -365,17 +365,32 @@ class OwnerModulesCrudTest extends TestCase
 
     public function test_owner_can_save_customer_notes(): void
     {
-        $res = $this->actingAs($this->userA)->post(route('owner.customers.note'), [
-            'customer_identifier' => '081234567890',
-            'notes' => 'Customer VIP, minta lighting hangat.',
+        // Create a booking so the IDOR guard passes (customer_identifier must exist in this tenant's bookings)
+        $schedule = Schedule::factory()->create([
+            'idtenant'  => $this->tenantA->id,
+            'idlayanan' => $this->serviceA->id,
         ]);
-        $res->assertRedirect(route('owner.customers'));
-        $this->assertDatabaseHas('customer_notes', [
-            'idtenant' => $this->tenantA->id,
+        Booking::factory()->create([
+            'idtenant'   => $this->tenantA->id,
+            'idlayanan'  => $this->serviceA->id,
+            'idschedule' => $schedule->id,
+            'nomorhp'    => '081234567890',
+            'email'      => '',
+            'status'     => 'paid',
+        ]);
+
+        $res = $this->actingAs($this->userA)->postJson(route('owner.customers.note'), [
             'customer_identifier' => '081234567890',
-            'notes' => 'Customer VIP, minta lighting hangat.',
+            'notes'               => 'Customer VIP, minta lighting hangat.',
+        ]);
+        $res->assertOk()->assertJsonFragment(['success' => true]);
+        $this->assertDatabaseHas('customer_notes', [
+            'idtenant'            => $this->tenantA->id,
+            'customer_identifier' => '081234567890',
+            'notes'               => 'Customer VIP, minta lighting hangat.',
         ]);
     }
+
 
     // ──────────────────────────────────────────
     // 6. ASSETS & APPEARANCE TEST

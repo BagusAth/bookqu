@@ -19,6 +19,7 @@ use App\Http\Controllers\OwnerScheduleController;
 use App\Http\Controllers\OwnerSettingController;
 use App\Http\Controllers\OwnerStaffResourceController;
 use App\Http\Controllers\OwnerSubscriptionController;
+use App\Http\Controllers\OwnerCustomerController;
 use App\Http\Controllers\OwnerVoucherController;
 use App\Models\User;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -257,8 +258,9 @@ Route::prefix('owner')
         Route::post('/reviews/{id}/toggle', [OwnerReviewController::class, 'toggleVisibility'])->name('owner.reviews.toggle');
 
         // Customers CRM
-        Route::get('/customers', [OwnerPortalController::class, 'customers'])->name('owner.customers');
-        Route::post('/customers/note', [OwnerPortalController::class, 'saveCustomerNote'])->name('owner.customers.note');
+        Route::get('/customers', [OwnerCustomerController::class, 'index'])->name('owner.customers');
+        Route::get('/customers/detail', [OwnerCustomerController::class, 'show'])->name('owner.customers.detail');
+        Route::post('/customers/note', [OwnerCustomerController::class, 'saveNote'])->name('owner.customers.note');
 
         // Settings & Configurations
         Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
@@ -292,6 +294,8 @@ Route::prefix('manage')->group(function () {
         ->name('booking.manage.reschedule.slots');
     Route::get('/{booking_code}/invoice', [BookingManageController::class, 'invoice'])
         ->name('booking.manage.invoice');
+    Route::post('/{booking_code}/review', [BookingManageController::class, 'storeReview'])
+        ->name('booking.manage.review');
 });
 
 Route::prefix('admin')

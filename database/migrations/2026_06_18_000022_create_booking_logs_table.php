@@ -19,6 +19,7 @@ return new class extends Migration
                 'cancelled',
                 'rescheduled',
                 'viewed',
+                'reviewed',
             ]);
             $table->string('description', 500)->nullable();
             $table->json('metadata')->nullable(); // extra context (old date, ip, etc.)

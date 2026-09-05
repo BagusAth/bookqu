@@ -7,6 +7,7 @@ use App\Mail\BookingRescheduledMail;
 use App\Models\Booking;
 use App\Models\BookingLog;
 use App\Models\Refund;
+use App\Models\Review;
 use App\Models\Schedule;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -45,7 +46,7 @@ class BookingManageController extends Controller
 
         app(\App\Support\TenantContext::class)->setTenantId($booking->idtenant);
 
-        $booking->load(['tenant', 'layanan', 'payment', 'logs', 'refund']);
+        $booking->load(['tenant', 'layanan', 'payment', 'logs', 'refund', 'review']);
 
         return $booking;
     }
@@ -421,6 +422,54 @@ class BookingManageController extends Controller
             'token'      => $token,
             'invoiceDate' => $booking->payment?->updated_at ?? $booking->created_at,
         ]);
+    }
+
+    // ── Customer Review ───────────────────────────────────────────────────────
+
+    public function storeReview(Request $request, string $bookingCode)
+    {
+        $token   = $request->input('token') ?? $request->query('token');
+        $booking = $this->resolveBooking($bookingCode, $token);
+
+        // Guard: only completed bookings can be reviewed
+        if ($booking->status !== 'completed') {
+            return back()->withErrors(['review' => 'Ulasan hanya dapat diberikan untuk booking yang telah selesai.']);
+        }
+
+        // Guard: one review per booking
+        if (Review::where('idbooking', $booking->id)->exists()) {
+            return back()->withErrors(['review' => 'Anda sudah memberikan ulasan untuk booking ini.']);
+        }
+
+        $validated = $request->validate([
+            'rating'   => ['required', 'integer', 'min:1', 'max:5'],
+            'komentar' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'rating.required' => 'Silakan pilih rating bintang 1 sampai 5.',
+            'rating.min'      => 'Rating minimal 1 bintang.',
+            'rating.max'      => 'Rating maksimal 5 bintang.',
+            'komentar.max'    => 'Komentar maksimal 1000 karakter.',
+        ]);
+
+        Review::create([
+            'idtenant'  => $booking->idtenant,
+            'idbooking' => $booking->id,
+            'rating'    => (int) $validated['rating'],
+            'komentar'  => $validated['komentar'] ?? null,
+            'is_hidden' => false,
+        ]);
+
+        BookingLog::record(
+            $booking->id,
+            'reviewed',
+            "Customer memberikan ulasan bintang {$validated['rating']}.",
+            ['rating' => (int) $validated['rating']]
+        );
+
+        return redirect()->route('booking.manage', [
+            'booking_code' => $booking->booking_code,
+            'token'        => $token,
+        ])->with('success', 'Terima kasih atas ulasan Anda! Masukan Anda sangat berarti bagi kami.');
     }
 
     // ── Cache helpers ─────────────────────────────────────────────────────────

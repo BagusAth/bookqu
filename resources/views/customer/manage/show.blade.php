@@ -146,6 +146,156 @@
                 </div>
                 @endif
 
+                {{-- ── Review Section (Only for completed bookings) ── --}}
+                @if($booking->status === 'completed')
+                    @if($booking->review)
+                    {{-- Review already submitted --}}
+                    <div class="manage-card p-6 border-indigo-100 bg-gradient-to-b from-white to-indigo-50/20">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-amber-600 font-bold text-xs">
+                                    ★
+                                </span>
+                                <p class="section-title">Ulasan Anda</p>
+                            </div>
+                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                Terkirim
+                            </span>
+                        </div>
+
+                        <div class="mt-4 rounded-2xl bg-white border border-[#E5E7EB] p-4 shadow-xs space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-1 text-amber-400">
+                                    @for ($i = 1; $i <= 5; $i++)
+                                        @if ($i <= $booking->review->rating)
+                                            <svg class="h-5 w-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                        @else
+                                            <svg class="h-5 w-5 text-slate-200 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                        @endif
+                                    @endfor
+                                    <span class="ml-1 text-xs font-bold text-[#111827]">{{ $booking->review->rating }}.0</span>
+                                </div>
+                                <span class="text-xs text-[#9CA3AF]">{{ $booking->review->created_at->format('d M Y, H:i') }} WIB</span>
+                            </div>
+
+                            @if($booking->review->komentar)
+                            <p class="text-sm text-[#374151] leading-relaxed italic bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                "{{ $booking->review->komentar }}"
+                            </p>
+                            @endif
+
+                            {{-- Owner Reply --}}
+                            @if($booking->review->balasan)
+                            <div class="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3.5 space-y-1">
+                                <div class="flex items-center gap-1.5 text-xs font-bold text-[#4F46E5]">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                                    <span>Tanggapan dari {{ $booking->tenant->namabisnis }}</span>
+                                    @if($booking->review->dibalas_pada)
+                                    <span class="font-normal text-[#6B7280]">· {{ $booking->review->dibalas_pada->format('d M Y') }}</span>
+                                    @endif
+                                </div>
+                                <p class="text-xs text-[#4B5563] pl-5 leading-relaxed">
+                                    {{ $booking->review->balasan }}
+                                </p>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @else
+                    {{-- Review Form --}}
+                    <div class="manage-card p-6 border-indigo-100 bg-gradient-to-b from-white to-indigo-50/20"
+                         x-data="{
+                             rating: 0,
+                             hoverRating: 0,
+                             labels: {1: 'Sangat Kurang', 2: 'Kurang Memuaskan', 3: 'Cukup', 4: 'Puas', 5: 'Sangat Puas!'}
+                         }">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-amber-600 font-bold text-xs">
+                                ★
+                            </span>
+                            <div>
+                                <p class="section-title">Berikan Ulasan Layanan</p>
+                                <p class="text-xs text-[#6B7280] mt-0.5">Bagikan pengalaman Anda menggunakan layanan dari {{ $booking->tenant->namabisnis }}.</p>
+                            </div>
+                        </div>
+
+                        <form
+                            method="POST"
+                            action="{{ route('booking.manage.review', ['booking_code' => $booking->booking_code]) }}"
+                            class="mt-4 space-y-4"
+                        >
+                            @csrf
+                            <input type="hidden" name="token" value="{{ $token }}">
+                            <input type="hidden" name="rating" :value="rating">
+
+                            {{-- Interactive Star Rating --}}
+                            <div>
+                                <label class="block text-xs font-semibold text-[#374151] mb-1.5">Penilaian Bintang <span class="text-red-500">*</span></label>
+                                <div class="flex items-center gap-3">
+                                    <div class="flex items-center gap-1">
+                                        <template x-for="star in [1, 2, 3, 4, 5]" :key="star">
+                                            <button
+                                                type="button"
+                                                @click="rating = star"
+                                                @mouseenter="hoverRating = star"
+                                                @mouseleave="hoverRating = 0"
+                                                class="p-1 focus:outline-none transition transform hover:scale-110"
+                                            >
+                                                <svg
+                                                    class="h-7 w-7 transition-colors"
+                                                    :class="(hoverRating || rating) >= star ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200 hover:text-amber-300'"
+                                                    viewBox="0 0 20 20"
+                                                >
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                                </svg>
+                                            </button>
+                                        </template>
+                                    </div>
+                                    <span
+                                        x-text="labels[hoverRating || rating] || 'Pilih rating bintang'"
+                                        class="text-xs font-semibold"
+                                        :class="rating > 0 ? 'text-[#4F46E5]' : 'text-[#9CA3AF]'"
+                                    ></span>
+                                </div>
+                                @error('rating')
+                                    <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- Comment Textarea --}}
+                            <div>
+                                <label for="komentar" class="block text-xs font-semibold text-[#374151] mb-1.5">Komentar & Ulasan (Opsional)</label>
+                                <textarea
+                                    id="komentar"
+                                    name="komentar"
+                                    rows="3"
+                                    maxlength="1000"
+                                    placeholder="Ceritakan pengalaman Anda, kepuasan terhadap hasil layanan, atau fasilitas..."
+                                    class="w-full rounded-xl border border-[#D1D5DB] p-3 text-xs text-[#111827] placeholder-[#9CA3AF] focus:border-[#4F46E5] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 transition"
+                                >{{ old('komentar') }}</textarea>
+                                @error('komentar')
+                                    <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- Submit Button --}}
+                            <div class="flex justify-end">
+                                <button
+                                    type="submit"
+                                    :disabled="rating === 0"
+                                    class="btn-primary flex items-center gap-2"
+                                    :class="rating === 0 ? 'opacity-50 cursor-not-allowed' : ''"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                    <span>Kirim Ulasan</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    @endif
+                @endif
+
                 {{-- ── Activity Timeline ── --}}
                 <div class="manage-card p-6">
                     <p class="section-title">Riwayat Aktivitas</p>
@@ -160,6 +310,7 @@
                                 'cancelled'       => 'red',
                                 'rescheduled'     => 'blue',
                                 'viewed'          => 'gray',
+                                'reviewed'        => 'amber',
                             ];
                             $dotColor = $colorMap[$log->event] ?? 'gray';
 
@@ -171,6 +322,7 @@
                                 'cancelled'       => '<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>',
                                 'rescheduled'     => '<rect x="3" y="4" width="18" height="18" rx="4"/><path stroke-linecap="round" d="M8 2v4M16 2v4M3 10h18"/>',
                                 'viewed'          => '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>',
+                                'reviewed'        => '<path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>',
                             ];
                             $icon = $iconMap[$log->event] ?? '<circle cx="12" cy="12" r="9"/>';
                         @endphp
