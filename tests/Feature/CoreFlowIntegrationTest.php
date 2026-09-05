@@ -499,4 +499,360 @@ class CoreFlowIntegrationTest extends TestCase
         $response->assertSee('Tidak ada data');
         $response->assertDontSee('14:00 (Jam paling diminati)');
     }
+
+    /**
+     * 11. Customer can select available schedule
+     */
+    public function test_customer_can_select_available_schedule(): void
+    {
+        $this->assertTrue($this->scheduleA->isAvailable());
+
+        $response = $this->withSession([
+            'booking' => [
+                'tenant_id'  => $this->tenantA->id,
+                'service_id' => $this->serviceA->id,
+                'tanggal'    => $this->tomorrow,
+                'jam'        => null,
+            ]
+        ])->post('/studio-a/booking/select-time', [
+            'schedule_id' => $this->scheduleA->id,
+            'jam'         => '10:00',
+        ]);
+
+        $response->assertRedirect('/studio-a/booking/checkout');
+        $this->assertEquals('10:00', session('booking.jam'));
+        $this->assertEquals($this->scheduleA->id, session('booking.schedule_id'));
+    }
+
+    /**
+     * 12. Customer cannot select booked schedule
+     */
+    public function test_customer_cannot_select_booked_schedule(): void
+    {
+        // Create active booking for scheduleA
+        Booking::create([
+            'idtenant'       => $this->tenantA->id,
+            'idlayanan'      => $this->serviceA->id,
+            'idschedule'     => $this->scheduleA->id,
+            'namapelanggan'  => 'Occupant Customer',
+            'email'          => 'occupant@test.com',
+            'nomorhp'        => '08123456789',
+            'tanggalbooking' => $this->tomorrow,
+            'jam'            => '10:00:00',
+            'status'         => 'paid',
+        ]);
+
+        $this->assertFalse($this->scheduleA->fresh()->isAvailable());
+        $this->assertEquals(Schedule::STATUS_BOOKED, $this->scheduleA->fresh()->getAvailabilityStatus());
+
+        $response = $this->withSession([
+            'booking' => [
+                'tenant_id'  => $this->tenantA->id,
+                'service_id' => $this->serviceA->id,
+                'tanggal'    => $this->tomorrow,
+                'jam'        => null,
+            ]
+        ])->post('/studio-a/booking/select-time', [
+            'schedule_id' => $this->scheduleA->id,
+            'jam'         => '10:00',
+        ]);
+
+        $response->assertRedirect('/studio-a/booking/time');
+        $response->assertSessionHasErrors(['jam']);
+    }
+
+    /**
+     * 13. Cancelled booking releases schedule slot back to available
+     */
+    public function test_cancelled_booking_releases_schedule_slot(): void
+    {
+        $booking = Booking::create([
+            'idtenant'       => $this->tenantA->id,
+            'idlayanan'      => $this->serviceA->id,
+            'idschedule'     => $this->scheduleA->id,
+            'namapelanggan'  => 'Temporary Customer',
+            'email'          => 'temp@test.com',
+            'nomorhp'        => '08123456789',
+            'tanggalbooking' => $this->tomorrow,
+            'jam'            => '10:00:00',
+            'status'         => 'paid',
+        ]);
+
+        $this->assertFalse($this->scheduleA->fresh()->isAvailable());
+
+        // Cancel the booking
+        $booking->update(['status' => 'cancelled']);
+
+        // Schedule slot is immediately available again
+        $this->assertEquals(Schedule::STATUS_AVAILABLE, $this->scheduleA->fresh()->getAvailabilityStatus());
+        $this->assertTrue($this->scheduleA->fresh()->isAvailable());
+
+        // Another customer can now successfully select this time slot
+        $response = $this->withSession([
+            'booking' => [
+                'tenant_id'  => $this->tenantA->id,
+                'service_id' => $this->serviceA->id,
+                'tanggal'    => $this->tomorrow,
+                'jam'        => null,
+            ]
+        ])->post('/studio-a/booking/select-time', [
+            'schedule_id' => $this->scheduleA->id,
+            'jam'         => '10:00',
+        ]);
+
+        $response->assertRedirect('/studio-a/booking/checkout');
+    }
+
+    /**
+     * 14. Owner only sees own tenant bookings in booking list
+     */
+    public function test_owner_only_sees_own_tenant_bookings(): void
+    {
+        Booking::create([
+            'idtenant'       => $this->tenantA->id,
+            'idlayanan'      => $this->serviceA->id,
+            'idschedule'     => $this->scheduleA->id,
+            'namapelanggan'  => 'Pelanggan Tenant A',
+            'email'          => 'pelanggana@domain.com',
+            'nomorhp'        => '081111111',
+            'tanggalbooking' => $this->tomorrow,
+            'jam'            => '10:00:00',
+            'status'         => 'paid',
+        ]);
+
+        Booking::create([
+            'idtenant'       => $this->tenantB->id,
+            'idlayanan'      => $this->serviceB->id,
+            'idschedule'     => $this->scheduleB->id,
+            'namapelanggan'  => 'Pelanggan Tenant B',
+            'email'          => 'pelangganb@domain.com',
+            'nomorhp'        => '082222222',
+            'tanggalbooking' => $this->tomorrow,
+            'jam'            => '14:00:00',
+            'status'         => 'paid',
+        ]);
+
+        $this->actingAs($this->ownerA);
+        session(['current_tenant_id' => $this->tenantA->id]);
+
+        $response = $this->get(route('owner.bookings'));
+        $response->assertStatus(200);
+        $response->assertSee('Pelanggan Tenant A');
+        $response->assertDontSee('Pelanggan Tenant B');
+    }
+
+    /**
+     * 15. Calendar displays available schedule slots
+     */
+    public function test_calendar_displays_available_schedules(): void
+    {
+        $this->actingAs($this->ownerA);
+        session(['current_tenant_id' => $this->tenantA->id]);
+
+        $response = $this->get(route('owner.calendar', [
+            'view' => 'week',
+            'date' => $this->tomorrow,
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertSee('Photo Session A');
+        $response->assertSee('Tersedia');
+    }
+
+    /**
+     * 16. Calendar displays bookings
+     */
+    public function test_calendar_displays_bookings(): void
+    {
+        Booking::create([
+            'idtenant'       => $this->tenantA->id,
+            'idlayanan'      => $this->serviceA->id,
+            'idschedule'     => $this->scheduleA->id,
+            'namapelanggan'  => 'Calender Customer',
+            'email'          => 'cal@domain.com',
+            'nomorhp'        => '089999999',
+            'tanggalbooking' => $this->tomorrow,
+            'jam'            => '10:00:00',
+            'status'         => 'paid',
+        ]);
+
+        $this->actingAs($this->ownerA);
+        session(['current_tenant_id' => $this->tenantA->id]);
+
+        $response = $this->get(route('owner.calendar', [
+            'view' => 'week',
+            'date' => $this->tomorrow,
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertSee('Calender Customer');
+        $response->assertSee('Confirmed');
+    }
+
+    /**
+     * 17. Calendar filters by service and status
+     */
+    public function test_calendar_filters_work(): void
+    {
+        $serviceA2 = Service::create([
+            'idtenant'    => $this->tenantA->id,
+            'namalayanan' => 'Special Class A2',
+            'harga'       => 300000,
+            'durasi'      => 60,
+            'is_active'   => true,
+        ]);
+        $scheduleA2 = Schedule::create([
+            'idtenant'    => $this->tenantA->id,
+            'idlayanan'   => $serviceA2->id,
+            'tanggal'     => $this->tomorrow,
+            'jam_mulai'   => '16:00:00',
+            'jam_selesai' => '16:59:00',
+            'status'      => 'tersedia',
+        ]);
+
+        Booking::create([
+            'idtenant'       => $this->tenantA->id,
+            'idlayanan'      => $serviceA2->id,
+            'idschedule'     => $scheduleA2->id,
+            'namapelanggan'  => 'Special Student',
+            'email'          => 'special@test.com',
+            'nomorhp'        => '081233333',
+            'tanggalbooking' => $this->tomorrow,
+            'jam'            => '16:00:00',
+            'status'         => 'pending',
+        ]);
+
+        $this->actingAs($this->ownerA);
+        session(['current_tenant_id' => $this->tenantA->id]);
+
+        // Filter by service A only -> should NOT see Special Student
+        $responseService = $this->get(route('owner.calendar', [
+            'view'       => 'day',
+            'date'       => $this->tomorrow,
+            'service_id' => $this->serviceA->id,
+        ]));
+        $responseService->assertStatus(200);
+        $responseService->assertDontSee('Special Student');
+
+        // Filter by status 'paid' only -> should NOT see Special Student who is 'pending'
+        $responseStatus = $this->get(route('owner.calendar', [
+            'view'   => 'day',
+            'date'   => $this->tomorrow,
+            'status' => 'paid',
+        ]));
+        $responseStatus->assertStatus(200);
+        $responseStatus->assertDontSee('Special Student');
+    }
+
+    /**
+     * 18. Calendar Today/Previous/Next and View navigation work
+     */
+    public function test_calendar_today_previous_next_navigation(): void
+    {
+        $this->actingAs($this->ownerA);
+        session(['current_tenant_id' => $this->tenantA->id]);
+
+        // Day view
+        $responseDay = $this->get(route('owner.calendar', [
+            'view' => 'day',
+            'date' => $this->tomorrow,
+        ]));
+        $responseDay->assertStatus(200);
+        $responseDay->assertSee('Jadwal Harian');
+
+        // Month view
+        $responseMonth = $this->get(route('owner.calendar', [
+            'view' => 'month',
+            'date' => $this->tomorrow,
+        ]));
+        $responseMonth->assertStatus(200);
+        $responseMonth->assertSee(Carbon::parse($this->tomorrow)->translatedFormat('F Y'));
+    }
+
+    /**
+     * 19. Booking status and payment status are kept strictly separate
+     */
+    public function test_booking_status_and_payment_status_separation(): void
+    {
+        $payment = Payment::create([
+            'idtenant'       => $this->tenantA->id,
+            'tipe'           => 'booking',
+            'jumlah'         => 150000,
+            'status'         => 'sukses',
+            'metode'         => 'midtrans',
+            'order_id'       => 'BKG-STATUS-TEST-1',
+            'expired_at'     => now()->addMinutes(15),
+            'nama_pembayar'  => 'Status Tester',
+            'email_pembayar' => 'stat@test.com',
+            'hp_pembayar'    => '0812345678',
+        ]);
+
+        $booking = Booking::create([
+            'idtenant'       => $this->tenantA->id,
+            'idlayanan'      => $this->serviceA->id,
+            'idschedule'     => $this->scheduleA->id,
+            'idpayment'      => $payment->id,
+            'namapelanggan'  => 'Status Tester',
+            'email'          => 'stat@test.com',
+            'nomorhp'        => '0812345678',
+            'tanggalbooking' => $this->tomorrow,
+            'jam'            => '10:00:00',
+            'status'         => 'cancelled', // Booking is cancelled, while payment was sukses
+        ]);
+
+        // Booking status remains 'cancelled' and payment remains 'sukses'
+        $this->assertEquals('cancelled', $booking->fresh()->status);
+        $this->assertEquals('sukses', $payment->fresh()->status);
+    }
+
+    /**
+     * 20. Schedule Report calculates utilization correctly with cancelled bookings excluded
+     */
+    public function test_schedule_report_calculates_utilization_correctly(): void
+    {
+        // Tenant A currently has 1 schedule (scheduleA). Let's create a second schedule
+        $scheduleA2 = Schedule::create([
+            'idtenant'    => $this->tenantA->id,
+            'idlayanan'   => $this->serviceA->id,
+            'tanggal'     => $this->tomorrow,
+            'jam_mulai'   => '11:00:00',
+            'jam_selesai' => '11:59:00',
+            'status'      => 'tersedia',
+        ]);
+
+        // 1 confirmed booking on scheduleA
+        Booking::create([
+            'idtenant'       => $this->tenantA->id,
+            'idlayanan'      => $this->serviceA->id,
+            'idschedule'     => $this->scheduleA->id,
+            'namapelanggan'  => 'Valid Occupant',
+            'email'          => 'valid@test.com',
+            'nomorhp'        => '081234567',
+            'tanggalbooking' => $this->tomorrow,
+            'jam'            => '10:00:00',
+            'status'         => 'paid',
+        ]);
+
+        // 1 cancelled booking on scheduleA2 (should NOT count as booked)
+        Booking::create([
+            'idtenant'       => $this->tenantA->id,
+            'idlayanan'      => $this->serviceA->id,
+            'idschedule'     => $scheduleA2->id,
+            'namapelanggan'  => 'Cancelled Customer',
+            'email'          => 'cancelled@test.com',
+            'nomorhp'        => '087654321',
+            'tanggalbooking' => $this->tomorrow,
+            'jam'            => '11:00:00',
+            'status'         => 'cancelled',
+        ]);
+
+        $this->actingAs($this->ownerA);
+        session(['current_tenant_id' => $this->tenantA->id]);
+
+        $response = $this->get(route('owner.schedule-report'));
+        $response->assertStatus(200);
+
+        // Total slots: 2, Booked: 1, Available: 1, Utilization: 50%
+        $response->assertSee('50%');
+    }
 }

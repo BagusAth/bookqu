@@ -16,29 +16,120 @@ class OwnerPortalController extends Controller
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $services = \App\Models\Service::where('idtenant', $tenant->id)->get();
-        
-        $startOfWeek = now()->startOfWeek();
-        $endOfWeek = now()->endOfWeek();
+        $view = in_array($request->query('view'), ['day', 'week', 'month']) ? $request->query('view') : 'week';
+        $rawDate = $request->query('date');
+        $currentDate = $rawDate ? \Carbon\Carbon::parse($rawDate) : \Carbon\Carbon::today();
 
-        $weekSchedules = \App\Models\Schedule::where('idtenant', $tenant->id)
-            ->whereBetween('tanggal', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
-            ->with(['layanan', 'bookings'])
-            ->get();
+        // Calculate navigation dates based on active viewMode
+        $todayDate = \Carbon\Carbon::today()->toDateString();
+        if ($view === 'day') {
+            $prevDate = $currentDate->copy()->subDay()->toDateString();
+            $nextDate = $currentDate->copy()->addDay()->toDateString();
+            $dateLabel = $currentDate->translatedFormat('l, d F Y');
+        } elseif ($view === 'month') {
+            $prevDate = $currentDate->copy()->subMonth()->startOfMonth()->toDateString();
+            $nextDate = $currentDate->copy()->addMonth()->startOfMonth()->toDateString();
+            $dateLabel = $currentDate->translatedFormat('F Y');
+        } else { // week
+            $startOfWeek = $currentDate->copy()->startOfWeek();
+            $endOfWeek = $currentDate->copy()->endOfWeek();
+            $prevDate = $startOfWeek->copy()->subWeek()->toDateString();
+            $nextDate = $startOfWeek->copy()->addWeek()->toDateString();
+            $dateLabel = $startOfWeek->translatedFormat('d M') . ' - ' . $endOfWeek->translatedFormat('d M Y');
+        }
 
-        $bookings = \App\Models\Booking::where('idtenant', $tenant->id)
-            ->with('layanan')
-            ->orderBy('tanggalbooking')
-            ->orderBy('jam')
-            ->get();
+        $selectedService = $request->query('service_id', 'all');
+        $selectedStatus = $request->query('status', 'all');
 
-        $monthBookings = \App\Models\Booking::where('idtenant', $tenant->id)
-            ->whereMonth('tanggalbooking', now()->month)
-            ->whereYear('tanggalbooking', now()->year)
-            ->get()
-            ->groupBy(fn($b) => \Carbon\Carbon::parse($b->tanggalbooking)->format('j'));
+        $services = \App\Models\Service::where('idtenant', $tenant->id)->orderBy('namalayanan')->get();
 
-        return view('owner.owner-calendar', compact('tenant', 'services', 'bookings', 'weekSchedules', 'monthBookings'));
+        // Date range covering month + edge weeks for smooth view transitions
+        $rangeStart = $currentDate->copy()->startOfMonth()->startOfWeek();
+        $rangeEnd = $currentDate->copy()->endOfMonth()->endOfWeek();
+
+        // Blocked dates in range
+        $blockedDates = \App\Models\OwnerBlockedDate::where('idtenant', $tenant->id)
+            ->whereBetween('tanggal', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
+            ->pluck('alasan', 'tanggal')
+            ->toArray();
+
+        // Schedules in range
+        $schedulesQuery = \App\Models\Schedule::where('idtenant', $tenant->id)
+            ->whereBetween('tanggal', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
+            ->with(['layanan', 'bookings.payment']);
+
+        if ($selectedService !== 'all' && is_numeric($selectedService)) {
+            $schedulesQuery->where('idlayanan', (int) $selectedService);
+        }
+
+        if ($selectedStatus === 'available') {
+            $schedulesQuery->where('status', 'tersedia')
+                ->whereDoesntHave('bookings', fn($q) => $q->whereIn('status', ['pending', 'paid', 'completed']));
+        } elseif ($selectedStatus === 'blocked') {
+            $schedulesQuery->where('status', 'diblokir');
+        } elseif ($selectedStatus !== 'all' && in_array($selectedStatus, ['paid', 'pending', 'completed', 'cancelled'])) {
+            $schedulesQuery->whereHas('bookings', fn($q) => $q->where('status', $selectedStatus));
+        }
+
+        $schedules = $schedulesQuery->orderBy('tanggal')->orderBy('jam_mulai')->get();
+
+        // Bookings in range
+        $bookingsQuery = \App\Models\Booking::where('idtenant', $tenant->id)
+            ->whereBetween('tanggalbooking', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
+            ->with(['layanan', 'payment', 'schedule']);
+
+        if ($selectedService !== 'all' && is_numeric($selectedService)) {
+            $bookingsQuery->where('idlayanan', (int) $selectedService);
+        }
+
+        if ($selectedStatus === 'available' || $selectedStatus === 'blocked') {
+            $bookingsQuery->whereRaw('1 = 0');
+        } elseif ($selectedStatus !== 'all' && in_array($selectedStatus, ['paid', 'pending', 'completed', 'cancelled'])) {
+            $bookingsQuery->where('status', $selectedStatus);
+        }
+
+        $bookings = $bookingsQuery->orderBy('tanggalbooking')->orderBy('jam')->get();
+
+        // Week schedules specific for week view
+        $weekStart = $currentDate->copy()->startOfWeek();
+        $weekEnd = $currentDate->copy()->endOfWeek();
+        $weekSchedules = $schedules->filter(function ($s) use ($weekStart, $weekEnd) {
+            $t = \Carbon\Carbon::parse($s->tanggal);
+            return $t->betweenIncluded($weekStart, $weekEnd);
+        })->values();
+
+        // Month bookings grouped by day (1..31) for month view
+        $monthBookings = $bookings->filter(function ($b) use ($currentDate) {
+            $t = \Carbon\Carbon::parse($b->tanggalbooking);
+            return $t->month === $currentDate->month && $t->year === $currentDate->year;
+        })->groupBy(fn($b) => \Carbon\Carbon::parse($b->tanggalbooking)->format('j'));
+
+        // Month schedules grouped by day (1..31) for month view
+        $monthSchedules = $schedules->filter(function ($s) use ($currentDate) {
+            $t = \Carbon\Carbon::parse($s->tanggal);
+            return $t->month === $currentDate->month && $t->year === $currentDate->year;
+        })->groupBy(fn($s) => \Carbon\Carbon::parse($s->tanggal)->format('j'));
+
+        return view('owner.owner-calendar', compact(
+            'tenant',
+            'services',
+            'bookings',
+            'schedules',
+            'weekSchedules',
+            'monthBookings',
+            'monthSchedules',
+            'blockedDates',
+            'view',
+            'currentDate',
+            'prevDate',
+            'nextDate',
+            'todayDate',
+            'dateLabel',
+            'weekStart',
+            'weekEnd',
+            'selectedService',
+            'selectedStatus'
+        ));
     }
 
     public function scheduleReport()
@@ -52,7 +143,10 @@ class OwnerPortalController extends Controller
         $bookedSlots = \App\Models\Schedule::where('idtenant', $tenant->id)
             ->whereHas('bookings', fn($q) => $q->whereIn('status', ['paid', 'completed']))
             ->count();
-        $availableSlots = max(0, $totalSlots - $bookedSlots);
+        $availableSlots = \App\Models\Schedule::where('idtenant', $tenant->id)
+            ->where('status', 'tersedia')
+            ->whereDoesntHave('bookings', fn($q) => $q->whereIn('status', ['pending', 'paid', 'completed']))
+            ->count();
         $utilizationRate = $totalSlots > 0 ? round(($bookedSlots / $totalSlots) * 100, 1) : 0;
 
         $bookings = \App\Models\Booking::where('idtenant', $tenant->id)

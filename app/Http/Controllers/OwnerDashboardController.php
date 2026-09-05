@@ -170,10 +170,10 @@ class OwnerDashboardController extends Controller
             $sisahari = (int) max(0, ceil(Carbon::now()->diffInDays($langganan->trial_berakhir, false)));
         }
 
-        $totalpelanggan = Booking::where('idtenant', $idtenant)
-            ->whereNotNull('email')
-            ->distinct('email')
-            ->count('email');
+        $totalpelanggan = DB::table('bookings')
+            ->where('idtenant', $idtenant)
+            ->distinct()
+            ->count(DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id))))"));
 
         $upcomingbookings = Booking::where('bookings.idtenant', $idtenant)
             ->where('tanggalbooking', '>=', Carbon::today())

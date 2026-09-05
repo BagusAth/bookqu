@@ -102,7 +102,7 @@ class OwnerBookingController extends Controller
 
         // Pastikan booking milik tenant yang sedang login
         if (!$tenant || $booking->idtenant !== $tenant->id) {
-            return back()->withErrors(['error' => 'Akses tidak diizinkan.']);
+            abort(404, 'Booking tidak ditemukan.');
         }
 
         $validated = $request->validate([

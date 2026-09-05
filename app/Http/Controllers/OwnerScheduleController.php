@@ -315,10 +315,9 @@ class OwnerScheduleController extends Controller
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        OwnerBlockedDate::where('idtenant', $tenant->id)
-            ->where('id', $blockedDate)
-            ->delete();
+        $bDate = OwnerBlockedDate::where('idtenant', $tenant->id)->findOrFail($blockedDate);
+        $bDate->delete();
 
-        return redirect('/owner/schedule')->with('sukses', 'Tanggal berhasil dibuka.');
+        return redirect('/owner/schedule')->with('sukses', 'Tanggal blokir berhasil dihapus.');
     }
 }
