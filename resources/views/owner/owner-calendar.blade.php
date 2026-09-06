@@ -18,20 +18,33 @@
         }
     }"
 >
-    {{-- Header --}}
+    {{-- Header Section --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-bq-text sm:text-3xl">Calendar &amp; Jadwal Operasional</h1>
-            <p class="mt-1 text-sm text-bq-text-muted">Visualisasi terpadu ketersediaan slot Schedule dan transaksi Booking.</p>
+            <div class="flex items-center gap-2.5">
+                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#e7e2f7] shadow-2xs">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </span>
+                <h1 class="text-2xl font-extrabold text-[#231a3d] tracking-tight sm:text-3xl">Calendar &amp; Jadwal Operasional</h1>
+            </div>
+            <p class="mt-1 text-sm text-[#6e6584]">Visualisasi terpadu ketersediaan slot Schedule dan transaksi Booking.</p>
         </div>
         <div class="flex items-center gap-2.5">
-            <a href="{{ route('owner.schedule') }}" class="inline-flex items-center gap-2 rounded-xl border border-bq-border bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-bq-text hover:bg-bq-surface transition-all shadow-2xs">
-                <svg class="h-4 w-4 text-[#4F46E5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <a
+                href="{{ route('owner.schedule') }}"
+                class="craft-btn inline-flex items-center gap-2 rounded-xl border border-[#e7e2f7] bg-white px-4 py-2.5 text-xs sm:text-sm font-bold text-[#231a3d] hover:bg-[#f7f7fa] hover:border-[#b499ff] shadow-2xs"
+            >
+                <svg class="h-4 w-4 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
                 <span>Kelola Schedule</span>
             </a>
-            <a href="{{ route('owner.bookings') }}" class="inline-flex items-center gap-2 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition-all active:scale-98">
+            <a
+                href="{{ route('owner.bookings') }}"
+                class="craft-btn inline-flex items-center gap-2 rounded-xl bg-[#382186] hover:bg-[#2d1a6d] px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs"
+            >
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                 </svg>
@@ -41,25 +54,25 @@
     </div>
 
     {{-- Controls Bar: View Switcher, Date Navigator, Filters --}}
-    <div class="rounded-2xl border border-bq-border bg-white p-4 shadow-2xs space-y-4">
+    <div class="rounded-2xl border border-[#e7e2f7] bg-white p-4 sm:p-5 shadow-[0_4px_20px_rgba(35,26,61,0.03)] space-y-4">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            {{-- View Switcher Tabs --}}
-            <div class="flex items-center gap-1 rounded-xl bg-slate-100 p-1 w-fit">
+            {{-- Segmented View Switcher Tabs (Day / Week / Month) --}}
+            <div class="flex items-center gap-1 rounded-xl bg-[#f7f7fa] p-1 border border-[#e7e2f7] w-fit">
                 <a
                     href="{{ route('owner.calendar', ['view' => 'day', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
-                    class="rounded-lg px-3.5 py-1.5 text-xs transition cursor-pointer {{ $view === 'day' ? 'bg-white text-[#4F46E5] font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-medium' }}"
+                    class="rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer {{ $view === 'day' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d] hover:bg-white/60' }}"
                 >
                     Day
                 </a>
                 <a
                     href="{{ route('owner.calendar', ['view' => 'week', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
-                    class="rounded-lg px-3.5 py-1.5 text-xs transition cursor-pointer {{ $view === 'week' ? 'bg-white text-[#4F46E5] font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-medium' }}"
+                    class="rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer {{ $view === 'week' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d] hover:bg-white/60' }}"
                 >
                     Week
                 </a>
                 <a
                     href="{{ route('owner.calendar', ['view' => 'month', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
-                    class="rounded-lg px-3.5 py-1.5 text-xs transition cursor-pointer {{ $view === 'month' ? 'bg-white text-[#4F46E5] font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-medium' }}"
+                    class="rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer {{ $view === 'month' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d] hover:bg-white/60' }}"
                 >
                     Month
                 </a>
@@ -69,26 +82,26 @@
             <div class="flex items-center gap-2">
                 <a
                     href="{{ route('owner.calendar', ['view' => $view, 'date' => $todayDate, 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
-                    class="rounded-xl border border-bq-border bg-white px-3 py-1.5 text-xs font-bold text-bq-text hover:bg-slate-50 transition shadow-2xs"
+                    class="craft-btn rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] hover:bg-[#e7e2f7] px-3.5 py-1.5 text-xs font-bold text-[#382186] shadow-2xs"
                 >
                     Hari Ini
                 </a>
-                <div class="flex items-center rounded-xl border border-bq-border bg-white shadow-2xs">
+                <div class="flex items-center rounded-xl border border-[#e7e2f7] bg-white shadow-2xs overflow-hidden">
                     <a
                         href="{{ route('owner.calendar', ['view' => $view, 'date' => $prevDate, 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
-                        class="p-2 text-slate-500 hover:text-slate-800 transition border-r border-bq-border"
+                        class="p-2 text-[#6e6584] hover:text-[#382186] hover:bg-[#f7f7fa] transition border-r border-[#e7e2f7]"
                         aria-label="Previous"
                     >
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </a>
-                    <span class="px-4 py-1.5 text-xs font-bold text-bq-text min-w-[170px] text-center">
+                    <span class="px-4 py-1.5 text-xs font-bold text-[#231a3d] min-w-[170px] text-center tracking-wide">
                         {{ $dateLabel }}
                     </span>
                     <a
                         href="{{ route('owner.calendar', ['view' => $view, 'date' => $nextDate, 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
-                        class="p-2 text-slate-500 hover:text-slate-800 transition border-l border-bq-border"
+                        class="p-2 text-[#6e6584] hover:text-[#382186] hover:bg-[#f7f7fa] transition border-l border-[#e7e2f7]"
                         aria-label="Next"
                     >
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -102,7 +115,7 @@
             <div class="flex flex-wrap items-center gap-2">
                 <select
                     onchange="window.location.href = updateCalendarFilter('service_id', this.value)"
-                    class="rounded-xl border border-bq-border bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-[#4F46E5] focus:outline-none"
+                    class="rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] hover:bg-white px-3.5 py-1.5 text-xs font-semibold text-[#231a3d] focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 focus:outline-none transition shadow-2xs"
                 >
                     <option value="all" {{ $selectedService === 'all' ? 'selected' : '' }}>Semua Layanan</option>
                     @foreach ($services as $service)
@@ -112,45 +125,45 @@
 
                 <select
                     onchange="window.location.href = updateCalendarFilter('status', this.value)"
-                    class="rounded-xl border border-bq-border bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-[#4F46E5] focus:outline-none"
+                    class="rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] hover:bg-white px-3.5 py-1.5 text-xs font-semibold text-[#231a3d] focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 focus:outline-none transition shadow-2xs"
                 >
                     <option value="all" {{ $selectedStatus === 'all' ? 'selected' : '' }}>Semua Status</option>
-                    <option value="available" {{ $selectedStatus === 'available' ? 'selected' : '' }}>Slot Tersedia (Available)</option>
+                    <option value="available" {{ $selectedStatus === 'available' ? 'selected' : '' }}>Slot Kosong (Available)</option>
                     <option value="paid" {{ $selectedStatus === 'paid' ? 'selected' : '' }}>Confirmed (Lunas)</option>
                     <option value="pending" {{ $selectedStatus === 'pending' ? 'selected' : '' }}>Pending (Menunggu Bayar)</option>
                     <option value="completed" {{ $selectedStatus === 'completed' ? 'selected' : '' }}>Completed (Selesai)</option>
                     <option value="cancelled" {{ $selectedStatus === 'cancelled' ? 'selected' : '' }}>Cancelled (Dibatalkan)</option>
-                    <option value="blocked" {{ $selectedStatus === 'blocked' ? 'selected' : '' }}>Blocked (Diblokir)</option>
+                    <option value="blocked" {{ $selectedStatus === 'blocked' ? 'selected' : '' }}>Blocked (Libur / Tutup)</option>
                 </select>
             </div>
         </div>
 
         {{-- Legend Indicators --}}
-        <div class="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-100 text-xs text-slate-600">
-            <span class="font-bold text-slate-900">Indikator:</span>
+        <div class="flex flex-wrap items-center gap-4 pt-3.5 border-t border-[#e7e2f7] text-xs text-[#6e6584]">
+            <span class="font-extrabold text-[#231a3d]">Indikator:</span>
             <div class="flex items-center gap-1.5">
-                <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                <span>Confirmed (Lunas)</span>
+                <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-2xs"></span>
+                <span class="font-medium">Confirmed (Lunas)</span>
             </div>
             <div class="flex items-center gap-1.5">
-                <span class="h-2.5 w-2.5 rounded-full bg-amber-400"></span>
-                <span>Pending</span>
+                <span class="h-2.5 w-2.5 rounded-full bg-[#ffb84d] shadow-2xs"></span>
+                <span class="font-medium">Pending</span>
             </div>
             <div class="flex items-center gap-1.5">
-                <span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                <span>Completed</span>
+                <span class="h-2.5 w-2.5 rounded-full bg-sky-500 shadow-2xs"></span>
+                <span class="font-medium">Completed</span>
             </div>
             <div class="flex items-center gap-1.5">
-                <span class="h-2.5 w-2.5 rounded-full bg-indigo-400"></span>
-                <span>Slot Tersedia (Available)</span>
+                <span class="h-2.5 w-2.5 rounded-full bg-[#b499ff] shadow-2xs"></span>
+                <span class="font-medium">Slot Tersedia (Available)</span>
             </div>
             <div class="flex items-center gap-1.5">
-                <span class="h-2.5 w-2.5 rounded-full bg-rose-400"></span>
-                <span>Cancelled</span>
+                <span class="h-2.5 w-2.5 rounded-full bg-rose-400 shadow-2xs"></span>
+                <span class="font-medium">Cancelled</span>
             </div>
             <div class="flex items-center gap-1.5">
-                <span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
-                <span>Blocked / Libur</span>
+                <span class="h-2.5 w-2.5 rounded-full bg-[#6e6584] shadow-2xs"></span>
+                <span class="font-medium">Blocked / Libur</span>
             </div>
         </div>
     </div>
@@ -184,28 +197,38 @@
             $hours = $defaultHours->merge($calendarHours)->unique()->sort()->values()->all();
         @endphp
 
-        <div class="rounded-2xl border border-bq-border bg-white shadow-2xs overflow-hidden">
+        <div class="rounded-2xl border border-[#e7e2f7] bg-white shadow-[0_4px_24px_rgba(35,26,61,0.03)] overflow-hidden">
             <div class="overflow-x-auto">
-                <div class="min-w-[820px]">
+                <div class="min-w-[840px]">
                     {{-- Week Days Header --}}
-                    <div class="grid grid-cols-8 border-b border-bq-border bg-slate-50/80 text-center text-xs font-bold text-slate-700">
-                        <div class="py-3 px-2 text-slate-400 border-r border-bq-border">Waktu</div>
+                    <div class="grid grid-cols-8 border-b border-[#e7e2f7] bg-[#f7f7fa] text-center text-xs font-bold text-[#231a3d]">
+                        <div class="py-3 px-2 text-[#6e6584] border-r border-[#e7e2f7] font-semibold">Waktu</div>
                         @foreach ($daysOfWeek as $d)
-                            <div class="py-3 px-2 border-r last:border-r-0 border-bq-border {{ $d['isToday'] ? 'bg-[#EEF2FF]/60 text-[#4F46E5]' : '' }}">
-                                <p class="uppercase tracking-wider text-[11px]">{{ $d['name'] }}</p>
-                                <p class="text-xs font-extrabold text-slate-900 mt-0.5">{{ $d['date'] }}</p>
+                            <div class="py-3 px-2 border-r last:border-r-0 border-[#e7e2f7] {{ $d['isToday'] ? 'bg-[#f3effe] text-[#382186]' : '' }}">
+                                <p class="uppercase tracking-wider text-[10px] text-[#6e6584] font-bold">{{ $d['name'] }}</p>
+                                <p class="text-xs font-extrabold text-[#231a3d] mt-0.5">
+                                    @if ($d['isToday'])
+                                        <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-[#382186] text-white text-[11px] font-extrabold shadow-2xs">
+                                            {{ $d['date'] }}
+                                        </span>
+                                    @else
+                                        {{ $d['date'] }}
+                                    @endif
+                                </p>
                                 @if (isset($blockedDates[$d['fullDate']]))
-                                    <span class="inline-block mt-0.5 rounded bg-slate-200 px-1 text-[9px] font-bold text-slate-700">Libur</span>
+                                    <span class="inline-flex items-center gap-0.5 mt-1 rounded-md bg-[#e7e2f7] px-1.5 py-0.5 text-[9px] font-bold text-[#6e6584]" title="Alasan: {{ $blockedDates[$d['fullDate']] ?: 'Libur Operasional' }}">
+                                        <span>🔒 Libur</span>
+                                    </span>
                                 @endif
                             </div>
                         @endforeach
                     </div>
 
                     {{-- Time Slots Rows --}}
-                    <div class="divide-y divide-slate-100">
+                    <div class="divide-y divide-[#e7e2f7]">
                         @foreach ($hours as $hour)
-                            <div class="grid grid-cols-8 min-h-[64px]">
-                                <div class="py-2.5 px-3 text-right text-[11px] font-semibold text-slate-400 border-r border-bq-border bg-slate-50/40">
+                            <div class="grid grid-cols-8 min-h-[68px]">
+                                <div class="py-2.5 px-3 text-right text-[11px] font-bold text-[#6e6584] border-r border-[#e7e2f7] bg-[#f7f7fa]/60 select-none">
                                     {{ $hour }}
                                 </div>
 
@@ -227,17 +250,17 @@
                                         });
                                     @endphp
 
-                                    <div class="p-1 border-r last:border-r-0 border-bq-border transition hover:bg-slate-50/70 relative">
+                                    <div class="p-1 border-r last:border-r-0 border-[#e7e2f7] transition-colors duration-150 hover:bg-[#f7f7fa]/60 relative">
                                         @if ($cellBookings->isNotEmpty())
                                             @foreach ($cellBookings as $matchedBooking)
                                                 @php
                                                     $bStatus = $matchedBooking->status;
                                                     $cardStyle = match($bStatus) {
-                                                        'paid'      => 'bg-emerald-50 text-emerald-900 border-emerald-300',
-                                                        'pending'   => 'bg-amber-50 text-amber-900 border-amber-300',
-                                                        'completed' => 'bg-blue-50 text-blue-900 border-blue-300',
-                                                        'cancelled' => 'bg-rose-50 text-rose-800 border-rose-200 line-through opacity-70',
-                                                        default     => 'bg-slate-100 text-slate-800 border-slate-300',
+                                                        'paid'      => 'bg-emerald-50/90 text-emerald-950 border-emerald-300 hover:border-emerald-400',
+                                                        'pending'   => 'bg-[#fff8eb] text-[#875000] border-[#ffb84d] hover:border-[#ffb84d]/90',
+                                                        'completed' => 'bg-sky-50/90 text-sky-950 border-sky-300 hover:border-sky-400',
+                                                        'cancelled' => 'bg-rose-50/70 text-rose-800 border-rose-200 line-through opacity-70',
+                                                        default     => 'bg-[#f7f7fa] text-[#231a3d] border-[#e7e2f7]',
                                                     };
                                                     $badgeStatus = match($bStatus) {
                                                         'paid'      => 'Confirmed',
@@ -265,13 +288,13 @@
                                                         amount: 'Rp {{ number_format($matchedBooking->payment->jumlah ?? $matchedBooking->layanan->harga ?? 0, 0, ',', '.') }}',
                                                         notes: '{{ addslashes($matchedBooking->catatan ?? '-') }}'
                                                     })"
-                                                    class="mb-1 rounded-lg border p-1.5 text-[11px] font-bold cursor-pointer transition shadow-2xs hover:shadow-xs {{ $cardStyle }}"
+                                                    class="craft-card mb-1 rounded-xl border p-2 text-[11px] font-bold cursor-pointer shadow-2xs {{ $cardStyle }}"
                                                 >
                                                     <div class="flex items-center justify-between gap-1">
-                                                        <span class="truncate leading-tight">{{ $matchedBooking->layanan->namalayanan ?? 'Layanan' }}</span>
-                                                        <span class="text-[9px] uppercase px-1 py-0.2 rounded bg-white/70">{{ $badgeStatus }}</span>
+                                                        <span class="truncate leading-tight font-extrabold">{{ $matchedBooking->layanan->namalayanan ?? 'Layanan' }}</span>
+                                                        <span class="text-[9px] uppercase px-1.5 py-0.2 rounded-md bg-white/80 font-bold shadow-2xs">{{ $badgeStatus }}</span>
                                                     </div>
-                                                    <p class="text-[10px] font-medium opacity-85 truncate mt-0.5">{{ $matchedBooking->namapelanggan }} ({{ substr($matchedBooking->jam, 0, 5) }})</p>
+                                                    <p class="text-[10px] font-medium opacity-90 truncate mt-1">{{ $matchedBooking->namapelanggan }} ({{ substr($matchedBooking->jam, 0, 5) }})</p>
                                                 </div>
                                             @endforeach
                                         @elseif ($cellSchedules->isNotEmpty())
@@ -298,30 +321,56 @@
                                                             amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
                                                             notes: 'Slot aktif ini terbuka untuk reservasi pelanggan.'
                                                         })"
-                                                        class="h-full rounded-lg border border-dashed border-indigo-300 bg-indigo-50/60 p-1.5 text-[10px] text-indigo-950 font-semibold cursor-pointer transition hover:bg-indigo-100/70"
+                                                        class="craft-card h-full rounded-xl border border-dashed border-[#b499ff] bg-[#f3effe]/60 hover:bg-[#f3effe] p-2 text-[10px] text-[#231a3d] font-semibold cursor-pointer shadow-2xs"
                                                     >
                                                         <div class="flex items-center justify-between">
-                                                            <span class="truncate font-bold text-indigo-800">{{ $sched->layanan->namalayanan ?? 'Layanan' }}</span>
-                                                            <span class="rounded bg-indigo-200 px-1 py-0.2 text-[8px] font-extrabold uppercase text-indigo-900">Tersedia</span>
+                                                            <span class="truncate font-extrabold text-[#382186]">{{ $sched->layanan->namalayanan ?? 'Layanan' }}</span>
+                                                            <span class="rounded-md bg-[#e7e2f7] px-1.5 py-0.2 text-[8px] font-extrabold uppercase text-[#382186]">Tersedia</span>
                                                         </div>
-                                                        <p class="text-[9px] text-indigo-700 opacity-80 mt-0.5">{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}</p>
+                                                        <div class="mt-1.5 flex items-center justify-between">
+                                                            <span class="text-[9px] text-[#6e6584] font-semibold">{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}</span>
+                                                            <button
+                                                                type="button"
+                                                                @click.stop="openDetail({
+                                                                    raw_booking_id: null,
+                                                                    raw_schedule_id: {{ $sched->id }},
+                                                                    is_booking: false,
+                                                                    raw_status: 'available',
+                                                                    booking_id: 'SCHED-{{ $sched->id }}',
+                                                                    customer: 'Belum Terisi (Slot Tersedia)',
+                                                                    phone: '-',
+                                                                    email: '-',
+                                                                    service: '{{ addslashes($sched->layanan->namalayanan ?? 'Layanan') }}',
+                                                                    date: '{{ \Carbon\Carbon::parse($sched->tanggal)->translatedFormat('d F Y') }}',
+                                                                    time: '{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}',
+                                                                    payment_status: 'Belum Ada Transaksi',
+                                                                    booking_status: 'Available',
+                                                                    amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
+                                                                    notes: 'Slot aktif ini terbuka untuk reservasi pelanggan.'
+                                                                }); walkinMode = true"
+                                                                class="rounded-md bg-[#382186] hover:bg-[#2d1a6d] px-1.5 py-0.5 text-[8px] font-extrabold text-white transition shadow-2xs"
+                                                                title="Catat Reservasi Walk-in Tamu"
+                                                            >
+                                                                + Walk-in
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 @elseif ($schedStatus === \App\Models\Schedule::STATUS_BLOCKED)
-                                                    <div class="h-full rounded-md border border-slate-200 bg-slate-100/70 p-1 text-[9px] text-slate-500 flex items-center justify-center font-medium">
+                                                    <div class="h-full rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] p-1.5 text-[9px] text-[#6e6584] flex items-center justify-center font-semibold italic">
                                                         [Diblokir]
                                                     </div>
                                                 @else
-                                                    <div class="h-full rounded-md border border-slate-100 bg-slate-50/50 p-1 text-[9px] text-slate-400 flex items-center justify-center">
+                                                    <div class="h-full rounded-xl border border-[#e7e2f7] bg-[#f7f7fa]/60 p-1.5 text-[9px] text-[#6e6584]/60 flex items-center justify-center">
                                                         [Nonaktif]
                                                     </div>
                                                 @endif
                                             @endforeach
                                         @elseif ($isDayBlocked)
-                                            <div class="h-full rounded-md bg-slate-100/40 border border-slate-200/50 flex items-center justify-center text-[10px] text-slate-400 font-medium">
+                                            <div class="h-full rounded-xl bg-[#f7f7fa] border border-[#e7e2f7] flex items-center justify-center text-[10px] text-[#6e6584] font-semibold italic">
                                                 Libur
                                             </div>
                                         @else
-                                            <div class="h-full rounded-md border border-dashed border-transparent hover:border-slate-300 flex items-center justify-center text-[10px] text-slate-300">
+                                            <div class="h-full rounded-xl border border-dashed border-transparent hover:border-[#e7e2f7] flex items-center justify-center text-[10px] text-[#e7e2f7] transition">
                                                 -
                                             </div>
                                         @endif
@@ -344,32 +393,43 @@
             $isBlockedToday = isset($blockedDates[$targetDateStr]);
         @endphp
 
-        <div class="rounded-2xl border border-bq-border bg-white shadow-2xs p-6 space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
+        <div class="rounded-2xl border border-[#e7e2f7] bg-white shadow-[0_4px_24px_rgba(35,26,61,0.03)] p-6 space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#e7e2f7] pb-4">
                 <div>
-                    <h2 class="text-lg font-bold text-bq-text">Jadwal Harian &mdash; {{ $currentDate->translatedFormat('l, d F Y') }}</h2>
-                    <p class="text-xs text-bq-text-muted mt-0.5">{{ $dayBookings->count() }} Booking &bull; {{ $daySchedules->count() }} Total Slot Schedule</p>
+                    <h2 class="text-lg font-extrabold text-[#231a3d] tracking-tight">Jadwal Harian &mdash; {{ $currentDate->translatedFormat('l, d F Y') }}</h2>
+                    <p class="text-xs text-[#6e6584] mt-0.5 font-medium">{{ $dayBookings->count() }} Booking &bull; {{ $daySchedules->count() }} Total Slot Schedule</p>
                 </div>
-                @if ($isBlockedToday)
-                    <span class="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700">
-                        <span>⚠️ Tanggal Diblokir: {{ $blockedDates[$targetDateStr] ?: 'Libur Operasional' }}</span>
-                    </span>
-                @endif
+                <div class="flex flex-wrap items-center gap-2">
+                    @if ($currentDate->isToday())
+                        <span class="inline-flex items-center gap-1.5 rounded-xl bg-[#f3effe] border border-[#b499ff]/50 px-3 py-1.5 text-xs font-bold text-[#382186] shadow-2xs">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#382186] opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-[#382186]"></span>
+                            </span>
+                            <span>Hari Ini &bull; Waktu Sekarang {{ now()->format('H:i') }} WIB</span>
+                        </span>
+                    @endif
+                    @if ($isBlockedToday)
+                        <span class="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 shadow-2xs">
+                            <span>⚠️ Tanggal Diblokir: {{ $blockedDates[$targetDateStr] ?: 'Libur Operasional' }}</span>
+                        </span>
+                    @endif
+                </div>
             </div>
 
             {{-- 1. Transaksi Bookings Pada Hari Ini --}}
             <div class="space-y-3">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Booking Aktif &amp; Riwayat Hari Ini</h3>
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-[#6e6584]">Booking Aktif &amp; Riwayat Hari Ini</h3>
                 @if ($dayBookings->isNotEmpty())
-                    <div class="divide-y divide-slate-100 rounded-xl border border-bq-border bg-white overflow-hidden">
+                    <div class="divide-y divide-[#e7e2f7] rounded-2xl border border-[#e7e2f7] bg-white overflow-hidden shadow-2xs">
                         @foreach ($dayBookings as $item)
                             @php
                                 $badgeClass = match($item->status) {
-                                    'paid'      => 'bg-emerald-100 text-emerald-800',
-                                    'pending'   => 'bg-amber-100 text-amber-800',
-                                    'completed' => 'bg-blue-100 text-blue-800',
-                                    'cancelled' => 'bg-rose-100 text-rose-800',
-                                    default     => 'bg-slate-100 text-slate-800',
+                                    'paid'      => 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                                    'pending'   => 'bg-[#fff8eb] text-[#875000] border-[#ffb84d]',
+                                    'completed' => 'bg-sky-100 text-sky-800 border-sky-200',
+                                    'cancelled' => 'bg-rose-100 text-rose-800 border-rose-200',
+                                    default     => 'bg-[#f7f7fa] text-[#231a3d] border-[#e7e2f7]',
                                 };
                                 $badgeLabel = match($item->status) {
                                     'paid'      => 'Confirmed',
@@ -397,22 +457,22 @@
                                     amount: 'Rp {{ number_format($item->payment->jumlah ?? $item->layanan->harga ?? 0, 0, ',', '.') }}',
                                     notes: '{{ addslashes($item->catatan ?? '-') }}'
                                 })"
-                                class="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-slate-50 transition cursor-pointer"
+                                class="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-[#f7f7fa] transition duration-150 cursor-pointer"
                             >
                                 <div class="flex items-center gap-3.5">
-                                    <span class="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl bg-[#EEF2FF] text-xs font-black text-[#4F46E5]">
+                                    <span class="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl bg-[#f3effe] text-xs font-black text-[#382186] border border-[#e7e2f7]">
                                         {{ substr($item->jam, 0, 5) }}
                                     </span>
                                     <div>
-                                        <p class="text-sm font-bold text-slate-900">{{ $item->layanan->namalayanan ?? 'Layanan' }}</p>
-                                        <p class="text-xs text-slate-500 mt-0.5">{{ $item->namapelanggan }} &bull; {{ $item->nomorhp }} &bull; {{ $item->email }}</p>
+                                        <p class="text-sm font-extrabold text-[#231a3d]">{{ $item->layanan->namalayanan ?? 'Layanan' }}</p>
+                                        <p class="text-xs text-[#6e6584] mt-0.5 font-medium">{{ $item->namapelanggan }} &bull; {{ $item->nomorhp }} &bull; {{ $item->email }}</p>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-bold text-slate-900">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-xs font-black text-[#231a3d]">
                                         Rp {{ number_format($item->payment->jumlah ?? $item->layanan->harga ?? 0, 0, ',', '.') }}
                                     </span>
-                                    <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold uppercase {{ $badgeClass }}">
+                                    <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-extrabold uppercase border {{ $badgeClass }}">
                                         {{ $badgeLabel }}
                                     </span>
                                 </div>
@@ -420,17 +480,17 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+                    <div class="rounded-2xl border border-dashed border-[#e7e2f7] p-8 text-center text-sm text-[#6e6584] bg-[#f7f7fa]/40">
                         Tidak ada booking transaksi pada tanggal ini.
                     </div>
                 @endif
             </div>
 
             {{-- 2. Ketersediaan Slot Schedule Pada Hari Ini --}}
-            <div class="space-y-3 pt-4 border-t border-slate-100">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Slot Schedule Operasional Hari Ini</h3>
+            <div class="space-y-3 pt-4 border-t border-[#e7e2f7]">
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-[#6e6584]">Slot Schedule Operasional Hari Ini</h3>
                 @if ($daySchedules->isNotEmpty())
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                         @foreach ($daySchedules as $sched)
                             @php
                                 $avail = $sched->getAvailabilityStatus();
@@ -455,38 +515,67 @@
                                         amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
                                         notes: 'Slot aktif ini terbuka untuk reservasi pelanggan atau walk-in booking.'
                                     })"
-                                    class="rounded-xl border p-3.5 border-indigo-200 bg-indigo-50/40 cursor-pointer hover:bg-indigo-100/60 transition shadow-2xs"
+                                    class="craft-card rounded-2xl border p-4 border-[#b499ff] bg-[#f3effe]/50 hover:bg-[#f3effe] cursor-pointer shadow-2xs"
                                 @else
-                                    class="rounded-xl border p-3.5 border-bq-border bg-white opacity-85"
+                                    class="rounded-2xl border p-4 border-[#e7e2f7] bg-white opacity-90 shadow-2xs"
                                 @endif
                             >
                                 <div class="flex items-center justify-between">
-                                    <span class="text-xs font-extrabold text-[#4F46E5]">
+                                    <span class="text-xs font-black text-[#382186]">
                                         {{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}
                                     </span>
                                     @if ($avail === \App\Models\Schedule::STATUS_AVAILABLE)
-                                        <span class="rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-800 uppercase">Tersedia</span>
+                                        <span class="rounded-md bg-[#e7e2f7] px-2 py-0.5 text-[10px] font-extrabold text-[#382186] uppercase">Tersedia</span>
                                     @elseif ($avail === \App\Models\Schedule::STATUS_BOOKED)
-                                        <span class="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 uppercase">Booked</span>
+                                        <span class="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800 uppercase">Booked</span>
                                     @elseif ($avail === \App\Models\Schedule::STATUS_BLOCKED)
-                                        <span class="rounded bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700 uppercase">Diblokir</span>
+                                        <span class="rounded-md bg-[#e7e2f7] px-2 py-0.5 text-[10px] font-extrabold text-[#6e6584] uppercase">Diblokir</span>
                                     @else
-                                        <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 uppercase">Unavailable</span>
+                                        <span class="rounded-md bg-[#f7f7fa] px-2 py-0.5 text-[10px] font-extrabold text-[#6e6584] uppercase">Unavailable</span>
                                     @endif
                                 </div>
-                                <p class="text-sm font-bold text-slate-900 mt-1">{{ $sched->layanan->namalayanan ?? 'Layanan' }}</p>
-                                <p class="text-xs text-slate-500 mt-0.5">
+                                <p class="text-sm font-extrabold text-[#231a3d] mt-1.5">{{ $sched->layanan->namalayanan ?? 'Layanan' }}</p>
+                                <p class="text-xs text-[#6e6584] mt-0.5 font-medium">
                                     @if ($hasBooking)
-                                        Dipesan oleh: <span class="font-medium text-slate-700">{{ $hasBooking->namapelanggan }}</span>
+                                        Dipesan oleh: <span class="font-bold text-[#231a3d]">{{ $hasBooking->namapelanggan }}</span>
                                     @else
-                                        Tarif: Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}
+                                        Tarif: <span class="font-bold text-[#231a3d]">Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}</span>
                                     @endif
                                 </p>
+                                @if ($avail === \App\Models\Schedule::STATUS_AVAILABLE)
+                                    <div class="mt-3 pt-2.5 border-t border-[#b499ff]/30 flex items-center justify-between">
+                                        <span class="text-[10px] text-[#6e6584] font-medium">Slot siap dipesan</span>
+                                        <button
+                                            type="button"
+                                            @click.stop="openDetail({
+                                                raw_booking_id: null,
+                                                raw_schedule_id: {{ $sched->id }},
+                                                is_booking: false,
+                                                raw_status: 'available',
+                                                booking_id: 'SCHED-{{ $sched->id }}',
+                                                customer: 'Belum Terisi (Slot Tersedia)',
+                                                phone: '-',
+                                                email: '-',
+                                                service: '{{ addslashes($sched->layanan->namalayanan ?? 'Layanan') }}',
+                                                date: '{{ \Carbon\Carbon::parse($sched->tanggal)->translatedFormat('d F Y') }}',
+                                                time: '{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}',
+                                                payment_status: 'Belum Ada Transaksi',
+                                                booking_status: 'Available',
+                                                amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
+                                                notes: 'Slot aktif ini terbuka untuk reservasi pelanggan atau walk-in booking.'
+                                            }); walkinMode = true"
+                                            class="craft-btn inline-flex items-center gap-1 rounded-lg bg-[#382186] px-2.5 py-1 text-[10px] font-bold text-white hover:bg-[#2d1a6d] shadow-2xs transition"
+                                        >
+                                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            <span>+ Walk-in</span>
+                                        </button>
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>
                 @else
-                    <div class="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+                    <div class="rounded-2xl border border-dashed border-[#e7e2f7] p-8 text-center text-sm text-[#6e6584] bg-[#f7f7fa]/40">
                         Tidak ada slot schedule yang dibuat untuk tanggal ini.
                     </div>
                 @endif
@@ -499,22 +588,20 @@
         @php
             $startOfMonth = $currentDate->copy()->startOfMonth();
             $daysInMonth = $currentDate->daysInMonth;
-            // dayOfWeek: 0 = Sun, 1 = Mon, ..., 6 = Sat
-            // Let's normalize Monday as first column (0 = Mon .. 6 = Sun)
             $dayOfWeekIso = $startOfMonth->dayOfWeekIso; // 1 = Monday .. 7 = Sunday
             $startDayOffset = $dayOfWeekIso - 1; // 0 for Monday
             $totalCells = (int) ceil(($startDayOffset + $daysInMonth) / 7) * 7;
         @endphp
 
-        <div class="rounded-2xl border border-bq-border bg-white shadow-2xs p-5 space-y-3">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                <h2 class="text-base font-bold text-bq-text">{{ $currentDate->translatedFormat('F Y') }}</h2>
-                <span class="text-xs text-slate-500">Klik tanggal untuk melihat jadwal harian lengkap</span>
+        <div class="rounded-2xl border border-[#e7e2f7] bg-white shadow-[0_4px_24px_rgba(35,26,61,0.03)] p-5 space-y-3">
+            <div class="flex items-center justify-between pb-3 border-b border-[#e7e2f7]">
+                <h2 class="text-base font-extrabold text-[#231a3d]">{{ $currentDate->translatedFormat('F Y') }}</h2>
+                <span class="text-xs text-[#6e6584] font-medium">Klik tanggal untuk melihat jadwal harian lengkap</span>
             </div>
 
-            <div class="grid grid-cols-7 gap-px rounded-xl border border-bq-border bg-slate-200 overflow-hidden text-center text-xs">
+            <div class="grid grid-cols-7 gap-px rounded-2xl border border-[#e7e2f7] bg-[#e7e2f7] overflow-hidden text-center text-xs">
                 @foreach (['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'] as $dayName)
-                    <div class="bg-slate-50 py-2.5 font-bold text-slate-700">{{ $dayName }}</div>
+                    <div class="bg-[#f7f7fa] py-2.5 font-extrabold text-[#6e6584] uppercase tracking-wider text-[11px]">{{ $dayName }}</div>
                 @endforeach
 
                 @foreach (range(0, $totalCells - 1) as $cell)
@@ -532,34 +619,34 @@
                         $availCount = $daySchedules->filter(fn($s) => $s->getAvailabilityStatus() === \App\Models\Schedule::STATUS_AVAILABLE)->count();
                     @endphp
 
-                    <div class="bg-white min-h-[90px] p-2 text-left relative transition hover:bg-slate-50 {{ !$isValidDay ? 'bg-slate-50/50' : '' }}">
+                    <div class="bg-white min-h-[96px] p-2 text-left relative transition duration-150 hover:bg-[#f7f7fa] {{ !$isValidDay ? 'bg-[#f7f7fa]/60' : '' }}">
                         @if ($isValidDay)
                             <a
                                 href="{{ route('owner.calendar', ['view' => 'day', 'date' => $cellDate, 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
                                 class="block h-full cursor-pointer group"
                             >
                                 <div class="flex items-center justify-between">
-                                    <span class="text-xs font-bold {{ $isToday ? 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4F46E5] text-white' : 'text-slate-700 group-hover:text-[#4F46E5]' }}">
+                                    <span class="text-xs font-extrabold {{ $isToday ? 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#382186] text-white shadow-2xs' : 'text-[#231a3d] group-hover:text-[#382186]' }}">
                                         {{ $dayNum }}
                                     </span>
                                     @if ($isBlocked)
-                                        <span class="rounded bg-slate-200 px-1 text-[8px] font-bold text-slate-700">Libur</span>
+                                        <span class="rounded bg-[#e7e2f7] px-1 text-[8px] font-bold text-[#6e6584]" title="Alasan: {{ $blockedDates[$cellDate] ?: 'Libur Operasional' }}">Libur</span>
                                     @endif
                                 </div>
 
                                 <div class="mt-1.5 space-y-1">
                                     @if ($confirmedCount > 0)
-                                        <span class="block truncate rounded bg-emerald-50 px-1 py-0.5 text-[10px] font-bold text-emerald-800">
+                                        <span class="block truncate rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200/50">
                                             {{ $confirmedCount }} Confirmed
                                         </span>
                                     @endif
                                     @if ($pendingCount > 0)
-                                        <span class="block truncate rounded bg-amber-50 px-1 py-0.5 text-[10px] font-bold text-amber-800">
+                                        <span class="block truncate rounded-md bg-[#fff8eb] px-1.5 py-0.5 text-[10px] font-bold text-[#875000] border border-[#ffb84d]/50">
                                             {{ $pendingCount }} Pending
                                         </span>
                                     @endif
                                     @if ($availCount > 0)
-                                        <span class="block truncate rounded bg-indigo-50 px-1 py-0.5 text-[10px] font-medium text-indigo-800">
+                                        <span class="block truncate rounded-md bg-[#f3effe] px-1.5 py-0.5 text-[10px] font-bold text-[#382186] border border-[#b499ff]/40">
                                             {{ $availCount }} Slot Tersedia
                                         </span>
                                     @endif
@@ -576,16 +663,42 @@
     <div
         x-show="modalOpen"
         x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#231a3d]/50 backdrop-blur-xs"
         @click.self="modalOpen = false"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
     >
-        <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-bq-border space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <h3 class="text-base font-bold text-bq-text">Detail Booking Calendar</h3>
-                    <span class="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-mono font-bold text-slate-700" x-text="selectedSlot ? selectedSlot.booking_id : ''"></span>
+        <div
+            class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7] space-y-4 transform transition-all duration-200"
+            x-show="modalOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+        >
+            <div class="flex items-center justify-between border-b border-[#e7e2f7] pb-3.5">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#e7e2f7]">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                    </span>
+                    <div>
+                        <h3 class="text-base font-extrabold text-[#231a3d]">Detail Booking Calendar</h3>
+                        <span class="inline-block mt-0.5 rounded-md bg-[#e7e2f7] px-2 py-0.5 text-xs font-mono font-bold text-[#382186]" x-text="selectedSlot ? selectedSlot.booking_id : ''"></span>
+                    </div>
                 </div>
-                <button @click="modalOpen = false" class="text-slate-400 hover:text-slate-700">
+                <button
+                    @click="modalOpen = false"
+                    class="rounded-xl p-1.5 text-[#6e6584] hover:text-[#231a3d] hover:bg-[#f7f7fa] transition active:scale-95"
+                    aria-label="Tutup"
+                >
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -594,69 +707,69 @@
 
             <template x-if="selectedSlot">
                 <div class="space-y-3.5 text-sm">
-                    {{-- 1. Service & Amount --}}
-                    <div class="rounded-xl bg-[#F8FAFC] p-3.5 border border-bq-border flex items-center justify-between">
+                    {{-- 1. Service & Amount Banner --}}
+                    <div class="rounded-2xl bg-[#f7f7fa] p-4 border border-[#e7e2f7] flex items-center justify-between">
                         <div>
-                            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Layanan / Service</p>
-                            <p class="text-base font-extrabold text-slate-900 mt-0.5" x-text="selectedSlot.service"></p>
+                            <p class="text-xs text-[#6e6584] uppercase tracking-wider font-extrabold">Layanan / Service</p>
+                            <p class="text-base font-black text-[#231a3d] mt-0.5" x-text="selectedSlot.service"></p>
                         </div>
                         <div class="text-right">
-                            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Amount / Tarif</p>
-                            <p class="text-base font-extrabold text-[#4F46E5] mt-0.5" x-text="selectedSlot.amount"></p>
+                            <p class="text-xs text-[#6e6584] uppercase tracking-wider font-extrabold">Amount / Tarif</p>
+                            <p class="text-lg font-black text-[#382186] mt-0.5" x-text="selectedSlot.amount"></p>
                         </div>
                     </div>
 
                     {{-- 2. Date & Time --}}
                     <div class="grid grid-cols-2 gap-3">
-                        <div class="rounded-xl border border-bq-border p-3">
-                            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Tanggal / Date</p>
-                            <p class="font-bold text-slate-900 mt-0.5" x-text="selectedSlot.date"></p>
+                        <div class="rounded-xl border border-[#e7e2f7] bg-white p-3">
+                            <p class="text-xs text-[#6e6584] uppercase tracking-wider font-bold">Tanggal / Date</p>
+                            <p class="font-extrabold text-[#231a3d] mt-0.5" x-text="selectedSlot.date"></p>
                         </div>
-                        <div class="rounded-xl border border-bq-border p-3">
-                            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Waktu / Time</p>
-                            <p class="font-bold text-[#4F46E5] mt-0.5" x-text="selectedSlot.time"></p>
+                        <div class="rounded-xl border border-[#e7e2f7] bg-white p-3">
+                            <p class="text-xs text-[#6e6584] uppercase tracking-wider font-bold">Waktu / Time</p>
+                            <p class="font-black text-[#382186] mt-0.5" x-text="selectedSlot.time"></p>
                         </div>
                     </div>
 
                     {{-- 3. Customer Info --}}
-                    <div class="rounded-xl border border-bq-border p-3 space-y-1">
-                        <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Informasi Pelanggan</p>
-                        <p class="font-bold text-slate-900 text-sm" x-text="selectedSlot.customer"></p>
-                        <div class="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-600">
-                            <span>📞 <span x-text="selectedSlot.phone"></span></span>
-                            <span>✉️ <span x-text="selectedSlot.email"></span></span>
+                    <div class="rounded-xl border border-[#e7e2f7] bg-white p-3.5 space-y-1.5">
+                        <p class="text-xs text-[#6e6584] uppercase tracking-wider font-bold">Informasi Pelanggan</p>
+                        <p class="font-black text-[#231a3d] text-sm" x-text="selectedSlot.customer"></p>
+                        <div class="flex flex-wrap items-center gap-3 pt-0.5 text-xs text-[#6e6584] font-medium">
+                            <span class="inline-flex items-center gap-1">📞 <span x-text="selectedSlot.phone"></span></span>
+                            <span class="inline-flex items-center gap-1">✉️ <span x-text="selectedSlot.email"></span></span>
                         </div>
                     </div>
 
                     {{-- 4. Status Separation: Booking Status & Payment Status --}}
                     <div class="grid grid-cols-2 gap-3">
-                        <div class="rounded-xl border border-bq-border p-3">
-                            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Booking Status</p>
-                            <div class="mt-1">
+                        <div class="rounded-xl border border-[#e7e2f7] bg-white p-3">
+                            <p class="text-xs text-[#6e6584] uppercase tracking-wider font-bold">Booking Status</p>
+                            <div class="mt-1.5">
                                 <span
-                                    class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-extrabold uppercase"
+                                    class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-black uppercase border"
                                     :class="{
-                                        'bg-emerald-100 text-emerald-800': selectedSlot.booking_status === 'Confirmed',
-                                        'bg-amber-100 text-amber-800': selectedSlot.booking_status === 'Pending',
-                                        'bg-blue-100 text-blue-800': selectedSlot.booking_status === 'Completed',
-                                        'bg-rose-100 text-rose-800': selectedSlot.booking_status === 'Cancelled',
-                                        'bg-indigo-100 text-indigo-800': selectedSlot.booking_status === 'Available',
-                                        'bg-slate-100 text-slate-800': !['Confirmed', 'Pending', 'Completed', 'Cancelled', 'Available'].includes(selectedSlot.booking_status)
+                                        'bg-emerald-100 text-emerald-800 border-emerald-200': selectedSlot.booking_status === 'Confirmed',
+                                        'bg-[#fff8eb] text-[#875000] border-[#ffb84d]': selectedSlot.booking_status === 'Pending',
+                                        'bg-sky-100 text-sky-800 border-sky-200': selectedSlot.booking_status === 'Completed',
+                                        'bg-rose-100 text-rose-800 border-rose-200': selectedSlot.booking_status === 'Cancelled',
+                                        'bg-[#f3effe] text-[#382186] border-[#b499ff]': selectedSlot.booking_status === 'Available',
+                                        'bg-[#f7f7fa] text-[#231a3d] border-[#e7e2f7]': !['Confirmed', 'Pending', 'Completed', 'Cancelled', 'Available'].includes(selectedSlot.booking_status)
                                     }"
                                     x-text="selectedSlot.booking_status"
                                 ></span>
                             </div>
                         </div>
-                        <div class="rounded-xl border border-bq-border p-3">
-                            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Payment Status</p>
-                            <div class="mt-1">
+                        <div class="rounded-xl border border-[#e7e2f7] bg-white p-3">
+                            <p class="text-xs text-[#6e6584] uppercase tracking-wider font-bold">Payment Status</p>
+                            <div class="mt-1.5">
                                 <span
-                                    class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-extrabold uppercase"
+                                    class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-black uppercase border"
                                     :class="{
-                                        'bg-emerald-100 text-emerald-800': selectedSlot.payment_status.toLowerCase() === 'sukses',
-                                        'bg-amber-100 text-amber-800': selectedSlot.payment_status.toLowerCase() === 'pending',
-                                        'bg-rose-100 text-rose-800': ['gagal', 'failed', 'expired'].includes(selectedSlot.payment_status.toLowerCase()),
-                                        'bg-slate-100 text-slate-700': !['sukses', 'pending', 'gagal', 'failed', 'expired'].includes(selectedSlot.payment_status.toLowerCase())
+                                        'bg-emerald-100 text-emerald-800 border-emerald-200': selectedSlot.payment_status.toLowerCase() === 'sukses',
+                                        'bg-[#fff8eb] text-[#875000] border-[#ffb84d]': selectedSlot.payment_status.toLowerCase() === 'pending',
+                                        'bg-rose-100 text-rose-800 border-rose-200': ['gagal', 'failed', 'expired'].includes(selectedSlot.payment_status.toLowerCase()),
+                                        'bg-[#f7f7fa] text-[#6e6584] border-[#e7e2f7]': !['sukses', 'pending', 'gagal', 'failed', 'expired'].includes(selectedSlot.payment_status.toLowerCase())
                                     }"
                                     x-text="selectedSlot.payment_status"
                                 ></span>
@@ -665,53 +778,107 @@
                     </div>
 
                     {{-- 5. Notes --}}
-                    <div class="rounded-xl border border-bq-border p-3">
-                        <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Catatan / Notes</p>
-                        <p class="text-xs text-slate-700 mt-1 italic" x-text="selectedSlot.notes"></p>
+                    <div class="rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] p-3">
+                        <p class="text-xs text-[#6e6584] uppercase tracking-wider font-bold">Catatan / Notes</p>
+                        <p class="text-xs text-[#231a3d] mt-1 italic" x-text="selectedSlot.notes"></p>
                     </div>
 
+                    {{-- Walk-in Invitation Banner when available slot is selected and walkinMode is false --}}
+                    <template x-if="selectedSlot && !selectedSlot.is_booking && selectedSlot.raw_status === 'available' && !walkinMode">
+                        <div class="mt-3 rounded-2xl border border-dashed border-[#b499ff] bg-[#f3effe]/60 p-4 text-center space-y-2">
+                            <p class="text-xs font-bold text-[#382186]">Slot ini masih kosong &amp; siap diisi reservasi walk-in tamu di tempat.</p>
+                            <button
+                                type="button"
+                                @click="walkinMode = true"
+                                class="craft-btn inline-flex items-center gap-1.5 rounded-xl bg-[#382186] px-4 py-2 text-xs font-bold text-white hover:bg-[#2d1a6d] shadow-xs"
+                            >
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                <span>Buka Form Walk-in Tamu</span>
+                            </button>
+                        </div>
+                    </template>
+
                     {{-- Walk-in Booking Form (When Available slot is selected and walkinMode is active) --}}
-                    <div x-show="walkinMode" class="mt-4 pt-4 border-t border-slate-200">
-                        <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">Form Reservasi Walk-in Langsung</h4>
+                    <div x-show="walkinMode" class="mt-4 pt-4 border-t border-[#e7e2f7] space-y-3 rounded-2xl bg-[#f3effe]/40 p-4 border border-[#b499ff]/50">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-extrabold text-[#382186] uppercase tracking-wider">Form Reservasi Walk-in Langsung</h4>
+                            <span class="text-[10px] text-[#6e6584] font-semibold">Tamu Datang Langsung</span>
+                        </div>
                         <form method="POST" action="{{ route('owner.bookings.walkin') }}" class="space-y-3">
                             @csrf
                             <input type="hidden" name="idschedule" :value="selectedSlot.raw_schedule_id">
                             <div>
-                                <label class="block text-xs font-bold text-slate-700">Nama Pelanggan <span class="text-rose-500">*</span></label>
-                                <input type="text" name="namapelanggan" required placeholder="Nama tamu walk-in..." class="mt-1 w-full rounded-xl border border-bq-border px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#4F46E5]">
+                                <label class="block text-xs font-bold text-[#231a3d]">Nama Pelanggan <span class="text-rose-500">*</span></label>
+                                <input
+                                    type="text"
+                                    name="namapelanggan"
+                                    required
+                                    placeholder="Nama tamu walk-in..."
+                                    class="mt-1 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] focus:outline-none focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 transition shadow-2xs"
+                                >
                             </div>
-                            <div class="grid grid-cols-2 gap-2">
+                            <div class="grid grid-cols-2 gap-2.5">
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700">No. WhatsApp / HP <span class="text-rose-500">*</span></label>
-                                    <input type="text" name="nomorhp" required placeholder="08..." class="mt-1 w-full rounded-xl border border-bq-border px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#4F46E5]">
+                                    <label class="block text-xs font-bold text-[#231a3d]">No. WhatsApp / HP <span class="text-rose-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        name="nomorhp"
+                                        required
+                                        placeholder="08..."
+                                        class="mt-1 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] focus:outline-none focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 transition shadow-2xs"
+                                    >
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700">Email (Opsional)</label>
-                                    <input type="email" name="email" placeholder="email@tamu.com" class="mt-1 w-full rounded-xl border border-bq-border px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#4F46E5]">
+                                    <label class="block text-xs font-bold text-[#231a3d]">Email (Opsional)</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        placeholder="email@tamu.com"
+                                        class="mt-1 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] focus:outline-none focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 transition shadow-2xs"
+                                    >
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700">Metode Pembayaran</label>
-                                <select name="metode" class="mt-1 w-full rounded-xl border border-bq-border px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#4F46E5]">
+                                <label class="block text-xs font-bold text-[#231a3d]">Metode Pembayaran</label>
+                                <select
+                                    name="metode"
+                                    class="mt-1 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] focus:outline-none focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 transition shadow-2xs"
+                                >
                                     <option value="cash">Tunai (Cash di Tempat)</option>
                                     <option value="transfer">Transfer Bank Manual</option>
                                     <option value="qris">QRIS Langsung</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700">Catatan Khusus (Opsional)</label>
-                                <input type="text" name="catatan" placeholder="Catatan tamu atau permintaan khusus..." class="mt-1 w-full rounded-xl border border-bq-border px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#4F46E5]">
+                                <label class="block text-xs font-bold text-[#231a3d]">Catatan Khusus (Opsional)</label>
+                                <input
+                                    type="text"
+                                    name="catatan"
+                                    placeholder="Catatan tamu atau permintaan khusus..."
+                                    class="mt-1 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] focus:outline-none focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 transition shadow-2xs"
+                                >
                             </div>
                             <div class="flex items-center justify-end gap-2 pt-2">
-                                <button type="button" @click="walkinMode = false" class="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100">Batal</button>
-                                <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition">Konfirmasi Walk-in</button>
+                                <button
+                                    type="button"
+                                    @click="walkinMode = false"
+                                    class="craft-btn rounded-xl px-3.5 py-2 text-xs font-bold text-[#6e6584] hover:text-[#231a3d] hover:bg-[#f7f7fa]"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    class="craft-btn rounded-xl bg-[#382186] px-4 py-2 text-xs font-bold text-white hover:bg-[#2d1a6d] shadow-xs"
+                                >
+                                    Konfirmasi Walk-in
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
             </template>
 
-            <div class="pt-2 flex flex-wrap items-center justify-between gap-2">
+            <div class="pt-3 border-t border-[#e7e2f7] flex flex-wrap items-center justify-between gap-2.5">
                 <div class="flex items-center gap-2">
                     {{-- Quick Action for Confirmed Booking --}}
                     <template x-if="selectedSlot && selectedSlot.is_booking && selectedSlot.raw_status === 'paid'">
@@ -720,7 +887,7 @@
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="status" value="completed">
-                                <button type="submit" class="rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-xs font-bold transition cursor-pointer">
+                                <button type="submit" class="craft-btn rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 text-xs font-bold shadow-2xs cursor-pointer">
                                     ✓ Selesai
                                 </button>
                             </form>
@@ -728,7 +895,7 @@
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="status" value="cancelled">
-                                <button type="submit" class="rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3 py-2 text-xs font-bold transition cursor-pointer">
+                                <button type="submit" class="craft-btn rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold shadow-2xs cursor-pointer">
                                     Batalkan
                                 </button>
                             </form>
@@ -741,7 +908,7 @@
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="status" value="cancelled">
-                            <button type="submit" class="rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3 py-2 text-xs font-bold transition cursor-pointer">
+                            <button type="submit" class="craft-btn rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold shadow-2xs cursor-pointer">
                                 Batalkan
                             </button>
                         </form>
@@ -752,7 +919,7 @@
                         <button
                             type="button"
                             @click="walkinMode = true"
-                            class="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white transition cursor-pointer"
+                            class="craft-btn rounded-xl bg-[#382186] hover:bg-[#2d1a6d] px-3.5 py-2 text-xs font-bold text-white shadow-xs cursor-pointer"
                         >
                             + Walk-in Booking
                         </button>
@@ -763,13 +930,13 @@
                     <button
                         type="button"
                         @click="modalOpen = false"
-                        class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+                        class="craft-btn rounded-xl bg-[#f7f7fa] border border-[#e7e2f7] px-4 py-2 text-xs font-bold text-[#6e6584] hover:text-[#231a3d] hover:bg-[#e7e2f7] transition cursor-pointer"
                     >
                         Tutup
                     </button>
                     <a
                         href="{{ route('owner.bookings') }}"
-                        class="rounded-xl bg-[#4F46E5] px-4 py-2 text-xs font-bold text-white hover:bg-[#4338CA] transition cursor-pointer"
+                        class="craft-btn rounded-xl bg-[#382186] px-4 py-2 text-xs font-bold text-white hover:bg-[#2d1a6d] shadow-xs transition cursor-pointer"
                     >
                         Lihat di Daftar Booking
                     </a>

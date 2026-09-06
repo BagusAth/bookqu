@@ -29,11 +29,46 @@
     --color-bq-info: oklch(68.5% 0.169 237.323);
     --color-bq-info-bg: oklch(95.1% 0.026 236.824);
 
+    /* ── Official Brand Palette ── */
+    --color-brand-purple: #382186;
+    --color-brand-purple-hover: #2d1a6d;
+    --color-brand-lavender: #b499ff;
+    --color-brand-lavender-light: #f3effe;
+    --color-brand-orange: #ffb84d;
+    --color-brand-orange-light: #fff8eb;
+    --color-brand-offwhite: #f7f7fa;
+    --color-brand-paletint: #e7e2f7;
+    --color-brand-ink: #231a3d;
+    --color-brand-mutedgray: #6e6584;
+
     /* Sidebar */
     --color-bq-sidebar: oklch(100% 0 0);
     --color-bq-sidebar-active: oklch(93% 0.034 272.788);
     --color-bq-sidebar-text: oklch(44.6% 0.043 257.281);
     --color-bq-sidebar-active-text: oklch(54.6% 0.245 262.881);
+}
+
+/* ── Motion & Craft Utilities (Emil Kowalski / Apple Design) ── */
+:root {
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-craft: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.craft-btn {
+    transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, box-shadow 160ms ease;
+}
+.craft-btn:active {
+    transform: scale(0.97);
+}
+
+.craft-card {
+    transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 200ms ease, border-color 200ms ease;
+}
+.craft-card:hover {
+    transform: translateY(-2px);
+}
+.craft-card:active {
+    transform: scale(0.985);
 }
 
 [x-cloak] {
