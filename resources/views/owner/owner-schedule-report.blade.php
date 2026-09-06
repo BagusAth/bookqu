@@ -132,13 +132,20 @@
                     </div>
                 </div>
             </div>
-            <div class="shrink-0 flex sm:flex-col gap-2">
+            <div class="shrink-0 flex flex-wrap sm:flex-col gap-2">
                 <a
                     href="{{ route('owner.vouchers') }}"
                     class="craft-btn inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#382186] hover:bg-[#2d1a6d] px-4 py-2 text-xs font-bold text-white shadow-xs"
                 >
                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <span>Buat Diskon Happy Hour</span>
+                </a>
+                <a
+                    href="{{ route('owner.calendar') }}"
+                    class="craft-btn inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#e7e2f7] bg-white hover:bg-[#f7f7fa] hover:border-[#b499ff] px-4 py-2 text-xs font-bold text-[#231a3d] shadow-2xs"
+                >
+                    <svg class="h-3.5 w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span>Buka Kalender Operasional</span>
                 </a>
             </div>
         </div>
@@ -239,7 +246,13 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-xs text-[#6e6584] py-4 text-center">Belum ada staf terdaftar di sistem.</p>
+                    <div class="py-8 text-center">
+                        <p class="text-xs font-bold text-[#231a3d]">Belum ada staf terdaftar</p>
+                        <p class="text-[11px] text-[#6e6584] mt-0.5">Daftarkan staf untuk mulai memantau distribusi beban kerja.</p>
+                        <a href="{{ route('owner.staff-resources', ['tab' => 'staff']) }}" class="mt-3 inline-flex items-center gap-1 text-xs font-bold text-[#382186] hover:underline">
+                            + Kelola Tim Staf &rarr;
+                        </a>
+                    </div>
                 @endforelse
             </div>
         </div>
@@ -286,7 +299,13 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-xs text-[#6e6584] py-4 text-center">Belum ada resource atau ruangan fisik terdaftar.</p>
+                    <div class="py-8 text-center">
+                        <p class="text-xs font-bold text-[#231a3d]">Belum ada resource atau ruangan fisik terdaftar</p>
+                        <p class="text-[11px] text-[#6e6584] mt-0.5">Daftarkan aset fisik untuk memantau okupansi ruangan.</p>
+                        <a href="{{ route('owner.staff-resources', ['tab' => 'resources']) }}" class="mt-3 inline-flex items-center gap-1 text-xs font-bold text-[#382186] hover:underline">
+                            + Kelola Resource Fisik &rarr;
+                        </a>
+                    </div>
                 @endforelse
             </div>
         </div>

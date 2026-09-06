@@ -209,6 +209,7 @@
     x-data="{
         collapsed: JSON.parse(localStorage.getItem('bookqu_collapsed_sections') || '{}'),
         activeSection: '{{ $activeSectionTitle }}',
+        mounted: false,
         init() {
             // Ensure the category containing active page is ALWAYS open and NEVER stored as collapsed
             if (this.activeSection) {
@@ -217,6 +218,9 @@
                     localStorage.setItem('bookqu_collapsed_sections', JSON.stringify(this.collapsed));
                 } catch (e) {}
             }
+            this.$nextTick(() => {
+                this.mounted = true;
+            });
         },
         isOpen(title) {
             if (!title) return true;
@@ -240,21 +244,35 @@
         }
     }"
     :class="sidebaropen ? 'translate-x-0' : '-translate-x-full'"
-    class="fixed inset-y-0 left-0 z-50 flex h-screen max-h-screen w-64 flex-col border-r border-[#E2E8F0] bg-white transition-transform duration-300 ease-in-out lg:translate-x-0 select-none shadow-xs"
+    class="fixed inset-y-0 left-0 z-50 flex h-screen max-h-screen w-64 flex-col border-r border-[#e7e2f7] bg-white transition-transform duration-300 ease-in-out lg:translate-x-0 select-none shadow-xs"
     id="sidebar-nav"
     style="height: 100vh; max-height: 100vh; display: flex; flex-direction: column; overflow: hidden;"
 >
     <!-- Brand Header (Fixed at Top) -->
-    <div class="flex items-center gap-3 px-5 py-4 border-b border-[#F1F5F9] shrink-0 bg-white">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4F46E5] text-white shadow-xs">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+    <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#e7e2f7] shrink-0 bg-white/95 backdrop-blur-xs">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#382186] text-white shadow-xs border border-[#b499ff]/30 shrink-0">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <h1 class="text-base font-black text-[#231a3d] tracking-tight leading-tight truncate">BookQu</h1>
+                <p class="text-[10px] font-bold text-[#6e6584] uppercase tracking-wider">Admin Portal</p>
+            </div>
+        </div>
+
+        {{-- Mobile Close Drawer Button --}}
+        <button
+            type="button"
+            @click="sidebaropen = false"
+            class="rounded-xl p-1.5 text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#231a3d] transition lg:hidden cursor-pointer"
+            aria-label="Close Sidebar"
+        >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
-        </div>
-        <div class="min-w-0 flex-1">
-            <h1 class="text-base font-extrabold text-[#0F172A] tracking-tight leading-tight truncate">BookQu</h1>
-            <p class="text-[11px] font-medium text-[#64748B]">Admin Portal</p>
-        </div>
+        </button>
     </div>
 
     <!-- Scrollable Navigation Container -->
@@ -265,7 +283,7 @@
     >
         @foreach ($sections as $sectionIndex => $section)
             @if ($sectionIndex === count($sections) - 1 && !$section['title'])
-                <div class="pt-2 border-t border-[#F1F5F9]"></div>
+                <div class="pt-2 border-t border-[#e7e2f7]"></div>
             @endif
             <div class="space-y-1">
                 @if ($section['title'])
@@ -276,41 +294,48 @@
                     <button
                         type="button"
                         @click="toggleSection('{{ $section['title'] }}')"
-                        class="group flex w-full items-center justify-between px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer"
+                        class="group flex w-full items-center justify-between px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer select-none"
                         :class="isOpen('{{ $section['title'] }}')
-                            ? '{{ $isActiveSection ? 'bg-[#EEF2FF]/60 text-[#4F46E5]' : 'bg-[#F8FAFC] text-[#0F172A]' }}'
-                            : 'text-[#94A3B8] hover:text-[#0F172A] hover:bg-[#F8FAFC]'"
+                            ? '{{ $isActiveSection ? 'bg-[#f3effe] text-[#382186]' : 'bg-[#f7f7fa] text-[#231a3d]' }}'
+                            : 'text-[#6e6584] hover:text-[#231a3d] hover:bg-[#f7f7fa]'"
                         :aria-expanded="isOpen('{{ $section['title'] }}')"
                         id="category-btn-{{ \Illuminate\Support\Str::slug($section['title']) }}"
                     >
-                        <span>{{ $section['title'] }}</span>
+                        <span class="flex items-center gap-1.5 truncate">
+                            @if ($isActiveSection)
+                                <span class="h-1.5 w-1.5 rounded-full bg-[#382186]"></span>
+                            @endif
+                            <span>{{ $section['title'] }}</span>
+                        </span>
 
-                        {{-- Smooth Arrow Animation: Down when minimized (rotate-0), Up when expanded (rotate-180) --}}
                         <svg
-                            class="h-4 w-4 transition-transform duration-300 ease-in-out shrink-0"
-                            :class="isOpen('{{ $section['title'] }}') ? 'rotate-180 text-[#4F46E5]' : 'rotate-0 text-[#94A3B8] group-hover:text-[#475569]'"
+                            class="h-3.5 w-3.5 shrink-0 {{ $isActiveSection ? 'rotate-180 text-[#382186]' : 'rotate-0 text-[#6e6584]' }}"
+                            :class="{
+                                'transition-transform duration-200 ease-out': mounted,
+                                'rotate-180 text-[#382186]': isOpen('{{ $section['title'] }}'),
+                                'rotate-0 text-[#6e6584] group-hover:text-[#231a3d]': !isOpen('{{ $section['title'] }}')
+                            }"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
                             stroke-width="2.2"
                         >
-                            {{-- Base shape points DOWN: rotate-0 = DOWN (minimized), rotate-180 = UP (expanded) --}}
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
                 @endif
 
-                {{-- Category Menu Items List with Smooth Slide & Fade Transition --}}
+                {{-- Category Menu Items List (Static initial render, zero accordion expansion on load) --}}
                 <div
                     @if ($section['title'])
                         x-show="isOpen('{{ $section['title'] }}')"
-                        x-transition:enter="transition-all ease-out duration-250"
-                        x-transition:enter-start="opacity-0 max-h-0 -translate-y-1"
-                        x-transition:enter-end="opacity-100 max-h-[600px] translate-y-0"
-                        x-transition:leave="transition-all ease-in duration-200"
-                        x-transition:leave-start="opacity-100 max-h-[600px] translate-y-0"
-                        x-transition:leave-end="opacity-0 max-h-0 -translate-y-1"
-                        x-cloak
+                        :class="mounted ? 'transition-all duration-200 ease-out' : ''"
+                        x-transition:enter="transition-opacity ease-out duration-150"
+                        x-transition:enter-start="opacity-0"
+                        x-transition:enter-end="opacity-100"
+                        x-transition:leave="transition-opacity ease-in duration-100"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
                     @endif
                     class="space-y-0.5 overflow-hidden"
                 >
@@ -320,12 +345,15 @@
                         @endphp
                         <a
                             href="{{ $item['href'] }}"
-                            class="group flex items-center gap-3 rounded-xl px-3 py-2 text-xs sm:text-[13px] font-medium transition-all duration-150 {{ $active
-                                ? 'bg-[#EEF2FF] text-[#4F46E5] font-semibold shadow-2xs'
-                                : 'text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]' }}"
+                            class="craft-btn group relative flex items-center gap-3 rounded-xl px-3 py-2 text-xs sm:text-[13px] font-medium transition-all duration-150 active:scale-[0.98] {{ $active
+                                ? 'bg-[#f3effe] text-[#382186] font-bold shadow-2xs'
+                                : 'text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#231a3d] hover:translate-x-0.5' }}"
                             id="nav-{{ \Illuminate\Support\Str::slug($item['label']) }}"
                         >
-                            <span class="shrink-0 transition-colors {{ $active ? 'text-[#4F46E5]' : 'text-[#64748B] group-hover:text-[#0F172A]' }}">
+                            @if ($active)
+                                <span class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-[#382186]"></span>
+                            @endif
+                            <span class="shrink-0 transition-colors {{ $active ? 'text-[#382186]' : 'text-[#6e6584] group-hover:text-[#231a3d]' }}">
                                 @switch($item['icon'])
                                     @case('dashboard')
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
@@ -457,7 +485,7 @@
                             <span class="truncate">{{ $item['label'] }}</span>
 
                             @if (!empty($item['badge']))
-                                <span class="ml-auto inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-extrabold tracking-wider uppercase {{ $active ? 'bg-[#4F46E5] text-white' : 'bg-[#EEF2FF] text-[#4F46E5] group-hover:bg-[#E0E7FF]' }}">
+                                <span class="ml-auto inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-black tracking-wider uppercase {{ $active ? 'bg-[#382186] text-white' : 'bg-[#fff8eb] text-[#875000] border border-[#ffb84d]/60' }}">
                                     {{ $item['badge'] }}
                                 </span>
                             @endif
@@ -468,30 +496,57 @@
         @endforeach
     </nav>
 
+    {{-- Instant Pre-Paint Scroll Restoration (Zero Layout Shift) --}}
+    <script>
+        (function() {
+            try {
+                const nav = document.getElementById('sidebar-scrollable-nav');
+                const saved = sessionStorage.getItem('bookqu_sidebar_scroll');
+                if (nav && saved !== null) {
+                    nav.scrollTop = parseInt(saved, 10);
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <!-- Bottom Section: Upgrade Card & Account Actions (Fixed at Bottom) -->
-    <div class="p-3 border-t border-[#F1F5F9] space-y-2.5 shrink-0 bg-white">
+    <div class="p-3 border-t border-[#e7e2f7] space-y-2.5 shrink-0 bg-white">
         {{-- Subscription Status Card --}}
-        <div class="rounded-2xl border border-[#E2E8F0] bg-[#FAFAFC] p-3.5 shadow-2xs">
+        <div class="rounded-2xl border border-[#e7e2f7] bg-gradient-to-br from-[#f7f7fa] to-[#f3effe]/60 p-3.5 shadow-2xs">
             <div class="flex items-center gap-2.5">
-                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5] shrink-0">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-[#382186] text-white shrink-0 shadow-2xs">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                 </div>
                 <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-1.5">
-                        <p class="text-xs font-bold text-[#0F172A]">Active</p>
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-black text-[#231a3d]">Active Plan</p>
+                        <span class="rounded-full bg-[#f3effe] px-2 py-0.5 text-[10px] font-extrabold text-[#382186] border border-[#b499ff]/40">
+                            {{ $isTrial ? 'Trial' : 'Pro' }}
+                        </span>
                     </div>
-                    <p class="text-[11px] font-medium text-[#64748B]">{{ $daysLeft }} days left</p>
+                    <p class="text-[11px] font-semibold text-[#6e6584] mt-0.5">{{ $daysLeft }} days left</p>
                 </div>
+            </div>
+
+            <!-- Visual Progress Bar for Days Left -->
+            <div class="mt-2.5 h-1.5 w-full rounded-full bg-[#e7e2f7] overflow-hidden">
+                <div
+                    class="h-full rounded-full bg-gradient-to-r from-[#382186] to-[#b499ff] transition-all duration-300"
+                    style="width: {{ min(100, max(8, ($daysLeft / 14) * 100)) }}%"
+                ></div>
             </div>
 
             <a
                 href="{{ route('owner.subscription') }}"
-                class="mt-3 flex w-full items-center justify-center rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] py-2 px-3 text-xs font-bold text-white shadow-xs transition-all active:scale-98"
+                class="craft-btn mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#382186] hover:bg-[#2d1a6d] py-2 px-3 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98]"
                 id="btn-sidebar-upgrade"
             >
-                Upgrade now
+                <span>Upgrade now</span>
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
             </a>
         </div>
 
@@ -500,10 +555,10 @@
             @csrf
             <button
                 type="submit"
-                class="group flex w-full items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+                class="craft-btn group flex w-full items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-all cursor-pointer active:scale-[0.98]"
                 id="nav-logout"
             >
-                <svg class="h-3.5 w-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <svg class="h-4 w-4 text-rose-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
                 <span>Keluar Akun</span>
@@ -513,16 +568,81 @@
 </aside>
 
 <script>
-    // Universal wheel scrolling delegation: ensures wheel anywhere on the sidebar scrolls the nav list
     (function () {
         const sidebar = document.getElementById('sidebar-nav');
         const nav = document.getElementById('sidebar-scrollable-nav');
-        if (sidebar && nav) {
-            sidebar.addEventListener('wheel', function (e) {
-                if (!e.target.closest('#sidebar-scrollable-nav')) {
-                    nav.scrollTop += e.deltaY;
+        if (!sidebar || !nav) return;
+
+        // 1. Universal wheel scrolling delegation: ensures wheel anywhere on the sidebar scrolls the nav list
+        sidebar.addEventListener('wheel', function (e) {
+            if (!e.target.closest('#sidebar-scrollable-nav')) {
+                nav.scrollTop += e.deltaY;
+            }
+        }, { passive: true });
+
+        // 2. Track and save scroll position continuously (debounced)
+        let scrollTimeout;
+        nav.addEventListener('scroll', function () {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(function () {
+                try {
+                    sessionStorage.setItem('bookqu_sidebar_scroll', nav.scrollTop);
+                } catch (e) {}
+            }, 40);
+        }, { passive: true });
+
+        // 3. Immediately save scroll position on click of any link or category accordion
+        sidebar.addEventListener('click', function (e) {
+            if (e.target.closest('a') || e.target.closest('button')) {
+                try {
+                    sessionStorage.setItem('bookqu_sidebar_scroll', nav.scrollTop);
+                } catch (e) {}
+            }
+        });
+
+        // 4. Save on window beforeunload
+        window.addEventListener('beforeunload', function () {
+            try {
+                sessionStorage.setItem('bookqu_sidebar_scroll', nav.scrollTop);
+            } catch (e) {}
+        });
+
+        // 5. DOMContentLoaded check: verify scroll position and ensure active item is visible
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                const saved = sessionStorage.getItem('bookqu_sidebar_scroll');
+                if (saved !== null) {
+                    nav.scrollTop = parseInt(saved, 10);
+                } else {
+                    // If first entry or no saved scroll, ensure active menu item is comfortably visible
+                    const activeItem = nav.querySelector('a[id^="nav-"][class*="bg-[#f3effe]"]');
+                    if (activeItem) {
+                        activeItem.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+                    }
                 }
-            }, { passive: true });
-        }
+            } catch (e) {}
+        });
+
+        // 6. Speculative prefetching on hover: preloads the page in 65ms before user clicks
+        const prefetchedUrls = new Set();
+        nav.addEventListener('mouseover', function (e) {
+            const anchor = e.target.closest('a[href^="/owner/"]');
+            if (!anchor) return;
+            const url = anchor.href;
+            if (!url || prefetchedUrls.has(url) || url === window.location.href || url.includes('#')) return;
+
+            let hoverTimer = setTimeout(function () {
+                prefetchedUrls.add(url);
+                const prefetchLink = document.createElement('link');
+                prefetchLink.rel = 'prefetch';
+                prefetchLink.href = url;
+                prefetchLink.as = 'document';
+                document.head.appendChild(prefetchLink);
+            }, 65);
+
+            anchor.addEventListener('mouseleave', function () {
+                clearTimeout(hoverTimer);
+            }, { once: true });
+        }, { passive: true });
     })();
 </script>

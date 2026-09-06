@@ -13,12 +13,30 @@
     editResourceModal: false,
     activeResource: { id: null, name: '', type: '', capacity: 1, location: '', is_active: 1, service_ids: [] },
     openEditStaff(staff) {
-        this.activeStaff = { ...staff };
+        this.activeStaff = { ...staff, service_ids: Array.isArray(staff.service_ids) ? [...staff.service_ids] : [] };
         this.editStaffModal = true;
     },
     openEditResource(res) {
-        this.activeResource = { ...res };
+        this.activeResource = { ...res, service_ids: Array.isArray(res.service_ids) ? [...res.service_ids] : [] };
         this.editResourceModal = true;
+    },
+    toggleStaffService(id) {
+        if (!this.activeStaff.service_ids) this.activeStaff.service_ids = [];
+        const index = this.activeStaff.service_ids.indexOf(id);
+        if (index > -1) {
+            this.activeStaff.service_ids.splice(index, 1);
+        } else {
+            this.activeStaff.service_ids.push(id);
+        }
+    },
+    toggleResourceService(id) {
+        if (!this.activeResource.service_ids) this.activeResource.service_ids = [];
+        const index = this.activeResource.service_ids.indexOf(id);
+        if (index > -1) {
+            this.activeResource.service_ids.splice(index, 1);
+        } else {
+            this.activeResource.service_ids.push(id);
+        }
     }
 }">
 
@@ -216,8 +234,28 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-8 text-center text-[#6e6584]">
-                                    Belum ada staf terdaftar. Klik "+ Tambah Staff" untuk menambahkan.
+                                <td colspan="6" class="px-5 py-12 text-center">
+                                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f3effe] text-[#382186] border border-[#e7e2f7] shadow-2xs mb-3">
+                                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                        </svg>
+                                    </div>
+                                    <p class="text-xs font-bold text-[#231a3d]">
+                                        {{ !empty($search) ? 'Tidak ada staf yang sesuai dengan pencarian' : 'Belum ada staf terdaftar' }}
+                                    </p>
+                                    <p class="text-[11px] text-[#6e6584] mt-1 max-w-sm mx-auto">
+                                        {{ !empty($search) ? 'Coba periksa kembali ejaan kata kunci atau reset filter pencarian.' : 'Tambahkan staf pertama Anda untuk mulai menugaskan layanan dan jadwal operasional.' }}
+                                    </p>
+                                    <div class="mt-4 flex items-center justify-center gap-2">
+                                        @if(!empty($search))
+                                            <a href="{{ route('owner.staff-resources', ['tab' => 'staff']) }}" class="craft-btn inline-flex items-center gap-1.5 rounded-xl border border-[#e7e2f7] bg-white px-3 py-1.5 text-xs font-bold text-[#6e6584] hover:text-[#231a3d] hover:bg-[#f7f7fa]">
+                                                Reset Pencarian
+                                            </a>
+                                        @endif
+                                        <button type="button" @click="addStaffModal = true" class="craft-btn inline-flex items-center gap-1.5 rounded-xl bg-[#382186] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#2d1a6d] shadow-2xs">
+                                            + Tambah Staff
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse
@@ -351,8 +389,28 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-8 text-center text-[#6e6584]">
-                                    Belum ada resource / ruangan terdaftar. Klik "+ Tambah Resource" untuk menambahkan.
+                                <td colspan="6" class="px-5 py-12 text-center">
+                                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f3effe] text-[#382186] border border-[#e7e2f7] shadow-2xs mb-3">
+                                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                    </div>
+                                    <p class="text-xs font-bold text-[#231a3d]">
+                                        {{ !empty($search) ? 'Tidak ada resource yang sesuai dengan pencarian' : 'Belum ada fasilitas / ruangan terdaftar' }}
+                                    </p>
+                                    <p class="text-[11px] text-[#6e6584] mt-1 max-w-sm mx-auto">
+                                        {{ !empty($search) ? 'Coba periksa kembali ejaan kata kunci atau reset filter pencarian.' : 'Daftarkan ruangan, studio, atau alat fisik pertama untuk mulai menghubungkannya dengan layanan.' }}
+                                    </p>
+                                    <div class="mt-4 flex items-center justify-center gap-2">
+                                        @if(!empty($search))
+                                            <a href="{{ route('owner.staff-resources', ['tab' => 'resources']) }}" class="craft-btn inline-flex items-center gap-1.5 rounded-xl border border-[#e7e2f7] bg-white px-3 py-1.5 text-xs font-bold text-[#6e6584] hover:text-[#231a3d] hover:bg-[#f7f7fa]">
+                                                Reset Pencarian
+                                            </a>
+                                        @endif
+                                        <button type="button" @click="addResourceModal = true" class="craft-btn inline-flex items-center gap-1.5 rounded-xl bg-[#382186] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#2d1a6d] shadow-2xs">
+                                            + Tambah Resource
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse
@@ -451,6 +509,16 @@
                         <button type="button" @click="$refs.addStaffAvailability.value = 'Shift Siang (13:00 - 20:00)'" class="craft-btn rounded-lg bg-[#f7f7fa] border border-[#e7e2f7] px-2.5 py-1 text-[10px] font-bold text-[#382186] hover:bg-[#f3effe]">Shift Siang (13:00 - 20:00)</button>
                         <button type="button" @click="$refs.addStaffAvailability.value = 'Setiap Hari (08:00 - 21:00)'" class="craft-btn rounded-lg bg-[#f7f7fa] border border-[#e7e2f7] px-2.5 py-1 text-[10px] font-bold text-[#382186] hover:bg-[#f3effe]">Setiap Hari (08:00 - 21:00)</button>
                     </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-[#231a3d]">Status Awal</label>
+                    <select
+                        name="is_active"
+                        class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
+                    >
+                        <option value="1" selected>Active (Siap Melayani)</option>
+                        <option value="0">Inactive (Nonaktif)</option>
+                    </select>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-[#231a3d]">Layanan yang Ditangani</label>
@@ -577,7 +645,7 @@
                     <div class="mt-2 max-h-32 overflow-y-auto space-y-1.5 rounded-2xl border border-[#e7e2f7] bg-[#f7f7fa]/60 p-3">
                         @foreach($services as $svc)
                             <label class="flex items-center gap-2 text-xs text-[#231a3d] font-semibold cursor-pointer">
-                                <input type="checkbox" name="service_ids[]" value="{{ $svc->id }}" :checked="activeStaff.service_ids && activeStaff.service_ids.includes({{ $svc->id }})" class="rounded border-[#e7e2f7] text-[#382186] focus:ring-[#b499ff]">
+                                <input type="checkbox" name="service_ids[]" value="{{ $svc->id }}" :checked="activeStaff.service_ids && activeStaff.service_ids.includes({{ $svc->id }})" @change="toggleStaffService({{ $svc->id }})" class="rounded border-[#e7e2f7] text-[#382186] focus:ring-[#b499ff]">
                                 <span>{{ $svc->namalayanan }}</span>
                             </label>
                         @endforeach
@@ -664,6 +732,16 @@
                         placeholder="Lantai 2, Ruang Belakang"
                         class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     >
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-[#231a3d]">Status Awal</label>
+                    <select
+                        name="is_active"
+                        class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
+                    >
+                        <option value="1" selected>Active (Tersedia)</option>
+                        <option value="0">Inactive (Perawatan / Nonaktif)</option>
+                    </select>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-[#231a3d]">Layanan Terkait</label>
@@ -775,7 +853,7 @@
                     <div class="mt-2 max-h-32 overflow-y-auto space-y-1.5 rounded-2xl border border-[#e7e2f7] bg-[#f7f7fa]/60 p-3">
                         @foreach($services as $svc)
                             <label class="flex items-center gap-2 text-xs text-[#231a3d] font-semibold cursor-pointer">
-                                <input type="checkbox" name="service_ids[]" value="{{ $svc->id }}" :checked="activeResource.service_ids && activeResource.service_ids.includes({{ $svc->id }})" class="rounded border-[#e7e2f7] text-[#382186] focus:ring-[#b499ff]">
+                                <input type="checkbox" name="service_ids[]" value="{{ $svc->id }}" :checked="activeResource.service_ids && activeResource.service_ids.includes({{ $svc->id }})" @change="toggleResourceService({{ $svc->id }})" class="rounded border-[#e7e2f7] text-[#382186] focus:ring-[#b499ff]">
                                 <span>{{ $svc->namalayanan }}</span>
                             </label>
                         @endforeach

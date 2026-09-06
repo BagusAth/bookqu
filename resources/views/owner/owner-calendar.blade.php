@@ -891,11 +891,15 @@
                                     ✓ Selesai
                                 </button>
                             </form>
-                            <form method="POST" :action="`/owner/bookings/${selectedSlot.raw_booking_id}/status`" class="inline" onsubmit="return confirm('Yakin ingin membatalkan booking ini?')">
+                            <form method="POST" :action="`/owner/bookings/${selectedSlot.raw_booking_id}/status`" :id="`form-calendar-cancel-${selectedSlot.raw_booking_id}`" class="inline">
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="status" value="cancelled">
-                                <button type="submit" class="craft-btn rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold shadow-2xs cursor-pointer">
+                                <button
+                                    type="button"
+                                    @click="$dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan booking ' + selectedSlot.booking_id + ' untuk ' + selectedSlot.customer + '?', formId: `form-calendar-cancel-${selectedSlot.raw_booking_id}`, confirmText: 'Ya, Batalkan' })"
+                                    class="craft-btn rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold shadow-2xs cursor-pointer"
+                                >
                                     Batalkan
                                 </button>
                             </form>
@@ -904,25 +908,43 @@
 
                     {{-- Quick Action for Pending Booking --}}
                     <template x-if="selectedSlot && selectedSlot.is_booking && selectedSlot.raw_status === 'pending'">
-                        <form method="POST" :action="`/owner/bookings/${selectedSlot.raw_booking_id}/status`" class="inline" onsubmit="return confirm('Yakin ingin membatalkan booking ini?')">
+                        <form method="POST" :action="`/owner/bookings/${selectedSlot.raw_booking_id}/status`" :id="`form-calendar-cancel-${selectedSlot.raw_booking_id}`" class="inline">
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="status" value="cancelled">
-                            <button type="submit" class="craft-btn rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold shadow-2xs cursor-pointer">
+                            <button
+                                type="button"
+                                @click="$dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan pesanan pending ' + selectedSlot.booking_id + ' ini?', formId: `form-calendar-cancel-${selectedSlot.raw_booking_id}`, confirmText: 'Ya, Batalkan' })"
+                                class="craft-btn rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold shadow-2xs cursor-pointer"
+                            >
                                 Batalkan
                             </button>
                         </form>
                     </template>
 
-                    {{-- Walk-in Button for Available Slot --}}
+                    {{-- Actions for Available Slot (Walk-in & Delete Slot) --}}
                     <template x-if="selectedSlot && !selectedSlot.is_booking && selectedSlot.raw_status === 'available' && !walkinMode">
-                        <button
-                            type="button"
-                            @click="walkinMode = true"
-                            class="craft-btn rounded-xl bg-[#382186] hover:bg-[#2d1a6d] px-3.5 py-2 text-xs font-bold text-white shadow-xs cursor-pointer"
-                        >
-                            + Walk-in Booking
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                @click="walkinMode = true"
+                                class="craft-btn rounded-xl bg-[#382186] hover:bg-[#2d1a6d] px-3.5 py-2 text-xs font-bold text-white shadow-xs cursor-pointer"
+                            >
+                                + Walk-in Booking
+                            </button>
+                            <form method="POST" :action="`/owner/schedule/slots/${selectedSlot.raw_schedule_id}`" :id="`form-delete-calendar-slot-${selectedSlot.raw_schedule_id}`" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button
+                                    type="button"
+                                    @click="$dispatch('open-confirm', { title: 'Hapus Slot Jadwal?', message: 'Slot ketersediaan pada jam ' + selectedSlot.time + ' ini akan dihapus dari jadwal operasional. Lanjutkan?', formId: `form-delete-calendar-slot-${selectedSlot.raw_schedule_id}`, confirmText: 'Ya, Hapus Slot' })"
+                                    class="craft-btn rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold shadow-2xs cursor-pointer"
+                                    title="Hapus slot jadwal ini"
+                                >
+                                    Hapus Slot
+                                </button>
+                            </form>
+                        </div>
                     </template>
                 </div>
 

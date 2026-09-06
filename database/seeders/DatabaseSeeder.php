@@ -207,5 +207,8 @@ class DatabaseSeeder extends Seeder
                 array_merge($service, ['idtenant' => $tenantStudio->id])
             );
         }
+
+        // Call Brama Digital comprehensive seeder
+        $this->call(BramaStudioSeeder::class);
     }
 }

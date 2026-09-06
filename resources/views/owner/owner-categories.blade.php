@@ -7,9 +7,13 @@
     search: '{{ addslashes($search ?? '') }}',
     addModalOpen: false,
     editModalOpen: false,
-    activeCategory: { id: null, name: '', description: '', color: 'indigo', is_active: 1 },
+    newCategoryColor: 'purple',
+    activeCategory: { id: null, name: '', description: '', color: 'purple', is_active: 1 },
     openEdit(cat) {
         this.activeCategory = { ...cat };
+        if (!this.activeCategory.color) {
+            this.activeCategory.color = 'purple';
+        }
         this.editModalOpen = true;
     }
 }">
@@ -36,91 +40,84 @@
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
             </svg>
-            Tambah Kategori
+            + Tambah Kategori
         </button>
     </div>
 
-    {{-- ── Search & Filter Bar ── --}}
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-[#e7e2f7] bg-white p-3.5 shadow-[0_4px_20px_rgba(35,26,61,0.03)]">
-        <div class="flex flex-wrap items-center gap-2.5">
-            <form method="GET" action="{{ route('owner.categories') }}" class="relative w-full sm:w-64">
-                <input type="hidden" name="status" value="{{ $status ?? 'all' }}">
-                <input type="hidden" name="sort" value="{{ $sort ?? 'newest' }}">
-                <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6e6584]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                <input
-                    type="text"
-                    name="search"
-                    value="{{ $search ?? '' }}"
-                    placeholder="Cari kategori..."
-                    class="w-full rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] py-2 pl-9 pr-3 text-xs text-[#231a3d] placeholder-[#6e6584] transition focus:border-[#382186] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs"
-                    id="input-search-categories"
-                >
-            </form>
-
-            {{-- Status Filter Pills --}}
-            <div class="flex items-center gap-1 rounded-xl bg-[#f7f7fa] p-1 border border-[#e7e2f7] text-xs">
-                <a
-                    href="{{ route('owner.categories', ['status' => 'all', 'search' => $search ?? '', 'sort' => $sort ?? 'newest']) }}"
-                    class="rounded-lg px-3 py-1 font-bold transition {{ ($status ?? 'all') === 'all' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d]' }}"
-                >
-                    Semua
-                </a>
-                <a
-                    href="{{ route('owner.categories', ['status' => 'active', 'search' => $search ?? '', 'sort' => $sort ?? 'newest']) }}"
-                    class="rounded-lg px-3 py-1 font-bold transition {{ ($status ?? 'all') === 'active' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d]' }}"
-                >
-                    Aktif
-                </a>
-                <a
-                    href="{{ route('owner.categories', ['status' => 'inactive', 'search' => $search ?? '', 'sort' => $sort ?? 'newest']) }}"
-                    class="rounded-lg px-3 py-1 font-bold transition {{ ($status ?? 'all') === 'inactive' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d]' }}"
-                >
-                    Nonaktif
-                </a>
-            </div>
-        </div>
-
-        {{-- Sort & Count --}}
-        <div class="flex items-center gap-3">
-            <select
-                onchange="location.href = this.value"
-                class="rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] hover:bg-white px-3 py-1.5 text-xs font-semibold text-[#231a3d] focus:outline-none focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 transition shadow-2xs"
+    {{-- ── Search & Filter Toolbar ── --}}
+    <div class="flex flex-col gap-3 rounded-2xl border border-[#e7e2f7] bg-white p-4 shadow-[0_4px_20px_rgba(35,26,61,0.03)] sm:flex-row sm:items-center sm:justify-between">
+        <form method="GET" action="{{ route('owner.categories') }}" class="relative w-full sm:max-w-xs">
+            <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6e6584]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input
+                type="text"
+                name="search"
+                value="{{ $search ?? '' }}"
+                placeholder="Cari kategori..."
+                class="w-full rounded-xl border border-[#e7e2f7] bg-white pl-9 pr-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
             >
-                <option value="{{ route('owner.categories', ['sort' => 'newest', 'status' => $status ?? 'all', 'search' => $search ?? '']) }}" {{ ($sort ?? 'newest') === 'newest' ? 'selected' : '' }}>Terbaru</option>
-                <option value="{{ route('owner.categories', ['sort' => 'name_asc', 'status' => $status ?? 'all', 'search' => $search ?? '']) }}" {{ ($sort ?? '') === 'name_asc' ? 'selected' : '' }}>Nama (A - Z)</option>
-                <option value="{{ route('owner.categories', ['sort' => 'name_desc', 'status' => $status ?? 'all', 'search' => $search ?? '']) }}" {{ ($sort ?? '') === 'name_desc' ? 'selected' : '' }}>Nama (Z - A)</option>
-                <option value="{{ route('owner.categories', ['sort' => 'services', 'status' => $status ?? 'all', 'search' => $search ?? '']) }}" {{ ($sort ?? '') === 'services' ? 'selected' : '' }}>Layanan Terbanyak</option>
-            </select>
-            <div class="text-xs text-[#6e6584] whitespace-nowrap font-medium">
-                Total <span class="font-extrabold text-[#231a3d]">{{ $categories->count() }}</span>
+        </form>
+        <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center rounded-xl border border-[#e7e2f7] p-1 bg-[#f7f7fa] text-xs">
+                <a href="{{ route('owner.categories', array_merge(request()->query(), ['status' => 'all'])) }}" class="rounded-lg px-2.5 py-1 font-bold transition {{ ($status ?? 'all') === 'all' ? 'bg-white text-[#382186] shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d]' }}">Semua</a>
+                <a href="{{ route('owner.categories', array_merge(request()->query(), ['status' => 'active'])) }}" class="rounded-lg px-2.5 py-1 font-bold transition {{ ($status ?? '') === 'active' ? 'bg-white text-[#382186] shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d]' }}">Aktif</a>
+                <a href="{{ route('owner.categories', array_merge(request()->query(), ['status' => 'inactive'])) }}" class="rounded-lg px-2.5 py-1 font-bold transition {{ ($status ?? '') === 'inactive' ? 'bg-white text-[#382186] shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d]' }}">Nonaktif</a>
+            </div>
+            <div class="relative">
+                <form method="GET" action="{{ route('owner.categories') }}" id="sort-form">
+                    @if($search ?? '') <input type="hidden" name="search" value="{{ $search }}"> @endif
+                    @if(($status ?? 'all') !== 'all') <input type="hidden" name="status" value="{{ $status }}"> @endif
+                    <select
+                        name="sort"
+                        onchange="document.getElementById('sort-form').submit()"
+                        class="rounded-xl border border-[#e7e2f7] bg-white px-3 py-2 text-xs font-bold text-[#231a3d] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
+                    >
+                        <option value="newest" {{ ($sort ?? '') === 'newest' ? 'selected' : '' }}>Terbaru</option>
+                        <option value="name_asc" {{ ($sort ?? '') === 'name_asc' ? 'selected' : '' }}>Nama (A - Z)</option>
+                        <option value="name_desc" {{ ($sort ?? '') === 'name_desc' ? 'selected' : '' }}>Nama (Z - A)</option>
+                        <option value="services" {{ ($sort ?? '') === 'services' ? 'selected' : '' }}>Layanan Terbanyak</option>
+                    </select>
+                </form>
             </div>
         </div>
     </div>
 
     {{-- ── Categories List / Grid ── --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" id="categories-grid">
+        @php
+            $colorBadgeClasses = [
+                'purple'   => 'bg-[#f3effe] text-[#382186] border-[#e7e2f7]',
+                'indigo'   => 'bg-[#f3effe] text-[#382186] border-[#e7e2f7]',
+                'lavender' => 'bg-[#f8f6ff] text-[#7a5af8] border-[#e7e2f7]',
+                'emerald'  => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                'amber'    => 'bg-amber-50 text-amber-700 border-amber-200',
+                'rose'     => 'bg-rose-50 text-rose-700 border-rose-200',
+                'sky'      => 'bg-sky-50 text-sky-700 border-sky-200',
+            ];
+        @endphp
+
         @forelse ($categories as $cat)
             @php
                 $catPayload = [
                     'id'          => $cat->id,
                     'name'        => $cat->name,
                     'description' => $cat->description ?? '',
-                    'color'       => $cat->color ?? 'indigo',
+                    'color'       => $cat->color ?? 'purple',
                     'is_active'   => (int) $cat->is_active,
                 ];
+                $badgeColor = $colorBadgeClasses[$cat->color ?? 'purple'] ?? $colorBadgeClasses['purple'];
             @endphp
             <div class="craft-card rounded-2xl border border-[#e7e2f7] bg-white p-5 shadow-[0_4px_20px_rgba(35,26,61,0.03)] hover:border-[#b499ff] flex flex-col justify-between">
                 <div>
                     <div class="flex items-start justify-between gap-2">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] font-black text-sm border border-[#e7e2f7]">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl font-black text-sm border {{ $badgeColor }}">
                                 <span>{{ strtoupper(substr($cat->name, 0, 1)) }}</span>
                             </div>
                             <div>
                                 <h3 class="font-extrabold text-sm text-[#231a3d]">{{ $cat->name }}</h3>
-                                <span class="text-[11px] font-semibold text-[#6e6584]">{{ $cat->services_count }} Layanan terhubung</span>
+                                <span class="text-[11px] font-semibold text-[#6e6584]">{{ $cat->services_count ?? 0 }} Layanan terhubung</span>
                             </div>
                         </div>
                         <form method="POST" action="{{ route('owner.categories.toggle', $cat->id) }}">
@@ -159,7 +156,7 @@
                             @method('DELETE')
                             <button
                                 type="button"
-                                @click="$dispatch('open-confirm', { title: 'Hapus Kategori?', message: 'Kategori yang dihapus akan melepaskan relasi dari layanan yang terhubung. Yakin ingin menghapus?', formId: 'form-delete-cat-{{ $cat->id }}' })"
+                                @click="$dispatch('open-confirm', { title: 'Hapus Kategori?', message: 'Kategori {{ $cat->name }} akan dihapus dan melepaskan relasi dari layanannya. Yakin ingin menghapus?', formId: 'form-delete-cat-{{ $cat->id }}', confirmText: 'Ya, Hapus Kategori' })"
                                 class="craft-btn rounded-xl p-1.5 text-[#6e6584] hover:bg-rose-50 hover:text-rose-600 transition"
                                 title="Hapus"
                                 id="btn-delete-category-{{ $cat->id }}"
@@ -179,15 +176,24 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                     </svg>
                 </div>
-                <h3 class="text-sm font-extrabold text-[#231a3d]">Belum ada kategori</h3>
-                <p class="mt-1 text-xs text-[#6e6584] max-w-sm mx-auto">Kelompokkan layanan bisnis Anda untuk memudahkan navigasi pengunjung pada halaman booking.</p>
-                <button
-                    type="button"
-                    @click="addModalOpen = true"
-                    class="craft-btn mt-4 inline-flex items-center gap-2 rounded-xl bg-[#382186] px-4 py-2 text-xs font-bold text-white hover:bg-[#2d1a6d] shadow-xs"
-                >
-                    + Tambah Kategori Baru
-                </button>
+                <h3 class="text-sm font-extrabold text-[#231a3d]">{{ ($search ?? '') ? 'Tidak ada kategori yang cocok' : 'Belum ada kategori' }}</h3>
+                <p class="mt-1 text-xs text-[#6e6584] max-w-sm mx-auto">
+                    {{ ($search ?? '') ? 'Coba periksa kata kunci pencarian Anda atau reset filter untuk melihat semua kategori.' : 'Kelompokkan layanan bisnis Anda untuk memudahkan navigasi pengunjung pada halaman booking.' }}
+                </p>
+                <div class="mt-4 flex items-center justify-center gap-2">
+                    @if($search ?? '')
+                        <a href="{{ route('owner.categories') }}" class="craft-btn inline-flex items-center gap-2 rounded-xl border border-[#e7e2f7] bg-white px-4 py-2 text-xs font-bold text-[#6e6584] hover:bg-[#e7e2f7] hover:text-[#231a3d] shadow-xs">
+                            Reset Pencarian
+                        </a>
+                    @endif
+                    <button
+                        type="button"
+                        @click="addModalOpen = true"
+                        class="craft-btn inline-flex items-center gap-2 rounded-xl bg-[#382186] px-4 py-2 text-xs font-bold text-white hover:bg-[#2d1a6d] shadow-xs"
+                    >
+                        + Tambah Kategori Baru
+                    </button>
+                </div>
             </div>
         @endforelse
     </div>
@@ -204,6 +210,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
+        @keydown.escape.window="addModalOpen = false"
     >
         <div
             class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
@@ -234,17 +241,50 @@
                         placeholder="Contoh: Photoshoot Outdoor"
                         class="mt-1 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     >
-                    <p class="mt-1 text-[11px] text-[#6e6584]">Nama kategori yang jelas memudahkan pelanggan memilih layanan yang tepat.</p>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-[#231a3d]">Deskripsi Singkat</label>
                     <textarea
                         name="description"
-                        rows="3"
+                        rows="2"
                         placeholder="Jelaskan jenis layanan dalam kategori ini..."
                         class="mt-1 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     ></textarea>
-                    <p class="mt-1 text-[11px] text-[#6e6584]">Deskripsi akan membantu pengunjung memahami cakupan layanan di kategori ini.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-[#231a3d]">Warna Aksen Kategori</label>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="purple" x-model="newCategoryColor" class="text-[#382186] focus:ring-[#b499ff]">
+                            <span class="h-3 w-3 rounded-full bg-[#382186]"></span>
+                            <span>Purple</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="lavender" x-model="newCategoryColor" class="text-[#7a5af8] focus:ring-[#b499ff]">
+                            <span class="h-3 w-3 rounded-full bg-[#b499ff]"></span>
+                            <span>Lavender</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="emerald" x-model="newCategoryColor" class="text-emerald-600 focus:ring-emerald-400">
+                            <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
+                            <span>Emerald</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="amber" x-model="newCategoryColor" class="text-amber-600 focus:ring-amber-400">
+                            <span class="h-3 w-3 rounded-full bg-amber-500"></span>
+                            <span>Amber</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="rose" x-model="newCategoryColor" class="text-rose-600 focus:ring-rose-400">
+                            <span class="h-3 w-3 rounded-full bg-rose-500"></span>
+                            <span>Rose</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="sky" x-model="newCategoryColor" class="text-sky-600 focus:ring-sky-400">
+                            <span class="h-3 w-3 rounded-full bg-sky-500"></span>
+                            <span>Sky</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="flex items-center gap-2 pt-1">
                     <input type="checkbox" name="is_active" value="1" id="cat_add_active" checked class="h-4 w-4 rounded border-[#e7e2f7] text-[#382186] focus:ring-[#b499ff]">
@@ -273,6 +313,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
+        @keydown.escape.window="editModalOpen = false"
     >
         <div
             class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
@@ -304,16 +345,50 @@
                         required
                         class="mt-1 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     >
-                    <p class="mt-1 text-[11px] text-[#6e6584]">Nama kategori diperbarui pada katalog booking pelanggan.</p>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-[#231a3d]">Deskripsi Singkat</label>
                     <textarea
                         name="description"
                         x-model="activeCategory.description"
-                        rows="3"
+                        rows="2"
                         class="mt-1 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     ></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-[#231a3d]">Warna Aksen Kategori</label>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="purple" x-model="activeCategory.color" class="text-[#382186] focus:ring-[#b499ff]">
+                            <span class="h-3 w-3 rounded-full bg-[#382186]"></span>
+                            <span>Purple</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="lavender" x-model="activeCategory.color" class="text-[#7a5af8] focus:ring-[#b499ff]">
+                            <span class="h-3 w-3 rounded-full bg-[#b499ff]"></span>
+                            <span>Lavender</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="emerald" x-model="activeCategory.color" class="text-emerald-600 focus:ring-emerald-400">
+                            <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
+                            <span>Emerald</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="amber" x-model="activeCategory.color" class="text-amber-600 focus:ring-amber-400">
+                            <span class="h-3 w-3 rounded-full bg-amber-500"></span>
+                            <span>Amber</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="rose" x-model="activeCategory.color" class="text-rose-600 focus:ring-rose-400">
+                            <span class="h-3 w-3 rounded-full bg-rose-500"></span>
+                            <span>Rose</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer rounded-xl border border-[#e7e2f7] px-2.5 py-1 hover:bg-[#f7f7fa] text-xs font-semibold">
+                            <input type="radio" name="color" value="sky" x-model="activeCategory.color" class="text-sky-600 focus:ring-sky-400">
+                            <span class="h-3 w-3 rounded-full bg-sky-500"></span>
+                            <span>Sky</span>
+                        </label>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-[#231a3d]">Status</label>
@@ -322,10 +397,9 @@
                         x-model="activeCategory.is_active"
                         class="mt-1 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     >
-                        <option :value="1">Active (Ditampilkan)</option>
-                        <option :value="0">Inactive (Disembunyikan)</option>
+                        <option value="1">Active (Ditampilkan)</option>
+                        <option value="0">Inactive (Disembunyikan)</option>
                     </select>
-                    <p class="mt-1 text-[10px] text-[#6e6584]">Kategori inactive tidak akan muncul di halaman pemesanan customer.</p>
                 </div>
                 <div class="flex items-center justify-end gap-2 pt-3 border-t border-[#e7e2f7]">
                     <button type="button" @click="editModalOpen = false" class="craft-btn rounded-xl px-4 py-2 text-xs font-bold text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#231a3d] transition">Batal</button>
@@ -334,6 +408,5 @@
             </form>
         </div>
     </div>
-
 </div>
 @endsection

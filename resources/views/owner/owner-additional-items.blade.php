@@ -7,10 +7,22 @@
     search: '{{ addslashes($search ?? '') }}',
     addModalOpen: false,
     editModalOpen: false,
+    addUnlimited: true,
+    editUnlimited: true,
     activeItem: { id: null, name: '', description: '', price: 0, stock: null, is_active: 1, service_ids: [] },
     openEdit(item) {
-        this.activeItem = { ...item };
+        this.activeItem = { ...item, service_ids: Array.isArray(item.service_ids) ? [...item.service_ids] : [] };
+        this.editUnlimited = (item.stock === null || item.stock === undefined || item.stock === '');
         this.editModalOpen = true;
+    },
+    toggleItemService(id) {
+        if (!this.activeItem.service_ids) this.activeItem.service_ids = [];
+        const index = this.activeItem.service_ids.indexOf(id);
+        if (index > -1) {
+            this.activeItem.service_ids.splice(index, 1);
+        } else {
+            this.activeItem.service_ids.push(id);
+        }
     }
 }">
 
@@ -182,8 +194,28 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-5 py-8 text-center text-[#6e6584]">
-                                Belum ada add-on tambahan. Klik "+ Tambah Add-on" untuk menambahkan perlengkapan atau layanan ekstra.
+                            <td colspan="6" class="px-5 py-12 text-center">
+                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f3effe] text-[#382186] border border-[#e7e2f7] shadow-2xs mb-3">
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                                    </svg>
+                                </div>
+                                <p class="text-xs font-bold text-[#231a3d]">
+                                    {{ !empty($search) ? 'Tidak ada add-on yang sesuai dengan pencarian' : 'Belum ada add-on tambahan terdaftar' }}
+                                </p>
+                                <p class="text-[11px] text-[#6e6584] mt-1 max-w-sm mx-auto">
+                                    {{ !empty($search) ? 'Coba periksa kembali ejaan kata kunci atau reset filter pencarian.' : 'Tambahkan perlengkapan, minuman, atau sewa alat ekstra untuk meningkatkan pendapatan reservasi Anda.' }}
+                                </p>
+                                <div class="mt-4 flex items-center justify-center gap-2">
+                                    @if(!empty($search))
+                                        <a href="{{ route('owner.additional-items') }}" class="craft-btn inline-flex items-center gap-1.5 rounded-xl border border-[#e7e2f7] bg-white px-3 py-1.5 text-xs font-bold text-[#6e6584] hover:text-[#231a3d] hover:bg-[#f7f7fa]">
+                                            Reset Pencarian
+                                        </a>
+                                    @endif
+                                    <button type="button" @click="addModalOpen = true" class="craft-btn inline-flex items-center gap-1.5 rounded-xl bg-[#382186] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#2d1a6d] shadow-2xs">
+                                        + Tambah Add-on
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     @endforelse
@@ -250,16 +282,33 @@
                         >
                     </div>
                     <div>
-                        <label class="text-xs font-bold text-[#231a3d]">Stok (Opsional)</label>
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-bold text-[#231a3d]">Stok Unit</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" x-model="addUnlimited" class="rounded border-[#e7e2f7] text-[#382186] focus:ring-[#b499ff]">
+                                <span class="text-[10px] font-bold text-[#382186]">Unlimited</span>
+                            </label>
+                        </div>
                         <input
                             type="number"
                             name="stock"
                             min="0"
-                            placeholder="Kosongkan jika unlimited"
-                            class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
+                            :disabled="addUnlimited"
+                            :placeholder="addUnlimited ? 'Tak Terbatas' : 'Contoh: 20'"
+                            class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition disabled:bg-[#f7f7fa] disabled:text-[#6e6584] disabled:cursor-not-allowed"
                         >
-                        <p class="mt-1 text-[10px] text-[#6e6584]">Biarkan kosong jika stok tanpa batas.</p>
+                        <p class="mt-1 text-[10px] text-[#6e6584]" x-text="addUnlimited ? 'Item ini dapat dipesan tanpa batasan kuantitas.' : 'Kuantitas akan berkurang setiap kali dipesan customer.'"></p>
                     </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-[#231a3d]">Status Awal</label>
+                    <select
+                        name="is_active"
+                        class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
+                    >
+                        <option value="1" selected>Active (Tersedia untuk Dipesan)</option>
+                        <option value="0">Inactive (Disembunyikan)</option>
+                    </select>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-[#231a3d]">Deskripsi</label>
@@ -351,16 +400,28 @@
                         >
                     </div>
                     <div>
-                        <label class="text-xs font-bold text-[#231a3d]">Stok (Opsional)</label>
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-bold text-[#231a3d]">Stok Unit</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    x-model="editUnlimited" 
+                                    @change="if (editUnlimited) activeItem.stock = ''; else if (!activeItem.stock) activeItem.stock = 10;" 
+                                    class="rounded border-[#e7e2f7] text-[#382186] focus:ring-[#b499ff]"
+                                >
+                                <span class="text-[10px] font-bold text-[#382186]">Unlimited</span>
+                            </label>
+                        </div>
                         <input
                             type="number"
                             name="stock"
                             x-model="activeItem.stock"
+                            :disabled="editUnlimited"
                             min="0"
-                            placeholder="Unlimited"
-                            class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
+                            :placeholder="editUnlimited ? 'Tak Terbatas' : 'Contoh: 20'"
+                            class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition disabled:bg-[#f7f7fa] disabled:text-[#6e6584] disabled:cursor-not-allowed"
                         >
-                        <p class="mt-1 text-[10px] text-[#6e6584]">Kosongkan jika stok tanpa batas.</p>
+                        <p class="mt-1 text-[10px] text-[#6e6584]" x-text="editUnlimited ? 'Item ini dapat dipesan tanpa batasan kuantitas.' : 'Kuantitas akan berkurang setiap kali dipesan customer.'"></p>
                     </div>
                 </div>
                 <div>
@@ -393,6 +454,7 @@
                                     name="service_ids[]"
                                     value="{{ $svc->id }}"
                                     :checked="activeItem.service_ids && activeItem.service_ids.includes({{ $svc->id }})"
+                                    @change="toggleItemService({{ $svc->id }})"
                                     class="rounded border-[#e7e2f7] text-[#382186] focus:ring-[#b499ff]"
                                 >
                                 <span>{{ $svc->namalayanan }}</span>
