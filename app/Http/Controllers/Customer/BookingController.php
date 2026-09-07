@@ -796,7 +796,17 @@ class BookingController extends Controller
         if ($result['free']) {
             $freeBooking = $result['booking'];
             $freeBooking->assignManagementTokens();
-            $freeBooking->load(['tenant', 'layanan', 'payment']);
+            $freeBooking->load(['tenant.user', 'layanan', 'payment']);
+
+            // Kirim notifikasi ke owner bisnis
+            $owner = $freeBooking->tenant?->user;
+            if ($owner) {
+                try {
+                    $owner->notify(new \App\Notifications\NewBookingOwnerNotification($freeBooking));
+                } catch (\Exception $e) {
+                    Log::error('Gagal kirim notif free booking ke owner: ' . $e->getMessage());
+                }
+            }
 
             if ($freeBooking->email) {
                 try {

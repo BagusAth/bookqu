@@ -23,7 +23,7 @@ class NewBookingOwnerNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['database', 'mail'];
     }
 
     /**
@@ -36,24 +36,30 @@ class NewBookingOwnerNotification extends Notification
         $tenant   = $booking->tenant;
         $payment  = $booking->payment;
 
-        $namaLayanan  = $layanan?->namalayanan ?? '-';
-        $tanggal      = $booking->tanggalbooking?->translatedFormat('l, d F Y') ?? '-';
+        $namaLayanan  = $layanan?->namalayanan ?? 'Layanan';
+        $tanggal      = $booking->tanggalbooking instanceof \Carbon\Carbon
+            ? $booking->tanggalbooking->translatedFormat('l, d F Y')
+            : ($booking->tanggalbooking ? \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') : '-');
         $jam          = $booking->jam ?? '-';
-        $harga        = 'Rp ' . number_format($payment?->jumlah ?? ($layanan?->harga ?? 0), 0, ',', '.');
+        $nominal      = $payment?->jumlah ?? ($layanan?->harga ?? 0);
+        $harga        = $nominal > 0 ? 'Rp ' . number_format($nominal, 0, ',', '.') : 'Gratis (Free)';
 
-        $dashboardUrl = url('/owner/bookings');
+        $dashboardUrl = url('/owner/bookings?katakunci=' . urlencode($booking->booking_code ?? $booking->namapelanggan));
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject('📅 Booking Baru Masuk — ' . ($tenant->namabisnis ?? 'BookQu'))
             ->greeting('Halo ' . ($notifiable->namalengkap ?? 'Owner') . ',')
-            ->line('Ada booking baru yang telah **berhasil dibayar**. Berikut detail booking:')
-            ->line("**Pelanggan :** {$booking->namapelanggan}")
-            ->line("**Layanan   :** {$namaLayanan}")
-            ->line("**Tanggal   :** {$tanggal} pukul {$jam}")
-            ->line("**Total     :** {$harga}")
+            ->line('Ada booking baru yang telah **terkonfirmasi**. Berikut detail booking:')
+            ->line("**Kode Booking:** " . ($booking->booking_code ?? '-'))
+            ->line("**Pelanggan   :** {$booking->namapelanggan}")
+            ->line("**Layanan     :** {$namaLayanan}")
+            ->line("**Tanggal     :** {$tanggal} pukul {$jam}")
+            ->line("**Total       :** {$harga}")
             ->action('Lihat di Dashboard', $dashboardUrl)
             ->line('Pastikan Anda siap menyambut pelanggan pada jadwal tersebut.')
             ->salutation('Salam, Tim BookQu');
+
+        return $mail;
     }
 
     /**
@@ -63,10 +69,34 @@ class NewBookingOwnerNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
+        $booking = $this->booking;
+        $layanan = $booking->layanan;
+        $payment = $booking->payment;
+
+        $namaLayanan = $layanan?->namalayanan ?? 'Layanan';
+        $tanggal = $booking->tanggalbooking instanceof \Carbon\Carbon
+            ? $booking->tanggalbooking->translatedFormat('d M Y')
+            : ($booking->tanggalbooking ? \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('d M Y') : '-');
+        $nominal = $payment?->jumlah ?? ($layanan?->harga ?? 0);
+        $harga = $nominal > 0 ? 'Rp ' . number_format($nominal, 0, ',', '.') : 'Gratis';
+
         return [
-            'booking_id'     => $this->booking->id,
-            'namapelanggan'  => $this->booking->namapelanggan,
-            'tanggalbooking' => $this->booking->tanggalbooking,
+            'event_type'     => 'new_booking',
+            'title'          => 'Booking Baru Masuk',
+            'message'        => "{$booking->namapelanggan} memesan {$namaLayanan} untuk {$tanggal} pukul {$booking->jam}",
+            'booking_id'     => $booking->id,
+            'booking_code'   => $booking->booking_code,
+            'customer_name'  => $booking->namapelanggan,
+            'customer_email' => $booking->email,
+            'customer_phone' => $booking->nomorhp,
+            'service_name'   => $namaLayanan,
+            'tanggal'        => $tanggal,
+            'jam'            => $booking->jam,
+            'amount'         => $harga,
+            'status'         => $booking->status,
+            'badge_color'    => 'emerald',
+            'icon'           => 'calendar-plus',
+            'url'            => url('/owner/bookings?katakunci=' . urlencode($booking->booking_code ?? $booking->namapelanggan)),
         ];
     }
 }

@@ -65,6 +65,9 @@
     } elseif (str_contains($currentPath, 'landing-page')) {
         $parentSection = 'Marketing';
         $currentBreadcrumbLabel = 'Landing Page [PRO]';
+    } elseif (str_contains($currentPath, 'notifications')) {
+        $parentSection = 'Account';
+        $currentBreadcrumbLabel = 'Notifications';
     }
 @endphp
 
@@ -158,6 +161,161 @@
             </span>
             <span class="text-xs font-bold text-[#231a3d] truncate max-w-[140px]">{{ $tenant->namabisnis ?? 'Bisnis' }}</span>
         </a>
+
+        {{-- Notification Bell Dropdown --}}
+        <div class="relative" x-data="ownerNotificationBell()" x-init="init()" @click.outside="isOpen = false">
+            <button
+                type="button"
+                @click="toggleDropdown()"
+                class="craft-btn relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#e7e2f7] bg-white text-[#6e6584] hover:border-[#b499ff] hover:bg-[#f7f7fa] hover:text-[#382186] transition-all shadow-2xs cursor-pointer active:scale-95"
+                id="btn-owner-notifications"
+                aria-label="Lihat Notifikasi"
+                :aria-expanded="isOpen"
+            >
+                <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+
+                {{-- Unread Badge Counter --}}
+                <span
+                    x-show="unreadCount > 0"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 scale-50"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    x-cloak
+                    class="absolute -top-1 -right-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-extrabold text-white shadow-xs border-2 border-white"
+                    x-text="unreadCount > 99 ? '99+' : unreadCount"
+                ></span>
+            </button>
+
+            {{-- Dropdown Menu --}}
+            <div
+                x-show="isOpen"
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
+                x-cloak
+                class="absolute right-0 mt-2 w-80 sm:w-96 origin-top-right rounded-2xl border border-[#e7e2f7] bg-white shadow-2xl z-50 overflow-hidden divide-y divide-[#e7e2f7]"
+                style="display: none;"
+                id="owner-notifications-dropdown"
+            >
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-4 py-3 bg-[#fdfcff]">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-[#231a3d]">Notifikasi</span>
+                        <template x-if="unreadCount > 0">
+                            <span class="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 border border-rose-200" x-text="`${unreadCount} baru`"></span>
+                        </template>
+                    </div>
+
+                    <button
+                        type="button"
+                        x-show="unreadCount > 0"
+                        @click="markAllAsRead()"
+                        class="text-[11px] font-semibold text-[#382186] hover:text-[#5233be] hover:underline transition cursor-pointer"
+                        id="btn-mark-all-read"
+                    >
+                        Tandai semua dibaca
+                    </button>
+                </div>
+
+                {{-- List of Notifications --}}
+                <div class="max-h-84 overflow-y-auto divide-y divide-[#f7f7fa]">
+                    <template x-if="loading && notifications.length === 0">
+                        <div class="p-6 text-center text-xs text-[#6e6584]">
+                            <svg class="inline-block h-5 w-5 animate-spin text-[#382186] mb-1" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <p>Memuat notifikasi...</p>
+                        </div>
+                    </template>
+
+                    <template x-if="!loading && notifications.length === 0">
+                        <div class="p-8 text-center" id="empty-notifications-state">
+                            <div class="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-[#f3effe] text-[#382186]">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                </svg>
+                            </div>
+                            <p class="text-xs font-bold text-[#231a3d]">Belum ada notifikasi baru</p>
+                            <p class="text-[11px] text-[#6e6584] mt-0.5">Booking masuk dan perubahan status akan muncul di sini.</p>
+                        </div>
+                    </template>
+
+                    <template x-for="item in notifications" :key="item.id">
+                        <div
+                            @click="handleNotificationClick(item)"
+                            :class="item.is_read ? 'bg-white hover:bg-[#f7f7fa]' : 'bg-[#f8f6ff] hover:bg-[#f1edfe]'"
+                            class="group relative flex items-start gap-3 p-3.5 transition-colors cursor-pointer"
+                        >
+                            {{-- Event Icon Badge --}}
+                            <div class="shrink-0 mt-0.5">
+                                <template x-if="item.event_type === 'new_booking'">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                    </div>
+                                </template>
+                                <template x-if="item.event_type === 'cancelled'">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                </template>
+                                <template x-if="item.event_type === 'rescheduled'">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                </template>
+                                <template x-if="item.event_type === 'completed' || (item.event_type !== 'new_booking' && item.event_type !== 'cancelled' && item.event_type !== 'rescheduled')">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#b499ff]/30">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                </template>
+                            </div>
+
+                            {{-- Content --}}
+                            <div class="flex-1 min-w-0 pr-2">
+                                <div class="flex items-center justify-between gap-1 mb-0.5">
+                                    <p class="text-xs font-bold text-[#231a3d] truncate" x-text="item.title"></p>
+                                    <span class="text-[10px] text-[#6e6584] whitespace-nowrap shrink-0" x-text="item.created_at"></span>
+                                </div>
+                                <p class="text-[11px] text-[#6e6584] line-clamp-2 leading-relaxed" x-text="item.message"></p>
+                            </div>
+
+                            {{-- Unread Dot --}}
+                            <div class="shrink-0 self-center" x-show="!item.is_read">
+                                <span class="block h-2 w-2 rounded-full bg-[#382186]"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                {{-- Footer --}}
+                <div class="p-2.5 bg-[#fdfcff] text-center">
+                    <a
+                        href="{{ route('owner.notifications') }}"
+                        class="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-[#382186] hover:text-[#231a3d] transition py-1 px-3 rounded-xl hover:bg-[#f3effe]"
+                        id="link-view-all-notifications"
+                    >
+                        <span>Lihat Semua Notifikasi</span>
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
 
         {{-- Interactive User Profile Dropdown --}}
         <div class="relative pl-2 border-l border-[#e7e2f7]" x-data="{ userMenuOpen: false }">
@@ -255,3 +413,91 @@
         </div>
     </div>
 </header>
+
+<script>
+function ownerNotificationBell() {
+    return {
+        isOpen: false,
+        unreadCount: {{ auth()->user()?->unreadNotifications()->count() ?? 0 }},
+        notifications: [],
+        loading: false,
+        pollInterval: null,
+
+        init() {
+            this.fetchNotifications();
+            this.pollInterval = setInterval(() => {
+                this.fetchNotifications(true);
+            }, 30000);
+        },
+
+        toggleDropdown() {
+            this.isOpen = !this.isOpen;
+            if (this.isOpen && this.notifications.length === 0) {
+                this.fetchNotifications();
+            }
+        },
+
+        async fetchNotifications(isBackground = false) {
+            if (!isBackground) this.loading = true;
+            try {
+                const res = await fetch('{{ route("owner.notifications") }}?limit=8', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success) {
+                        this.notifications = json.data;
+                        this.unreadCount = json.unread_count;
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load notifications', e);
+            } finally {
+                if (!isBackground) this.loading = false;
+            }
+        },
+
+        async handleNotificationClick(item) {
+            if (!item.is_read) {
+                this.unreadCount = Math.max(0, this.unreadCount - 1);
+                item.is_read = true;
+                try {
+                    await fetch(`/owner/notifications/${item.id}/read`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        }
+                    });
+                } catch (e) {
+                    console.error('Failed to mark read', e);
+                }
+            }
+            if (item.url) {
+                window.location.href = item.url;
+            }
+        },
+
+        async markAllAsRead() {
+            this.unreadCount = 0;
+            this.notifications.forEach(n => n.is_read = true);
+            try {
+                await fetch('{{ route("owner.notifications.read-all") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                });
+            } catch (e) {
+                console.error('Failed to mark all as read', e);
+            }
+        }
+    };
+}
+</script>

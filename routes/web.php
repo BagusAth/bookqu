@@ -12,6 +12,7 @@ use App\Http\Controllers\Owner\OwnerCheckoutController;
 use App\Http\Controllers\Owner\OwnerCustomerController;
 use App\Http\Controllers\Owner\OwnerDashboardController;
 use App\Http\Controllers\Owner\OwnerLandingPageController;
+use App\Http\Controllers\Owner\OwnerNotificationController;
 use App\Http\Controllers\Owner\OwnerPortalController;
 use App\Http\Controllers\Owner\OwnerProgramController;
 use App\Http\Controllers\Owner\OwnerReviewController;
@@ -172,6 +173,10 @@ Route::prefix('owner')
     ->group(function () {
     Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
     Route::get('/dashboard/polling', [OwnerDashboardController::class, 'pollingData'])->name('owner.dashboard.polling');
+    Route::get('/notifications', [OwnerNotificationController::class, 'index'])->name('owner.notifications');
+    Route::post('/notifications/read-all', [OwnerNotificationController::class, 'markAllAsRead'])->name('owner.notifications.read-all');
+    Route::post('/notifications/{id}/read', [OwnerNotificationController::class, 'markAsRead'])->name('owner.notifications.read');
+    Route::delete('/notifications/{id}', [OwnerNotificationController::class, 'destroy'])->name('owner.notifications.destroy');
     Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
     Route::post('/profile/complete', [OwnerSettingController::class, 'storeProfile'])->name('owner.profile.complete');
     Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');
