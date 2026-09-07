@@ -145,6 +145,21 @@ class OwnerBookingController extends Controller
             );
         }
 
+        // Notifikasi perubahan status
+        try {
+            $booking->load(['tenant.user', 'layanan']);
+            $owner = $booking->tenant?->user;
+            if ($owner) {
+                $owner->notify(new \App\Notifications\BookingStatusChangedOwnerNotification(
+                    $booking,
+                    $statusBaru,
+                    ['updated_by' => 'owner']
+                ));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Owner update status notification failed: ' . $e->getMessage());
+        }
+
         $label = match ($statusBaru) {
             'completed' => 'selesai',
             'cancelled'  => 'dibatalkan',

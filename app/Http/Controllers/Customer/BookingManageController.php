@@ -150,10 +150,20 @@ class BookingManageController extends Controller
 
             // 6. Send cancellation email
             try {
-                $booking->refresh()->load(['tenant', 'layanan', 'payment', 'refund']);
+                $booking->refresh()->load(['tenant.user', 'layanan', 'payment', 'refund']);
                 Mail::to($booking->email)->send(new BookingCancelledMail($booking));
             } catch (\Throwable $e) {
                 Log::warning('BookingManage: Failed to send cancellation email', ['error' => $e->getMessage()]);
+            }
+
+            // 7. Notify owner about cancellation
+            try {
+                $owner = $booking->tenant?->user;
+                if ($owner) {
+                    $owner->notify(new \App\Notifications\BookingStatusChangedOwnerNotification($booking, 'cancelled'));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('BookingManage: Failed to notify owner about cancellation', ['error' => $e->getMessage()]);
             }
 
             return redirect()
@@ -330,10 +340,29 @@ class BookingManageController extends Controller
 
             // Send reschedule email
             try {
-                $booking->refresh()->load(['tenant', 'layanan']);
+                $booking->refresh()->load(['tenant.user', 'layanan']);
                 Mail::to($booking->email)->send(new BookingRescheduledMail($booking));
             } catch (\Throwable $e) {
                 Log::warning('BookingManage: Failed to send reschedule email', ['error' => $e->getMessage()]);
+            }
+
+            // Notify owner about the reschedule
+            try {
+                $owner = $booking->tenant?->user;
+                if ($owner) {
+                    $owner->notify(new \App\Notifications\BookingStatusChangedOwnerNotification(
+                        $booking,
+                        'rescheduled',
+                        [
+                            'old_date' => $oldDate,
+                            'old_time' => $oldTime,
+                            'new_date' => $newDate,
+                            'new_time' => $booking->jam,
+                        ]
+                    ));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('BookingManage: Failed to notify owner about reschedule', ['error' => $e->getMessage()]);
             }
 
             return redirect()
