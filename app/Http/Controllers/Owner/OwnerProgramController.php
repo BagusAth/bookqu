@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Booking;
 use App\Models\Service;
@@ -58,7 +60,7 @@ class OwnerProgramController extends Controller
             ->get()
             ->sum(fn($b) => $b->payment->jumlah ?? 0);
 
-        return view('owner.owner-programs', compact(
+        return view('owner.programs', compact(
             'tenant',
             'daftarlayanan',
             'kategoriList',
@@ -266,3 +268,4 @@ class OwnerProgramController extends Controller
         return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $layanan->namalayanan . '" berhasil ' . $statusText . '!');
     }
 }
+

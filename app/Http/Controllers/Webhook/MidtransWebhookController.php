@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Webhook;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Booking;
 use App\Models\BookingLog;

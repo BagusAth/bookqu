@@ -26,6 +26,10 @@ class BookingManageTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withoutMiddleware([
+            \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        ]);
         Mail::fake();
 
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);

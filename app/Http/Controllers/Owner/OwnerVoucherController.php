@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Service;
 use App\Models\Voucher;
@@ -33,7 +35,7 @@ class OwnerVoucherController extends Controller
             ->orderBy('namalayanan')
             ->get();
 
-        return view('owner.owner-vouchers', compact('tenant', 'vouchers', 'services', 'search'));
+        return view('owner.vouchers', compact('tenant', 'vouchers', 'services', 'search'));
     }
 
     public function store(Request $request)
@@ -154,3 +156,4 @@ class OwnerVoucherController extends Controller
             ->with('sukses', 'Voucher "' . $voucher->code . '" berhasil ' . $statusText . '!');
     }
 }
+

@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\OwnerPayout;
 use App\Models\Tenant;
@@ -37,7 +39,7 @@ class OwnerSettingController extends Controller
                 ->get();
         }
 
-        return view('owner.owner-settings', compact('tenant', 'payouts'));
+        return view('owner.settings', compact('tenant', 'payouts'));
     }
 
     /**
@@ -68,7 +70,7 @@ class OwnerSettingController extends Controller
                 ->withInput();
         }
 
-        $reserved = ['owner', 'admin', 'login', 'register', 'dummy-register'];
+        $reserved = ['owner', 'admin', 'login', 'register'];
         if (in_array($slug, $reserved, true)) {
             return back()
                 ->withErrors(['namabisnis' => 'Nama bisnis ini tidak bisa dipakai sebagai URL.'])
@@ -150,7 +152,7 @@ class OwnerSettingController extends Controller
                 ->withInput();
         }
 
-        $reserved = ['owner', 'admin', 'login', 'register', 'dummy-register'];
+        $reserved = ['owner', 'admin', 'login', 'register'];
         if (in_array($slug, $reserved, true)) {
             return back()
                 ->withErrors(['namabisnis' => 'Nama bisnis ini tidak bisa dipakai sebagai URL.'])
@@ -301,3 +303,4 @@ class OwnerSettingController extends Controller
         return redirect()->route('owner.settings')->with('sukses', 'Permintaan withdraw berhasil dibuat.');
     }
 }
+

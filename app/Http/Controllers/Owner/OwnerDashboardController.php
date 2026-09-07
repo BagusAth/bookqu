@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Booking;
 use App\Models\Payment;
@@ -40,7 +42,7 @@ class OwnerDashboardController extends Controller
                 $datarevenueperbulan[] = 0;
             }
 
-            return view('owner.owner-dashboard', [
+            return view('owner.dashboard', [
                 'tenant' => $tenant,
                 'totalbooking' => 0,
                 'persenperubahanboking' => 0,
@@ -188,7 +190,7 @@ class OwnerDashboardController extends Controller
         $showPaymentPrompt = ($tenant->payment_mode ?? 'platform') === 'owner'
             && ($tenant->midtrans_status ?? 'pending') !== 'approved';
 
-        return view('owner.owner-dashboard', compact(
+        return view('owner.dashboard', compact(
             'tenant',
             'totalbooking',
             'persenperubahanboking',
@@ -297,3 +299,4 @@ class OwnerDashboardController extends Controller
         ]);
     }
 }
+

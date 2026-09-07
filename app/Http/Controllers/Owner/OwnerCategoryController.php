@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Category;
 use App\Traits\ResolvesOwnerTenant;
@@ -46,7 +48,7 @@ class OwnerCategoryController extends Controller
 
         $categories = $query->get();
 
-        return view('owner.owner-categories', compact('tenant', 'categories', 'search', 'status', 'sort'));
+        return view('owner.categories', compact('tenant', 'categories', 'search', 'status', 'sort'));
     }
 
     public function store(Request $request)
@@ -157,3 +159,4 @@ class OwnerCategoryController extends Controller
         return redirect()->route('owner.categories')->with('sukses', 'Kategori "' . $category->name . '" berhasil ' . $statusText . '!');
     }
 }
+

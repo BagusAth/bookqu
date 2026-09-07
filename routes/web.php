@@ -1,26 +1,26 @@
 <?php
 
-use App\Http\Controllers\AdminDashboardController;
-use App\Http\Controllers\BookingController;
-use App\Http\Controllers\BookingManageController;
-use App\Http\Controllers\DummyRegistrationController;
-use App\Http\Controllers\OwnerAnalyticsController;
-use App\Http\Controllers\OwnerBookingController;
-use App\Http\Controllers\OwnerCheckoutController;
-use App\Http\Controllers\OwnerDashboardController;
-use App\Http\Controllers\OwnerLandingPageController;
-use App\Http\Controllers\OwnerPortalController;
-use App\Http\Controllers\OwnerAdditionalItemController;
-use App\Http\Controllers\OwnerAssetController;
-use App\Http\Controllers\OwnerCategoryController;
-use App\Http\Controllers\OwnerProgramController;
-use App\Http\Controllers\OwnerReviewController;
-use App\Http\Controllers\OwnerScheduleController;
-use App\Http\Controllers\OwnerSettingController;
-use App\Http\Controllers\OwnerStaffResourceController;
-use App\Http\Controllers\OwnerSubscriptionController;
-use App\Http\Controllers\OwnerCustomerController;
-use App\Http\Controllers\OwnerVoucherController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Customer\BookingController;
+use App\Http\Controllers\Customer\BookingManageController;
+use App\Http\Controllers\Owner\OwnerAdditionalItemController;
+use App\Http\Controllers\Owner\OwnerAnalyticsController;
+use App\Http\Controllers\Owner\OwnerAssetController;
+use App\Http\Controllers\Owner\OwnerBookingController;
+use App\Http\Controllers\Owner\OwnerCategoryController;
+use App\Http\Controllers\Owner\OwnerCheckoutController;
+use App\Http\Controllers\Owner\OwnerCustomerController;
+use App\Http\Controllers\Owner\OwnerDashboardController;
+use App\Http\Controllers\Owner\OwnerLandingPageController;
+use App\Http\Controllers\Owner\OwnerPortalController;
+use App\Http\Controllers\Owner\OwnerProgramController;
+use App\Http\Controllers\Owner\OwnerReviewController;
+use App\Http\Controllers\Owner\OwnerScheduleController;
+use App\Http\Controllers\Owner\OwnerSettingController;
+use App\Http\Controllers\Owner\OwnerStaffResourceController;
+use App\Http\Controllers\Owner\OwnerSubscriptionController;
+use App\Http\Controllers\Owner\OwnerVoucherController;
+use App\Http\Controllers\Webhook\MidtransWebhookController;
 use App\Models\User;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -165,11 +165,6 @@ Route::middleware('auth')->group(function () {
     })->name('logout');
 });
 
-// Dummy registration module (isolated for slug testing, only in local)
-if (app()->environment('local', 'staging', 'testing')) {
-    Route::get('/dummy-register', [DummyRegistrationController::class, 'showForm'])->name('dummy-register.form');
-    Route::post('/dummy-register', [DummyRegistrationController::class, 'processForm'])->name('dummy-register.process');
-}
 
 // ── Owner Dashboard Routes ──
 Route::prefix('owner')
@@ -282,7 +277,7 @@ Route::prefix('owner')
 });
 
 // ── Midtrans Webhook (tanpa auth & CSRF, dipanggil oleh Midtrans) ──
-Route::post('/midtrans/webhook', [\App\Http\Controllers\MidtransWebhookController::class, 'handle'])
+Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle'])
     ->name('midtrans.webhook');
 
 // ── Booking Management Without Account (tokenized URLs) ──
@@ -340,6 +335,9 @@ $customerRoutes = function () {
     Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])
         ->name('customer.booking.process-checkout');
 
+    Route::post('/booking/validate-voucher', [BookingController::class, 'validateVoucher'])
+        ->name('customer.booking.validate-voucher');
+
     Route::get('/booking/payment/{payment:order_id}', [BookingController::class, 'showPayment'])
         ->name('customer.booking.payment');
 
@@ -348,6 +346,9 @@ $customerRoutes = function () {
 
     Route::post('/booking/payment/{payment:order_id}/callback', [BookingController::class, 'handleCallback'])
         ->name('customer.booking.callback');
+
+    Route::post('/booking/payment/{payment:order_id}/cancel', [BookingController::class, 'cancelPayment'])
+        ->name('customer.booking.cancel');
 
     Route::get('/booking/payment/{payment:order_id}/invoice', [BookingController::class, 'showInvoice'])
         ->name('customer.booking.invoice');

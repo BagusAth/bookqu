@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Resource;
 use App\Models\Service;
@@ -50,7 +52,7 @@ class OwnerStaffResourceController extends Controller
             ->orderBy('namalayanan')
             ->get();
 
-        return view('owner.owner-staff-resources', compact('tenant', 'staff', 'resources', 'services', 'tab', 'search'));
+        return view('owner.staff-resources', compact('tenant', 'staff', 'resources', 'services', 'tab', 'search'));
     }
 
     public function storeStaff(Request $request)
@@ -259,3 +261,4 @@ class OwnerStaffResourceController extends Controller
             ->with('sukses', 'Resource "' . $resource->name . '" berhasil ' . $statusText . '!');
     }
 }
+

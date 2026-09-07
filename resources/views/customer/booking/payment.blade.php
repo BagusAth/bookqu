@@ -2,35 +2,50 @@
 
 @section('title', 'Pembayaran')
 @section('current_step', 5)
+@section('back_url', route('customer.booking.program', $tenant->slug))
+@section('back_label', 'Pilih Layanan Lain')
 
 @section('head')
 <script src="{{ $snapUrl }}" data-client-key="{{ $clientKey }}"></script>
 @endsection
 
 @section('content')
-<div class="mx-auto max-w-2xl">
+<div class="mx-auto max-w-2xl" x-data="{ showCancelModal: false, copied: false }">
     {{-- Header Content --}}
     <div class="text-center mb-6">
         <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Selesaikan Pembayaran</h1>
-        <p class="mt-1 text-sm text-[#64748B]">Pilih metode pembayaran yang Anda inginkan dan selesaikan transaksi.</p>
-    </div>
-
-    {{-- Realtime Auto-Detect Status Banner --}}
-    <div id="realtime-status-banner" class="mb-5 flex items-center justify-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-xs sm:text-sm font-semibold text-emerald-800 shadow-2xs transition-all">
-        <span class="relative flex h-2.5 w-2.5">
-            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-        </span>
-        <span id="realtime-status-text">Sistem memantau pembayaran Anda secara otomatis...</span>
+        <p class="mt-1 text-sm text-[#64748B]">Selesaikan transaksi Anda sebelum batas waktu pembayaran berakhir.</p>
     </div>
 
     {{-- Main Payment Card --}}
     <div class="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-sm mb-6">
-        {{-- Order ID & Total --}}
+        {{-- Order ID & Status & Total --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-[#F1F5F9]">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-[#64748B] mb-1">Kode Pesanan (Order ID)</p>
-                <p class="font-mono text-base sm:text-lg font-bold text-[#0F172A]">{{ $payment->order_id }}</p>
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-[#64748B]">Kode Pesanan</span>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 border border-amber-200/70">
+                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                        Menunggu Pembayaran
+                    </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="font-mono text-base sm:text-lg font-bold text-[#0F172A]">{{ $payment->order_id }}</span>
+                    <button
+                        type="button"
+                        @click="navigator.clipboard.writeText('{{ $payment->order_id }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                        class="inline-flex items-center gap-1 rounded-lg bg-slate-100 hover:bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-[#475569] transition-colors cursor-pointer"
+                        title="Salin Order ID"
+                    >
+                        <svg x-show="!copied" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span x-text="copied ? 'Tersalin' : 'Salin'">Salin</span>
+                    </button>
+                </div>
             </div>
             <div class="sm:text-right">
                 <p class="text-xs font-semibold uppercase tracking-wider text-[#64748B] mb-1">Total Tagihan</p>
@@ -40,16 +55,32 @@
 
         {{-- Booking Details Preview --}}
         @if ($payment->booking)
-            <div class="py-5 border-b border-[#F1F5F9] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
-                <div>
-                    <span class="text-[#64748B]">Layanan:</span>
-                    <strong class="text-[#0F172A] block sm:inline ml-0 sm:ml-1">{{ $payment->booking->layanan->namalayanan ?? 'Layanan' }}</strong>
-                </div>
-                <div class="sm:text-right">
-                    <span class="text-[#64748B]">Jadwal:</span>
-                    <strong class="text-[#0F172A] block sm:inline ml-0 sm:ml-1">
-                        {{ \Carbon\Carbon::parse($payment->booking->tanggalbooking)->translatedFormat('d M Y') }}, {{ $payment->booking->jam }} WIB
-                    </strong>
+            <div class="py-4 border-b border-[#F1F5F9]">
+                <div class="rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+                    <div class="flex items-center gap-2.5">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-[#64748B] text-xs block">Layanan</span>
+                            <strong class="text-[#0F172A] font-semibold">{{ $payment->booking->layanan->namalayanan ?? 'Layanan' }}</strong>
+                        </div>
+                    </div>
+                    <div class="flex items-center sm:justify-end gap-2.5">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div class="sm:text-right">
+                            <span class="text-[#64748B] text-xs block">Jadwal Sesi</span>
+                            <strong class="text-[#0F172A] font-semibold">
+                                {{ \Carbon\Carbon::parse($payment->booking->tanggalbooking)->translatedFormat('d M Y') }}, {{ $payment->booking->jam }} WIB
+                            </strong>
+                        </div>
+                    </div>
                 </div>
             </div>
         @endif
@@ -71,18 +102,29 @@
         </div>
 
         {{-- Action Button --}}
-        <div class="mt-8">
+        <div class="mt-7">
             <button
                 id="pay-button"
                 type="button"
-                class="w-full flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-4 text-sm sm:text-base font-bold text-white shadow-lg shadow-[#4F46E5]/25 transition-all hover:bg-[#4338CA] hover:shadow-xl hover:shadow-[#4F46E5]/30 active:scale-98 cursor-pointer"
+                class="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#4F46E5] px-6 py-4 text-sm sm:text-base font-bold text-white shadow-lg shadow-[#4F46E5]/25 transition-all hover:bg-[#4338CA] hover:shadow-xl hover:shadow-[#4F46E5]/30 active:scale-[0.99] cursor-pointer"
             >
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
                 <span>Buka Pilihan Pembayaran</span>
             </button>
-            <p class="mt-3 text-center text-xs font-medium text-[#94A3B8]">Mendukung QRIS, GoPay, ShopeePay, Virtual Account BCA/Mandiri/BNI/BRI &amp; E-Wallet</p>
+            <p class="mt-2.5 text-center text-xs text-[#94A3B8]">
+                Mendukung QRIS, GoPay, ShopeePay, Virtual Account BCA/Mandiri/BNI/BRI &amp; E-Wallet
+            </p>
+        </div>
+
+        {{-- Realtime Auto-Detect Status Indicator (Subtle) --}}
+        <div class="mt-6 pt-4 border-t border-[#F1F5F9] flex items-center justify-center gap-2 text-xs text-[#64748B]">
+            <span class="relative flex h-2 w-2">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+            </span>
+            <span id="realtime-status-text">Sistem memantau pembayaran Anda secara otomatis</span>
         </div>
 
         {{-- Loading & Success Overlay --}}
@@ -102,33 +144,115 @@
         </div>
     </div>
 
-    {{-- Seamless Info Box --}}
-    <div class="flex gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 text-xs sm:text-sm text-blue-900 mb-6">
-        <svg class="w-5 h-5 shrink-0 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        <p class="leading-relaxed">
-            Setelah menyelesaikan pembayaran di HP (QRIS/VA/E-Wallet), halaman ini akan <strong>otomatis mendeteksi status berhasil</strong> dan langsung mengalihkan Anda ke tiket invoice.
-        </p>
-    </div>
-
-    {{-- Manual Check Status Fallback Button --}}
-    <div class="text-center">
+    {{-- Bottom Action Buttons --}}
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
         <button
             id="check-status-btn"
             type="button"
-            class="text-xs sm:text-sm font-semibold text-[#4F46E5] hover:text-[#4338CA] hover:underline inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[#CBD5E1] bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#334155] shadow-2xs hover:bg-[#F8FAFC] hover:border-[#94A3B8] transition-all cursor-pointer"
         >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span>Cek Status Pembayaran Manual</span>
+            <span>Cek Status Pembayaran</span>
         </button>
+
+        <button
+            type="button"
+            @click="showCancelModal = true"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl border border-transparent px-4 py-2.5 text-xs sm:text-sm font-medium text-[#64748B] hover:text-red-600 hover:bg-red-50/70 transition-all cursor-pointer"
+        >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span>Batalkan &amp; Ganti Jadwal</span>
+        </button>
+    </div>
+
+    {{-- Modal Konfirmasi Batalkan & Ganti Jadwal --}}
+    <div
+        x-show="showCancelModal"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+    >
+        {{-- Backdrop --}}
+        <div
+            x-show="showCancelModal"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click="showCancelModal = false"
+            class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+        ></div>
+
+        {{-- Modal Card --}}
+        <div
+            x-show="showCancelModal"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 shadow-2xl transition-all z-10"
+        >
+            <div class="flex items-start gap-4">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-base font-bold text-[#0F172A]">
+                        Batalkan &amp; Ganti Jadwal?
+                    </h3>
+                    <p class="mt-1 text-xs text-[#64748B] leading-relaxed">
+                        Tagihan saat ini akan dibatalkan dan slot jadwal akan kembali tersedia untuk dipesan pelanggan lain. Anda akan dialihkan ke daftar layanan untuk memilih jadwal baru.
+                    </p>
+
+                    <div class="mt-3 rounded-xl bg-[#F8FAFC] p-3 border border-[#E2E8F0] text-xs text-[#475569] space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-[#64748B]">Order ID:</span>
+                            <span class="font-mono font-medium text-[#0F172A]">{{ $payment->order_id }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-[#64748B]">Total:</span>
+                            <span class="font-bold text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+                <button
+                    type="button"
+                    @click="showCancelModal = false"
+                    class="inline-flex justify-center rounded-xl border border-[#CBD5E1] bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#334155] hover:bg-[#F8FAFC] transition-colors cursor-pointer"
+                >
+                    Kembali ke Pembayaran
+                </button>
+                <form method="POST" action="{{ route('customer.booking.cancel', [$tenant->slug, $payment]) }}" class="inline">
+                    @csrf
+                    <button
+                        type="submit"
+                        class="w-full inline-flex justify-center rounded-xl bg-red-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-red-700 transition-colors cursor-pointer"
+                    >
+                        Ya, Batalkan Pesanan
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
 
 @section('scripts')
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const payButton = document.getElementById('pay-button');
@@ -194,6 +318,8 @@
             if (realtimeStatusBanner) {
                 realtimeStatusBanner.classList.replace('border-emerald-200', 'border-emerald-400');
                 realtimeStatusBanner.classList.replace('bg-emerald-50/90', 'bg-emerald-100');
+                realtimeStatusText.innerText = '✓ Pembayaran berhasil diterima!';
+            } else if (realtimeStatusText) {
                 realtimeStatusText.innerText = '✓ Pembayaran berhasil diterima!';
             }
 
@@ -339,6 +465,13 @@
 
         // Start real-time background monitoring
         startAutoPolling();
+
+        // Auto-launch Snap popup modal smoothly after initial render
+        setTimeout(() => {
+            if (typeof snap !== 'undefined' && payButton && !isProcessingSuccess) {
+                payButton.click();
+            }
+        }, 500);
     });
 </script>
 @endsection

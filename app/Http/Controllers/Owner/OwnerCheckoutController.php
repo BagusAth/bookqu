@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Payment;
 use App\Models\Plan;
@@ -81,7 +83,7 @@ class OwnerCheckoutController extends Controller
             ->where('expired_at', '>', now())
             ->first();
 
-        return view('owner.owner-checkout', [
+        return view('owner.checkout', [
             'tenant' => $tenant,
             'plan' => $plan,
             'user' => $user,
@@ -209,7 +211,7 @@ class OwnerCheckoutController extends Controller
 
         $plan = $payment->plan;
 
-        return view('owner.owner-checkout-payment', [
+        return view('owner.checkout-payment', [
             'tenant' => $tenant,
             'payment' => $payment,
             'plan' => $plan,
@@ -299,7 +301,7 @@ class OwnerCheckoutController extends Controller
             ->latest()
             ->first();
 
-        return view('owner.owner-checkout-invoice', [
+        return view('owner.checkout-invoice', [
             'tenant' => $tenant,
             'payment' => $payment,
             'plan' => $payment->plan,
@@ -361,3 +363,4 @@ class OwnerCheckoutController extends Controller
         ]);
     }
 }
+

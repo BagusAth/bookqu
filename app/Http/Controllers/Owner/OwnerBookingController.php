@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Booking;
 use App\Models\Payment;
@@ -36,7 +38,7 @@ class OwnerBookingController extends Controller
             $katakunci     = $request->input('katakunci', '');
             $daftarbooking = Booking::whereRaw('1 = 0')->paginate(15);
 
-            return view('owner.owner-bookings', [
+            return view('owner.bookings', [
                 'tenant'            => $tenant,
                 'daftarbooking'     => $daftarbooking,
                 'totalbooking'      => 0,
@@ -81,7 +83,7 @@ class OwnerBookingController extends Controller
             ->whereDate('tanggalbooking', Carbon::today())
             ->count();
 
-        return view('owner.owner-bookings', compact(
+        return view('owner.bookings', compact(
             'tenant',
             'daftarbooking',
             'totalbooking',
@@ -248,3 +250,4 @@ class OwnerBookingController extends Controller
         return back()->with('sukses', "Walk-in booking atas nama {$booking->namapelanggan} berhasil dibuat!");
     }
 }
+

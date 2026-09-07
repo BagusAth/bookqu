@@ -31,7 +31,7 @@
                     </ul>
                 </div>
 
-                <a href="/dummy-register" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
                     Pilih Paket
                 </a>
             </div>
@@ -61,7 +61,7 @@
                     </ul>
                 </div>
 
-                <a href="/dummy-register" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
                     Pilih Paket
                 </a>
             </div>
@@ -86,7 +86,7 @@
                     </ul>
                 </div>
 
-                <a href="/dummy-register" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
                     Pilih Paket
                 </a>
             </div>

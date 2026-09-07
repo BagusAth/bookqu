@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -36,7 +38,7 @@ class OwnerLandingPageController extends Controller
                 ->with('pesan', 'Fitur Landing Page hanya tersedia untuk paket Pro. Silakan upgrade paket Anda.');
         }
 
-        return view('owner.owner-landing-page', compact('tenant'));
+        return view('owner.landing-page', compact('tenant'));
     }
 
     public function store(Request $request)
@@ -78,3 +80,4 @@ class OwnerLandingPageController extends Controller
         return redirect()->back()->with('pesan', 'Pengaturan Landing Page berhasil disimpan!');
     }
 }
+

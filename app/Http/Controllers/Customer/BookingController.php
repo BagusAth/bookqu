@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Customer;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Service;
 use App\Models\Tenant;
@@ -71,10 +73,14 @@ class BookingController extends Controller
                 'price' => (float) $service->harga,
                 'price_label' => $priceLabel,
                 'price_unit' => $service->satuan_harga ?: 'sesi',
+                'duration' => (int) ($service->durasi ?? 60),
+                'duration_unit' => $service->satuan_durasi ?: 'menit',
             ];
         })->values();
 
-        return view('customer.booking.program-selection', compact('tenant', 'services', 'servicesPayload'));
+        $categories = $services->pluck('category')->filter()->unique('id')->values();
+
+        return view('customer.booking.program-selection', compact('tenant', 'services', 'servicesPayload', 'categories'));
     }
 
     public function selectProgram(Request $request, string $slug_usaha)
@@ -685,7 +691,27 @@ class BookingController extends Controller
                 }
             }
 
-            $hargaAkhir = ($schedule->harga_override ? $schedule->harga_override : $service->harga) + $addonTotal;
+            $subtotalBeforeVoucher = ($schedule->harga_override ? $schedule->harga_override : $service->harga) + $addonTotal;
+
+            // Voucher calculation
+            $voucherDiscount = 0;
+            $appliedVoucherCode = null;
+            if ($request->filled('voucher_code')) {
+                $vCode = strtoupper(trim((string) $request->voucher_code));
+                $voucher = \App\Models\Voucher::withoutGlobalScopes()
+                    ->where('idtenant', $tenant->id)
+                    ->where('code', $vCode)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($voucher && $voucher->isValid($subtotalBeforeVoucher, $service->id)) {
+                    $voucherDiscount = $voucher->calculateDiscount($subtotalBeforeVoucher);
+                    $appliedVoucherCode = $voucher->code;
+                    $voucher->increment('used_count');
+                }
+            }
+
+            $hargaAkhir = max(0, $subtotalBeforeVoucher - $voucherDiscount);
 
             $fullCatatan = trim($request->catatan ?? '');
             if (!empty($addonNames)) {
@@ -693,6 +719,9 @@ class BookingController extends Controller
             }
             if ($staffPref) {
                 $fullCatatan .= ($fullCatatan ? ' | ' : '') . $staffPref;
+            }
+            if ($appliedVoucherCode) {
+                $fullCatatan .= ($fullCatatan ? ' | ' : '') . "Voucher: {$appliedVoucherCode} (-Rp " . number_format($voucherDiscount, 0, ',', '.') . ")";
             }
 
             // Free booking path
@@ -731,17 +760,20 @@ class BookingController extends Controller
             ]);
 
             $newBooking = Booking::create([
-                'idtenant'       => $tenant->id,
-                'idlayanan'      => $service->id,
-                'idschedule'     => $schedule->id,
-                'namapelanggan'  => $request->namapelanggan,
-                'nomorhp'        => $request->nomorhp,
-                'email'          => $request->email,
-                'tanggalbooking' => $selectedDate,
-                'jam'            => $selectedTime . ':00',
-                'status'         => 'pending',
-                'idpayment'      => $payment->id,
-                'catatan'        => $fullCatatan ?: null,
+                'idtenant'           => $tenant->id,
+                'idlayanan'          => $service->id,
+                'idschedule'         => $schedule->id,
+                'namapelanggan'      => $request->namapelanggan,
+                'nomorhp'            => $request->nomorhp,
+                'email'              => $request->email,
+                'tanggalbooking'     => $selectedDate,
+                'jam'                => $selectedTime . ':00',
+                'status'             => 'pending',
+                'idpayment'          => $payment->id,
+                'booking_code'       => Booking::generateBookingCode(),
+                'cancellation_token' => Booking::generateSecureToken(),
+                'reschedule_token'   => Booking::generateSecureToken(),
+                'catatan'            => $fullCatatan ?: null,
             ]);
 
             return [
@@ -816,7 +848,9 @@ class BookingController extends Controller
         ];
 
         try {
-            $snapToken = Snap::getSnapToken($params);
+            $snapToken = app()->environment('testing')
+                ? 'mocked-snap-token'
+                : Snap::getSnapToken($params);
             $payment->update(['snap_token' => $snapToken]);
         } catch (\Exception $e) {
             Log::error('Midtrans Snap Error (Booking): ' . $e->getMessage());
@@ -836,6 +870,78 @@ class BookingController extends Controller
 
         session()->forget('booking');
         return redirect()->route('customer.booking.payment', [$slug_usaha, $payment]);
+    }
+
+    public function validateVoucher(Request $request, string $slug_usaha)
+    {
+        $tenant = $this->resolveTenant($slug_usaha);
+        if (!$tenant) {
+            return response()->json(['valid' => false, 'message' => 'Tenant tidak ditemukan.'], 404);
+        }
+
+        $code = strtoupper(trim((string) ($request->input('voucher_code') ?? $request->input('code', ''))));
+        $subtotal = (float) ($request->input('amount') ?? $request->input('subtotal', 0));
+        $serviceId = $request->filled('service_id') ? (int) $request->input('service_id') : null;
+
+        if (empty($code)) {
+            return response()->json(['valid' => false, 'message' => 'Silakan masukkan kode voucher.'], 422);
+        }
+
+        $voucher = \App\Models\Voucher::withoutGlobalScopes()
+            ->where('idtenant', $tenant->id)
+            ->where('code', $code)
+            ->first();
+
+        if (!$voucher) {
+            return response()->json(['valid' => false, 'message' => 'Kode voucher "' . $code . '" tidak ditemukan.'], 404);
+        }
+
+        if (!$voucher->is_active) {
+            return response()->json(['valid' => false, 'message' => 'Voucher ini sedang tidak aktif.'], 422);
+        }
+
+        $today = Carbon::today();
+        if ($voucher->start_date && $today->lessThan($voucher->start_date)) {
+            return response()->json(['valid' => false, 'message' => 'Voucher belum berlaku (mulai ' . $voucher->start_date->format('d M Y') . ').'], 422);
+        }
+        if ($voucher->end_date && $today->greaterThan($voucher->end_date)) {
+            return response()->json(['valid' => false, 'message' => 'Voucher sudah kedaluwarsa pada ' . $voucher->end_date->format('d M Y') . '.'], 422);
+        }
+
+        if ($voucher->usage_limit !== null && $voucher->used_count >= $voucher->usage_limit) {
+            return response()->json(['valid' => false, 'message' => 'Kuota penggunaan voucher ini sudah habis.'], 422);
+        }
+
+        if ($voucher->min_spending > 0 && $subtotal < $voucher->min_spending) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'Minimal order untuk voucher ini adalah Rp ' . number_format($voucher->min_spending, 0, ',', '.') . '.',
+            ], 422);
+        }
+
+        if ($serviceId && !empty($voucher->applicable_services) && $voucher->applicable_services !== 'all') {
+            $allowedServices = array_map('intval', explode(',', $voucher->applicable_services));
+            if (!in_array($serviceId, $allowedServices)) {
+                return response()->json(['valid' => false, 'message' => 'Voucher ini tidak berlaku untuk paket layanan yang Anda pilih.'], 422);
+            }
+        }
+
+        $discount = $voucher->calculateDiscount($subtotal);
+        if ($discount <= 0) {
+            return response()->json(['valid' => false, 'message' => 'Voucher tidak memberikan potongan untuk pesanan ini.'], 422);
+        }
+
+        return response()->json([
+            'valid'              => true,
+            'code'               => $voucher->code,
+            'discount_type'      => $voucher->discount_type,
+            'discount_value'     => (float) $voucher->discount_value,
+            'discount_amount'    => $discount,
+            'formatted_discount' => 'Rp ' . number_format($discount, 0, ',', '.'),
+            'new_total'          => max(0, $subtotal - $discount),
+            'formatted_new_total'=> 'Rp ' . number_format(max(0, $subtotal - $discount), 0, ',', '.'),
+            'message'            => 'Voucher ' . $voucher->code . ' berhasil digunakan! Hemat ' . 'Rp ' . number_format($discount, 0, ',', '.') . '.',
+        ]);
     }
 
     public function showPayment(string $slug_usaha, Payment $payment)
@@ -880,6 +986,39 @@ class BookingController extends Controller
             'clientKey' => config('midtrans.client_key'),
             'snapUrl' => config('midtrans.snap_url'),
         ]);
+    }
+
+    public function cancelPayment(string $slug_usaha, Payment $payment)
+    {
+        $tenant = $this->resolveTenant($slug_usaha);
+        if (!$tenant || $payment->idtenant !== $tenant->id) {
+            abort(404);
+        }
+
+        if ($payment->status === 'pending') {
+            $booking = Booking::where('idpayment', $payment->id)->first();
+            $payment->update(['status' => 'gagal']);
+
+            if ($booking) {
+                $booking->update(['status' => 'cancelled']);
+                if ($booking->idlayanan && $booking->tanggalbooking) {
+                    $tanggal = $booking->tanggalbooking instanceof \Carbon\Carbon
+                        ? $booking->tanggalbooking->toDateString()
+                        : Carbon::parse($booking->tanggalbooking)->toDateString();
+
+                    $this->clearBookingAvailabilityCache(
+                        (int) $booking->idtenant,
+                        (int) $booking->idlayanan,
+                        $tanggal
+                    );
+                }
+            }
+        }
+
+        session()->forget('booking');
+
+        return redirect()->route('customer.booking.program', $slug_usaha)
+            ->with('info', 'Transaksi berhasil dibatalkan. Anda dapat memilih layanan atau jadwal baru.');
     }
 
     public function checkPaymentStatus(string $slug_usaha, Payment $payment, MidtransPaymentService $paymentService)
@@ -996,6 +1135,11 @@ class BookingController extends Controller
 
         $booking = Booking::with('layanan')->where('idpayment', $payment->id)->first();
         if (!$booking) abort(404);
+
+        if (!$booking->booking_code) {
+            $booking->assignManagementTokens();
+            $booking->refresh();
+        }
 
         return view('customer.booking.invoice', compact('tenant', 'payment', 'booking'));
     }

@@ -135,8 +135,12 @@ class Booking extends Model
      */
     public function getManageUrl(): string
     {
+        if (!$this->booking_code) {
+            return '#';
+        }
+
         return route('booking.manage', ['booking_code' => $this->booking_code])
-            . '?token=' . $this->cancellation_token;
+            . ($this->cancellation_token ? '?token=' . $this->cancellation_token : '');
     }
 
     /**

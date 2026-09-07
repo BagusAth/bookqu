@@ -20,6 +20,10 @@
     --bq-danger-light: #FEF2F2;
 }
 
+[x-cloak] {
+    display: none !important;
+}
+
 body.booking-page {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--bq-text-body);

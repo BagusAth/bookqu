@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Booking;
 use App\Models\Payment;
@@ -28,7 +30,7 @@ class OwnerSubscriptionController extends Controller
                 $tenant->setRelation('user', $user);
             }
 
-            return view('owner.owner-subscription', [
+            return view('owner.subscription', [
                 'tenant' => $tenant,
                 'langgananaktif' => null,
                 'semuapaket' => Plan::all(),
@@ -85,7 +87,7 @@ class OwnerSubscriptionController extends Controller
             ->limit(10)
             ->get();
 
-        return view('owner.owner-subscription', compact(
+        return view('owner.subscription', compact(
             'tenant',
             'langgananaktif',
             'semuapaket',
@@ -102,3 +104,4 @@ class OwnerSubscriptionController extends Controller
         ));
     }
 }
+

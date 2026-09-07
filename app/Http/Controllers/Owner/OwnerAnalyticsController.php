@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Booking;
 use App\Models\Payment;
@@ -36,7 +38,7 @@ class OwnerAnalyticsController extends Controller
                 $bookingperbulan[] = 0;
             }
 
-            return view('owner.owner-analytics', [
+            return view('owner.analytics', [
                 'tenant' => $tenant,
                 'revenueperbulan' => $revenueperbulan,
                 'bookingperbulan' => $bookingperbulan,
@@ -141,7 +143,7 @@ class OwnerAnalyticsController extends Controller
         $totalbayar = Booking::where('idtenant', $idtenant)->whereIn('status', ['paid', 'completed'])->count();
         $tingkatkonversi = $totalsemuabooking > 0 ? round(($totalbayar / $totalsemuabooking) * 100, 1) : 0;
 
-        return view('owner.owner-analytics', compact(
+        return view('owner.analytics', compact(
             'tenant',
             'revenueperbulan',
             'bookingperbulan',
@@ -209,3 +211,4 @@ class OwnerAnalyticsController extends Controller
         }, $filename, $headers);
     }
 }
+

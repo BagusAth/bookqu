@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\AdditionalItem;
 use App\Models\Service;
@@ -37,7 +39,7 @@ class OwnerAdditionalItemController extends Controller
             ->orderBy('namalayanan')
             ->get();
 
-        return view('owner.owner-additional-items', compact('tenant', 'items', 'services', 'search'));
+        return view('owner.additional-items', compact('tenant', 'items', 'services', 'search'));
     }
 
     public function store(Request $request)
@@ -138,3 +140,4 @@ class OwnerAdditionalItemController extends Controller
             ->with('sukses', 'Add-on "' . $item->name . '" berhasil ' . $statusText . '!');
     }
 }
+

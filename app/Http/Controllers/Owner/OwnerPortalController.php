@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
 use App\Traits\ResolvesOwnerTenant;
@@ -110,7 +112,7 @@ class OwnerPortalController extends Controller
             return $t->month === $currentDate->month && $t->year === $currentDate->year;
         })->groupBy(fn($s) => \Carbon\Carbon::parse($s->tanggal)->format('j'));
 
-        return view('owner.owner-calendar', compact(
+        return view('owner.calendar', compact(
             'tenant',
             'services',
             'bookings',
@@ -273,7 +275,7 @@ class OwnerPortalController extends Controller
             ];
         });
 
-        return view('owner.owner-schedule-report', compact(
+        return view('owner.schedule-report', compact(
             'tenant',
             'totalSlots',
             'bookedSlots',
@@ -372,131 +374,10 @@ class OwnerPortalController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    public function categories()
-    {
-        $tenant = $this->resolveTenant();
-        return view('owner.owner-categories', compact('tenant'));
-    }
-
-    public function staffResources()
-    {
-        $tenant = $this->resolveTenant();
-        return view('owner.owner-staff-resources', compact('tenant'));
-    }
-
-    public function additionalItems()
-    {
-        $tenant = $this->resolveTenant();
-        return view('owner.owner-additional-items', compact('tenant'));
-    }
-
-    public function vouchers()
-    {
-        $tenant = $this->resolveTenant();
-        return view('owner.owner-vouchers', compact('tenant'));
-    }
-
-    public function reviews()
-    {
-        $tenant = $this->resolveTenant();
-        return view('owner.owner-reviews', compact('tenant'));
-    }
-
-    public function customers(Request $request)
-    {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            return view('owner.owner-customers', [
-                'tenant' => null,
-                'customers' => collect(),
-                'totalCustomers' => 0,
-                'totalSpentAll' => 0,
-                'totalBookingsAll' => 0,
-            ]);
-        }
-
-        $bookings = \App\Models\Booking::where('idtenant', $tenant->id)
-            ->with(['layanan', 'payment'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $notesMap = \App\Models\CustomerNote::where('idtenant', $tenant->id)
-            ->pluck('notes', 'customer_identifier');
-
-        $grouped = $bookings->groupBy(function ($b) {
-            return strtolower(trim($b->email ?: ($b->nomorhp ?: ('guest-' . $b->id))));
-        });
-
-        $customers = $grouped->map(function ($userBookings, $identifier) use ($notesMap) {
-            $first = $userBookings->first();
-            $totalBookings = $userBookings->count();
-            $paidBookings = $userBookings->filter(fn($b) => in_array($b->status, ['paid', 'completed']));
-            $totalSpent = $paidBookings->sum(fn($b) => $b->layanan?->harga ?? 0);
-            $lastBooking = $userBookings->sortByDesc('tanggalbooking')->first();
-            $today = \Carbon\Carbon::today()->toDateString();
-            $upcomingBooking = $userBookings->filter(fn($b) => $b->tanggalbooking && $b->tanggalbooking->toDateString() >= $today && in_array($b->status, ['paid', 'pending']))->sortBy('tanggalbooking')->first();
-
-            return [
-                'identifier' => (string) $identifier,
-                'name' => $first->namapelanggan ?: 'Customer',
-                'email' => $first->email ?: '-',
-                'phone' => $first->nomorhp ?: '-',
-                'notes' => $notesMap[$identifier] ?? '',
-                'total_bookings' => $totalBookings,
-                'total_spent' => $totalSpent,
-                'formatted_spent' => 'Rp ' . number_format($totalSpent, 0, ',', '.'),
-                'last_booking' => $lastBooking?->tanggalbooking ? $lastBooking->tanggalbooking->format('d M Y') : '-',
-                'upcoming_booking' => $upcomingBooking ? ($upcomingBooking->tanggalbooking->format('d M Y') . ' ' . $upcomingBooking->jam) : '-',
-                'services_used' => $userBookings->map(fn($b) => $b->layanan?->namalayanan)->filter()->unique()->values()->toArray(),
-                'bookings' => $userBookings->map(fn($b) => [
-                    'id' => $b->id,
-                    'code' => $b->booking_code ?? ('BKQ-' . $b->id),
-                    'service' => $b->layanan?->namalayanan ?? 'Service',
-                    'price' => 'Rp ' . number_format($b->layanan?->harga ?? 0, 0, ',', '.'),
-                    'date' => $b->tanggalbooking ? $b->tanggalbooking->format('d M Y') : '-',
-                    'time' => $b->jam,
-                    'status' => $b->status,
-                    'notes' => $b->catatan ?: '-',
-                ])->values(),
-            ];
-        })->values();
-
-        $totalCustomers = $customers->count();
-        $totalSpentAll = $customers->sum('total_spent');
-        $totalBookingsAll = $bookings->count();
-
-        return view('owner.owner-customers', compact('tenant', 'customers', 'totalCustomers', 'totalSpentAll', 'totalBookingsAll'));
-    }
-
-    public function saveCustomerNote(Request $request)
-    {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
-
-        $validated = $request->validate([
-            'customer_identifier' => 'required|string|max:190',
-            'notes'               => 'nullable|string|max:2000',
-        ]);
-
-        \App\Models\CustomerNote::updateOrCreate(
-            [
-                'idtenant'            => $tenant->id,
-                'customer_identifier' => $validated['customer_identifier'],
-            ],
-            [
-                'notes' => $validated['notes'] ?? '',
-            ]
-        );
-
-        return redirect()->route('owner.customers')->with('sukses', 'Catatan customer berhasil disimpan.');
-    }
-
     public function appearance()
     {
         $tenant = $this->resolveTenant();
-        return view('owner.owner-appearance', compact('tenant'));
+        return view('owner.appearance', compact('tenant'));
     }
 
     public function updateAppearance(Request $request)
@@ -531,13 +412,13 @@ class OwnerPortalController extends Controller
         $tenant = $this->resolveTenant();
         $payouts = \App\Models\OwnerPayout::where('idtenant', $tenant?->id)->orderByDesc('created_at')->limit(10)->get();
         $transactions = \App\Models\Payment::where('idtenant', $tenant?->id)->with('booking.layanan')->orderByDesc('created_at')->limit(15)->get();
-        return view('owner.owner-payment-settings', compact('tenant', 'payouts', 'transactions'));
+        return view('owner.payment-settings', compact('tenant', 'payouts', 'transactions'));
     }
 
     public function assets()
     {
         $tenant = $this->resolveTenant();
-        return view('owner.owner-assets', compact('tenant'));
+        return view('owner.assets', compact('tenant'));
     }
 
     public function balance()
@@ -560,7 +441,7 @@ class OwnerPortalController extends Controller
             ->limit(10)
             ->get();
 
-        return view('owner.owner-balance', compact('tenant', 'availableBalance', 'pendingSettlement', 'totalEarnings', 'payouts'));
+        return view('owner.balance', compact('tenant', 'availableBalance', 'pendingSettlement', 'totalEarnings', 'payouts'));
     }
 
     public function integrations()
@@ -626,6 +507,7 @@ class OwnerPortalController extends Controller
             ],
         ];
 
-        return view('owner.owner-integrations', compact('tenant', 'integrations'));
+        return view('owner.integrations', compact('tenant', 'integrations'));
     }
 }
+

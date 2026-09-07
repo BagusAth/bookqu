@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
@@ -92,7 +94,7 @@ class OwnerScheduleController extends Controller
             ->limit(10)
             ->get();
 
-        return view('owner.owner-schedule', compact(
+        return view('owner.schedule', compact(
             'tenant',
             'daftarhari',
             'jadwalminggu',
@@ -321,3 +323,4 @@ class OwnerScheduleController extends Controller
         return redirect('/owner/schedule')->with('sukses', 'Tanggal blokir berhasil dihapus.');
     }
 }
+

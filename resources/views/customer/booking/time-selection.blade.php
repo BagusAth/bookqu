@@ -14,6 +14,9 @@
     data-selected-time="{{ $selectedTime ?? '' }}"
     data-simulate="{{ $simulate ? 'true' : 'false' }}"
     x-data="bookingTimeSelection()"
+    @pageshow.window="isSubmitting = false"
+    @pagehide.window="isSubmitting = false"
+    @popstate.window="isSubmitting = false"
 >
     <form
         id="booking-time-form"

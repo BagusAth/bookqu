@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Booking;
 use App\Models\CustomerNote;
@@ -152,7 +154,7 @@ class OwnerCustomerController extends Controller
 
         $totalBookingsAll = Booking::where('idtenant', $idtenant)->count();
 
-        return view('owner.owner-customers', compact(
+        return view('owner.customers', compact(
             'tenant',
             'customers',
             'totalCustomers',
@@ -332,3 +334,4 @@ class OwnerCustomerController extends Controller
         return response()->json(['success' => true, 'message' => 'Catatan berhasil disimpan.']);
     }
 }
+

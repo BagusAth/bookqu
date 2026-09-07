@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Review;
 use App\Traits\ResolvesOwnerTenant;
@@ -53,7 +55,7 @@ class OwnerReviewController extends Controller
             1 => $allTenantReviews->where('rating', 1)->count(),
         ];
 
-        return view('owner.owner-reviews', compact(
+        return view('owner.reviews', compact(
             'tenant',
             'reviews',
             'totalReviews',
@@ -103,3 +105,4 @@ class OwnerReviewController extends Controller
             ->with('sukses', 'Ulasan berhasil ' . $statusText . '.');
     }
 }
+

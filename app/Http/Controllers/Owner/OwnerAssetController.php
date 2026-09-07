@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\Asset;
 use App\Traits\ResolvesOwnerTenant;
@@ -31,7 +33,7 @@ class OwnerAssetController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('owner.owner-assets', compact('tenant', 'assets', 'filter', 'search'));
+        return view('owner.assets', compact('tenant', 'assets', 'filter', 'search'));
     }
 
     public function store(Request $request)
@@ -88,3 +90,4 @@ class OwnerAssetController extends Controller
             ->with('sukses', 'Aset "' . $title . '" berhasil dihapus!');
     }
 }
+

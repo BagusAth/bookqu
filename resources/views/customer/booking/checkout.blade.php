@@ -237,6 +237,73 @@
                         placeholder="Tuliskan catatan khusus atau permintaan tambahan untuk penyedia layanan jika ada..."
                     >{{ old('catatan') }}</textarea>
                 </div>
+
+                {{-- Remember Me / Auto-fill Checkbox --}}
+                <div class="pt-1 border-t border-[#F1F5F9]">
+                    <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            id="remember-customer-data"
+                            class="h-4 w-4 rounded border-gray-300 text-[#4F46E5] focus:ring-[#EEF2FF] cursor-pointer"
+                        />
+                        <span class="text-xs font-semibold text-[#475569]">
+                            Ingat data saya di browser ini untuk kemudahan pemesanan berikutnya
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            {{-- Voucher / Promo Code Box --}}
+            <div class="mt-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-7 shadow-xs">
+                <div class="border-b border-[#F1F5F9] pb-3 mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-[#4F46E5]">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-bold text-[#0F172A]">Voucher / Kupon Promo</h2>
+                            <p class="text-xs text-[#64748B]">Gunakan kode kupon untuk mendapatkan potongan harga</p>
+                        </div>
+                    </div>
+                    <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">Opsional</span>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <input
+                                type="text"
+                                id="voucher_code_input"
+                                class="w-full uppercase tracking-wider font-mono rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] px-4 py-2.5 text-sm text-[#0F172A] font-bold placeholder:font-sans placeholder:font-normal placeholder:tracking-normal transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
+                                placeholder="Contoh: BRAMA15 atau HAPPYHOUR"
+                                value="{{ old('voucher_code') }}"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            id="btn-apply-voucher"
+                            class="inline-flex items-center justify-center rounded-xl bg-[#0F172A] hover:bg-[#1E293B] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition active:scale-98 cursor-pointer disabled:opacity-50"
+                        >
+                            <span id="btn-apply-text">Terapkan</span>
+                        </button>
+                    </div>
+
+                    {{-- Hidden form input for submission --}}
+                    <input type="hidden" name="voucher_code" id="applied_voucher_code" value="{{ old('voucher_code') }}" />
+
+                    {{-- Voucher Message Box --}}
+                    <div id="voucher-status-box" class="hidden rounded-xl p-3 text-xs flex items-center justify-between gap-2 transition-all">
+                        <div class="flex items-center gap-2">
+                            <span id="voucher-icon"></span>
+                            <span id="voucher-message" class="font-medium"></span>
+                        </div>
+                        <button type="button" id="btn-remove-voucher" class="hidden text-xs font-bold text-red-600 hover:text-red-700 underline cursor-pointer">
+                            Hapus Kupon
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {{-- Policy --}}
@@ -304,6 +371,10 @@
                         <span>Item Tambahan (<span id="summary-addons-count">0</span>)</span>
                         <span id="summary-addons-total" class="font-medium text-[#4F46E5]">+ Rp 0</span>
                     </div>
+                    <div id="summary-discount-row" class="hidden items-center justify-between text-xs text-emerald-600 mb-2 font-semibold">
+                        <span>Diskon Kupon (<span id="summary-voucher-code"></span>)</span>
+                        <span id="summary-discount-total">- Rp 0</span>
+                    </div>
                     <div class="border-t border-[#E2E8F0] pt-2 mt-2 flex items-center justify-between">
                         <span class="text-sm font-bold text-[#0F172A]">Total Bayar</span>
                         <span id="desktop-total-display" class="text-xl font-extrabold text-[#4F46E5]">
@@ -349,9 +420,14 @@
             <div class="flex items-center justify-between gap-3">
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] text-[#64748B] truncate">{{ $service->namalayanan }}</p>
-                    <p id="mobile-total-display" class="text-base font-black text-[#4F46E5]">
-                        Rp {{ number_format($hargaAkhir, 0, ',', '.') }}
-                    </p>
+                    <div class="flex items-baseline gap-1.5">
+                        <p id="mobile-total-display" class="text-base font-black text-[#4F46E5]">
+                            Rp {{ number_format($hargaAkhir, 0, ',', '.') }}
+                        </p>
+                        <span id="mobile-discount-badge" class="hidden text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
+                            Diskon Aktif
+                        </span>
+                    </div>
                 </div>
                 <button
                     type="submit"
@@ -370,15 +446,88 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const basePrice = {{ (int) $hargaAkhir }};
+        const serviceId = {{ (int) $service->id }};
+        const validateVoucherUrl = '{{ route("customer.booking.validate-voucher", $tenant->slug) }}';
+        const csrfToken = '{{ csrf_token() }}';
+
+        // Elements
         const addonCheckboxes = document.querySelectorAll('.addon-checkbox');
         const desktopTotal = document.getElementById('desktop-total-display');
         const mobileTotal = document.getElementById('mobile-total-display');
+        const mobileDiscountBadge = document.getElementById('mobile-discount-badge');
         const addonsRow = document.getElementById('summary-addons-row');
         const addonsCount = document.getElementById('summary-addons-count');
         const addonsTotal = document.getElementById('summary-addons-total');
 
+        const voucherInput = document.getElementById('voucher_code_input');
+        const btnApplyVoucher = document.getElementById('btn-apply-voucher');
+        const btnApplyText = document.getElementById('btn-apply-text');
+        const appliedVoucherCodeInput = document.getElementById('applied_voucher_code');
+        const voucherStatusBox = document.getElementById('voucher-status-box');
+        const voucherIcon = document.getElementById('voucher-icon');
+        const voucherMessage = document.getElementById('voucher-message');
+        const btnRemoveVoucher = document.getElementById('btn-remove-voucher');
+
+        const summaryDiscountRow = document.getElementById('summary-discount-row');
+        const summaryVoucherCode = document.getElementById('summary-voucher-code');
+        const summaryDiscountTotal = document.getElementById('summary-discount-total');
+
+        // Customer Info fields & Remember Me
+        const inputName = document.getElementById('namapelanggan');
+        const inputEmail = document.getElementById('email');
+        const inputPhone = document.getElementById('nomorhp');
+        const chkRemember = document.getElementById('remember-customer-data');
+        const checkoutForm = document.getElementById('booking-checkout-form');
+
+        const STORAGE_KEY = 'bookqu_saved_customer';
+
+        // Auto-fill from localStorage if available
+        try {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                const parsed = JSON.parse(savedData);
+                if (parsed && typeof parsed === 'object') {
+                    if (inputName && !inputName.value && parsed.name) inputName.value = parsed.name;
+                    if (inputEmail && !inputEmail.value && parsed.email) inputEmail.value = parsed.email;
+                    if (inputPhone && !inputPhone.value && parsed.phone) inputPhone.value = parsed.phone;
+                    if (chkRemember) chkRemember.checked = true;
+                }
+            }
+        } catch (e) {
+            console.warn('LocalStorage not accessible:', e);
+        }
+
+        // Save or remove customer data upon submit
+        if (checkoutForm) {
+            checkoutForm.addEventListener('submit', function () {
+                if (chkRemember && chkRemember.checked) {
+                    const dataToSave = {
+                        name: inputName ? inputName.value.trim() : '',
+                        email: inputEmail ? inputEmail.value.trim() : '',
+                        phone: inputPhone ? inputPhone.value.trim() : ''
+                    };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+                } else {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+            });
+        }
+
+        let appliedDiscount = 0;
+        let appliedCode = appliedVoucherCodeInput ? appliedVoucherCodeInput.value.trim() : '';
+
         function formatRupiah(num) {
             return 'Rp ' + new Intl.NumberFormat('id-ID').format(num);
+        }
+
+        function getSubtotal() {
+            let addonSum = 0;
+            addonCheckboxes.forEach(cb => {
+                if (cb.checked) {
+                    addonSum += parseInt(cb.dataset.price || '0', 10);
+                }
+            });
+            return basePrice + addonSum;
         }
 
         function recalculate() {
@@ -391,7 +540,9 @@
                 }
             });
 
-            const grandTotal = basePrice + addonSum;
+            const subtotal = basePrice + addonSum;
+            const grandTotal = Math.max(0, subtotal - appliedDiscount);
+
             if (desktopTotal) desktopTotal.textContent = formatRupiah(grandTotal);
             if (mobileTotal) mobileTotal.textContent = formatRupiah(grandTotal);
 
@@ -406,13 +557,136 @@
                     addonsRow.classList.remove('flex');
                 }
             }
+
+            if (summaryDiscountRow) {
+                if (appliedDiscount > 0) {
+                    summaryDiscountRow.classList.remove('hidden');
+                    summaryDiscountRow.classList.add('flex');
+                    if (summaryVoucherCode) summaryVoucherCode.textContent = appliedCode;
+                    if (summaryDiscountTotal) summaryDiscountTotal.textContent = '- ' + formatRupiah(appliedDiscount);
+                    if (mobileDiscountBadge) mobileDiscountBadge.classList.remove('hidden');
+                } else {
+                    summaryDiscountRow.classList.add('hidden');
+                    summaryDiscountRow.classList.remove('flex');
+                    if (mobileDiscountBadge) mobileDiscountBadge.classList.add('hidden');
+                }
+            }
+        }
+
+        async function validateAndApplyVoucher(code, silent = false) {
+            const cleanCode = code.trim().toUpperCase();
+            if (!cleanCode) return;
+
+            const currentSubtotal = getSubtotal();
+
+            if (!silent) {
+                btnApplyVoucher.disabled = true;
+                btnApplyText.textContent = 'Mengecek...';
+            }
+
+            try {
+                const res = await fetch(validateVoucherUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        voucher_code: cleanCode,
+                        amount: currentSubtotal,
+                        service_id: serviceId
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.valid) {
+                    appliedDiscount = data.discount_amount;
+                    appliedCode = data.code;
+                    appliedVoucherCodeInput.value = data.code;
+                    voucherInput.value = data.code;
+
+                    // Show success status
+                    voucherStatusBox.className = 'rounded-xl p-3 text-xs flex items-center justify-between gap-2 border border-emerald-200 bg-emerald-50 text-emerald-800';
+                    voucherIcon.innerHTML = `<svg class="h-4 w-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+                    voucherMessage.textContent = `Kupon ${data.code} berhasil diterapkan! Hemat ${formatRupiah(data.discount_amount)}`;
+                    btnRemoveVoucher.classList.remove('hidden');
+                    voucherStatusBox.classList.remove('hidden');
+                } else {
+                    appliedDiscount = 0;
+                    appliedCode = '';
+                    appliedVoucherCodeInput.value = '';
+
+                    // Show error status
+                    voucherStatusBox.className = 'rounded-xl p-3 text-xs flex items-center justify-between gap-2 border border-red-200 bg-red-50 text-red-700';
+                    voucherIcon.innerHTML = `<svg class="h-4 w-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>`;
+                    voucherMessage.textContent = data.message || 'Kupon tidak dapat digunakan.';
+                    btnRemoveVoucher.classList.add('hidden');
+                    voucherStatusBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Voucher check error:', err);
+                if (!silent) {
+                    alert('Gagal memvalidasi kupon. Silakan coba lagi.');
+                }
+            } finally {
+                btnApplyVoucher.disabled = false;
+                btnApplyText.textContent = 'Terapkan';
+                recalculate();
+            }
+        }
+
+        function removeVoucher() {
+            appliedDiscount = 0;
+            appliedCode = '';
+            appliedVoucherCodeInput.value = '';
+            voucherInput.value = '';
+            voucherStatusBox.classList.add('hidden');
+            btnRemoveVoucher.classList.add('hidden');
+            recalculate();
+        }
+
+        if (btnApplyVoucher) {
+            btnApplyVoucher.addEventListener('click', function () {
+                const code = voucherInput.value;
+                if (!code.trim()) {
+                    voucherInput.focus();
+                    return;
+                }
+                validateAndApplyVoucher(code, false);
+            });
+        }
+
+        if (voucherInput) {
+            voucherInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btnApplyVoucher.click();
+                }
+            });
+        }
+
+        if (btnRemoveVoucher) {
+            btnRemoveVoucher.addEventListener('click', removeVoucher);
         }
 
         addonCheckboxes.forEach(cb => {
-            cb.addEventListener('change', recalculate);
+            cb.addEventListener('change', function () {
+                if (appliedCode) {
+                    validateAndApplyVoucher(appliedCode, true);
+                } else {
+                    recalculate();
+                }
+            });
         });
 
-        recalculate();
+        // If old voucher_code exists on page load (e.g. from validation error redirect)
+        if (appliedCode) {
+            validateAndApplyVoucher(appliedCode, true);
+        } else {
+            recalculate();
+        }
     });
 </script>
 @endsection
