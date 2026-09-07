@@ -2,6 +2,7 @@
 @props(['daftarlayanan' => collect()])
 
 <div
+    id="modal-add-bulk-slots"
     x-data="{
         buka: false,
         sedangkirim: false,
@@ -12,6 +13,7 @@
         namaProgram: '',
     }"
     @open-add-bulk-slots.window="buka = true"
+    @keydown.escape.window="buka = false"
     x-cloak
 >
     {{-- Overlay --}}

@@ -17,6 +17,7 @@
             this.modalOpen = true;
         }
     }"
+    @keydown.escape.window="modalOpen = false"
 >
     {{-- Header Section --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -661,6 +662,7 @@
 
     {{-- Detail Modal Drawer (All 10 required fields) --}}
     <div
+        id="calendar-detail-modal"
         x-show="modalOpen"
         x-cloak
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#231a3d]/50 backdrop-blur-xs"

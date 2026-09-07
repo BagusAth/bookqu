@@ -1,6 +1,7 @@
 {{-- Owner Portal Topbar Component --}}
 @php
-    $tenant = auth()->user()?->tenant;
+    $tenantContextId = app(\App\Support\TenantContext::class)->getTenantId();
+    $tenant = $tenantContextId ? \App\Models\Tenant::find($tenantContextId) : auth()->user()?->tenant;
     $currentPath = request()->path();
     $currentRoute = request()->route() ? request()->route()->getName() : '';
 

@@ -1,5 +1,6 @@
 {{-- View Booking Details Modal Component --}}
 <div
+    id="modal-view-booking"
     x-data="{
         buka: false,
         booking: null,
@@ -13,6 +14,7 @@
         booking = $event.detail.booking;
         buka = true;
     "
+    @keydown.escape.window="buka = false"
     x-cloak
 >
     {{-- Overlay --}}
@@ -68,6 +70,14 @@
                     </div>
                 </div>
 
+                <div class="rounded-xl border border-bq-border bg-bq-background/50 p-3.5" x-show="booking?.layanan">
+                    <p class="text-xs font-medium text-bq-text-muted">Program / Layanan</p>
+                    <div class="mt-1 flex items-center justify-between">
+                        <p class="text-sm font-bold text-bq-text" x-text="booking?.layanan?.namalayanan"></p>
+                        <span class="text-xs font-bold text-bq-primary" x-text="booking?.layanan?.harga ? 'Rp ' + Number(booking.layanan.harga).toLocaleString('id-ID') : ''"></span>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div class="rounded-lg border border-bq-border bg-bq-background/50 p-3">
                         <p class="text-xs font-medium text-bq-text-muted">Phone Number</p>
@@ -82,7 +92,7 @@
                 <div class="rounded-lg border border-bq-border bg-bq-background/50 p-3">
                     <p class="text-xs font-medium text-bq-text-muted">Schedule</p>
                     <p class="mt-1 text-sm font-semibold text-bq-text">
-                        <span x-text="formatDate(booking?.tanggalbooking)"></span> at <span x-text="booking?.jam"></span>
+                        <span x-text="formatDate(booking?.tanggalbooking)"></span> &bull; <span x-text="(booking?.jam || '').substring(0, 5) + ' WIB'"></span>
                     </p>
                 </div>
 

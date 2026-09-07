@@ -42,6 +42,13 @@ class OwnerDashboardController extends Controller
                 $datarevenueperbulan[] = 0;
             }
 
+            $labelminggu = [];
+            $datarevenueperminggu = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $labelminggu[] = Carbon::today()->subDays($i)->format('d M');
+                $datarevenueperminggu[] = 0;
+            }
+
             return view('owner.dashboard', [
                 'tenant' => $tenant,
                 'totalbooking' => 0,
@@ -52,6 +59,8 @@ class OwnerDashboardController extends Controller
                 'totalpelanggan' => 0,
                 'datarevenueperbulan' => $datarevenueperbulan,
                 'labelbulan' => $labelbulan,
+                'datarevenueperminggu' => $datarevenueperminggu,
+                'labelminggu' => $labelminggu,
                 'trendlayanan' => collect(),
                 'aktivitasterbaru' => collect(),
                 'upcomingbookings' => collect(),
@@ -123,6 +132,22 @@ class OwnerDashboardController extends Controller
                 ->sum('jumlah');
 
             $datarevenueperbulan[] = round($revenuenya);
+        }
+
+        // ── Revenue Mingguan (7 hari terakhir) ──
+        $datarevenueperminggu = [];
+        $labelminggu = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $targetHari = Carbon::today()->subDays($i);
+            $labelminggu[] = $targetHari->translatedFormat('D, d M');
+
+            $revHari = Payment::where('idtenant', $idtenant)
+                ->where('tipe', 'booking')
+                ->where('status', 'sukses')
+                ->whereDate('created_at', $targetHari)
+                ->sum('jumlah');
+
+            $datarevenueperminggu[] = round($revHari);
         }
 
         // ── Daily Trends (layanan terpopuler hari ini vs kemarin) ──
@@ -200,6 +225,8 @@ class OwnerDashboardController extends Controller
             'totalpelanggan',
             'datarevenueperbulan',
             'labelbulan',
+            'datarevenueperminggu',
+            'labelminggu',
             'trendlayanan',
             'aktivitasterbaru',
             'upcomingbookings',

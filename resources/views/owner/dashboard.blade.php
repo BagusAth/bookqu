@@ -13,18 +13,21 @@
             </h1>
             <p class="mt-1 text-sm text-bq-text-muted">Here's what's happening with your business today.</p>
         </div>
-        <div class="flex items-center gap-3">
-            {{-- Notification Bell --}}
-            <button class="relative rounded-lg border border-bq-border bg-bq-surface p-2.5 text-bq-text-muted transition-all hover:border-bq-border-strong hover:text-bq-text hover:shadow-sm" id="btn-notifications">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        <div class="flex items-center gap-2.5">
+            {{-- Date Indicator Badge --}}
+            <div class="hidden sm:inline-flex items-center gap-2 rounded-xl border border-bq-border bg-bq-surface px-3.5 py-2 text-xs font-semibold text-bq-text shadow-2xs">
+                <svg class="h-4 w-4 text-[#4F46E5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-bq-primary text-[10px] font-bold text-white">3</span>
-            </button>
-            {{-- Avatar --}}
-            <div class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-bq-primary to-violet-500 text-sm font-bold text-white shadow-md shadow-bq-primary/20" id="user-avatar">
-                {{ strtoupper(substr($tenant->user->namalengkap ?? 'O', 0, 1)) }}{{ strtoupper(substr(explode(' ', $tenant->user->namalengkap ?? 'O')[1] ?? '', 0, 1)) }}
+                <span>{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
             </div>
+            {{-- Quick Calendar Link --}}
+            <a href="{{ route('owner.calendar') }}" class="inline-flex items-center gap-1.5 rounded-xl border border-[#4F46E5]/20 bg-[#4F46E5]/5 px-3.5 py-2 text-xs font-bold text-[#4F46E5] hover:bg-[#4F46E5]/10 transition-colors shadow-2xs" id="btn-quick-calendar">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>Kalender Reservasi</span>
+            </a>
         </div>
     </div>
 
@@ -121,22 +124,22 @@
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-bq-text">Revenue Growth</h2>
-                    <p class="text-sm text-bq-text-muted">Monthly earnings overview</p>
+                    <p class="text-sm text-bq-text-muted" id="revenue-chart-subtitle">Monthly earnings overview</p>
                 </div>
                 {{-- Period Toggle --}}
                 <div x-data="{ periodnya: 'monthly' }" class="flex rounded-lg border border-bq-border bg-bq-background p-0.5">
                     <button
-                        @click="periodnya = 'weekly'"
+                        @click="periodnya = 'weekly'; switchRevenuePeriod('weekly')"
                         :class="periodnya === 'weekly' ? 'bg-bq-surface text-bq-text shadow-sm' : 'text-bq-text-muted hover:text-bq-text'"
-                        class="rounded-md px-3.5 py-1.5 text-xs font-medium transition-all duration-200"
+                        class="rounded-md px-3.5 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer"
                         id="btn-period-weekly"
                     >
                         Weekly
                     </button>
                     <button
-                        @click="periodnya = 'monthly'"
+                        @click="periodnya = 'monthly'; switchRevenuePeriod('monthly')"
                         :class="periodnya === 'monthly' ? 'bg-bq-primary text-white shadow-sm' : 'text-bq-text-muted hover:text-bq-text'"
-                        class="rounded-md px-3.5 py-1.5 text-xs font-medium transition-all duration-200"
+                        class="rounded-md px-3.5 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer"
                         id="btn-period-monthly"
                     >
                         Monthly
@@ -308,20 +311,46 @@
 
 {{-- ── Revenue Chart Script ── --}}
 <script>
+    window.revenueChartData = {
+        monthly: {
+            labels: @json($labelbulan),
+            data: @json($datarevenueperbulan),
+            subtitle: 'Monthly earnings overview'
+        },
+        weekly: {
+            labels: @json($labelminggu),
+            data: @json($datarevenueperminggu),
+            subtitle: 'Last 7 days daily earnings'
+        }
+    };
+
+    window.switchRevenuePeriod = function(period) {
+        if (!window.revenueChartInstance) return;
+        const cfg = window.revenueChartData[period] || window.revenueChartData.monthly;
+        window.revenueChartInstance.data.labels = cfg.labels;
+        window.revenueChartInstance.data.datasets[0].data = cfg.data;
+        window.revenueChartInstance.update();
+
+        const subtitleEl = document.getElementById('revenue-chart-subtitle');
+        if (subtitleEl) subtitleEl.textContent = cfg.subtitle;
+    };
+
     document.addEventListener('DOMContentLoaded', function () {
-        const ctx = document.getElementById('revenue-chart').getContext('2d');
+        const canvas = document.getElementById('revenue-chart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
 
         const gradient = ctx.createLinearGradient(0, 0, 0, 220);
         gradient.addColorStop(0, 'rgba(99, 102, 241, 0.15)');
         gradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
 
-        new Chart(ctx, {
+        window.revenueChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: @json($labelbulan),
+                labels: window.revenueChartData.monthly.labels,
                 datasets: [{
                     label: 'Revenue',
-                    data: @json($datarevenueperbulan),
+                    data: window.revenueChartData.monthly.data,
                     borderColor: 'rgb(99, 102, 241)',
                     backgroundColor: gradient,
                     borderWidth: 2.5,

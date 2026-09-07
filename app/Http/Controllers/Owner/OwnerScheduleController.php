@@ -45,7 +45,7 @@ class OwnerScheduleController extends Controller
         // Slot jadwal minggu ini
         $jadwalminggu = Schedule::where('idtenant', $idtenant)
             ->whereBetween('tanggal', [$awalminggu->format('Y-m-d'), $akhirminggu->format('Y-m-d')])
-            ->with(['layanan', 'bookings'])
+            ->with(['layanan', 'bookings.layanan'])
             ->orderBy('tanggal')
             ->orderBy('jam_mulai')
             ->get()

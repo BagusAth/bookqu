@@ -64,7 +64,7 @@
             </div>
             <p class="mt-1 text-xs text-bq-text-muted">
                 @if ($bookingberikutnya)
-                    Next booking {{ $bookingberikutnya->tanggalbooking->format('d M') }} at {{ $bookingberikutnya->jam }}
+                    Next booking {{ $bookingberikutnya->tanggalbooking->format('d M') }} at {{ substr($bookingberikutnya->jam, 0, 5) }} WIB
                 @else
                     No upcoming bookings
                 @endif
@@ -146,7 +146,7 @@
                                     {{ $adabooking ? 'Booked: ' . ($bookingnya->namapelanggan ?? '') : 'Available' }}
                                 </p>
                                 <div class="mt-0.5 flex items-center justify-between gap-2 text-bq-text-subtle">
-                                    <span>{{ $slot->jam_mulai }} - {{ $slot->jam_selesai }}</span>
+                                    <span>{{ substr($slot->jam_mulai, 0, 5) }} - {{ substr($slot->jam_selesai, 0, 5) }}</span>
                                     @if (!$adabooking)
                                         <form method="POST" action="/owner/schedule/slots/{{ $slot->id }}" class="opacity-0 transition-all group-hover:opacity-100" id="form-delete-slot-{{ $slot->id }}">
                                             @csrf

@@ -2,8 +2,10 @@
 @props(['blockedDates' => collect(), 'tenant' => null])
 
 <div
+    id="modal-configure-availability"
     x-data="{ buka: false, sedangkirim: false }"
     @open-configure-availability.window="buka = true"
+    @keydown.escape.window="buka = false"
     x-cloak
 >
     <div

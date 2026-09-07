@@ -2,8 +2,10 @@
 @props(['daftarlayanan' => collect()])
 
 <div
+    id="modal-default-pricing"
     x-data="{ buka: false, sedangkirim: false }"
     @open-default-pricing.window="buka = true"
+    @keydown.escape.window="buka = false"
     x-cloak
 >
     <div
