@@ -7,6 +7,11 @@
         handleFile(e) {
             const file = e.target.files[0];
             if (!file) return;
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Ukuran gambar maksimal adalah 10MB.');
+                this.reset();
+                return;
+            }
             const reader = new FileReader();
             reader.onload = ev => this.preview = ev.target.result;
             reader.readAsDataURL(file);
@@ -58,26 +63,34 @@
             </div>
 
             {{-- Form --}}
-            <form method="POST" action="/owner/programs" enctype="multipart/form-data" @submit="sedangkirim = true" id="form-add-program">
+            <form method="POST" action="{{ request()->is('*services*') ? '/owner/services' : '/owner/programs' }}" enctype="multipart/form-data" @submit="sedangkirim = true" id="form-add-program">
                 @csrf
                 <div class="space-y-4 px-6 py-5 max-h-[72vh] overflow-y-auto">
 
                     {{-- Cover Image Upload --}}
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-bq-text">Cover Image <span class="text-bq-text-subtle text-xs font-normal">(optional, max 2MB)</span></label>
+                        <label class="mb-1.5 block text-sm font-medium text-bq-text">Cover Image <span class="text-bq-text-subtle text-xs font-normal">(opsional, max 10MB)</span></label>
                         <div
                             class="relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-bq-border bg-bq-background transition-all hover:border-bq-primary/50 hover:bg-indigo-50/30 cursor-pointer overflow-hidden"
                             :class="preview ? 'p-0 border-solid border-bq-primary/40' : 'p-6'"
                             @click="$refs.fileInput.click()"
                         >
-                            {{-- Preview --}}
+                            {{-- Preview with Smart Ambient Backdrop --}}
                             <template x-if="preview">
-                                <div class="relative w-full h-36">
-                                    <img :src="preview" class="h-full w-full object-cover rounded-xl" alt="Cover preview">
+                                <div class="relative w-full aspect-square max-h-60 mx-auto rounded-xl overflow-hidden bg-gradient-to-br from-[#f8f6ff] to-[#ede8fc] flex items-center justify-center">
+                                    {{-- Ambient Blurred Layer --}}
+                                    <div class="absolute inset-0 overflow-hidden select-none pointer-events-none" aria-hidden="true">
+                                        <img :src="preview" alt="" class="h-full w-full object-cover blur-2xl scale-125 opacity-35 filter brightness-105">
+                                        <div class="absolute inset-0 bg-white/20 backdrop-blur-xs"></div>
+                                    </div>
+                                    {{-- Foreground Sharp Image --}}
+                                    <div class="relative z-10 h-full w-full flex items-center justify-center p-2.5">
+                                        <img :src="preview" class="max-h-full max-w-full object-contain rounded-xl shadow-xs" alt="Cover preview">
+                                    </div>
                                     <button
                                         type="button"
                                         @click.stop="reset()"
-                                        class="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
+                                        class="absolute top-2 right-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70 cursor-pointer shadow-sm"
                                         title="Remove image"
                                     >
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -96,8 +109,8 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <p class="text-sm font-medium text-bq-text">Click to upload cover image</p>
-                                        <p class="text-xs text-bq-text-subtle mt-0.5">JPG, PNG, WEBP up to 2MB</p>
+                                        <p class="text-sm font-medium text-bq-text">Upload Foto Layanan (Format Persegi)</p>
+                                        <p class="text-xs text-bq-text-subtle mt-0.5">JPG, PNG, WEBP hingga 10MB</p>
                                     </div>
                                 </div>
                             </template>
@@ -105,7 +118,7 @@
                             <input
                                 type="file"
                                 name="cover_image"
-                                accept="image/jpeg,image/png,image/webp"
+                                accept="image/jpeg,image/png,image/webp,image/svg+xml,image/gif"
                                 x-ref="fileInput"
                                 class="hidden"
                                 id="input-cover-image"

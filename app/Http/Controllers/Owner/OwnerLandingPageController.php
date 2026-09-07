@@ -64,11 +64,14 @@ class OwnerLandingPageController extends Controller
 
         $validated = $request->validate([
             'custom_domain' => 'nullable|string|max:255|unique:tenants,custom_domain,' . $tenant->id,
-            'theme_color' => 'nullable|string|max:50',
-            'banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'theme_color'   => 'nullable|string|max:50',
+            'banner'        => 'nullable|image|mimes:jpeg,png,jpg,webp,gif,svg|max:10240',
         ]);
 
         if ($request->hasFile('banner')) {
+            if ($tenant->banner_path && !str_starts_with($tenant->banner_path, 'http') && \Illuminate\Support\Facades\Storage::disk('public')->exists($tenant->banner_path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($tenant->banner_path);
+            }
             $bannerPath = $request->file('banner')->store('banners', 'public');
             $tenant->banner_path = $bannerPath;
         }

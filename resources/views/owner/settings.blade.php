@@ -69,12 +69,29 @@
                     <label class="mb-1.5 block text-sm font-medium text-bq-text">Phone Number</label>
                     <input type="text" name="nomorhp" value="{{ $tenant->nomorhp }}" class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-nomorhp">
                 </div>
-                <div>
-                    <label class="mb-1.5 block text-sm font-medium text-bq-text">Logo</label>
-                    <input type="file" name="logo" accept="image/*" class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text" id="input-logo">
-                    @if ($tenant->logo_path)
-                        <img src="{{ asset('storage/' . $tenant->logo_path) }}" alt="Logo" class="mt-2 h-12 w-12 rounded-lg object-cover">
-                    @endif
+                <div x-data="{ logoPreview: '{{ $tenant->logo_url ?? '' }}' }">
+                    <label class="mb-1.5 block text-sm font-medium text-bq-text">Business Logo <span class="text-xs font-normal text-bq-text-muted">(Max 10MB)</span></label>
+                    <input
+                        type="file"
+                        name="logo"
+                        accept="image/jpeg,image/png,image/webp,image/svg+xml,image/gif"
+                        class="w-full rounded-xl border border-bq-border bg-bq-surface px-3.5 py-2 text-xs text-bq-text file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                        id="input-logo"
+                        @change="
+                            const f = $event.target.files[0];
+                            if (f) {
+                                const r = new FileReader();
+                                r.onload = ev => logoPreview = ev.target.result;
+                                r.readAsDataURL(f);
+                            }
+                        "
+                    >
+                    <template x-if="logoPreview">
+                        <div class="mt-2.5 flex items-center gap-3">
+                            <img :src="logoPreview" alt="Logo preview" class="h-14 w-14 rounded-xl object-cover border border-[#e7e2f7] shadow-xs bg-[#f8f6ff]">
+                            <span class="text-[11px] text-bq-text-muted">Logo saat ini / terpilih</span>
+                        </div>
+                    </template>
                 </div>
             </div>
             <div class="flex justify-end border-t border-bq-border pt-5">

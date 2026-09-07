@@ -251,6 +251,32 @@
                     </div>
                 </div>
 
+                {{-- Banner Upload --}}
+                <div x-data="{ bannerPreview: '{{ $tenant->banner_url ?? '' }}' }" class="pt-1">
+                    <label class="text-xs font-semibold text-bq-text">Hero Banner Cover Image <span class="text-[11px] text-bq-text-muted font-normal">(Opsional, max 10MB)</span></label>
+                    <p class="text-[11px] text-bq-text-muted mb-1.5">Gambar utama yang tampil di bagian atas landing page bisnis Anda.</p>
+                    <input
+                        type="file"
+                        name="banner"
+                        accept="image/jpeg,image/png,image/webp,image/svg+xml,image/gif"
+                        class="w-full rounded-xl border border-bq-border bg-bq-surface px-3.5 py-2 text-xs text-bq-text file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                        @change="
+                            const f = $event.target.files[0];
+                            if (f) {
+                                const r = new FileReader();
+                                r.onload = ev => bannerPreview = ev.target.result;
+                                r.readAsDataURL(f);
+                            }
+                        "
+                    >
+                    <template x-if="bannerPreview">
+                        <div class="mt-2.5 rounded-xl border border-[#e7e2f7] overflow-hidden bg-slate-900 h-28 relative">
+                            <img :src="bannerPreview" alt="Banner preview" class="w-full h-full object-cover">
+                            <span class="absolute bottom-2 left-2 rounded-lg bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white">Preview Banner</span>
+                        </div>
+                    </template>
+                </div>
+
                 <div class="flex justify-end pt-2 border-t border-bq-border">
                     <button type="submit" class="rounded-xl bg-bq-primary px-6 py-2.5 text-xs font-semibold text-white hover:bg-bq-primary-hover transition">
                         Simpan Pengaturan Landing Page

@@ -44,7 +44,7 @@ class OwnerAssetController extends Controller
         }
 
         $validated = $request->validate([
-            'file'     => 'required|file|image|mimes:jpg,jpeg,png,webp,svg|max:5120',
+            'file'     => 'required|file|image|mimes:jpg,jpeg,png,webp,svg,gif|max:10240',
             'title'    => 'nullable|string|max:150',
             'category' => 'nullable|string|in:logo,cover,service,gallery,other',
         ]);

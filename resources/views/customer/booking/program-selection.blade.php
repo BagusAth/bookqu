@@ -132,15 +132,23 @@
                             </svg>
                         </div>
 
-                        {{-- Service Image Media --}}
-                        <div class="booking-card__media aspect-[16/9] w-full overflow-hidden bg-[#EEF2FF] relative">
+                        {{-- Service Image Media with Smart Ambient Backdrop --}}
+                        <div class="booking-card__media aspect-square w-full overflow-hidden bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF] relative flex items-center justify-center">
                             @if ($imageUrl)
-                                <img
-                                    src="{{ $imageUrl }}"
-                                    alt="{{ $service->namalayanan }}"
-                                    class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                                    loading="lazy"
-                                />
+                                {{-- Ambient Blurred Layer --}}
+                                <div class="absolute inset-0 overflow-hidden select-none pointer-events-none" aria-hidden="true">
+                                    <img src="{{ $imageUrl }}" alt="" class="h-full w-full object-cover blur-2xl scale-125 opacity-35 filter brightness-105">
+                                    <div class="absolute inset-0 bg-white/15 backdrop-blur-xs"></div>
+                                </div>
+                                {{-- Sharp Foreground Image --}}
+                                <div class="relative z-10 h-full w-full flex items-center justify-center p-3">
+                                    <img
+                                        src="{{ $imageUrl }}"
+                                        alt="{{ $service->namalayanan }}"
+                                        class="max-h-full max-w-full rounded-xl object-contain shadow-xs transition duration-300 group-hover:scale-[1.02]"
+                                        loading="lazy"
+                                    />
+                                </div>
                             @else
                                 <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#EEF2FF] via-white to-[#E0E7FF]">
                                     <svg class="h-10 w-10 text-[#818CF8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -150,7 +158,7 @@
                             @endif
 
                             @if ($service->is_popular)
-                                <span class="absolute left-3 top-3 rounded-full bg-[#4F46E5] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                <span class="absolute left-3 top-3 z-20 rounded-full bg-[#4F46E5] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
                                     Favorit
                                 </span>
                             @endif
@@ -258,8 +266,8 @@
 </div>
 
 {{-- Data Contract: Render both IDs to guarantee 100% compatibility --}}
-<script type="application/json" id="booking-services-data">@json($servicesPayload)</script>
-<script type="application/json" id="booking-service-data">@json($servicesPayload)</script>
+<script type="application/json" id="booking-services-data">@json($servicesPayload ?? [])</script>
+<script type="application/json" id="booking-service-data">@json($servicesPayload ?? [])</script>
 @endsection
 
 @section('scripts')

@@ -135,58 +135,78 @@ class OwnerSettingController extends Controller
         $tenant = $this->resolveTenant();
 
         $data = $request->validate([
-            'namabisnis' => 'required|string|max:150',
+            'namabisnis'  => 'required|string|max:150',
             'jenisbisnis' => 'required|string|max:150',
-            'nomorhp' => 'required|string|max:20',
-            'alamat' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string|max:1000',
-            'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'nomorhp'     => 'required|string|max:20',
+            'alamat'      => 'required|string|max:255',
+            'deskripsi'   => 'nullable|string|max:1000',
+            'logo'        => 'nullable|image|mimes:jpg,jpeg,png,webp,svg,gif|max:10240',
         ]);
 
         $namabisnis = trim($data['namabisnis']);
-        $slug = Str::slug($namabisnis);
+        
+        // Preserve existing slug if business name is unchanged
+        if ($tenant && $tenant->namabisnis === $namabisnis && !empty($tenant->slug)) {
+            $slug = $tenant->slug;
+        } else {
+            $slug = Str::slug($namabisnis);
 
-        if ($slug === '') {
-            return back()
-                ->withErrors(['namabisnis' => 'Nama bisnis tidak valid untuk dijadikan URL.'])
-                ->withInput();
-        }
+            if ($slug === '') {
+                return back()
+                    ->withErrors(['namabisnis' => 'Nama bisnis tidak valid untuk dijadikan URL.'])
+                    ->withInput();
+            }
 
-        $reserved = ['owner', 'admin', 'login', 'register'];
-        if (in_array($slug, $reserved, true)) {
-            return back()
-                ->withErrors(['namabisnis' => 'Nama bisnis ini tidak bisa dipakai sebagai URL.'])
-                ->withInput();
-        }
+            $reserved = ['owner', 'admin', 'login', 'register'];
+            if (in_array($slug, $reserved, true)) {
+                return back()
+                    ->withErrors(['namabisnis' => 'Nama bisnis ini tidak bisa dipakai sebagai URL.'])
+                    ->withInput();
+            }
 
-        $slugQuery = Tenant::where('slug', $slug);
-        if ($tenant) {
-            $slugQuery->where('id', '!=', $tenant->id);
-        }
+            $slugQuery = Tenant::where('slug', $slug);
+            if ($tenant) {
+                $slugQuery->where('id', '!=', $tenant->id);
+            }
 
-        if ($slugQuery->exists()) {
-            return back()
-                ->withErrors(['namabisnis' => 'Slug sudah dipakai. Coba variasi nama bisnis lain.'])
-                ->withInput();
+            if ($slugQuery->exists()) {
+                return back()
+                    ->withErrors(['namabisnis' => 'Slug sudah dipakai. Coba variasi nama bisnis lain.'])
+                    ->withInput();
+            }
         }
 
         $logoPath = $tenant?->logo_path;
         if ($request->hasFile('logo')) {
+            // Remove previous local logo if exists
+            if ($tenant && $tenant->logo_path && !str_starts_with($tenant->logo_path, 'http') && \Illuminate\Support\Facades\Storage::disk('public')->exists($tenant->logo_path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($tenant->logo_path);
+            }
             $logoPath = $request->file('logo')->store('logos', 'public');
         }
 
-        $tenant = Tenant::updateOrCreate(
-            ['iduser' => $user->id],
-            [
-                'namabisnis' => $namabisnis,
-                'slug' => $slug,
+        if ($tenant) {
+            $tenant->update([
+                'namabisnis'  => $namabisnis,
+                'slug'        => $slug,
                 'jenisbisnis' => $data['jenisbisnis'],
-                'alamat' => $data['alamat'],
-                'deskripsi' => $data['deskripsi'] ?? null,
-                'logo_path' => $logoPath,
-                'nomorhp' => $data['nomorhp'],
-            ]
-        );
+                'alamat'      => $data['alamat'],
+                'deskripsi'   => $data['deskripsi'] ?? null,
+                'logo_path'   => $logoPath,
+                'nomorhp'     => $data['nomorhp'],
+            ]);
+        } else {
+            $tenant = Tenant::create([
+                'iduser'      => $user->id,
+                'namabisnis'  => $namabisnis,
+                'slug'        => $slug,
+                'jenisbisnis' => $data['jenisbisnis'],
+                'alamat'      => $data['alamat'],
+                'deskripsi'   => $data['deskripsi'] ?? null,
+                'logo_path'   => $logoPath,
+                'nomorhp'     => $data['nomorhp'],
+            ]);
+        }
 
         session()->put('current_tenant_id', $tenant->id);
 

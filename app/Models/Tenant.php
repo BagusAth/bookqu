@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Tenant extends Model
 {
@@ -63,6 +64,11 @@ class Tenant extends Model
         return $this->hasMany(Subscription::class, 'idtenant');
     }
 
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class, 'idtenant')->latestOfMany();
+    }
+
     public function blockedDates(): HasMany
     {
         return $this->hasMany(OwnerBlockedDate::class, 'idtenant');
@@ -71,5 +77,27 @@ class Tenant extends Model
     public function payouts(): HasMany
     {
         return $this->hasMany(OwnerPayout::class, 'idtenant');
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        if (empty($this->logo_path)) {
+            return null;
+        }
+        if (str_starts_with($this->logo_path, 'http://') || str_starts_with($this->logo_path, 'https://') || str_starts_with($this->logo_path, '/')) {
+            return $this->logo_path;
+        }
+        return \Illuminate\Support\Facades\Storage::url($this->logo_path);
+    }
+
+    public function getBannerUrlAttribute(): ?string
+    {
+        if (empty($this->banner_path)) {
+            return null;
+        }
+        if (str_starts_with($this->banner_path, 'http://') || str_starts_with($this->banner_path, 'https://') || str_starts_with($this->banner_path, '/')) {
+            return $this->banner_path;
+        }
+        return \Illuminate\Support\Facades\Storage::url($this->banner_path);
     }
 }

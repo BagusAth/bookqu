@@ -57,15 +57,21 @@ class OwnerBookingController extends Controller
         $katakunci    = $request->input('katakunci', '');
 
         $daftarbooking = Booking::where('bookings.idtenant', $idtenant)
-            ->with(['layanan', 'payment'])
+            ->with(['layanan.staff', 'layanan.resources', 'payment'])
             ->when($filterstatus !== 'semua', function ($query) use ($filterstatus) {
-                $query->where('status', $filterstatus);
+                if ($filterstatus === 'today') {
+                    $query->whereDate('tanggalbooking', Carbon::today());
+                } else {
+                    $query->where('status', $filterstatus);
+                }
             })
             ->when($katakunci, function ($query) use ($katakunci) {
                 $query->where(function ($q) use ($katakunci) {
                     $q->where('namapelanggan', 'like', '%' . $katakunci . '%')
                       ->orWhere('email', 'like', '%' . $katakunci . '%')
-                      ->orWhere('nomorhp', 'like', '%' . $katakunci . '%');
+                      ->orWhere('nomorhp', 'like', '%' . $katakunci . '%')
+                      ->orWhere('booking_code', 'like', '%' . $katakunci . '%')
+                      ->orWhere('bookings.id', 'like', '%' . $katakunci . '%');
                 });
             })
             ->orderByDesc('bookings.created_at')
@@ -101,7 +107,7 @@ class OwnerBookingController extends Controller
      * FS-010: Update status booking oleh owner.
      * Transisi status yang diizinkan:
      *   paid    → completed | cancelled
-     *   pending → cancelled
+     *   pending → paid | completed | cancelled
      */
     public function updateStatus(Request $request, Booking $booking)
     {
@@ -113,7 +119,7 @@ class OwnerBookingController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => ['required', 'string', 'in:completed,cancelled'],
+            'status' => ['required', 'string', 'in:paid,completed,cancelled'],
         ]);
 
         $statusLama = $booking->status;
@@ -121,7 +127,7 @@ class OwnerBookingController extends Controller
 
         $transisi = [
             'paid'    => ['completed', 'cancelled'],
-            'pending' => ['cancelled'],
+            'pending' => ['paid', 'completed', 'cancelled'],
         ];
 
         if (!in_array($statusBaru, $transisi[$statusLama] ?? [])) {
@@ -131,6 +137,16 @@ class OwnerBookingController extends Controller
         }
 
         $booking->update(['status' => $statusBaru]);
+
+        // If marked as paid or completed, ensure management tokens exist and payment status is updated
+        if ($statusBaru === 'paid' || $statusBaru === 'completed') {
+            if (!$booking->booking_code) {
+                $booking->assignManagementTokens();
+            }
+            if ($booking->payment && $booking->payment->status !== 'sukses') {
+                $booking->payment->update(['status' => 'sukses']);
+            }
+        }
 
         // Invalidate availability cache when a cancellation or completion frees/affects a slot
         if (in_array($statusBaru, ['cancelled', 'completed']) && $booking->idlayanan && $booking->tanggalbooking) {
@@ -161,7 +177,8 @@ class OwnerBookingController extends Controller
         }
 
         $label = match ($statusBaru) {
-            'completed' => 'selesai',
+            'paid'       => 'lunas / dikonfirmasi',
+            'completed'  => 'selesai',
             'cancelled'  => 'dibatalkan',
             default      => $statusBaru,
         };

@@ -168,117 +168,138 @@
             <button
                 type="button"
                 @click="toggleDropdown()"
-                class="craft-btn relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#e7e2f7] bg-white text-[#6e6584] hover:border-[#b499ff] hover:bg-[#f7f7fa] hover:text-[#382186] transition-all shadow-2xs cursor-pointer active:scale-95"
+                class="craft-btn group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-[#e7e2f7] bg-white text-[#6e6584] hover:border-[#b499ff] hover:bg-[#f8f6ff] hover:text-[#382186] hover:shadow-[0_4px_16px_rgba(56,33,134,0.08)] transition-all cursor-pointer active:scale-95"
                 id="btn-owner-notifications"
                 aria-label="Lihat Notifikasi"
                 :aria-expanded="isOpen"
             >
-                <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                {{-- Modern Bell Icon with subtle hover motion --}}
+                <svg
+                    class="h-5 w-5 transition-transform duration-300 group-hover:scale-105"
+                    :class="unreadCount > 0 ? 'text-[#382186]' : 'text-[#6e6584] group-hover:text-[#382186]'"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="1.85"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M10.5 5.25a1.5 1.5 0 013 0"/>
                 </svg>
 
-                {{-- Unread Badge Counter --}}
+                {{-- Unread Glowing Badge Counter --}}
                 <span
                     x-show="unreadCount > 0"
                     x-transition:enter="transition ease-out duration-200"
                     x-transition:enter-start="opacity-0 scale-50"
                     x-transition:enter-end="opacity-100 scale-100"
                     x-cloak
-                    class="absolute -top-1 -right-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-extrabold text-white shadow-xs border-2 border-white"
-                    x-text="unreadCount > 99 ? '99+' : unreadCount"
-                ></span>
+                    class="absolute -top-1 -right-1 flex h-4.5 min-w-4.5 items-center justify-center"
+                >
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-60"></span>
+                    <span class="relative inline-flex items-center justify-center min-h-4.5 min-w-4.5 rounded-full bg-gradient-to-r from-rose-500 to-rose-600 px-1 text-[9px] font-black tracking-tight text-white shadow-xs border-2 border-white" x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
+                </span>
             </button>
 
             {{-- Dropdown Menu --}}
             <div
                 x-show="isOpen"
-                x-transition:enter="transition ease-out duration-150"
-                x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave="transition ease-in duration-120"
                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
+                x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
                 x-cloak
-                class="absolute right-0 mt-2 w-80 sm:w-96 origin-top-right rounded-2xl border border-[#e7e2f7] bg-white shadow-2xl z-50 overflow-hidden divide-y divide-[#e7e2f7]"
+                class="absolute right-0 mt-2.5 w-84 sm:w-[410px] origin-top-right rounded-3xl border border-[#e7e2f7] bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_-12px_rgba(35,26,61,0.18)] z-50 overflow-hidden divide-y divide-[#f2eefc]"
                 style="display: none;"
                 id="owner-notifications-dropdown"
             >
+                {{-- Decorative Top Accent Gradient --}}
+                <div class="h-1 w-full bg-gradient-to-r from-[#382186] via-[#7a5af8] to-[#b499ff]"></div>
+
                 {{-- Header --}}
-                <div class="flex items-center justify-between px-4 py-3 bg-[#fdfcff]">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-[#231a3d]">Notifikasi</span>
-                        <template x-if="unreadCount > 0">
-                            <span class="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 border border-rose-200" x-text="`${unreadCount} baru`"></span>
-                        </template>
+                <div class="flex items-center justify-between px-5 py-3.5 bg-[#fdfcff]/90">
+                    <div class="flex items-center gap-2.5">
+                        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f3effe] text-[#382186]">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-xs font-extrabold text-[#231a3d] block leading-none">Notifikasi Bisnis</span>
+                            <span class="text-[10px] text-[#6e6584] mt-0.5 block" x-text="unreadCount > 0 ? `${unreadCount} belum dibaca` : 'Semua sudah dibaca'"></span>
+                        </div>
                     </div>
 
                     <button
                         type="button"
                         x-show="unreadCount > 0"
                         @click="markAllAsRead()"
-                        class="text-[11px] font-semibold text-[#382186] hover:text-[#5233be] hover:underline transition cursor-pointer"
+                        class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold text-[#382186] hover:bg-[#f3effe] transition cursor-pointer"
                         id="btn-mark-all-read"
                     >
-                        Tandai semua dibaca
+                        <svg class="h-3.5 w-3.5 text-[#7a5af8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span>Tandai dibaca</span>
                     </button>
                 </div>
 
                 {{-- List of Notifications --}}
-                <div class="max-h-84 overflow-y-auto divide-y divide-[#f7f7fa]">
+                <div class="max-h-96 overflow-y-auto divide-y divide-[#f7f7fa]">
                     <template x-if="loading && notifications.length === 0">
-                        <div class="p-6 text-center text-xs text-[#6e6584]">
-                            <svg class="inline-block h-5 w-5 animate-spin text-[#382186] mb-1" fill="none" viewBox="0 0 24 24">
+                        <div class="p-8 text-center text-xs text-[#6e6584]">
+                            <svg class="inline-block h-6 w-6 animate-spin text-[#382186] mb-2" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                             </svg>
-                            <p>Memuat notifikasi...</p>
+                            <p class="font-medium">Memuat notifikasi...</p>
                         </div>
                     </template>
 
                     <template x-if="!loading && notifications.length === 0">
-                        <div class="p-8 text-center" id="empty-notifications-state">
-                            <div class="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-[#f3effe] text-[#382186]">
-                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        <div class="p-9 text-center" id="empty-notifications-state">
+                            <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f3effe] to-[#e7e2f7] text-[#382186] shadow-inner">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M10.5 5.25a1.5 1.5 0 013 0"/>
                                 </svg>
                             </div>
-                            <p class="text-xs font-bold text-[#231a3d]">Belum ada notifikasi baru</p>
-                            <p class="text-[11px] text-[#6e6584] mt-0.5">Booking masuk dan perubahan status akan muncul di sini.</p>
+                            <p class="text-xs font-extrabold text-[#231a3d]">Belum ada notifikasi baru</p>
+                            <p class="text-[11px] text-[#6e6584] mt-1 max-w-xs mx-auto leading-relaxed">Reservasi masuk dan perubahan status operasional akan muncul secara instan di sini.</p>
                         </div>
                     </template>
 
                     <template x-for="item in notifications" :key="item.id">
                         <div
                             @click="handleNotificationClick(item)"
-                            :class="item.is_read ? 'bg-white hover:bg-[#f7f7fa]' : 'bg-[#f8f6ff] hover:bg-[#f1edfe]'"
-                            class="group relative flex items-start gap-3 p-3.5 transition-colors cursor-pointer"
+                            :class="item.is_read ? 'bg-white hover:bg-[#faf9fe]' : 'bg-[#f7f5ff] hover:bg-[#efeafc] border-l-[3px] border-[#7a5af8]'"
+                            class="group relative flex items-start gap-3.5 p-4 transition-all cursor-pointer"
                         >
                             {{-- Event Icon Badge --}}
                             <div class="shrink-0 mt-0.5">
                                 <template x-if="item.event_type === 'new_booking'">
-                                    <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
-                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <div class="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 shadow-2xs">
+                                        <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                         </svg>
                                     </div>
                                 </template>
                                 <template x-if="item.event_type === 'cancelled'">
-                                    <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200">
-                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <div class="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200/80 shadow-2xs">
+                                        <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
                                     </div>
                                 </template>
                                 <template x-if="item.event_type === 'rescheduled'">
-                                    <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
-                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <div class="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 shadow-2xs">
+                                        <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
                                     </div>
                                 </template>
                                 <template x-if="item.event_type === 'completed' || (item.event_type !== 'new_booking' && item.event_type !== 'cancelled' && item.event_type !== 'rescheduled')">
-                                    <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#b499ff]/30">
-                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <div class="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#b499ff]/40 shadow-2xs">
+                                        <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
                                     </div>
@@ -286,31 +307,34 @@
                             </div>
 
                             {{-- Content --}}
-                            <div class="flex-1 min-w-0 pr-2">
-                                <div class="flex items-center justify-between gap-1 mb-0.5">
-                                    <p class="text-xs font-bold text-[#231a3d] truncate" x-text="item.title"></p>
-                                    <span class="text-[10px] text-[#6e6584] whitespace-nowrap shrink-0" x-text="item.created_at"></span>
+                            <div class="flex-1 min-w-0 pr-1">
+                                <div class="flex items-baseline justify-between gap-1 mb-1">
+                                    <p class="text-xs font-bold text-[#231a3d] truncate group-hover:text-[#382186] transition-colors" x-text="item.title"></p>
+                                    <span class="text-[10px] text-[#6e6584] whitespace-nowrap shrink-0 font-medium" x-text="item.created_at"></span>
                                 </div>
                                 <p class="text-[11px] text-[#6e6584] line-clamp-2 leading-relaxed" x-text="item.message"></p>
                             </div>
 
-                            {{-- Unread Dot --}}
-                            <div class="shrink-0 self-center" x-show="!item.is_read">
-                                <span class="block h-2 w-2 rounded-full bg-[#382186]"></span>
+                            {{-- Unread Dot Indicator --}}
+                            <div class="shrink-0 self-center pl-1" x-show="!item.is_read">
+                                <span class="relative flex h-2.5 w-2.5">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7a5af8] opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#382186]"></span>
+                                </span>
                             </div>
                         </div>
                     </template>
                 </div>
 
                 {{-- Footer --}}
-                <div class="p-2.5 bg-[#fdfcff] text-center">
+                <div class="p-3 bg-[#fdfcff]/90 text-center">
                     <a
                         href="{{ route('owner.notifications') }}"
-                        class="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-[#382186] hover:text-[#231a3d] transition py-1 px-3 rounded-xl hover:bg-[#f3effe]"
+                        class="group inline-flex items-center justify-center gap-1.5 text-xs font-extrabold text-[#382186] hover:text-[#231a3d] transition py-1.5 px-4 rounded-xl hover:bg-[#f3effe]"
                         id="link-view-all-notifications"
                     >
                         <span>Lihat Semua Notifikasi</span>
-                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg class="h-3.5 w-3.5 text-[#7a5af8] transition-transform duration-200 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                         </svg>
                     </a>

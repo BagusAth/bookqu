@@ -11,6 +11,20 @@
         'subjudul' => 'Manage your business services, pricing, and programs offered to customers.',
     ])
 
+    {{-- ── Flash Messages ── --}}
+    @if (session('sukses'))
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 flex items-center gap-2">
+            <svg class="h-5 w-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>{{ session('sukses') }}</span>
+        </div>
+    @endif
+    @if ($errors->has('error'))
+        <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 flex items-center gap-2">
+            <svg class="h-5 w-5 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span>{{ $errors->first('error') }}</span>
+        </div>
+    @endif
+
     {{-- ── Stats ── --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         @include('components.owner.stat-card', ['ikon' => 'program', 'label' => 'Total Programs', 'nilai' => $totallayanan, 'perubahan' => 0, 'tipeperubahan' => 'stabil'])
@@ -20,21 +34,49 @@
     </div>
 
     {{-- ── Search & Actions ── --}}
+    @php
+        $baseRoute = request()->is('*services*') ? '/owner/services' : '/owner/programs';
+    @endphp
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <form method="GET" action="/owner/programs" class="relative w-full sm:max-w-xs">
-            <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input
-                type="text"
-                name="katakunci"
-                value="{{ $katakunci }}"
-                placeholder="Search programs..."
-                class="w-full rounded-lg border border-bq-border bg-bq-surface py-2.5 pl-10 pr-4 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
-                id="input-search-programs"
-            >
-        </form>
-        <button @click="$dispatch('open-add-program')" class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0" id="btn-add-program">
+        <div class="flex flex-1 flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <form method="GET" action="{{ $baseRoute }}" class="relative w-full sm:max-w-xs">
+                @if(!empty($selectedCategory))
+                    <input type="hidden" name="category" value="{{ $selectedCategory }}">
+                @endif
+                <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input
+                    type="text"
+                    name="katakunci"
+                    value="{{ $katakunci }}"
+                    placeholder="Search programs..."
+                    class="w-full rounded-lg border border-bq-border bg-bq-surface py-2.5 pl-10 pr-4 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                    id="input-search-programs"
+                >
+            </form>
+            @if(isset($kategoriList) && $kategoriList->isNotEmpty())
+                <form method="GET" action="{{ $baseRoute }}" class="w-full sm:w-auto">
+                    @if(!empty($katakunci))
+                        <input type="hidden" name="katakunci" value="{{ $katakunci }}">
+                    @endif
+                    <select
+                        name="category"
+                        onchange="this.form.submit()"
+                        class="w-full sm:w-auto rounded-lg border border-bq-border bg-bq-surface py-2.5 px-3 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                        id="filter-category"
+                    >
+                        <option value="">Semua Kategori ({{ $totallayanan }})</option>
+                        @foreach($kategoriList as $kat)
+                            <option value="{{ $kat->id }}" {{ (string)$selectedCategory === (string)$kat->id ? 'selected' : '' }}>
+                                {{ $kat->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+            @endif
+        </div>
+        <button @click="$dispatch('open-add-program')" class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 shrink-0" id="btn-add-program">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
             </svg>
@@ -43,22 +85,33 @@
     </div>
 
     {{-- ── Program Cards Grid ── --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" id="programs-grid">
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" id="programs-grid">
         @forelse ($daftarlayanan as $layanan)
-            <div class="group rounded-xl border border-bq-border bg-bq-surface transition-all duration-300 hover:border-bq-border-strong hover:shadow-md overflow-hidden">
-                {{-- Cover Image / Placeholder --}}
-                <div class="relative h-36 bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center">
+            <div class="group rounded-2xl border border-bq-border bg-bq-surface transition-all duration-300 hover:border-[#b499ff] hover:shadow-md overflow-hidden flex flex-col justify-between">
+                {{-- Cover Image with Smart Ambient Backdrop --}}
+                <div class="relative aspect-square w-full bg-gradient-to-br from-[#f8f6ff] to-[#ede8fc] flex items-center justify-center overflow-hidden">
                     @if ($layanan->image_url)
                         @php
                             $cardImageUrl = \Illuminate\Support\Str::startsWith($layanan->image_url, ['http://', 'https://', '/'])
                                 ? $layanan->image_url
                                 : \Illuminate\Support\Facades\Storage::url($layanan->image_url);
                         @endphp
-                        <img src="{{ $cardImageUrl }}" alt="{{ $layanan->namalayanan }}" class="h-full w-full object-cover">
+                        {{-- Ambient Blurred Background Clone --}}
+                        <div class="absolute inset-0 overflow-hidden select-none pointer-events-none" aria-hidden="true">
+                            <img src="{{ $cardImageUrl }}" alt="" class="h-full w-full object-cover blur-2xl scale-125 opacity-35 filter brightness-105">
+                            <div class="absolute inset-0 bg-white/20 backdrop-blur-xs"></div>
+                        </div>
+                        {{-- Foreground Content: Uncropped, Sharp, Framed --}}
+                        <div class="relative z-10 h-full w-full flex items-center justify-center p-2.5">
+                            <img src="{{ $cardImageUrl }}" alt="{{ $layanan->namalayanan }}" class="max-h-full max-w-full rounded-xl object-contain shadow-xs transition-transform duration-300 group-hover:scale-[1.02]">
+                        </div>
                     @else
-                        <svg class="h-10 w-10 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
+                        <div class="flex flex-col items-center justify-center text-center p-4 text-[#b499ff]">
+                            <svg class="h-12 w-12 stroke-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span class="text-[11px] font-bold text-[#6e6584] mt-1 opacity-70">No Image</span>
+                        </div>
                     @endif
                     {{-- Action buttons overlay --}}
                     @php
@@ -91,7 +144,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                             </svg>
                         </button>
-                        <form method="POST" action="/owner/programs/{{ $layanan->id }}" id="form-delete-program-{{ $layanan->id }}">
+                        <form method="POST" action="{{ $baseRoute }}/{{ $layanan->id }}" id="form-delete-program-{{ $layanan->id }}">
                             @csrf
                             @method('DELETE')
                             <button
@@ -156,7 +209,7 @@
                                 </svg>
                                 {{ $layanan->bookings_count }} bookings
                             </span>
-                            <form method="POST" action="{{ route('owner.services.toggle', $layanan->id) }}">
+                            <form method="POST" action="{{ $baseRoute }}/{{ $layanan->id }}/toggle">
                                 @csrf
                                 @method('PATCH')
                                 <button type="submit" class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold transition {{ ($layanan->is_active ?? true) ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200' }}" title="Klik untuk ubah status">
@@ -182,7 +235,7 @@
     {{-- ── Pagination ── --}}
     @if ($daftarlayanan->hasPages())
         <div class="flex justify-center">
-            {{ $daftarlayanan->appends(['katakunci' => $katakunci])->links() }}
+            {{ $daftarlayanan->appends(['katakunci' => $katakunci, 'category' => $selectedCategory])->links() }}
         </div>
     @endif
 

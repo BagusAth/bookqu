@@ -85,7 +85,7 @@
             <div class="group rounded-2xl border border-bq-border bg-bq-surface overflow-hidden shadow-xs hover:border-bq-border-strong hover:shadow-md transition flex flex-col justify-between">
                 <div>
                     {{-- Image Thumbnail --}}
-                    <div class="relative h-40 bg-slate-100 overflow-hidden cursor-pointer" @click="openPreview(@json($assetPayload))">
+                    <div class="relative h-40 bg-slate-100 overflow-hidden cursor-pointer" @click='openPreview(@json($assetPayload))'>
                         <img src="{{ $asset->url }}" alt="{{ $asset->title }}" class="h-full w-full object-cover group-hover:scale-105 transition duration-300">
                         <span class="absolute top-2 left-2 rounded-lg bg-slate-900/70 backdrop-blur-xs px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
                             {{ $asset->category }}
@@ -108,7 +108,7 @@
                         {{ $asset->created_at ? $asset->created_at->diffForHumans() : '-' }}
                     </span>
                     <div class="flex items-center gap-1">
-                        <button type="button" @click="openPreview(@json($assetPayload))" class="rounded-lg p-1.5 text-bq-text-muted hover:bg-slate-100 hover:text-bq-text transition" title="Lihat">
+                        <button type="button" @click='openPreview(@json($assetPayload))' class="rounded-lg p-1.5 text-bq-text-muted hover:bg-slate-100 hover:text-bq-text transition" title="Lihat">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         </button>
                         <form method="POST" action="{{ route('owner.settings.assets.destroy', $asset->id) }}" id="form-delete-asset-{{ $asset->id }}">

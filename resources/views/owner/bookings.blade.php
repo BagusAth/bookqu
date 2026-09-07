@@ -37,7 +37,7 @@
         @php
             $statbooking = [
                 ['label' => 'All',       'nilai' => $totalbooking,      'warna' => 'bg-slate-100 text-slate-700',   'filter' => 'semua'],
-                ['label' => 'Today',     'nilai' => $bookinghariini,    'warna' => 'bg-blue-100 text-blue-700',     'filter' => null],
+                ['label' => 'Today',     'nilai' => $bookinghariini,    'warna' => 'bg-blue-100 text-blue-700',     'filter' => 'today'],
                 ['label' => 'Pending',   'nilai' => $bookingpending,    'warna' => 'bg-amber-100 text-amber-800',   'filter' => 'pending'],
                 ['label' => 'Confirmed', 'nilai' => $bookingkonfirmasi, 'warna' => 'bg-indigo-100 text-indigo-700', 'filter' => 'paid'],
                 ['label' => 'Completed', 'nilai' => $bookingselesai,    'warna' => 'bg-emerald-100 text-emerald-800','filter' => 'completed'],
@@ -45,7 +45,7 @@
             ];
         @endphp
         @foreach ($statbooking as $stat)
-            <a href="{{ $stat['filter'] ? '/owner/bookings?status=' . $stat['filter'] : '/owner/bookings' }}"
+            <a href="{{ '/owner/bookings?status=' . $stat['filter'] }}"
                class="rounded-xl border border-bq-border bg-bq-surface p-4 text-center transition-all hover:border-bq-border-strong hover:shadow-sm {{ $filterstatus === ($stat['filter'] ?? '') ? 'ring-2 ring-bq-primary ring-offset-1' : '' }}">
                 <p class="text-2xl font-bold text-bq-text">{{ number_format($stat['nilai']) }}</p>
                 <span class="mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold {{ $stat['warna'] }}">{{ $stat['label'] }}</span>
@@ -60,12 +60,12 @@
             <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <input type="text" name="katakunci" value="{{ $katakunci }}" placeholder="Search by name, email, or phone..."
+            <input type="text" name="katakunci" value="{{ $katakunci }}" placeholder="Search by booking code, name, email, or phone..."
                 class="w-full rounded-lg border border-bq-border bg-bq-surface py-2.5 pl-10 pr-4 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
                 id="input-search-bookings">
         </form>
         <div class="flex flex-wrap items-center gap-2">
-            @foreach (['semua' => 'All', 'pending' => 'Pending', 'paid' => 'Confirmed', 'completed' => 'Completed', 'cancelled' => 'Cancelled'] as $kunci => $label)
+            @foreach (['semua' => 'All', 'today' => 'Today', 'pending' => 'Pending', 'paid' => 'Confirmed', 'completed' => 'Completed', 'cancelled' => 'Cancelled'] as $kunci => $label)
                 <a href="/owner/bookings?status={{ $kunci }}&katakunci={{ $katakunci }}"
                    class="rounded-lg px-3 py-1.5 text-xs font-medium transition-all
                     {{ $filterstatus === $kunci
@@ -99,6 +99,9 @@
                     @forelse ($daftarbooking as $booking)
                         @php
                             $paymentStatus = $booking->payment?->status ?? ($booking->status === 'paid' ? 'sukses' : 'pending');
+                            $staffName = $booking->layanan?->staff?->pluck('name')->join(', ');
+                            $resourceName = $booking->layanan?->resources?->pluck('name')->join(', ');
+                            $staffResourceDisplay = $staffName ?: ($resourceName ?: 'General Staff / Spot');
                             $bookingData = [
                                 'id' => $booking->id,
                                 'code' => $booking->booking_code ?? ('BKQ-' . $booking->id),
@@ -112,9 +115,14 @@
                                 'time' => $booking->jam,
                                 'status' => $booking->status,
                                 'payment_status' => $paymentStatus,
+                                'staff' => $staffName ?: 'General Staff',
+                                'resource' => $resourceName ?: 'General Facility',
                                 'notes' => $booking->catatan ?? '-',
                                 'order_id' => $booking->payment?->order_id ?? '-',
                                 'snap_token' => $booking->payment?->snap_token ?? null,
+                                'rescheduled_from_date' => $booking->rescheduled_from_date ? $booking->rescheduled_from_date->format('d M Y') : null,
+                                'rescheduled_from_time' => $booking->rescheduled_from_time ?? null,
+                                'manage_url' => $booking->booking_code ? route('booking.manage', $booking->booking_code) : null,
                             ];
                         @endphp
                         <tr class="transition-colors hover:bg-bq-background/40">
@@ -158,9 +166,9 @@
 
                             {{-- Staff / Resource --}}
                             <td class="whitespace-nowrap px-5 py-4 text-xs text-bq-text-muted">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="h-2 w-2 rounded-full bg-slate-400"></span>
-                                    <span>General Staff / Spot</span>
+                                <div class="flex items-center gap-1.5" title="{{ $staffResourceDisplay }}">
+                                    <span class="h-2 w-2 rounded-full shrink-0 {{ $staffName ? 'bg-indigo-500' : ($resourceName ? 'bg-sky-500' : 'bg-slate-400') }}"></span>
+                                    <span class="max-w-[130px] truncate">{{ $staffResourceDisplay }}</span>
                                 </div>
                             </td>
 
@@ -237,6 +245,18 @@
                                             <div x-show="open" @click.outside="open = false"
                                                 class="absolute right-0 z-20 mt-1 w-44 origin-top-right rounded-xl border border-bq-border bg-white shadow-xl overflow-hidden"
                                                 style="display: none;">
+                                                @if ($booking->status === 'pending')
+                                                    <form method="POST" action="{{ route('owner.bookings.status', $booking->id) }}">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <input type="hidden" name="status" value="paid">
+                                                        <button type="submit"
+                                                            class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+                                                            id="mark-paid-{{ $booking->id }}">
+                                                            ✓ Konfirmasi Lunas
+                                                        </button>
+                                                    </form>
+                                                @endif
                                                 @if ($booking->status === 'paid')
                                                     <form method="POST" action="{{ route('owner.bookings.status', $booking->id) }}">
                                                         @csrf
@@ -403,9 +423,18 @@
                                         <span class="font-mono text-bq-text" x-text="activeBooking.time"></span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-bq-text-muted text-xs">Staff / Resource:</span>
-                                        <span class="text-bq-text text-xs">General Staff / Facility</span>
+                                        <span class="text-bq-text-muted text-xs">Assigned Staff:</span>
+                                        <span class="font-medium text-bq-text text-xs" x-text="activeBooking.staff || 'General Staff'"></span>
                                     </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-bq-text-muted text-xs">Assigned Resource:</span>
+                                        <span class="font-medium text-bq-text text-xs" x-text="activeBooking.resource || 'General Facility'"></span>
+                                    </div>
+                                    <template x-if="activeBooking.rescheduled_from_date">
+                                        <div class="mt-2 rounded-lg bg-amber-50 p-2.5 border border-amber-200 text-xs text-amber-800">
+                                            <span class="font-semibold">Reschedule History:</span> Dipindahkan dari jadwal sebelumnya pada <span class="font-mono" x-text="activeBooking.rescheduled_from_date"></span> pukul <span class="font-mono" x-text="activeBooking.rescheduled_from_time || '-'"></span>.
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
 
@@ -424,6 +453,15 @@
                                         <span class="text-bq-text-muted text-xs">Order ID:</span>
                                         <span class="font-mono text-xs text-bq-text-muted" x-text="activeBooking.order_id"></span>
                                     </div>
+                                    <template x-if="activeBooking.manage_url">
+                                        <div class="pt-2 border-t border-bq-border/60 flex items-center justify-between">
+                                            <span class="text-xs text-bq-text-muted">Customer Link:</span>
+                                            <a :href="activeBooking.manage_url" target="_blank" class="text-xs font-medium text-bq-primary hover:underline flex items-center gap-1">
+                                                <span>Buka Halaman Manage</span>
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            </a>
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
                         </div>
@@ -437,6 +475,16 @@
                     </button>
                     <template x-if="activeBooking && (activeBooking.status === 'paid' || activeBooking.status === 'pending')">
                         <div class="flex items-center gap-2">
+                            <template x-if="activeBooking.status === 'pending'">
+                                <form method="POST" :action="'/owner/bookings/' + activeBooking.id + '/status'">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="status" value="paid">
+                                    <button type="submit" class="px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition shadow-sm">
+                                        ✓ Konfirmasi Lunas
+                                    </button>
+                                </form>
+                            </template>
                             <template x-if="activeBooking.status === 'paid'">
                                 <form method="POST" :action="'/owner/bookings/' + activeBooking.id + '/status'">
                                     @csrf

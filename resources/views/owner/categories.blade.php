@@ -34,7 +34,7 @@
         <button
             type="button"
             @click="addModalOpen = true"
-            class="craft-btn inline-flex items-center gap-2 rounded-xl bg-[#382186] px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#2d1a6d]"
+            class="craft-btn inline-flex items-center gap-2 rounded-xl bg-[#382186] px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#2d1a6d] cursor-pointer"
             id="btn-add-category"
         >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -43,6 +43,34 @@
             + Tambah Kategori
         </button>
     </div>
+
+    {{-- Alerts Container --}}
+    @if (session('sukses'))
+        <div class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-xs font-semibold text-emerald-800 shadow-2xs">
+            <svg class="h-4 w-4 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>{{ session('sukses') }}</span>
+        </div>
+    @endif
+
+    @if (session('error') || $errors->any())
+        <div class="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50/90 px-4 py-3 text-xs font-semibold text-rose-800 shadow-2xs">
+            <svg class="h-4 w-4 shrink-0 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <div>
+                <p>{{ session('error') ?? 'Terjadi kesalahan saat memproses kategori:' }}</p>
+                @if ($errors->any())
+                    <ul class="list-disc pl-4 mt-1 space-y-0.5 font-normal">
+                        @foreach ($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </div>
+    @endif
 
     {{-- ── Search & Filter Toolbar ── --}}
     <div class="flex flex-col gap-3 rounded-2xl border border-[#e7e2f7] bg-white p-4 shadow-[0_4px_20px_rgba(35,26,61,0.03)] sm:flex-row sm:items-center sm:justify-between">
@@ -142,8 +170,8 @@
                     <div class="flex items-center gap-1">
                         <button
                             type="button"
-                            @click="openEdit(@json($catPayload))"
-                            class="craft-btn rounded-xl p-1.5 text-[#6e6584] hover:bg-[#f3effe] hover:text-[#382186] transition"
+                            @click='openEdit(@json($catPayload))'
+                            class="craft-btn rounded-xl p-1.5 text-[#6e6584] hover:bg-[#f3effe] hover:text-[#382186] transition cursor-pointer"
                             title="Edit"
                             id="btn-edit-category-{{ $cat->id }}"
                         >
@@ -156,8 +184,8 @@
                             @method('DELETE')
                             <button
                                 type="button"
-                                @click="$dispatch('open-confirm', { title: 'Hapus Kategori?', message: 'Kategori {{ $cat->name }} akan dihapus dan melepaskan relasi dari layanannya. Yakin ingin menghapus?', formId: 'form-delete-cat-{{ $cat->id }}', confirmText: 'Ya, Hapus Kategori' })"
-                                class="craft-btn rounded-xl p-1.5 text-[#6e6584] hover:bg-rose-50 hover:text-rose-600 transition"
+                                @click="$dispatch('open-confirm', { title: 'Hapus Kategori?', message: 'Kategori {{ addslashes($cat->name) }} akan dihapus dan melepaskan relasi dari layanannya. Yakin ingin menghapus?', formId: 'form-delete-cat-{{ $cat->id }}', confirmText: 'Ya, Hapus Kategori' })"
+                                class="craft-btn rounded-xl p-1.5 text-[#6e6584] hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
                                 title="Hapus"
                                 id="btn-delete-category-{{ $cat->id }}"
                             >
@@ -333,7 +361,7 @@
                 </button>
             </div>
             <p class="text-xs text-[#6e6584] mt-2">Perbarui informasi kategori layanan reservasi.</p>
-            <form method="POST" :action="`/owner/categories/${activeCategory.id}`" class="mt-4 space-y-4" id="form-edit-category">
+            <form method="POST" :action="'{{ url('owner/categories') }}/' + activeCategory.id" class="mt-4 space-y-4" id="form-edit-category">
                 @csrf
                 @method('PUT')
                 <div>
