@@ -48,7 +48,7 @@ class BookingManageController extends Controller
 
         app(\App\Support\TenantContext::class)->setTenantId($booking->idtenant);
 
-        $booking->load(['tenant', 'layanan', 'payment', 'logs', 'refund', 'review']);
+        $booking->load(['tenant.user', 'layanan', 'payment', 'logs', 'refund', 'review']);
 
         return $booking;
     }
