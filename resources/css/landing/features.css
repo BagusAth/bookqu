@@ -62,8 +62,8 @@
 @media (min-width: 768px) {
     .feature-card.is-expanded {
         flex: 2.5; /* Proporsi lebih lebar saat mendominasi */
-        box-shadow: 0 25px 50px -12px rgb(59 130 246 / 0.15);
-        border-color: #dbeafe;
+        box-shadow: 0 25px 50px -12px rgb(79 70 229 / 0.15);
+        border-color: #e0e7ff;
         background: linear-gradient(to bottom right, #ffffff, #f8fafc);
         opacity: 1;
     }
@@ -72,7 +72,7 @@
 @media (max-width: 767px) {
     .feature-card.is-expanded {
         box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
-        border-color: #dbeafe;
+        border-color: #e0e7ff;
         background: #f8fafc;
         opacity: 1;
     }
@@ -195,7 +195,7 @@
 }
 
 .is-expanded .card-title {
-    color: #1e3a8a;
+    color: #312e81;
 }
 
 .card-icon {
@@ -210,8 +210,8 @@
 }
 
 .is-expanded .card-icon {
-    color: #2563eb;
-    background-color: #eff6ff;
+    color: #4F46E5;
+    background-color: #eef2ff;
     transform: scale(1.1);
 }
 
@@ -219,7 +219,7 @@
 .progress-bar {
     height: 3px;
     width: 0%;
-    background-color: #3b82f6;
+    background-color: #4F46E5;
     position: absolute;
     bottom: 0;
     left: 0;

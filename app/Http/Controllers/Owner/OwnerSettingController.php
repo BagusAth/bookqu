@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\OwnerPayout;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -321,6 +323,60 @@ class OwnerSettingController extends Controller
         ]);
 
         return redirect()->route('owner.settings')->with('sukses', 'Permintaan withdraw berhasil dibuat.');
+    }
+
+    /**
+     * Hapus akun dan seluruh data bisnis owner secara permanen setelah konfirmasi.
+     */
+    public function deleteAccount(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            abort(403, 'User tidak ditemukan.');
+        }
+
+        $tenant = $this->resolveTenant();
+
+        $expectedEmail = strtolower(trim($user->email));
+        $expectedBusiness = strtolower(trim($tenant?->namabisnis ?? ''));
+        $input = strtolower(trim((string) $request->input('confirm_account', '')));
+
+        if ($input === '' || ($input !== $expectedEmail && $input !== $expectedBusiness)) {
+            return back()->withErrors([
+                'confirm_account' => 'Konfirmasi tidak sesuai. Silakan ketikkan email akun (' . $user->email . ') dengan benar untuk konfirmasi penghapusan.',
+            ]);
+        }
+
+        DB::transaction(function () use ($user, $tenant) {
+            if ($tenant) {
+                // Hapus file logo jika ada
+                if ($tenant->logo_path && !str_starts_with($tenant->logo_path, 'http') && Storage::disk('public')->exists($tenant->logo_path)) {
+                    Storage::disk('public')->delete($tenant->logo_path);
+                }
+                // Hapus file banner jika ada
+                if ($tenant->banner_path && !str_starts_with($tenant->banner_path, 'http') && Storage::disk('public')->exists($tenant->banner_path)) {
+                    Storage::disk('public')->delete($tenant->banner_path);
+                }
+
+                // Hapus asset files jika ada
+                $assets = \App\Models\Asset::where('idtenant', $tenant->id)->get();
+                foreach ($assets as $asset) {
+                    if ($asset->file_path && Storage::disk('public')->exists($asset->file_path)) {
+                        Storage::disk('public')->delete($asset->file_path);
+                    }
+                }
+
+                $tenant->delete();
+            }
+
+            $user->delete();
+        });
+
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/')->with('sukses', 'Akun dan bisnis Anda telah berhasil dihapus secara permanen.');
     }
 }
 

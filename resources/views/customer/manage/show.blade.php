@@ -225,8 +225,8 @@
 
                 {{-- Previous Reschedule Notice if any --}}
                 @if($booking->rescheduled_from_date)
-                    <div class="mt-6 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 text-xs sm:text-sm text-blue-900 flex items-start gap-3">
-                        <svg class="w-5 h-5 flex-shrink-0 text-blue-600 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <div class="mt-6 rounded-2xl border border-[#C7D2FE] bg-[#EEF2FF]/70 p-4 text-xs sm:text-sm text-[#312E81] flex items-start gap-3">
+                        <svg class="w-5 h-5 flex-shrink-0 text-[#4F46E5] mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                         <div>
@@ -452,7 +452,7 @@
                                     'payment_success' => ['bg' => 'bg-emerald-50 text-emerald-600 border-emerald-200', 'title' => 'Pembayaran Terkonfirmasi'],
                                     'payment_failed'  => ['bg' => 'bg-rose-50 text-rose-600 border-rose-200', 'title' => 'Pembayaran Gagal'],
                                     'cancelled'       => ['bg' => 'bg-rose-50 text-rose-600 border-rose-200', 'title' => 'Booking Dibatalkan'],
-                                    'rescheduled'     => ['bg' => 'bg-blue-50 text-blue-600 border-blue-200', 'title' => 'Jadwal Diubah'],
+                                    'rescheduled'     => ['bg' => 'bg-indigo-50 text-[#4F46E5] border-[#C7D2FE]', 'title' => 'Jadwal Diubah'],
                                     'viewed'          => ['bg' => 'bg-slate-100 text-slate-600 border-slate-200', 'title' => 'Detail Dilihat'],
                                     'reviewed'        => ['bg' => 'bg-amber-50 text-amber-600 border-amber-200', 'title' => 'Ulasan Diberikan'],
                                     default           => ['bg' => 'bg-slate-100 text-slate-600 border-slate-200', 'title' => ucfirst($log->event)],

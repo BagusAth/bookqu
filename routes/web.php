@@ -181,6 +181,7 @@ Route::prefix('owner')
     Route::post('/profile/complete', [OwnerSettingController::class, 'storeProfile'])->name('owner.profile.complete');
     Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');
     Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
+    Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');
     Route::post('/settings/payment', [OwnerSettingController::class, 'updatePaymentSettings'])->name('owner.settings.payment');
     Route::post('/payouts', [OwnerSettingController::class, 'requestPayout'])->name('owner.payouts.request');
 

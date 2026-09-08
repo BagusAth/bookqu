@@ -10,9 +10,9 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 
     /* ── shadcn-style design tokens ── */
-    --color-bq-primary: oklch(54.6% 0.245 262.881);
-    --color-bq-primary-light: oklch(93% 0.034 272.788);
-    --color-bq-primary-hover: oklch(48.8% 0.243 264.376);
+    --color-bq-primary: #4F46E5;
+    --color-bq-primary-light: #EEF2FF;
+    --color-bq-primary-hover: #4338CA;
     --color-bq-background: oklch(98.8% 0.002 247.839);
     --color-bq-surface: oklch(100% 0 0);
     --color-bq-border: oklch(92.9% 0.013 255.508);
@@ -43,9 +43,9 @@
 
     /* Sidebar */
     --color-bq-sidebar: oklch(100% 0 0);
-    --color-bq-sidebar-active: oklch(93% 0.034 272.788);
+    --color-bq-sidebar-active: #EEF2FF;
     --color-bq-sidebar-text: oklch(44.6% 0.043 257.281);
-    --color-bq-sidebar-active-text: oklch(54.6% 0.245 262.881);
+    --color-bq-sidebar-active-text: #4F46E5;
 }
 
 /* ── Motion & Craft Utilities (Emil Kowalski / Apple Design) ── */

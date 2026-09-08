@@ -87,7 +87,7 @@
                 <p class="text-xs font-semibold text-bq-text-muted">Total Bookings Recorded</p>
                 <p class="text-2xl font-bold text-bq-primary mt-1">{{ number_format($totalBookingsAll) }}</p>
             </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#4F46E5]">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             </div>
         </div>

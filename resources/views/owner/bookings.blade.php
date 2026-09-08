@@ -37,7 +37,7 @@
         @php
             $statbooking = [
                 ['label' => 'All',       'nilai' => $totalbooking,      'warna' => 'bg-slate-100 text-slate-700',   'filter' => 'semua'],
-                ['label' => 'Today',     'nilai' => $bookinghariini,    'warna' => 'bg-blue-100 text-blue-700',     'filter' => 'today'],
+                ['label' => 'Today',     'nilai' => $bookinghariini,    'warna' => 'bg-[#EEF2FF] text-[#4F46E5]',     'filter' => 'today'],
                 ['label' => 'Pending',   'nilai' => $bookingpending,    'warna' => 'bg-amber-100 text-amber-800',   'filter' => 'pending'],
                 ['label' => 'Confirmed', 'nilai' => $bookingkonfirmasi, 'warna' => 'bg-indigo-100 text-indigo-700', 'filter' => 'paid'],
                 ['label' => 'Completed', 'nilai' => $bookingselesai,    'warna' => 'bg-emerald-100 text-emerald-800','filter' => 'completed'],

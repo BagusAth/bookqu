@@ -31,7 +31,7 @@
                     </ul>
                 </div>
 
-                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-center">
                     Pilih Paket
                 </a>
             </div>
@@ -41,7 +41,7 @@
                 <div>
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-gray-500 font-medium">Medium</h3>
-                        <span class="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                        <span class="bg-[#4F46E5] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
                             Populer
                         </span>
                     </div>
@@ -61,7 +61,7 @@
                     </ul>
                 </div>
 
-                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-center">
                     Pilih Paket
                 </a>
             </div>
@@ -86,7 +86,7 @@
                     </ul>
                 </div>
 
-                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-center">
                     Pilih Paket
                 </a>
             </div>

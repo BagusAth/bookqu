@@ -26,7 +26,7 @@
 
                 <form method="POST" action="{{ route('verification.send') }}" class="space-y-4">
                     @csrf
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    <button type="submit" class="w-full bg-[#4F46E5] text-white py-2 rounded-lg font-semibold hover:bg-[#4338CA] transition shadow-sm shadow-[#4F46E5]/25">
                         Kirim Ulang Link Verifikasi
                     </button>
                 </form>
