@@ -34,17 +34,17 @@ class BramaStudioSeeder extends Seeder
         // ── 1. Ensure Subscription Plans ──────────────────────────────────────
         $planSmall = Plan::updateOrCreate(
             ['namapaket' => 'small'],
-            ['hargabulanan' => 149000, 'maxlayanan' => 5, 'maxbooking' => 100, 'isunlimited' => false]
+            ['hargabulanan' => 149000, 'maxlayanan' => 5, 'maxbooking' => 300, 'isunlimited' => false]
         );
 
         $planMedium = Plan::updateOrCreate(
             ['namapaket' => 'medium'],
-            ['hargabulanan' => 299000, 'maxlayanan' => 15, 'maxbooking' => 500, 'isunlimited' => false]
+            ['hargabulanan' => 299000, 'maxlayanan' => 0, 'maxbooking' => 500, 'isunlimited' => false]
         );
 
         $planPro = Plan::updateOrCreate(
             ['namapaket' => 'pro'],
-            ['hargabulanan' => 799000, 'maxlayanan' => 50, 'maxbooking' => 9999, 'isunlimited' => true]
+            ['hargabulanan' => 499000, 'maxlayanan' => 0, 'maxbooking' => 0, 'isunlimited' => true]
         );
 
         // ── 2. Create / Ensure Owner Users ───────────────────────────────────

@@ -118,10 +118,10 @@ Route::middleware('guest')->group(function () {
         $proPlan = \App\Models\Plan::firstOrCreate(
             ['namapaket' => 'pro'],
             [
-                'hargabulanan' => 100000,
-                'maxlayanan'   => 10,
-                'maxbooking'   => 500,
-                'isunlimited'  => false,
+                'hargabulanan' => 499000,
+                'maxlayanan'   => 0,
+                'maxbooking'   => 0,
+                'isunlimited'  => true,
             ]
         );
 

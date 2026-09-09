@@ -7,14 +7,10 @@
 }
 
 .pricing-card {
-    transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     transform-origin: center bottom;
     background-color: #ffffff;
     will-change: transform, opacity, box-shadow;
-}
-
-/* Default Layout */
-.pricing-card {
     border: 1px solid #e5e7eb;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
     transform: scale(1);
@@ -23,50 +19,18 @@
 
 /* Active State (Yang sedang difokuskan/di-hover) */
 .pricing-card.is-active {
-    transform: scale(1.05);
-    box-shadow: 0 25px 50px -12px rgb(79 70 229 / 0.15);
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 25px 50px -12px rgb(79 70 229 / 0.18), 0 0 0 2px #4F46E5;
     border-color: #4F46E5;
     z-index: 10;
 }
 
 /* Inactive State (Yang sedang tidak di-hover saat ada card lain yang aktif) */
 .pricing-container.has-hover .pricing-card:not(.is-active) {
-    transform: scale(0.98);
-    opacity: 0.6;
+    transform: scale(0.99);
+    opacity: 0.75;
     box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.05);
     border-color: #f3f4f6;
-}
-
-/* Custom Bullet Point (Titik Indigo sesuai tema) */
-.feature-list li {
-    position: relative;
-    padding-left: 1.5rem;
-    color: #4b5563;
-    font-size: 0.95rem;
-    margin-bottom: 1rem;
-    line-height: 1.5;
-    transition: color 0.3s ease;
-}
-
-.feature-list li::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0.45rem;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: #4F46E5;
-    transition: transform 0.3s ease;
-}
-
-/* Hover efek pada list item */
-.feature-list li:hover {
-    color: #111827;
-}
-
-.feature-list li:hover::before {
-    transform: scale(1.5);
 }
 
 /* Button Hover Effects */
@@ -100,3 +64,4 @@
 .animate-fade-in {
     animation: fadeIn 0.8s ease-out forwards;
 }
+

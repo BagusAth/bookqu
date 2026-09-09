@@ -88,15 +88,15 @@
                 <ul class="mt-4 space-y-2.5 text-sm text-bq-text-muted">
                     <li class="flex items-center gap-2">
                         <svg class="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        Up to {{ $paket->maxlayanan }} services
+                        {{ $paket->maxlayanan > 0 ? 'Up to ' . $paket->maxlayanan . ' services' : 'Unlimited services' }}
                     </li>
                     <li class="flex items-center gap-2">
                         <svg class="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        {{ $paket->isunlimited ? 'Unlimited' : number_format($paket->maxbooking) }} bookings/mo
+                        {{ $paket->isunlimited ? 'Unlimited' : '<' . number_format($paket->maxbooking) }} bookings/mo
                     </li>
                     <li class="flex items-center gap-2">
                         <svg class="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        {{ $paket->namapaket === 'pro' ? 'Priority support' : 'Email support' }}
+                        {{ $paket->namapaket === 'pro' ? 'Priority support & custom domain' : ($paket->namapaket === 'medium' ? 'WhatsApp & email reminders' : 'Email notification') }}
                     </li>
                 </ul>
                 @if ($adalahaktif)
