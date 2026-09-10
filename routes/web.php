@@ -207,8 +207,8 @@ Route::prefix('owner')
         Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
         Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
         Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
-        Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('subscription:pro');
-        Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware('subscription:pro');
+        Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('subscription:medium');
+        Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware('subscription:medium');
         Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
         Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page')->middleware('subscription:pro');
         Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware('subscription:pro');

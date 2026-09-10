@@ -43,26 +43,36 @@
     </div>
 
     {{-- Usage Stats --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div class="rounded-xl border border-bq-border bg-bq-surface p-5">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-bq-text">Services Used</p>
-                <span class="text-sm font-bold text-bq-text">{{ $jumlahlayanan }} / {{ $maxlayanan }}</span>
+                <span class="text-sm font-bold text-bq-text">{{ $jumlahlayanan }} / {{ $maxlayanan > 0 ? $maxlayanan : '∞' }}</span>
             </div>
             <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-bq-background">
-                <div class="h-full rounded-full transition-all duration-500 {{ $persenlayanan > 80 ? 'bg-rose-500' : ($persenlayanan > 60 ? 'bg-amber-500' : 'bg-bq-primary') }}" style="width: {{ $persenlayanan }}%"></div>
+                <div class="h-full rounded-full transition-all duration-500 {{ $persenlayanan > 80 ? 'bg-rose-500' : ($persenlayanan > 60 ? 'bg-amber-500' : 'bg-bq-primary') }}" style="width: {{ $maxlayanan > 0 ? $persenlayanan : 20 }}%"></div>
             </div>
-            <p class="mt-2 text-xs text-bq-text-muted">{{ $persenlayanan }}% of your plan limit</p>
+            <p class="mt-2 text-xs text-bq-text-muted">{{ $maxlayanan > 0 ? $persenlayanan . '% of your plan limit' : 'Unlimited services' }}</p>
         </div>
         <div class="rounded-xl border border-bq-border bg-bq-surface p-5">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-bq-text">Bookings This Month</p>
-                <span class="text-sm font-bold text-bq-text">{{ $jumlahbookingbulanini }} / {{ $isunlimited ? '∞' : $maxbooking }}</span>
+                <span class="text-sm font-bold text-bq-text">{{ $jumlahbookingbulanini }} / {{ ($isunlimited || $maxbooking <= 0) ? '∞' : $maxbooking }}</span>
             </div>
             <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-bq-background">
-                <div class="h-full rounded-full transition-all duration-500 {{ $persenbooking > 80 ? 'bg-rose-500' : ($persenbooking > 60 ? 'bg-amber-500' : 'bg-emerald-500') }}" style="width: {{ $isunlimited ? 30 : $persenbooking }}%"></div>
+                <div class="h-full rounded-full transition-all duration-500 {{ $persenbooking > 80 ? 'bg-rose-500' : ($persenbooking > 60 ? 'bg-amber-500' : 'bg-emerald-500') }}" style="width: {{ ($isunlimited || $maxbooking <= 0) ? 20 : $persenbooking }}%"></div>
             </div>
-            <p class="mt-2 text-xs text-bq-text-muted">{{ $isunlimited ? 'Unlimited bookings' : $persenbooking . '% of your plan limit' }}</p>
+            <p class="mt-2 text-xs text-bq-text-muted">{{ ($isunlimited || $maxbooking <= 0) ? 'Unlimited bookings' : $persenbooking . '% of your plan limit' }}</p>
+        </div>
+        <div class="rounded-xl border border-bq-border bg-bq-surface p-5">
+            <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-bq-text">Staff Members</p>
+                <span class="text-sm font-bold text-bq-text">{{ $jumlahstaff }} / {{ ($isunlimitedstaff || $maxstaff <= 0) ? '∞' : $maxstaff }}</span>
+            </div>
+            <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-bq-background">
+                <div class="h-full rounded-full transition-all duration-500 {{ $persenstaff > 80 ? 'bg-rose-500' : ($persenstaff > 60 ? 'bg-amber-500' : 'bg-indigo-500') }}" style="width: {{ ($isunlimitedstaff || $maxstaff <= 0) ? 20 : $persenstaff }}%"></div>
+            </div>
+            <p class="mt-2 text-xs text-bq-text-muted">{{ ($isunlimitedstaff || $maxstaff <= 0) ? 'Unlimited staff' : $persenstaff . '% of your plan limit' }}</p>
         </div>
     </div>
 
@@ -87,16 +97,20 @@
                 <p class="mt-1 text-2xl font-bold text-bq-text">Rp {{ number_format($paket->hargabulanan, 0, ',', '.') }}<span class="text-sm font-normal text-bq-text-muted">/mo</span></p>
                 <ul class="mt-4 space-y-2.5 text-sm text-bq-text-muted">
                     <li class="flex items-center gap-2">
-                        <svg class="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        {{ $paket->maxlayanan > 0 ? 'Up to ' . $paket->maxlayanan . ' services' : 'Unlimited services' }}
+                        <svg class="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        {{ $paket->maxlayanan > 0 ? 'Hingga ' . $paket->maxlayanan . ' layanan' : 'Unlimited layanan' }}
                     </li>
                     <li class="flex items-center gap-2">
-                        <svg class="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        {{ $paket->isunlimited ? 'Unlimited' : '<' . number_format($paket->maxbooking) }} bookings/mo
+                        <svg class="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        {{ ($paket->isunlimited || $paket->maxbooking == 0) ? 'Unlimited booking' : '<' . number_format($paket->maxbooking) . ' booking/bulan' }}
                     </li>
                     <li class="flex items-center gap-2">
-                        <svg class="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        {{ $paket->namapaket === 'pro' ? 'Priority support & custom domain' : ($paket->namapaket === 'medium' ? 'WhatsApp & email reminders' : 'Email notification') }}
+                        <svg class="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        {{ $paket->namapaket === 'pro' ? 'Unlimited staff' : ($paket->namapaket === 'medium' ? 'Hingga 15 staff' : '1 admin + 2 staff') }}
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <svg class="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        {{ $paket->namapaket === 'pro' ? 'Multi-location, custom domain & landing page' : ($paket->namapaket === 'medium' ? 'Analytics, CRM, promo & voucher' : 'Customer booking page & auto invoice') }}
                     </li>
                 </ul>
                 @if ($adalahaktif)

@@ -176,5 +176,17 @@ class BookingManageTest extends TestCase
             'tanggalbooking' => $newSchedule->tanggal,
             'jam' => '16:00',
         ]);
+
+        // Verify owner received the reschedule notification
+        $owner = $this->tenant->user;
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id'   => $owner->id,
+            'notifiable_type' => get_class($owner),
+        ]);
+
+        $notification = $owner->notifications()->latest()->first();
+        $this->assertNotNull($notification);
+        $this->assertEquals('rescheduled', $notification->data['event_type']);
+        $this->assertEquals('Jadwal Booking Diubah', $notification->data['title']);
     }
 }

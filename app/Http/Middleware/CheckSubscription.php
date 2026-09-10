@@ -36,16 +36,25 @@ class CheckSubscription
 
         // Feature gating
         if (!empty($features)) {
-            $planName = $subscription->plan->namapaket ?? '';
-            
             // Allow all for trial
             if ($subscription->status === 'trial') {
                 return $next($request);
             }
 
-            // Simple check: if feature is 'pro', require pro plan
-            if (in_array('pro', $features) && $planName !== 'pro') {
+            $planName = strtolower($subscription->plan->namapaket ?? 'small');
+            $levels = [
+                'small'  => 1,
+                'medium' => 2,
+                'pro'    => 3,
+            ];
+            $currentLevel = $levels[$planName] ?? 1;
+
+            if (in_array('pro', $features) && $currentLevel < 3) {
                 return redirect()->route('owner.subscription')->with('error', 'Fitur ini membutuhkan paket Pro.');
+            }
+
+            if (in_array('medium', $features) && $currentLevel < 2) {
+                return redirect()->route('owner.subscription')->with('error', 'Fitur ini membutuhkan minimal paket Medium.');
             }
         }
 

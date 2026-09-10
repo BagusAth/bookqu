@@ -74,6 +74,31 @@ class OwnerStaffResourceController extends Controller
             'service_ids.*'         => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
+        // Check subscription staff limit
+        $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+        if ($subscription && $subscription->plan) {
+            $planName = strtolower($subscription->plan->namapaket ?? 'small');
+            $isUnlimitedStaff = ($subscription->status === 'trial')
+                || ($subscription->plan->isunlimited ?? false)
+                || ($planName === 'pro');
+
+            $maxStaff = match ($planName) {
+                'small'  => 2,
+                'medium' => 15,
+                'pro'    => 0,
+                default  => 2,
+            };
+
+            if (!$isUnlimitedStaff && $maxStaff > 0) {
+                $currentStaffCount = Staff::where('idtenant', $tenant->id)->count();
+                if ($currentStaffCount >= $maxStaff) {
+                    return back()->withErrors([
+                        'name' => 'Batas maksimal staf untuk paket ' . ucfirst($planName) . ' (' . $maxStaff . ' staf) telah tercapai. Silakan upgrade paket Anda.',
+                    ])->withInput();
+                }
+            }
+        }
+
         $avail = $validated['availability_schedule'] ?? $validated['availability'] ?? null;
 
         $staff = Staff::create([

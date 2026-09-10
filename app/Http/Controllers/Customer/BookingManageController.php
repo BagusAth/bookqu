@@ -276,8 +276,14 @@ class BookingManageController extends Controller
         $tenant        = $booking->tenant;
         $service       = $booking->layanan;
 
+        $oldDate       = $booking->tanggalbooking instanceof Carbon
+            ? $booking->tanggalbooking->toDateString()
+            : Carbon::parse($booking->tanggalbooking)->toDateString();
+        $oldTime       = $booking->jam;
+        $oldScheduleId = $booking->idschedule;
+
         try {
-            DB::transaction(function () use ($booking, $newDate, $newScheduleId, $tenant, $service) {
+            DB::transaction(function () use ($booking, $newDate, $newScheduleId, $tenant, $service, $oldDate, $oldTime, $oldScheduleId) {
                 // Lock and validate new schedule slot
                 $schedule = DB::table('schedules')
                     ->where('id', $newScheduleId)
@@ -302,11 +308,6 @@ class BookingManageController extends Controller
                 if ($slotTaken) {
                     throw new \Exception('SLOT_TAKEN');
                 }
-
-                // Save old schedule for history
-                $oldDate       = $booking->tanggalbooking->toDateString();
-                $oldTime       = $booking->jam;
-                $oldScheduleId = $booking->idschedule;
 
                 // Update booking to new slot
                 $booking->update([
@@ -348,9 +349,10 @@ class BookingManageController extends Controller
 
             // Notify owner about the reschedule
             try {
-                $owner = $booking->tenant?->user;
+                $booking->loadMissing(['tenant.user', 'layanan']);
+                $owner = $booking->tenant?->user ?? ($tenant?->iduser ? \App\Models\User::find($tenant->iduser) : null);
                 if ($owner) {
-                    $owner->notify(new \App\Notifications\BookingStatusChangedOwnerNotification(
+                    $notification = new \App\Notifications\BookingStatusChangedOwnerNotification(
                         $booking,
                         'rescheduled',
                         [
@@ -359,7 +361,16 @@ class BookingManageController extends Controller
                             'new_date' => $newDate,
                             'new_time' => $booking->jam,
                         ]
-                    ));
+                    );
+
+                    try {
+                        $owner->notify($notification);
+                    } catch (\Throwable $mailException) {
+                        Log::warning('BookingManage: Mail notification to owner failed, ensuring database notification', [
+                            'error' => $mailException->getMessage(),
+                        ]);
+                        $owner->notifyNow($notification, ['database']);
+                    }
                 }
             } catch (\Throwable $e) {
                 Log::warning('BookingManage: Failed to notify owner about reschedule', ['error' => $e->getMessage()]);

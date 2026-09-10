@@ -154,8 +154,9 @@
                     <div>
                         <p class="text-xs font-medium text-bq-text-muted uppercase tracking-wider">Fitur</p>
                         <ul class="mt-1 space-y-1 text-xs text-bq-text-muted">
-                            <li>• {{ $plan->isunlimited ? 'Unlimited' : $plan->maxlayanan }} layanan</li>
-                            <li>• {{ $plan->isunlimited ? 'Unlimited' : number_format($plan->maxbooking) }} booking/bulan</li>
+                            <li>• {{ $plan->maxlayanan > 0 ? $plan->maxlayanan . ' layanan' : 'Unlimited layanan' }}</li>
+                            <li>• {{ ($plan->isunlimited || $plan->maxbooking == 0) ? 'Unlimited' : '<' . number_format($plan->maxbooking) }} booking/bulan</li>
+                            <li>• {{ $plan->namapaket === 'pro' ? 'Unlimited staff' : ($plan->namapaket === 'medium' ? 'Hingga 15 staff' : '1 admin + 2 staff') }}</li>
                             <li>• Durasi 1 bulan</li>
                         </ul>
                     </div>

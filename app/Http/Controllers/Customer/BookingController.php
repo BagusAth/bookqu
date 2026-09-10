@@ -261,18 +261,26 @@ class BookingController extends Controller
             ]);
         }
 
+        // Subscription monthly booking limit check
         $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
-        $maxbooking = $subscription->plan->maxbooking ?? 500;
+        $isUnlimitedBooking = ($subscription && $subscription->status === 'trial')
+            || ($subscription?->plan?->isunlimited ?? false)
+            || (($subscription?->plan?->namapaket ?? '') === 'pro')
+            || (($subscription?->plan?->maxbooking ?? 0) <= 0);
 
-        $totalBookingsThatDay = DB::table('bookings')
-            ->where('idtenant', $tenant->id)
-            ->whereDate('tanggalbooking', $selectedDate)
-            ->whereIn('status', ['pending', 'paid', 'completed'])
-            ->count();
+        if (!$isUnlimitedBooking && ($subscription?->plan?->maxbooking ?? 0) > 0) {
+            $dateCarbon = Carbon::parse($selectedDate);
+            $totalMonthlyBookings = DB::table('bookings')
+                ->where('idtenant', $tenant->id)
+                ->whereYear('tanggalbooking', $dateCarbon->year)
+                ->whereMonth('tanggalbooking', $dateCarbon->month)
+                ->whereIn('status', ['pending', 'paid', 'completed'])
+                ->count();
 
-        if ($totalBookingsThatDay >= $maxbooking) {
-            return redirect()->route('customer.booking.date', $slug_usaha)
-                ->withErrors(['tanggal' => 'Kapasitas maksimal booking harian bisnis ini telah penuh.']);
+            if ($totalMonthlyBookings >= $subscription->plan->maxbooking) {
+                return redirect()->route('customer.booking.date', $slug_usaha)
+                    ->withErrors(['tanggal' => 'Kapasitas kuota booking bulanan bisnis ini telah penuh (maksimal ' . $subscription->plan->maxbooking . ' booking/bulan). Silakan hubungi pemilik bisnis.']);
+            }
         }
 
         $availableSlots = DB::table('schedules')
@@ -627,6 +635,28 @@ class BookingController extends Controller
             'selected_addons.*' => 'integer',
             'staff_id'          => 'nullable|integer',
         ]);
+
+        // Subscription monthly booking limit check
+        $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+        $isUnlimitedBooking = ($subscription && $subscription->status === 'trial')
+            || ($subscription?->plan?->isunlimited ?? false)
+            || (($subscription?->plan?->namapaket ?? '') === 'pro')
+            || (($subscription?->plan?->maxbooking ?? 0) <= 0);
+
+        if (!$isUnlimitedBooking && ($subscription?->plan?->maxbooking ?? 0) > 0) {
+            $dateCarbon = Carbon::parse($selectedDate);
+            $totalMonthlyBookings = DB::table('bookings')
+                ->where('idtenant', $tenant->id)
+                ->whereYear('tanggalbooking', $dateCarbon->year)
+                ->whereMonth('tanggalbooking', $dateCarbon->month)
+                ->whereIn('status', ['pending', 'paid', 'completed'])
+                ->count();
+
+            if ($totalMonthlyBookings >= $subscription->plan->maxbooking) {
+                return redirect()->route('customer.booking.date', $slug_usaha)
+                    ->withErrors(['tanggal' => 'Kapasitas kuota booking bulanan bisnis ini telah penuh (maksimal ' . $subscription->plan->maxbooking . ' booking/bulan). Silakan hubungi pemilik bisnis.']);
+            }
+        }
 
         // Wrap slot availability check + booking creation in a transaction to prevent double-booking
         $result = DB::transaction(function () use ($tenant, $service, $selectedDate, $selectedTime, $scheduleId, $request) {

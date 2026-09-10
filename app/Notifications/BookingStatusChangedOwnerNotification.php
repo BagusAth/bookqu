@@ -113,7 +113,7 @@ class BookingStatusChangedOwnerNotification extends Notification
 
         $message = match ($this->action) {
             'cancelled'   => "{$booking->namapelanggan} membatalkan reservasi {$namaLayanan} ({$tanggal})",
-            'rescheduled' => "{$booking->namapelanggan} menjadwalkan ulang {$namaLayanan} ke {$tanggal} ({$booking->jam})",
+            'rescheduled' => "{$booking->namapelanggan} menjadwalkan ulang {$namaLayanan} untuk {$tanggal} pukul {$booking->jam}",
             'completed'   => "Booking {$namaLayanan} atas nama {$booking->namapelanggan} telah selesai",
             default       => "Status booking {$booking->namapelanggan} ({$namaLayanan}) diubah ke {$booking->status}",
         };

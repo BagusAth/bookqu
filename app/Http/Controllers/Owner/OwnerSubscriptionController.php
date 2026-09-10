@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Service;
+use App\Models\Staff;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use Carbon\Carbon;
@@ -68,9 +69,21 @@ class OwnerSubscriptionController extends Controller
         $maxlayanan = $langgananaktif?->plan?->maxlayanan ?? 0;
         $maxbooking = $langgananaktif?->plan?->maxbooking ?? 0;
         $isunlimited = $langgananaktif?->plan?->isunlimited ?? false;
+        $planName = strtolower($langgananaktif?->plan?->namapaket ?? 'small');
+
+        // Staff usage & limit
+        $jumlahstaff = Staff::where('idtenant', $idtenant)->count();
+        $isunlimitedstaff = $isunlimited || $planName === 'pro';
+        $maxstaff = match ($planName) {
+            'small'  => 2,
+            'medium' => 15,
+            'pro'    => 0,
+            default  => 2,
+        };
 
         $persenlayanan = $maxlayanan > 0 ? min(100, round(($jumlahlayanan / $maxlayanan) * 100)) : 0;
         $persenbooking = ($maxbooking > 0 && !$isunlimited) ? min(100, round(($jumlahbookingbulanini / $maxbooking) * 100)) : 0;
+        $persenstaff = ($maxstaff > 0 && !$isunlimitedstaff) ? min(100, round(($jumlahstaff / $maxstaff) * 100)) : 0;
 
         // Status trial
         $sisahari = 0;
@@ -93,11 +106,15 @@ class OwnerSubscriptionController extends Controller
             'semuapaket',
             'jumlahlayanan',
             'jumlahbookingbulanini',
+            'jumlahstaff',
             'maxlayanan',
             'maxbooking',
+            'maxstaff',
             'isunlimited',
+            'isunlimitedstaff',
             'persenlayanan',
             'persenbooking',
+            'persenstaff',
             'statustrial',
             'sisahari',
             'riwayatpembayaran',
