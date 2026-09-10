@@ -57,7 +57,7 @@
             {{-- Form --}}
             <form method="POST" action="/owner/schedule/bulk-slots" @submit="sedangkirim = true" id="form-add-bulk-slots">
                 @csrf
-                <div class="space-y-4 px-6 py-5">
+                <div class="space-y-4 px-4 sm:px-6 py-4 sm:py-5 max-h-[75vh] overflow-y-auto">
                     {{-- Slot Type Toggle --}}
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-bq-text">Slot Type</label>
@@ -184,19 +184,19 @@
                 </div>
 
                 {{-- Footer --}}
-                <div class="flex items-center justify-end gap-3 border-t border-bq-border px-6 py-4">
-                    <button type="button" @click="buka = false" class="rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm font-medium text-bq-text transition-all hover:bg-bq-background" id="btn-cancel-slots">
+                <div class="flex items-center justify-end gap-3 border-t border-bq-border px-4 sm:px-6 py-3.5 sm:py-4">
+                    <button type="button" @click="buka = false" class="flex-1 sm:flex-none justify-center inline-flex rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs sm:text-sm font-semibold text-bq-text transition-all hover:bg-bq-background active:scale-95" id="btn-cancel-slots">
                         Cancel
                     </button>
                     <button
                         type="submit"
                         :disabled="sedangkirim || !durasiDariProgram"
-                        :class="(sedangkirim || !durasiDariProgram) ? 'opacity-60 cursor-not-allowed' : 'hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5'"
-                        class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all"
+                        :class="(sedangkirim || !durasiDariProgram) ? 'opacity-60 cursor-not-allowed' : 'hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 active:scale-95'"
+                        class="flex-1 sm:flex-none justify-center inline-flex items-center gap-2 rounded-xl bg-bq-primary px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all"
                         id="btn-submit-slots"
                     >
                         <svg x-show="sedangkirim" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                        <span x-text="sedangkirim ? 'Creating Slots...' : 'Create Slots'"></span>
+                        <span x-text="sedangkirim ? 'Creating...' : 'Create Slots'"></span>
                     </button>
                 </div>
             </form>

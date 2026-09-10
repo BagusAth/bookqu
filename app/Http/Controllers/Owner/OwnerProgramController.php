@@ -160,14 +160,15 @@ class OwnerProgramController extends Controller
     /**
      * Update program.
      */
-    public function update(Request $request, int $id)
+    public function update(Request $request, $id)
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
+        $targetId = $id instanceof Service ? $id->id : (int) $id;
+        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($targetId);
 
         $datavalid = $request->validate([
             'namalayanan'         => 'required|string|max:255',
@@ -235,14 +236,15 @@ class OwnerProgramController extends Controller
     /**
      * Hapus program.
      */
-    public function destroy(int $id)
+    public function destroy($id)
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
+        $targetId = $id instanceof Service ? $id->id : (int) $id;
+        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($targetId);
         $namalayanan = $layanan->namalayanan;
 
         // Safety check: Prevent delete if active bookings exist
@@ -257,7 +259,7 @@ class OwnerProgramController extends Controller
         $layanan->delete();
 
         // Invalidate customer-facing cache
-        $this->clearServiceCache($tenant->id, $id);
+        $this->clearServiceCache($tenant->id, $targetId);
 
         $redirectRoute = (request()->is('*programs*') && !str_contains(request()->headers->get('referer', ''), '/services'))
             ? 'owner.programs'
@@ -268,14 +270,15 @@ class OwnerProgramController extends Controller
     /**
      * Toggle status aktif program.
      */
-    public function toggleStatus(int $id)
+    public function toggleStatus($id)
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
+        $targetId = $id instanceof Service ? $id->id : (int) $id;
+        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($targetId);
         $layanan->update([
             'is_active' => !$layanan->is_active,
         ]);

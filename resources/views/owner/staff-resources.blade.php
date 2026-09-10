@@ -43,14 +43,7 @@
     {{-- ── Header ── --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <div class="flex items-center gap-2.5">
-                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#e7e2f7] shadow-2xs">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                    </svg>
-                </span>
-                <h1 class="text-2xl font-extrabold tracking-tight text-[#231a3d] sm:text-3xl">Staff &amp; Resources</h1>
-            </div>
+            <h1 class="text-2xl font-extrabold tracking-tight text-[#231a3d] sm:text-3xl">Staff &amp; Resources</h1>
             <p class="text-sm text-[#6e6584] mt-1">Kelola tim staf profesional dan aset fisik operasional untuk melayani customer Anda.</p>
         </div>
         <div class="flex items-center gap-2">

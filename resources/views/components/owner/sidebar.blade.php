@@ -10,6 +10,8 @@
         ? max(0, (int) now()->diffInDays($subscription->trial_berakhir, false))
         : 8;
 
+    $unreadNotifCount = auth()->user()?->unreadNotifications()->count() ?? 0;
+
     $isActive = function ($href, $routeNames = []) use ($halamanaktif, $currentRoute) {
         if ($currentRoute && in_array($currentRoute, (array)$routeNames, true)) {
             return true;
@@ -17,6 +19,9 @@
         $trimmed = ltrim($href, '/');
         if ($trimmed === 'owner/dashboard') {
             return $halamanaktif === 'owner/dashboard';
+        }
+        if ($trimmed === 'owner/notifications') {
+            return $halamanaktif === 'owner/notifications' || str_starts_with($halamanaktif, 'owner/notifications');
         }
         if ($trimmed === 'owner/services' && ($halamanaktif === 'owner/programs' || str_starts_with($halamanaktif, 'owner/programs'))) {
             return true;
@@ -29,13 +34,21 @@
 
     $sections = [
         [
-            'title' => null, // Standalone top item
+            'title' => null, // Standalone top items
             'items' => [
                 [
                     'label' => 'Dashboard',
                     'href'  => '/owner/dashboard',
                     'route' => ['owner.dashboard'],
                     'icon'  => 'dashboard',
+                ],
+                [
+                    'label' => 'Notifications',
+                    'href'  => '/owner/notifications',
+                    'route' => ['owner.notifications'],
+                    'icon'  => 'notifications',
+                    'badge' => $unreadNotifCount > 0 ? ($unreadNotifCount > 99 ? '99+' : (string)$unreadNotifCount) : null,
+                    'badge_type' => 'counter',
                 ],
             ],
         ],
@@ -361,6 +374,12 @@
                                         </svg>
                                         @break
 
+                                    @case('notifications')
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M10.5 5.25a1.5 1.5 0 013 0"/>
+                                        </svg>
+                                        @break
+
                                     @case('calendar')
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -485,9 +504,15 @@
                             <span class="truncate">{{ $item['label'] }}</span>
 
                             @if (!empty($item['badge']))
-                                <span class="ml-auto inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-black tracking-wider uppercase {{ $active ? 'bg-[#382186] text-white' : 'bg-[#fff8eb] text-[#875000] border border-[#ffb84d]/60' }}">
-                                    {{ $item['badge'] }}
-                                </span>
+                                @if (!empty($item['badge_type']) && $item['badge_type'] === 'counter')
+                                    <span class="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-extrabold text-white shadow-2xs">
+                                        {{ $item['badge'] }}
+                                    </span>
+                                @else
+                                    <span class="ml-auto inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-black tracking-wider uppercase {{ $active ? 'bg-[#382186] text-white' : 'bg-[#fff8eb] text-[#875000] border border-[#ffb84d]/60' }}">
+                                        {{ $item['badge'] }}
+                                    </span>
+                                @endif
                             @endif
                         </a>
                     @endforeach

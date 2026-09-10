@@ -29,14 +29,7 @@
     {{-- ── Header ── --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <div class="flex items-center gap-2.5">
-                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#e7e2f7] shadow-2xs">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                    </svg>
-                </span>
-                <h1 class="text-2xl font-extrabold tracking-tight text-[#231a3d] sm:text-3xl">Additional Items (Add-ons)</h1>
-            </div>
+            <h1 class="text-2xl font-extrabold tracking-tight text-[#231a3d] sm:text-3xl">Additional Items (Add-ons)</h1>
             <p class="text-sm text-[#6e6584] mt-1">Kelola produk atau perlengkapan tambahan yang dapat dibeli customer saat checkout reservasi.</p>
         </div>
         <button

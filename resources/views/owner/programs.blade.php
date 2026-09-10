@@ -8,7 +8,7 @@
     {{-- ── Header ── --}}
     @include('components.owner.page-header', [
         'judul' => 'Services Management',
-        'subjudul' => 'Manage your business services, pricing, and programs offered to customers.',
+        'subjudul' => '',
     ])
 
     {{-- ── Flash Messages ── --}}
@@ -25,12 +25,55 @@
         </div>
     @endif
 
-    {{-- ── Stats ── --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        @include('components.owner.stat-card', ['ikon' => 'program', 'label' => 'Total Programs', 'nilai' => $totallayanan, 'perubahan' => 0, 'tipeperubahan' => 'stabil'])
-        @include('components.owner.stat-card', ['ikon' => 'revenue', 'label' => 'Avg. Price', 'nilai' => 'Rp ' . number_format($ratarataharga, 0, ',', '.'), 'perubahan' => 0, 'tipeperubahan' => 'stabil'])
-        @include('components.owner.stat-card', ['ikon' => 'booking', 'label' => 'Bookings This Month', 'nilai' => number_format($totalbookinglayanan), 'perubahan' => 0, 'tipeperubahan' => 'stabil'])
-        @include('components.owner.stat-card', ['ikon' => 'revenue', 'label' => 'Revenue This Month', 'nilai' => 'Rp ' . number_format($pendapatanlayanan, 0, ',', '.'), 'perubahan' => 0, 'tipeperubahan' => 'stabil'])
+    {{-- ── Compact Metric Summary Bar ── --}}
+    <div class="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-4">
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex items-center gap-3 shadow-2xs">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#b499ff]/20">
+                <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-[11px] font-bold text-bq-text-muted truncate">Total Layanan</p>
+                <p class="text-base sm:text-lg font-black text-bq-text">{{ $totallayanan }}</p>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex items-center gap-3 shadow-2xs">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/50">
+                <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-[11px] font-bold text-bq-text-muted truncate">Rata-rata Tarif</p>
+                <p class="text-base sm:text-lg font-black text-bq-text truncate">Rp {{ number_format($ratarataharga, 0, ',', '.') }}</p>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex items-center gap-3 shadow-2xs">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/50">
+                <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-[11px] font-bold text-bq-text-muted truncate">Booking Bulan Ini</p>
+                <p class="text-base sm:text-lg font-black text-bq-text">{{ number_format($totalbookinglayanan) }}</p>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex items-center gap-3 shadow-2xs">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600 border border-purple-200/50">
+                <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-[11px] font-bold text-bq-text-muted truncate">Estimasi Omzet</p>
+                <p class="text-base sm:text-lg font-black text-bq-text truncate">Rp {{ number_format($pendapatanlayanan, 0, ',', '.') }}</p>
+            </div>
+        </div>
     </div>
 
     {{-- ── Search & Actions ── --}}
@@ -38,7 +81,7 @@
         $baseRoute = request()->is('*services*') ? '/owner/services' : '/owner/programs';
     @endphp
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex flex-1 flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+        <div class="flex flex-1 flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
             <form method="GET" action="{{ $baseRoute }}" class="relative w-full sm:max-w-xs">
                 @if(!empty($selectedCategory))
                     <input type="hidden" name="category" value="{{ $selectedCategory }}">
@@ -51,7 +94,7 @@
                     name="katakunci"
                     value="{{ $katakunci }}"
                     placeholder="Search programs..."
-                    class="w-full rounded-lg border border-bq-border bg-bq-surface py-2.5 pl-10 pr-4 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                    class="w-full rounded-xl border border-bq-border bg-bq-surface py-2.5 pl-10 pr-4 text-xs sm:text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
                     id="input-search-programs"
                 >
             </form>
@@ -63,7 +106,7 @@
                     <select
                         name="category"
                         onchange="this.form.submit()"
-                        class="w-full sm:w-auto rounded-lg border border-bq-border bg-bq-surface py-2.5 px-3 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                        class="w-full sm:w-auto rounded-xl border border-bq-border bg-bq-surface py-2.5 px-3 text-xs sm:text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
                         id="filter-category"
                     >
                         <option value="">Semua Kategori ({{ $totallayanan }})</option>
@@ -76,11 +119,11 @@
                 </form>
             @endif
         </div>
-        <button @click="$dispatch('open-add-program')" class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 shrink-0" id="btn-add-program">
+        <button @click="$dispatch('open-add-program')" class="inline-flex items-center justify-center gap-2 rounded-xl bg-bq-primary px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 w-full sm:w-auto shrink-0" id="btn-add-program">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
             </svg>
-            Add Program
+            <span>Add Program</span>
         </button>
     </div>
 
@@ -113,7 +156,7 @@
                             <span class="text-[11px] font-bold text-[#6e6584] mt-1 opacity-70">No Image</span>
                         </div>
                     @endif
-                    {{-- Action buttons overlay --}}
+                    {{-- Action buttons overlay (Always visible on mobile, hover on desktop) --}}
                     @php
                         $editPayload = [
                             'id'                  => $layanan->id,
@@ -133,9 +176,9 @@
                                 : null,
                         ];
                     @endphp
-                    <div class="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <div class="absolute top-2 right-2 z-20 flex items-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
                         <button
-                            class="rounded-lg p-1.5 bg-white/90 shadow text-bq-text-subtle transition-all hover:bg-white hover:text-bq-primary"
+                            class="rounded-xl p-2 sm:p-1.5 bg-white/95 backdrop-blur-xs shadow-md text-bq-text-subtle transition-all hover:bg-white hover:text-bq-primary active:scale-95 cursor-pointer"
                             @click='$dispatch("open-edit-program", @json($editPayload))'
                             aria-label="Edit program"
                             id="btn-edit-program-{{ $layanan->id }}"
@@ -149,7 +192,7 @@
                             @method('DELETE')
                             <button
                                 type="button"
-                                class="rounded-lg p-1.5 bg-white/90 shadow text-bq-text-subtle transition-all hover:bg-rose-50 hover:text-rose-600"
+                                class="rounded-xl p-2 sm:p-1.5 bg-white/95 backdrop-blur-xs shadow-md text-bq-text-subtle transition-all hover:bg-rose-50 hover:text-rose-600 active:scale-95 cursor-pointer"
                                 @click="$dispatch('open-confirm', { title: 'Hapus Program?', message: 'Program yang sudah dihapus tidak dapat dikembalikan. Yakin ingin menghapus program ini?', formId: 'form-delete-program-{{ $layanan->id }}' })"
                                 aria-label="Delete program"
                                 id="btn-delete-program-{{ $layanan->id }}"

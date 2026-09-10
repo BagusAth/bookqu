@@ -231,14 +231,15 @@ class OwnerScheduleController extends Controller
     /**
      * Hapus slot jadwal.
      */
-    public function destroy(int $id)
+    public function destroy($id)
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $slot = Schedule::where('idtenant', $tenant->id)->findOrFail($id);
+        $targetId = $id instanceof Schedule ? $id->id : (int) $id;
+        $slot = Schedule::where('idtenant', $tenant->id)->findOrFail($targetId);
 
         $adaBooking = $slot->bookings()->where('status', '!=', 'cancelled')->exists();
         if ($adaBooking) {
@@ -310,14 +311,15 @@ class OwnerScheduleController extends Controller
         return redirect('/owner/schedule')->with('sukses', 'Pengaturan availability berhasil disimpan.');
     }
 
-    public function deleteBlockedDate(int $blockedDate)
+    public function deleteBlockedDate($blockedDate)
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $bDate = OwnerBlockedDate::where('idtenant', $tenant->id)->findOrFail($blockedDate);
+        $targetId = $blockedDate instanceof OwnerBlockedDate ? $blockedDate->id : (int) $blockedDate;
+        $bDate = OwnerBlockedDate::where('idtenant', $tenant->id)->findOrFail($targetId);
         $bDate->delete();
 
         return redirect('/owner/schedule')->with('sukses', 'Tanggal blokir berhasil dihapus.');

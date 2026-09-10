@@ -56,17 +56,17 @@
             </div>
 
             {{-- Body --}}
-            <div class="p-6 space-y-4" x-show="booking">
+            <div class="p-4 sm:p-6 space-y-4 max-h-[75vh] overflow-y-auto" x-show="booking">
                 
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-bq-primary/10 text-bq-primary">
+                <div class="flex items-center gap-3 mb-4 sm:mb-6">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-bq-primary/10 text-bq-primary shrink-0">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                         </svg>
                     </div>
                     <div>
                         <p class="text-base font-bold text-bq-text" x-text="booking?.namapelanggan"></p>
-                        <p class="text-sm text-bq-text-muted" x-text="booking?.booking_code"></p>
+                        <p class="text-xs sm:text-sm text-bq-text-muted font-mono" x-text="booking?.booking_code"></p>
                     </div>
                 </div>
 
@@ -78,30 +78,30 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="rounded-lg border border-bq-border bg-bq-background/50 p-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div class="rounded-xl border border-bq-border bg-bq-background/50 p-3">
                         <p class="text-xs font-medium text-bq-text-muted">Phone Number</p>
-                        <p class="mt-1 text-sm font-semibold text-bq-text" x-text="booking?.nomorhp"></p>
+                        <p class="mt-1 text-sm font-semibold text-bq-text font-mono" x-text="booking?.nomorhp"></p>
                     </div>
-                    <div class="rounded-lg border border-bq-border bg-bq-background/50 p-3 overflow-hidden">
+                    <div class="rounded-xl border border-bq-border bg-bq-background/50 p-3 overflow-hidden">
                         <p class="text-xs font-medium text-bq-text-muted">Email</p>
                         <p class="mt-1 text-sm font-semibold text-bq-text truncate" x-text="booking?.email" :title="booking?.email"></p>
                     </div>
                 </div>
 
-                <div class="rounded-lg border border-bq-border bg-bq-background/50 p-3">
+                <div class="rounded-xl border border-bq-border bg-bq-background/50 p-3">
                     <p class="text-xs font-medium text-bq-text-muted">Schedule</p>
                     <p class="mt-1 text-sm font-semibold text-bq-text">
                         <span x-text="formatDate(booking?.tanggalbooking)"></span> &bull; <span x-text="(booking?.jam || '').substring(0, 5) + ' WIB'"></span>
                     </p>
                 </div>
 
-                <div class="rounded-lg border border-bq-border bg-bq-background/50 p-3" x-show="booking?.catatan">
+                <div class="rounded-xl border border-bq-border bg-bq-background/50 p-3" x-show="booking?.catatan">
                     <p class="text-xs font-medium text-bq-text-muted">Notes</p>
                     <p class="mt-1 text-sm text-bq-text" x-text="booking?.catatan"></p>
                 </div>
 
-                <div class="flex items-center justify-between rounded-lg border border-bq-border bg-bq-primary/5 p-3">
+                <div class="flex items-center justify-between rounded-xl border border-bq-border bg-bq-primary/5 p-3">
                     <p class="text-xs font-medium text-bq-primary">Status</p>
                     <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium"
                         :class="{
@@ -115,8 +115,20 @@
             </div>
 
             {{-- Footer --}}
-            <div class="flex items-center justify-end border-t border-bq-border px-6 py-4">
-                <button type="button" @click="buka = false" class="rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm font-medium text-bq-text transition-all hover:bg-bq-background">
+            <div class="flex items-center justify-between border-t border-bq-border px-4 sm:px-6 py-3.5 sm:py-4 gap-2">
+                <template x-if="booking && booking.status !== 'cancelled' && booking.status !== 'refunded'">
+                    <button
+                        type="button"
+                        @click="buka = false; $dispatch('open-owner-reschedule', { booking: booking })"
+                        class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer shadow-2xs"
+                    >
+                        <svg class="h-3.5 w-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span>Ubah Jadwal</span>
+                    </button>
+                </template>
+                <button type="button" @click="buka = false" class="w-full sm:w-auto rounded-xl border border-bq-border bg-bq-surface px-4 py-2 text-xs sm:text-sm font-semibold text-bq-text transition-all hover:bg-bq-background active:scale-95 cursor-pointer">
                     Close
                 </button>
             </div>

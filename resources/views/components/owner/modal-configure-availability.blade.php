@@ -45,7 +45,7 @@
 
             <form method="POST" action="/owner/schedule/availability" @submit="sedangkirim = true" id="form-configure-availability">
                 @csrf
-                <div class="space-y-5 px-6 py-5">
+                <div class="space-y-4 px-4 sm:px-6 py-4 sm:py-5 max-h-[75vh] overflow-y-auto">
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label for="input-block-date" class="mb-1.5 block text-sm font-medium text-bq-text">Block Date</label>
@@ -53,7 +53,7 @@
                                 type="date"
                                 name="tanggal_block"
                                 id="input-block-date"
-                                class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                                class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs sm:text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
                             >
                         </div>
                         <div>
@@ -63,12 +63,12 @@
                                 name="alasan"
                                 id="input-block-reason"
                                 placeholder="Maintenance, holiday"
-                                class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                                class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs sm:text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
                             >
                         </div>
                     </div>
 
-                    <div class="rounded-lg border border-bq-border bg-bq-background p-4">
+                    <div class="rounded-xl border border-bq-border bg-bq-background p-4">
                         <p class="text-sm font-semibold text-bq-text">Weekend Pricing</p>
                         <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
@@ -76,7 +76,7 @@
                                 <select
                                     name="weekend_price_type"
                                     id="input-weekend-type"
-                                    class="w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                                    class="w-full rounded-xl border border-bq-border bg-bq-surface px-3 py-2 text-xs sm:text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
                                 >
                                     <option value="none" {{ ($tenant?->weekend_price_type ?? 'none') === 'none' ? 'selected' : '' }}>No adjustment</option>
                                     <option value="multiplier" {{ ($tenant?->weekend_price_type ?? '') === 'multiplier' ? 'selected' : '' }}>Multiplier</option>
@@ -93,7 +93,7 @@
                                     step="0.01"
                                     value="{{ $tenant?->weekend_price_value }}"
                                     placeholder="1.2 or 200000"
-                                    class="w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                                    class="w-full rounded-xl border border-bq-border bg-bq-surface px-3 py-2 text-xs sm:text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
                                 >
                             </div>
                         </div>
@@ -104,7 +104,7 @@
                         <p class="text-sm font-semibold text-bq-text">Blocked Dates</p>
                         <div class="mt-2 space-y-2">
                             @forelse ($blockedDates as $blocked)
-                                <div class="flex items-center justify-between rounded-lg border border-bq-border bg-bq-background px-3 py-2 text-xs">
+                                <div class="flex items-center justify-between rounded-xl border border-bq-border bg-bq-background px-3 py-2 text-xs">
                                     <div>
                                         <p class="font-semibold text-bq-text">{{ $blocked->tanggal->format('d M Y') }}</p>
                                         <p class="text-bq-text-muted">{{ $blocked->alasan ?? 'No reason' }}</p>
@@ -112,14 +112,14 @@
                                     <form id="form-remove-blocked-{{ $blocked->id }}" method="POST" action="/owner/schedule/blocked-dates/{{ $blocked->id }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="button" class="rounded-md px-2 py-1 text-rose-600 hover:bg-rose-50" 
+                                        <button type="button" class="rounded-lg px-2.5 py-1 text-rose-600 hover:bg-rose-50 font-semibold active:scale-95" 
                                             @click="$dispatch('open-confirm', { title: 'Buka Tanggal?', message: 'Apakah Anda yakin ingin menghapus blokir untuk tanggal ini?', formId: 'form-remove-blocked-{{ $blocked->id }}' })">
                                             Remove
                                         </button>
                                     </form>
                                 </div>
                             @empty
-                                <div class="rounded-lg border border-dashed border-bq-border bg-bq-background px-3 py-4 text-center text-xs text-bq-text-muted">
+                                <div class="rounded-xl border border-dashed border-bq-border bg-bq-background px-3 py-4 text-center text-xs text-bq-text-muted">
                                     Belum ada tanggal diblokir.
                                 </div>
                             @endforelse
@@ -127,15 +127,15 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end gap-3 border-t border-bq-border px-6 py-4">
-                    <button type="button" @click="buka = false" class="rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm font-medium text-bq-text transition-all hover:bg-bq-background" id="btn-cancel-configure-availability">
+                <div class="flex items-center justify-end gap-3 border-t border-bq-border px-4 sm:px-6 py-3.5 sm:py-4">
+                    <button type="button" @click="buka = false" class="flex-1 sm:flex-none justify-center inline-flex rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs sm:text-sm font-semibold text-bq-text transition-all hover:bg-bq-background active:scale-95" id="btn-cancel-configure-availability">
                         Cancel
                     </button>
                     <button
                         type="submit"
                         :disabled="sedangkirim"
-                        :class="sedangkirim ? 'opacity-60 cursor-not-allowed' : 'hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5'"
-                        class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all"
+                        :class="sedangkirim ? 'opacity-60 cursor-not-allowed' : 'hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 active:scale-95'"
+                        class="flex-1 sm:flex-none justify-center inline-flex items-center gap-2 rounded-xl bg-bq-primary px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all"
                         id="btn-submit-configure-availability"
                     >
                         <svg x-show="sedangkirim" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
