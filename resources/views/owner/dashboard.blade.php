@@ -53,7 +53,7 @@
                     <p class="text-sm font-semibold text-sky-900">Pengaturan pembayaran belum diverifikasi</p>
                     <p class="text-xs text-sky-800">Lengkapi kredensial Midtrans dan tunggu verifikasi admin.</p>
                 </div>
-                <a href="/owner/settings" class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-sky-700" id="btn-payment-settings">
+                <a href="{{ route('owner.settings') }}" class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-sky-700" id="btn-payment-settings">
                     Buka Settings
                 </a>
             </div>
@@ -95,7 +95,7 @@
                     </svg>
                 </div>
             </div>
-            <p class="mt-2 text-2xl font-extrabold text-bq-text tracking-tight">{{ number_format($totalpelanggan ?? 0) }}</p>
+            <p class="mt-2 text-2xl font-extrabold text-bq-text tracking-tight" id="stat-customers-value">{{ number_format($totalpelanggan ?? 0) }}</p>
             <div class="mt-2 flex items-center gap-1.5 text-xs text-bq-text-muted">
                 <span class="inline-flex items-center gap-1 font-semibold text-emerald-600">
                     <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -130,7 +130,7 @@
                 <div x-data="{ periodnya: 'monthly' }" class="flex rounded-lg border border-bq-border bg-bq-background p-0.5">
                     <button
                         @click="periodnya = 'weekly'; switchRevenuePeriod('weekly')"
-                        :class="periodnya === 'weekly' ? 'bg-bq-surface text-bq-text shadow-sm' : 'text-bq-text-muted hover:text-bq-text'"
+                        :class="periodnya === 'weekly' ? 'bg-bq-primary text-white shadow-sm' : 'text-bq-text-muted hover:text-bq-text'"
                         class="rounded-md px-3.5 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer"
                         id="btn-period-weekly"
                     >
@@ -196,7 +196,7 @@
             </div>
             @if ($trendlayanan->count() > 0)
                 <div class="mt-5 border-t border-bq-border pt-4">
-                    <a href="/owner/analytics" class="text-sm font-medium text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-full-report">
+                    <a href="{{ route('owner.analytics') }}" class="text-sm font-medium text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-full-report">
                         View Full Report →
                     </a>
                 </div>
@@ -210,7 +210,7 @@
         <div class="rounded-xl border border-bq-border bg-bq-surface lg:col-span-3" id="recent-activity-card">
             <div class="flex items-center justify-between border-b border-bq-border px-5 py-4">
                 <h2 class="text-base font-semibold text-bq-text">Recent Bookings</h2>
-                <a href="/owner/bookings" class="text-sm font-medium text-bq-text-muted transition-colors hover:text-bq-primary" id="link-all-activity">
+                <a href="{{ route('owner.bookings') }}" class="text-sm font-medium text-bq-text-muted transition-colors hover:text-bq-primary" id="link-all-activity">
                     View All Activity →
                 </a>
             </div>
@@ -269,7 +269,7 @@
                     <h2 class="text-base font-semibold text-bq-text">Upcoming Schedule</h2>
                     <p class="text-xs text-bq-text-muted">Next confirmed client sessions</p>
                 </div>
-                <a href="/owner/calendar" class="text-xs font-bold text-[#4F46E5] hover:underline">Open Calendar &rarr;</a>
+                <a href="{{ route('owner.calendar') }}" class="text-xs font-bold text-[#4F46E5] hover:underline">Open Calendar &rarr;</a>
             </div>
 
             <div class="mt-4 space-y-3 flex-1">
@@ -283,8 +283,16 @@
                             <p class="truncate text-sm font-bold text-bq-text">{{ $upcoming->layanan->namalayanan ?? 'Layanan' }}</p>
                             <p class="text-xs text-bq-text-muted truncate">{{ $upcoming->namapelanggan }} &bull; {{ substr($upcoming->jam, 0, 5) }} WIB</p>
                         </div>
-                        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                            {{ ucfirst($upcoming->status) }}
+                        @php
+                            $statusColor = match($upcoming->status) {
+                                'paid', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+                                'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
+                                default => 'bg-gray-50 text-gray-700 ring-gray-600/20',
+                            };
+                            $statusLabel = $upcoming->status === 'paid' ? 'Paid' : ucfirst($upcoming->status);
+                        @endphp
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset {{ $statusColor }}">
+                            {{ $statusLabel }}
                         </span>
                     </div>
                 @empty
@@ -463,6 +471,17 @@
             if (revChange) {
                 revChange.textContent = (data.persen_perubahan_revenue > 0 ? '+' : '') + data.persen_perubahan_revenue + '%';
                 updateChangeColor(revChange, data.persen_perubahan_revenue);
+            }
+
+            // Update Customers & Active Services
+            const custVal = document.getElementById('stat-customers-value');
+            if (custVal && data.total_customers !== undefined) {
+                custVal.textContent = new Intl.NumberFormat('id-ID').format(data.total_customers);
+            }
+
+            const servVal = document.getElementById('stat-services-value');
+            if (servVal && data.active_services !== undefined) {
+                servVal.textContent = new Intl.NumberFormat('id-ID').format(data.active_services);
             }
 
             // Update Recent Activity

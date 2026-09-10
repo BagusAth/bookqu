@@ -58,6 +58,8 @@ class OwnerDashboardPollingTest extends TestCase
                 'data' => [
                     'total_bookings',
                     'total_revenue',
+                    'total_customers',
+                    'active_services',
                     'recent_activities',
                 ],
             ]);
@@ -189,5 +191,40 @@ class OwnerDashboardPollingTest extends TestCase
             ->getJson(route('owner.dashboard.polling'));
 
         $response->assertJsonPath('data.total_bookings', 0);
+    }
+
+    public function test_active_services_only_counts_active_services()
+    {
+        // 1 active service was already created in setUp()
+        Service::create([
+            'idtenant'    => $this->tenant->id,
+            'namalayanan' => 'Layanan Nonaktif',
+            'harga'       => 150000,
+            'durasi'      => 60,
+            'is_active'   => false,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->getJson(route('owner.dashboard.polling'));
+
+        $response->assertJsonPath('data.active_services', 1);
+    }
+
+    public function test_owner_dashboard_view_displays_all_business_summary_components()
+    {
+        $response = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->get(route('owner.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Total Bookings');
+        $response->assertSee('Total Revenue');
+        $response->assertSee('Total Customers');
+        $response->assertSee('Active Services');
+        $response->assertSee('Revenue Growth');
+        $response->assertSee('Daily Trends');
+        $response->assertSee('Upcoming Schedule');
+        $response->assertSee('Recent Bookings');
     }
 }

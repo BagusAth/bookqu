@@ -73,6 +73,7 @@ class OwnerDashboardController extends Controller
 
         $idtenant = $tenant->id;
         $bulanini = Carbon::now()->startOfMonth();
+        $akhirbulanini = Carbon::now()->endOfMonth();
         $bulanlalu = Carbon::now()->subMonth()->startOfMonth();
         $akhirbulanlalu = Carbon::now()->subMonth()->endOfMonth();
 
@@ -80,7 +81,7 @@ class OwnerDashboardController extends Controller
         $totalbooking = Booking::where('idtenant', $idtenant)->count();
 
         $bookinbulanini = Booking::where('idtenant', $idtenant)
-            ->where('tanggalbooking', '>=', $bulanini)
+            ->whereBetween('tanggalbooking', [$bulanini, $akhirbulanini])
             ->count();
 
         $bookinbulanlalu = Booking::where('idtenant', $idtenant)
@@ -89,7 +90,7 @@ class OwnerDashboardController extends Controller
 
         $persenperubahanboking = $bookinbulanlalu > 0
             ? round((($bookinbulanini - $bookinbulanlalu) / $bookinbulanlalu) * 100)
-            : 0;
+            : ($bookinbulanini > 0 ? 100 : 0);
 
         // ── Total Revenue ──
         $totalrevenue = Payment::where('idtenant', $idtenant)
@@ -100,7 +101,7 @@ class OwnerDashboardController extends Controller
         $revenuebulanini = Payment::where('idtenant', $idtenant)
             ->where('tipe', 'booking')
             ->where('status', 'sukses')
-            ->where('created_at', '>=', $bulanini)
+            ->whereBetween('created_at', [$bulanini, $akhirbulanini])
             ->sum('jumlah');
 
         $revenuebulanlalu = Payment::where('idtenant', $idtenant)
@@ -111,10 +112,12 @@ class OwnerDashboardController extends Controller
 
         $persenperubahanrevenue = $revenuebulanlalu > 0
             ? round((($revenuebulanini - $revenuebulanlalu) / $revenuebulanlalu) * 100)
-            : 0;
+            : ($revenuebulanini > 0 ? 100 : 0);
 
         // ── Active Programs ──
-        $programaktif = Service::where('idtenant', $idtenant)->count();
+        $programaktif = Service::where('idtenant', $idtenant)
+            ->where('is_active', true)
+            ->count();
 
         // ── Revenue Per Bulan (7 bulan terakhir) ──
         $datarevenueperbulan = [];
@@ -155,6 +158,7 @@ class OwnerDashboardController extends Controller
         $kemarin = Carbon::yesterday();
 
         $trendlayanan = Service::where('services.idtenant', $idtenant)
+            ->where('services.is_active', true)
             ->select('services.id', 'services.namalayanan')
             ->withCount(['bookings as bookingshariini' => function ($query) use ($hariini) {
                 $query->whereDate('tanggalbooking', $hariini);
@@ -166,15 +170,26 @@ class OwnerDashboardController extends Controller
             ->limit(5)
             ->get()
             ->map(function ($layanan) {
-                $perubahan = $layanan->bookingskemarin > 0
-                    ? round((($layanan->bookingshariini - $layanan->bookingskemarin) / $layanan->bookingskemarin) * 100)
-                    : 0;
+                if ($layanan->bookingskemarin > 0) {
+                    $perubahan = round((($layanan->bookingshariini - $layanan->bookingskemarin) / $layanan->bookingskemarin) * 100);
+                } elseif ($layanan->bookingshariini > 0) {
+                    $perubahan = 100;
+                } else {
+                    $perubahan = 0;
+                }
+
+                $trennya = 'stabil';
+                if ($layanan->bookingshariini > $layanan->bookingskemarin) {
+                    $trennya = 'naik';
+                } elseif ($layanan->bookingshariini < $layanan->bookingskemarin) {
+                    $trennya = 'turun';
+                }
 
                 return [
                     'namalayanan' => $layanan->namalayanan,
                     'jumlahbooking' => $layanan->bookingshariini,
                     'persenperubahan' => $perubahan,
-                    'trennya' => $perubahan > 0 ? 'naik' : ($perubahan < 0 ? 'turun' : 'stabil'),
+                    'trennya' => $trennya,
                 ];
             });
 
@@ -249,6 +264,7 @@ class OwnerDashboardController extends Controller
 
         $compute = function () use ($idtenant) {
             $bulanini = Carbon::now()->startOfMonth();
+            $akhirbulanini = Carbon::now()->endOfMonth();
             $bulanlalu = Carbon::now()->subMonth()->startOfMonth();
             $akhirbulanlalu = Carbon::now()->subMonth()->endOfMonth();
 
@@ -256,7 +272,7 @@ class OwnerDashboardController extends Controller
             $totalbooking = Booking::where('idtenant', $idtenant)->count();
 
             $bookinbulanini = Booking::where('idtenant', $idtenant)
-                ->where('tanggalbooking', '>=', $bulanini)
+                ->whereBetween('tanggalbooking', [$bulanini, $akhirbulanini])
                 ->count();
 
             $bookinbulanlalu = Booking::where('idtenant', $idtenant)
@@ -265,7 +281,7 @@ class OwnerDashboardController extends Controller
 
             $persenperubahanboking = $bookinbulanlalu > 0
                 ? round((($bookinbulanini - $bookinbulanlalu) / $bookinbulanlalu) * 100)
-                : 0;
+                : ($bookinbulanini > 0 ? 100 : 0);
 
             // ── Total Revenue ──
             $totalrevenue = Payment::where('idtenant', $idtenant)
@@ -276,7 +292,7 @@ class OwnerDashboardController extends Controller
             $revenuebulanini = Payment::where('idtenant', $idtenant)
                 ->where('tipe', 'booking')
                 ->where('status', 'sukses')
-                ->where('created_at', '>=', $bulanini)
+                ->whereBetween('created_at', [$bulanini, $akhirbulanini])
                 ->sum('jumlah');
 
             $revenuebulanlalu = Payment::where('idtenant', $idtenant)
@@ -287,7 +303,17 @@ class OwnerDashboardController extends Controller
 
             $persenperubahanrevenue = $revenuebulanlalu > 0
                 ? round((($revenuebulanini - $revenuebulanlalu) / $revenuebulanlalu) * 100)
-                : 0;
+                : ($revenuebulanini > 0 ? 100 : 0);
+
+            // ── Active Programs & Customers ──
+            $programaktif = Service::where('idtenant', $idtenant)
+                ->where('is_active', true)
+                ->count();
+
+            $totalpelanggan = DB::table('bookings')
+                ->where('idtenant', $idtenant)
+                ->distinct()
+                ->count(DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id))))"));
 
             // ── Recent Activity ──
             $aktivitasterbaru = Booking::where('bookings.idtenant', $idtenant)
@@ -296,11 +322,15 @@ class OwnerDashboardController extends Controller
                 ->limit(10)
                 ->get()
                 ->map(function ($aktivitas) {
+                    $tanggalFormatted = $aktivitas->tanggalbooking instanceof Carbon
+                        ? $aktivitas->tanggalbooking->format('d M Y')
+                        : Carbon::parse($aktivitas->tanggalbooking)->format('d M Y');
+
                     return [
                         'id' => $aktivitas->id,
                         'program_name' => $aktivitas->layanan->namalayanan ?? '-',
                         'customer_name' => $aktivitas->namapelanggan,
-                        'date' => $aktivitas->tanggalbooking->format('d M Y'),
+                        'date' => $tanggalFormatted,
                         'status' => $aktivitas->status,
                     ];
                 });
@@ -310,6 +340,8 @@ class OwnerDashboardController extends Controller
                 'persen_perubahan_booking' => $persenperubahanboking,
                 'total_revenue' => $totalrevenue,
                 'persen_perubahan_revenue' => $persenperubahanrevenue,
+                'total_customers' => $totalpelanggan,
+                'active_services' => $programaktif,
                 'recent_activities' => $aktivitasterbaru,
             ];
         };
