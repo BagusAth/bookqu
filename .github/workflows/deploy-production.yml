@@ -137,6 +137,8 @@ jobs:
 
             echo "--- Deployment directory ---"
             ls -lah "$DEPLOY_DIR" || true
+            echo "--- Transferred archives ---"
+            find "$DEPLOY_DIR" -type f \( -name 'bookqu-laravel.tar.gz' -o -name 'bookqu-build.tar.gz' \) -print || true
 
             echo "--- Laravel directory ---"
             ls -lah "$LARAVEL_DIR" || true
@@ -191,8 +193,10 @@ jobs:
             }
             trap rollback EXIT
 
-            test -f "$DEPLOY_DIR/bookqu-laravel.tar.gz"
-            test -f "$DEPLOY_DIR/bookqu-build.tar.gz"
+            LARAVEL_ARCHIVE="$(find "$DEPLOY_DIR" -type f -name 'bookqu-laravel.tar.gz' -print -quit)"
+            BUILD_ARCHIVE="$(find "$DEPLOY_DIR" -type f -name 'bookqu-build.tar.gz' -print -quit)"
+            test -n "$LARAVEL_ARCHIVE"
+            test -n "$BUILD_ARCHIVE"
             test -d "$LARAVEL_DIR"
             test -f "$LARAVEL_DIR/.env"
             test -f "$LARAVEL_DIR/vendor/autoload.php"
@@ -203,8 +207,8 @@ jobs:
 
             rm -rf "$SOURCE_DIR" "$BUILD_DIR"
             mkdir -p "$SOURCE_DIR" "$BUILD_DIR"
-            tar -xzf "$DEPLOY_DIR/bookqu-laravel.tar.gz" -C "$SOURCE_DIR"
-            tar -xzf "$DEPLOY_DIR/bookqu-build.tar.gz" -C "$BUILD_DIR"
+            tar -xzf "$LARAVEL_ARCHIVE" -C "$SOURCE_DIR"
+            tar -xzf "$BUILD_ARCHIVE" -C "$BUILD_DIR"
             test -f "$SOURCE_DIR/artisan"
             test -f "$SOURCE_DIR/composer.json"
             test -f "$SOURCE_DIR/composer.lock"
