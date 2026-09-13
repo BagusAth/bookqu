@@ -14,6 +14,7 @@ use App\Models\Payment;
 use App\Models\Schedule;
 use App\Services\MidtransPaymentService;
 use App\Traits\ClearsBookingCache;
+use App\Support\CustomerBookingRoutes;
 use Illuminate\Support\Facades\Log;
 use Midtrans\Config as MidtransConfig;
 use Midtrans\Snap;
@@ -92,7 +93,7 @@ class BookingController extends Controller
         $service = $this->resolveService($tenant->id, (int) $validated['service_id']);
 
         if (!$service || !$service->hasActiveFulfillment()) {
-            return redirect()->route('customer.booking.program', $slug_usaha)
+                return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha)
                 ->withErrors(['service' => 'Layanan ini sedang tidak tersedia karena staf atau sumber daya tidak aktif.']);
         }
 
@@ -105,7 +106,7 @@ class BookingController extends Controller
             ],
         ]);
 
-        return redirect()->route('customer.booking.date', $slug_usaha);
+        return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha);
     }
 
     public function showDateSelection(string $slug_usaha)
@@ -123,20 +124,20 @@ class BookingController extends Controller
 
         if ($sessionTenantId && (int) $sessionTenantId !== $tenant->id) {
             session()->forget('booking');
-            return redirect()->route('customer.booking.program', $slug_usaha);
+                return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $serviceId = $booking['service_id'] ?? null;
 
         if (!$serviceId) {
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
         if (!$service || !$service->hasActiveFulfillment()) {
             session()->forget('booking');
-            return redirect()->route('customer.booking.program', $slug_usaha);
+                return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         session()->put('booking.tenant_id', $tenant->id);
@@ -214,20 +215,20 @@ class BookingController extends Controller
 
         if ($sessionTenantId && (int) $sessionTenantId !== $tenant->id) {
             session()->forget('booking');
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $serviceId = $booking['service_id'] ?? null;
 
         if (!$serviceId) {
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
         if (!$service || !$service->hasActiveFulfillment()) {
             session()->forget('booking');
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         session()->put('booking.tenant_id', $tenant->id);
@@ -241,7 +242,7 @@ class BookingController extends Controller
         $maxDate = Carbon::today()->addDays(30);
 
         if ($selectedDate < $minDate->toDateString() || $selectedDate > $maxDate->toDateString()) {
-            return redirect()->route('customer.booking.date', $slug_usaha)
+            return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
                 ->withErrors(['tanggal' => 'Selected date is outside the booking window.']);
         }
 
@@ -249,7 +250,7 @@ class BookingController extends Controller
             session()->put('booking.tanggal', $selectedDate);
             session()->put('booking.jam', null);
 
-            return redirect()->route('customer.booking.time', [
+            return CustomerBookingRoutes::route('customer.booking.time', [
                 'slug_usaha' => $slug_usaha,
                 'simulate' => 1,
             ]);
@@ -265,7 +266,7 @@ class BookingController extends Controller
             ->count();
 
         if ($totalBookingsThatDay >= $maxbooking) {
-            return redirect()->route('customer.booking.date', $slug_usaha)
+            return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
                 ->withErrors(['tanggal' => 'Kapasitas maksimal booking harian bisnis ini telah penuh.']);
         }
 
@@ -282,14 +283,14 @@ class BookingController extends Controller
             ->count();
 
         if ($availableSlots < 1) {
-            return redirect()->route('customer.booking.date', $slug_usaha)
+            return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
                 ->withErrors(['tanggal' => 'Selected date is fully booked.']);
         }
 
         session()->put('booking.tanggal', $selectedDate);
         session()->put('booking.jam', null);
 
-        return redirect()->route('customer.booking.time', $slug_usaha);
+        return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha);
     }
 
     public function showTimeSelection(string $slug_usaha)
@@ -307,25 +308,25 @@ class BookingController extends Controller
 
         if ($sessionTenantId && (int) $sessionTenantId !== $tenant->id) {
             session()->forget('booking');
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
 
         if (!$serviceId) {
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         if (!$selectedDate) {
-            return redirect()->route('customer.booking.date', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
         if (!$service || !$service->hasActiveFulfillment()) {
             session()->forget('booking');
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         session()->put('booking.tenant_id', $tenant->id);
@@ -437,25 +438,25 @@ class BookingController extends Controller
 
         if ($sessionTenantId && (int) $sessionTenantId !== $tenant->id) {
             session()->forget('booking');
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
 
         if (!$serviceId) {
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         if (!$selectedDate) {
-            return redirect()->route('customer.booking.date', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
         if (!$service || !$service->hasActiveFulfillment()) {
             session()->forget('booking');
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         session()->put('booking.tenant_id', $tenant->id);
@@ -475,7 +476,7 @@ class BookingController extends Controller
         if ($simulate) {
             session()->put('booking.jam', $validated['jam']);
 
-            return redirect()->route('customer.booking.checkout', [
+            return CustomerBookingRoutes::route('customer.booking.checkout', [
                 'slug_usaha' => $slug_usaha,
                 'simulate' => 1,
             ]);
@@ -508,7 +509,7 @@ class BookingController extends Controller
         });
 
         if (!$schedule) {
-            return redirect()->route('customer.booking.time', $slug_usaha)
+            return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
                 ->withErrors(['jam' => 'Selected time is no longer available.']);
         }
 
@@ -516,19 +517,19 @@ class BookingController extends Controller
         $selectedTime = $scheduleTime->format('H:i');
 
         if ($validated['jam'] !== $selectedTime) {
-            return redirect()->route('customer.booking.time', $slug_usaha)
+            return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
                 ->withErrors(['jam' => 'Selected time does not match the schedule.']);
         }
 
         if (Carbon::parse($selectedDate)->isSameDay($now) && $scheduleTime->lessThanOrEqualTo($now)) {
-            return redirect()->route('customer.booking.time', $slug_usaha)
+            return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
                 ->withErrors(['jam' => 'Selected time has already passed.']);
         }
 
         session()->put('booking.jam', $selectedTime);
         session()->put('booking.schedule_id', $schedule->id);
 
-        return redirect()->route('customer.booking.checkout', $slug_usaha);
+        return CustomerBookingRoutes::route('customer.booking.checkout', $slug_usaha);
     }
 
     public function showCheckout(string $slug_usaha)
@@ -546,12 +547,12 @@ class BookingController extends Controller
         $scheduleId = $booking['schedule_id'] ?? null;
 
         if (!$serviceId || !$selectedDate || !$selectedTime) {
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
         if (!$service || !$service->hasActiveFulfillment()) {
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $schedule = null;
@@ -603,13 +604,13 @@ class BookingController extends Controller
         $scheduleId = $booking['schedule_id'] ?? null;
 
         if (!$serviceId || !$selectedDate || !$selectedTime) {
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
         if (!$service || !$service->hasActiveFulfillment()) {
-            return redirect()->route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $request->validate([
@@ -756,7 +757,7 @@ class BookingController extends Controller
 
         // Handle slot conflict or schedule not found
         if (isset($result['error'])) {
-            return redirect()->route('customer.booking.time', $slug_usaha)
+            return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
                 ->withErrors(['jam' => $result['error']]);
         }
 
@@ -781,7 +782,7 @@ class BookingController extends Controller
                 Carbon::parse($selectedDate)->toDateString()
             );
             session()->forget('booking');
-            return redirect()->route('customer.booking.program', $slug_usaha)->with('success', 'Booking berhasil!');
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha)->with('success', 'Booking berhasil!');
         }
 
         // Paid booking: get Midtrans snap token
@@ -835,7 +836,7 @@ class BookingController extends Controller
         }
 
         session()->forget('booking');
-        return redirect()->route('customer.booking.payment', [$slug_usaha, $payment]);
+        return CustomerBookingRoutes::route('customer.booking.payment', [$slug_usaha, $payment]);
     }
 
     public function showPayment(string $slug_usaha, Payment $payment)
@@ -846,7 +847,7 @@ class BookingController extends Controller
         }
 
         if ($payment->status === 'sukses') {
-            return redirect()->route('customer.booking.invoice', [$slug_usaha, $payment]);
+            return CustomerBookingRoutes::route('customer.booking.invoice', [$slug_usaha, $payment]);
         }
 
         if ($payment->isExpired() && $payment->status === 'pending') {
@@ -869,7 +870,7 @@ class BookingController extends Controller
                 );
             }
 
-            return redirect()->route('customer.booking.program', $slug_usaha)
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha)
                 ->with('error', 'Waktu pembayaran telah habis.');
         }
 
@@ -894,7 +895,7 @@ class BookingController extends Controller
             return response()->json([
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
+                'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
             ]);
         }
 
@@ -904,7 +905,7 @@ class BookingController extends Controller
             return response()->json([
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
+                'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
             ]);
         }
 
@@ -922,7 +923,7 @@ class BookingController extends Controller
                 return response()->json([
                     'status' => 'sukses',
                     'message' => 'Pembayaran berhasil dikonfirmasi!',
-                    'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
+                    'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
                 ]);
             }
 
@@ -951,7 +952,7 @@ class BookingController extends Controller
             return response()->json([
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
+                    'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
             ]);
         }
 
@@ -970,7 +971,7 @@ class BookingController extends Controller
             return response()->json([
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => route('customer.booking.invoice', [$slug_usaha, $payment]),
+                'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
             ]);
         }
 

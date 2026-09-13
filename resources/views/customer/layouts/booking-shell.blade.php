@@ -116,7 +116,7 @@
         </header>
 
         {{-- Optional Banner Image for Tenant --}}
-        @if(isset($tenant) && $tenant->banner_path && Request::routeIs('customer.booking.program'))
+        @if(isset($tenant) && $tenant->banner_path && Request::routeIs('customer.booking.program', 'customer.booking.slug.program'))
             <div class="w-full bg-[#0F172A] relative h-40 sm:h-56 overflow-hidden">
                 <img src="{{ Storage::url($tenant->banner_path) }}" alt="Banner {{ $tenant->namabisnis }}" class="w-full h-full object-cover opacity-85">
                 <div class="absolute inset-0 bg-gradient-to-t from-[#0F172A]/70 via-transparent to-transparent"></div>

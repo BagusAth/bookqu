@@ -22,7 +22,7 @@
                 </p>
 
                 <div class="mt-8 space-y-3">
-                    <a href="{{ route('customer.booking.date', $tenant->slug) }}" class="inline-flex w-full justify-center rounded-xl bg-[#4F46E5] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#4338CA]">
+                    <a href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug) }}" class="inline-flex w-full justify-center rounded-xl bg-[#4F46E5] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#4338CA]">
                         Retry Booking
                     </a>
                     <a href="#" class="inline-flex w-full justify-center rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm font-bold text-[#374151] transition hover:bg-[#F9FAFB]">

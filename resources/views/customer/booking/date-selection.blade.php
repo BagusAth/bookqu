@@ -2,7 +2,7 @@
 
 @section('title', 'Pilih Tanggal')
 @section('current_step', 2)
-@section('back_url', route('customer.booking.program', $tenant->slug))
+@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug))
 @section('back_label', 'Pilih Layanan')
 
 @section('content')
@@ -19,7 +19,7 @@
         id="booking-date-form"
         class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
         method="POST"
-        action="{{ route('customer.booking.select-date', $tenant->slug) }}"
+        action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.select-date'), $tenant->slug) }}"
         x-ref="confirmForm"
     >
         @csrf
@@ -32,7 +32,7 @@
         <section>
             <div class="mb-6">
                 <a
-                    href="{{ route('customer.booking.program', $tenant->slug) }}"
+                    href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
                     class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#64748B] hover:text-[#4F46E5] transition-colors mb-2"
                 >
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
@@ -65,7 +65,7 @@
             buttonLabel="Lanjut Pilih Jam"
             buttonEnabledWhen="selectedDate"
             onButtonClick="handleConfirm()"
-            :backUrl="route('customer.booking.program', $tenant->slug)"
+            :backUrl="route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug)"
             backLabel="Kembali ke Layanan"
         />
     </form>

@@ -73,7 +73,7 @@
                 @endif
 
                 <div class="mt-6 space-y-3">
-                    <a href="{{ route('customer.booking.program', $tenant->slug) }}" class="inline-flex w-full justify-center rounded-xl bg-[#4F46E5] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#4338CA]">
+                    <a href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}" class="inline-flex w-full justify-center rounded-xl bg-[#4F46E5] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#4338CA]">
                         Buat Booking Baru
                     </a>
                     @if($booking && $booking->booking_code && $booking->cancellation_token)

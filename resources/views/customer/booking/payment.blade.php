@@ -144,8 +144,8 @@
         const csrfToken = '{{ csrf_token() }}';
 
         // Robust route URLs bound to order_id
-        const callbackUrl = '{{ route("customer.booking.callback", [$tenant->slug, $payment]) }}';
-        const checkStatusUrl = '{{ route("customer.booking.check-status", [$tenant->slug, $payment]) }}';
+        const callbackUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.callback"), [$tenant->slug, $payment]) }}';
+        const checkStatusUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.check-status"), [$tenant->slug, $payment]) }}';
 
         let isProcessingSuccess = false;
         let pollInterval = null;

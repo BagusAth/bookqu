@@ -2,7 +2,7 @@
 
 @section('title', 'Isi Data Diri')
 @section('current_step', 4)
-@section('back_url', route('customer.booking.time', $tenant->slug))
+@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug))
 @section('back_label', 'Pilih Jam')
 
 @section('content')
@@ -11,7 +11,7 @@
         id="booking-checkout-form"
         class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
         method="POST"
-        action="{{ route('customer.booking.process-checkout', $tenant->slug) }}"
+        action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.process-checkout'), $tenant->slug) }}"
     >
         @csrf
 
@@ -19,7 +19,7 @@
         <section>
             <div class="mb-6">
                 <a
-                    href="{{ route('customer.booking.time', $tenant->slug) }}"
+                    href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug) }}"
                     class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#64748B] hover:text-[#4F46E5] transition-colors mb-2"
                 >
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
@@ -326,7 +326,7 @@
                 </button>
 
                 <a
-                    href="{{ route('customer.booking.time', $tenant->slug) }}"
+                    href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug) }}"
                     class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-white py-2.5 px-4 text-xs font-semibold text-[#64748B] transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
                 >
                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">

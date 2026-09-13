@@ -2,7 +2,7 @@
 
 @section('title', 'Pilih Jam')
 @section('current_step', 3)
-@section('back_url', route('customer.booking.date', $tenant->slug))
+@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug))
 @section('back_label', 'Pilih Tanggal')
 
 @section('content')
@@ -19,7 +19,7 @@
         id="booking-time-form"
         class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
         method="POST"
-        action="{{ route('customer.booking.select-time', $tenant->slug) }}"
+        action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.select-time'), $tenant->slug) }}"
         x-ref="confirmForm"
     >
         @csrf
@@ -33,7 +33,7 @@
         <section>
             <div class="mb-6">
                 <a
-                    href="{{ route('customer.booking.date', $tenant->slug) }}"
+                    href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug) }}"
                     class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#64748B] hover:text-[#4F46E5] transition-colors mb-2"
                 >
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
@@ -118,7 +118,7 @@
                     <h4 class="text-sm font-bold text-[#0F172A]">Tidak Ada Slot Tersedia</h4>
                     <p class="text-xs text-[#64748B] mt-1">Semua slot pada tanggal ini sudah penuh atau tidak tersedia. Silakan pilih tanggal lain.</p>
                     <a
-                        href="{{ route('customer.booking.date', $tenant->slug) }}"
+                        href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug) }}"
                         class="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-[#CBD5E1] bg-white px-4 py-2 text-xs font-bold text-[#0F172A] hover:bg-[#F8FAFC]"
                     >
                         &larr; Pilih Tanggal Lain
@@ -138,7 +138,7 @@
             buttonLabel="Lanjut ke Data Diri"
             buttonEnabledWhen="selectedTime"
             onButtonClick="handleConfirm()"
-            :backUrl="route('customer.booking.date', $tenant->slug)"
+            :backUrl="route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug)"
             backLabel="Kembali ke Tanggal"
         />
     </form>

@@ -154,7 +154,7 @@
         </button>
 
         <a
-            href="{{ route('customer.booking.program', $tenant->slug) }}"
+                            href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] px-6 py-3 text-sm font-bold text-white shadow-md shadow-[#4F46E5]/20 transition active:scale-98"
         >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">

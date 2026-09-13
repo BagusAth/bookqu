@@ -315,51 +315,48 @@ if (app()->environment('local', 'staging', 'testing')) {
     });
 }
 
-$customerRoutes = function () {
+$customerRoutes = function (string $namePrefix = 'customer.booking.') {
     Route::get('/', [BookingController::class, 'showProgramSelection'])
-        ->name('customer.booking.program');
+        ->name($namePrefix . 'program');
 
     Route::post('/booking/select-program', [BookingController::class, 'selectProgram'])
-        ->name('customer.booking.select-program');
+        ->name($namePrefix . 'select-program');
 
     Route::get('/booking/date', [BookingController::class, 'showDateSelection'])
-        ->name('customer.booking.date');
+        ->name($namePrefix . 'date');
 
     Route::post('/booking/select-date', [BookingController::class, 'selectDate'])
-        ->name('customer.booking.select-date');
+        ->name($namePrefix . 'select-date');
 
     Route::get('/booking/time', [BookingController::class, 'showTimeSelection'])
-        ->name('customer.booking.time');
+        ->name($namePrefix . 'time');
 
     Route::post('/booking/select-time', [BookingController::class, 'selectTime'])
-        ->name('customer.booking.select-time');
+        ->name($namePrefix . 'select-time');
 
     Route::get('/booking/checkout', [BookingController::class, 'showCheckout'])
-        ->name('customer.booking.checkout');
+        ->name($namePrefix . 'checkout');
 
     Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])
-        ->name('customer.booking.process-checkout');
+        ->name($namePrefix . 'process-checkout');
 
     Route::get('/booking/payment/{payment:order_id}', [BookingController::class, 'showPayment'])
-        ->name('customer.booking.payment');
+        ->name($namePrefix . 'payment');
 
     Route::post('/booking/payment/{payment:order_id}/check-status', [BookingController::class, 'checkPaymentStatus'])
-        ->name('customer.booking.check-status');
+        ->name($namePrefix . 'check-status');
 
     Route::post('/booking/payment/{payment:order_id}/callback', [BookingController::class, 'handleCallback'])
-        ->name('customer.booking.callback');
+        ->name($namePrefix . 'callback');
 
     Route::get('/booking/payment/{payment:order_id}/invoice', [BookingController::class, 'showInvoice'])
-        ->name('customer.booking.invoice');
+        ->name($namePrefix . 'invoice');
 };
 
 // Custom domain routing
-$host = request()->getHost();
-if ($host !== '127.0.0.1' && $host !== 'localhost' && !str_contains($host, 'bookqu.test')) {
-    Route::middleware('tenant')->group($customerRoutes);
-}
+Route::middleware('tenant')->group(fn () => $customerRoutes());
 
 // Subdirectory routing (default)
 Route::prefix('{slug_usaha}')
     ->middleware('tenant')
-    ->group($customerRoutes);
+    ->group(fn () => $customerRoutes('customer.booking.slug.'));

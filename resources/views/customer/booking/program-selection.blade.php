@@ -10,7 +10,7 @@
         id="booking-program-form"
         class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
         method="POST"
-        action="{{ route('customer.booking.select-program', $tenant->slug) }}"
+        action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.select-program'), $tenant->slug) }}"
         x-ref="confirmForm"
     >
         @csrf
