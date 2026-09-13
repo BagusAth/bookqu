@@ -43,7 +43,11 @@ jobs:
       - name: Create Laravel source archive
         run: |
           set -e
-          tar -czf bookqu-laravel.tar.gz \
+
+          ARCHIVE_DIR="$RUNNER_TEMP/bookqu-deploy"
+          mkdir -p "$ARCHIVE_DIR"
+
+          tar -czf "$ARCHIVE_DIR/bookqu-laravel.tar.gz" \
             --exclude='./.git' \
             --exclude='./.env*' \
             --exclude='./node_modules' \
@@ -51,13 +55,26 @@ jobs:
             --exclude='./storage' \
             --exclude='./public/build' \
             -C . .
-          tar -tzf bookqu-laravel.tar.gz | head -40
+
+          echo "Laravel archive created:"
+          ls -lh "$ARCHIVE_DIR/bookqu-laravel.tar.gz"
+
+          tar -tzf "$ARCHIVE_DIR/bookqu-laravel.tar.gz" | head -40
 
       - name: Create frontend build archive
         run: |
           set -e
-          tar -czf bookqu-build.tar.gz -C public build
-          tar -tzf bookqu-build.tar.gz
+
+          ARCHIVE_DIR="$RUNNER_TEMP/bookqu-deploy"
+          mkdir -p "$ARCHIVE_DIR"
+
+          tar -czf "$ARCHIVE_DIR/bookqu-build.tar.gz" \
+            -C public build
+
+          echo "Frontend archive created:"
+          ls -lh "$ARCHIVE_DIR/bookqu-build.tar.gz"
+
+          tar -tzf "$ARCHIVE_DIR/bookqu-build.tar.gz"
 
       - name: Prepare temporary deployment directory
         uses: appleboy/ssh-action@v1.2.2
@@ -80,7 +97,7 @@ jobs:
           username: ${{ secrets.HOSTDATA_USER }}
           key: ${{ secrets.HOSTDATA_SSH_KEY }}
           port: ${{ secrets.HOSTDATA_PORT }}
-          source: bookqu-laravel.tar.gz
+          source: ${{ runner.temp }}/bookqu-deploy/bookqu-laravel.tar.gz
           target: /home/bacadite/bookqu-production-deploy
 
       - name: Transfer frontend build archive
