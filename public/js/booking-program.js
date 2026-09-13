@@ -7,6 +7,18 @@ document.addEventListener('alpine:init', () => {
         tenantSlug: '',
         storageKey: '',
         isSubmitting: false,
+        searchQuery: '',
+        activeCategory: 'all',
+
+        isCardVisible(serviceId, categoryId, serviceName) {
+            const matchesCat = this.activeCategory === 'all' || String(categoryId) === String(this.activeCategory);
+            const matchesSearch = !this.searchQuery || serviceName.toLowerCase().includes(this.searchQuery.toLowerCase().trim());
+            return matchesCat && matchesSearch;
+        },
+
+        setCategory(catId) {
+            this.activeCategory = catId;
+        },
 
         init() {
             // Support both IDs consistently to prevent mismatch bugs
@@ -25,6 +37,19 @@ document.addEventListener('alpine:init', () => {
                 : 'bookqu:selected-service';
 
             this.restoreSelection();
+
+            window.addEventListener('pageshow', () => {
+                this.isSubmitting = false;
+            });
+            window.addEventListener('pagehide', () => {
+                this.isSubmitting = false;
+            });
+            window.addEventListener('popstate', () => {
+                this.isSubmitting = false;
+            });
+            window.addEventListener('booking-reset-submitting', () => {
+                this.isSubmitting = false;
+            });
         },
 
         restoreSelection() {
@@ -75,6 +100,12 @@ document.addEventListener('alpine:init', () => {
 
             this.isSubmitting = true;
 
+            // Safety reset timeout: Ensures if page is cached via BFCache or navigation is slow,
+            // isSubmitting never remains permanently true when navigating back.
+            setTimeout(() => {
+                this.isSubmitting = false;
+            }, 1200);
+
             const form = this.$refs?.confirmForm || document.getElementById('booking-program-form');
             if (form) {
                 form.submit();
@@ -91,8 +122,10 @@ document.addEventListener('alpine:init', () => {
 
         get serviceDuration() {
             if (!this.selectedService) return '-';
-            const unit = this.selectedService.duration_unit || 'menit';
-            return `${this.selectedService.duration} ${unit}`;
+            const dur = this.selectedService.duration ?? this.selectedService.durasi ?? null;
+            if (!dur) return '-';
+            const unit = this.selectedService.duration_unit || this.selectedService.satuan_durasi || 'menit';
+            return `${dur} ${unit}`;
         },
     }));
 });

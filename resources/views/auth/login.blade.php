@@ -46,7 +46,7 @@
                             name="email" 
                             placeholder="nama@email.com"
                             value="{{ old('email') }}"
-                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('email') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('email') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                             required
                         />
                         @error('email')
@@ -62,7 +62,7 @@
                                 type="password" 
                                 name="password" 
                                 placeholder="Masukkan password"
-                                class="w-full px-4 py-2 border rounded-lg pr-12 focus:ring-2 focus:border-transparent {{ $errors->has('password') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                                class="w-full px-4 py-2 border rounded-lg pr-12 focus:ring-2 focus:border-transparent {{ $errors->has('password') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                                 required
                             />
                             <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-700" data-toggle="password">
@@ -76,13 +76,13 @@
 
                     <div class="flex items-center justify-between">
                         <label class="flex items-center">
-                            <input type="checkbox" name="remember" class="rounded border-slate-300" @checked(old('remember')) />
+                            <input type="checkbox" name="remember" class="rounded border-slate-300 text-[#4F46E5] focus:ring-[#4F46E5]" @checked(old('remember')) />
                             <span class="ml-2 text-sm text-slate-600">Ingat saya</span>
                         </label>
-                        <a href="#" class="text-sm text-blue-600 hover:text-blue-700">Lupa password?</a>
+                        <a href="#" class="text-sm text-[#4F46E5] hover:text-[#4338CA]">Lupa password?</a>
                     </div>
 
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    <button type="submit" class="w-full bg-[#4F46E5] text-white py-2 rounded-lg font-semibold hover:bg-[#4338CA] transition shadow-sm shadow-[#4F46E5]/25">
                         Masuk
                     </button>
 

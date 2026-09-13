@@ -90,4 +90,15 @@ class Service extends Model
 
         return true;
     }
+
+    public function getCoverImageUrlAttribute(): ?string
+    {
+        if (empty($this->image_url)) {
+            return null;
+        }
+        if (str_starts_with($this->image_url, 'http://') || str_starts_with($this->image_url, 'https://') || str_starts_with($this->image_url, '/')) {
+            return $this->image_url;
+        }
+        return \Illuminate\Support\Facades\Storage::url($this->image_url);
+    }
 }

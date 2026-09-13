@@ -30,12 +30,12 @@ class DatabaseSeeder extends Seeder
                 'namapaket' => 'medium',
                 'hargabulanan' => 299000,
                 'maxlayanan' => 0,
-                'maxbooking' => 0,
-                'isunlimited' => true,
+                'maxbooking' => 500,
+                'isunlimited' => false,
             ],
             [
                 'namapaket' => 'pro',
-                'hargabulanan' => 799000,
+                'hargabulanan' => 499000,
                 'maxlayanan' => 0,
                 'maxbooking' => 0,
                 'isunlimited' => true,
@@ -207,5 +207,8 @@ class DatabaseSeeder extends Seeder
                 array_merge($service, ['idtenant' => $tenantStudio->id])
             );
         }
+
+        // Call Brama Digital comprehensive seeder
+        $this->call(BramaStudioSeeder::class);
     }
 }

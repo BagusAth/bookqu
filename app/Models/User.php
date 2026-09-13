@@ -55,4 +55,14 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->role === 'customer';
     }
+
+    public function tenant(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Tenant::class, 'iduser');
+    }
+
+    public function tenants(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Tenant::class, 'iduser');
+    }
 }

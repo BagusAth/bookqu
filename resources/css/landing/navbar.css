@@ -29,7 +29,7 @@ html {
     bottom: 0;
     height: 2px;
     width: 100%;
-    background-color: #2563eb;
+    background-color: #4F46E5;
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.25s ease;
@@ -37,7 +37,7 @@ html {
 
 .nav-link:hover,
 .nav-link.is-active {
-    color: #1d4ed8;
+    color: #4F46E5;
     font-weight: 600;
 }
 

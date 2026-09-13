@@ -228,6 +228,11 @@ class MidtransPaymentService
                     } elseif ($booking->status === 'pending') {
                         $booking->update(['status' => 'paid']);
 
+                        if (!$booking->booking_code) {
+                            $booking->assignManagementTokens();
+                            $booking->refresh();
+                        }
+
                         // Catat penggunaan booking ke usage_logs (inside transaction)
                         try {
                             UsageLog::record($booking->idtenant, 'booking');

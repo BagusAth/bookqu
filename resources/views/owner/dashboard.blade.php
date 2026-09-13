@@ -1,0 +1,528 @@
+@extends('layouts.owner-layout')
+
+@section('title', 'Dashboard')
+
+@section('content')
+<div class="mx-auto max-w-7xl space-y-6">
+
+    {{-- ── Welcome Header ── --}}
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-bq-text sm:text-3xl" id="welcome-heading">
+                Welcome back, {{ $tenant->user->namalengkap ?? 'Owner' }}
+            </h1>
+            <p class="mt-1 text-sm text-bq-text-muted">Here's what's happening with your business today.</p>
+        </div>
+        <div class="flex items-center gap-2.5">
+            {{-- Date Indicator Badge --}}
+            <div class="hidden sm:inline-flex items-center gap-2 rounded-xl border border-bq-border bg-bq-surface px-3.5 py-2 text-xs font-semibold text-bq-text shadow-2xs">
+                <svg class="h-4 w-4 text-[#4F46E5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
+            </div>
+            {{-- Quick Calendar Link --}}
+            <a href="{{ route('owner.calendar') }}" class="inline-flex items-center gap-1.5 rounded-xl border border-[#4F46E5]/20 bg-[#4F46E5]/5 px-3.5 py-2 text-xs font-bold text-[#4F46E5] hover:bg-[#4F46E5]/10 transition-colors shadow-2xs" id="btn-quick-calendar">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>Kalender Reservasi</span>
+            </a>
+        </div>
+    </div>
+
+    {{-- ── Profile Completion Prompt --}}
+    @if ($showProfilePrompt)
+        <div class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4" id="profile-completion-banner">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-amber-900">Lengkapi profil bisnis Anda</p>
+                    <p class="text-xs text-amber-800">Isi data bisnis agar akun Anda siap digunakan dan URL bisnis bisa dibuat.</p>
+                </div>
+                <button @click="$dispatch('open-complete-profile')" class="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-amber-700" id="btn-complete-profile">
+                    Lengkapi Profil
+                </button>
+            </div>
+        </div>
+    @endif
+
+    @if ($showPaymentPrompt)
+        <div class="rounded-xl border border-sky-200 bg-sky-50 px-5 py-4" id="payment-verification-banner">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-sky-900">Pengaturan pembayaran belum diverifikasi</p>
+                    <p class="text-xs text-sky-800">Lengkapi kredensial Midtrans dan tunggu verifikasi admin.</p>
+                </div>
+                <a href="{{ route('owner.settings') }}" class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-sky-700" id="btn-payment-settings">
+                    Buka Settings
+                </a>
+            </div>
+        </div>
+    @endif
+
+    {{-- ── Trial Banner ── --}}
+    @if ($statustrial)
+        @include('components.owner.trial-banner', ['sisahari' => $sisahari])
+    @endif
+
+    {{-- ── Stat Cards (4 Overview Cards) ── --}}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" id="stats-grid">
+        @include('components.owner.stat-card', [
+            'ikon' => 'booking',
+            'label' => 'Total Bookings',
+            'nilai' => number_format($totalbooking),
+            'perubahan' => abs($persenperubahanboking),
+            'tipeperubahan' => $persenperubahanboking > 0 ? 'naik' : ($persenperubahanboking < 0 ? 'turun' : 'stabil'),
+            'idPrefix' => 'stat-booking',
+        ])
+
+        @include('components.owner.stat-card', [
+            'ikon' => 'revenue',
+            'label' => 'Total Revenue',
+            'nilai' => 'Rp ' . number_format($totalrevenue, 0, ',', '.'),
+            'perubahan' => abs($persenperubahanrevenue),
+            'tipeperubahan' => $persenperubahanrevenue > 0 ? 'naik' : ($persenperubahanrevenue < 0 ? 'turun' : 'stabil'),
+            'idPrefix' => 'stat-revenue',
+        ])
+
+        {{-- Customers Card --}}
+        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 shadow-xs transition-all hover:border-bq-border-strong hover:shadow-sm" id="stat-customers">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Total Customers</p>
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+            </div>
+            <p class="mt-2 text-2xl font-extrabold text-bq-text tracking-tight" id="stat-customers-value">{{ number_format($totalpelanggan ?? 0) }}</p>
+            <div class="mt-2 flex items-center gap-1.5 text-xs text-bq-text-muted">
+                <span class="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                    </svg>
+                    CRM
+                </span>
+                <span>Unique Clients</span>
+            </div>
+        </div>
+
+        @include('components.owner.stat-card', [
+            'ikon' => 'program',
+            'label' => 'Active Services',
+            'nilai' => $programaktif,
+            'perubahan' => 0,
+            'tipeperubahan' => 'stabil',
+            'idPrefix' => 'stat-services',
+        ])
+    </div>
+
+    {{-- ── Revenue Chart & Daily Trends ── --}}
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        {{-- Revenue Growth Chart --}}
+        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 lg:col-span-3" id="revenue-chart-card">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-bq-text">Revenue Growth</h2>
+                    <p class="text-sm text-bq-text-muted" id="revenue-chart-subtitle">Monthly earnings overview</p>
+                </div>
+                {{-- Period Toggle --}}
+                <div x-data="{ periodnya: 'monthly' }" class="flex rounded-lg border border-bq-border bg-bq-background p-0.5">
+                    <button
+                        @click="periodnya = 'weekly'; switchRevenuePeriod('weekly')"
+                        :class="periodnya === 'weekly' ? 'bg-bq-primary text-white shadow-sm' : 'text-bq-text-muted hover:text-bq-text'"
+                        class="rounded-md px-3.5 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer"
+                        id="btn-period-weekly"
+                    >
+                        Weekly
+                    </button>
+                    <button
+                        @click="periodnya = 'monthly'; switchRevenuePeriod('monthly')"
+                        :class="periodnya === 'monthly' ? 'bg-bq-primary text-white shadow-sm' : 'text-bq-text-muted hover:text-bq-text'"
+                        class="rounded-md px-3.5 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer"
+                        id="btn-period-monthly"
+                    >
+                        Monthly
+                    </button>
+                </div>
+            </div>
+            <div class="mt-6">
+                <canvas id="revenue-chart" height="220"></canvas>
+            </div>
+        </div>
+
+        {{-- Daily Trends --}}
+        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 lg:col-span-2" id="daily-trends-card">
+            <h2 class="text-base font-semibold text-bq-text">Daily Trends</h2>
+            <div class="mt-4 space-y-4">
+                @forelse ($trendlayanan as $trend)
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg
+                            {{ $trend['trennya'] === 'naik' ? 'bg-emerald-50' : ($trend['trennya'] === 'turun' ? 'bg-rose-50' : 'bg-indigo-50') }}
+                        ">
+                            @if ($trend['trennya'] === 'naik')
+                                <svg class="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
+                            @elseif ($trend['trennya'] === 'turun')
+                                <svg class="h-5 w-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+                                </svg>
+                            @else
+                                <svg class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 12h7m0 0l-3-3m3 3l-3 3"/>
+                                </svg>
+                            @endif
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-semibold text-bq-text">{{ $trend['namalayanan'] }}</p>
+                            <p class="text-xs text-bq-text-muted">
+                                @if ($trend['trennya'] === 'naik')
+                                    +{{ $trend['persenperubahan'] }}% vs yesterday
+                                @elseif ($trend['trennya'] === 'turun')
+                                    {{ $trend['persenperubahan'] }}% vs yesterday
+                                @else
+                                    Stable performance
+                                @endif
+                            </p>
+                        </div>
+                        <span class="text-sm font-bold text-bq-text">{{ $trend['jumlahbooking'] }}</span>
+                    </div>
+                @empty
+                    <div class="py-8 text-center">
+                        <p class="text-sm text-bq-text-muted">No booking data for today yet.</p>
+                    </div>
+                @endforelse
+            </div>
+            @if ($trendlayanan->count() > 0)
+                <div class="mt-5 border-t border-bq-border pt-4">
+                    <a href="{{ route('owner.analytics') }}" class="text-sm font-medium text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-full-report">
+                        View Full Report →
+                    </a>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- ── Recent Activity & Upcoming Bookings Grid ── --}}
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        {{-- Recent Bookings --}}
+        <div class="rounded-xl border border-bq-border bg-bq-surface lg:col-span-3" id="recent-activity-card">
+            <div class="flex items-center justify-between border-b border-bq-border px-5 py-4">
+                <h2 class="text-base font-semibold text-bq-text">Recent Bookings</h2>
+                <a href="{{ route('owner.bookings') }}" class="text-sm font-medium text-bq-text-muted transition-colors hover:text-bq-primary" id="link-all-activity">
+                    View All Activity →
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full" id="activity-table">
+                    <thead>
+                        <tr class="border-b border-bq-border">
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Program</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Customer</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Date</th>
+                            <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-bq-border" id="activity-tbody">
+                        @forelse ($aktivitasterbaru as $aktivitas)
+                            <tr class="transition-colors hover:bg-bq-background/50">
+                                <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">
+                                    {{ $aktivitas->layanan->namalayanan ?? '-' }}
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">
+                                    {{ $aktivitas->namapelanggan }}
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">
+                                    {{ $aktivitas->tanggalbooking instanceof \Carbon\Carbon ? $aktivitas->tanggalbooking->format('d M Y') : \Carbon\Carbon::parse($aktivitas->tanggalbooking)->format('d M Y') }}
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-3.5 text-center">
+                                    @php
+                                        $warnastatus = match($aktivitas->status) {
+                                            'completed', 'paid' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+                                            'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
+                                            'cancelled' => 'bg-rose-50 text-rose-700 ring-rose-600/20',
+                                            default => 'bg-gray-50 text-gray-700 ring-gray-600/20',
+                                        };
+                                    @endphp
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset {{ $warnastatus }}">
+                                        {{ $aktivitas->status === 'paid' ? 'confirmed' : $aktivitas->status }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="py-8 text-center text-sm text-bq-text-muted">
+                                    No booking records found yet.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{-- Upcoming Bookings Card --}}
+        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 lg:col-span-2 flex flex-col shadow-2xs" id="upcoming-bookings-card">
+            <div class="flex items-center justify-between border-b border-bq-border pb-3">
+                <div>
+                    <h2 class="text-base font-semibold text-bq-text">Upcoming Schedule</h2>
+                    <p class="text-xs text-bq-text-muted">Next confirmed client sessions</p>
+                </div>
+                <a href="{{ route('owner.calendar') }}" class="text-xs font-bold text-[#4F46E5] hover:underline">Open Calendar &rarr;</a>
+            </div>
+
+            <div class="mt-4 space-y-3 flex-1">
+                @forelse ($upcomingbookings as $upcoming)
+                    <div class="flex items-center gap-3 rounded-xl border border-bq-border bg-[#F8FAFC] p-3 transition hover:bg-white hover:shadow-2xs">
+                        <div class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5] font-bold leading-none">
+                            <span class="text-[10px] uppercase font-semibold text-[#64748B]">{{ \Carbon\Carbon::parse($upcoming->tanggalbooking)->format('M') }}</span>
+                            <span class="text-sm font-extrabold text-[#4F46E5]">{{ \Carbon\Carbon::parse($upcoming->tanggalbooking)->format('d') }}</span>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-bold text-bq-text">{{ $upcoming->layanan->namalayanan ?? 'Layanan' }}</p>
+                            <p class="text-xs text-bq-text-muted truncate">{{ $upcoming->namapelanggan }} &bull; {{ substr($upcoming->jam, 0, 5) }} WIB</p>
+                        </div>
+                        @php
+                            $statusColor = match($upcoming->status) {
+                                'paid', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+                                'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
+                                default => 'bg-gray-50 text-gray-700 ring-gray-600/20',
+                            };
+                            $statusLabel = $upcoming->status === 'paid' ? 'Paid' : ucfirst($upcoming->status);
+                        @endphp
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset {{ $statusColor }}">
+                            {{ $statusLabel }}
+                        </span>
+                    </div>
+                @empty
+                    <div class="flex flex-col items-center justify-center py-8 text-center my-auto">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <p class="text-xs font-semibold text-bq-text">No upcoming bookings</p>
+                        <p class="text-[11px] text-bq-text-muted mt-0.5">New reservations will appear here automatically.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{{-- Complete Profile Modal --}}
+@if ($showProfilePrompt)
+    @include('components.owner.modal-complete-profile')
+@endif
+
+{{-- ── Revenue Chart Script ── --}}
+<script>
+    window.revenueChartData = {
+        monthly: {
+            labels: @json($labelbulan),
+            data: @json($datarevenueperbulan),
+            subtitle: 'Monthly earnings overview'
+        },
+        weekly: {
+            labels: @json($labelminggu),
+            data: @json($datarevenueperminggu),
+            subtitle: 'Last 7 days daily earnings'
+        }
+    };
+
+    window.switchRevenuePeriod = function(period) {
+        if (!window.revenueChartInstance) return;
+        const cfg = window.revenueChartData[period] || window.revenueChartData.monthly;
+        window.revenueChartInstance.data.labels = cfg.labels;
+        window.revenueChartInstance.data.datasets[0].data = cfg.data;
+        window.revenueChartInstance.update();
+
+        const subtitleEl = document.getElementById('revenue-chart-subtitle');
+        if (subtitleEl) subtitleEl.textContent = cfg.subtitle;
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const canvas = document.getElementById('revenue-chart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.15)');
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
+
+        window.revenueChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: window.revenueChartData.monthly.labels,
+                datasets: [{
+                    label: 'Revenue',
+                    data: window.revenueChartData.monthly.data,
+                    borderColor: 'rgb(99, 102, 241)',
+                    backgroundColor: gradient,
+                    borderWidth: 2.5,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: 'rgb(99, 102, 241)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: 'rgb(99, 102, 241)',
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e1b4b',
+                        titleColor: '#e0e7ff',
+                        bodyColor: '#fff',
+                        bodyFont: { weight: '600' },
+                        padding: 12,
+                        cornerRadius: 10,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'Rp ' + context.parsed.y.toLocaleString('id-ID');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: { size: 12, weight: '500' }
+                        },
+                        border: { display: false }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(0,0,0,0.04)',
+                            drawBorder: false,
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: { size: 11 },
+                            callback: function(value) {
+                                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                                if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
+                                return value;
+                            }
+                        },
+                        border: { display: false }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+{{-- ── Dashboard Polling Script ── --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function fetchDashboardData() {
+            fetch('{{ route('owner.dashboard.polling') }}', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.data) {
+                    updateDashboardUI(data.data);
+                }
+            })
+            .catch(error => {
+                console.error('Dashboard Polling error:', error);
+            });
+        }
+
+        function updateDashboardUI(data) {
+            // Update Stat Cards
+            const bookingVal = document.getElementById('stat-booking-value');
+            if (bookingVal) bookingVal.textContent = new Intl.NumberFormat('id-ID').format(data.total_bookings);
+            
+            const bookingChange = document.getElementById('stat-booking-change');
+            if (bookingChange) {
+                bookingChange.textContent = (data.persen_perubahan_booking > 0 ? '+' : '') + data.persen_perubahan_booking + '%';
+                updateChangeColor(bookingChange, data.persen_perubahan_booking);
+            }
+
+            const revVal = document.getElementById('stat-revenue-value');
+            if (revVal) revVal.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.total_revenue);
+
+            const revChange = document.getElementById('stat-revenue-change');
+            if (revChange) {
+                revChange.textContent = (data.persen_perubahan_revenue > 0 ? '+' : '') + data.persen_perubahan_revenue + '%';
+                updateChangeColor(revChange, data.persen_perubahan_revenue);
+            }
+
+            // Update Customers & Active Services
+            const custVal = document.getElementById('stat-customers-value');
+            if (custVal && data.total_customers !== undefined) {
+                custVal.textContent = new Intl.NumberFormat('id-ID').format(data.total_customers);
+            }
+
+            const servVal = document.getElementById('stat-services-value');
+            if (servVal && data.active_services !== undefined) {
+                servVal.textContent = new Intl.NumberFormat('id-ID').format(data.active_services);
+            }
+
+            // Update Recent Activity
+            const tbody = document.getElementById('activity-tbody');
+            if (tbody && data.recent_activities) {
+                tbody.innerHTML = '';
+                data.recent_activities.forEach(item => {
+                    const statusText = item.status === 'paid' ? 'confirmed' : item.status;
+                    let colorClass = 'bg-gray-50 text-gray-700 ring-gray-600/20';
+                    if (item.status === 'completed' || item.status === 'paid') colorClass = 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
+                    else if (item.status === 'pending') colorClass = 'bg-amber-50 text-amber-700 ring-amber-600/20';
+                    else if (item.status === 'cancelled') colorClass = 'bg-rose-50 text-rose-700 ring-rose-600/20';
+
+                    const row = `
+                        <tr class="transition-colors hover:bg-bq-background/50">
+                            <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">${item.program_name}</td>
+                            <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.customer_name}</td>
+                            <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.date}</td>
+                            <td class="whitespace-nowrap px-5 py-3.5 text-center">
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset ${colorClass}">
+                                    ${statusText}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            }
+        }
+
+        function updateChangeColor(el, val) {
+            el.classList.remove('text-emerald-600', 'text-rose-500', 'text-bq-text-subtle');
+            if (val > 0) el.classList.add('text-emerald-600');
+            else if (val < 0) el.classList.add('text-rose-500');
+            else el.classList.add('text-bq-text-subtle');
+        }
+
+        if (!window.dashboardPollingInitialized) {
+            window.dashboardPollingInitialized = true;
+            setInterval(fetchDashboardData, 30000);
+        }
+    });
+</script>
+@endsection

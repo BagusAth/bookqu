@@ -102,4 +102,32 @@ class SettingsTest extends TestCase
             'saldo_platform' => 300000,
         ]);
     }
+
+    public function test_owner_cannot_delete_account_without_matching_confirmation(): void
+    {
+        $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
+            'confirm_account' => 'wrong-input@example.com',
+        ]);
+
+        $response->assertSessionHasErrors('confirm_account');
+        $this->assertDatabaseHas('users', ['id' => $this->user->id]);
+        $this->assertDatabaseHas('tenants', ['id' => $this->tenant->id]);
+    }
+
+    public function test_owner_can_delete_account_with_matching_email_confirmation(): void
+    {
+        $userId = $this->user->id;
+        $tenantId = $this->tenant->id;
+
+        $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
+            'confirm_account' => $this->user->email,
+        ]);
+
+        $response->assertRedirect('/');
+        $response->assertSessionHas('sukses');
+        $this->assertGuest();
+
+        $this->assertDatabaseMissing('users', ['id' => $userId]);
+        $this->assertDatabaseMissing('tenants', ['id' => $tenantId]);
+    }
 }

@@ -75,6 +75,19 @@ document.addEventListener('alpine:init', () => {
                     this.selectedScheduleId = '';
                 }
             }
+
+            window.addEventListener('pageshow', () => {
+                this.isSubmitting = false;
+            });
+            window.addEventListener('pagehide', () => {
+                this.isSubmitting = false;
+            });
+            window.addEventListener('popstate', () => {
+                this.isSubmitting = false;
+            });
+            window.addEventListener('booking-reset-submitting', () => {
+                this.isSubmitting = false;
+            });
         },
 
         buildSimulatedSlots() {
@@ -233,6 +246,9 @@ document.addEventListener('alpine:init', () => {
         handleConfirm() {
             if (!this.selectedTime || this.isSubmitting) return;
             this.isSubmitting = true;
+            setTimeout(() => {
+                this.isSubmitting = false;
+            }, 1200);
             const form = this.$refs?.confirmForm || document.getElementById('booking-time-form');
             if (form) form.submit();
         }

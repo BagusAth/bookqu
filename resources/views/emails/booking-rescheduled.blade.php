@@ -8,12 +8,12 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #F3F4F6; font-family: 'Segoe UI', Arial, sans-serif; color: #111827; }
         .wrapper { max-width: 580px; margin: 32px auto; background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,.06); }
-        .header { background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); padding: 36px 40px; text-align: center; }
+        .header { background: linear-gradient(135deg, #4F46E5 0%, #6D28D9 100%); padding: 36px 40px; text-align: center; }
         .header-icon { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,.2); margin-bottom: 16px; }
         .header h1 { color: #fff; font-size: 22px; font-weight: 700; }
         .header p { color: rgba(255,255,255,.8); font-size: 14px; margin-top: 6px; }
         .body { padding: 36px 40px; }
-        .booking-code { display: inline-block; background: #EFF6FF; color: #1D4ED8; font-size: 18px; font-weight: 700; letter-spacing: 0.05em; padding: 10px 20px; border-radius: 12px; }
+        .booking-code { display: inline-block; background: #EEF2FF; color: #4F46E5; font-size: 18px; font-weight: 700; letter-spacing: 0.05em; padding: 10px 20px; border-radius: 12px; }
         .schedule-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
         .schedule-box { border-radius: 16px; padding: 20px; }
         .schedule-box.old { background: #FEF2F2; border: 1px solid #FECACA; }
@@ -28,7 +28,7 @@
         .detail-row:last-child { border-bottom: none; }
         .detail-label { font-size: 13px; color: #6B7280; }
         .detail-value { font-size: 13px; font-weight: 600; color: #111827; text-align: right; }
-        .cta-btn { display: inline-block; background: linear-gradient(135deg, #2563EB, #1D4ED8); color: #fff; font-size: 15px; font-weight: 700; padding: 14px 36px; border-radius: 14px; text-decoration: none; }
+        .cta-btn { display: inline-block; background: linear-gradient(135deg, #4F46E5, #6D28D9); color: #fff; font-size: 15px; font-weight: 700; padding: 14px 36px; border-radius: 14px; text-decoration: none; }
         .footer { background: #F9FAFB; border-top: 1px solid #E5E7EB; padding: 24px 40px; text-align: center; }
         .footer p { font-size: 12px; color: #9CA3AF; line-height: 1.6; }
         .footer a { color: #4F46E5; text-decoration: none; }

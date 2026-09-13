@@ -154,6 +154,11 @@
             </div>
         </footer>
 
+        <script>
+            window.addEventListener('pageshow', function (event) {
+                window.dispatchEvent(new CustomEvent('booking-reset-submitting'));
+            });
+        </script>
         @yield('scripts')
     </body>
 </html>

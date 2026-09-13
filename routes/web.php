@@ -1,26 +1,27 @@
 <?php
 
-use App\Http\Controllers\AdminDashboardController;
-use App\Http\Controllers\BookingController;
-use App\Http\Controllers\BookingManageController;
-use App\Http\Controllers\DummyRegistrationController;
-use App\Http\Controllers\OwnerAnalyticsController;
-use App\Http\Controllers\OwnerBookingController;
-use App\Http\Controllers\OwnerCheckoutController;
-use App\Http\Controllers\OwnerDashboardController;
-use App\Http\Controllers\OwnerLandingPageController;
-use App\Http\Controllers\OwnerPortalController;
-use App\Http\Controllers\OwnerAdditionalItemController;
-use App\Http\Controllers\OwnerAssetController;
-use App\Http\Controllers\OwnerCategoryController;
-use App\Http\Controllers\OwnerProgramController;
-use App\Http\Controllers\OwnerReviewController;
-use App\Http\Controllers\OwnerScheduleController;
-use App\Http\Controllers\OwnerSettingController;
-use App\Http\Controllers\OwnerStaffResourceController;
-use App\Http\Controllers\OwnerSubscriptionController;
-use App\Http\Controllers\OwnerCustomerController;
-use App\Http\Controllers\OwnerVoucherController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Customer\BookingController;
+use App\Http\Controllers\Customer\BookingManageController;
+use App\Http\Controllers\Owner\OwnerAdditionalItemController;
+use App\Http\Controllers\Owner\OwnerAnalyticsController;
+use App\Http\Controllers\Owner\OwnerAssetController;
+use App\Http\Controllers\Owner\OwnerBookingController;
+use App\Http\Controllers\Owner\OwnerCategoryController;
+use App\Http\Controllers\Owner\OwnerCheckoutController;
+use App\Http\Controllers\Owner\OwnerCustomerController;
+use App\Http\Controllers\Owner\OwnerDashboardController;
+use App\Http\Controllers\Owner\OwnerLandingPageController;
+use App\Http\Controllers\Owner\OwnerNotificationController;
+use App\Http\Controllers\Owner\OwnerPortalController;
+use App\Http\Controllers\Owner\OwnerProgramController;
+use App\Http\Controllers\Owner\OwnerReviewController;
+use App\Http\Controllers\Owner\OwnerScheduleController;
+use App\Http\Controllers\Owner\OwnerSettingController;
+use App\Http\Controllers\Owner\OwnerStaffResourceController;
+use App\Http\Controllers\Owner\OwnerSubscriptionController;
+use App\Http\Controllers\Owner\OwnerVoucherController;
+use App\Http\Controllers\Webhook\MidtransWebhookController;
 use App\Models\User;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -117,10 +118,10 @@ Route::middleware('guest')->group(function () {
         $proPlan = \App\Models\Plan::firstOrCreate(
             ['namapaket' => 'pro'],
             [
-                'hargabulanan' => 100000,
-                'maxlayanan'   => 10,
-                'maxbooking'   => 500,
-                'isunlimited'  => false,
+                'hargabulanan' => 499000,
+                'maxlayanan'   => 0,
+                'maxbooking'   => 0,
+                'isunlimited'  => true,
             ]
         );
 
@@ -165,11 +166,6 @@ Route::middleware('auth')->group(function () {
     })->name('logout');
 });
 
-// Dummy registration module (isolated for slug testing, only in local)
-if (app()->environment('local', 'staging', 'testing')) {
-    Route::get('/dummy-register', [DummyRegistrationController::class, 'showForm'])->name('dummy-register.form');
-    Route::post('/dummy-register', [DummyRegistrationController::class, 'processForm'])->name('dummy-register.process');
-}
 
 // ── Owner Dashboard Routes ──
 Route::prefix('owner')
@@ -177,10 +173,15 @@ Route::prefix('owner')
     ->group(function () {
     Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
     Route::get('/dashboard/polling', [OwnerDashboardController::class, 'pollingData'])->name('owner.dashboard.polling');
+    Route::get('/notifications', [OwnerNotificationController::class, 'index'])->name('owner.notifications');
+    Route::post('/notifications/read-all', [OwnerNotificationController::class, 'markAllAsRead'])->name('owner.notifications.read-all');
+    Route::post('/notifications/{id}/read', [OwnerNotificationController::class, 'markAsRead'])->name('owner.notifications.read');
+    Route::delete('/notifications/{id}', [OwnerNotificationController::class, 'destroy'])->name('owner.notifications.destroy');
     Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
     Route::post('/profile/complete', [OwnerSettingController::class, 'storeProfile'])->name('owner.profile.complete');
     Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');
     Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
+    Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');
     Route::post('/settings/payment', [OwnerSettingController::class, 'updatePaymentSettings'])->name('owner.settings.payment');
     Route::post('/payouts', [OwnerSettingController::class, 'requestPayout'])->name('owner.payouts.request');
 
@@ -206,8 +207,10 @@ Route::prefix('owner')
         Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
         Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
         Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
-        Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('subscription:pro');
-        Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware('subscription:pro');
+        Route::get('/bookings/{booking}/available-slots', [OwnerBookingController::class, 'getAvailableSlots'])->name('owner.bookings.available-slots');
+        Route::post('/bookings/{booking}/reschedule', [OwnerBookingController::class, 'reschedule'])->name('owner.bookings.reschedule');
+        Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('subscription:medium');
+        Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware('subscription:medium');
         Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
         Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page')->middleware('subscription:pro');
         Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware('subscription:pro');
@@ -282,7 +285,7 @@ Route::prefix('owner')
 });
 
 // ── Midtrans Webhook (tanpa auth & CSRF, dipanggil oleh Midtrans) ──
-Route::post('/midtrans/webhook', [\App\Http\Controllers\MidtransWebhookController::class, 'handle'])
+Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle'])
     ->name('midtrans.webhook');
 
 // ── Booking Management Without Account (tokenized URLs) ──
@@ -340,6 +343,9 @@ $customerRoutes = function (string $namePrefix = 'customer.booking.') {
     Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])
         ->name($namePrefix . 'process-checkout');
 
+    Route::post('/booking/validate-voucher', [BookingController::class, 'validateVoucher'])
+        ->name('customer.booking.validate-voucher');
+
     Route::get('/booking/payment/{payment:order_id}', [BookingController::class, 'showPayment'])
         ->name($namePrefix . 'payment');
 
@@ -348,6 +354,9 @@ $customerRoutes = function (string $namePrefix = 'customer.booking.') {
 
     Route::post('/booking/payment/{payment:order_id}/callback', [BookingController::class, 'handleCallback'])
         ->name($namePrefix . 'callback');
+
+    Route::post('/booking/payment/{payment:order_id}/cancel', [BookingController::class, 'cancelPayment'])
+        ->name('customer.booking.cancel');
 
     Route::get('/booking/payment/{payment:order_id}/invoice', [BookingController::class, 'showInvoice'])
         ->name($namePrefix . 'invoice');

@@ -40,7 +40,7 @@
                             name="name" 
                             placeholder="Nama Anda"
                             value="{{ old('name') }}"
-                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('name') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('name') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                             required
                         />
                         @error('name')
@@ -56,7 +56,7 @@
                             name="email" 
                             placeholder="nama@email.com"
                             value="{{ old('email') }}"
-                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('email') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('email') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                             required
                         />
                         @error('email')
@@ -72,7 +72,7 @@
                             name="nomorhp" 
                             placeholder="08xxxxxxxxxx"
                             value="{{ old('nomorhp') }}"
-                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('nomorhp') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('nomorhp') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                             required
                         />
                         @error('nomorhp')
@@ -88,7 +88,7 @@
                             name="nama_bisnis" 
                             placeholder="Contoh: Studio Yoga Sehat"
                             value="{{ old('nama_bisnis') }}"
-                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('nama_bisnis') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('nama_bisnis') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                             required
                         />
                         @error('nama_bisnis')
@@ -104,7 +104,7 @@
                             name="jenis_bisnis" 
                             placeholder="Contoh: Fitness, Salon, Studio Musik"
                             value="{{ old('jenis_bisnis') }}"
-                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('jenis_bisnis') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('jenis_bisnis') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                             required
                         />
                         @error('jenis_bisnis')
@@ -120,7 +120,7 @@
                             name="alamat" 
                             placeholder="Jl. Contoh No. 1, Kota"
                             value="{{ old('alamat') }}"
-                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('alamat') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('alamat') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                             required
                         />
                         @error('alamat')
@@ -136,7 +136,7 @@
                                 type="password" 
                                 name="password" 
                                 placeholder="Minimal 8 karakter"
-                                class="w-full px-4 py-2 border rounded-lg pr-12 focus:ring-2 focus:border-transparent {{ $errors->has('password') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                                class="w-full px-4 py-2 border rounded-lg pr-12 focus:ring-2 focus:border-transparent {{ $errors->has('password') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                                 required
                             />
                             <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-700" data-toggle="password" data-target="password">
@@ -156,7 +156,7 @@
                                 type="password" 
                                 name="password_confirmation" 
                                 placeholder="Ulangi password"
-                                class="w-full px-4 py-2 border rounded-lg pr-12 focus:ring-2 focus:border-transparent {{ $errors->has('password_confirmation') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-blue-500' }}"
+                                class="w-full px-4 py-2 border rounded-lg pr-12 focus:ring-2 focus:border-transparent {{ $errors->has('password_confirmation') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                                 required
                             />
                             <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-700" data-toggle="password" data-target="password_confirmation">
@@ -169,17 +169,17 @@
                     </div>
 
                     <label class="flex items-center">
-                        <input type="checkbox" name="terms" class="rounded border-slate-300" @checked(old('terms')) required />
+                        <input type="checkbox" name="terms" class="rounded border-slate-300 text-[#4F46E5] focus:ring-[#4F46E5]" @checked(old('terms')) required />
                         <span class="ml-2 text-sm text-slate-600">
                             Saya setuju dengan 
-                            <a href="#" class="text-blue-600 hover:text-blue-700">Syarat & Ketentuan</a>
+                            <a href="#" class="text-[#4F46E5] hover:text-[#4338CA]">Syarat & Ketentuan</a>
                         </span>
                     </label>
                     @error('terms')
                         <p class="text-xs text-rose-600">{{ $message }}</p>
                     @enderror
 
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    <button type="submit" class="w-full bg-[#4F46E5] text-white py-2 rounded-lg font-semibold hover:bg-[#4338CA] transition shadow-sm shadow-[#4F46E5]/25">
                         Daftar Sekarang
                     </button>
 

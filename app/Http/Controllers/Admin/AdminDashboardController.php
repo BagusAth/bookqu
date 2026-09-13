@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+
+use App\Models\Payment;
+use App\Models\Subscription;
+use App\Models\Tenant;
+use App\Models\User;
+use Carbon\Carbon;
+
+class AdminDashboardController extends Controller
+{
+    public function index()
+    {
+        // ── Statistik Global ──
+        $totalTenant      = Tenant::count();
+        $totalUser        = User::where('role', 'owner')->count();
+        $tenantTrial      = Subscription::withoutGlobalScopes()->where('status', 'trial')->count();
+        $tenantAktif      = Subscription::withoutGlobalScopes()->where('status', 'active')->count();
+        $tenantExpired    = Subscription::withoutGlobalScopes()->where('status', 'expired')->count();
+
+        // ── Revenue platform dari langganan ──
+        $totalRevenuePlatform = Payment::withoutGlobalScopes()->where('tipe', 'subscription')
+            ->where('status', 'sukses')
+            ->sum('jumlah');
+
+        $revenuebulanini = Payment::withoutGlobalScopes()->where('tipe', 'subscription')
+            ->where('status', 'sukses')
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum('jumlah');
+
+        // ── Daftar tenant terbaru ──
+        $tenantTerbaru = Tenant::with(['user', 'subscriptions' => function ($q) {
+            $q->withoutGlobalScopes()->latest()->limit(1);
+        }])
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get();
+
+        // ── Grafik revenue langganan 6 bulan ──
+        $labelBulan = [];
+        $revenuePerBulan = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $awal  = Carbon::now()->subMonths($i)->startOfMonth();
+            $akhir = Carbon::now()->subMonths($i)->endOfMonth();
+            $labelBulan[]      = $awal->format('M Y');
+            $revenuePerBulan[] = round(Payment::withoutGlobalScopes()->where('tipe', 'subscription')
+                ->where('status', 'sukses')
+                ->whereBetween('created_at', [$awal, $akhir])
+                ->sum('jumlah'));
+        }
+
+        return view('admin.dashboard', compact(
+            'totalTenant',
+            'totalUser',
+            'tenantTrial',
+            'tenantAktif',
+            'tenantExpired',
+            'totalRevenuePlatform',
+            'revenuebulanini',
+            'tenantTerbaru',
+            'labelBulan',
+            'revenuePerBulan',
+        ));
+    }
+}

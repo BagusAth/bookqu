@@ -54,7 +54,7 @@ class Booking extends Model
 
     public function layanan(): BelongsTo
     {
-        return $this->belongsTo(Service::class, 'idlayanan');
+        return $this->belongsTo(Service::class, 'idlayanan')->withoutGlobalScope(\App\Models\Scopes\TenantScope::class);
     }
 
     public function schedule(): BelongsTo
@@ -64,7 +64,7 @@ class Booking extends Model
 
     public function payment(): BelongsTo
     {
-        return $this->belongsTo(Payment::class, 'idpayment');
+        return $this->belongsTo(Payment::class, 'idpayment')->withoutGlobalScope(\App\Models\Scopes\TenantScope::class);
     }
 
     public function logs(): HasMany
@@ -135,8 +135,12 @@ class Booking extends Model
      */
     public function getManageUrl(): string
     {
+        if (!$this->booking_code) {
+            return '#';
+        }
+
         return route('booking.manage', ['booking_code' => $this->booking_code])
-            . '?token=' . $this->cancellation_token;
+            . ($this->cancellation_token ? '?token=' . $this->cancellation_token : '');
     }
 
     /**
@@ -193,6 +197,7 @@ class Booking extends Model
      */
     public function getPriceLabelAttribute(): string
     {
-        return 'Rp ' . number_format((float) ($this->payment?->jumlah ?? 0), 0, ',', '.');
+        $amount = (float) ($this->payment?->jumlah ?? $this->layanan?->harga ?? 0);
+        return 'Rp ' . number_format($amount, 0, ',', '.');
     }
 }

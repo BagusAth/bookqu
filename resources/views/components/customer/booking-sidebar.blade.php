@@ -8,7 +8,7 @@
 ])
 
 {{-- Desktop Sticky Sidebar --}}
-<aside class="hidden lg:block lg:sticky lg:top-24 h-fit">
+<aside class="hidden lg:block lg:sticky lg:top-24 h-fit" @pageshow.window="isSubmitting = false" @pagehide.window="isSubmitting = false" @popstate.window="isSubmitting = false">
     <div class="rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
         <div class="border-b border-[#F1F5F9] pb-4">
             <h2 class="text-base font-bold text-[#0F172A]">Ringkasan Booking</h2>
@@ -72,27 +72,23 @@
             class="mt-5 w-full flex items-center justify-center gap-2 rounded-xl py-3.5 px-4 text-sm font-bold text-white shadow-md shadow-[#4F46E5]/20 transition-all active:scale-98"
             :class="({{ $buttonEnabledWhen }}) && !isSubmitting
                 ? 'bg-[#4F46E5] hover:bg-[#4338CA] hover:shadow-lg hover:shadow-[#4F46E5]/30 cursor-pointer'
-                : 'bg-[#CBD5E1] text-[#94A3B8] cursor-not-allowed pointer-events-none'
+                : 'bg-[#CBD5E1] text-[#94A3B8] cursor-not-allowed'
             "
             :disabled="!({{ $buttonEnabledWhen }}) || isSubmitting"
         >
-            <template x-if="isSubmitting">
-                <span class="flex items-center gap-2">
-                    <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Memproses...
-                </span>
-            </template>
-            <template x-if="!isSubmitting">
-                <span class="flex items-center gap-2">
-                    {{ $buttonLabel }}
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                </span>
-            </template>
+            <span x-show="isSubmitting" class="flex items-center gap-2" x-cloak>
+                <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Memproses...
+            </span>
+            <span x-show="!isSubmitting" class="flex items-center gap-2">
+                {{ $buttonLabel }}
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+            </span>
         </button>
 
         @if ($backUrl)
@@ -117,7 +113,7 @@
 </aside>
 
 {{-- Mobile Sticky Bottom Action Bar --}}
-<div class="booking-mobile-bar lg:hidden">
+<div class="booking-mobile-bar lg:hidden" @pageshow.window="isSubmitting = false" @pagehide.window="isSubmitting = false" @popstate.window="isSubmitting = false">
     <div class="flex items-center justify-between gap-3">
         <div class="min-w-0 flex-1">
             <p class="text-[11px] text-[#64748B] truncate">
@@ -138,27 +134,23 @@
             class="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all active:scale-95 shrink-0"
             :class="({{ $buttonEnabledWhen }}) && !isSubmitting
                 ? 'bg-[#4F46E5] hover:bg-[#4338CA] cursor-pointer'
-                : 'bg-[#CBD5E1] text-[#94A3B8] cursor-not-allowed pointer-events-none'
+                : 'bg-[#CBD5E1] text-[#94A3B8] cursor-not-allowed'
             "
             :disabled="!({{ $buttonEnabledWhen }}) || isSubmitting"
         >
-            <template x-if="isSubmitting">
-                <span class="flex items-center gap-1.5">
-                    <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Proses
-                </span>
-            </template>
-            <template x-if="!isSubmitting">
-                <span class="flex items-center gap-1.5">
-                    {{ $buttonLabel }}
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                </span>
-            </template>
+            <span x-show="isSubmitting" class="flex items-center gap-1.5" x-cloak>
+                <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Proses
+            </span>
+            <span x-show="!isSubmitting" class="flex items-center gap-1.5">
+                {{ $buttonLabel }}
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+            </span>
         </button>
     </div>
 </div>

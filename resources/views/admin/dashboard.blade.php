@@ -11,7 +11,7 @@
         {{-- ── Topbar ── --}}
         <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <span class="text-lg font-bold text-blue-700">BookQu</span>
+                <span class="text-lg font-bold text-[#4F46E5]">BookQu</span>
                 <span class="text-slate-400">/</span>
                 <span class="text-sm font-medium text-slate-600">Superadmin Panel</span>
             </div>
@@ -31,8 +31,8 @@
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 @php
                     $stats = [
-                        ['label' => 'Total Bisnis', 'nilai' => $totalTenant, 'warna' => 'bg-blue-600'],
-                        ['label' => 'Total Owner', 'nilai' => $totalUser, 'warna' => 'bg-indigo-600'],
+                        ['label' => 'Total Bisnis', 'nilai' => $totalTenant, 'warna' => 'bg-[#4F46E5]'],
+                        ['label' => 'Total Owner', 'nilai' => $totalUser, 'warna' => 'bg-indigo-700'],
                         ['label' => 'Tenant Trial', 'nilai' => $tenantTrial, 'warna' => 'bg-amber-500'],
                         ['label' => 'Tenant Aktif', 'nilai' => $tenantAktif, 'warna' => 'bg-emerald-600'],
                         ['label' => 'Tenant Expired', 'nilai' => $tenantExpired, 'warna' => 'bg-rose-600'],

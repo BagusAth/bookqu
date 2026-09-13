@@ -109,6 +109,12 @@ document.addEventListener('alpine:init', () => {
             document.addEventListener('checkout-reset', () => {
                 this.isSubmitting = false;
             });
+            window.addEventListener('pageshow', () => {
+                this.isSubmitting = false;
+            });
+            window.addEventListener('booking-reset-submitting', () => {
+                this.isSubmitting = false;
+            });
         }
     }));
 });

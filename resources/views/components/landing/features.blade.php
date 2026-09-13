@@ -3,8 +3,8 @@
         <!-- Header Section -->
         <div class="text-center mb-16 animate-fade-up">
             <h2 class="text-3xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight">
-                Fitur Utama Untuk <span class="text-blue-600 relative inline-block">Bisnis Anda
-                    <svg class="absolute -bottom-2 w-full h-3 text-blue-100/50" viewBox="0 0 200 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                Fitur Utama Untuk <span class="text-[#4F46E5] relative inline-block">Bisnis Anda
+                    <svg class="absolute -bottom-2 w-full h-3 text-[#C7D2FE]/70" viewBox="0 0 200 9" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M2.00035 6.99998C49.6231 1.74567 122.973 -1.33246 198.001 7.00007" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
                     </svg>
                 </span>

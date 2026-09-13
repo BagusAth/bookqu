@@ -55,9 +55,36 @@ document.addEventListener('alpine:init', () => {
                 this.selectedDate = '';
             }
 
+            if (!this.selectedDate) {
+                const todayStr = this.formatDateString(this.today);
+                if (!this.isOutsideRange(todayStr) && this.isAvailable(todayStr)) {
+                    this.selectedDate = todayStr;
+                } else {
+                    const availableDates = Object.keys(this.availabilityByDate)
+                        .filter(d => !this.isOutsideRange(d) && this.isAvailable(d))
+                        .sort();
+                    if (availableDates.length > 0) {
+                        this.selectedDate = availableDates[0];
+                    }
+                }
+            }
+
             const baseDate = this.selectedDate ? this.parseDate(this.selectedDate) : this.today;
             this.currentYear = baseDate.getFullYear();
             this.currentMonth = baseDate.getMonth();
+
+            window.addEventListener('pageshow', () => {
+                this.isSubmitting = false;
+            });
+            window.addEventListener('pagehide', () => {
+                this.isSubmitting = false;
+            });
+            window.addEventListener('popstate', () => {
+                this.isSubmitting = false;
+            });
+            window.addEventListener('booking-reset-submitting', () => {
+                this.isSubmitting = false;
+            });
         },
 
         seedSimulatedAvailability() {
@@ -229,6 +256,56 @@ document.addEventListener('alpine:init', () => {
             return parsed.getTime() === this.today.getTime();
         },
 
+        getRemainingSlots(date) {
+            const entry = this.availabilityByDate[date];
+            return entry ? entry.available_slots : 0;
+        },
+
+        selectQuickDate(type) {
+            const now = new Date();
+            let target = new Date();
+            if (type === 'today') {
+                target = now;
+            } else if (type === 'tomorrow') {
+                target.setDate(now.getDate() + 1);
+            } else if (type === 'this_saturday') {
+                const day = now.getDay();
+                const diff = (6 - day + 7) % 7 || 7;
+                target.setDate(now.getDate() + diff);
+            } else if (type === 'this_sunday') {
+                const day = now.getDay();
+                const diff = (7 - day) % 7 || 7;
+                target.setDate(now.getDate() + diff);
+            }
+
+            const formatted = this.formatDateString(target);
+            if (!this.isOutsideRange(formatted) && this.isAvailable(formatted)) {
+                this.currentYear = target.getFullYear();
+                this.currentMonth = target.getMonth();
+                this.selectedDate = formatted;
+            }
+        },
+
+        isQuickDateAvailable(type) {
+            const now = new Date();
+            let target = new Date();
+            if (type === 'today') {
+                target = now;
+            } else if (type === 'tomorrow') {
+                target.setDate(now.getDate() + 1);
+            } else if (type === 'this_saturday') {
+                const day = now.getDay();
+                const diff = (6 - day + 7) % 7 || 7;
+                target.setDate(now.getDate() + diff);
+            } else if (type === 'this_sunday') {
+                const day = now.getDay();
+                const diff = (7 - day) % 7 || 7;
+                target.setDate(now.getDate() + diff);
+            }
+            const formatted = this.formatDateString(target);
+            return !this.isOutsideRange(formatted) && this.isAvailable(formatted);
+        },
+
         slotLabel(date) {
             const entry = this.availabilityByDate[date];
             if (!entry) {
@@ -280,8 +357,20 @@ document.addEventListener('alpine:init', () => {
         },
 
         handleConfirm() {
-            if (!this.selectedDate || this.isSubmitting) return;
+            if (!this.selectedDate) {
+                const cal = document.querySelector('.booking-calendar');
+                if (cal) {
+                    cal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    cal.classList.add('ring-2', 'ring-[#4F46E5]', 'ring-offset-2');
+                    setTimeout(() => cal.classList.remove('ring-2', 'ring-[#4F46E5]', 'ring-offset-2'), 1500);
+                }
+                return;
+            }
+            if (this.isSubmitting) return;
             this.isSubmitting = true;
+            setTimeout(() => {
+                this.isSubmitting = false;
+            }, 1200);
             const form = this.$refs?.confirmForm || document.getElementById('booking-date-form');
             if (form) form.submit();
         }

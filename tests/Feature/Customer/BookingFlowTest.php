@@ -17,6 +17,10 @@ class BookingFlowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withoutMiddleware([
+            \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        ]);
 
         // Create tenant
         $this->user = User::factory()->create(['role' => 'owner']);
@@ -55,6 +59,8 @@ class BookingFlowTest extends TestCase
         $response = $this->get('/my-business');
         $response->assertStatus(200);
         $response->assertSee('Program Konsultasi');
+        $response->assertSee('"duration":60', false);
+        $response->assertSee('"duration_unit":"menit"', false);
 
         $responseSelect = $this->post('/my-business/booking/select-program', [
             'service_id' => $this->service->id,
@@ -114,17 +120,13 @@ class BookingFlowTest extends TestCase
 
     public function test_customer_can_process_checkout(): void
     {
-        // Mock Midtrans Snap
-        \Mockery::mock('alias:Midtrans\Snap', function ($mock) {
-            $mock->shouldReceive('getSnapToken')->andReturn('mocked-snap-token');
-        });
-
         session([
             'booking' => [
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
                 'tanggal' => $this->tomorrow,
                 'jam' => '10:00',
+                'schedule_id' => $this->schedule->id,
             ]
         ]);
 
@@ -227,4 +229,185 @@ class BookingFlowTest extends TestCase
         ]);
         $this->assertStringContainsString('/my-business/booking/payment/' . $payment->order_id . '/invoice', $response->json('redirect'));
     }
+
+    public function test_customer_can_validate_voucher(): void
+    {
+        $voucher = \App\Models\Voucher::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'code' => 'HEMAT20',
+            'discount_type' => 'percentage',
+            'discount_value' => 20,
+            'min_spending' => 100000,
+            'max_discount' => 50000,
+            'usage_limit' => 10,
+            'used_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $response = $this->postJson('/my-business/booking/validate-voucher', [
+            'voucher_code' => 'HEMAT20',
+            'amount' => 200000,
+            'service_id' => $this->service->id,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'valid' => true,
+            'code' => 'HEMAT20',
+            'discount_amount' => 40000, // 20% of 200k = 40k
+        ]);
+    }
+
+    public function test_checkout_with_valid_voucher_applies_discount(): void
+    {
+        $voucher = \App\Models\Voucher::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'code' => 'POTONG50',
+            'discount_type' => 'fixed',
+            'discount_value' => 50000,
+            'min_spending' => 150000,
+            'usage_limit' => 5,
+            'used_count' => 0,
+            'is_active' => true,
+        ]);
+
+        session([
+            'booking' => [
+                'tenant_id' => $this->tenant->id,
+                'service_id' => $this->service->id,
+                'tanggal' => $this->tomorrow,
+                'jam' => '10:00',
+                'schedule_id' => $this->schedule->id,
+            ]
+        ]);
+
+        $response = $this->post('/my-business/booking/checkout', [
+            'namapelanggan' => 'Jane Doe',
+            'email' => 'jane@example.com',
+            'nomorhp' => '081298765432',
+            'voucher_code' => 'POTONG50',
+        ]);
+
+        $payment = \App\Models\Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->latest()->first();
+        $this->assertNotNull($payment);
+        // Original 200k - 50k voucher = 150k
+        $this->assertEquals(150000, (int) $payment->jumlah);
+
+        // Voucher used count should be incremented
+        $this->assertEquals(1, $voucher->fresh()->used_count);
+    }
+
+    public function test_invoice_renders_calendar_and_back_buttons(): void
+    {
+        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'order_id' => 'BQ-TEST-INVOICE',
+            'tipe' => 'booking',
+            'metode' => 'midtrans',
+            'jumlah' => 200000,
+            'status' => 'sukses',
+            'snap_token' => 'mocked-snap-token',
+            'expired_at' => now()->addMinutes(15),
+        ]);
+
+        $booking = \App\Models\Booking::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $this->schedule->id,
+            'idpayment' => $payment->id,
+            'namapelanggan' => 'Alice',
+            'email' => 'alice@example.com',
+            'nomorhp' => '08123456789',
+            'tanggalbooking' => $this->tomorrow,
+            'jam' => '10:00',
+            'status' => 'paid',
+            'booking_code' => 'BKQ-INV-001',
+            'cancellation_token' => 'token123',
+        ]);
+
+        $response = $this->get('/my-business/booking/payment/' . $payment->order_id . '/invoice');
+        $response->assertStatus(200);
+        $response->assertSee('Booking Berhasil Dikonfirmasi!');
+        $response->assertSee('Google Calendar');
+        $response->assertSee('Apple / Outlook (.ics)');
+        $response->assertSee('Bagikan ke WhatsApp');
+        $response->assertSee('Kembali ke Beranda');
+        // Check header back button
+        $response->assertSee('/my-business');
+    }
+
+    public function test_invoice_renders_even_when_booking_code_is_initially_null(): void
+    {
+        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'order_id' => 'BQ-TEST-NULL-CODE',
+            'tipe' => 'booking',
+            'metode' => 'midtrans',
+            'jumlah' => 200000,
+            'status' => 'sukses',
+            'snap_token' => 'mocked-snap-token-2',
+            'expired_at' => now()->addMinutes(15),
+        ]);
+
+        $booking = \App\Models\Booking::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $this->schedule->id,
+            'idpayment' => $payment->id,
+            'namapelanggan' => 'Bob',
+            'email' => 'bob@example.com',
+            'nomorhp' => '08123456780',
+            'tanggalbooking' => $this->tomorrow,
+            'jam' => '10:00',
+            'status' => 'paid',
+            'booking_code' => null, // Initially null as reported by user
+            'cancellation_token' => null,
+        ]);
+
+        $response = $this->get('/my-business/booking/payment/' . $payment->order_id . '/invoice');
+        $response->assertStatus(200);
+        $response->assertSee('Booking Berhasil Dikonfirmasi!');
+
+        $booking->refresh();
+        $this->assertNotNull($booking->booking_code);
+        $this->assertNotNull($booking->cancellation_token);
+    }
+
+    public function test_customer_can_cancel_pending_payment_and_release_booking_slot(): void
+    {
+        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'order_id' => 'BQ-TEST-CANCEL',
+            'tipe' => 'booking',
+            'metode' => 'midtrans',
+            'jumlah' => 200000,
+            'status' => 'pending',
+            'snap_token' => 'mocked-snap-token-3',
+            'expired_at' => now()->addMinutes(15),
+        ]);
+
+        $booking = \App\Models\Booking::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $this->schedule->id,
+            'idpayment' => $payment->id,
+            'namapelanggan' => 'Charlie',
+            'email' => 'charlie@example.com',
+            'nomorhp' => '08123456781',
+            'tanggalbooking' => $this->tomorrow,
+            'jam' => '10:00',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->post('/my-business/booking/payment/' . $payment->order_id . '/cancel');
+        $response->assertRedirect('/my-business');
+        $response->assertSessionHas('info');
+
+        $payment->refresh();
+        $booking->refresh();
+
+        $this->assertEquals('gagal', $payment->status);
+        $this->assertEquals('cancelled', $booking->status);
+    }
 }
+
