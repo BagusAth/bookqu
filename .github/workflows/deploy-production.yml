@@ -40,57 +40,19 @@ jobs:
           find public/build/assets -maxdepth 1 -type f -name '*.js' -print -quit | grep -q .
           find public/build -maxdepth 2 -type f -print | sort
 
-            - name: Create Laravel source archive
+      - name: Create Laravel source archive
         run: |
           set -e
-
           ARCHIVE_DIR="$RUNNER_TEMP/bookqu-deploy"
           mkdir -p "$ARCHIVE_DIR"
-
-          echo "=== Creating Laravel source archive ==="
-
-          git archive \
-            --format=tar.gz \
-            --output="$ARCHIVE_DIR/bookqu-laravel.tar.gz" \
-            HEAD
-
-          echo "=== Validating Laravel archive ==="
-
-          test -s "$ARCHIVE_DIR/bookqu-laravel.tar.gz"
-
-          tar -tzf "$ARCHIVE_DIR/bookqu-laravel.tar.gz" \
-            > "$RUNNER_TEMP/laravel-archive-list.txt"
-
-          grep -q '^artisan$' "$RUNNER_TEMP/laravel-archive-list.txt"
-          grep -q '^composer.json$' "$RUNNER_TEMP/laravel-archive-list.txt"
-          grep -q '^composer.lock$' "$RUNNER_TEMP/laravel-archive-list.txt"
-
-          if grep -q '^\.env' "$RUNNER_TEMP/laravel-archive-list.txt"; then
-            echo "ERROR: .env file found in Laravel archive"
-            exit 1
-          fi
-
-          if grep -q '^vendor/' "$RUNNER_TEMP/laravel-archive-list.txt"; then
-            echo "ERROR: vendor directory found in Laravel archive"
-            exit 1
-          fi
-
-          if grep -q '^node_modules/' "$RUNNER_TEMP/laravel-archive-list.txt"; then
-            echo "ERROR: node_modules directory found in Laravel archive"
-            exit 1
-          fi
-
-          if grep -q '^storage/' "$RUNNER_TEMP/laravel-archive-list.txt"; then
-            echo "ERROR: storage directory found in Laravel archive"
-            exit 1
-          fi
-
-          if grep -q '^public/build/' "$RUNNER_TEMP/laravel-archive-list.txt"; then
-            echo "ERROR: public/build found in Laravel source archive"
-            exit 1
-          fi
-
-          echo "=== Laravel archive validated ==="
+          tar -czf "$ARCHIVE_DIR/bookqu-laravel.tar.gz" \
+            --exclude='./.git' \
+            --exclude='./.env*' \
+            --exclude='./node_modules' \
+            --exclude='./vendor' \
+            --exclude='./storage' \
+            --exclude='./public/build' \
+            -C . .
           tar -tzf "$ARCHIVE_DIR/bookqu-laravel.tar.gz" | head -40
 
       - name: Create frontend build archive
