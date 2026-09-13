@@ -105,7 +105,7 @@ jobs:
           key: ${{ secrets.HOSTDATA_SSH_KEY }}
           port: ${{ secrets.HOSTDATA_PORT }}
           script: |
-            set -eu
+            set -Eeuo pipefail
 
             DEPLOY_DIR="$HOME/bookqu-production-deploy"
             LARAVEL_DIR="$HOME/domains/bookqu.my.id/laravel"
@@ -116,6 +116,41 @@ jobs:
             SOURCE_DIR="$DEPLOY_DIR/laravel-source"
             BUILD_DIR="$DEPLOY_DIR/public-assets"
             DEPLOY_STARTED=0
+
+            echo "=== PRODUCTION DEPLOY DIAGNOSTIC ==="
+            echo "DEPLOY_DIR=$DEPLOY_DIR"
+            echo "LARAVEL_DIR=$LARAVEL_DIR"
+            echo "PUBLIC_DIR=$PUBLIC_DIR"
+
+            echo "--- Deployment directory ---"
+            ls -lah "$DEPLOY_DIR" || true
+
+            echo "--- Laravel directory ---"
+            ls -lah "$LARAVEL_DIR" || true
+
+            echo "--- Laravel required files ---"
+            for file in \
+              "$LARAVEL_DIR/.env" \
+              "$LARAVEL_DIR/vendor/autoload.php" \
+              "$LARAVEL_DIR/artisan" \
+              "$LARAVEL_DIR/composer.json" \
+              "$LARAVEL_DIR/composer.lock"
+            do
+              if [ -f "$file" ]; then
+                echo "OK: $file"
+              else
+                echo "MISSING: $file"
+              fi
+            done
+
+            echo "--- Public directory ---"
+            ls -lah "$PUBLIC_DIR" || true
+
+            echo "--- Environment keys ---"
+            grep -E '^[[:space:]]*DB_(CONNECTION|DATABASE|USERNAME)=' "$LARAVEL_DIR/.env" \
+              | sed 's/=.*/=<present>/'
+
+            echo "=== END DIAGNOSTIC ==="
 
             rollback() {
               status=$?
