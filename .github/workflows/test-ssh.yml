@@ -1,0 +1,22 @@
+name: Test HostData SSH
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-ssh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test SSH connection
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.HOSTDATA_HOST }}
+          username: ${{ secrets.HOSTDATA_USER }}
+          key: ${{ secrets.HOSTDATA_SSH_KEY }}
+          port: ${{ secrets.HOSTDATA_PORT }}
+          script: |
+            echo "SSH connection successful"
+            whoami
+            hostname
+            pwd
