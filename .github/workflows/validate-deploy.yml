@@ -1,0 +1,139 @@
+name: Validate Build & Transfer
+
+on:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Build & Test Transfer
+    runs-on: ubuntu-latest
+
+    steps:
+      # =========================
+      # 1. Checkout
+      # =========================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # =========================
+      # 2. Setup Node
+      # =========================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # =========================
+      # 3. Install dependencies
+      # =========================
+      - name: Install Node dependencies
+        run: npm ci
+
+      # =========================
+      # 4. Build Vite
+      # =========================
+      - name: Build frontend
+        run: npm run build
+
+      # =========================
+      # 5. Validate build output
+      # =========================
+      - name: Validate build output
+        run: |
+          echo "=== Build directory ==="
+          ls -lah public/build
+
+          echo ""
+          echo "=== Build files ==="
+          find public/build -maxdepth 2 -type f | sort
+
+          echo ""
+          echo "=== Manifest ==="
+          test -f public/build/manifest.json
+          echo "manifest.json exists"
+
+      # =========================
+      # 6. Create deployment archive
+      # =========================
+      - name: Create build archive
+        run: |
+          tar -czf bookqu-build-test.tar.gz -C public build
+          ls -lh bookqu-build-test.tar.gz
+
+      # =========================
+      # 7. Prepare test directory
+      # =========================
+      - name: Prepare HostData test directory
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.HOSTDATA_HOST }}
+          username: ${{ secrets.HOSTDATA_USER }}
+          key: ${{ secrets.HOSTDATA_SSH_KEY }}
+          port: ${{ secrets.HOSTDATA_PORT }}
+          script: |
+            set -e
+
+            TEST_DIR="/home/bacadite/bookqu-deploy-test"
+
+            echo "Creating test directory..."
+
+            rm -rf "$TEST_DIR"
+            mkdir -p "$TEST_DIR"
+
+            echo "Test directory ready:"
+            ls -ld "$TEST_DIR"
+
+      # =========================
+      # 8. Transfer build
+      # =========================
+      - name: Transfer build archive
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOSTDATA_HOST }}
+          username: ${{ secrets.HOSTDATA_USER }}
+          key: ${{ secrets.HOSTDATA_SSH_KEY }}
+          port: ${{ secrets.HOSTDATA_PORT }}
+          source: "bookqu-build-test.tar.gz"
+          target: "/home/bacadite/bookqu-deploy-test"
+
+      # =========================
+      # 9. Extract & validate on HostData
+      # =========================
+      - name: Validate transferred files
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.HOSTDATA_HOST }}
+          username: ${{ secrets.HOSTDATA_USER }}
+          key: ${{ secrets.HOSTDATA_SSH_KEY }}
+          port: ${{ secrets.HOSTDATA_PORT }}
+          script: |
+            set -e
+
+            TEST_DIR="/home/bacadite/bookqu-deploy-test"
+
+            cd "$TEST_DIR"
+
+            echo "=== Received archive ==="
+            ls -lh bookqu-build-test.tar.gz
+
+            echo ""
+            echo "=== Extracting ==="
+            tar -xzf bookqu-build-test.tar.gz
+
+            echo ""
+            echo "=== Extracted structure ==="
+            find build -maxdepth 2 -type f | sort
+
+            echo ""
+            echo "=== Validating manifest ==="
+            test -f build/manifest.json
+
+            echo ""
+            echo "=== Build directory ==="
+            ls -lah build
+
+            echo ""
+            echo "================================="
+            echo "BUILD TRANSFER VALIDATION PASSED"
+            echo "================================="
