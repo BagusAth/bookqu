@@ -243,7 +243,11 @@ jobs:
             cp -a "$BUILD_DIR/build" "$PUBLIC_DIR/build"
 
             cd "$LARAVEL_DIR"
-            composer install --no-dev --optimize-autoloader
+            # HostData disables proc_open, which Laravel's Composer package:discover
+            # script invokes through Illuminate\Process. Install dependencies and
+            # generate the optimized autoloader without Composer lifecycle scripts;
+            # the Laravel cache commands below remain the deployment validation.
+            composer install --no-dev --no-scripts --optimize-autoloader
             php artisan migrate --force
             php artisan optimize:clear
             php artisan optimize
