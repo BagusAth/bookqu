@@ -20,7 +20,7 @@ return new class extends Migration
             $table->timestamp('created_at')->useCurrent();
 
             $table->foreign('idtenant')->references('id')->on('tenants')->onDelete('cascade');
-        });
+       });
     }
 
     /**

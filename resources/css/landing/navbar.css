@@ -1,0 +1,47 @@
+/* Sticky navbar blur + transparency when scrolled */
+.landing-navbar {
+    transition: background-color 0.25s ease, box-shadow 0.25s ease, backdrop-filter 0.25s ease;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+.landing-navbar.is-scrolled {
+    background-color: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    border-bottom-color: rgba(226, 232, 240, 0.7);
+}
+
+.nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding-bottom: 6px;
+    transition: color 0.2s ease, font-weight 0.2s ease;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    background-color: #4F46E5;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+}
+
+.nav-link:hover,
+.nav-link.is-active {
+    color: #4F46E5;
+    font-weight: 600;
+}
+
+.nav-link:hover::after,
+.nav-link.is-active::after {
+    transform: scaleX(1);
+}

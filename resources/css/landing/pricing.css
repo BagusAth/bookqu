@@ -1,0 +1,67 @@
+/* =========================================
+   Custom CSS & Pricing Animations
+   ========================================= */
+
+.pricing-container {
+    perspective: 1000px;
+}
+
+.pricing-card {
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    transform-origin: center bottom;
+    background-color: #ffffff;
+    will-change: transform, opacity, box-shadow;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* Active State (Yang sedang difokuskan/di-hover) */
+.pricing-card.is-active {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 25px 50px -12px rgb(79 70 229 / 0.18), 0 0 0 2px #4F46E5;
+    border-color: #4F46E5;
+    z-index: 10;
+}
+
+/* Inactive State (Yang sedang tidak di-hover saat ada card lain yang aktif) */
+.pricing-container.has-hover .pricing-card:not(.is-active) {
+    transform: scale(0.99);
+    opacity: 0.75;
+    box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.05);
+    border-color: #f3f4f6;
+}
+
+/* Button Hover Effects */
+.btn-paket {
+    transition: all 0.3s ease;
+    background-color: #ffffff;
+}
+
+/* Tombol otomatis menyala saat Card di-hover/aktif */
+.pricing-card.is-active .btn-paket {
+    background-color: #4F46E5;
+    border-color: #4F46E5;
+    color: #ffffff;
+    box-shadow: 0 10px 15px -3px rgb(79 70 229 / 0.3);
+}
+
+/* Efek pop-up tipis jika tombolnya sendiri secara spesifik diarahkan kursor */
+.btn-paket:hover {
+    transform: translateY(-2px);
+}
+
+.pricing-card.is-active .btn-paket:hover {
+    background-color: #4338CA;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+}
+

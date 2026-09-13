@@ -1,0 +1,382 @@
+<?php
+
+namespace App\Http\Controllers\Owner;
+
+use App\Http\Controllers\Controller;
+
+use App\Models\OwnerPayout;
+use App\Models\Tenant;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+
+class OwnerSettingController extends Controller
+{
+    use \App\Traits\ResolvesOwnerTenant;
+
+    /**
+     * Halaman pengaturan bisnis.
+     */
+    public function index()
+    {
+        $tenant = $this->resolveTenant();
+        $user = auth()->user();
+
+        if (!$tenant) {
+            $tenant = new Tenant();
+            if ($user) {
+                $tenant->setRelation('user', $user);
+            }
+        }
+
+        $payouts = collect();
+        if ($tenant->id) {
+            $payouts = OwnerPayout::where('idtenant', $tenant->id)
+                ->orderByDesc('requested_at')
+                ->limit(10)
+                ->get();
+        }
+
+        return view('owner.settings', compact('tenant', 'payouts'));
+    }
+
+    /**
+     * Simpan profil bisnis untuk owner baru.
+     */
+    public function storeProfile(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            abort(403, 'User tidak ditemukan.');
+        }
+
+        $tenant = $this->resolveTenant();
+
+        $data = $request->validate([
+            'namabisnis' => 'required|string|max:150',
+            'jenisbisnis' => 'required|string|max:150',
+            'nomorhp' => 'required|string|max:20',
+            'alamat' => 'required|string|max:255',
+        ]);
+
+        $namabisnis = trim($data['namabisnis']);
+        $slug = Str::slug($namabisnis);
+
+        if ($slug === '') {
+            return back()
+                ->withErrors(['namabisnis' => 'Nama bisnis tidak valid untuk dijadikan URL.'])
+                ->withInput();
+        }
+
+        $reserved = ['owner', 'admin', 'login', 'register'];
+        if (in_array($slug, $reserved, true)) {
+            return back()
+                ->withErrors(['namabisnis' => 'Nama bisnis ini tidak bisa dipakai sebagai URL.'])
+                ->withInput();
+        }
+
+        $slugQuery = Tenant::where('slug', $slug);
+        if ($tenant) {
+            $slugQuery->where('id', '!=', $tenant->id);
+        }
+
+        if ($slugQuery->exists()) {
+            return back()
+                ->withErrors(['namabisnis' => 'Slug sudah dipakai. Coba variasi nama bisnis lain.'])
+                ->withInput();
+        }
+
+        $isNewTenant = !Tenant::where('iduser', $user->id)->exists();
+
+        $tenant = Tenant::updateOrCreate(
+            ['iduser' => $user->id],
+            [
+                'namabisnis' => $namabisnis,
+                'slug' => $slug,
+                'jenisbisnis' => $data['jenisbisnis'],
+                'alamat' => $data['alamat'],
+                'nomorhp' => $data['nomorhp'],
+            ]
+        );
+
+        if ($isNewTenant) {
+            $proPlan = \App\Models\Plan::firstOrCreate(
+                ['namapaket' => 'pro'],
+                [
+                    'hargabulanan' => 100000,
+                    'maxlayanan' => 10,
+                    'maxbooking' => 500,
+                    'isunlimited' => false,
+                ]
+            );
+
+            \App\Models\Subscription::create([
+                'idtenant' => $tenant->id,
+                'idplan' => $proPlan->id,
+                'status' => 'trial',
+                'trial_berakhir' => now()->addDays(7),
+            ]);
+        }
+
+        session()->put('current_tenant_id', $tenant->id);
+
+        return redirect()->route('owner.dashboard')->with('sukses', 'Profil bisnis berhasil dibuat. Anda mendapatkan Free Trial 7 Hari paket Pro!');
+    }
+
+    public function updateBusinessProfile(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            abort(403, 'User tidak ditemukan.');
+        }
+
+        $tenant = $this->resolveTenant();
+
+        $data = $request->validate([
+            'namabisnis'  => 'required|string|max:150',
+            'jenisbisnis' => 'required|string|max:150',
+            'nomorhp'     => 'required|string|max:20',
+            'alamat'      => 'required|string|max:255',
+            'deskripsi'   => 'nullable|string|max:1000',
+            'logo'        => 'nullable|image|mimes:jpg,jpeg,png,webp,svg,gif|max:10240',
+        ]);
+
+        $namabisnis = trim($data['namabisnis']);
+        
+        // Preserve existing slug if business name is unchanged
+        if ($tenant && $tenant->namabisnis === $namabisnis && !empty($tenant->slug)) {
+            $slug = $tenant->slug;
+        } else {
+            $slug = Str::slug($namabisnis);
+
+            if ($slug === '') {
+                return back()
+                    ->withErrors(['namabisnis' => 'Nama bisnis tidak valid untuk dijadikan URL.'])
+                    ->withInput();
+            }
+
+            $reserved = ['owner', 'admin', 'login', 'register'];
+            if (in_array($slug, $reserved, true)) {
+                return back()
+                    ->withErrors(['namabisnis' => 'Nama bisnis ini tidak bisa dipakai sebagai URL.'])
+                    ->withInput();
+            }
+
+            $slugQuery = Tenant::where('slug', $slug);
+            if ($tenant) {
+                $slugQuery->where('id', '!=', $tenant->id);
+            }
+
+            if ($slugQuery->exists()) {
+                return back()
+                    ->withErrors(['namabisnis' => 'Slug sudah dipakai. Coba variasi nama bisnis lain.'])
+                    ->withInput();
+            }
+        }
+
+        $logoPath = $tenant?->logo_path;
+        if ($request->hasFile('logo')) {
+            // Remove previous local logo if exists
+            if ($tenant && $tenant->logo_path && !str_starts_with($tenant->logo_path, 'http') && \Illuminate\Support\Facades\Storage::disk('public')->exists($tenant->logo_path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($tenant->logo_path);
+            }
+            $logoPath = $request->file('logo')->store('logos', 'public');
+        }
+
+        if ($tenant) {
+            $tenant->update([
+                'namabisnis'  => $namabisnis,
+                'slug'        => $slug,
+                'jenisbisnis' => $data['jenisbisnis'],
+                'alamat'      => $data['alamat'],
+                'deskripsi'   => $data['deskripsi'] ?? null,
+                'logo_path'   => $logoPath,
+                'nomorhp'     => $data['nomorhp'],
+            ]);
+        } else {
+            $tenant = Tenant::create([
+                'iduser'      => $user->id,
+                'namabisnis'  => $namabisnis,
+                'slug'        => $slug,
+                'jenisbisnis' => $data['jenisbisnis'],
+                'alamat'      => $data['alamat'],
+                'deskripsi'   => $data['deskripsi'] ?? null,
+                'logo_path'   => $logoPath,
+                'nomorhp'     => $data['nomorhp'],
+            ]);
+        }
+
+        session()->put('current_tenant_id', $tenant->id);
+
+        \Illuminate\Support\Facades\Cache::forget("tenant:slug:{$tenant->slug}");
+
+        return redirect()->route('owner.settings')->with('sukses', 'Profil bisnis berhasil diperbarui.');
+    }
+
+    public function updateAccount(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            abort(403, 'User tidak ditemukan.');
+        }
+
+        $data = $request->validate([
+            'namalengkap' => 'required|string|max:100',
+            'email' => ['required', 'email', 'max:100', Rule::unique('users', 'email')->ignore($user->id)],
+            'nomorhp' => 'required|string|max:20',
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+
+        $user->namalengkap = $data['namalengkap'];
+        $user->email = $data['email'];
+        $user->nomorhp = $data['nomorhp'];
+
+        if (!empty($data['password'])) {
+            $user->password = Hash::make($data['password']);
+        }
+
+        $user->save();
+
+        return redirect()->route('owner.settings')->with('sukses', 'Akun berhasil diperbarui.');
+    }
+
+    public function updatePaymentSettings(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            abort(403, 'User tidak ditemukan.');
+        }
+
+        $tenant = $this->resolveTenant();
+        if (!$tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        $data = $request->validate([
+            'payment_mode' => 'required|in:platform,owner',
+            'midtrans_environment' => 'required|in:sandbox,production',
+            'midtrans_sandbox_merchant_id' => 'nullable|string|max:100',
+            'midtrans_sandbox_client_key' => 'nullable|string|max:200',
+            'midtrans_sandbox_server_key' => 'nullable|string|max:200',
+            'midtrans_prod_merchant_id' => 'nullable|string|max:100',
+            'midtrans_prod_client_key' => 'nullable|string|max:200',
+            'midtrans_prod_server_key' => 'nullable|string|max:200',
+        ]);
+
+        $tenant->payment_mode = $data['payment_mode'];
+        $tenant->midtrans_environment = $data['midtrans_environment'];
+        
+        if (isset($data['midtrans_sandbox_merchant_id'])) $tenant->midtrans_sandbox_merchant_id = $data['midtrans_sandbox_merchant_id'];
+        if (isset($data['midtrans_sandbox_client_key'])) $tenant->midtrans_sandbox_client_key = $data['midtrans_sandbox_client_key'];
+        if (isset($data['midtrans_sandbox_server_key']) && $data['midtrans_sandbox_server_key'] !== '********') {
+            $tenant->midtrans_sandbox_server_key = $data['midtrans_sandbox_server_key'];
+        }
+        
+        if (isset($data['midtrans_prod_merchant_id'])) $tenant->midtrans_prod_merchant_id = $data['midtrans_prod_merchant_id'];
+        if (isset($data['midtrans_prod_client_key'])) $tenant->midtrans_prod_client_key = $data['midtrans_prod_client_key'];
+        if (isset($data['midtrans_prod_server_key']) && $data['midtrans_prod_server_key'] !== '********') {
+            $tenant->midtrans_prod_server_key = $data['midtrans_prod_server_key'];
+        }
+
+        if ($tenant->payment_mode === 'owner') {
+            $tenant->midtrans_status = 'pending';
+        }
+
+        $tenant->save();
+
+        \Illuminate\Support\Facades\Cache::forget("tenant:slug:{$tenant->slug}");
+
+        return redirect()->route('owner.settings')->with('sukses', 'Pengaturan pembayaran berhasil diperbarui.');
+    }
+
+    public function requestPayout(Request $request)
+    {
+        $tenant = $this->resolveTenant();
+        if (!$tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        $data = $request->validate([
+            'jumlah' => 'required|numeric|min:10000',
+        ]);
+
+        if ($tenant->payment_mode !== 'platform') {
+            return back()->withErrors(['jumlah' => 'Withdraw hanya tersedia untuk mode pembayaran platform.']);
+        }
+
+        if ($tenant->saldo_platform < $data['jumlah']) {
+            return back()->withErrors(['jumlah' => 'Saldo tidak mencukupi.']);
+        }
+
+        $tenant->saldo_platform = $tenant->saldo_platform - $data['jumlah'];
+        $tenant->save();
+
+        OwnerPayout::create([
+            'idtenant' => $tenant->id,
+            'jumlah' => $data['jumlah'],
+            'status' => 'pending',
+            'requested_at' => now(),
+        ]);
+
+        return redirect()->route('owner.settings')->with('sukses', 'Permintaan withdraw berhasil dibuat.');
+    }
+
+    /**
+     * Hapus akun dan seluruh data bisnis owner secara permanen setelah konfirmasi.
+     */
+    public function deleteAccount(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            abort(403, 'User tidak ditemukan.');
+        }
+
+        $tenant = $this->resolveTenant();
+
+        $expectedEmail = strtolower(trim($user->email));
+        $expectedBusiness = strtolower(trim($tenant?->namabisnis ?? ''));
+        $input = strtolower(trim((string) $request->input('confirm_account', '')));
+
+        if ($input === '' || ($input !== $expectedEmail && $input !== $expectedBusiness)) {
+            return back()->withErrors([
+                'confirm_account' => 'Konfirmasi tidak sesuai. Silakan ketikkan email akun (' . $user->email . ') dengan benar untuk konfirmasi penghapusan.',
+            ]);
+        }
+
+        DB::transaction(function () use ($user, $tenant) {
+            if ($tenant) {
+                // Hapus file logo jika ada
+                if ($tenant->logo_path && !str_starts_with($tenant->logo_path, 'http') && Storage::disk('public')->exists($tenant->logo_path)) {
+                    Storage::disk('public')->delete($tenant->logo_path);
+                }
+                // Hapus file banner jika ada
+                if ($tenant->banner_path && !str_starts_with($tenant->banner_path, 'http') && Storage::disk('public')->exists($tenant->banner_path)) {
+                    Storage::disk('public')->delete($tenant->banner_path);
+                }
+
+                // Hapus asset files jika ada
+                $assets = \App\Models\Asset::where('idtenant', $tenant->id)->get();
+                foreach ($assets as $asset) {
+                    if ($asset->file_path && Storage::disk('public')->exists($asset->file_path)) {
+                        Storage::disk('public')->delete($asset->file_path);
+                    }
+                }
+
+                $tenant->delete();
+            }
+
+            $user->delete();
+        });
+
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/')->with('sukses', 'Akun dan bisnis Anda telah berhasil dihapus secara permanen.');
+    }
+}
+
