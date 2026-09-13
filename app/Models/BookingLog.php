@@ -53,6 +53,7 @@ class BookingLog extends Model
             'cancelled'       => 'Booking Dibatalkan',
             'rescheduled'     => 'Jadwal Diubah',
             'viewed'          => 'Booking Dilihat',
+            'reviewed'        => 'Ulasan Diberikan',
             default           => ucfirst($this->event),
         };
     }
@@ -67,6 +68,7 @@ class BookingLog extends Model
             'cancelled'       => 'ban',
             'rescheduled'     => 'calendar',
             'viewed'          => 'eye',
+            'reviewed'        => 'star',
             default           => 'info',
         };
     }
@@ -81,6 +83,7 @@ class BookingLog extends Model
             'cancelled'       => 'red',
             'rescheduled'     => 'blue',
             'viewed'          => 'gray',
+            'reviewed'        => 'amber',
             default           => 'gray',
         };
     }

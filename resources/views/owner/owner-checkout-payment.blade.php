@@ -39,13 +39,22 @@
             <div class="rounded-xl border border-bq-border bg-bq-surface p-6 space-y-5">
 
                 {{-- Status Indicator --}}
-                <div class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 shrink-0">
-                        <svg class="h-5 w-5 text-amber-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div class="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/80 p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 shrink-0">
+                            <svg class="h-5 w-5 text-amber-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-amber-800">Menunggu Pembayaran</p>
+                            <p class="text-xs text-amber-700">Order ID: <span class="font-mono font-bold">{{ $payment->order_id }}</span></p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-sm font-semibold text-amber-800">Menunggu Pembayaran</p>
-                        <p class="text-xs text-amber-700">Order ID: <span class="font-mono font-bold">{{ $payment->order_id }}</span></p>
+                    <div class="hidden sm:flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        Auto-detect aktif
                     </div>
                 </div>
 
@@ -67,15 +76,15 @@
                         Buka Ulang Pembayaran
                     </button>
 
-                    {{-- Check Status --}}
+                    {{-- Check Status Manual --}}
                     <button type="button" id="btn-check-status"
-                        @click="checkStatus()"
+                        @click="checkStatus(false)"
                         :disabled="isChecking"
-                        class="w-full rounded-xl border border-emerald-200 bg-emerald-50 py-3.5 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100 hover:border-emerald-300 flex items-center justify-center gap-2 disabled:opacity-50">
+                        class="w-full rounded-xl border border-emerald-200 bg-emerald-50 py-3 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100 hover:border-emerald-300 flex items-center justify-center gap-2 disabled:opacity-50">
                         <template x-if="!isChecking">
                             <span class="flex items-center gap-2">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                Cek Status Pembayaran
+                                Cek Status Pembayaran Manual
                             </span>
                         </template>
                         <template x-if="isChecking">
@@ -94,7 +103,10 @@
                         'bg-amber-50 border-amber-200 text-amber-800': statusType === 'pending',
                         'bg-rose-50 border-rose-200 text-rose-800': statusType === 'gagal' || statusType === 'error'
                     }"
-                    class="rounded-lg border p-3 text-sm font-medium">
+                    class="rounded-lg border p-3.5 text-sm font-medium flex items-center gap-2">
+                    <template x-if="statusType === 'sukses'">
+                        <svg class="h-5 w-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </template>
                     <span x-text="statusMessage"></span>
                 </div>
 
@@ -108,19 +120,11 @@
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-bq-primary font-bold mt-0.5">2.</span>
-                            Pilih metode pembayaran (QRIS, GoPay, Transfer Bank, dll).
+                            Pilih metode pembayaran (QRIS, GoPay, Transfer Bank, dll) dan selesaikan transaksi.
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-bq-primary font-bold mt-0.5">3.</span>
-                            Selesaikan pembayaran sesuai instruksi.
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-bq-primary font-bold mt-0.5">4.</span>
-                            Jika pop-up tertutup, klik <strong>"Buka Ulang Pembayaran"</strong>.
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-bq-primary font-bold mt-0.5">5.</span>
-                            Jika status tidak berubah otomatis, klik <strong>"Cek Status Pembayaran"</strong>.
+                            Website akan <strong>otomatis mendeteksi</strong> pembayaran selesai dan mengarahkan ke halaman invoice.
                         </li>
                     </ul>
                 </div>
@@ -196,11 +200,24 @@ function paymentPage() {
         countdown: {{ max(0, $payment->expired_at ? $payment->expired_at->diffInSeconds(now(), false) * -1 : 3600) }},
         countdownDisplay: '--:--',
         timer: null,
-        snapOpened: false,
+        pollTimer: null,
+        isSuccessRedirecting: false,
+        csrfToken: '{{ csrf_token() }}',
+        callbackUrl: '{{ route("owner.checkout.callback", $payment) }}',
+        checkStatusUrl: '{{ route("owner.checkout.check-status", $payment) }}',
 
         init() {
             this.startCountdown();
-            // Auto-open Snap setelah halaman dimuat
+            this.startAutoPolling();
+
+            // Dengarkan tab visibility agar saat user kembali dari app bank, langsung cek!
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && !this.isSuccessRedirecting) {
+                    this.checkStatus(true);
+                }
+            });
+
+            // Auto-open Snap setelah halaman dimuat jika belum expired
             this.$nextTick(() => {
                 setTimeout(() => this.openSnap(), 800);
             });
@@ -213,6 +230,7 @@ function paymentPage() {
                 this.updateDisplay();
                 if (this.countdown <= 0) {
                     clearInterval(this.timer);
+                    this.stopPolling();
                     this.countdownDisplay = '00:00';
                     this.statusMessage = 'Waktu pembayaran telah habis. Silakan buat pesanan baru.';
                     this.statusType = 'gagal';
@@ -230,10 +248,27 @@ function paymentPage() {
             this.countdownDisplay = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
         },
 
+        startAutoPolling() {
+            if (this.pollTimer) clearInterval(this.pollTimer);
+            this.pollTimer = setInterval(() => {
+                if (!document.hidden && !this.isSuccessRedirecting) {
+                    this.checkStatus(true);
+                }
+            }, 2500);
+        },
+
+        stopPolling() {
+            if (this.pollTimer) {
+                clearInterval(this.pollTimer);
+                this.pollTimer = null;
+            }
+        },
+
         openSnap() {
-            if (this.countdown <= 0) {
-                this.statusMessage = 'Waktu pembayaran telah habis. Silakan buat pesanan baru.';
-                this.statusType = 'gagal';
+            if (this.countdown <= 0 || this.isSuccessRedirecting) return;
+
+            if (typeof window.snap === 'undefined') {
+                console.warn('Midtrans Snap SDK not ready');
                 return;
             }
 
@@ -244,9 +279,6 @@ function paymentPage() {
                     self.statusMessage = 'Pembayaran berhasil! Mengarahkan ke halaman invoice...';
                     self.statusType = 'sukses';
                     self.sendCallback(result);
-                    setTimeout(() => {
-                        window.location.href = '{{ route("owner.checkout.invoice", $payment->id) }}';
-                    }, 1500);
                 },
                 onPending: function(result) {
                     self.statusMessage = 'Pembayaran sedang diproses. Silakan selesaikan pembayaran Anda.';
@@ -259,62 +291,83 @@ function paymentPage() {
                     self.sendCallback(result);
                 },
                 onClose: function() {
-                    if (!self.statusMessage) {
-                        self.statusMessage = 'Pop-up pembayaran ditutup. Klik "Buka Ulang Pembayaran" jika ingin melanjutkan.';
-                        self.statusType = 'pending';
-                    }
+                    self.checkStatus(true);
                 }
             });
         },
 
         async sendCallback(result) {
+            if (this.isSuccessRedirecting) return;
+
             try {
-                await fetch('{{ route("owner.checkout.callback", $payment->id) }}', {
+                const response = await fetch(this.callbackUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': this.csrfToken
                     },
                     body: JSON.stringify({ result: result })
                 });
+
+                const data = await response.json();
+                if (data.status === 'sukses' && data.redirect) {
+                    this.triggerSuccess(data.redirect);
+                }
             } catch (e) {
                 console.error('Callback error:', e);
             }
         },
 
-        async checkStatus() {
-            if (this.isChecking) return;
+        async checkStatus(isSilent = false) {
+            if (this.isSuccessRedirecting || this.isChecking) return;
             this.isChecking = true;
-            this.statusMessage = '';
 
             try {
-                const response = await fetch('{{ route("owner.checkout.check-status", $payment->id) }}', {
+                const response = await fetch(this.checkStatusUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': this.csrfToken
                     }
                 });
 
                 const data = await response.json();
-                this.statusMessage = data.message || 'Status tidak diketahui';
-                this.statusType = data.status || 'pending';
 
                 if (data.status === 'sukses' && data.redirect) {
-                    setTimeout(() => {
-                        window.location.href = data.redirect;
-                    }, 1500);
+                    this.triggerSuccess(data.redirect);
+                    return;
+                }
+
+                if (!isSilent) {
+                    this.statusMessage = data.message || 'Status pembayaran diperbarui.';
+                    this.statusType = data.status || 'pending';
                 }
             } catch (e) {
-                this.statusMessage = 'Gagal memeriksa status. Coba lagi.';
-                this.statusType = 'error';
+                if (!isSilent) {
+                    this.statusMessage = 'Gagal memeriksa status. Coba lagi.';
+                    this.statusType = 'error';
+                }
             } finally {
                 this.isChecking = false;
             }
         },
 
+        triggerSuccess(redirectUrl) {
+            if (this.isSuccessRedirecting) return;
+            this.isSuccessRedirecting = true;
+            this.stopPolling();
+
+            this.statusMessage = '✓ Pembayaran Berhasil Dikonfirmasi! Mengarahkan ke invoice...';
+            this.statusType = 'sukses';
+
+            setTimeout(() => {
+                window.location.href = redirectUrl;
+            }, 1200);
+        },
+
         destroy() {
             if (this.timer) clearInterval(this.timer);
+            this.stopPolling();
         }
     }
 }

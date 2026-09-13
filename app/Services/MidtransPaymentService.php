@@ -6,12 +6,12 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\UsageLog;
-use App\Notifications\BookingPaidNotification;
+use App\Mail\BookingInvoiceMail;
 use App\Notifications\NewBookingOwnerNotification;
 use App\Traits\ClearsBookingCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
 use Midtrans\Config as MidtransConfig;
 use Midtrans\Transaction as MidtransTransaction;
 
@@ -21,6 +21,30 @@ class MidtransPaymentService
 
     public function __construct()
     {
+        MidtransConfig::$serverKey = config('midtrans.server_key');
+        MidtransConfig::$isProduction = (bool) config('midtrans.is_production', false);
+        MidtransConfig::$isSanitized = true;
+        MidtransConfig::$is3ds = true;
+    }
+
+    public function configureForPayment(Payment $payment): void
+    {
+        $tenant = $payment->tenant;
+        if ($tenant && $tenant->payment_mode === 'owner' && $payment->tipe === 'booking') {
+            $isProd = $tenant->midtrans_environment === 'production';
+            $serverKey = $isProd
+                ? $tenant->midtrans_prod_server_key
+                : $tenant->midtrans_sandbox_server_key;
+
+            if ($serverKey) {
+                MidtransConfig::$serverKey = $serverKey;
+                MidtransConfig::$isProduction = $isProd;
+                MidtransConfig::$isSanitized = true;
+                MidtransConfig::$is3ds = true;
+                return;
+            }
+        }
+
         MidtransConfig::$serverKey = config('midtrans.server_key');
         MidtransConfig::$isProduction = (bool) config('midtrans.is_production', false);
         MidtransConfig::$isSanitized = true;
@@ -44,6 +68,18 @@ class MidtransPaymentService
                 'payment' => $payment,
             ];
         }
+
+        // Fast-path: jika di database status sudah sukses, kembalikan langsung tanpa delay
+        if ($payment->status === 'sukses') {
+            return [
+                'status' => 'sukses',
+                'transaction_status' => 'settlement',
+                'message' => 'Pembayaran berhasil dikonfirmasi.',
+                'payment' => $payment,
+            ];
+        }
+
+        $this->configureForPayment($payment);
 
         try {
             $midtransStatus = MidtransTransaction::status($payment->order_id);
@@ -72,6 +108,10 @@ class MidtransPaymentService
      */
     public function syncStatus(Payment $payment, array|object $midtransPayload): array
     {
+        if ($payment->idtenant && !app(\App\Support\TenantContext::class)->hasTenant()) {
+            app(\App\Support\TenantContext::class)->setTenantId($payment->idtenant);
+        }
+
         $payload = is_object($midtransPayload) ? (array) $midtransPayload : $midtransPayload;
 
         $transactionStatus = $payload['transaction_status'] ?? null;
@@ -127,9 +167,19 @@ class MidtransPaymentService
      */
     private function processSuccess(Payment $payment, ?string $paymentType, ?string $transactionStatus): array
     {
-        DB::transaction(function () use ($payment, $paymentType) {
-            // Reload payment untuk mencegah race condition
-            $payment->refresh();
+        return DB::transaction(function () use ($payment, $paymentType, $transactionStatus) {
+            // P0-06: Concurrency & Idempotency
+            $payment = Payment::lockForUpdate()->find($payment->id);
+
+            // P0-05: State Machine check
+            if ($payment->status === 'sukses') {
+                return [
+                    'status' => 'sukses',
+                    'transaction_status' => $transactionStatus,
+                    'message' => 'Pembayaran sudah dikonfirmasi sebelumnya.',
+                    'payment' => $payment,
+                ];
+            }
 
             // 1. Update Payment status
             $payment->update([
@@ -162,65 +212,71 @@ class MidtransPaymentService
 
             // 3. Jika tipe pembayaran adalah booking
             if ($payment->tipe === 'booking') {
+                // P0-06: Lock the booking to prevent race condition with other hooks or users
                 $booking = Booking::with(['layanan', 'tenant.user', 'payment'])
+                    ->lockForUpdate()
                     ->where('idpayment', $payment->id)
                     ->first();
 
-                if ($booking) {
-                    $wasPaid = ($booking->status === 'paid');
-
-                    if (!$wasPaid) {
+                // P0-09: Ensure Tenant Relationship consistency
+                if ($booking && $booking->idtenant === $payment->idtenant) {
+                    if ($booking->status === 'cancelled') {
+                        Log::warning('Late Webhook: Settlement received for cancelled booking', [
+                            'payment_id' => $payment->id,
+                            'booking_id' => $booking->id,
+                        ]);
+                    } elseif ($booking->status === 'pending') {
                         $booking->update(['status' => 'paid']);
 
-                        // Kirim notifikasi email ke owner bisnis
-                        $owner = $booking->tenant?->user;
-                        if ($owner && $owner->email) {
-                            try {
-                                $owner->notify(new NewBookingOwnerNotification($booking));
-                            } catch (\Exception $e) {
-                                Log::error('Gagal kirim notif booking ke owner: ' . $e->getMessage());
-                            }
-                        }
-
-                        // Catat penggunaan booking ke usage_logs
+                        // Catat penggunaan booking ke usage_logs (inside transaction)
                         try {
                             UsageLog::record($booking->idtenant, 'booking');
                         } catch (\Exception $e) {
                             Log::error('Gagal catat usage log booking: ' . $e->getMessage());
                         }
 
-                        // Kirim notifikasi email ke pelanggan
-                        if ($payment->email_pembayar) {
-                            try {
-                                Notification::route('mail', $payment->email_pembayar)
-                                    ->notify(new BookingPaidNotification($booking));
-                            } catch (\Exception $e) {
-                                Log::error('Gagal kirim notif booking ke pelanggan: ' . $e->getMessage());
+                        DB::afterCommit(function () use ($booking, $payment) {
+                            // Kirim notifikasi email ke owner bisnis
+                            $owner = $booking->tenant?->user;
+                            if ($owner && $owner->email) {
+                                try {
+                                    $owner->notify(new NewBookingOwnerNotification($booking));
+                                } catch (\Exception $e) {
+                                    Log::error('Gagal kirim notif booking ke owner: ' . $e->getMessage());
+                                }
                             }
-                        }
 
-                        // Invalidate cache ketersediaan jadwal
-                        if ($booking->idlayanan && $booking->tanggalbooking) {
-                            $tanggal = is_string($booking->tanggalbooking) 
-                                ? $booking->tanggalbooking 
-                                : $booking->tanggalbooking->format('Y-m-d');
-                            $this->clearScheduleCache($booking->idtenant, $booking->idlayanan, [$tanggal]);
-                        }
-                        // Invalidate availability cache for the service
-                        $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
+                            // Kirim email invoice ke pelanggan
+                            if ($booking->email) {
+                                try {
+                                    Mail::to($booking->email)
+                                        ->send(new BookingInvoiceMail($booking));
+                                } catch (\Exception $e) {
+                                    Log::error('Gagal kirim email invoice ke pelanggan: ' . $e->getMessage());
+                                }
+                            }
+
+                            // Invalidate cache ketersediaan jadwal
+                            if ($booking->idlayanan && $booking->tanggalbooking) {
+                                $tanggal = is_string($booking->tanggalbooking) 
+                                    ? $booking->tanggalbooking 
+                                    : $booking->tanggalbooking->format('Y-m-d');
+                                $this->clearScheduleCache($booking->idtenant, $booking->idlayanan, [$tanggal]);
+                            }
+                            // Invalidate availability cache for the service
+                            $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
+                        });
                     }
                 }
             }
+
+            return [
+                'status' => 'sukses',
+                'transaction_status' => $transactionStatus,
+                'message' => 'Pembayaran berhasil dikonfirmasi.',
+                'payment' => $payment,
+            ];
         });
-
-        $payment->refresh();
-
-        return [
-            'status' => 'sukses',
-            'transaction_status' => $transactionStatus,
-            'message' => 'Pembayaran berhasil dikonfirmasi.',
-            'payment' => $payment,
-        ];
     }
 
     /**
@@ -228,12 +284,17 @@ class MidtransPaymentService
      */
     private function processFailed(Payment $payment, ?string $paymentType, ?string $transactionStatus): array
     {
-        DB::transaction(function () use ($payment, $paymentType) {
-            $payment->refresh();
+        return DB::transaction(function () use ($payment, $paymentType, $transactionStatus) {
+            $payment = Payment::lockForUpdate()->find($payment->id);
 
             // Jika sudah sukses sebelumnya, jangan ubah menjadi gagal
-            if ($payment->status === 'sukses') {
-                return;
+            if ($payment->status === 'sukses' || $payment->status === 'gagal') {
+                return [
+                    'status' => $payment->status,
+                    'transaction_status' => $transactionStatus,
+                    'message' => 'Pembayaran gagal/batal atau sudah selesai.',
+                    'payment' => $payment,
+                ];
             }
 
             $payment->update([
@@ -242,31 +303,31 @@ class MidtransPaymentService
             ]);
 
             if ($payment->tipe === 'booking') {
-                $booking = Booking::where('idpayment', $payment->id)->first();
-                if ($booking && $booking->status !== 'cancelled') {
+                $booking = Booking::lockForUpdate()->where('idpayment', $payment->id)->first();
+                if ($booking && $booking->status !== 'cancelled' && $booking->idtenant === $payment->idtenant) {
                     $booking->update(['status' => 'cancelled']);
 
-                    // Invalidate cache agar jadwal kembali tersedia bagi pelanggan lain
-                    if ($booking->idlayanan && $booking->tanggalbooking) {
-                        $tanggal = is_string($booking->tanggalbooking) 
-                            ? $booking->tanggalbooking 
-                            : $booking->tanggalbooking->format('Y-m-d');
-                        $this->clearScheduleCache($booking->idtenant, $booking->idlayanan, [$tanggal]);
-                    }
-                    // Invalidate availability cache after cancellation
-                    $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
+                    DB::afterCommit(function () use ($booking) {
+                        // Invalidate cache agar jadwal kembali tersedia bagi pelanggan lain
+                        if ($booking->idlayanan && $booking->tanggalbooking) {
+                            $tanggal = is_string($booking->tanggalbooking) 
+                                ? $booking->tanggalbooking 
+                                : $booking->tanggalbooking->format('Y-m-d');
+                            $this->clearScheduleCache($booking->idtenant, $booking->idlayanan, [$tanggal]);
+                        }
+                        // Invalidate availability cache after cancellation
+                        $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
+                    });
                 }
             }
+
+            return [
+                'status' => 'gagal',
+                'transaction_status' => $transactionStatus,
+                'message' => 'Pembayaran gagal atau dibatalkan.',
+                'payment' => $payment,
+            ];
         });
-
-        $payment->refresh();
-
-        return [
-            'status' => 'gagal',
-            'transaction_status' => $transactionStatus,
-            'message' => 'Pembayaran gagal atau dibatalkan.',
-            'payment' => $payment,
-        ];
     }
 
     /**

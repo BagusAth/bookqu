@@ -167,7 +167,7 @@
             </div>
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-bq-text">Sandbox Server Key</label>
-                <input type="text" name="midtrans_sandbox_server_key" value="{{ $tenant->midtrans_sandbox_server_key }}" class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text">
+                <input type="text" name="midtrans_sandbox_server_key" value="{{ $tenant->midtrans_sandbox_server_key ? '********' : '' }}" class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text">
             </div>
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
@@ -181,7 +181,7 @@
             </div>
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-bq-text">Production Server Key</label>
-                <input type="text" name="midtrans_prod_server_key" value="{{ $tenant->midtrans_prod_server_key }}" class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text">
+                <input type="text" name="midtrans_prod_server_key" value="{{ $tenant->midtrans_prod_server_key ? '********' : '' }}" class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text">
             </div>
             <div class="flex justify-end border-t border-bq-border pt-5">
                 <button type="submit" class="rounded-lg bg-bq-primary px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5" id="btn-save-payment">Save Payment Settings</button>

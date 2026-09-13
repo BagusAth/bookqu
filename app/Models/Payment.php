@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Traits\BelongsToTenant;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
-    use BelongsToTenant;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'idtenant',
@@ -65,5 +66,17 @@ class Payment extends Model
     public function isPending(): bool
     {
         return $this->status === 'pending' && !$this->isExpired();
+    }
+
+    /**
+     * Override route model binding to bypass TenantScope.
+     * Binding runs before TenantMiddleware populates the TenantContext,
+     * so we must query globally here. Controllers will verify idtenant.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return static::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->first();
     }
 }

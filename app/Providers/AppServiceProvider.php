@@ -14,7 +14,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->scoped(\App\Support\TenantContext::class, function () {
+            return new \App\Support\TenantContext();
+        });
     }
 
     /**
@@ -25,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
         // Share Pro subscription status with the sidebar
         View::composer('components.owner.sidebar', function ($view) {
             $userId = auth()->id();
-            $tenantId = session('current_tenant_id');
+            $tenantId = app(\App\Support\TenantContext::class)->getTenantId();
             $tenant = null;
 
             if (is_numeric($tenantId)) {

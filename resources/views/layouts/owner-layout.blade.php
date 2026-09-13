@@ -42,15 +42,8 @@
 
         <!-- Main Content -->
         <main class="flex-1 lg:ml-64">
-            <!-- Mobile Header -->
-            <div class="sticky top-0 z-30 flex items-center gap-3 border-b border-bq-border bg-bq-surface/80 px-4 py-3 backdrop-blur-md lg:hidden">
-                <button @click="sidebaropen = true" class="rounded-lg p-2 text-bq-text-muted hover:bg-bq-primary-light hover:text-bq-primary transition-colors" id="btn-mobile-menu">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                </button>
-                <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-6 w-auto" />
-            </div>
+            <!-- Topbar (Desktop & Mobile) -->
+            @include('components.owner.topbar')
 
             <div class="p-4 sm:p-6 lg:p-8">
                 @if (session('pesan'))

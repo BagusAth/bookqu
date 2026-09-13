@@ -1,161 +1,174 @@
-@extends('customer.layouts.app')
+@extends('customer.layouts.booking-shell')
 
-@section('title', 'Booking Berhasil')
+@section('title', 'Konfirmasi Booking & Invoice')
+@section('current_step', 6)
 
 @section('content')
-<div class="max-w-3xl mx-auto px-4 py-8">
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
-        
-        <!-- Decorative Header Background -->
-        <div class="h-32 bg-gradient-to-r from-primary-500 to-primary-600 absolute top-0 left-0 right-0 z-0"></div>
-        
-        <div class="relative z-10 p-8 flex flex-col items-center">
-            @if ($payment->status === 'sukses')
-                <!-- Success Icon -->
-                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mb-6">
-                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                        </svg>
+<div class="mx-auto max-w-2xl">
+    {{-- Success Hero Banner --}}
+    <div class="text-center mb-8">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mb-4 shadow-sm">
+            <svg class="h-9 w-9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">Booking Berhasil Dikonfirmasi!</h1>
+        <p class="mt-2 text-sm text-[#64748B] max-w-md mx-auto">
+            Terima kasih! Pembayaran Anda telah diterima dan sesi jadwal Anda sudah resmi terdaftar.
+        </p>
+    </div>
+
+    {{-- Professional Receipt Card --}}
+    <div class="booking-receipt-card rounded-2xl border border-[#E2E8F0] bg-white shadow-sm overflow-hidden mb-8">
+        {{-- Receipt Header --}}
+        <div class="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] p-6 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-white/80">Tanda Terima Resmi</p>
+                <h2 class="text-xl font-bold mt-0.5">{{ $tenant->namabisnis }}</h2>
+            </div>
+            <div class="sm:text-right">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-xs px-3 py-1 text-xs font-bold text-white border border-white/30">
+                    <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                    {{ $payment->status === 'sukses' ? 'LUNAS' : strtoupper($payment->status) }}
+                </span>
+            </div>
+        </div>
+
+        {{-- Order Identifiers Bar --}}
+        <div class="bg-[#F8FAFC] px-6 py-4 border-b border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+            <div>
+                <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider">Kode Booking</span>
+                <span class="font-mono text-base font-bold text-[#4F46E5] tracking-wide">{{ $booking->booking_code ?? '-' }}</span>
+            </div>
+            <div class="sm:text-right">
+                <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider">Order ID</span>
+                <span class="font-mono text-xs sm:text-sm font-semibold text-[#0F172A]">{{ $payment->order_id }}</span>
+            </div>
+        </div>
+
+        {{-- Session Details --}}
+        <div class="p-6 space-y-6">
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-3">Rincian Layanan &amp; Jadwal</h3>
+                <div class="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-3 text-xs sm:text-sm">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[#64748B]">Layanan</span>
+                        <span class="font-bold text-[#0F172A] text-right">{{ $booking->layanan->namalayanan ?? 'Layanan' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[#64748B]">Durasi</span>
+                        <span class="font-semibold text-[#0F172A]">{{ $booking->layanan->durasi ?? 60 }} {{ $booking->layanan->satuan_durasi ?? 'menit' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[#64748B]">Hari &amp; Tanggal</span>
+                        <span class="font-bold text-[#0F172A]">{{ \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[#64748B]">Jam Sesi</span>
+                        <span class="font-bold text-[#4F46E5]">Pukul {{ $booking->jam }} WIB</span>
+                    </div>
+                    <div class="flex justify-between items-start pt-2 border-t border-[#E2E8F0]">
+                        <span class="text-[#64748B]">Lokasi / Tempat</span>
+                        <span class="font-medium text-[#0F172A] text-right">{{ $tenant->namabisnis }}</span>
                     </div>
                 </div>
-                
-                <h1 class="text-3xl font-bold text-gray-900 text-center mb-2">Booking Berhasil!</h1>
-                <p class="text-gray-600 text-center max-w-md">
-                    Terima kasih, pembayaran Anda telah kami terima dan jadwal Anda sudah dikonfirmasi.
-                </p>
-            @elseif ($payment->status === 'pending')
-                <!-- Pending Icon -->
-                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mb-6">
-                    <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
-                        <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
+            </div>
+
+            {{-- Customer Details --}}
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-3">Data Pemesan</h3>
+                <div class="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-2 text-xs sm:text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-[#64748B]">Nama Pemesan</span>
+                        <span class="font-bold text-[#0F172A]">{{ $booking->namapelanggan }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[#64748B]">Nomor WhatsApp</span>
+                        <span class="font-medium text-[#0F172A]">{{ $booking->nomorhp }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[#64748B]">Email</span>
+                        <span class="font-medium text-[#0F172A]">{{ $booking->email }}</span>
                     </div>
                 </div>
-                
-                <h1 class="text-3xl font-bold text-gray-900 text-center mb-2">Menunggu Pembayaran</h1>
-                <p class="text-gray-600 text-center max-w-md">
-                    Mohon selesaikan pembayaran Anda agar booking ini dapat dikonfirmasi.
-                </p>
-            @else
-                <!-- Failed/Cancelled Icon -->
-                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mb-6">
-                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
+            </div>
+
+            {{-- Payment Summary --}}
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-3">Rincian Pembayaran</h3>
+                <div class="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-2.5 text-xs sm:text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-[#64748B]">Metode Pembayaran</span>
+                        <span class="font-bold text-[#0F172A] uppercase">{{ $payment->metode ?? 'Midtrans' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[#64748B]">Status Transaksi</span>
+                        <span class="font-semibold text-emerald-700">Berhasil Dikonfirmasi</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-3 border-t border-[#E2E8F0]">
+                        <span class="text-sm font-bold text-[#0F172A]">Total Pembayaran</span>
+                        <span class="text-lg font-black text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</span>
                     </div>
                 </div>
-                
-                <h1 class="text-3xl font-bold text-gray-900 text-center mb-2">Booking Dibatalkan</h1>
-                <p class="text-gray-600 text-center max-w-md">
-                    Maaf, pembayaran gagal atau waktu pembayaran telah habis.
-                </p>
+            </div>
+
+            {{-- Self-Service Manage Booking Box --}}
+            @if ($booking->booking_code && $booking->cancellation_token)
+                <div class="rounded-xl border border-[#C7D2FE] bg-[#EEF2FF]/60 p-4 text-xs">
+                    <div class="flex items-start gap-2.5">
+                        <svg class="h-4 w-4 text-[#4F46E5] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <p class="font-bold text-[#4F46E5]">Kelola Booking Mandiri (Tanpa Perlu Login)</p>
+                            <p class="text-[#64748B] mt-0.5 leading-relaxed">
+                                Anda dapat melihat detail, membatalkan, atau mengubah jadwal booking ini kapan saja melalui tautan berikut:
+                            </p>
+                            <a
+                                href="{{ route('booking.manage', ['booking_code' => $booking->booking_code]) . '?token=' . $booking->cancellation_token }}"
+                                class="mt-2 inline-flex items-center gap-1 font-bold text-[#4F46E5] hover:underline break-all"
+                            >
+                                <span>{{ url('/manage/' . $booking->booking_code) }}</span>
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             @endif
         </div>
+    </div>
 
-        <div class="px-8 pb-8">
-            <!-- Ticket Info -->
-            <div class="bg-gray-50 rounded-xl p-6 border border-gray-100 mb-8 relative">
-                <!-- Ticket cutouts -->
-                <div class="absolute w-6 h-6 bg-white rounded-full border border-gray-100 border-l-transparent border-t-transparent border-b-transparent -left-3 top-1/2 transform -translate-y-1/2"></div>
-                <div class="absolute w-6 h-6 bg-white rounded-full border border-gray-100 border-r-transparent border-t-transparent border-b-transparent -right-3 top-1/2 transform -translate-y-1/2"></div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-200 border-dashed pb-6">
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Order ID</p>
-                        <p class="font-mono font-bold text-gray-900">{{ $payment->order_id }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Status</p>
-                        @if ($payment->status === 'sukses')
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Lunas
-                            </span>
-                        @elseif ($payment->status === 'pending')
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                Menunggu Pembayaran
-                            </span>
-                        @else
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                Dibatalkan
-                            </span>
-                        @endif
-                    </div>
-                    
-                    <div class="md:col-span-2 mt-2">
-                        <p class="text-sm text-gray-500 mb-1">Layanan</p>
-                        <p class="font-bold text-lg text-gray-900">{{ $booking->layanan->namalayanan }}</p>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-6 pt-6">
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Tanggal</p>
-                        <p class="font-medium text-gray-900">{{ \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('d M Y') }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Jam</p>
-                        <p class="font-medium text-gray-900">{{ \Carbon\Carbon::parse($booking->jam)->format('H:i') }} WIB</p>
-                    </div>
-                </div>
-            </div>
+    {{-- Action Buttons --}}
+    <div class="no-print flex flex-col sm:flex-row items-center justify-center gap-3">
+        <button
+            onclick="window.print()"
+            type="button"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[#CBD5E1] bg-white px-5 py-3 text-sm font-bold text-[#0F172A] shadow-xs hover:bg-[#F8FAFC] transition active:scale-98 cursor-pointer"
+        >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            <span>Cetak / Simpan Invoice</span>
+        </button>
 
-            <!-- Customer Details -->
-            <h3 class="font-semibold text-gray-900 mb-4">Detail Pemesan</h3>
-            <div class="bg-white border border-gray-100 rounded-lg p-5 grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 text-sm">
-                <div>
-                    <p class="text-gray-500 mb-1">Nama</p>
-                    <p class="font-medium text-gray-900">{{ $booking->namapelanggan }}</p>
-                </div>
-                <div>
-                    <p class="text-gray-500 mb-1">No. HP / WhatsApp</p>
-                    <p class="font-medium text-gray-900">{{ $booking->nomorhp }}</p>
-                </div>
-                <div class="md:col-span-2">
-                    <p class="text-gray-500 mb-1">Email</p>
-                    <p class="font-medium text-gray-900">{{ $booking->email }}</p>
-                </div>
-            </div>
+        <a
+            href="{{ route('customer.booking.program', $tenant->slug) }}"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] px-6 py-3 text-sm font-bold text-white shadow-md shadow-[#4F46E5]/20 transition active:scale-98"
+        >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Pesan Sesi Baru</span>
+        </a>
 
-            <!-- Action Buttons -->
-            <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                <button onclick="window.print()" class="flex-1 max-w-xs bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3 px-6 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-                    </svg>
-                    Cetak Invoice
-                </button>
-                <a href="{{ route('customer.booking.program', $tenant->slug) }}" class="flex-1 max-w-xs bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">
-                    Buat Pesanan Baru
-                </a>
-            </div>
-        </div>
-        
+        <a
+            href="{{ url('/' . $tenant->slug) }}"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-transparent px-4 py-3 text-sm font-semibold text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition"
+        >
+            <span>Kembali ke Beranda</span>
+        </a>
     </div>
 </div>
-
-<style>
-    @media print {
-        body {
-            background-color: white;
-        }
-        nav, footer, .no-print {
-            display: none !important;
-        }
-        .max-w-3xl {
-            max-width: 100% !important;
-        }
-        .shadow-sm, .shadow-md {
-            box-shadow: none !important;
-        }
-        .border, .border-gray-100 {
-            border-color: #e5e7eb !important;
-        }
-        button {
-            display: none !important;
-        }
-    }
-</style>
 @endsection

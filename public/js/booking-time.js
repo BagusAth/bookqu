@@ -1,4 +1,12 @@
 document.addEventListener('alpine:init', () => {
+    const INDONESIAN_MONTHS = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const INDONESIAN_DAYS = [
+        'Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'
+    ];
+
     Alpine.data('bookingTimeSelection', () => ({
         service: null,
         selectedDate: '',
@@ -12,10 +20,11 @@ document.addEventListener('alpine:init', () => {
             evening: [],
         },
         simulateAvailability: false,
+        isSubmitting: false,
 
         init() {
             const root = document.getElementById('booking-time-root');
-            const serviceEl = document.getElementById('booking-service-data');
+            const serviceEl = document.getElementById('booking-service-data') || document.getElementById('booking-services-data');
             const slotsEl = document.getElementById('booking-time-slots-data');
 
             this.selectedDate = root?.dataset.selectedDate || '';
@@ -31,13 +40,29 @@ document.addEventListener('alpine:init', () => {
                 rawSlots = this.buildSimulatedSlots();
             }
 
-            this.timeSlots = rawSlots.map((slot, index) => ({
-                ...slot,
-                id: slot.id ?? index + 1,
-                isAvailable: slot.is_available ?? true,
-                isDisabled: slot.is_disabled ?? false,
-                isSelected: false,
-            }));
+            this.timeSlots = rawSlots.map((slot, index) => {
+                const isAvailable = slot.is_available ?? true;
+                const isBooked = slot.is_booked ?? (!isAvailable && !slot.is_past);
+                const isPast = slot.is_past ?? false;
+
+                let statusBadge = 'Tersedia';
+                if (isPast) {
+                    statusBadge = 'Waktu Terlewat';
+                } else if (isBooked) {
+                    statusBadge = 'Sudah Dipesan';
+                }
+
+                return {
+                    ...slot,
+                    id: slot.id ?? index + 1,
+                    isAvailable: isAvailable,
+                    isDisabled: !isAvailable,
+                    isBooked: isBooked,
+                    isPast: isPast,
+                    statusBadge: statusBadge,
+                    isSelected: false,
+                };
+            });
 
             this.groupSlots();
 
@@ -71,7 +96,7 @@ document.addEventListener('alpine:init', () => {
 
             return template.map((time, index) => {
                 const session = this.resolveSession(time);
-                const period = this.resolvePeriod(time);
+                const period = 'WIB';
                 const isPast = isToday ? this.isTimePast(selectedDate, time, now) : false;
                 const isAvailable = !isPast;
 
@@ -98,11 +123,6 @@ document.addEventListener('alpine:init', () => {
                 return 'afternoon';
             }
             return 'evening';
-        },
-
-        resolvePeriod(time) {
-            const hour = parseInt(time.split(':')[0], 10);
-            return hour >= 12 ? 'PM' : 'AM';
         },
 
         isTimePast(dateObj, time, now) {
@@ -170,12 +190,11 @@ document.addEventListener('alpine:init', () => {
                 return dateString;
             }
 
-            return parsed.toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-            });
+            const dayName = INDONESIAN_DAYS[parsed.getDay()] || '';
+            const dayNum = parsed.getDate();
+            const monthName = INDONESIAN_MONTHS[parsed.getMonth()] || '';
+            const year = parsed.getFullYear();
+            return `${dayName}, ${dayNum} ${monthName} ${year}`;
         },
 
         parseDate(dateString) {
@@ -192,28 +211,30 @@ document.addEventListener('alpine:init', () => {
                 return this.selectedDateDisplay;
             }
 
-            return this.selectedDate ? this.formatDate(this.selectedDate) : 'Choose a date';
+            return this.selectedDate ? this.formatDate(this.selectedDate) : 'Pilih tanggal';
         },
 
         get selectedTimeLabel() {
             if (!this.selectedTime) {
-                return 'Select a time slot';
+                return 'Pilih jam yang tersedia';
             }
 
-            const selectedSlot = this.timeSlots.find((slot) => slot.id === this.selectedScheduleId);
-            if (selectedSlot) {
-                return `${selectedSlot.label} ${selectedSlot.period}`;
-            }
-
-            return this.selectedTime;
+            return `Pukul ${this.selectedTime} WIB`;
         },
 
         get totalLabel() {
-            return this.service ? this.service.price_label : 'Rp0.00';
+            return this.service ? this.service.price_label : 'Rp 0';
         },
 
         get hasSlots() {
             return this.timeSlots.length > 0;
         },
+
+        handleConfirm() {
+            if (!this.selectedTime || this.isSubmitting) return;
+            this.isSubmitting = true;
+            const form = this.$refs?.confirmForm || document.getElementById('booking-time-form');
+            if (form) form.submit();
+        }
     }));
 });

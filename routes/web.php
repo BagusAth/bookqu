@@ -9,10 +9,18 @@ use App\Http\Controllers\OwnerBookingController;
 use App\Http\Controllers\OwnerCheckoutController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerLandingPageController;
+use App\Http\Controllers\OwnerPortalController;
+use App\Http\Controllers\OwnerAdditionalItemController;
+use App\Http\Controllers\OwnerAssetController;
+use App\Http\Controllers\OwnerCategoryController;
 use App\Http\Controllers\OwnerProgramController;
+use App\Http\Controllers\OwnerReviewController;
 use App\Http\Controllers\OwnerScheduleController;
 use App\Http\Controllers\OwnerSettingController;
+use App\Http\Controllers\OwnerStaffResourceController;
 use App\Http\Controllers\OwnerSubscriptionController;
+use App\Http\Controllers\OwnerCustomerController;
+use App\Http\Controllers\OwnerVoucherController;
 use App\Models\User;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -157,9 +165,11 @@ Route::middleware('auth')->group(function () {
     })->name('logout');
 });
 
-// Dummy registration module (isolated for slug testing)
-Route::get('/dummy-register', [DummyRegistrationController::class, 'showForm'])->name('dummy-register.form');
-Route::post('/dummy-register', [DummyRegistrationController::class, 'processForm'])->name('dummy-register.process');
+// Dummy registration module (isolated for slug testing, only in local)
+if (app()->environment('local', 'staging', 'testing')) {
+    Route::get('/dummy-register', [DummyRegistrationController::class, 'showForm'])->name('dummy-register.form');
+    Route::post('/dummy-register', [DummyRegistrationController::class, 'processForm'])->name('dummy-register.process');
+}
 
 // ── Owner Dashboard Routes ──
 Route::prefix('owner')
@@ -177,10 +187,10 @@ Route::prefix('owner')
     // ── Checkout Routes (tanpa owner.profile middleware, karena ini billing) ──
     Route::get('/checkout/{plan}', [OwnerCheckoutController::class, 'showCheckout'])->name('owner.checkout');
     Route::post('/checkout', [OwnerCheckoutController::class, 'processCheckout'])->name('owner.checkout.process');
-    Route::get('/checkout/{payment}/payment', [OwnerCheckoutController::class, 'showPayment'])->name('owner.checkout.payment');
-    Route::post('/checkout/{payment}/check-status', [OwnerCheckoutController::class, 'checkPaymentStatus'])->name('owner.checkout.check-status');
-    Route::post('/checkout/{payment}/callback', [OwnerCheckoutController::class, 'handleCallback'])->name('owner.checkout.callback');
-    Route::get('/checkout/{payment}/invoice', [OwnerCheckoutController::class, 'showInvoice'])->name('owner.checkout.invoice');
+    Route::get('/checkout/{payment:order_id}/payment', [OwnerCheckoutController::class, 'showPayment'])->name('owner.checkout.payment');
+    Route::post('/checkout/{payment:order_id}/check-status', [OwnerCheckoutController::class, 'checkPaymentStatus'])->name('owner.checkout.check-status');
+    Route::post('/checkout/{payment:order_id}/callback', [OwnerCheckoutController::class, 'handleCallback'])->name('owner.checkout.callback');
+    Route::get('/checkout/{payment:order_id}/invoice', [OwnerCheckoutController::class, 'showInvoice'])->name('owner.checkout.invoice');
 
     Route::middleware('owner.profile')->group(function () {
         Route::get('/programs', [OwnerProgramController::class, 'index'])->name('owner.programs');
@@ -195,16 +205,84 @@ Route::prefix('owner')
         Route::delete('/schedule/blocked-dates/{blockedDate}', [OwnerScheduleController::class, 'deleteBlockedDate'])->name('owner.schedule.blocked-dates.delete');
         Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
         Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
+        Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
         Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('subscription:pro');
         Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware('subscription:pro');
         Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
         Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page')->middleware('subscription:pro');
         Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware('subscription:pro');
+
+        // ── Extended Core Business Modules (Tahap 2) ──
+        Route::get('/calendar', [OwnerPortalController::class, 'calendar'])->name('owner.calendar');
+        Route::get('/schedule-report', [OwnerPortalController::class, 'scheduleReport'])->name('owner.schedule-report');
+        Route::get('/schedule-report/export', [OwnerPortalController::class, 'exportScheduleReport'])->name('owner.schedule-report.export');
+
+        // Services & Programs
+        Route::get('/services', [OwnerProgramController::class, 'index'])->name('owner.services');
+        Route::post('/services', [OwnerProgramController::class, 'store'])->name('owner.services.store');
+        Route::put('/services/{program}', [OwnerProgramController::class, 'update'])->name('owner.services.update');
+        Route::delete('/services/{program}', [OwnerProgramController::class, 'destroy'])->name('owner.services.destroy');
+        Route::match(['post', 'patch'], '/services/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.services.toggle');
+        Route::match(['post', 'patch'], '/programs/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.programs.toggle');
+
+        // Categories
+        Route::get('/categories', [OwnerCategoryController::class, 'index'])->name('owner.categories');
+        Route::post('/categories', [OwnerCategoryController::class, 'store'])->name('owner.categories.store');
+        Route::put('/categories/{id}', [OwnerCategoryController::class, 'update'])->name('owner.categories.update');
+        Route::delete('/categories/{id}', [OwnerCategoryController::class, 'destroy'])->name('owner.categories.destroy');
+        Route::match(['post', 'patch'], '/categories/{id}/toggle', [OwnerCategoryController::class, 'toggleStatus'])->name('owner.categories.toggle');
+
+        // Staff & Resources
+        Route::get('/staff-resources', [OwnerStaffResourceController::class, 'index'])->name('owner.staff-resources');
+        Route::post('/staff', [OwnerStaffResourceController::class, 'storeStaff'])->name('owner.staff.store');
+        Route::put('/staff/{id}', [OwnerStaffResourceController::class, 'updateStaff'])->name('owner.staff.update');
+        Route::delete('/staff/{id}', [OwnerStaffResourceController::class, 'destroyStaff'])->name('owner.staff.destroy');
+        Route::match(['post', 'patch'], '/staff/{id}/toggle', [OwnerStaffResourceController::class, 'toggleStaffStatus'])->name('owner.staff.toggle');
+        Route::post('/resources', [OwnerStaffResourceController::class, 'storeResource'])->name('owner.resources.store');
+        Route::put('/resources/{id}', [OwnerStaffResourceController::class, 'updateResource'])->name('owner.resources.update');
+        Route::delete('/resources/{id}', [OwnerStaffResourceController::class, 'destroyResource'])->name('owner.resources.destroy');
+        Route::match(['post', 'patch'], '/resources/{id}/toggle', [OwnerStaffResourceController::class, 'toggleResourceStatus'])->name('owner.resources.toggle');
+
+        // Additional Items
+        Route::get('/additional-items', [OwnerAdditionalItemController::class, 'index'])->name('owner.additional-items');
+        Route::post('/additional-items', [OwnerAdditionalItemController::class, 'store'])->name('owner.additional-items.store');
+        Route::put('/additional-items/{id}', [OwnerAdditionalItemController::class, 'update'])->name('owner.additional-items.update');
+        Route::delete('/additional-items/{id}', [OwnerAdditionalItemController::class, 'destroy'])->name('owner.additional-items.destroy');
+        Route::match(['post', 'patch'], '/additional-items/{id}/toggle', [OwnerAdditionalItemController::class, 'toggleStatus'])->name('owner.additional-items.toggle');
+
+        // Vouchers
+        Route::get('/vouchers', [OwnerVoucherController::class, 'index'])->name('owner.vouchers');
+        Route::post('/vouchers', [OwnerVoucherController::class, 'store'])->name('owner.vouchers.store');
+        Route::put('/vouchers/{id}', [OwnerVoucherController::class, 'update'])->name('owner.vouchers.update');
+        Route::delete('/vouchers/{id}', [OwnerVoucherController::class, 'destroy'])->name('owner.vouchers.destroy');
+        Route::match(['post', 'patch'], '/vouchers/{id}/toggle', [OwnerVoucherController::class, 'toggleStatus'])->name('owner.vouchers.toggle');
+
+        // Reviews
+        Route::get('/reviews', [OwnerReviewController::class, 'index'])->name('owner.reviews');
+        Route::post('/reviews/{id}/reply', [OwnerReviewController::class, 'reply'])->name('owner.reviews.reply');
+        Route::match(['post', 'patch'], '/reviews/{id}/toggle', [OwnerReviewController::class, 'toggleVisibility'])->name('owner.reviews.toggle');
+
+        // Customers CRM
+        Route::get('/customers', [OwnerCustomerController::class, 'index'])->name('owner.customers');
+        Route::get('/customers/detail', [OwnerCustomerController::class, 'show'])->name('owner.customers.detail');
+        Route::post('/customers/note', [OwnerCustomerController::class, 'saveNote'])->name('owner.customers.note');
+
+        // Settings & Configurations
+        Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
+        Route::get('/settings/appearance', [OwnerPortalController::class, 'appearance'])->name('owner.settings.appearance');
+        Route::post('/settings/appearance', [OwnerPortalController::class, 'updateAppearance'])->name('owner.settings.appearance.update');
+        Route::get('/settings/payment-setting', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payment-setting');
+        Route::get('/settings/payments', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payments');
+        Route::get('/settings/assets', [OwnerAssetController::class, 'index'])->name('owner.settings.assets');
+        Route::post('/settings/assets', [OwnerAssetController::class, 'store'])->name('owner.settings.assets.store');
+        Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->name('owner.settings.assets.destroy');
+        Route::get('/settings/balance', [OwnerPortalController::class, 'balance'])->name('owner.settings.balance');
+        Route::get('/settings/integrations', [OwnerPortalController::class, 'integrations'])->name('owner.settings.integrations');
     });
 });
 
 // ── Midtrans Webhook (tanpa auth & CSRF, dipanggil oleh Midtrans) ──
-Route::post('/midtrans/webhook', [OwnerCheckoutController::class, 'handleCallback'])
+Route::post('/midtrans/webhook', [\App\Http\Controllers\MidtransWebhookController::class, 'handle'])
     ->name('midtrans.webhook');
 
 // ── Booking Management Without Account (tokenized URLs) ──
@@ -221,6 +299,8 @@ Route::prefix('manage')->group(function () {
         ->name('booking.manage.reschedule.slots');
     Route::get('/{booking_code}/invoice', [BookingManageController::class, 'invoice'])
         ->name('booking.manage.invoice');
+    Route::post('/{booking_code}/review', [BookingManageController::class, 'storeReview'])
+        ->name('booking.manage.review');
 });
 
 Route::prefix('admin')
@@ -229,12 +309,12 @@ Route::prefix('admin')
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     });
 
-Route::get('/test-isolasi/{slug}', function () {
-    $services = \App\Models\Service::all();
+if (app()->environment('local', 'staging', 'testing')) {
+    Route::get('/test-isolasi/{slug}', function () {
+        return "Route Test Isolasi Tenant";
+    });
+}
 
-    // Query all() ini akan otomatis terfilter sesuai tenant dari slug URL.
-    return response()->json($services);
-})->middleware('tenant');
 $customerRoutes = function () {
     Route::get('/', [BookingController::class, 'showProgramSelection'])
         ->name('customer.booking.program');
@@ -260,16 +340,16 @@ $customerRoutes = function () {
     Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])
         ->name('customer.booking.process-checkout');
 
-    Route::get('/booking/payment/{payment}', [BookingController::class, 'showPayment'])
+    Route::get('/booking/payment/{payment:order_id}', [BookingController::class, 'showPayment'])
         ->name('customer.booking.payment');
 
-    Route::post('/booking/payment/{payment}/check-status', [BookingController::class, 'checkPaymentStatus'])
+    Route::post('/booking/payment/{payment:order_id}/check-status', [BookingController::class, 'checkPaymentStatus'])
         ->name('customer.booking.check-status');
 
-    Route::post('/booking/payment/{payment}/callback', [BookingController::class, 'handleCallback'])
+    Route::post('/booking/payment/{payment:order_id}/callback', [BookingController::class, 'handleCallback'])
         ->name('customer.booking.callback');
 
-    Route::get('/booking/payment/{payment}/invoice', [BookingController::class, 'showInvoice'])
+    Route::get('/booking/payment/{payment:order_id}/invoice', [BookingController::class, 'showInvoice'])
         ->name('customer.booking.invoice');
 };
 

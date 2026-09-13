@@ -16,24 +16,7 @@ use App\Traits\ClearsBookingCache;
 class OwnerProgramController extends Controller
 {
     use ClearsBookingCache;
-    private function resolveTenant(): ?Tenant
-    {
-        $userId = auth()->id();
-        $tenantId = session('current_tenant_id');
-
-        if (is_numeric($tenantId)) {
-            $tenant = Tenant::with('user')->find($tenantId);
-            if ($tenant && $tenant->iduser === $userId) {
-                return $tenant;
-            }
-        }
-
-        if ($userId) {
-            return Tenant::with('user')->where('iduser', $userId)->first();
-        }
-
-        return null;
-    }
+    use \App\Traits\ResolvesOwnerTenant;
 
     /**
      * Halaman daftar program/layanan.
@@ -49,12 +32,18 @@ class OwnerProgramController extends Controller
         $katakunci = $request->input('katakunci', '');
 
         $daftarlayanan = Service::where('idtenant', $idtenant)
+            ->with(['category', 'staff', 'resources', 'additionalItems'])
             ->when($katakunci, function ($query) use ($katakunci) {
                 $query->where('namalayanan', 'like', '%' . $katakunci . '%');
             })
             ->withCount('bookings')
             ->orderByDesc('created_at')
             ->paginate(12);
+
+        $kategoriList = \App\Models\Category::where('idtenant', $idtenant)->orderBy('name')->get();
+        $staffList = \App\Models\Staff::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
+        $resourceList = \App\Models\Resource::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
+        $additionalItemList = \App\Models\AdditionalItem::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
 
         // Statistik program
         $totallayanan = Service::where('idtenant', $idtenant)->count();
@@ -72,6 +61,10 @@ class OwnerProgramController extends Controller
         return view('owner.owner-programs', compact(
             'tenant',
             'daftarlayanan',
+            'kategoriList',
+            'staffList',
+            'resourceList',
+            'additionalItemList',
             'totallayanan',
             'ratarataharga',
             'totalbookinglayanan',
@@ -91,11 +84,18 @@ class OwnerProgramController extends Controller
         }
 
         $datavalid = $request->validate([
-            'namalayanan'  => 'required|string|max:255',
-            'harga'        => 'required|numeric|min:0',
-            'durasi'       => 'required|integer|min:5|max:480',
-            'deskripsi'    => 'nullable|string|max:1000',
-            'cover_image'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'namalayanan'         => 'required|string|max:255',
+            'harga'               => 'required|numeric|min:0',
+            'durasi'              => 'required|integer|min:5|max:480',
+            'idcategory'          => ['nullable', Rule::exists('categories', 'id')->where('idtenant', $tenant->id)],
+            'deskripsi'           => 'nullable|string|max:1000',
+            'cover_image'         => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'staff_ids'           => 'nullable|array',
+            'staff_ids.*'         => ['integer', Rule::exists('staff', 'id')->where('idtenant', $tenant->id)],
+            'resource_ids'        => 'nullable|array',
+            'resource_ids.*'      => ['integer', Rule::exists('resources', 'id')->where('idtenant', $tenant->id)],
+            'additional_item_ids' => 'nullable|array',
+            'additional_item_ids.*' => ['integer', Rule::exists('additional_items', 'id')->where('idtenant', $tenant->id)],
         ]);
 
         $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
@@ -117,9 +117,20 @@ class OwnerProgramController extends Controller
             'namalayanan' => $datavalid['namalayanan'],
             'harga'       => $datavalid['harga'],
             'durasi'      => $datavalid['durasi'],
+            'idcategory'  => $datavalid['idcategory'] ?? null,
             'deskripsi'   => $datavalid['deskripsi'] ?? null,
             'image_url'   => $imageUrl,
         ]);
+
+        if (!empty($datavalid['staff_ids'])) {
+            $service->staff()->sync($datavalid['staff_ids']);
+        }
+        if (!empty($datavalid['resource_ids'])) {
+            $service->resources()->sync($datavalid['resource_ids']);
+        }
+        if (!empty($datavalid['additional_item_ids'])) {
+            $service->additionalItems()->sync($datavalid['additional_item_ids']);
+        }
 
         // FS-030: Catat penambahan layanan ke usage_logs
         try {
@@ -131,7 +142,8 @@ class OwnerProgramController extends Controller
         // Invalidate customer-facing cache
         $this->clearServiceCache($tenant->id, $service->id);
 
-        return redirect('/owner/programs')->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil ditambahkan!');
+        $redirectRoute = $request->is('*programs*') ? 'owner.programs' : 'owner.services';
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil ditambahkan!');
     }
 
     /**
@@ -147,13 +159,20 @@ class OwnerProgramController extends Controller
         $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
 
         $datavalid = $request->validate([
-            'namalayanan'  => 'required|string|max:255',
-            'harga'        => 'required|numeric|min:0',
-            'durasi'       => 'required|integer|min:5|max:480',
-            'deskripsi'    => 'nullable|string|max:1000',
-            'is_active'    => 'required|boolean',
-            'cover_image'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'remove_image' => 'nullable|in:0,1',
+            'namalayanan'         => 'required|string|max:255',
+            'harga'               => 'required|numeric|min:0',
+            'durasi'              => 'required|integer|min:5|max:480',
+            'idcategory'          => ['nullable', Rule::exists('categories', 'id')->where('idtenant', $tenant->id)],
+            'deskripsi'           => 'nullable|string|max:1000',
+            'is_active'           => 'required|boolean',
+            'cover_image'         => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'remove_image'        => 'nullable|in:0,1',
+            'staff_ids'           => 'nullable|array',
+            'staff_ids.*'         => ['integer', Rule::exists('staff', 'id')->where('idtenant', $tenant->id)],
+            'resource_ids'        => 'nullable|array',
+            'resource_ids.*'      => ['integer', Rule::exists('resources', 'id')->where('idtenant', $tenant->id)],
+            'additional_item_ids' => 'nullable|array',
+            'additional_item_ids.*' => ['integer', Rule::exists('additional_items', 'id')->where('idtenant', $tenant->id)],
         ]);
 
         // Handle cover image
@@ -177,15 +196,27 @@ class OwnerProgramController extends Controller
             'namalayanan' => $datavalid['namalayanan'],
             'harga'       => $datavalid['harga'],
             'durasi'      => $datavalid['durasi'],
+            'idcategory'  => $datavalid['idcategory'] ?? null,
             'deskripsi'   => $datavalid['deskripsi'] ?? null,
             'is_active'   => (bool) $datavalid['is_active'],
             'image_url'   => $imageUrl,
         ]);
 
+        if ($request->has('staff_ids')) {
+            $layanan->staff()->sync($datavalid['staff_ids'] ?? []);
+        }
+        if ($request->has('resource_ids')) {
+            $layanan->resources()->sync($datavalid['resource_ids'] ?? []);
+        }
+        if ($request->has('additional_item_ids')) {
+            $layanan->additionalItems()->sync($datavalid['additional_item_ids'] ?? []);
+        }
+
         // Invalidate customer-facing cache
         $this->clearServiceCache($tenant->id, $layanan->id);
 
-        return redirect('/owner/programs')->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil diperbarui!');
+        $redirectRoute = $request->is('*programs*') ? 'owner.programs' : 'owner.services';
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil diperbarui!');
     }
 
     /**
@@ -200,11 +231,38 @@ class OwnerProgramController extends Controller
 
         $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
         $namalayanan = $layanan->namalayanan;
+
+        $layanan->staff()->detach();
+        $layanan->resources()->detach();
+        $layanan->additionalItems()->detach();
         $layanan->delete();
 
         // Invalidate customer-facing cache
         $this->clearServiceCache($tenant->id, $id);
 
-        return redirect('/owner/programs')->with('sukses', 'Program "' . $namalayanan . '" berhasil dihapus!');
+        $redirectRoute = request()->is('*programs*') ? 'owner.programs' : 'owner.services';
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $namalayanan . '" berhasil dihapus!');
+    }
+
+    /**
+     * Toggle status aktif program.
+     */
+    public function toggleStatus(int $id)
+    {
+        $tenant = $this->resolveTenant();
+        if (!$tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($id);
+        $layanan->update([
+            'is_active' => !$layanan->is_active,
+        ]);
+
+        $this->clearServiceCache($tenant->id, $layanan->id);
+        $statusText = $layanan->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
+        $redirectRoute = request()->is('*programs*') ? 'owner.programs' : 'owner.services';
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $layanan->namalayanan . '" berhasil ' . $statusText . '!');
     }
 }

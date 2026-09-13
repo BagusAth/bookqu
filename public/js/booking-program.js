@@ -6,9 +6,11 @@ document.addEventListener('alpine:init', () => {
         selectedService: null,
         tenantSlug: '',
         storageKey: '',
+        isSubmitting: false,
 
         init() {
-            const dataEl = document.getElementById('booking-services-data');
+            // Support both IDs consistently to prevent mismatch bugs
+            const dataEl = document.getElementById('booking-services-data') || document.getElementById('booking-service-data');
             const rootEl = document.getElementById('booking-program-root');
 
             this.services = dataEl ? JSON.parse(dataEl.textContent || '[]') : [];
@@ -62,24 +64,35 @@ document.addEventListener('alpine:init', () => {
                 localStorage.setItem(this.storageKey, JSON.stringify({ id: service.id }));
             }
 
-            // Auto submit to next step
-            setTimeout(() => {
-                this.handleConfirm();
-            }, 50);
+            // Selection strictly updates state and summary. NO auto-submit!
+            // Customer reviews the summary and clicks "Lanjutkan" button.
         },
 
         handleConfirm() {
-            if (!this.selectedServiceId) {
+            if (!this.selectedServiceId || this.isSubmitting) {
                 return;
             }
 
-            if (this.$refs?.confirmForm) {
-                this.$refs.confirmForm.submit();
+            this.isSubmitting = true;
+
+            const form = this.$refs?.confirmForm || document.getElementById('booking-program-form');
+            if (form) {
+                form.submit();
             }
         },
 
         get totalLabel() {
-            return this.selectedService ? this.selectedService.price_label : 'Rp0.00';
+            return this.selectedService ? this.selectedService.price_label : 'Rp 0';
+        },
+
+        get serviceName() {
+            return this.selectedService ? this.selectedService.name : 'Belum memilih layanan';
+        },
+
+        get serviceDuration() {
+            if (!this.selectedService) return '-';
+            const unit = this.selectedService.duration_unit || 'menit';
+            return `${this.selectedService.duration} ${unit}`;
         },
     }));
 });

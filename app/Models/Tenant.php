@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tenant extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'iduser',
         'namabisnis',
@@ -31,6 +33,10 @@ class Tenant extends Model
         'weekend_price_value',
         'cancel_before_hours',
         'reschedule_before_hours',
+        'theme_color',
+        'button_style',
+        'font_family',
+        'card_style',
     ];
 
     public function user(): BelongsTo

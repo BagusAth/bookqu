@@ -62,8 +62,8 @@
         @include('components.owner.trial-banner', ['sisahari' => $sisahari])
     @endif
 
-    {{-- ── Stat Cards ── --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" id="stats-grid">
+    {{-- ── Stat Cards (4 Overview Cards) ── --}}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" id="stats-grid">
         @include('components.owner.stat-card', [
             'ikon' => 'booking',
             'label' => 'Total Bookings',
@@ -82,12 +82,35 @@
             'idPrefix' => 'stat-revenue',
         ])
 
+        {{-- Customers Card --}}
+        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 shadow-xs transition-all hover:border-bq-border-strong hover:shadow-sm" id="stat-customers">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Total Customers</p>
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+            </div>
+            <p class="mt-2 text-2xl font-extrabold text-bq-text tracking-tight">{{ number_format($totalpelanggan ?? 0) }}</p>
+            <div class="mt-2 flex items-center gap-1.5 text-xs text-bq-text-muted">
+                <span class="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                    </svg>
+                    CRM
+                </span>
+                <span>Unique Clients</span>
+            </div>
+        </div>
+
         @include('components.owner.stat-card', [
             'ikon' => 'program',
-            'label' => 'Active Programs',
+            'label' => 'Active Services',
             'nilai' => $programaktif,
             'perubahan' => 0,
             'tipeperubahan' => 'stabil',
+            'idPrefix' => 'stat-services',
         ])
     </div>
 
@@ -178,53 +201,101 @@
         </div>
     </div>
 
-    {{-- ── Recent Activity ── --}}
-    <div class="rounded-xl border border-bq-border bg-bq-surface" id="recent-activity-card">
-        <div class="flex items-center justify-between border-b border-bq-border px-5 py-4">
-            <h2 class="text-base font-semibold text-bq-text">Recent Activity</h2>
-            <a href="/owner/bookings" class="text-sm font-medium text-bq-text-muted transition-colors hover:text-bq-primary" id="link-all-activity">
-                View All Activity →
-            </a>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full" id="activity-table">
-                <thead>
-                    <tr class="border-b border-bq-border">
-                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Program</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Customer</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Date</th>
-                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-bq-border" id="activity-tbody">
-                    @foreach ($aktivitasterbaru as $aktivitas)
-                        <tr class="transition-colors hover:bg-bq-background/50">
-                            <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">
-                                {{ $aktivitas->layanan->namalayanan ?? '-' }}
-                            </td>
-                            <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">
-                                {{ $aktivitas->namapelanggan }}
-                            </td>
-                            <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">
-                                {{ $aktivitas->tanggalbooking->format('d M Y') }}
-                            </td>
-                            <td class="whitespace-nowrap px-5 py-3.5 text-center">
-                                @php
-                                    $warnastatus = match($aktivitas->status) {
-                                        'completed', 'paid' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-                                        'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
-                                        'cancelled' => 'bg-rose-50 text-rose-700 ring-rose-600/20',
-                                        default => 'bg-gray-50 text-gray-700 ring-gray-600/20',
-                                    };
-                                @endphp
-                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset {{ $warnastatus }}">
-                                    {{ $aktivitas->status === 'paid' ? 'confirmed' : $aktivitas->status }}
-                                </span>
-                            </td>
+    {{-- ── Recent Activity & Upcoming Bookings Grid ── --}}
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        {{-- Recent Bookings --}}
+        <div class="rounded-xl border border-bq-border bg-bq-surface lg:col-span-3" id="recent-activity-card">
+            <div class="flex items-center justify-between border-b border-bq-border px-5 py-4">
+                <h2 class="text-base font-semibold text-bq-text">Recent Bookings</h2>
+                <a href="/owner/bookings" class="text-sm font-medium text-bq-text-muted transition-colors hover:text-bq-primary" id="link-all-activity">
+                    View All Activity →
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full" id="activity-table">
+                    <thead>
+                        <tr class="border-b border-bq-border">
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Program</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Customer</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Date</th>
+                            <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Status</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-bq-border" id="activity-tbody">
+                        @forelse ($aktivitasterbaru as $aktivitas)
+                            <tr class="transition-colors hover:bg-bq-background/50">
+                                <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">
+                                    {{ $aktivitas->layanan->namalayanan ?? '-' }}
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">
+                                    {{ $aktivitas->namapelanggan }}
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">
+                                    {{ $aktivitas->tanggalbooking instanceof \Carbon\Carbon ? $aktivitas->tanggalbooking->format('d M Y') : \Carbon\Carbon::parse($aktivitas->tanggalbooking)->format('d M Y') }}
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-3.5 text-center">
+                                    @php
+                                        $warnastatus = match($aktivitas->status) {
+                                            'completed', 'paid' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+                                            'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
+                                            'cancelled' => 'bg-rose-50 text-rose-700 ring-rose-600/20',
+                                            default => 'bg-gray-50 text-gray-700 ring-gray-600/20',
+                                        };
+                                    @endphp
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset {{ $warnastatus }}">
+                                        {{ $aktivitas->status === 'paid' ? 'confirmed' : $aktivitas->status }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="py-8 text-center text-sm text-bq-text-muted">
+                                    No booking records found yet.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{-- Upcoming Bookings Card --}}
+        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 lg:col-span-2 flex flex-col shadow-2xs" id="upcoming-bookings-card">
+            <div class="flex items-center justify-between border-b border-bq-border pb-3">
+                <div>
+                    <h2 class="text-base font-semibold text-bq-text">Upcoming Schedule</h2>
+                    <p class="text-xs text-bq-text-muted">Next confirmed client sessions</p>
+                </div>
+                <a href="/owner/calendar" class="text-xs font-bold text-[#4F46E5] hover:underline">Open Calendar &rarr;</a>
+            </div>
+
+            <div class="mt-4 space-y-3 flex-1">
+                @forelse ($upcomingbookings as $upcoming)
+                    <div class="flex items-center gap-3 rounded-xl border border-bq-border bg-[#F8FAFC] p-3 transition hover:bg-white hover:shadow-2xs">
+                        <div class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5] font-bold leading-none">
+                            <span class="text-[10px] uppercase font-semibold text-[#64748B]">{{ \Carbon\Carbon::parse($upcoming->tanggalbooking)->format('M') }}</span>
+                            <span class="text-sm font-extrabold text-[#4F46E5]">{{ \Carbon\Carbon::parse($upcoming->tanggalbooking)->format('d') }}</span>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-bold text-bq-text">{{ $upcoming->layanan->namalayanan ?? 'Layanan' }}</p>
+                            <p class="text-xs text-bq-text-muted truncate">{{ $upcoming->namapelanggan }} &bull; {{ substr($upcoming->jam, 0, 5) }} WIB</p>
+                        </div>
+                        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                            {{ ucfirst($upcoming->status) }}
+                        </span>
+                    </div>
+                @empty
+                    <div class="flex flex-col items-center justify-center py-8 text-center my-auto">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <p class="text-xs font-semibold text-bq-text">No upcoming bookings</p>
+                        <p class="text-[11px] text-bq-text-muted mt-0.5">New reservations will appear here automatically.</p>
+                    </div>
+                @endforelse
+            </div>
         </div>
     </div>
 

@@ -15,16 +15,16 @@ class AdminDashboardController extends Controller
         // ── Statistik Global ──
         $totalTenant      = Tenant::count();
         $totalUser        = User::where('role', 'owner')->count();
-        $tenantTrial      = Subscription::where('status', 'trial')->count();
-        $tenantAktif      = Subscription::where('status', 'active')->count();
-        $tenantExpired    = Subscription::where('status', 'expired')->count();
+        $tenantTrial      = Subscription::withoutGlobalScopes()->where('status', 'trial')->count();
+        $tenantAktif      = Subscription::withoutGlobalScopes()->where('status', 'active')->count();
+        $tenantExpired    = Subscription::withoutGlobalScopes()->where('status', 'expired')->count();
 
         // ── Revenue platform dari langganan ──
-        $totalRevenuePlatform = Payment::where('tipe', 'subscription')
+        $totalRevenuePlatform = Payment::withoutGlobalScopes()->where('tipe', 'subscription')
             ->where('status', 'sukses')
             ->sum('jumlah');
 
-        $revenuebulanini = Payment::where('tipe', 'subscription')
+        $revenuebulanini = Payment::withoutGlobalScopes()->where('tipe', 'subscription')
             ->where('status', 'sukses')
             ->whereMonth('created_at', Carbon::now()->month)
             ->whereYear('created_at', Carbon::now()->year)
@@ -32,7 +32,7 @@ class AdminDashboardController extends Controller
 
         // ── Daftar tenant terbaru ──
         $tenantTerbaru = Tenant::with(['user', 'subscriptions' => function ($q) {
-            $q->latest()->limit(1);
+            $q->withoutGlobalScopes()->latest()->limit(1);
         }])
             ->orderByDesc('created_at')
             ->limit(10)
@@ -45,7 +45,7 @@ class AdminDashboardController extends Controller
             $awal  = Carbon::now()->subMonths($i)->startOfMonth();
             $akhir = Carbon::now()->subMonths($i)->endOfMonth();
             $labelBulan[]      = $awal->format('M Y');
-            $revenuePerBulan[] = round(Payment::where('tipe', 'subscription')
+            $revenuePerBulan[] = round(Payment::withoutGlobalScopes()->where('tipe', 'subscription')
                 ->where('status', 'sukses')
                 ->whereBetween('created_at', [$awal, $akhir])
                 ->sum('jumlah'));

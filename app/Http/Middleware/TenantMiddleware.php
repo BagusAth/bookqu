@@ -13,42 +13,49 @@ class TenantMiddleware
 {
     public function handle(Request $request, Closure $next): mixed
     {
-        if (Auth::check()) {
-            $tenant = Tenant::where('iduser', Auth::id())->first();
-
-            if ($tenant) {
-                session()->put('current_tenant_id', $tenant->id);
-                return $next($request);
-            }
-
-            session()->forget('current_tenant_id');
-        }
-
+        // First check if this is an owner route (prefix /owner or explicitly targeting owner)
+        $isOwnerRoute = $request->is('owner/*') || $request->is('owner');
+        
+        // P0-01: Customer context (based on slug or custom domain)
         $slug = $request->route('slug') ?? $request->route('slug_usaha');
+        $host = $request->getHost();
+        $isCustomDomain = $host !== '127.0.0.1' && $host !== 'localhost' && !str_contains($host, 'bookqu.test');
+        
+        $resolvedTenant = null;
 
         if (is_string($slug) && $slug !== '') {
-            $tenant = Tenant::where('slug', $slug)->first();
-
-            if ($tenant) {
-                session()->put('current_tenant_id', $tenant->id);
-                return $next($request);
-            }
-
-            abort(404, 'Bisnis tidak ditemukan');
-        }
-
-        // Cek custom domain jika tidak ada slug
-        $host = $request->getHost();
-        if ($host !== '127.0.0.1' && $host !== 'localhost' && !str_contains($host, 'bookqu.test')) {
-            $tenant = Tenant::where('custom_domain', $host)->first();
-            if ($tenant) {
-                session()->put('current_tenant_id', $tenant->id);
-                // Agar controller yang membutuhkan route('slug_usaha') tidak error, kita bisa mensetnya
-                $request->route()->setParameter('slug_usaha', $tenant->slug);
-                return $next($request);
+            $resolvedTenant = Tenant::where('slug', $slug)->first();
+        } elseif ($isCustomDomain) {
+            $resolvedTenant = Tenant::where('custom_domain', $host)->first();
+            if ($resolvedTenant) {
+                $request->route()->setParameter('slug_usaha', $resolvedTenant->slug);
             }
         }
 
-        return $next($request);
+        try {
+            if ($resolvedTenant && !$isOwnerRoute) {
+                app(\App\Support\TenantContext::class)->setTenantId($resolvedTenant->id);
+                return $next($request);
+            }
+
+            if (is_string($slug) && $slug !== '' && !$resolvedTenant) {
+                abort(404, 'Bisnis tidak ditemukan');
+            }
+
+            // P0-01: Owner context (based on authenticated user)
+            if ($isOwnerRoute) {
+                $user = auth()->user();
+                if ($user) {
+                    $ownerTenant = \App\Models\Tenant::where('iduser', $user->id)->first();
+                    if ($ownerTenant) {
+                        app(\App\Support\TenantContext::class)->setTenantId($ownerTenant->id);
+                    }
+                }
+            }
+
+            return $next($request);
+        } finally {
+            app(\App\Support\TenantContext::class)->clear();
+        }
     }
 }

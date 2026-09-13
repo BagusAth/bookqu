@@ -28,8 +28,9 @@ class ExpireBookingPayments extends Command
 
         $this->info($isDryRun ? '[DRY RUN] Checking expired booking payments...' : 'Checking expired booking payments...');
 
-        // Find all pending payments of type=booking that have passed expired_at
-        $expiredPayments = Payment::where('tipe', 'booking')
+        // Find all pending payments of type=booking that have passed expired_at across all tenants
+        $expiredPayments = Payment::withoutGlobalScopes()
+            ->where('tipe', 'booking')
             ->where('status', 'pending')
             ->whereNotNull('expired_at')
             ->where('expired_at', '<', now())
@@ -46,8 +47,11 @@ class ExpireBookingPayments extends Command
         $cacheCleared = [];
 
         foreach ($expiredPayments as $payment) {
+            app(\App\Support\TenantContext::class)->setTenantId($payment->idtenant);
+
             // Load the pending booking linked to this payment
-            $booking = Booking::where('idpayment', $payment->id)
+            $booking = Booking::withoutGlobalScopes()
+                ->where('idpayment', $payment->id)
                 ->where('status', 'pending')
                 ->first();
 
@@ -116,6 +120,8 @@ class ExpireBookingPayments extends Command
             $this->info("Done. Cancelled {$processed} expired booking payment(s).");
             $this->info('Cache cleared for ' . count($cacheCleared) . ' slot(s).');
         }
+
+        app(\App\Support\TenantContext::class)->clear();
 
         return Command::SUCCESS;
     }
