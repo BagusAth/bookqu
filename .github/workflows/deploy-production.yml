@@ -1,0 +1,212 @@
+name: deploy-production
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: bookqu-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy BookQu production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Validate build output
+        run: |
+          set -e
+          test -d public/build
+          test -n "$(find public/build -type f -print -quit)"
+          test -f public/build/manifest.json
+          find public/build/assets -maxdepth 1 -type f -name '*.css' -print -quit | grep -q .
+          find public/build/assets -maxdepth 1 -type f -name '*.js' -print -quit | grep -q .
+          find public/build -maxdepth 2 -type f -print | sort
+
+      - name: Create Laravel source archive
+        run: |
+          set -e
+          tar -czf bookqu-laravel.tar.gz \
+            --exclude='./.git' \
+            --exclude='./.env*' \
+            --exclude='./node_modules' \
+            --exclude='./vendor' \
+            --exclude='./storage' \
+            --exclude='./public/build' \
+            -C . .
+          tar -tzf bookqu-laravel.tar.gz | head -40
+
+      - name: Create frontend build archive
+        run: |
+          set -e
+          tar -czf bookqu-build.tar.gz -C public build
+          tar -tzf bookqu-build.tar.gz
+
+      - name: Prepare temporary deployment directory
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.HOSTDATA_HOST }}
+          username: ${{ secrets.HOSTDATA_USER }}
+          key: ${{ secrets.HOSTDATA_SSH_KEY }}
+          port: ${{ secrets.HOSTDATA_PORT }}
+          script: |
+            set -eu
+            DEPLOY_DIR="$HOME/bookqu-production-deploy"
+            rm -rf "$DEPLOY_DIR"
+            mkdir -p "$DEPLOY_DIR"
+            echo "Temporary deployment directory prepared: $DEPLOY_DIR"
+
+      - name: Transfer Laravel source archive
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOSTDATA_HOST }}
+          username: ${{ secrets.HOSTDATA_USER }}
+          key: ${{ secrets.HOSTDATA_SSH_KEY }}
+          port: ${{ secrets.HOSTDATA_PORT }}
+          source: bookqu-laravel.tar.gz
+          target: /home/bacadite/bookqu-production-deploy
+
+      - name: Transfer frontend build archive
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOSTDATA_HOST }}
+          username: ${{ secrets.HOSTDATA_USER }}
+          key: ${{ secrets.HOSTDATA_SSH_KEY }}
+          port: ${{ secrets.HOSTDATA_PORT }}
+          source: bookqu-build.tar.gz
+          target: /home/bacadite/bookqu-production-deploy
+
+      - name: Deploy and validate production
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.HOSTDATA_HOST }}
+          username: ${{ secrets.HOSTDATA_USER }}
+          key: ${{ secrets.HOSTDATA_SSH_KEY }}
+          port: ${{ secrets.HOSTDATA_PORT }}
+          script: |
+            set -eu
+
+            DEPLOY_DIR="$HOME/bookqu-production-deploy"
+            LARAVEL_DIR="$HOME/domains/bookqu.my.id/laravel"
+            PUBLIC_DIR="$HOME/domains/bookqu.my.id/public_html"
+            BACKUP_ROOT="$HOME/domains/bookqu.my.id/deploy-backups"
+            TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+            BACKUP_DIR="$BACKUP_ROOT/$TIMESTAMP"
+            SOURCE_DIR="$DEPLOY_DIR/laravel-source"
+            BUILD_DIR="$DEPLOY_DIR/public-assets"
+            DEPLOY_STARTED=0
+
+            rollback() {
+              status=$?
+              if [ "$status" -eq 0 ] || [ "$DEPLOY_STARTED" -ne 1 ]; then
+                exit "$status"
+              fi
+
+              echo "Deployment failed. Restoring Laravel source and public build from $BACKUP_DIR"
+              for item in app bootstrap config database resources routes; do
+                rm -rf "$LARAVEL_DIR/$item"
+                cp -a "$BACKUP_DIR/$item" "$LARAVEL_DIR/$item"
+              done
+              for item in composer.json composer.lock; do
+                cp -a "$BACKUP_DIR/$item" "$LARAVEL_DIR/$item"
+              done
+              rm -rf "$PUBLIC_DIR/build"
+              if [ -d "$BACKUP_DIR/public-build" ]; then
+                cp -a "$BACKUP_DIR/public-build" "$PUBLIC_DIR/build"
+              fi
+              cd "$LARAVEL_DIR"
+              php artisan optimize:clear || true
+              php artisan optimize || true
+              echo "PRODUCTION DEPLOY FAILED; rollback attempted. Backup preserved at $BACKUP_DIR"
+              exit "$status"
+            }
+            trap rollback EXIT
+
+            test -f "$DEPLOY_DIR/bookqu-laravel.tar.gz"
+            test -f "$DEPLOY_DIR/bookqu-build.tar.gz"
+            test -d "$LARAVEL_DIR"
+            test -f "$LARAVEL_DIR/.env"
+            test -f "$LARAVEL_DIR/vendor/autoload.php"
+            grep -Eq '^[[:space:]]*DB_CONNECTION=' "$LARAVEL_DIR/.env"
+            grep -Eq '^[[:space:]]*DB_DATABASE=' "$LARAVEL_DIR/.env"
+            grep -Eq '^[[:space:]]*DB_USERNAME=' "$LARAVEL_DIR/.env"
+            test -d "$PUBLIC_DIR"
+
+            rm -rf "$SOURCE_DIR" "$BUILD_DIR"
+            mkdir -p "$SOURCE_DIR" "$BUILD_DIR"
+            tar -xzf "$DEPLOY_DIR/bookqu-laravel.tar.gz" -C "$SOURCE_DIR"
+            tar -xzf "$DEPLOY_DIR/bookqu-build.tar.gz" -C "$BUILD_DIR"
+            test -f "$SOURCE_DIR/artisan"
+            test -f "$SOURCE_DIR/composer.json"
+            test -f "$SOURCE_DIR/composer.lock"
+            test -f "$BUILD_DIR/build/manifest.json"
+            find "$BUILD_DIR/build/assets" -maxdepth 1 -type f -name '*.css' -print -quit | grep -q .
+            find "$BUILD_DIR/build/assets" -maxdepth 1 -type f -name '*.js' -print -quit | grep -q .
+
+            mkdir -p "$BACKUP_DIR"
+            for item in app bootstrap config database resources routes; do
+              cp -a "$LARAVEL_DIR/$item" "$BACKUP_DIR/$item"
+            done
+            cp -a "$LARAVEL_DIR/composer.json" "$BACKUP_DIR/composer.json"
+            cp -a "$LARAVEL_DIR/composer.lock" "$BACKUP_DIR/composer.lock"
+            if [ -d "$PUBLIC_DIR/build" ]; then
+              cp -a "$PUBLIC_DIR/build" "$BACKUP_DIR/public-build"
+            fi
+            chmod 700 "$BACKUP_DIR"
+            echo "Backup created: $BACKUP_DIR"
+
+            DEPLOY_STARTED=1
+            for item in app bootstrap config database resources routes; do
+              rm -rf "$LARAVEL_DIR/$item"
+              cp -a "$SOURCE_DIR/$item" "$LARAVEL_DIR/$item"
+            done
+            cp -a "$SOURCE_DIR/composer.json" "$LARAVEL_DIR/composer.json"
+            cp -a "$SOURCE_DIR/composer.lock" "$LARAVEL_DIR/composer.lock"
+
+            find "$SOURCE_DIR/public" -mindepth 1 -maxdepth 1 \
+              ! -name index.php ! -name .htaccess ! -name .user.ini ! -name build \
+              -exec cp -a {} "$PUBLIC_DIR/" \;
+            rm -rf "$PUBLIC_DIR/build"
+            cp -a "$BUILD_DIR/build" "$PUBLIC_DIR/build"
+
+            cd "$LARAVEL_DIR"
+            composer install --no-dev --optimize-autoloader
+            php artisan migrate --force
+            php artisan optimize:clear
+            php artisan optimize
+
+            php artisan --version
+            php artisan route:list >/dev/null
+            php artisan route:cache
+            test -f "$PUBLIC_DIR/build/manifest.json"
+            find "$PUBLIC_DIR/build/assets" -maxdepth 1 -type f -name '*.css' -print -quit | grep -q .
+            find "$PUBLIC_DIR/build/assets" -maxdepth 1 -type f -name '*.js' -print -quit | grep -q .
+            test -f "$LARAVEL_DIR/.env"
+            php -r "require 'vendor/autoload.php'; echo 'Composer autoload OK';"
+
+            HTTP_STATUS="$(curl -fsS --max-time 20 -o /dev/null -w '%{http_code}' https://bookqu.my.id)"
+            case "$HTTP_STATUS" in
+              2*|3*) echo "HTTP health check passed: $HTTP_STATUS" ;;
+              *) echo "HTTP health check failed: $HTTP_STATUS"; exit 1 ;;
+            esac
+
+            echo "================================="
+            echo "PRODUCTION DEPLOY PASSED"
+            echo "================================="
