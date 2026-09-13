@@ -344,7 +344,7 @@ $customerRoutes = function (string $namePrefix = 'customer.booking.') {
         ->name($namePrefix . 'process-checkout');
 
     Route::post('/booking/validate-voucher', [BookingController::class, 'validateVoucher'])
-        ->name('customer.booking.validate-voucher');
+        ->name($namePrefix . 'validate-voucher');
 
     Route::get('/booking/payment/{payment:order_id}', [BookingController::class, 'showPayment'])
         ->name($namePrefix . 'payment');
@@ -356,7 +356,7 @@ $customerRoutes = function (string $namePrefix = 'customer.booking.') {
         ->name($namePrefix . 'callback');
 
     Route::post('/booking/payment/{payment:order_id}/cancel', [BookingController::class, 'cancelPayment'])
-        ->name('customer.booking.cancel');
+        ->name($namePrefix . 'cancel');
 
     Route::get('/booking/payment/{payment:order_id}/invoice', [BookingController::class, 'showInvoice'])
         ->name($namePrefix . 'invoice');
