@@ -261,11 +261,33 @@ jobs:
             test -f "$LARAVEL_DIR/.env"
             php -r "require 'vendor/autoload.php'; echo 'Composer autoload OK';"
 
+            echo "--- DEPLOYED COMMIT / ROUTE DIAGNOSTIC ---"
+
+            cd "$LARAVEL_DIR"
+
+            echo "--- web.php custom-domain routing ---"
+            grep -n -A8 -B3 "Custom domain routing" routes/web.php || true
+
+            echo "--- root route declarations ---"
+            grep -n "Route::get('/'" routes/web.php || true
+
+            echo "--- customer booking route helper ---"
+            grep -n "function route\|function isCustomDomain\|function buildParameters" app/Support/CustomerBookingRoutes.php || true
+
+            echo "--- cached routes ---"
+            php artisan route:list --name=customer.booking
+
+            echo "--- HTTP health check ---"
+            curl -i --max-time 20 https://bookqu.my.id/ || true
+
             HTTP_STATUS="$(curl -fsS --max-time 20 -o /dev/null -w '%{http_code}' https://bookqu.my.id)"
             case "$HTTP_STATUS" in
               2*|3*) echo "HTTP health check passed: $HTTP_STATUS" ;;
               *) echo "HTTP health check failed: $HTTP_STATUS"; exit 1 ;;
             esac
+
+            echo "--- LATEST LARAVEL ERROR LOG ---"
+            tail -n 100 "$LARAVEL_DIR/storage/logs/laravel.log" || true
 
             echo "================================="
             echo "PRODUCTION DEPLOY PASSED"
