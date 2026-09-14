@@ -318,10 +318,8 @@ if (app()->environment('local', 'staging', 'testing')) {
     });
 }
 
-$customerRoutes = function (string $namePrefix = 'customer.booking.') {
-    Route::get('/', [BookingController::class, 'showProgramSelection'])
-        ->name($namePrefix . 'program');
-
+// Shared booking sub-routes (no root GET /) — used by both custom-domain and slug groups.
+$bookingSubRoutes = function (string $namePrefix) {
     Route::post('/booking/select-program', [BookingController::class, 'selectProgram'])
         ->name($namePrefix . 'select-program');
 
@@ -362,10 +360,29 @@ $customerRoutes = function (string $namePrefix = 'customer.booking.') {
         ->name($namePrefix . 'invoice');
 };
 
-// Custom domain routing
-Route::middleware('tenant')->group(fn () => $customerRoutes());
+// Custom domain routing:
+// Route::domain('{custom_domain}') acts as a wildcard that matches any hostname that
+// is NOT the main bookqu.my.id domain (excluded via the 'custom_domain' where constraint).
+// TenantMiddleware resolves the tenant from $request->getHost() and injects slug_usaha
+// into route parameters, so the controller still receives $slug_usaha correctly.
+$mainDomain = parse_url(config('app.url'), PHP_URL_HOST) ?? 'bookqu.my.id';
+Route::domain('{custom_domain}')
+    ->where(['custom_domain' => '^(?!' . preg_quote($mainDomain, '/') . '$).*'])
+    ->middleware('tenant')
+    ->group(function () use ($bookingSubRoutes) {
+        Route::get('/', [BookingController::class, 'showProgramSelection'])
+            ->name('customer.booking.program');
+        $bookingSubRoutes('customer.booking.');
+    });
 
-// Subdirectory routing (default)
+// Subdirectory (slug-based) routing:
+// GET /{slug_usaha} → showProgramSelection($slug_usaha)
+// All /{slug_usaha}/booking/... routes follow.
+// bookqu.my.id/ is NOT included here — it stays as the welcome page (defined above at line 33).
 Route::prefix('{slug_usaha}')
     ->middleware('tenant')
-    ->group(fn () => $customerRoutes('customer.booking.slug.'));
+    ->group(function () use ($bookingSubRoutes) {
+        Route::get('/', [BookingController::class, 'showProgramSelection'])
+            ->name('customer.booking.slug.program');
+        $bookingSubRoutes('customer.booking.slug.');
+    });
