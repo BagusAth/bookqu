@@ -365,7 +365,7 @@ $bookingSubRoutes = function (string $namePrefix) {
 // is NOT the main bookqu.my.id domain (excluded via the 'custom_domain' where constraint).
 // TenantMiddleware resolves the tenant from $request->getHost() and injects slug_usaha
 // into route parameters, so the controller still receives $slug_usaha correctly.
-$mainDomain = parse_url(config('app.url'), PHP_URL_HOST) ?? 'bookqu.my.id';
+$mainDomain = explode(':', parse_url(config('app.url'), PHP_URL_HOST) ?? 'bookqu.my.id')[0];
 Route::domain('{custom_domain}')
     ->where(['custom_domain' => '^(?!' . preg_quote($mainDomain, '/') . '$).*'])
     ->middleware('tenant')

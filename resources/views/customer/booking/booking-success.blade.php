@@ -4,6 +4,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{{ $tenant->namabisnis }} - Booking Confirmed</title>
+        <link rel="icon" type="image/png" href="{{ asset('logo_icon.png') }}">
         @vite('resources/css/app.css')
         <link rel="stylesheet" href="{{ asset('css/booking-program.css') }}" />
     </head>

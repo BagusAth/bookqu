@@ -8,6 +8,9 @@
 
     <title>@yield('title', 'Dashboard') — BookQu</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('logo_icon.png') }}">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
