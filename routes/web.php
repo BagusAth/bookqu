@@ -21,6 +21,7 @@ use App\Http\Controllers\Owner\OwnerSettingController;
 use App\Http\Controllers\Owner\OwnerStaffResourceController;
 use App\Http\Controllers\Owner\OwnerSubscriptionController;
 use App\Http\Controllers\Owner\OwnerVoucherController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
 use App\Models\User;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -33,6 +34,8 @@ use Illuminate\Validation\Rules\Password;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // ── Authentication Routes ──
 Route::middleware('guest')->group(function () {
@@ -380,6 +383,7 @@ Route::domain('{custom_domain}')
 // All /{slug_usaha}/booking/... routes follow.
 // bookqu.my.id/ is NOT included here — it stays as the welcome page (defined above at line 33).
 Route::prefix('{slug_usaha}')
+    ->where(['slug_usaha' => '^(?!sitemap\.xml$).*'])
     ->middleware('tenant')
     ->group(function () use ($bookingSubRoutes) {
         Route::get('/', [BookingController::class, 'showProgramSelection'])
