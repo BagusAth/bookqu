@@ -369,8 +369,11 @@ $bookingSubRoutes = function (string $namePrefix) {
 // TenantMiddleware resolves the tenant from $request->getHost() and injects slug_usaha
 // into route parameters, so the controller still receives $slug_usaha correctly.
 $mainDomain = explode(':', parse_url(config('app.url'), PHP_URL_HOST) ?? 'bookqu.my.id')[0];
+$excludedDomains = array_unique(array_filter([$mainDomain, 'localhost', '127.0.0.1', 'bookqu.my.id', 'bookqu.test']));
+$customDomainPattern = '^(?!(' . implode('|', array_map(fn($d) => preg_quote($d, '/'), $excludedDomains)) . ')$).*';
+
 Route::domain('{custom_domain}')
-    ->where(['custom_domain' => '^(?!' . preg_quote($mainDomain, '/') . '$).*'])
+    ->where(['custom_domain' => $customDomainPattern])
     ->middleware('tenant')
     ->group(function () use ($bookingSubRoutes) {
         Route::get('/', [BookingController::class, 'showProgramSelection'])
