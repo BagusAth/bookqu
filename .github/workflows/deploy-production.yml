@@ -242,6 +242,10 @@ jobs:
             rm -rf "$PUBLIC_DIR/build"
             cp -a "$BUILD_DIR/build" "$PUBLIC_DIR/build"
 
+            # Laravel Vite assets
+            rm -rf "$LARAVEL_DIR/public/build"
+            cp -a "$BUILD_DIR/build" "$LARAVEL_DIR/public/build"
+
             cd "$LARAVEL_DIR"
             # HostData disables proc_open, which Laravel's Composer package:discover
             # script invokes through Illuminate\Process. Install dependencies and
@@ -256,8 +260,11 @@ jobs:
             php artisan route:list >/dev/null
             php artisan route:cache
             test -f "$PUBLIC_DIR/build/manifest.json"
+            test -f "$LARAVEL_DIR/public/build/manifest.json"
             find "$PUBLIC_DIR/build/assets" -maxdepth 1 -type f -name '*.css' -print -quit | grep -q .
             find "$PUBLIC_DIR/build/assets" -maxdepth 1 -type f -name '*.js' -print -quit | grep -q .
+            find "$LARAVEL_DIR/public/build/assets" -maxdepth 1 -type f -name '*.css' -print -quit | grep -q .
+            find "$LARAVEL_DIR/public/build/assets" -maxdepth 1 -type f -name '*.js' -print -quit | grep -q .
             test -f "$LARAVEL_DIR/.env"
             php -r "require 'vendor/autoload.php'; echo 'Composer autoload OK';"
 
