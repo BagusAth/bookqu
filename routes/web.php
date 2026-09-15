@@ -386,7 +386,7 @@ Route::domain('{custom_domain}')
 // All /{slug_usaha}/booking/... routes follow.
 // bookqu.my.id/ is NOT included here — it stays as the welcome page (defined above at line 33).
 Route::prefix('{slug_usaha}')
-    ->where(['slug_usaha' => '^(?!sitemap\.xml$).*'])
+    ->where(['slug_usaha' => '^(?!sitemap\.xml$)[^/]+$'])
     ->middleware('tenant')
     ->group(function () use ($bookingSubRoutes) {
         Route::get('/', [BookingController::class, 'showProgramSelection'])
