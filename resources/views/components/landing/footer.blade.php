@@ -30,7 +30,7 @@
             <div>
                 <h4 class="text-sm font-semibold text-slate-700">Kontak</h4>
                 <ul class="mt-3 space-y-2 text-sm text-slate-500">
-                    <li>[EMAIL_ADDRESS]</li>
+                    <li><a href="mailto:bookquind@gmail.com" class="hover:text-slate-700">bookquind@gmail.com</a></li>
                     <li>+62 895416023108</li>
                     <li>Tembalang, Semarang, Indonesia</li>
                 </ul>
