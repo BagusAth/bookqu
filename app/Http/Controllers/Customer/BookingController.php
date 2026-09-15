@@ -1058,7 +1058,7 @@ class BookingController extends Controller
 
         session()->forget('booking');
 
-        return redirect()->route('customer.booking.program', $slug_usaha)
+        return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha)
             ->with('info', 'Transaksi berhasil dibatalkan. Anda dapat memilih layanan atau jadwal baru.');
     }
 
