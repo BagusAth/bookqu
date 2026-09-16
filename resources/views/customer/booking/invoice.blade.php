@@ -187,7 +187,7 @@
     {{-- Quick Utilities & Calendar Integrations --}}
     <div class="no-print rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-xs mb-8">
         <h3 class="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-3">Pengingat Jadwal &amp; Bagikan</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {{-- Google Calendar --}}
             <a
                 href="{{ $gCalUrl }}"
@@ -195,33 +195,16 @@
                 rel="noopener noreferrer"
                 class="flex items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-xs font-semibold text-[#0F172A] hover:border-[#4F46E5] hover:bg-white transition-all shadow-2xs group"
             >
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5] group-hover:scale-105 transition-transform">
+                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5] group-hover:scale-105 transition-transform shrink-0">
                     <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 4h-2v-2h2v2zm4 0h-2v-2h2v2z"/>
                     </svg>
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="font-bold truncate">Google Calendar</p>
-                    <p class="text-[11px] text-[#64748B]">Simpan ke kalender Google</p>
+                    <p class="text-[11px] text-[#64748B] truncate">Simpan ke kalender</p>
                 </div>
             </a>
-
-            {{-- Download .ics (Apple / Outlook) --}}
-            <button
-                type="button"
-                id="btn-download-ics"
-                class="flex items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-xs font-semibold text-[#0F172A] hover:border-[#4F46E5] hover:bg-white transition-all shadow-2xs group cursor-pointer text-left"
-            >
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-[#4F46E5] group-hover:scale-105 transition-transform">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="font-bold truncate">Apple / Outlook (.ics)</p>
-                    <p class="text-[11px] text-[#64748B]">Unduh file kalender .ics</p>
-                </div>
-            </button>
 
             {{-- WhatsApp Share --}}
             <a
@@ -230,14 +213,14 @@
                 rel="noopener noreferrer"
                 class="flex items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-xs font-semibold text-[#0F172A] hover:border-emerald-500 hover:bg-white transition-all shadow-2xs group"
             >
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:scale-105 transition-transform">
+                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:scale-105 transition-transform shrink-0">
                     <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2m.01 1.67c4.54 0 8.24 3.7 8.24 8.24 0 2.2-.86 4.27-2.42 5.82a8.19 8.19 0 01-5.82 2.42c-1.46 0-2.9-.38-4.16-1.13l-.3-.18-3.11.82.83-3.03-.2-.31a8.214 8.214 0 01-1.26-4.42c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.67-1.26-1.5-1.41-1.75-.14-.25-.02-.39.11-.51.11-.11.25-.29.38-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1s.9 2.43 1.03 2.6c.13.17 1.77 2.7 4.29 3.78.6.26 1.07.41 1.43.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.17-.48-.3z"/>
                     </svg>
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="font-bold truncate">Bagikan ke WhatsApp</p>
-                    <p class="text-[11px] text-[#64748B]">Kirim rincian ke teman / keluarga</p>
+                    <p class="text-[11px] text-[#64748B] truncate">Kirim ke teman/keluarga</p>
                 </div>
             </a>
 
@@ -297,46 +280,4 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const btnDownloadIcs = document.getElementById('btn-download-ics');
-        if (btnDownloadIcs) {
-            btnDownloadIcs.addEventListener('click', function () {
-                const title = @json($eventTitle);
-                const description = @json($eventDetails);
-                const location = @json($eventLocation);
-                const startIso = '{{ $startDateTime->format("Ymd\THis") }}';
-                const endIso = '{{ $endDateTime->format("Ymd\THis") }}';
-                const code = '{{ $booking->booking_code }}';
-
-                const icsLines = [
-                    'BEGIN:VCALENDAR',
-                    'VERSION:2.0',
-                    'PRODID:-//Bookqu//Booking//ID',
-                    'CALSCALE:GREGORIAN',
-                    'METHOD:PUBLISH',
-                    'BEGIN:VEVENT',
-                    `UID:booking-${code}@bookqu.id`,
-                    `DTSTAMP:${startIso}`,
-                    `DTSTART:${startIso}`,
-                    `DTEND:${endIso}`,
-                    `SUMMARY:${title}`,
-                    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
-                    `LOCATION:${location}`,
-                    'STATUS:CONFIRMED',
-                    'END:VEVENT',
-                    'END:VCALENDAR'
-                ];
-
-                const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
-                const link = document.createElement('a');
-                link.href = window.URL.createObjectURL(blob);
-                link.setAttribute('download', `booking-${code}.ics`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-        }
-    });
-</script>
 @endsection

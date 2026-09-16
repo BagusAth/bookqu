@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Owner;
 use App\Http\Controllers\Controller;
 
 use App\Models\Category;
+use App\Traits\ClearsBookingCache;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -13,6 +14,7 @@ use Illuminate\Validation\Rule;
 class OwnerCategoryController extends Controller
 {
     use ResolvesOwnerTenant;
+    use ClearsBookingCache;
 
     public function index(Request $request)
     {
@@ -80,6 +82,8 @@ class OwnerCategoryController extends Controller
             'is_active'   => $request->has('is_active') ? (bool) $request->input('is_active') : true,
         ]);
 
+        $this->clearActiveServicesCache($tenant->id);
+
         return redirect()->route('owner.categories')->with('sukses', 'Kategori "' . $validated['name'] . '" berhasil ditambahkan!');
     }
 
@@ -114,6 +118,8 @@ class OwnerCategoryController extends Controller
             'is_active'   => (bool) $validated['is_active'],
         ]);
 
+        $this->clearActiveServicesCache($tenant->id);
+
         return redirect()->route('owner.categories')->with('sukses', 'Kategori "' . $category->name . '" berhasil diperbarui!');
     }
 
@@ -131,6 +137,8 @@ class OwnerCategoryController extends Controller
         $category->services()->update(['idcategory' => null]);
         $category->delete();
 
+        $this->clearActiveServicesCache($tenant->id);
+
         return redirect()->route('owner.categories')->with('sukses', 'Kategori "' . $name . '" berhasil dihapus!');
     }
 
@@ -145,6 +153,8 @@ class OwnerCategoryController extends Controller
         $category->update([
             'is_active' => !$category->is_active,
         ]);
+
+        $this->clearActiveServicesCache($tenant->id);
 
         $statusText = $category->is_active ? 'diaktifkan' : 'dinonaktifkan';
 

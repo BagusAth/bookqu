@@ -307,6 +307,7 @@ class OwnerScheduleController extends Controller
         $tenant->save();
 
         \Illuminate\Support\Facades\Cache::forget("tenant:slug:{$tenant->slug}");
+        $this->clearAllServicesAvailability($tenant->id);
 
         return redirect('/owner/schedule')->with('sukses', 'Pengaturan availability berhasil disimpan.');
     }
@@ -321,6 +322,8 @@ class OwnerScheduleController extends Controller
         $targetId = $blockedDate instanceof OwnerBlockedDate ? $blockedDate->id : (int) $blockedDate;
         $bDate = OwnerBlockedDate::where('idtenant', $tenant->id)->findOrFail($targetId);
         $bDate->delete();
+
+        $this->clearAllServicesAvailability($tenant->id);
 
         return redirect('/owner/schedule')->with('sukses', 'Tanggal blokir berhasil dihapus.');
     }

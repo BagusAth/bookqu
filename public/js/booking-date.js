@@ -212,11 +212,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         selectDate(date) {
+            if (this.isSubmitting) return;
             if (!date || this.isOutsideRange(date) || !this.isAvailable(date)) {
                 return;
             }
 
             this.selectedDate = date;
+            this.handleConfirm();
         },
 
         isAvailable(date) {
@@ -262,6 +264,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         selectQuickDate(type) {
+            if (this.isSubmitting) return;
             const now = new Date();
             let target = new Date();
             if (type === 'today') {
@@ -283,6 +286,7 @@ document.addEventListener('alpine:init', () => {
                 this.currentYear = target.getFullYear();
                 this.currentMonth = target.getMonth();
                 this.selectedDate = formatted;
+                this.handleConfirm();
             }
         },
 

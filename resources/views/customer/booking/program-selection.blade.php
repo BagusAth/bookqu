@@ -8,7 +8,7 @@
     {{-- Form Confirmation (Submitted explicitly by user clicking Continue) --}}
     <form
         id="booking-program-form"
-        class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
+        class="max-w-5xl mx-auto w-full"
         method="POST"
         action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.select-program'), $tenant->slug) }}"
         x-ref="confirmForm"
@@ -95,7 +95,7 @@
                 </div>
             @endif
 
-            <div class="grid gap-5 sm:grid-cols-2">
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 @forelse ($services as $service)
                     @php
                         $priceUnit = $service->satuan_harga ?: 'sesi';
@@ -132,23 +132,15 @@
                             </svg>
                         </div>
 
-                        {{-- Service Image Media with Smart Ambient Backdrop --}}
-                        <div class="booking-card__media aspect-square w-full overflow-hidden bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF] relative flex items-center justify-center">
+                        {{-- Service Image Media --}}
+                        <div class="booking-card__media relative h-44 sm:h-48 w-full overflow-hidden bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF] flex items-center justify-center">
                             @if ($imageUrl)
-                                {{-- Ambient Blurred Layer --}}
-                                <div class="absolute inset-0 overflow-hidden select-none pointer-events-none" aria-hidden="true">
-                                    <img src="{{ $imageUrl }}" alt="" class="h-full w-full object-cover blur-2xl scale-125 opacity-35 filter brightness-105">
-                                    <div class="absolute inset-0 bg-white/15 backdrop-blur-xs"></div>
-                                </div>
-                                {{-- Sharp Foreground Image --}}
-                                <div class="relative z-10 h-full w-full flex items-center justify-center p-3">
-                                    <img
-                                        src="{{ $imageUrl }}"
-                                        alt="{{ $service->namalayanan }}"
-                                        class="max-h-full max-w-full rounded-xl object-contain shadow-xs transition duration-300 group-hover:scale-[1.02]"
-                                        loading="lazy"
-                                    />
-                                </div>
+                                <img
+                                    src="{{ $imageUrl }}"
+                                    alt="{{ $service->namalayanan }}"
+                                    class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                    loading="lazy"
+                                />
                             @else
                                 <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#EEF2FF] via-white to-[#E0E7FF]">
                                     <svg class="h-10 w-10 text-[#818CF8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -165,7 +157,7 @@
                         </div>
 
                         {{-- Service Details --}}
-                        <div class="flex h-full flex-col p-5">
+                        <div class="flex flex-1 flex-col p-4 sm:p-5 justify-between">
                             @if($service->category)
                                 <span class="inline-block rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 mb-1.5 w-fit">
                                     {{ $service->category->name }}
@@ -256,12 +248,7 @@
             </div>
         </section>
 
-        {{-- Right Column: Sticky Booking Summary --}}
-        <x-customer.booking-sidebar
-            buttonLabel="Lanjut Pilih Tanggal"
-            buttonEnabledWhen="selectedServiceId"
-            onButtonClick="handleConfirm()"
-        />
+        {{-- Remove sidebar, auto-submit on click --}}
     </form>
 </div>
 

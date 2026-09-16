@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Resource;
 use App\Models\Service;
 use App\Models\Staff;
+use App\Traits\ClearsBookingCache;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,6 +15,7 @@ use Illuminate\Validation\Rule;
 class OwnerStaffResourceController extends Controller
 {
     use ResolvesOwnerTenant;
+    use ClearsBookingCache;
 
     public function index(Request $request)
     {
@@ -115,6 +117,8 @@ class OwnerStaffResourceController extends Controller
             $staff->services()->sync($validated['service_ids']);
         }
 
+        $this->clearActiveServicesCache($tenant->id);
+
         return redirect()->route('owner.staff-resources', ['tab' => 'staff'])
             ->with('sukses', 'Staff "' . $staff->name . '" berhasil ditambahkan!');
     }
@@ -153,6 +157,8 @@ class OwnerStaffResourceController extends Controller
 
         $staff->services()->sync($validated['service_ids'] ?? []);
 
+        $this->clearActiveServicesCache($tenant->id);
+
         return redirect()->route('owner.staff-resources', ['tab' => 'staff'])
             ->with('sukses', 'Staff "' . $staff->name . '" berhasil diperbarui!');
     }
@@ -169,6 +175,8 @@ class OwnerStaffResourceController extends Controller
         $staff->services()->detach();
         $staff->delete();
 
+        $this->clearActiveServicesCache($tenant->id);
+
         return redirect()->route('owner.staff-resources', ['tab' => 'staff'])
             ->with('sukses', 'Staff "' . $name . '" berhasil dihapus!');
     }
@@ -182,6 +190,8 @@ class OwnerStaffResourceController extends Controller
 
         $staff = Staff::where('idtenant', $tenant->id)->findOrFail($id);
         $staff->update(['is_active' => !$staff->is_active]);
+
+        $this->clearActiveServicesCache($tenant->id);
 
         $statusText = $staff->is_active ? 'diaktifkan' : 'dinonaktifkan';
         return redirect()->route('owner.staff-resources', ['tab' => 'staff'])
@@ -218,6 +228,8 @@ class OwnerStaffResourceController extends Controller
             $resource->services()->sync($validated['service_ids']);
         }
 
+        $this->clearActiveServicesCache($tenant->id);
+
         return redirect()->route('owner.staff-resources', ['tab' => 'resources'])
             ->with('sukses', 'Resource "' . $resource->name . '" berhasil ditambahkan!');
     }
@@ -251,6 +263,8 @@ class OwnerStaffResourceController extends Controller
 
         $resource->services()->sync($validated['service_ids'] ?? []);
 
+        $this->clearActiveServicesCache($tenant->id);
+
         return redirect()->route('owner.staff-resources', ['tab' => 'resources'])
             ->with('sukses', 'Resource "' . $resource->name . '" berhasil diperbarui!');
     }
@@ -267,6 +281,8 @@ class OwnerStaffResourceController extends Controller
         $resource->services()->detach();
         $resource->delete();
 
+        $this->clearActiveServicesCache($tenant->id);
+
         return redirect()->route('owner.staff-resources', ['tab' => 'resources'])
             ->with('sukses', 'Resource "' . $name . '" berhasil dihapus!');
     }
@@ -280,6 +296,8 @@ class OwnerStaffResourceController extends Controller
 
         $resource = Resource::where('idtenant', $tenant->id)->findOrFail($id);
         $resource->update(['is_active' => !$resource->is_active]);
+
+        $this->clearActiveServicesCache($tenant->id);
 
         $statusText = $resource->is_active ? 'diaktifkan' : 'dinonaktifkan';
         return redirect()->route('owner.staff-resources', ['tab' => 'resources'])

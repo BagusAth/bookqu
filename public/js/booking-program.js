@@ -77,6 +77,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         selectServiceById(id) {
+            if (this.isSubmitting) return;
+
             const service = this.servicesById[String(id)];
             if (!service) {
                 return;
@@ -89,8 +91,8 @@ document.addEventListener('alpine:init', () => {
                 localStorage.setItem(this.storageKey, JSON.stringify({ id: service.id }));
             }
 
-            // Selection strictly updates state and summary. NO auto-submit!
-            // Customer reviews the summary and clicks "Lanjutkan" button.
+            // Immediately proceed to Step 2 (Date selection)
+            this.handleConfirm();
         },
 
         handleConfirm() {

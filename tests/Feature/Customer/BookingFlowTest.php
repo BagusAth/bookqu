@@ -106,12 +106,12 @@ class BookingFlowTest extends TestCase
         $response->assertStatus(200);
 
         $responseSelect = $this->post('/my-business/booking/select-time', [
-            'jam' => '10:00',
-            'schedule_id' => $this->schedule->id,
+            'jam' => ['10:00'],
+            'schedule_ids' => [$this->schedule->id],
         ]);
 
         $responseSelect->assertRedirect('/my-business/booking/checkout');
-        $this->assertEquals('10:00', session('booking.jam'));
+        $this->assertEquals(['10:00'], session('booking.jam'));
         
         $responseCheckout = $this->get('/my-business/booking/checkout');
         $responseCheckout->assertStatus(200);
@@ -125,8 +125,8 @@ class BookingFlowTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
                 'tanggal' => $this->tomorrow,
-                'jam' => '10:00',
-                'schedule_id' => $this->schedule->id,
+                'jam' => ['10:00'],
+                'schedule_ids' => [$this->schedule->id],
             ]
         ]);
 
@@ -276,8 +276,8 @@ class BookingFlowTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
                 'tanggal' => $this->tomorrow,
-                'jam' => '10:00',
-                'schedule_id' => $this->schedule->id,
+                'jam' => ['10:00'],
+                'schedule_ids' => [$this->schedule->id],
             ]
         ]);
 
@@ -329,8 +329,9 @@ class BookingFlowTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Booking Berhasil Dikonfirmasi!');
         $response->assertSee('Google Calendar');
-        $response->assertSee('Apple / Outlook (.ics)');
+        $response->assertDontSee('Apple / Outlook (.ics)');
         $response->assertSee('Bagikan ke WhatsApp');
+        $response->assertSee('Petunjuk Arah');
         $response->assertSee('Kembali ke Beranda');
         // Check header back button
         $response->assertSee('/my-business');

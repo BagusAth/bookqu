@@ -11,6 +11,7 @@ use App\Models\BookingLog;
 use App\Models\Refund;
 use App\Models\Review;
 use App\Models\Schedule;
+use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Mail;
 
 class BookingManageController extends Controller
 {
+    use ClearsBookingCache;
     // ── Shared token validation ────────────────────────────────────────────────
 
     /**
@@ -206,11 +208,12 @@ class BookingManageController extends Controller
         $service = $booking->layanan;
 
         $availabilityKey = sprintf(
-            'tenant:%s:service:%s:availability:%s:%s',
+            'tenant:%s:service:%s:availability:%s:%s:reschedule:%s',
             $tenant->id,
             $service->id,
             $minDate->toDateString(),
-            $maxDate->toDateString()
+            $maxDate->toDateString(),
+            $booking->id
         );
 
         $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(1800), function () use ($tenant, $service, $minDate, $maxDate, $booking) {
@@ -516,11 +519,15 @@ class BookingManageController extends Controller
 
     // ── Cache helpers ─────────────────────────────────────────────────────────
 
-    private function clearBookingCaches(int $tenantId, int $serviceId, string $date): void
+    private function clearBookingCaches(int $tenantId, int $serviceId, string $date, ?int $bookingId = null): void
     {
-        Cache::forget("tenant:{$tenantId}:service:{$serviceId}:schedules:{$date}");
-        $minDate = now()->toDateString();
-        $maxDate = now()->addDays(30)->toDateString();
-        Cache::forget("tenant:{$tenantId}:service:{$serviceId}:availability:{$minDate}:{$maxDate}");
+        $this->clearBookingAvailabilityCache($tenantId, $serviceId, $date);
+
+        if ($bookingId) {
+            $minDate = Carbon::today()->toDateString();
+            $maxDate = Carbon::today()->addDays(30)->toDateString();
+            Cache::forget("tenant:{$tenantId}:service:{$serviceId}:availability:{$minDate}:{$maxDate}:reschedule:{$bookingId}");
+            Cache::forget("tenant:{$tenantId}:service:{$serviceId}:schedules:{$date}:reschedule:{$bookingId}");
+        }
     }
 }

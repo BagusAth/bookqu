@@ -77,17 +77,41 @@ trait ClearsBookingCache
     }
 
     /**
+     * Clear active services cache for a tenant.
+     */
+    protected function clearActiveServicesCache(int $tenantId): void
+    {
+        Cache::forget($this->getActiveServicesCacheKey($tenantId));
+    }
+
+    /**
+     * Clear availability cache for all services of a tenant (e.g. when blocking dates).
+     */
+    protected function clearAllServicesAvailability(int $tenantId): void
+    {
+        $serviceIds = \App\Models\Service::withoutGlobalScopes()
+            ->where('idtenant', $tenantId)
+            ->pluck('id');
+
+        foreach ($serviceIds as $sId) {
+            Cache::forget($this->getAvailabilityCacheKey($tenantId, (int) $sId));
+        }
+    }
+
+    /**
      * Convenience: clear both the per-date schedule cache and the broad availability cache.
      * Use this after any booking status transition that affects slot availability
      * (pending→paid, pending→cancelled, paid→completed, etc.)
      *
-     * @param int    $tenantId
-     * @param int    $serviceId
-     * @param string $date      Y-m-d
+     * @param int         $tenantId
+     * @param int         $serviceId
+     * @param string|null $date      Y-m-d
      */
-    protected function clearBookingAvailabilityCache(int $tenantId, int $serviceId, string $date): void
+    protected function clearBookingAvailabilityCache(int $tenantId, int $serviceId, ?string $date = null): void
     {
-        Cache::forget($this->getSchedulesCacheKey($tenantId, $serviceId, $date));
+        if ($date) {
+            Cache::forget($this->getSchedulesCacheKey($tenantId, $serviceId, $date));
+        }
         Cache::forget($this->getAvailabilityCacheKey($tenantId, $serviceId));
     }
 }

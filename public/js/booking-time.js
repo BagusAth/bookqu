@@ -11,8 +11,7 @@ document.addEventListener('alpine:init', () => {
         service: null,
         selectedDate: '',
         selectedDateDisplay: '',
-        selectedTime: '',
-        selectedScheduleId: '',
+        selectedTimes: [],       // Array of {id, time} objects
         timeSlots: [],
         groupedSlots: {
             morning: [],
@@ -29,10 +28,23 @@ document.addEventListener('alpine:init', () => {
 
             this.selectedDate = root?.dataset.selectedDate || '';
             this.selectedDateDisplay = root?.dataset.selectedDateLabel || '';
-            this.selectedTime = root?.dataset.selectedTime || '';
             this.simulateAvailability = root?.dataset.simulate === 'true';
 
             this.service = serviceEl ? JSON.parse(serviceEl.textContent || 'null') : null;
+
+            // Parse previously selected times from data attribute (if returning from checkout)
+            const prevTimesRaw = root?.dataset.selectedTimes || '';
+            let prevTimes = [];
+            if (prevTimesRaw) {
+                try {
+                    prevTimes = JSON.parse(prevTimesRaw);
+                } catch (_) {
+                    // If it's a single time string from old session format
+                    if (prevTimesRaw && prevTimesRaw !== '[]') {
+                        prevTimes = [prevTimesRaw];
+                    }
+                }
+            }
 
             let rawSlots = slotsEl ? JSON.parse(slotsEl.textContent || '[]') : [];
 
@@ -66,15 +78,19 @@ document.addEventListener('alpine:init', () => {
 
             this.groupSlots();
 
-            if (this.selectedTime) {
-                const match = this.timeSlots.find((slot) => slot.time === this.selectedTime && slot.isAvailable);
-                if (match) {
-                    this.selectSlot(match);
-                } else {
-                    this.selectedTime = '';
-                    this.selectedScheduleId = '';
-                }
+            // Restore previously selected times (if navigating back from checkout)
+            if (prevTimes.length > 0) {
+                prevTimes.forEach(prevTime => {
+                    const match = this.timeSlots.find(
+                        (slot) => slot.time === prevTime && slot.isAvailable
+                    );
+                    if (match) {
+                        match.isSelected = true;
+                        this.selectedTimes.push({ id: match.id, time: match.time });
+                    }
+                });
             }
+            // Do NOT auto-select any slot on first visit
 
             window.addEventListener('pageshow', () => {
                 this.isSubmitting = false;
@@ -181,17 +197,27 @@ document.addEventListener('alpine:init', () => {
             this.groupedSlots = groups;
         },
 
+        /**
+         * Toggle a slot's selection on/off (multi-select).
+         * No auto-submit — user must press the "Lanjut" button.
+         */
         selectSlot(slot) {
-            if (!slot || slot.isDisabled) {
-                return;
+            if (this.isSubmitting) return;
+            if (!slot || slot.isDisabled) return;
+
+            const existingIndex = this.selectedTimes.findIndex(
+                (item) => item.id === slot.id
+            );
+
+            if (existingIndex >= 0) {
+                // Deselect
+                this.selectedTimes.splice(existingIndex, 1);
+                slot.isSelected = false;
+            } else {
+                // Select
+                this.selectedTimes.push({ id: slot.id, time: slot.time });
+                slot.isSelected = true;
             }
-
-            this.timeSlots.forEach((item) => {
-                item.isSelected = item.id === slot.id;
-            });
-
-            this.selectedScheduleId = slot.id;
-            this.selectedTime = slot.time;
         },
 
         formatDate(dateString) {
@@ -227,15 +253,44 @@ document.addEventListener('alpine:init', () => {
             return this.selectedDate ? this.formatDate(this.selectedDate) : 'Pilih tanggal';
         },
 
-        get selectedTimeLabel() {
-            if (!this.selectedTime) {
-                return 'Pilih jam yang tersedia';
-            }
-
-            return `Pukul ${this.selectedTime} WIB`;
+        /**
+         * Returns a sorted array of selected time strings for display.
+         */
+        get sortedSelectedTimes() {
+            return [...this.selectedTimes].sort((a, b) => a.time.localeCompare(b.time));
         },
 
+        /**
+         * Human-readable label for all selected times.
+         */
+        get selectedTimesLabel() {
+            if (this.selectedTimes.length === 0) {
+                return 'Belum ada jam yang dipilih';
+            }
+            return this.sortedSelectedTimes.map((t) => t.time + ' WIB').join(', ');
+        },
+
+        /**
+         * How many slots are selected.
+         */
+        get selectedCount() {
+            return this.selectedTimes.length;
+        },
+
+        /**
+         * Price label × number of selected slots.
+         */
         get totalLabel() {
+            if (!this.service) return 'Rp 0';
+            const count = this.selectedTimes.length || 1;
+            const total = this.service.price * count;
+            return 'Rp ' + new Intl.NumberFormat('id-ID').format(total);
+        },
+
+        /**
+         * Price per slot label.
+         */
+        get perSlotLabel() {
             return this.service ? this.service.price_label : 'Rp 0';
         },
 
@@ -243,12 +298,16 @@ document.addEventListener('alpine:init', () => {
             return this.timeSlots.length > 0;
         },
 
+        get canSubmit() {
+            return this.selectedTimes.length > 0 && !this.isSubmitting;
+        },
+
         handleConfirm() {
-            if (!this.selectedTime || this.isSubmitting) return;
+            if (!this.canSubmit) return;
             this.isSubmitting = true;
             setTimeout(() => {
                 this.isSubmitting = false;
-            }, 1200);
+            }, 5000);
             const form = this.$refs?.confirmForm || document.getElementById('booking-time-form');
             if (form) form.submit();
         }

@@ -104,58 +104,7 @@
                 </div>
             @endif
 
-            {{-- Pilihan Item Tambahan / Add-ons (Opsional jika tersedia) --}}
-            @if(isset($availableAddons) && $availableAddons->isNotEmpty())
-                <div class="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-7 shadow-xs">
-                    <div class="border-b border-[#F1F5F9] pb-3 mb-4 flex items-center justify-between">
-                        <div>
-                            <h2 class="text-base font-bold text-[#0F172A]">Item &amp; Layanan Tambahan (Add-ons)</h2>
-                            <p class="text-xs text-[#64748B] mt-0.5">Tambahkan item pelengkap untuk memaksimalkan pengalaman Anda</p>
-                        </div>
-                        <span class="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700">Add-on</span>
-                    </div>
 
-                    <div class="space-y-3">
-                        @foreach($availableAddons as $addon)
-                            @php
-                                $isSoldOut = !$addon->is_unlimited && $addon->stock !== null && $addon->stock <= 0;
-                            @endphp
-                            <label class="flex items-start gap-3 rounded-xl border {{ $isSoldOut ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : 'border-[#E2E8F0] bg-white hover:border-[#4F46E5] cursor-pointer' }} p-3.5 transition-all">
-                                <input
-                                    type="checkbox"
-                                    name="selected_addons[]"
-                                    value="{{ $addon->id }}"
-                                    data-price="{{ (int) $addon->price }}"
-                                    data-name="{{ $addon->name }}"
-                                    class="addon-checkbox mt-1 h-4 w-4 rounded text-[#4F46E5] focus:ring-[#EEF2FF] {{ $isSoldOut ? 'cursor-not-allowed' : '' }}"
-                                    {{ $isSoldOut ? 'disabled' : '' }}
-                                    {{ is_array(old('selected_addons')) && in_array($addon->id, old('selected_addons')) ? 'checked' : '' }}
-                                />
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center justify-between gap-2">
-                                        <p class="text-sm font-bold text-[#0F172A]">{{ $addon->name }}</p>
-                                        <span class="text-sm font-extrabold text-[#4F46E5] shrink-0">
-                                            + Rp {{ number_format($addon->price, 0, ',', '.') }}
-                                        </span>
-                                    </div>
-                                    @if($addon->description)
-                                        <p class="text-xs text-[#64748B] mt-0.5">{{ $addon->description }}</p>
-                                    @endif
-                                    <div class="mt-1 flex items-center gap-2">
-                                        @if($addon->is_unlimited)
-                                            <span class="text-[11px] text-emerald-600 font-medium">Tersedia</span>
-                                        @elseif($isSoldOut)
-                                            <span class="text-[11px] text-red-600 font-bold">Stok Habis</span>
-                                        @else
-                                            <span class="text-[11px] text-amber-600 font-medium">Sisa stok: {{ $addon->stock }}</span>
-                                        @endif
-                                    </div>
-                                </div>
-                            </label>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
 
             <div class="rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-7 shadow-xs space-y-5">
                 <div class="border-b border-[#F1F5F9] pb-3">
@@ -253,58 +202,7 @@
                 </div>
             </div>
 
-            {{-- Voucher / Promo Code Box --}}
-            <div class="mt-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-7 shadow-xs">
-                <div class="border-b border-[#F1F5F9] pb-3 mb-4 flex items-center justify-between">
-                    <div class="flex items-center gap-2.5">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-[#4F46E5]">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="text-base font-bold text-[#0F172A]">Voucher / Kupon Promo</h2>
-                            <p class="text-xs text-[#64748B]">Gunakan kode kupon untuk mendapatkan potongan harga</p>
-                        </div>
-                    </div>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">Opsional</span>
-                </div>
 
-                <div class="space-y-3">
-                    <div class="flex gap-2">
-                        <div class="relative flex-1">
-                            <input
-                                type="text"
-                                id="voucher_code_input"
-                                class="w-full uppercase tracking-wider font-mono rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] px-4 py-2.5 text-sm text-[#0F172A] font-bold placeholder:font-sans placeholder:font-normal placeholder:tracking-normal transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
-                                placeholder="Contoh: BRAMA15 atau HAPPYHOUR"
-                                value="{{ old('voucher_code') }}"
-                            />
-                        </div>
-                        <button
-                            type="button"
-                            id="btn-apply-voucher"
-                            class="inline-flex items-center justify-center rounded-xl bg-[#0F172A] hover:bg-[#1E293B] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition active:scale-98 cursor-pointer disabled:opacity-50"
-                        >
-                            <span id="btn-apply-text">Terapkan</span>
-                        </button>
-                    </div>
-
-                    {{-- Hidden form input for submission --}}
-                    <input type="hidden" name="voucher_code" id="applied_voucher_code" value="{{ old('voucher_code') }}" />
-
-                    {{-- Voucher Message Box --}}
-                    <div id="voucher-status-box" class="hidden rounded-xl p-3 text-xs flex items-center justify-between gap-2 transition-all">
-                        <div class="flex items-center gap-2">
-                            <span id="voucher-icon"></span>
-                            <span id="voucher-message" class="font-medium"></span>
-                        </div>
-                        <button type="button" id="btn-remove-voucher" class="hidden text-xs font-bold text-red-600 hover:text-red-700 underline cursor-pointer">
-                            Hapus Kupon
-                        </button>
-                    </div>
-                </div>
-            </div>
 
             {{-- Policy --}}
             <div class="mt-6">
@@ -347,9 +245,19 @@
                             <p class="text-sm font-bold text-[#0F172A] truncate">
                                 {{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d F Y') }}
                             </p>
-                            <p class="text-xs text-[#64748B] mt-0.5 font-medium">
-                                Pukul {{ $selectedTime }} WIB
-                            </p>
+                            <div class="mt-1.5 flex flex-wrap gap-1.5">
+                                @foreach ($selectedTimes as $time)
+                                    <span class="inline-flex items-center gap-1 rounded-lg bg-[#4F46E5]/10 px-2 py-1 text-xs font-bold text-[#4F46E5]">
+                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        {{ $time }} WIB
+                                    </span>
+                                @endforeach
+                            </div>
+                            @if (count($selectedTimes) > 1)
+                                <p class="text-[11px] text-[#64748B] mt-1 font-medium">{{ count($selectedTimes) }} slot waktu dipilih</p>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -364,7 +272,7 @@
                 {{-- Total Biaya & Rincian Add-ons --}}
                 <div class="mt-5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
                     <div class="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
-                        <span>Biaya Layanan</span>
+                        <span>Biaya Layanan{{ count($selectedTimes) > 1 ? ' (' . count($selectedTimes) . ' slot)' : '' }}</span>
                         <span class="font-medium text-[#0F172A]">Rp {{ number_format($hargaAkhir, 0, ',', '.') }}</span>
                     </div>
                     <div id="summary-addons-row" class="hidden items-center justify-between text-xs text-[#64748B] mb-2">

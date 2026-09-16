@@ -20,7 +20,7 @@
 >
     <form
         id="booking-date-form"
-        class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
+        class="max-w-4xl mx-auto w-full"
         method="POST"
         action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.select-date'), $tenant->slug) }}"
         x-ref="confirmForm"
@@ -119,15 +119,7 @@
             </div>
         </section>
 
-        {{-- Right Column: Sticky Booking Summary --}}
-        <x-customer.booking-sidebar
-            :service="$service"
-            buttonLabel="Lanjut Pilih Jam"
-            buttonEnabledWhen="selectedDate"
-            onButtonClick="handleConfirm()"
-            :backUrl="route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug)"
-            backLabel="Kembali ke Layanan"
-        />
+        {{-- Removed sidebar, auto-submit on selection --}}
     </form>
 </div>
 
