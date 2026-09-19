@@ -26,16 +26,18 @@
         x-ref="confirmForm"
     >
         @csrf
-        {{-- Send each selected slot as jam[] and schedule_ids[] arrays --}}
-        <template x-for="item in sortedSelectedTimes" :key="item.id">
-            <div>
-                <input type="hidden" name="jam[]" :value="item.time" />
-                <input type="hidden" name="schedule_ids[]" :value="item.id" />
-            </div>
-        </template>
-        @if ($simulate)
-            <input type="hidden" name="simulate" value="1" />
-        @endif
+        {{-- Hidden inputs wrapper: prevents dynamic x-for children from becoming CSS Grid items --}}
+        <div class="hidden">
+            <template x-for="item in sortedSelectedTimes" :key="item.id">
+                <div>
+                    <input type="hidden" name="jam[]" :value="item.time" />
+                    <input type="hidden" name="schedule_ids[]" :value="item.id" />
+                </div>
+            </template>
+            @if ($simulate)
+                <input type="hidden" name="simulate" value="1" />
+            @endif
+        </div>
 
         {{-- Left Column: Session Slot Choices --}}
         <section>
