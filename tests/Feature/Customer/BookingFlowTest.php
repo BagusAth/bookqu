@@ -230,7 +230,7 @@ class BookingFlowTest extends TestCase
         $this->assertStringContainsString('/my-business/booking/payment/' . $payment->order_id . '/invoice', $response->json('redirect'));
     }
 
-    public function test_customer_can_validate_voucher(): void
+    public function test_customer_cannot_validate_voucher_while_feature_disabled(): void
     {
         $voucher = \App\Models\Voucher::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
@@ -250,15 +250,14 @@ class BookingFlowTest extends TestCase
             'service_id' => $this->service->id,
         ]);
 
-        $response->assertStatus(200);
+        $response->assertStatus(422);
         $response->assertJson([
-            'valid' => true,
-            'code' => 'HEMAT20',
-            'discount_amount' => 40000, // 20% of 200k = 40k
+            'valid' => false,
+            'message' => 'Fitur voucher saat ini belum aktif.',
         ]);
     }
 
-    public function test_checkout_with_valid_voucher_applies_discount(): void
+    public function test_checkout_with_voucher_is_rejected_while_feature_disabled(): void
     {
         $voucher = \App\Models\Voucher::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
@@ -288,13 +287,10 @@ class BookingFlowTest extends TestCase
             'voucher_code' => 'POTONG50',
         ]);
 
+        $response->assertSessionHasErrors(['voucher']);
         $payment = \App\Models\Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->latest()->first();
-        $this->assertNotNull($payment);
-        // Original 200k - 50k voucher = 150k
-        $this->assertEquals(150000, (int) $payment->jumlah);
-
-        // Voucher used count should be incremented
-        $this->assertEquals(1, $voucher->fresh()->used_count);
+        $this->assertNull($payment);
+        $this->assertEquals(0, $voucher->fresh()->used_count);
     }
 
     public function test_invoice_renders_calendar_and_back_buttons(): void

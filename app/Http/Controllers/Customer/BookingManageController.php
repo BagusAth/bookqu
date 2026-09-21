@@ -69,8 +69,9 @@ class BookingManageController extends Controller
             Cache::put($viewKey, true, now()->addMinutes(30));
         }
 
-        $canCancel    = $booking->canBeCancelled();
-        $canReschedule = $booking->canBeRescheduled();
+        $isMultiSlot  = $booking->isMultiSlot();
+        $canCancel    = !$isMultiSlot && $booking->canBeCancelled();
+        $canReschedule = !$isMultiSlot && $booking->canBeRescheduled();
 
         // Build cancel deadline message
         $cancelDeadline   = null;
@@ -88,6 +89,7 @@ class BookingManageController extends Controller
         return view('customer.manage.show', [
             'booking'             => $booking,
             'token'               => $token,
+            'isMultiSlot'         => $isMultiSlot,
             'canCancel'           => $canCancel,
             'canReschedule'       => $canReschedule,
             'cancelDeadline'      => $cancelDeadline,
@@ -101,6 +103,11 @@ class BookingManageController extends Controller
     {
         $token   = $request->query('token');
         $booking = $this->resolveBooking($bookingCode, $token);
+
+        // ── Guard: multi-slot booking cannot be cancelled individually ──
+        if ($booking->isMultiSlot()) {
+            return back()->withErrors(['cancel' => 'Booking multi-slot tidak dapat dibatalkan per slot secara individual. Silakan hubungi pengelola bisnis.']);
+        }
 
         // ── Guard: only paid bookings can be cancelled ──
         if ($booking->status !== 'paid') {
@@ -188,6 +195,12 @@ class BookingManageController extends Controller
         $token   = $request->query('token');
         $booking = $this->resolveBooking($bookingCode, $token);
 
+        if ($booking->isMultiSlot()) {
+            return redirect()
+                ->route('booking.manage', ['booking_code' => $bookingCode, 'token' => $token])
+                ->withErrors(['reschedule' => 'Booking multi-slot tidak dapat dibatalkan atau dijadwalkan ulang per slot secara individual. Silakan hubungi pengelola bisnis.']);
+        }
+
         if ($booking->status !== 'paid') {
             return redirect()
                 ->route('booking.manage', ['booking_code' => $bookingCode, 'token' => $token])
@@ -260,6 +273,10 @@ class BookingManageController extends Controller
     {
         $token   = $request->query('token');
         $booking = $this->resolveBooking($bookingCode, $token);
+
+        if ($booking->isMultiSlot()) {
+            return back()->withErrors(['reschedule' => 'Booking multi-slot tidak dapat dibatalkan atau dijadwalkan ulang per slot secara individual. Silakan hubungi pengelola bisnis.']);
+        }
 
         if ($booking->status !== 'paid') {
             return back()->withErrors(['reschedule' => 'Booking tidak dapat dijadwalkan ulang.']);

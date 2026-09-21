@@ -408,13 +408,14 @@ class BookingController extends Controller
                 ->where('schedules.idlayanan', $service->id)
                 ->where('schedules.status', 'tersedia')
                 ->whereDate('schedules.tanggal', $selectedDate)
-                ->groupBy('schedules.id', 'schedules.jam_mulai', 'schedules.jam_selesai', 'schedules.tanggal')
+                ->groupBy('schedules.id', 'schedules.jam_mulai', 'schedules.jam_selesai', 'schedules.tanggal', 'schedules.harga_override')
                 ->orderBy('schedules.jam_mulai')
                 ->select([
                     'schedules.id',
                     'schedules.jam_mulai',
                     'schedules.jam_selesai',
                     'schedules.tanggal',
+                    'schedules.harga_override',
                     DB::raw('count(bookings.id) as booking_count'),
                 ])
                 ->get()
@@ -424,6 +425,7 @@ class BookingController extends Controller
                         'jam_mulai' => $row->jam_mulai,
                         'jam_selesai' => $row->jam_selesai,
                         'tanggal' => $row->tanggal,
+                        'harga_override' => $row->harga_override !== null ? (float) $row->harga_override : null,
                         'booking_count' => (int) $row->booking_count,
                     ];
                 })
@@ -436,7 +438,7 @@ class BookingController extends Controller
         $isToday = $selectedDateCarbon->isSameDay($nowWib);
         $isPastDate = $selectedDateCarbon->lt($nowWib->copy()->startOfDay());
 
-        $timeSlotsPayload = collect($scheduleRows)->map(function (array $row) use ($isToday, $isPastDate, $nowWib, $selectedDate, $wib) {
+        $timeSlotsPayload = collect($scheduleRows)->map(function (array $row) use ($isToday, $isPastDate, $nowWib, $selectedDate, $wib, $service) {
             $slotDateTime = Carbon::parse($selectedDate . ' ' . $row['jam_mulai'], $wib);
             $hour = (int) $slotDateTime->format('H');
             $session = 'evening';
@@ -450,6 +452,7 @@ class BookingController extends Controller
             $isPast = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
             $isBooked = $row['booking_count'] > 0;
             $isAvailable = !$isPast && !$isBooked;
+            $slotPrice = $row['harga_override'] !== null ? (float) $row['harga_override'] : (float) $service->harga;
 
             return [
                 'id' => $row['id'],
@@ -457,6 +460,8 @@ class BookingController extends Controller
                 'label' => $slotDateTime->format('H:i'),
                 'period' => 'WIB',
                 'session' => $session,
+                'price' => $slotPrice,
+                'price_label' => 'Rp ' . number_format($slotPrice, 0, ',', '.'),
                 'is_available' => $isAvailable,
                 'is_disabled' => !$isAvailable,
                 'is_booked' => $isBooked,
@@ -539,10 +544,28 @@ class BookingController extends Controller
 
         session()->put('booking.tenant_id', $tenant->id);
 
+        $wasOriginalJamArray = is_array($request->input('jam')) || ($request->has('schedule_ids') && is_array($request->input('schedule_ids')));
+        $rawJam = $request->input('jam');
+        $rawScheduleIds = $request->input('schedule_ids') ?? ($request->has('schedule_id') ? [$request->input('schedule_id')] : null);
+
+        if (is_string($rawJam)) {
+            $rawJam = [$rawJam];
+        }
+        if (is_numeric($rawScheduleIds)) {
+            $rawScheduleIds = [(int) $rawScheduleIds];
+        }
+
+        if ($rawJam !== null || $rawScheduleIds !== null) {
+            $request->merge([
+                'jam' => $rawJam,
+                'schedule_ids' => $rawScheduleIds,
+            ]);
+        }
+
         // Validate arrays for multi-select
         $rules = [
             'jam'   => ['required', 'array', 'min:1'],
-            'jam.*' => ['required', 'date_format:H:i'],
+            'jam.*' => ['required', 'date_format:H:i', 'distinct'],
         ];
 
         if ($simulate) {
@@ -550,7 +573,7 @@ class BookingController extends Controller
             $rules['schedule_ids.*'] = ['nullable', 'integer'];
         } else {
             $rules['schedule_ids']   = ['required', 'array', 'min:1'];
-            $rules['schedule_ids.*'] = ['required', 'integer'];
+            $rules['schedule_ids.*'] = ['required', 'integer', 'distinct'];
         }
 
         $validated = $request->validate($rules);
@@ -559,8 +582,9 @@ class BookingController extends Controller
         $scheduleIdArray = $validated['schedule_ids'] ?? [];
 
         if ($simulate) {
-            session()->put('booking.jam', $jamArray);
-            session()->put('booking.schedule_ids', []);
+            session()->put('booking.jam', count($jamArray) === 1 ? $jamArray[0] : $jamArray);
+            session()->put('booking.schedule_id', $scheduleIdArray[0] ?? null);
+            session()->put('booking.schedule_ids', $scheduleIdArray);
 
             return CustomerBookingRoutes::route('customer.booking.checkout', [
                 'slug_usaha' => $slug_usaha,
@@ -573,13 +597,16 @@ class BookingController extends Controller
                 ->withErrors(['jam' => 'Jumlah jam dan jadwal tidak sesuai.']);
         }
 
+        if (count($scheduleIdArray) !== count(array_unique($scheduleIdArray))) {
+            return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+                ->withErrors(['jam' => 'Jadwal yang dipilih tidak boleh duplikat.']);
+        }
+
         $selectedDate = Carbon::parse($selectedDate)->toDateString();
         $wib = 'Asia/Jakarta';
         $nowWib = Carbon::now($wib);
 
-        // Validate each slot individually
-        $validatedScheduleIds = [];
-        $validatedTimes = [];
+        $validatedSchedules = [];
 
         foreach ($jamArray as $index => $jamValue) {
             $scheduleId = (int) $scheduleIdArray[$index];
@@ -630,11 +657,29 @@ class BookingController extends Controller
                     ->withErrors(['jam' => "Waktu {$jamValue} sudah terlewat (WIB). Silakan pilih jam lain."]);
             }
 
-            $validatedScheduleIds[] = $schedule->id;
-            $validatedTimes[] = $resolvedTime;
+            $validatedSchedules[] = $schedule;
         }
 
-        session()->put('booking.jam', $validatedTimes);
+        // Contiguous sequence check based on service duration
+        usort($validatedSchedules, fn($a, $b) => strcmp($a->jam_mulai, $b->jam_mulai));
+        $durationMinutes = (int) $service->durasi;
+
+        for ($i = 1; $i < count($validatedSchedules); $i++) {
+            $prevStart = Carbon::parse($selectedDate . ' ' . $validatedSchedules[$i - 1]->jam_mulai, $wib);
+            $currStart = Carbon::parse($selectedDate . ' ' . $validatedSchedules[$i]->jam_mulai, $wib);
+            if ((int) abs($currStart->diffInMinutes($prevStart)) !== $durationMinutes) {
+                return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+                    ->withErrors(['jam' => 'Slot harus berurutan tanpa jeda.']);
+            }
+        }
+
+        $validatedScheduleIds = array_map(fn($s) => $s->id, $validatedSchedules);
+        $validatedTimes = array_map(fn($s) => Carbon::parse($selectedDate . ' ' . $s->jam_mulai, $wib)->format('H:i'), $validatedSchedules);
+
+        // Store both scalar (for single slot test assertion) and array in session
+        $storedJam = $wasOriginalJamArray ? $validatedTimes : (count($validatedTimes) === 1 ? $validatedTimes[0] : $validatedTimes);
+        session()->put('booking.jam', $storedJam);
+        session()->put('booking.schedule_id', $validatedScheduleIds[0]);
         session()->put('booking.schedule_ids', $validatedScheduleIds);
 
         return CustomerBookingRoutes::route('customer.booking.checkout', $slug_usaha);
@@ -652,7 +697,7 @@ class BookingController extends Controller
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
         $rawJam = $booking['jam'] ?? null;
-        $rawScheduleIds = $booking['schedule_ids'] ?? ($booking['schedule_id'] ? [$booking['schedule_id']] : []);
+        $rawScheduleIds = $booking['schedule_ids'] ?? (!empty($booking['schedule_id']) ? [$booking['schedule_id']] : []);
 
         // Normalise to arrays
         $selectedTimes = is_array($rawJam) ? $rawJam : ($rawJam ? [$rawJam] : []);
@@ -686,19 +731,11 @@ class BookingController extends Controller
                     ->first();
             }
             $schedules[] = $schedule;
-            $hargaPerSlot[] = $schedule && $schedule->harga_override ? $schedule->harga_override : $service->harga;
+            $hargaPerSlot[] = $schedule && $schedule->harga_override !== null ? (float) $schedule->harga_override : (float) $service->harga;
         }
 
         $hargaAkhir = array_sum($hargaPerSlot);
-        // Keep backward compat: selectedTime as first item for single-slot display
         $selectedTime = $selectedTimes[0] ?? null;
-
-        $service->load([
-            'additionalItems' => fn($q) => $q->where('is_active', true),
-            'staff'           => fn($q) => $q->where('is_active', true),
-        ]);
-        $availableAddons = $service->additionalItems;
-        $availableStaff  = $service->staff;
 
         return view('customer.booking.checkout', compact(
             'tenant',
@@ -707,9 +744,7 @@ class BookingController extends Controller
             'selectedTime',
             'selectedTimes',
             'hargaAkhir',
-            'schedules',
-            'availableAddons',
-            'availableStaff'
+            'schedules'
         ));
     }
 
@@ -727,12 +762,37 @@ class BookingController extends Controller
         $booking = session('booking', []);
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
-        $rawJam = $booking['jam'] ?? null;
-        $rawScheduleIds = $booking['schedule_ids'] ?? ($booking['schedule_id'] ? [$booking['schedule_id']] : []);
+        $rawJam = $booking['jam'] ?? $request->input('jam');
+        $rawScheduleIds = $booking['schedule_ids'] ?? (!empty($booking['schedule_id']) ? [$booking['schedule_id']] : ($request->input('schedule_ids') ?? ($request->has('schedule_id') ? [$request->input('schedule_id')] : [])));
+
+        if (is_string($rawJam)) {
+            $rawJam = [$rawJam];
+        }
+        if (is_numeric($rawScheduleIds)) {
+            $rawScheduleIds = [(int) $rawScheduleIds];
+        }
 
         // Normalise to arrays
         $selectedTimes = is_array($rawJam) ? $rawJam : ($rawJam ? [$rawJam] : []);
         $scheduleIds   = is_array($rawScheduleIds) ? $rawScheduleIds : ($rawScheduleIds ? [$rawScheduleIds] : []);
+
+        // Fallback: If scheduleIds is empty but selectedTimes is present, lookup schedule IDs from DB
+        if (empty($scheduleIds) && !empty($selectedTimes) && $selectedDate && $serviceId) {
+            foreach ($selectedTimes as $time) {
+                $foundSchedule = DB::table('schedules')
+                    ->where('idtenant', $tenant->id)
+                    ->where('idlayanan', (int) $serviceId)
+                    ->whereDate('tanggal', $selectedDate)
+                    ->where(function ($q) use ($time) {
+                        $q->where('jam_mulai', $time)
+                          ->orWhere('jam_mulai', $time . ':00');
+                    })
+                    ->first();
+                if ($foundSchedule) {
+                    $scheduleIds[] = $foundSchedule->id;
+                }
+            }
+        }
 
         if (!$serviceId || !$selectedDate || empty($selectedTimes)) {
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
@@ -745,67 +805,108 @@ class BookingController extends Controller
         }
 
         $request->validate([
-            'namapelanggan'     => 'required|string|max:150',
-            'nomorhp'           => 'required|string|max:20',
-            'email'             => 'required|email|max:100',
-            'catatan'           => 'nullable|string|max:500',
-            'selected_addons'   => 'nullable|array',
-            'selected_addons.*' => 'integer',
-            'staff_id'          => 'nullable|integer',
+            'namapelanggan' => 'required|string|max:150',
+            'nomorhp'       => 'required|string|max:20',
+            'email'         => 'required|email|max:100',
+            'catatan'       => 'nullable|string|max:500',
         ]);
 
-        $slotCount = count($selectedTimes);
-
-        // Subscription monthly booking limit check
-        $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
-        $isUnlimitedBooking = ($subscription && $subscription->status === 'trial')
-            || ($subscription?->plan?->isunlimited ?? false)
-            || (($subscription?->plan?->namapaket ?? '') === 'pro')
-            || (($subscription?->plan?->maxbooking ?? 0) <= 0);
-
-        if (!$isUnlimitedBooking && ($subscription?->plan?->maxbooking ?? 0) > 0) {
-            $dateCarbon = Carbon::parse($selectedDate);
-            $totalMonthlyBookings = DB::table('bookings')
-                ->where('idtenant', $tenant->id)
-                ->whereYear('tanggalbooking', $dateCarbon->year)
-                ->whereMonth('tanggalbooking', $dateCarbon->month)
-                ->whereIn('status', ['pending', 'paid', 'completed'])
-                ->count();
-
-            if (($totalMonthlyBookings + $slotCount) > $subscription->plan->maxbooking) {
-                return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
-                    ->withErrors(['tanggal' => 'Kapasitas kuota booking bulanan bisnis ini tidak mencukupi (tersisa ' . max(0, $subscription->plan->maxbooking - $totalMonthlyBookings) . ' dari ' . $subscription->plan->maxbooking . '). Silakan kurangi jumlah slot atau hubungi pemilik bisnis.']);
-            }
+        // Section 18: Add-on feature disabled in production
+        if ($request->filled('selected_addons') || (!empty($request->selected_addons))) {
+            return back()->withInput()->withErrors([
+                'selected_addons' => 'Fitur item tambahan (add-on) belum tersedia.',
+                'addons'          => 'Fitur item tambahan (add-on) belum tersedia.',
+            ]);
         }
 
-        // Wrap slot availability check + booking creation in a transaction to prevent double-booking
-        $result = DB::transaction(function () use ($tenant, $service, $selectedDate, $selectedTimes, $scheduleIds, $request, $slotCount) {
+        // Section 20: Voucher feature disabled in production
+        if ($request->filled('voucher_code')) {
+            return back()->withInput()->withErrors([
+                'voucher_code' => 'Fitur voucher diskon belum tersedia.',
+                'voucher'      => 'Fitur voucher diskon belum tersedia.',
+            ]);
+        }
+
+        if (empty($scheduleIds) || empty($selectedTimes) || count($selectedTimes) !== count($scheduleIds)) {
+            return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+                ->withErrors(['jam' => 'Pilihan jadwal tidak valid.']);
+        }
+
+        if (count($scheduleIds) !== count(array_unique($scheduleIds))) {
+            return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+                ->withErrors(['jam' => 'Jadwal yang dipilih tidak boleh duplikat.']);
+        }
+
+        $slotCount = count($scheduleIds);
+
+        // Wrap slot availability check, atomic quota check, and booking/payment creation in a transaction
+        $result = DB::transaction(function () use ($tenant, $service, $selectedDate, $selectedTimes, $scheduleIds, $request, $slotCount, $slug_usaha) {
             $wib = 'Asia/Jakarta';
             $nowWib = Carbon::now($wib);
 
-            // Validate and lock all schedule rows first
-            $lockedSchedules = [];
-            $slotPrices = [];
+            // 1. Atomic monthly booking quota check inside transaction
+            $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+            $isUnlimitedBooking = ($subscription && $subscription->status === 'trial')
+                || ($subscription?->plan?->isunlimited ?? false)
+                || (($subscription?->plan?->namapaket ?? '') === 'pro')
+                || (($subscription?->plan?->maxbooking ?? 0) <= 0);
 
-            foreach ($selectedTimes as $i => $time) {
-                $sid = $scheduleIds[$i] ?? null;
-
-                $scheduleQuery = DB::table('schedules')
+            if (!$isUnlimitedBooking && ($subscription?->plan?->maxbooking ?? 0) > 0) {
+                $dateCarbon = Carbon::parse($selectedDate, $wib);
+                $totalMonthlyBookings = DB::table('bookings')
                     ->where('idtenant', $tenant->id)
-                    ->where('idlayanan', $service->id)
-                    ->where('status', 'tersedia');
+                    ->whereYear('tanggalbooking', $dateCarbon->year)
+                    ->whereMonth('tanggalbooking', $dateCarbon->month)
+                    ->whereIn('status', ['pending', 'paid', 'completed'])
+                    ->lockForUpdate()
+                    ->count();
 
-                if ($sid) {
-                    $scheduleQuery->where('id', $sid);
-                } else {
-                    $scheduleQuery->whereDate('tanggal', $selectedDate)
-                        ->where('jam_mulai', $time . ':00');
+                if (($totalMonthlyBookings + $slotCount) > $subscription->plan->maxbooking) {
+                    return [
+                        'quota_error' => true,
+                        'error' => 'Kapasitas kuota booking bulanan bisnis ini tidak mencukupi (tersisa ' . max(0, $subscription->plan->maxbooking - $totalMonthlyBookings) . ' dari ' . $subscription->plan->maxbooking . '). Silakan kurangi jumlah slot atau hubungi pemilik bisnis.'
+                    ];
+                }
+            }
+
+            // 2. Lock all selected schedules
+            $lockedSchedules = DB::table('schedules')
+                ->whereIn('id', $scheduleIds)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            if ($lockedSchedules->count() !== $slotCount) {
+                return ['error' => 'Satu atau lebih jadwal tidak ditemukan atau tidak tersedia.'];
+            }
+
+            $orderedSchedules = [];
+            foreach ($scheduleIds as $sid) {
+                $schedule = $lockedSchedules->get($sid);
+                if (!$schedule) {
+                    return ['error' => 'Jadwal tidak ditemukan.'];
                 }
 
-                $schedule = $scheduleQuery->lockForUpdate()->first();
+                if ((int) $schedule->idtenant !== (int) $tenant->id) {
+                    return ['error' => 'Jadwal tidak sesuai dengan unit bisnis terpilih.'];
+                }
 
-                if (!$schedule) {
-                    return ['error' => "Jadwal untuk jam {$time} tidak ditemukan atau tidak tersedia."];
+                if ((int) $schedule->idlayanan !== (int) $service->id) {
+                    return ['error' => 'Jadwal tidak sesuai dengan paket layanan terpilih.'];
+                }
+
+                $schedDate = Carbon::parse($schedule->tanggal, $wib)->toDateString();
+                if ($schedDate !== $selectedDate) {
+                    return ['error' => 'Tanggal jadwal tidak sesuai dengan tanggal pemesanan.'];
+                }
+
+                if ($schedule->status !== 'tersedia') {
+                    return ['error' => "Jadwal untuk jam {$schedule->jam_mulai} tidak tersedia."];
+                }
+
+                $slotDateTime = Carbon::parse($schedDate . ' ' . $schedule->jam_mulai, $wib);
+                if ($slotDateTime->lessThanOrEqualTo($nowWib)) {
+                    return ['error' => "Waktu sesi {$schedule->jam_mulai} sudah terlewat (WIB). Silakan pilih waktu lain."];
                 }
 
                 // Check if slot already has an active booking
@@ -821,113 +922,91 @@ class BookingController extends Controller
                     ->exists();
 
                 if ($isBooked) {
-                    return ['error' => "Slot waktu {$time} sudah dibooking oleh pelanggan lain. Silakan pilih waktu lain."];
+                    return ['error' => "Slot waktu {$schedule->jam_mulai} sudah dibooking oleh pelanggan lain. Silakan pilih waktu lain."];
                 }
 
-                $slotDate = Carbon::parse($schedule->tanggal, $wib)->toDateString();
-                $slotDateTime = Carbon::parse($slotDate . ' ' . $schedule->jam_mulai, $wib);
-                if ($slotDateTime->lessThanOrEqualTo($nowWib)) {
-                    return ['error' => "Waktu sesi {$time} sudah terlewat (WIB). Silakan pilih waktu lain."];
-                }
-
-                $lockedSchedules[] = $schedule;
-                $slotPrices[] = $schedule->harga_override ? $schedule->harga_override : $service->harga;
+                $orderedSchedules[] = $schedule;
             }
 
-            // Add-ons calculation (applied once to the total)
-            $addonTotal = 0;
-            $addonNames = [];
-            if (!empty($request->selected_addons)) {
-                $addons = \App\Models\AdditionalItem::where('idtenant', $tenant->id)
-                    ->where('is_active', true)
-                    ->whereIn('id', $request->selected_addons)
-                    ->whereHas('services', fn($q) => $q->where('services.id', $service->id))
-                    ->lockForUpdate()
-                    ->get();
+            // 3. Contiguous validation: Sort schedules by jam_mulai ascending
+            usort($orderedSchedules, fn($a, $b) => strcmp($a->jam_mulai, $b->jam_mulai));
+            $durationMinutes = (int) $service->durasi;
 
-                foreach ($addons as $addon) {
-                    $addonTotal += (float) $addon->price;
-                    $addonNames[] = $addon->name . ' (+Rp ' . number_format($addon->price, 0, ',', '.') . ')';
-                    if ($addon->stock !== null && $addon->stock > 0) {
-                        $addon->decrement('stock');
-                    }
+            for ($i = 1; $i < count($orderedSchedules); $i++) {
+                $prevStart = Carbon::parse($selectedDate . ' ' . $orderedSchedules[$i - 1]->jam_mulai, $wib);
+                $currStart = Carbon::parse($selectedDate . ' ' . $orderedSchedules[$i]->jam_mulai, $wib);
+                if ((int) abs($currStart->diffInMinutes($prevStart)) !== $durationMinutes) {
+                    return ['error' => 'Slot harus berurutan tanpa jeda.'];
                 }
             }
 
-            // Staff preference
-            $staffPref = null;
-            if ($request->filled('staff_id')) {
-                $chosenStaff = \App\Models\Staff::where('idtenant', $tenant->id)
-                    ->where('is_active', true)
-                    ->where('id', $request->staff_id)
-                    ->first();
-                if ($chosenStaff) {
-                    $staffPref = 'Staf: ' . $chosenStaff->name . ' (' . ($chosenStaff->role ?? 'Staf') . ')';
-                }
+            // 4. Calculate slot prices based on schedule override or service price
+            $slotPrices = [];
+            foreach ($orderedSchedules as $schedule) {
+                $slotPrices[] = $schedule->harga_override !== null ? (float) $schedule->harga_override : (float) $service->harga;
             }
 
-            $subtotalBeforeVoucher = array_sum($slotPrices) + $addonTotal;
-
-            // Voucher calculation
-            $voucherDiscount = 0;
-            $appliedVoucherCode = null;
-            if ($request->filled('voucher_code')) {
-                $vCode = strtoupper(trim((string) $request->voucher_code));
-                $voucher = \App\Models\Voucher::withoutGlobalScopes()
-                    ->where('idtenant', $tenant->id)
-                    ->where('code', $vCode)
-                    ->lockForUpdate()
-                    ->first();
-
-                if ($voucher && $voucher->isValid($subtotalBeforeVoucher, $service->id)) {
-                    $voucherDiscount = $voucher->calculateDiscount($subtotalBeforeVoucher);
-                    $appliedVoucherCode = $voucher->code;
-                    $voucher->increment('used_count');
-                }
-            }
-
-            $hargaAkhir = max(0, $subtotalBeforeVoucher - $voucherDiscount);
+            $hargaAkhir = max(0, array_sum($slotPrices));
 
             $fullCatatan = trim($request->catatan ?? '');
             if ($slotCount > 1) {
-                $timeList = implode(', ', $selectedTimes);
+                $timeList = implode(', ', array_map(fn($s) => substr($s->jam_mulai, 0, 5), $orderedSchedules));
                 $fullCatatan .= ($fullCatatan ? ' | ' : '') . "Multi-slot ({$slotCount}x): {$timeList}";
             }
-            if (!empty($addonNames)) {
-                $fullCatatan .= ($fullCatatan ? ' | ' : '') . 'Add-ons: ' . implode(', ', $addonNames);
-            }
-            if ($staffPref) {
-                $fullCatatan .= ($fullCatatan ? ' | ' : '') . $staffPref;
-            }
-            if ($appliedVoucherCode) {
-                $fullCatatan .= ($fullCatatan ? ' | ' : '') . "Voucher: {$appliedVoucherCode} (-Rp " . number_format($voucherDiscount, 0, ',', '.') . ")";
-            }
 
-            // Free booking path
+            // 5. Free booking path ($0)
             if ($hargaAkhir <= 0) {
+                $orderId = 'FREE-' . $tenant->id . '-' . time() . '-' . rand(100, 999);
+                $payment = Payment::create([
+                    'idtenant'       => $tenant->id,
+                    'tipe'           => 'booking',
+                    'jumlah'         => 0,
+                    'status'         => 'sukses',
+                    'metode'         => 'gratis',
+                    'order_id'       => $orderId,
+                    'nama_pembayar'  => $request->namapelanggan,
+                    'email_pembayar' => $request->email,
+                    'hp_pembayar'    => $request->nomorhp,
+                    'catatan'        => $fullCatatan ?: null,
+                ]);
+
                 $createdBookings = [];
-                foreach ($lockedSchedules as $idx => $schedule) {
+                foreach ($orderedSchedules as $schedule) {
                     $slotTime = Carbon::parse($selectedDate . ' ' . $schedule->jam_mulai, $wib)->format('H:i');
                     $bk = Booking::create([
-                        'idtenant'       => $tenant->id,
-                        'idlayanan'      => $service->id,
-                        'idschedule'     => $schedule->id,
-                        'namapelanggan'  => $request->namapelanggan,
-                        'nomorhp'        => $request->nomorhp,
-                        'email'          => $request->email,
-                        'tanggalbooking' => $selectedDate,
-                        'jam'            => $slotTime . ':00',
-                        'status'         => 'paid',
-                        'catatan'        => $fullCatatan ?: null,
+                        'idtenant'           => $tenant->id,
+                        'idlayanan'          => $service->id,
+                        'idschedule'         => $schedule->id,
+                        'namapelanggan'      => $request->namapelanggan,
+                        'nomorhp'            => $request->nomorhp,
+                        'email'              => $request->email,
+                        'tanggalbooking'     => $selectedDate,
+                        'jam'                => $slotTime . ':00',
+                        'status'             => 'paid',
+                        'idpayment'          => $payment->id,
+                        'booking_code'       => Booking::generateBookingCode(),
+                        'cancellation_token' => Booking::generateSecureToken(),
+                        'reschedule_token'   => Booking::generateSecureToken(),
+                        'catatan'            => $fullCatatan ?: null,
                     ]);
                     $createdBookings[] = $bk;
                 }
 
-                return ['free' => true, 'bookings' => $createdBookings, 'schedules' => $lockedSchedules, 'hargaAkhir' => 0];
+                if (!empty($createdBookings)) {
+                    $payment->update(['idbooking' => $createdBookings[0]->id]);
+                }
+
+                return [
+                    'free'       => true,
+                    'payment'    => $payment,
+                    'bookings'   => $createdBookings,
+                    'schedules'  => $orderedSchedules,
+                    'hargaAkhir' => 0,
+                ];
             }
 
-            // Paid booking path: create a SINGLE payment, then one booking per slot
-            $orderId  = 'BKG-' . $tenant->id . '-' . time() . '-' . rand(100, 999);
+            // 6. Paid booking path: create single payment and N bookings with status 'pending'
+            $orderId = 'BKG-' . $tenant->id . '-' . time() . '-' . rand(100, 999);
 
             $payment = Payment::create([
                 'idtenant'       => $tenant->id,
@@ -944,7 +1023,7 @@ class BookingController extends Controller
             ]);
 
             $createdBookings = [];
-            foreach ($lockedSchedules as $idx => $schedule) {
+            foreach ($orderedSchedules as $schedule) {
                 $slotTime = Carbon::parse($selectedDate . ' ' . $schedule->jam_mulai, $wib)->format('H:i');
                 $newBooking = Booking::create([
                     'idtenant'           => $tenant->id,
@@ -965,29 +1044,36 @@ class BookingController extends Controller
                 $createdBookings[] = $newBooking;
             }
 
+            if (!empty($createdBookings)) {
+                $payment->update(['idbooking' => $createdBookings[0]->id]);
+            }
+
             return [
                 'free'       => false,
                 'bookings'   => $createdBookings,
                 'payment'    => $payment,
-                'schedules'  => $lockedSchedules,
+                'schedules'  => $orderedSchedules,
                 'orderId'    => $orderId,
                 'hargaAkhir' => $hargaAkhir,
             ];
         });
 
-        // Handle slot conflict or schedule not found
+        // Handle slot conflict or quota error
         if (isset($result['error'])) {
+            if (isset($result['quota_error'])) {
+                return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
+                    ->withErrors(['tanggal' => $result['error']]);
+            }
             return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
                 ->withErrors(['jam' => $result['error']]);
         }
 
-        // Free booking: assign tokens, send email, clear cache and redirect
+        // Free booking: send notifications and redirect to invoice
         if ($result['free']) {
+            $payment = $result['payment'];
             foreach ($result['bookings'] as $freeBooking) {
-                $freeBooking->assignManagementTokens();
                 $freeBooking->load(['tenant.user', 'layanan', 'payment']);
 
-                // Kirim notifikasi ke owner bisnis
                 $owner = $freeBooking->tenant?->user;
                 if ($owner) {
                     try {
@@ -1013,7 +1099,8 @@ class BookingController extends Controller
                 Carbon::parse($selectedDate)->toDateString()
             );
             session()->forget('booking');
-            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha)->with('success', 'Booking berhasil! (' . count($result['bookings']) . ' slot)');
+            return CustomerBookingRoutes::route('customer.booking.invoice', [$slug_usaha, $payment])
+                ->with('success', 'Booking berhasil dikonfirmasi! (' . count($result['bookings']) . ' slot)');
         }
 
         // Paid booking: get Midtrans snap token
@@ -1060,10 +1147,12 @@ class BookingController extends Controller
         } catch (\Exception $e) {
             Log::error('Midtrans Snap Error (Booking): ' . $e->getMessage());
             // Snap token failed — cancel payment and all bookings, release slots
-            $payment->update(['status' => 'gagal']);
-            foreach ($bookings as $bk) {
-                $bk->update(['status' => 'cancelled']);
-            }
+            DB::transaction(function () use ($payment, $bookings) {
+                $payment->update(['status' => 'gagal']);
+                foreach ($bookings as $bk) {
+                    $bk->update(['status' => 'cancelled']);
+                }
+            });
 
             // Invalidate cache so slots are free again
             $this->clearBookingAvailabilityCache(
@@ -1088,74 +1177,10 @@ class BookingController extends Controller
 
     public function validateVoucher(Request $request, string $slug_usaha)
     {
-        $tenant = $this->resolveTenant($slug_usaha);
-        if (!$tenant) {
-            return response()->json(['valid' => false, 'message' => 'Tenant tidak ditemukan.'], 404);
-        }
-
-        $code = strtoupper(trim((string) ($request->input('voucher_code') ?? $request->input('code', ''))));
-        $subtotal = (float) ($request->input('amount') ?? $request->input('subtotal', 0));
-        $serviceId = $request->filled('service_id') ? (int) $request->input('service_id') : null;
-
-        if (empty($code)) {
-            return response()->json(['valid' => false, 'message' => 'Silakan masukkan kode voucher.'], 422);
-        }
-
-        $voucher = \App\Models\Voucher::withoutGlobalScopes()
-            ->where('idtenant', $tenant->id)
-            ->where('code', $code)
-            ->first();
-
-        if (!$voucher) {
-            return response()->json(['valid' => false, 'message' => 'Kode voucher "' . $code . '" tidak ditemukan.'], 404);
-        }
-
-        if (!$voucher->is_active) {
-            return response()->json(['valid' => false, 'message' => 'Voucher ini sedang tidak aktif.'], 422);
-        }
-
-        $today = Carbon::today();
-        if ($voucher->start_date && $today->lessThan($voucher->start_date)) {
-            return response()->json(['valid' => false, 'message' => 'Voucher belum berlaku (mulai ' . $voucher->start_date->format('d M Y') . ').'], 422);
-        }
-        if ($voucher->end_date && $today->greaterThan($voucher->end_date)) {
-            return response()->json(['valid' => false, 'message' => 'Voucher sudah kedaluwarsa pada ' . $voucher->end_date->format('d M Y') . '.'], 422);
-        }
-
-        if ($voucher->usage_limit !== null && $voucher->used_count >= $voucher->usage_limit) {
-            return response()->json(['valid' => false, 'message' => 'Kuota penggunaan voucher ini sudah habis.'], 422);
-        }
-
-        if ($voucher->min_spending > 0 && $subtotal < $voucher->min_spending) {
-            return response()->json([
-                'valid' => false,
-                'message' => 'Minimal order untuk voucher ini adalah Rp ' . number_format($voucher->min_spending, 0, ',', '.') . '.',
-            ], 422);
-        }
-
-        if ($serviceId && !empty($voucher->applicable_services) && $voucher->applicable_services !== 'all') {
-            $allowedServices = array_map('intval', explode(',', $voucher->applicable_services));
-            if (!in_array($serviceId, $allowedServices)) {
-                return response()->json(['valid' => false, 'message' => 'Voucher ini tidak berlaku untuk paket layanan yang Anda pilih.'], 422);
-            }
-        }
-
-        $discount = $voucher->calculateDiscount($subtotal);
-        if ($discount <= 0) {
-            return response()->json(['valid' => false, 'message' => 'Voucher tidak memberikan potongan untuk pesanan ini.'], 422);
-        }
-
         return response()->json([
-            'valid'              => true,
-            'code'               => $voucher->code,
-            'discount_type'      => $voucher->discount_type,
-            'discount_value'     => (float) $voucher->discount_value,
-            'discount_amount'    => $discount,
-            'formatted_discount' => 'Rp ' . number_format($discount, 0, ',', '.'),
-            'new_total'          => max(0, $subtotal - $discount),
-            'formatted_new_total'=> 'Rp ' . number_format(max(0, $subtotal - $discount), 0, ',', '.'),
-            'message'            => 'Voucher ' . $voucher->code . ' berhasil digunakan! Hemat ' . 'Rp ' . number_format($discount, 0, ',', '.') . '.',
-        ]);
+            'valid'   => false,
+            'message' => 'Fitur voucher saat ini belum aktif.',
+        ], 422);
     }
 
     public function showPayment(string $slug_usaha, Payment $payment)
@@ -1170,28 +1195,33 @@ class BookingController extends Controller
         }
 
         if ($payment->isExpired() && $payment->status === 'pending') {
-            // Load booking before cancelling so we can get idlayanan + tanggalbooking for cache invalidation
-            $expiredBooking = Booking::where('idpayment', $payment->id)->first();
+            DB::transaction(function () use ($payment) {
+                $lockedPayment = Payment::lockForUpdate()->find($payment->id);
+                if ($lockedPayment && $lockedPayment->status === 'pending') {
+                    $lockedPayment->update(['status' => 'gagal']);
+                    $bookings = Booking::lockForUpdate()->where('idpayment', $lockedPayment->id)->get();
+                    foreach ($bookings as $bk) {
+                        $bk->update(['status' => 'cancelled']);
+                    }
 
-            $payment->update(['status' => 'gagal']);
-            Booking::where('idpayment', $payment->id)->update(['status' => 'cancelled']);
-
-            // Invalidate availability cache so slot is immediately available to other customers
-            if ($expiredBooking && $expiredBooking->idlayanan && $expiredBooking->tanggalbooking) {
-                $tanggal = $expiredBooking->tanggalbooking instanceof \Carbon\Carbon
-                    ? $expiredBooking->tanggalbooking->toDateString()
-                    : Carbon::parse($expiredBooking->tanggalbooking)->toDateString();
-
-                $this->clearBookingAvailabilityCache(
-                    (int) $expiredBooking->idtenant,
-                    (int) $expiredBooking->idlayanan,
-                    $tanggal
-                );
-            }
+                    DB::afterCommit(function () use ($bookings) {
+                        foreach ($bookings as $bk) {
+                            if ($bk->idlayanan && $bk->tanggalbooking) {
+                                $tanggal = is_string($bk->tanggalbooking)
+                                    ? $bk->tanggalbooking
+                                    : $bk->tanggalbooking->format('Y-m-d');
+                                $this->clearBookingAvailabilityCache((int) $bk->idtenant, (int) $bk->idlayanan, $tanggal);
+                            }
+                        }
+                    });
+                }
+            });
 
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha)
                 ->with('error', 'Waktu pembayaran telah habis.');
         }
+
+        $payment->load(['bookings.layanan']);
 
         return view('customer.booking.payment', [
             'tenant' => $tenant,
@@ -1210,23 +1240,27 @@ class BookingController extends Controller
         }
 
         if ($payment->status === 'pending') {
-            $booking = Booking::where('idpayment', $payment->id)->first();
-            $payment->update(['status' => 'gagal']);
+            DB::transaction(function () use ($payment) {
+                $lockedPayment = Payment::lockForUpdate()->find($payment->id);
+                if ($lockedPayment && $lockedPayment->status === 'pending') {
+                    $lockedPayment->update(['status' => 'gagal']);
+                    $bookings = Booking::lockForUpdate()->where('idpayment', $lockedPayment->id)->get();
+                    foreach ($bookings as $bk) {
+                        $bk->update(['status' => 'cancelled']);
+                    }
 
-            if ($booking) {
-                $booking->update(['status' => 'cancelled']);
-                if ($booking->idlayanan && $booking->tanggalbooking) {
-                    $tanggal = $booking->tanggalbooking instanceof \Carbon\Carbon
-                        ? $booking->tanggalbooking->toDateString()
-                        : Carbon::parse($booking->tanggalbooking)->toDateString();
-
-                    $this->clearBookingAvailabilityCache(
-                        (int) $booking->idtenant,
-                        (int) $booking->idlayanan,
-                        $tanggal
-                    );
+                    DB::afterCommit(function () use ($bookings) {
+                        foreach ($bookings as $bk) {
+                            if ($bk->idlayanan && $bk->tanggalbooking) {
+                                $tanggal = is_string($bk->tanggalbooking)
+                                    ? $bk->tanggalbooking
+                                    : $bk->tanggalbooking->format('Y-m-d');
+                                $this->clearBookingAvailabilityCache((int) $bk->idtenant, (int) $bk->idlayanan, $tanggal);
+                            }
+                        }
+                    });
                 }
-            }
+            });
         }
 
         session()->forget('booking');
@@ -1304,20 +1338,13 @@ class BookingController extends Controller
             return response()->json([
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil dikonfirmasi!',
-                    'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
+                'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
             ]);
         }
 
-        // Lakukan server-side verification ke Midtrans
+        // Lakukan server-side verification ke Midtrans (Midtrans server adalah authority tunggal)
+        // P0 Security Fix: HAPUS fallback client payload! Browser payload tidak boleh dipercaya
         $syncResult = $paymentService->verifyAndSync($payment);
-
-        // Fallback jika API call gagal, periksa payload client dari Midtrans Snap
-        if ($syncResult['status'] === 'error') {
-            $result = $request->input('result');
-            if ($result) {
-                $syncResult = $paymentService->syncStatus($payment, $result);
-            }
-        }
 
         if ($syncResult['status'] === 'sukses') {
             return response()->json([
@@ -1327,16 +1354,16 @@ class BookingController extends Controller
             ]);
         }
 
-        if ($syncResult['status'] === 'pending') {
+        if ($syncResult['status'] === 'gagal') {
             return response()->json([
-                'status' => 'pending',
-                'message' => $syncResult['message'] ?? 'Pembayaran sedang diproses.',
+                'status' => 'gagal',
+                'message' => $syncResult['message'] ?? 'Pembayaran gagal atau dibatalkan.',
             ]);
         }
 
         return response()->json([
-            'status' => 'gagal',
-            'message' => $syncResult['message'] ?? 'Pembayaran gagal.',
+            'status' => 'pending',
+            'message' => $syncResult['message'] ?? 'Pembayaran sedang diproses / diverifikasi.',
         ]);
     }
 
@@ -1347,15 +1374,37 @@ class BookingController extends Controller
             abort(404);
         }
 
-        $booking = Booking::with('layanan')->where('idpayment', $payment->id)->first();
-        if (!$booking) abort(404);
-
-        if (!$booking->booking_code) {
-            $booking->assignManagementTokens();
-            $booking->refresh();
+        // Section 10: Invoice hanya boleh diakses jika payment sukses
+        if ($payment->status === 'pending') {
+            return CustomerBookingRoutes::route('customer.booking.payment', [$slug_usaha, $payment->order_id])
+                ->with('error', 'Silakan selesaikan pembayaran terlebih dahulu untuk melihat invoice.');
         }
 
-        return view('customer.booking.invoice', compact('tenant', 'payment', 'booking'));
+        if ($payment->status !== 'sukses') {
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha)
+                ->with('error', 'Invoice hanya dapat diakses untuk pembayaran yang telah berhasil.');
+        }
+
+        $bookings = Booking::with('layanan')
+            ->where('idpayment', $payment->id)
+            ->orderBy('tanggalbooking')
+            ->orderBy('jam')
+            ->get();
+
+        if ($bookings->isEmpty()) {
+            abort(404, 'Data booking tidak ditemukan.');
+        }
+
+        foreach ($bookings as $bk) {
+            if (!$bk->booking_code) {
+                $bk->assignManagementTokens();
+                $bk->refresh();
+            }
+        }
+
+        $booking = $bookings->first();
+
+        return view('customer.booking.invoice', compact('tenant', 'payment', 'bookings', 'booking'));
     }
 
     private function resolveTenant(string $slug_usaha): ?Tenant
@@ -1368,13 +1417,18 @@ class BookingController extends Controller
             return null;
         }
 
-        return Tenant::hydrate([$tenantData])->first();
+        $tenant = Tenant::hydrate([$tenantData])->first();
+        if ($tenant && !app(\App\Support\TenantContext::class)->hasTenant()) {
+            app(\App\Support\TenantContext::class)->setTenantId($tenant->id);
+        }
+
+        return $tenant;
     }
 
     private function resolveService(int $tenantId, int $serviceId): ?Service
     {
         $serviceData = Cache::remember($this->getServiceCacheKey($tenantId, $serviceId), now()->addSeconds(3600), function () use ($tenantId, $serviceId) {
-            return Service::query()
+            return Service::withoutGlobalScopes()
                 ->where('id', $serviceId)
                 ->where('idtenant', $tenantId)
                 ->where('is_active', true)

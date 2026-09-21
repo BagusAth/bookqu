@@ -6,6 +6,7 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Payment extends Model
 {
@@ -47,6 +48,17 @@ class Payment extends Model
         return $this->belongsTo(Plan::class, 'idplan');
     }
 
+    /**
+     * Relasi utama 1 Payment -> Banyak Booking (Multi-Slot Support).
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'idpayment');
+    }
+
+    /**
+     * Backward-compatibility relasi single booking.
+     */
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class, 'idbooking');

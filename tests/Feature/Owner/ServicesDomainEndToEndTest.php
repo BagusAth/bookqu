@@ -382,7 +382,7 @@ class ServicesDomainEndToEndTest extends TestCase
         $resSelect = $this->post('/' . $this->tenantA->slug . '/booking/select-program', [
             'service_id' => $service->id,
         ]);
-        $resSelect->assertRedirect(route('customer.booking.date', $this->tenantA->slug));
+        $resSelect->assertRedirect(route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $this->tenantA->slug));
 
         // Step C: Customer selects date
         $resDate = $this->withSession([
@@ -393,7 +393,7 @@ class ServicesDomainEndToEndTest extends TestCase
         ])->post('/' . $this->tenantA->slug . '/booking/select-date', [
             'tanggal' => $bookingDate,
         ]);
-        $resDate->assertRedirect(route('customer.booking.time', $this->tenantA->slug));
+        $resDate->assertRedirect(route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $this->tenantA->slug));
 
         // Step D: Customer selects time slot
         $resTime = $this->withSession([
@@ -406,7 +406,7 @@ class ServicesDomainEndToEndTest extends TestCase
             'jam' => '14:00',
             'schedule_id' => $schedule->id,
         ]);
-        $resTime->assertRedirect(route('customer.booking.checkout', $this->tenantA->slug));
+        $resTime->assertRedirect(route(\App\Support\CustomerBookingRoutes::name('customer.booking.checkout'), $this->tenantA->slug));
 
         // Step E: Customer completes checkout
         $resCheckout = $this->withSession([

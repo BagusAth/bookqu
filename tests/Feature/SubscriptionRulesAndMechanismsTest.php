@@ -110,7 +110,7 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
         ]);
 
         $response->assertSessionHasNoErrors();
-        $response->assertRedirect(route('customer.booking.time', $tenant->slug));
+        $response->assertRedirect(route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug));
     }
 
     /**
@@ -171,7 +171,7 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('tanggal');
-        $response->assertRedirect(route('customer.booking.date', $tenant->slug));
+        $response->assertRedirect(route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug));
     }
 
     /**

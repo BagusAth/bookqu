@@ -77,7 +77,13 @@
         <div class="bg-[#F8FAFC] px-6 py-4 border-b border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
             <div>
                 <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider">Kode Booking</span>
-                <span class="font-mono text-base font-bold text-[#4F46E5] tracking-wide">{{ $booking->booking_code ?? '-' }}</span>
+                <span class="font-mono text-base font-bold text-[#4F46E5] tracking-wide">
+                    @if (isset($bookings) && $bookings->count() > 1)
+                        {{ $bookings->pluck('booking_code')->join(', ') }}
+                    @else
+                        {{ $booking->booking_code ?? '-' }}
+                    @endif
+                </span>
             </div>
             <div class="sm:text-right">
                 <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider">Order ID</span>
@@ -89,22 +95,29 @@
         <div class="p-6 space-y-6">
             <div>
                 <h3 class="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-3">Rincian Layanan &amp; Jadwal</h3>
+                @php
+                    $allBookings = (isset($bookings) && $bookings->isNotEmpty()) ? $bookings : collect([$booking]);
+                @endphp
                 <div class="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-3 text-xs sm:text-sm">
                     <div class="flex justify-between items-start">
                         <span class="text-[#64748B]">Layanan</span>
                         <span class="font-bold text-[#0F172A] text-right">{{ $booking->layanan->namalayanan ?? 'Layanan' }}</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-[#64748B]">Durasi</span>
+                        <span class="text-[#64748B]">Durasi per Sesi</span>
                         <span class="font-semibold text-[#0F172A]">{{ $booking->layanan->durasi ?? 60 }} {{ $booking->layanan->satuan_durasi ?? 'menit' }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-[#64748B]">Hari &amp; Tanggal</span>
                         <span class="font-bold text-[#0F172A]">{{ \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') }}</span>
                     </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-[#64748B]">Jam Sesi</span>
-                        <span class="font-bold text-[#4F46E5]">Pukul {{ $booking->jam }} WIB</span>
+                    <div class="flex justify-between items-start">
+                        <span class="text-[#64748B]">Jam Sesi ({{ $allBookings->count() }} Slot)</span>
+                        <div class="text-right">
+                            @foreach ($allBookings as $bItem)
+                                <span class="font-bold text-[#4F46E5] block">{{ substr($bItem->jam, 0, 5) }} WIB @if($allBookings->count() > 1)<span class="text-xs text-[#64748B] font-mono">({{ $bItem->booking_code }})</span>@endif</span>
+                            @endforeach
+                        </div>
                     </div>
                     <div class="flex justify-between items-start pt-2 border-t border-[#E2E8F0]">
                         <span class="text-[#64748B]">Lokasi / Tempat</span>
@@ -166,17 +179,37 @@
                         <div>
                             <p class="font-bold text-[#4F46E5]">Kelola Booking Mandiri (Tanpa Perlu Login)</p>
                             <p class="text-[#64748B] mt-0.5 leading-relaxed">
-                                Anda dapat melihat detail, membatalkan, atau mengubah jadwal booking ini kapan saja melalui tautan berikut:
+                                @if ($allBookings->count() > 1)
+                                    Pemesanan Anda terdiri dari {{ $allBookings->count() }} slot waktu (multi-slot). Anda dapat melihat rincian melalui tautan berikut:
+                                @else
+                                    Anda dapat melihat detail, membatalkan, atau mengubah jadwal booking ini kapan saja melalui tautan berikut:
+                                @endif
                             </p>
-                            <a
-                                href="{{ $manageUrl }}"
-                                class="mt-2 inline-flex items-center gap-1 font-bold text-[#4F46E5] hover:underline break-all"
-                            >
-                                <span>{{ url('/manage/' . $booking->booking_code) }}</span>
-                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                            </a>
+                            @if ($allBookings->count() > 1)
+                                <div class="mt-2 space-y-1">
+                                    @foreach ($allBookings as $bItem)
+                                        <a
+                                            href="{{ route('booking.manage', ['booking_code' => $bItem->booking_code]) . ($bItem->cancellation_token ? '?token=' . $bItem->cancellation_token : '') }}"
+                                            class="inline-flex items-center gap-1 font-bold text-[#4F46E5] hover:underline break-all block"
+                                        >
+                                            <span>Slot {{ substr($bItem->jam, 0, 5) }} WIB: {{ url('/manage/' . $bItem->booking_code) }}</span>
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @else
+                                <a
+                                    href="{{ $manageUrl }}"
+                                    class="mt-2 inline-flex items-center gap-1 font-bold text-[#4F46E5] hover:underline break-all"
+                                >
+                                    <span>{{ url('/manage/' . $booking->booking_code) }}</span>
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </div>

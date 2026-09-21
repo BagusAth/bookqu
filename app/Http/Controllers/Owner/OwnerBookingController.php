@@ -141,6 +141,12 @@ class OwnerBookingController extends Controller
             ]);
         }
 
+        if ($statusBaru === 'cancelled' && $booking->isMultiSlot()) {
+            return back()->withErrors([
+                'error' => 'Booking ini merupakan bagian dari multi-slot booking dan tidak dapat dibatalkan per slot secara individual.',
+            ]);
+        }
+
         $booking->update(['status' => $statusBaru]);
 
         // If marked as paid or completed, ensure management tokens exist and payment status is updated
@@ -371,6 +377,14 @@ class OwnerBookingController extends Controller
         // Booking yang sudah dibatalkan atau selesai tidak dapat diubah jadwalnya
         if (in_array($booking->status, ['cancelled', 'refunded'])) {
             $msg = 'Booking dengan status "' . $booking->status . '" tidak dapat dijadwalkan ulang.';
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return back()->withErrors(['error' => $msg]);
+        }
+
+        if ($booking->isMultiSlot()) {
+            $msg = 'Booking multi-slot tidak dapat dijadwalkan ulang per slot secara individual.';
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => $msg], 422);
             }

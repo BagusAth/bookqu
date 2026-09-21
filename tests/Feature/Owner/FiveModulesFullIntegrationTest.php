@@ -407,25 +407,47 @@ class FiveModulesFullIntegrationTest extends TestCase
         ]);
         $this->service->staff()->attach($staff->id);
 
-        // 2. Customer visits checkout page
+        // 2. Customer visits checkout page (staff & addon are shut down on customer checkout per Section 17 & 18)
+        $bookingDate = Carbon::tomorrow()->toDateString();
+        $checkoutSchedule = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => $bookingDate,
+            'jam_mulai'   => '10:00:00',
+            'jam_selesai' => '10:45:00',
+            'status'      => 'tersedia',
+        ]);
+
         $sessionData = [
             'booking' => [
                 'tenant_id'   => $this->tenant->id,
                 'service_id'  => $this->service->id,
-                'tanggal'     => $this->schedule->tanggal,
+                'tanggal'     => $bookingDate,
                 'jam'         => '10:00',
-                'schedule_id' => $this->schedule->id,
+                'schedule_id' => $checkoutSchedule->id,
             ],
         ];
 
         $checkoutPageRes = $this->withSession($sessionData)
             ->get(route('customer.booking.checkout', $this->tenant->slug));
-
         $checkoutPageRes->assertStatus(200);
-        $checkoutPageRes->assertSee('Pomade Premium Matte');
-        $checkoutPageRes->assertSee('Bima Stylist');
+        $checkoutPageRes->assertDontSee('Pomade Premium Matte');
+        $checkoutPageRes->assertDontSee('Bima Stylist');
 
-        // 3. Customer submits checkout with addon & preferred staff
+        // 3. Submitting checkout with selected_addons is rejected per Section 18
+        $rejectRes = $this->withSession($sessionData)
+            ->post(route('customer.booking.process-checkout', $this->tenant->slug), [
+                'namapelanggan'   => 'Customer Adit',
+                'email'           => 'adit@example.com',
+                'nomorhp'         => '081234560000',
+                'catatan'         => 'Mohon jangan terlalu pendek sampingnya.',
+                'selected_addons' => [$addon->id],
+            ]);
+        $rejectRes->assertSessionHasErrors(['selected_addons']);
+        $addon->refresh();
+        $this->assertEquals(5, $addon->stock);
+
+        // 4. Customer submits valid checkout (service only)
         \Mockery::mock('alias:Midtrans\Snap')->shouldReceive('getSnapToken')->andReturn('mocked-snap-token-addon');
 
         $postData = [
@@ -433,30 +455,26 @@ class FiveModulesFullIntegrationTest extends TestCase
             'email'           => 'adit@example.com',
             'nomorhp'         => '081234560000',
             'catatan'         => 'Mohon jangan terlalu pendek sampingnya.',
-            'staff_id'        => $staff->id,
-            'selected_addons' => [$addon->id],
         ];
 
         $processRes = $this->withSession($sessionData)
             ->post(route('customer.booking.process-checkout', $this->tenant->slug), $postData);
 
-        // Expected total: 75000 (service) + 35000 (addon) = 110000
+        // Expected total: 75000 (service only)
         $processRes->assertRedirect();
 
-        // Verify stock was decremented from 5 to 4
+        // Verify stock remains untouched
         $addon->refresh();
-        $this->assertEquals(4, $addon->stock);
+        $this->assertEquals(5, $addon->stock);
 
         // Verify booking created
         $booking = Booking::withoutGlobalScopes()->where('email', 'adit@example.com')->first();
         $this->assertNotNull($booking);
         $this->assertEquals('pending', $booking->status);
-        $this->assertStringContainsString('Bima Stylist', $booking->catatan);
-        $this->assertStringContainsString('Pomade Premium Matte', $booking->catatan);
 
         // Verify payment total
         $payment = Payment::withoutGlobalScopes()->find($booking->idpayment);
         $this->assertNotNull($payment);
-        $this->assertEquals(110000, (float) $payment->jumlah);
+        $this->assertEquals(75000, (float) $payment->jumlah);
     }
 }

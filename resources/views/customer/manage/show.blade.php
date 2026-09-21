@@ -492,6 +492,18 @@
                     </h3>
 
                     <div class="mt-5 space-y-4">
+                        @if(!empty($isMultiSlot))
+                            <div class="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-xs text-amber-800 space-y-1">
+                                <p class="font-bold flex items-center gap-1.5 text-amber-900">
+                                    <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Reservasi Multi-Slot
+                                </p>
+                                <p class="leading-relaxed">
+                                    Booking ini merupakan bagian dari pemesanan multi-slot beruntun. Pembatalan atau pengubahan jadwal tidak dapat dilakukan per slot secara individual demi menjaga integritas jadwal. Silakan hubungi pengelola bisnis jika Anda memerlukan penyesuaian.
+                                </p>
+                            </div>
+                        @endif
+
                         @if($booking->status === 'paid')
 
                             {{-- Reschedule Action Section --}}
@@ -506,7 +518,7 @@
                                     @if($canReschedule)
                                         <span class="rounded-md bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">Tersedia</span>
                                     @else
-                                        <span class="rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">Berakhir</span>
+                                        <span class="rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">Tidak Tersedia</span>
                                     @endif
                                 </div>
 
@@ -531,7 +543,11 @@
                                     </a>
                                 @else
                                     <p class="text-xs text-slate-500 leading-relaxed">
-                                        Batas pengubahan jadwal mandiri telah berlalu (minimal {{ $booking->tenant->reschedule_before_hours ?? 24 }} jam sebelum sesi).
+                                        @if(!empty($isMultiSlot))
+                                            Booking multi-slot tidak dapat dijadwalkan ulang per slot secara individual.
+                                        @else
+                                            Batas pengubahan jadwal mandiri telah berlalu (minimal {{ $booking->tenant->reschedule_before_hours ?? 24 }} jam sebelum sesi).
+                                        @endif
                                     </p>
                                     @if($merchantWaUrl)
                                         <a
@@ -558,7 +574,7 @@
                                     @if($canCancel)
                                         <span class="rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">Tersedia</span>
                                     @else
-                                        <span class="rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">Berakhir</span>
+                                        <span class="rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">Tidak Tersedia</span>
                                     @endif
                                 </div>
 
@@ -584,7 +600,11 @@
                                     </button>
                                 @else
                                     <p class="text-xs text-slate-500 leading-relaxed">
-                                        Batas pembatalan mandiri telah berakhir (minimal {{ $booking->tenant->cancel_before_hours ?? 24 }} jam sebelum sesi).
+                                        @if(!empty($isMultiSlot))
+                                            Booking multi-slot tidak dapat dibatalkan per slot secara individual.
+                                        @else
+                                            Batas pembatalan mandiri telah berakhir (minimal {{ $booking->tenant->cancel_before_hours ?? 24 }} jam sebelum sesi).
+                                        @endif
                                     </p>
                                 @endif
                             </div>

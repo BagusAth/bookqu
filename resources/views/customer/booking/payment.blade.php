@@ -54,34 +54,39 @@
         </div>
 
         {{-- Booking Details Preview --}}
-        @if ($payment->booking)
-            <div class="py-4 border-b border-[#F1F5F9]">
-                <div class="rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
-                    <div class="flex items-center gap-2.5">
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
+        @php
+            $displayBookings = $payment->bookings && $payment->bookings->isNotEmpty() ? $payment->bookings : ($payment->booking ? collect([$payment->booking]) : collect());
+        @endphp
+        @if ($displayBookings->isNotEmpty())
+            <div class="py-4 border-b border-[#F1F5F9] space-y-2">
+                @foreach ($displayBookings as $bItem)
+                    <div class="rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                            </div>
+                            <div>
+                                <span class="text-[#64748B] text-xs block">Layanan</span>
+                                <strong class="text-[#0F172A] font-semibold">{{ $bItem->layanan->namalayanan ?? 'Layanan' }}</strong>
+                            </div>
                         </div>
-                        <div>
-                            <span class="text-[#64748B] text-xs block">Layanan</span>
-                            <strong class="text-[#0F172A] font-semibold">{{ $payment->booking->layanan->namalayanan ?? 'Layanan' }}</strong>
+                        <div class="flex items-center sm:justify-end gap-2.5">
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div class="sm:text-right">
+                                <span class="text-[#64748B] text-xs block">Jadwal Sesi</span>
+                                <strong class="text-[#0F172A] font-semibold">
+                                    {{ \Carbon\Carbon::parse($bItem->tanggalbooking)->translatedFormat('d M Y') }}, {{ substr($bItem->jam, 0, 5) }} WIB
+                                </strong>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-center sm:justify-end gap-2.5">
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                        <div class="sm:text-right">
-                            <span class="text-[#64748B] text-xs block">Jadwal Sesi</span>
-                            <strong class="text-[#0F172A] font-semibold">
-                                {{ \Carbon\Carbon::parse($payment->booking->tanggalbooking)->translatedFormat('d M Y') }}, {{ $payment->booking->jam }} WIB
-                            </strong>
-                        </div>
-                    </div>
-                </div>
+                @endforeach
             </div>
         @endif
 

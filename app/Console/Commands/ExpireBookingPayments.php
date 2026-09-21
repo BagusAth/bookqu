@@ -49,15 +49,14 @@ class ExpireBookingPayments extends Command
         foreach ($expiredPayments as $payment) {
             app(\App\Support\TenantContext::class)->setTenantId($payment->idtenant);
 
-            // Load the pending booking linked to this payment
-            $booking = Booking::withoutGlobalScopes()
+            // Load all pending bookings linked to this payment
+            $bookings = Booking::withoutGlobalScopes()
                 ->where('idpayment', $payment->id)
                 ->where('status', 'pending')
-                ->first();
+                ->get();
 
             if ($isDryRun) {
-                $this->line(" [DRY] Would cancel Payment #{$payment->id} (order: {$payment->order_id})" .
-                    ($booking ? " and Booking #{$booking->id}" : ' (no pending booking)'));
+                $this->line(" [DRY] Would cancel Payment #{$payment->id} (order: {$payment->order_id}) and {$bookings->count()} booking(s)");
                 continue;
             }
 
@@ -76,38 +75,39 @@ class ExpireBookingPayments extends Command
                 }
 
                 // If still pending (which means it's truly expired in Midtrans too) or already failed, proceed to cancel
-                DB::transaction(function () use ($payment, $booking) {
+                DB::transaction(function () use ($payment, $bookings) {
                     if ($payment->status === 'pending') {
                         $payment->update(['status' => 'gagal']);
                     }
 
-                    if ($booking) {
+                    foreach ($bookings as $booking) {
                         $booking->update(['status' => 'cancelled']);
                     }
                 });
 
-                // Invalidate cache for the freed slot (only once per tenant+service+date combination)
-                if ($booking && $booking->idlayanan && $booking->tanggalbooking) {
-                    $tanggal   = $booking->tanggalbooking instanceof Carbon
-                        ? $booking->tanggalbooking->toDateString()
-                        : Carbon::parse($booking->tanggalbooking)->toDateString();
+                // Invalidate cache for all freed slots
+                foreach ($bookings as $booking) {
+                    if ($booking->idlayanan && $booking->tanggalbooking) {
+                        $tanggal = $booking->tanggalbooking instanceof Carbon
+                            ? $booking->tanggalbooking->toDateString()
+                            : Carbon::parse($booking->tanggalbooking)->toDateString();
 
-                    $cacheKey = "{$booking->idtenant}:{$booking->idlayanan}:{$tanggal}";
+                        $cacheKey = "{$booking->idtenant}:{$booking->idlayanan}:{$tanggal}";
 
-                    if (!isset($cacheCleared[$cacheKey])) {
-                        $this->clearBookingAvailabilityCache(
-                            (int) $booking->idtenant,
-                            (int) $booking->idlayanan,
-                            $tanggal
-                        );
-                        $cacheCleared[$cacheKey] = true;
+                        if (!isset($cacheCleared[$cacheKey])) {
+                            $this->clearBookingAvailabilityCache(
+                                (int) $booking->idtenant,
+                                (int) $booking->idlayanan,
+                                $tanggal
+                            );
+                            $cacheCleared[$cacheKey] = true;
 
-                        $this->line("  Cleared cache: tenant={$booking->idtenant} service={$booking->idlayanan} date={$tanggal}");
+                            $this->line("  Cleared cache: tenant={$booking->idtenant} service={$booking->idlayanan} date={$tanggal}");
+                        }
                     }
                 }
 
-                $this->line("  Cancelled Payment #{$payment->id}" .
-                    ($booking ? " and Booking #{$booking->id}" : ''));
+                $this->line("  Cancelled Payment #{$payment->id} and {$bookings->count()} Booking(s)");
                 $processed++;
 
             } catch (\Throwable $e) {

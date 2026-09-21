@@ -144,6 +144,16 @@ class Booking extends Model
     }
 
     /**
+     * Cek apakah booking ini merupakan bagian dari transaksi multi-slot (> 1 slot).
+     */
+    public function isMultiSlot(): bool
+    {
+        return !empty($this->idpayment) && static::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where('idpayment', $this->idpayment)
+            ->count() > 1;
+    }
+
+    /**
      * Check if this booking can still be cancelled based on tenant policy.
      */
     public function canBeCancelled(): bool

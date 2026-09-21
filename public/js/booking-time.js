@@ -278,12 +278,23 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
-         * Price label × number of selected slots.
+         * Price label × number of selected slots (respecting per-slot price override).
          */
         get totalLabel() {
             if (!this.service) return 'Rp 0';
-            const count = this.selectedTimes.length || 1;
-            const total = this.service.price * count;
+            if (this.selectedTimes.length === 0) {
+                const total = this.service.price || 0;
+                return 'Rp ' + new Intl.NumberFormat('id-ID').format(total);
+            }
+            let total = 0;
+            this.selectedTimes.forEach((st) => {
+                const slotObj = this.timeSlots.find((s) => s.id === st.id);
+                if (slotObj && slotObj.price !== undefined && slotObj.price !== null) {
+                    total += Number(slotObj.price);
+                } else {
+                    total += Number(this.service.price || 0);
+                }
+            });
             return 'Rp ' + new Intl.NumberFormat('id-ID').format(total);
         },
 
