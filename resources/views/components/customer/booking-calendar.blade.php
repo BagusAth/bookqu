@@ -88,10 +88,6 @@
             <span>Penuh</span>
         </div>
         <div class="flex items-center gap-1.5">
-            <span class="h-2.5 w-2.5 rounded-full bg-[#4F46E5]"></span>
-            <span>Dipilih</span>
-        </div>
-        <div class="flex items-center gap-1.5">
             <span class="h-2.5 w-2.5 rounded-full bg-[#E2E8F0]"></span>
             <span>Tidak Tersedia</span>
         </div>

@@ -110,28 +110,15 @@
                         }
                     @endphp
                     <article
-                        class="booking-card group relative flex flex-col overflow-hidden rounded-2xl border transition-all cursor-pointer select-none"
-                        :class="selectedServiceId === {{ $service->id }} ? 'booking-card--selected border-[#4F46E5] ring-2 ring-[#4F46E5] bg-[#F5F5FF]' : 'border-[#E2E8F0] bg-white hover:border-[#CBD5E1] hover:shadow-md'"
+                        class="booking-card group relative flex flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white transition-all cursor-pointer select-none hover:border-[#4F46E5] hover:shadow-md"
+                        :class="isSubmitting && selectedServiceId === {{ $service->id }} ? 'border-[#4F46E5] ring-2 ring-[#4F46E5] bg-[#F5F5FF]' : ''"
                         x-show="isCardVisible({{ $service->id }}, '{{ $service->category?->id ?? '' }}', '{{ addslashes($service->namalayanan) }}')"
                         @click="selectServiceById({{ $service->id }})"
                         tabindex="0"
                         role="button"
-                        :aria-selected="selectedServiceId === {{ $service->id }}"
                         @keydown.enter="selectServiceById({{ $service->id }})"
                         @keydown.space.prevent="selectServiceById({{ $service->id }})"
                     >
-                        {{-- Selected Checkmark Badge --}}
-                        <div
-                            class="absolute top-3 right-3 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[#4F46E5] text-white shadow-md transition-all"
-                            x-show="selectedServiceId === {{ $service->id }}"
-                            x-cloak
-                            x-transition
-                        >
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-
                         {{-- Service Image Media --}}
                         <div class="booking-card__media relative h-44 sm:h-48 w-full overflow-hidden bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF] flex items-center justify-center">
                             @if ($imageUrl)
@@ -198,25 +185,15 @@
                                 @endif
                             </div>
 
-                            {{-- Card Select Indicator Button --}}
+                            {{-- Card Action Button --}}
                             <div class="mt-5 pt-3 border-t border-[#F1F5F9]">
                                 <span
-                                    class="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition-all"
-                                    :class="selectedServiceId === {{ $service->id }}
-                                        ? 'bg-[#4F46E5] text-white shadow-xs'
-                                        : 'bg-[#F1F5F9] text-[#475569] group-hover:bg-[#EEF2FF] group-hover:text-[#4F46E5]'"
+                                    class="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition-all bg-[#F1F5F9] text-[#475569] group-hover:bg-[#4F46E5] group-hover:text-white"
                                 >
-                                    <template x-if="selectedServiceId === {{ $service->id }}">
-                                        <span class="flex items-center gap-1.5">
-                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            Layanan Terpilih
-                                        </span>
-                                    </template>
-                                    <template x-if="selectedServiceId !== {{ $service->id }}">
-                                        <span>Pilih Layanan Ini</span>
-                                    </template>
+                                    <span>Pilih Layanan Ini</span>
+                                    <svg class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                    </svg>
                                 </span>
                             </div>
                         </div>

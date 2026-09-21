@@ -210,7 +210,7 @@ class BookingController extends Controller
             'duration_unit' => $service->satuan_durasi ?: 'menit',
         ];
 
-        $selectedDate = $booking['tanggal'] ?? null;
+        $selectedDate = null;
 
         return view('customer.booking.date-selection', [
             'tenant' => $tenant,

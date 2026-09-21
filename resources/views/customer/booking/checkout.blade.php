@@ -50,59 +50,6 @@
                 </div>
             @endif
 
-            {{-- Pilihan Staf / Praktisi (Opsional jika tersedia) --}}
-            @if(isset($availableStaff) && $availableStaff->isNotEmpty())
-                <div class="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-7 shadow-xs">
-                    <div class="border-b border-[#F1F5F9] pb-3 mb-4 flex items-center justify-between">
-                        <div>
-                            <h2 class="text-base font-bold text-[#0F172A]">Pilih Staf / Praktisi</h2>
-                            <p class="text-xs text-[#64748B] mt-0.5">Pilih staf favorit yang ingin melayani reservasi Anda</p>
-                        </div>
-                        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">Opsional</span>
-                    </div>
-
-                    <div class="space-y-2.5">
-                        <label class="flex items-center gap-3 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] p-3.5 cursor-pointer hover:border-[#4F46E5] hover:bg-white transition-all">
-                            <input
-                                type="radio"
-                                name="staff_id"
-                                value=""
-                                class="h-4 w-4 text-[#4F46E5] focus:ring-[#EEF2FF]"
-                                {{ old('staff_id') ? '' : 'checked' }}
-                            />
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-bold text-[#0F172A]">Rekomendasi Terbaik (Siapa Saja yang Siap)</p>
-                                <p class="text-xs text-[#64748B] mt-0.5">Sistem atau pengelola akan memilihkan staf terbaik yang tersedia</p>
-                            </div>
-                        </label>
-
-                        @foreach($availableStaff as $staf)
-                            <label class="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-3.5 cursor-pointer hover:border-[#4F46E5] transition-all">
-                                <input
-                                    type="radio"
-                                    name="staff_id"
-                                    value="{{ $staf->id }}"
-                                    class="h-4 w-4 text-[#4F46E5] focus:ring-[#EEF2FF]"
-                                    {{ old('staff_id') == $staf->id ? 'checked' : '' }}
-                                />
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-2">
-                                        <p class="text-sm font-bold text-[#0F172A]">{{ $staf->name }}</p>
-                                        @if($staf->role)
-                                            <span class="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">
-                                                {{ $staf->role }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                    @if($staf->availability_schedule)
-                                        <p class="text-xs text-[#64748B] mt-0.5">{{ $staf->availability_schedule }}</p>
-                                    @endif
-                                </div>
-                            </label>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
 
 
 

@@ -51,40 +51,23 @@ document.addEventListener('alpine:init', () => {
                 this.seedSimulatedAvailability();
             }
 
-            if (this.selectedDate && (this.isOutsideRange(this.selectedDate) || !this.isAvailable(this.selectedDate))) {
-                this.selectedDate = '';
-            }
+            // No date selected by default on enter or back navigation
+            this.selectedDate = '';
+            this.isSubmitting = false;
 
-            if (!this.selectedDate) {
-                const todayStr = this.formatDateString(this.today);
-                if (!this.isOutsideRange(todayStr) && this.isAvailable(todayStr)) {
-                    this.selectedDate = todayStr;
-                } else {
-                    const availableDates = Object.keys(this.availabilityByDate)
-                        .filter(d => !this.isOutsideRange(d) && this.isAvailable(d))
-                        .sort();
-                    if (availableDates.length > 0) {
-                        this.selectedDate = availableDates[0];
-                    }
-                }
-            }
-
-            const baseDate = this.selectedDate ? this.parseDate(this.selectedDate) : this.today;
+            const baseDate = this.today;
             this.currentYear = baseDate.getFullYear();
             this.currentMonth = baseDate.getMonth();
 
-            window.addEventListener('pageshow', () => {
+            const resetState = () => {
                 this.isSubmitting = false;
-            });
-            window.addEventListener('pagehide', () => {
-                this.isSubmitting = false;
-            });
-            window.addEventListener('popstate', () => {
-                this.isSubmitting = false;
-            });
-            window.addEventListener('booking-reset-submitting', () => {
-                this.isSubmitting = false;
-            });
+                this.selectedDate = '';
+            };
+
+            window.addEventListener('pageshow', resetState);
+            window.addEventListener('pagehide', resetState);
+            window.addEventListener('popstate', resetState);
+            window.addEventListener('booking-reset-submitting', resetState);
         },
 
         seedSimulatedAvailability() {
@@ -218,6 +201,20 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.selectedDate = date;
+
+            // Update DOM input synchronously so native form.submit() immediately receives the tanggal
+            const form = this.$refs?.confirmForm || document.getElementById('booking-date-form');
+            if (form) {
+                let input = form.querySelector('input[name="tanggal"]');
+                if (!input) {
+                    input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'tanggal';
+                    form.appendChild(input);
+                }
+                input.value = String(date);
+            }
+
             this.handleConfirm();
         },
 
@@ -261,53 +258,6 @@ document.addEventListener('alpine:init', () => {
         getRemainingSlots(date) {
             const entry = this.availabilityByDate[date];
             return entry ? entry.available_slots : 0;
-        },
-
-        selectQuickDate(type) {
-            if (this.isSubmitting) return;
-            const now = new Date();
-            let target = new Date();
-            if (type === 'today') {
-                target = now;
-            } else if (type === 'tomorrow') {
-                target.setDate(now.getDate() + 1);
-            } else if (type === 'this_saturday') {
-                const day = now.getDay();
-                const diff = (6 - day + 7) % 7 || 7;
-                target.setDate(now.getDate() + diff);
-            } else if (type === 'this_sunday') {
-                const day = now.getDay();
-                const diff = (7 - day) % 7 || 7;
-                target.setDate(now.getDate() + diff);
-            }
-
-            const formatted = this.formatDateString(target);
-            if (!this.isOutsideRange(formatted) && this.isAvailable(formatted)) {
-                this.currentYear = target.getFullYear();
-                this.currentMonth = target.getMonth();
-                this.selectedDate = formatted;
-                this.handleConfirm();
-            }
-        },
-
-        isQuickDateAvailable(type) {
-            const now = new Date();
-            let target = new Date();
-            if (type === 'today') {
-                target = now;
-            } else if (type === 'tomorrow') {
-                target.setDate(now.getDate() + 1);
-            } else if (type === 'this_saturday') {
-                const day = now.getDay();
-                const diff = (6 - day + 7) % 7 || 7;
-                target.setDate(now.getDate() + diff);
-            } else if (type === 'this_sunday') {
-                const day = now.getDay();
-                const diff = (7 - day) % 7 || 7;
-                target.setDate(now.getDate() + diff);
-            }
-            const formatted = this.formatDateString(target);
-            return !this.isOutsideRange(formatted) && this.isAvailable(formatted);
         },
 
         slotLabel(date) {
@@ -376,7 +326,13 @@ document.addEventListener('alpine:init', () => {
                 this.isSubmitting = false;
             }, 1200);
             const form = this.$refs?.confirmForm || document.getElementById('booking-date-form');
-            if (form) form.submit();
+            if (form) {
+                let input = form.querySelector('input[name="tanggal"]');
+                if (input && this.selectedDate) {
+                    input.value = String(this.selectedDate);
+                }
+                form.submit();
+            }
         }
     }));
 });

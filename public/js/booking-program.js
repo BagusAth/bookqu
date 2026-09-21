@@ -36,59 +36,45 @@ document.addEventListener('alpine:init', () => {
                 ? `bookqu:selected-service:${this.tenantSlug}`
                 : 'bookqu:selected-service';
 
-            this.restoreSelection();
-
-            window.addEventListener('pageshow', () => {
-                this.isSubmitting = false;
-            });
-            window.addEventListener('pagehide', () => {
-                this.isSubmitting = false;
-            });
-            window.addEventListener('popstate', () => {
-                this.isSubmitting = false;
-            });
-            window.addEventListener('booking-reset-submitting', () => {
-                this.isSubmitting = false;
-            });
-        },
-
-        restoreSelection() {
-            if (!this.storageKey) {
-                return;
-            }
-
-            const raw = localStorage.getItem(this.storageKey);
-            if (!raw) {
-                return;
-            }
-
+            // Clean up any legacy localStorage entry so no lingering selection persists
             try {
-                const saved = JSON.parse(raw);
-                const service = this.servicesById[String(saved.id)];
-                if (service) {
-                    this.selectedServiceId = service.id;
-                    this.selectedService = service;
-                } else {
-                    localStorage.removeItem(this.storageKey);
-                }
-            } catch (error) {
-                localStorage.removeItem(this.storageKey);
-            }
+                if (this.storageKey) localStorage.removeItem(this.storageKey);
+            } catch (e) {}
+
+            this.selectedServiceId = null;
+            this.selectedService = null;
+            this.isSubmitting = false;
+
+            const resetState = () => {
+                this.isSubmitting = false;
+                this.selectedServiceId = null;
+                this.selectedService = null;
+            };
+
+            window.addEventListener('pageshow', resetState);
+            window.addEventListener('pagehide', resetState);
+            window.addEventListener('popstate', resetState);
+            window.addEventListener('booking-reset-submitting', resetState);
         },
 
         selectServiceById(id) {
             if (this.isSubmitting) return;
 
             const service = this.servicesById[String(id)];
-            if (!service) {
-                return;
-            }
+            this.selectedServiceId = service ? service.id : id;
+            this.selectedService = service || null;
 
-            this.selectedServiceId = service.id;
-            this.selectedService = service;
-
-            if (this.storageKey) {
-                localStorage.setItem(this.storageKey, JSON.stringify({ id: service.id }));
+            // Update DOM input synchronously so native form.submit() immediately receives the service_id
+            const form = this.$refs?.confirmForm || document.getElementById('booking-program-form');
+            if (form) {
+                let input = form.querySelector('input[name="service_id"]');
+                if (!input) {
+                    input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'service_id';
+                    form.appendChild(input);
+                }
+                input.value = String(this.selectedServiceId);
             }
 
             // Immediately proceed to Step 2 (Date selection)
@@ -110,6 +96,10 @@ document.addEventListener('alpine:init', () => {
 
             const form = this.$refs?.confirmForm || document.getElementById('booking-program-form');
             if (form) {
+                let input = form.querySelector('input[name="service_id"]');
+                if (input && this.selectedServiceId) {
+                    input.value = String(this.selectedServiceId);
+                }
                 form.submit();
             }
         },
