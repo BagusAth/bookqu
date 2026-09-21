@@ -293,6 +293,13 @@ Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle'])
 
 // ── Booking Management Without Account (tokenized URLs) ──
 Route::prefix('manage')->group(function () {
+    // Payment Group Management (New Primary Customer Management)
+    Route::get('/payment/{order_id}', [BookingManageController::class, 'showPaymentGroup'])
+        ->name('booking.manage.payment');
+    Route::get('/payment/{order_id}/invoice', [BookingManageController::class, 'invoicePaymentGroup'])
+        ->name('booking.manage.payment.invoice');
+
+    // Legacy Individual Booking Management (Backward Compatibility)
     Route::get('/{booking_code}', [BookingManageController::class, 'show'])
         ->name('booking.manage');
     Route::post('/{booking_code}/cancel', [BookingManageController::class, 'cancel'])

@@ -71,11 +71,15 @@ class OwnerCustomerController extends Controller
         // Total spending from payments (correct source of truth: status='sukses', tipe='booking')
         $spendingMap = [];
         if (!empty($identifiers)) {
-            $spending = DB::table('payments')
-                ->join('bookings', 'payments.idbooking', '=', 'bookings.id')
+            $spendingRows = DB::table('bookings')
+                ->join('payments', function ($join) {
+                    $join->on('bookings.idpayment', '=', 'payments.id')
+                         ->orOn('payments.idbooking', '=', 'bookings.id');
+                })
                 ->select([
                     DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(bookings.email), ''), NULLIF(TRIM(bookings.nomorhp), ''), CONCAT('guest-', bookings.id)))) AS identifier"),
-                    DB::raw("SUM(payments.jumlah) AS total_spent"),
+                    'payments.id AS payment_id',
+                    'payments.jumlah AS payment_amount',
                 ])
                 ->where('payments.idtenant', $idtenant)
                 ->where('payments.tipe', 'booking')
@@ -84,11 +88,12 @@ class OwnerCustomerController extends Controller
                     DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(bookings.email), ''), NULLIF(TRIM(bookings.nomorhp), ''), CONCAT('guest-', bookings.id))))"),
                     $identifiers
                 )
-                ->groupBy(DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(bookings.email), ''), NULLIF(TRIM(bookings.nomorhp), ''), CONCAT('guest-', bookings.id))))"))
-                ->get();
+                ->distinct()
+                ->get()
+                ->groupBy('identifier');
 
-            foreach ($spending as $row) {
-                $spendingMap[$row->identifier] = (float) $row->total_spent;
+            foreach ($spendingRows as $identifier => $rows) {
+                $spendingMap[$identifier] = (float) $rows->unique('payment_id')->sum('payment_amount');
             }
         }
 
@@ -215,10 +220,23 @@ class OwnerCustomerController extends Controller
             ->filter(fn($b) => in_array($b->status, ['paid', 'completed']))
             ->pluck('id');
 
+        $paidPaymentIds = $bookings
+            ->filter(fn($b) => in_array($b->status, ['paid', 'completed']))
+            ->pluck('idpayment')
+            ->filter()
+            ->unique();
+
+        // Also include payments referenced by idbooking for legacy
+        $legacyPaidPaymentIds = Payment::where('idtenant', $idtenant)
+            ->whereIn('idbooking', $paidBookingIds)
+            ->pluck('id');
+
+        $allPaidPaymentIds = $paidPaymentIds->concat($legacyPaidPaymentIds)->unique()->values();
+
         $totalSpent = (float) Payment::where('idtenant', $idtenant)
             ->where('tipe', 'booking')
             ->where('status', 'sukses')
-            ->whereIn('idbooking', $paidBookingIds)
+            ->whereIn('id', $allPaidPaymentIds)
             ->sum('jumlah');
 
         $today           = Carbon::today()->toDateString();
@@ -240,26 +258,39 @@ class OwnerCustomerController extends Controller
             ->first();
 
         // ── Payment history (tenant-scoped) ──
+        $allPaymentIds = $bookings->pluck('idpayment')
+            ->concat(Payment::where('idtenant', $idtenant)->whereIn('idbooking', $bookings->pluck('id'))->pluck('id'))
+            ->filter()
+            ->unique()
+            ->values();
+
         $payments = Payment::where('idtenant', $idtenant)
             ->where('tipe', 'booking')
-            ->whereIn('idbooking', $bookings->pluck('id'))
-            ->with('booking.layanan')
+            ->whereIn('id', $allPaymentIds)
+            ->with(['bookings.layanan', 'booking.layanan'])
             ->orderByDesc('created_at')
             ->get()
-            ->map(fn($p) => [
-                'order_id'     => $p->order_id ?? $p->external_id ?? ('PAY-' . $p->id),
-                'booking_code' => $p->booking?->booking_code ?? '-',
-                'service'      => $p->booking?->layanan?->namalayanan ?? '-',
-                'jumlah'       => 'Rp ' . number_format((float) $p->jumlah, 0, ',', '.'),
-                'status'       => $p->status,
-                'date'         => $p->created_at?->format('d M Y'),
-            ]);
+            ->map(function ($p) {
+                $groupBookings = $p->bookings->isNotEmpty() ? $p->bookings : ($p->booking ? collect([$p->booking]) : collect());
+                $serviceNames = $groupBookings->map(fn($b) => $b->layanan?->namalayanan)->filter()->unique()->implode(', ');
+                $slots = $groupBookings->sortBy('jam')->map(fn($b) => substr($b->jam, 0, 5))->implode(', ');
+
+                return [
+                    'order_id'     => $p->order_id ?? $p->external_id ?? ('PAY-' . $p->id),
+                    'booking_code' => $groupBookings->pluck('booking_code')->filter()->implode(', ') ?: '-',
+                    'service'      => $serviceNames ?: '-',
+                    'slots'        => $slots,
+                    'jumlah'       => 'Rp ' . number_format((float) $p->jumlah, 0, ',', '.'),
+                    'status'       => $p->status,
+                    'date'         => $p->created_at?->format('d M Y'),
+                ];
+            });
 
         $bookingHistory = $bookings->map(fn($b) => [
             'id'      => $b->id,
             'code'    => $b->booking_code ?? ('BKQ-' . $b->id),
             'service' => $b->layanan?->namalayanan ?? '-',
-            'price'   => 'Rp ' . number_format((float) ($b->payment?->jumlah ?? $b->layanan?->harga ?? 0), 0, ',', '.'),
+            'price'   => 'Rp ' . number_format((float) ($b->schedule?->harga_override ?? $b->layanan?->harga ?? 0), 0, ',', '.'),
             'date'    => $b->tanggalbooking ? $b->tanggalbooking->format('d M Y') : '-',
             'time'    => $b->jam ? substr($b->jam, 0, 5) : '-',
             'status'  => $b->status,

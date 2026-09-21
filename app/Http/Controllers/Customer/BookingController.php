@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
+use App\Mail\BookingGroupInvoiceMail;
 use App\Services\MidtransPaymentService;
 use App\Traits\ClearsBookingCache;
 use App\Support\CustomerBookingRoutes;
@@ -844,8 +845,17 @@ class BookingController extends Controller
             $wib = 'Asia/Jakarta';
             $nowWib = Carbon::now($wib);
 
-            // 1. Atomic monthly booking quota check inside transaction
-            $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+            // 1. Atomic monthly booking quota check inside transaction: lock stable synchronization row (Subscription or Tenant)
+            $subscription = \App\Models\Subscription::with('plan')
+                ->where('idtenant', $tenant->id)
+                ->latest()
+                ->lockForUpdate()
+                ->first();
+
+            if (!$subscription) {
+                DB::table('tenants')->where('id', $tenant->id)->lockForUpdate()->first();
+            }
+
             $isUnlimitedBooking = ($subscription && $subscription->status === 'trial')
                 || ($subscription?->plan?->isunlimited ?? false)
                 || (($subscription?->plan?->namapaket ?? '') === 'pro')
@@ -858,7 +868,6 @@ class BookingController extends Controller
                     ->whereYear('tanggalbooking', $dateCarbon->year)
                     ->whereMonth('tanggalbooking', $dateCarbon->month)
                     ->whereIn('status', ['pending', 'paid', 'completed'])
-                    ->lockForUpdate()
                     ->count();
 
                 if (($totalMonthlyBookings + $slotCount) > $subscription->plan->maxbooking) {
@@ -964,6 +973,7 @@ class BookingController extends Controller
                     'status'         => 'sukses',
                     'metode'         => 'gratis',
                     'order_id'       => $orderId,
+                    'manage_token'   => Booking::generateSecureToken(),
                     'nama_pembayar'  => $request->namapelanggan,
                     'email_pembayar' => $request->email,
                     'hp_pembayar'    => $request->nomorhp,
@@ -1015,6 +1025,7 @@ class BookingController extends Controller
                 'status'         => 'pending',
                 'metode'         => 'midtrans',
                 'order_id'       => $orderId,
+                'manage_token'   => Booking::generateSecureToken(),
                 'expired_at'     => now()->addMinutes(15),
                 'nama_pembayar'  => $request->namapelanggan,
                 'email_pembayar' => $request->email,
@@ -1071,24 +1082,29 @@ class BookingController extends Controller
         // Free booking: send notifications and redirect to invoice
         if ($result['free']) {
             $payment = $result['payment'];
-            foreach ($result['bookings'] as $freeBooking) {
-                $freeBooking->load(['tenant.user', 'layanan', 'payment']);
+            $bookingsList = collect($result['bookings']);
+            $firstBooking = $bookingsList->first();
 
-                $owner = $freeBooking->tenant?->user;
+            if ($firstBooking) {
+                $firstBooking->load(['tenant.user', 'layanan', 'payment']);
+
+                $owner = $firstBooking->tenant?->user;
                 if ($owner) {
                     try {
-                        $owner->notify(new \App\Notifications\NewBookingOwnerNotification($freeBooking));
+                        $owner->notify(new \App\Notifications\NewBookingOwnerNotification($firstBooking));
                     } catch (\Exception $e) {
                         Log::error('Gagal kirim notif free booking ke owner: ' . $e->getMessage());
                     }
                 }
 
-                if ($freeBooking->email) {
+                $recipientEmail = $firstBooking->email ?: $payment->email_pembayar;
+                if ($recipientEmail) {
                     try {
-                        \Illuminate\Support\Facades\Mail::to($freeBooking->email)
-                            ->send(new \App\Mail\BookingInvoiceMail($freeBooking));
+                        $manageUrl = $payment->getManageUrl();
+                        \Illuminate\Support\Facades\Mail::to($recipientEmail)
+                            ->send(new BookingGroupInvoiceMail($payment, $bookingsList, $manageUrl));
                     } catch (\Exception $e) {
-                        Log::error('Gagal kirim email invoice free booking: ' . $e->getMessage());
+                        Log::error('Gagal kirim email invoice grup free booking: ' . $e->getMessage());
                     }
                 }
             }

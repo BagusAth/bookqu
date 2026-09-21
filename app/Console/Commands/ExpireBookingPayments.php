@@ -74,38 +74,8 @@ class ExpireBookingPayments extends Command
                     continue;
                 }
 
-                // If still pending (which means it's truly expired in Midtrans too) or already failed, proceed to cancel
-                DB::transaction(function () use ($payment, $bookings) {
-                    if ($payment->status === 'pending') {
-                        $payment->update(['status' => 'gagal']);
-                    }
-
-                    foreach ($bookings as $booking) {
-                        $booking->update(['status' => 'cancelled']);
-                    }
-                });
-
-                // Invalidate cache for all freed slots
-                foreach ($bookings as $booking) {
-                    if ($booking->idlayanan && $booking->tanggalbooking) {
-                        $tanggal = $booking->tanggalbooking instanceof Carbon
-                            ? $booking->tanggalbooking->toDateString()
-                            : Carbon::parse($booking->tanggalbooking)->toDateString();
-
-                        $cacheKey = "{$booking->idtenant}:{$booking->idlayanan}:{$tanggal}";
-
-                        if (!isset($cacheCleared[$cacheKey])) {
-                            $this->clearBookingAvailabilityCache(
-                                (int) $booking->idtenant,
-                                (int) $booking->idlayanan,
-                                $tanggal
-                            );
-                            $cacheCleared[$cacheKey] = true;
-
-                            $this->line("  Cleared cache: tenant={$booking->idtenant} service={$booking->idlayanan} date={$tanggal}");
-                        }
-                    }
-                }
+                // Delegate to centralized expirePayment for atomic transaction, row locking, and cache invalidation
+                $paymentService->expirePayment($payment);
 
                 $this->line("  Cancelled Payment #{$payment->id} and {$bookings->count()} Booking(s)");
                 $processed++;

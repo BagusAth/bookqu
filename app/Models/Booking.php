@@ -203,11 +203,11 @@ class Booking extends Model
     }
 
     /**
-     * Formatted price label.
+     * Formatted price label for an individual slot.
      */
     public function getPriceLabelAttribute(): string
     {
-        $amount = (float) ($this->payment?->jumlah ?? $this->layanan?->harga ?? 0);
+        $amount = (float) ($this->schedule?->harga_override ?? $this->layanan?->harga ?? 0);
         return 'Rp ' . number_format($amount, 0, ',', '.');
     }
 }

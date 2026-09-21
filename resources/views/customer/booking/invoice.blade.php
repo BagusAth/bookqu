@@ -6,23 +6,28 @@
 @section('back_label', 'Beranda')
 
 @php
-    if (!$booking->booking_code) {
-        $booking->assignManagementTokens();
-        $booking->refresh();
-    }
-    $bookingDate = $booking->tanggalbooking ? \Carbon\Carbon::parse($booking->tanggalbooking)->format('Y-m-d') : now()->format('Y-m-d');
-    $startDateTime = \Carbon\Carbon::parse($bookingDate . ' ' . $booking->jam);
-    $durasiMenit = (int) ($booking->layanan->durasi ?? 60);
-    $endDateTime = (clone $startDateTime)->addMinutes($durasiMenit);
+    $allBookings = isset($bookings) && $bookings->isNotEmpty() ? $bookings : collect([$booking]);
+    $firstSlot = $allBookings->first();
+    $lastSlot = $allBookings->last();
 
-    $eventTitle = 'Booking ' . ($booking->layanan->namalayanan ?? 'Layanan') . ' - ' . $tenant->namabisnis;
+    $bookingDate = $firstSlot->tanggalbooking ? \Carbon\Carbon::parse($firstSlot->tanggalbooking)->format('Y-m-d') : now()->format('Y-m-d');
+    $startDateTime = \Carbon\Carbon::parse($bookingDate . ' ' . $firstSlot->jam);
+    $durasiMenit = (int) ($lastSlot->layanan->durasi ?? 60);
+    $endDateTime = \Carbon\Carbon::parse($bookingDate . ' ' . $lastSlot->jam)->addMinutes($durasiMenit);
+
+    $eventTitle = 'Booking ' . ($firstSlot->layanan->namalayanan ?? 'Layanan') . ' - ' . $tenant->namabisnis;
     $eventLocation = ($tenant->alamat ? $tenant->alamat . ', ' : '') . $tenant->namabisnis;
-    $manageUrl = !empty($booking->booking_code)
-        ? route('booking.manage', ['booking_code' => $booking->booking_code]) . ($booking->cancellation_token ? '?token=' . $booking->cancellation_token : '')
-        : '#';
-    $eventDetails = 'Reservasi resmi di ' . $tenant->namabisnis . "\nKode Booking: " . ($booking->booking_code ?: $payment->order_id) . ($manageUrl !== '#' ? "\nKelola Booking: " . $manageUrl : '');
 
-    // Google Calendar URL
+    // Single Management URL per Payment Group (Problem2.md Section 1, 3, 8)
+    $manageUrl = $payment->manage_token 
+        ? $payment->getManageUrl() 
+        : (!empty($booking->booking_code)
+            ? route('booking.manage', ['booking_code' => $booking->booking_code]) . ($booking->cancellation_token ? '?token=' . $booking->cancellation_token : '')
+            : '#');
+
+    $eventDetails = 'Reservasi resmi di ' . $tenant->namabisnis . "\nOrder ID: " . $payment->order_id . ($manageUrl !== '#' ? "\nKelola Reservasi: " . $manageUrl : '');
+
+    // Google Calendar URL (spans from earliest slot start to latest slot end)
     $gCalDates = $startDateTime->format('Ymd\THis') . '/' . $endDateTime->format('Ymd\THis');
     $gCalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
         . '&text=' . urlencode($eventTitle)
@@ -30,11 +35,18 @@
         . '&details=' . urlencode($eventDetails)
         . '&location=' . urlencode($eventLocation);
 
-    // WhatsApp Share URL
-    $waText = "Halo! Saya telah melakukan booking sesi *" . ($booking->layanan->namalayanan ?? 'Layanan') . "* di *" . $tenant->namabisnis . "*\n"
-        . "📅 Tanggal: " . \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') . "\n"
-        . "⏰ Jam: " . $booking->jam . " WIB\n"
-        . "🔖 Kode Booking: " . ($booking->booking_code ?: $payment->order_id) . "\n"
+    // WhatsApp Share URL (lists all slots and 1 management link)
+    $slotListText = $allBookings->map(function($b) {
+        $dur = (int) ($b->layanan->durasi ?? 60);
+        $start = \Carbon\Carbon::parse($b->jam);
+        $end = (clone $start)->addMinutes($dur);
+        return $start->format('H:i') . ' - ' . $end->format('H:i') . ' WIB';
+    })->implode("\n");
+
+    $waText = "Halo! Saya telah melakukan booking sesi *" . ($firstSlot->layanan->namalayanan ?? 'Layanan') . "* di *" . $tenant->namabisnis . "*\n"
+        . "📅 Tanggal: " . \Carbon\Carbon::parse($firstSlot->tanggalbooking)->translatedFormat('l, d F Y') . "\n"
+        . "⏰ Jadwal:\n" . $slotListText . "\n"
+        . "🔖 Order ID: " . $payment->order_id . "\n"
         . ($manageUrl !== '#' ? "Kelola Reservasi: " . $manageUrl : '');
     $waShareUrl = 'https://api.whatsapp.com/send?text=' . urlencode($waText);
 
@@ -170,46 +182,30 @@
             </div>
 
             {{-- Self-Service Manage Booking Box --}}
-            @if ($booking->booking_code && $booking->cancellation_token)
+            @if ($manageUrl !== '#')
                 <div class="rounded-xl border border-[#C7D2FE] bg-[#EEF2FF]/60 p-4 text-xs">
                     <div class="flex items-start gap-2.5">
                         <svg class="h-4 w-4 text-[#4F46E5] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <div>
-                            <p class="font-bold text-[#4F46E5]">Kelola Booking Mandiri (Tanpa Perlu Login)</p>
+                        <div class="flex-1">
+                            <p class="font-bold text-[#4F46E5]">Kelola Reservasi Mandiri (Tanpa Perlu Login)</p>
                             <p class="text-[#64748B] mt-0.5 leading-relaxed">
                                 @if ($allBookings->count() > 1)
-                                    Pemesanan Anda terdiri dari {{ $allBookings->count() }} slot waktu (multi-slot). Anda dapat melihat rincian melalui tautan berikut:
+                                    Pemesanan Anda terdiri dari {{ $allBookings->count() }} slot waktu (multi-slot). Seluruh slot dikelola dalam satu grup reservasi:
                                 @else
-                                    Anda dapat melihat detail, membatalkan, atau mengubah jadwal booking ini kapan saja melalui tautan berikut:
+                                    Anda dapat melihat rincian booking ini kapan saja melalui tautan berikut:
                                 @endif
                             </p>
-                            @if ($allBookings->count() > 1)
-                                <div class="mt-2 space-y-1">
-                                    @foreach ($allBookings as $bItem)
-                                        <a
-                                            href="{{ route('booking.manage', ['booking_code' => $bItem->booking_code]) . ($bItem->cancellation_token ? '?token=' . $bItem->cancellation_token : '') }}"
-                                            class="inline-flex items-center gap-1 font-bold text-[#4F46E5] hover:underline break-all block"
-                                        >
-                                            <span>Slot {{ substr($bItem->jam, 0, 5) }} WIB: {{ url('/manage/' . $bItem->booking_code) }}</span>
-                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                            </svg>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            @else
-                                <a
-                                    href="{{ $manageUrl }}"
-                                    class="mt-2 inline-flex items-center gap-1 font-bold text-[#4F46E5] hover:underline break-all"
-                                >
-                                    <span>{{ url('/manage/' . $booking->booking_code) }}</span>
-                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
-                                </a>
-                            @endif
+                            <a
+                                href="{{ $manageUrl }}"
+                                class="mt-2 inline-flex items-center gap-1 font-bold text-[#4F46E5] hover:underline break-all"
+                            >
+                                <span>{{ $payment->manage_token ? url('/manage/payment/' . $payment->order_id) : url('/manage/' . $booking->booking_code) }}</span>
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
                         </div>
                     </div>
                 </div>

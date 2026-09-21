@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\UsageLog;
 use App\Mail\BookingInvoiceMail;
+use App\Mail\BookingGroupInvoiceMail;
 use App\Notifications\NewBookingOwnerNotification;
 use App\Traits\ClearsBookingCache;
 use Illuminate\Support\Facades\DB;
@@ -197,14 +198,13 @@ class MidtransPaymentService
                 ];
             }
 
-            // 1. Update Payment status
-            $payment->update([
-                'status' => 'sukses',
-                'metode' => $paymentType ?? $payment->metode ?? 'midtrans',
-            ]);
-
             // 2. Jika tipe pembayaran adalah subscription
             if ($payment->tipe === 'subscription') {
+                $payment->update([
+                    'status' => 'sukses',
+                    'metode' => $paymentType ?? $payment->metode ?? 'midtrans',
+                ]);
+
                 $hasActiveSub = Subscription::where('idtenant', $payment->idtenant)
                     ->where('idplan', $payment->idplan)
                     ->where('status', 'active')
@@ -229,19 +229,43 @@ class MidtransPaymentService
             // 3. Jika tipe pembayaran adalah booking
             if ($payment->tipe === 'booking') {
                 // Lock ALL bookings linked to this payment
-                $bookings = Booking::with(['layanan', 'tenant.user', 'payment'])
+                $bookings = Booking::withoutGlobalScopes()
+                    ->with(['layanan', 'tenant.user', 'payment'])
                     ->lockForUpdate()
                     ->where('idpayment', $payment->id)
                     ->get();
 
-                // Late webhook guard: if any booking was already cancelled, do not resurrect
+                // State machine check: if all bookings are already paid, idempotent return
+                $allPaid = $bookings->isNotEmpty() && $bookings->every(fn($b) => in_array($b->status, ['paid', 'completed']));
+                if ($allPaid && $payment->status === 'sukses') {
+                    return [
+                        'status' => 'sukses',
+                        'transaction_status' => $transactionStatus,
+                        'message' => 'Seluruh booking sudah dibayar sebelumnya.',
+                        'payment' => $payment,
+                    ];
+                }
+
+                // Late webhook / Mixed booking guard: if any booking was already cancelled, do not resurrect
                 $hasCancelled = $bookings->contains(fn($b) => $b->status === 'cancelled');
                 if ($hasCancelled) {
-                    Log::warning('Late Webhook: Settlement received for cancelled booking(s)', [
+                    Log::warning('Late Webhook Anomaly: Settlement received for cancelled booking(s) in payment group', [
                         'payment_id' => $payment->id,
                         'booking_ids' => $bookings->pluck('id')->all(),
                     ]);
+                    return [
+                        'status' => 'gagal',
+                        'transaction_status' => $transactionStatus,
+                        'message' => 'Terdapat booking yang sudah dibatalkan dalam grup reservasi ini. Settlement diabaikan untuk mencegah inkonsistensi.',
+                        'payment' => $payment,
+                    ];
                 }
+
+                // Valid state: update Payment status to sukses
+                $payment->update([
+                    'status' => 'sukses',
+                    'metode' => $paymentType ?? $payment->metode ?? 'midtrans',
+                ]);
 
                 $paidBookings = [];
                 foreach ($bookings as $booking) {
@@ -261,13 +285,15 @@ class MidtransPaymentService
                         }
 
                         $paidBookings[] = $booking;
+                    } elseif ($booking->status === 'paid') {
+                        $paidBookings[] = $booking;
                     }
                 }
 
                 if (!empty($paidBookings)) {
                     DB::afterCommit(function () use ($paidBookings, $payment) {
                         $firstBooking = $paidBookings[0];
-                        // Kirim notifikasi email ke owner bisnis
+                        // Kirim notifikasi email ke owner bisnis (1 notif per payment group)
                         $owner = $firstBooking->tenant?->user;
                         if ($owner && $owner->email) {
                             try {
@@ -277,18 +303,20 @@ class MidtransPaymentService
                             }
                         }
 
-                        // Kirim email invoice ke pelanggan untuk setiap booking & invalidate cache
-                        foreach ($paidBookings as $bk) {
-                            if ($bk->email) {
-                                try {
-                                    Mail::to($bk->email)
-                                        ->send(new BookingInvoiceMail($bk));
-                                } catch (\Exception $e) {
-                                    Log::error('Gagal kirim email invoice ke pelanggan: ' . $e->getMessage());
-                                }
+                        // Kirim HANYA SATU email konfirmasi invoice grup ke customer
+                        $recipientEmail = $firstBooking->email ?: $payment->email_pembayar;
+                        if ($recipientEmail) {
+                            try {
+                                $manageUrl = $payment->getManageUrl();
+                                Mail::to($recipientEmail)
+                                    ->send(new BookingGroupInvoiceMail($payment, collect($paidBookings), $manageUrl));
+                            } catch (\Exception $e) {
+                                Log::error('Gagal kirim email invoice grup ke pelanggan: ' . $e->getMessage());
                             }
+                        }
 
-                            // Invalidate cache ketersediaan jadwal
+                        // Invalidate cache ketersediaan jadwal untuk setiap slot
+                        foreach ($paidBookings as $bk) {
                             if ($bk->idlayanan && $bk->tanggalbooking) {
                                 $tanggal = is_string($bk->tanggalbooking) 
                                     ? $bk->tanggalbooking 
@@ -333,15 +361,18 @@ class MidtransPaymentService
 
             $payment->update([
                 'status' => 'gagal',
-                'metode' => $paymentType ?? $payment->metode ?? 'midtrans',
+                'metode' => $paymentType ?? $payment->metode,
             ]);
 
+            $cancelledBookings = [];
             if ($payment->tipe === 'booking') {
-                $bookings = Booking::lockForUpdate()->where('idpayment', $payment->id)->get();
-                $cancelledBookings = [];
+                $bookings = Booking::withoutGlobalScopes()
+                    ->where('idpayment', $payment->id)
+                    ->lockForUpdate()
+                    ->get();
 
                 foreach ($bookings as $booking) {
-                    if ($booking->status !== 'cancelled' && $booking->idtenant === $payment->idtenant) {
+                    if ($booking->idtenant === $payment->idtenant && $booking->status === 'pending') {
                         $booking->update(['status' => 'cancelled']);
                         $cancelledBookings[] = $booking;
                     }
@@ -367,6 +398,72 @@ class MidtransPaymentService
                 'status' => 'gagal',
                 'transaction_status' => $transactionStatus,
                 'message' => 'Pembayaran gagal atau dibatalkan.',
+                'payment' => $payment,
+            ];
+        });
+    }
+
+    /**
+     * Memproses kadaluarsa pembayaran dan membatalkan seluruh booking terkait secara atomik.
+     */
+    public function expirePayment(Payment $payment): array
+    {
+        return DB::transaction(function () use ($payment) {
+            $payment = Payment::withoutGlobalScopes()->lockForUpdate()->find($payment->id);
+            if (!$payment) {
+                return [
+                    'status' => 'not_found',
+                    'message' => 'Payment tidak ditemukan.',
+                ];
+            }
+
+            app(\App\Support\TenantContext::class)->setTenantId($payment->idtenant);
+
+            if ($payment->status === 'sukses') {
+                return [
+                    'status' => 'sukses',
+                    'message' => 'Payment sudah berstatus sukses, pembatalan diabaikan.',
+                    'payment' => $payment,
+                ];
+            }
+
+            if ($payment->status === 'pending') {
+                $payment->update(['status' => 'gagal']);
+            }
+
+            $cancelledBookings = [];
+            if ($payment->tipe === 'booking') {
+                $bookings = Booking::withoutGlobalScopes()
+                    ->where('idpayment', $payment->id)
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($bookings as $booking) {
+                    if ($booking->status === 'pending') {
+                        $booking->update(['status' => 'cancelled']);
+                        $cancelledBookings[] = $booking;
+                    }
+                }
+
+                if (!empty($cancelledBookings)) {
+                    DB::afterCommit(function () use ($cancelledBookings) {
+                        foreach ($cancelledBookings as $booking) {
+                            if ($booking->idlayanan && $booking->tanggalbooking) {
+                                $tanggal = is_string($booking->tanggalbooking) 
+                                    ? $booking->tanggalbooking 
+                                    : $booking->tanggalbooking->format('Y-m-d');
+                                $this->clearScheduleCache($booking->idtenant, $booking->idlayanan, [$tanggal]);
+                                $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
+                            }
+                        }
+                    });
+                }
+            }
+
+            return [
+                'status' => 'gagal',
+                'transaction_status' => 'expire',
+                'message' => 'Payment kadaluarsa dan booking berhasil dibatalkan.',
                 'payment' => $payment,
             ];
         });

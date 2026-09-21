@@ -8,6 +8,7 @@ use App\Mail\BookingCancelledMail;
 use App\Mail\BookingRescheduledMail;
 use App\Models\Booking;
 use App\Models\BookingLog;
+use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Review;
 use App\Models\Schedule;
@@ -22,7 +23,125 @@ use Illuminate\Support\Facades\Mail;
 class BookingManageController extends Controller
 {
     use ClearsBookingCache;
-    // ── Shared token validation ────────────────────────────────────────────────
+
+    // ── Payment Group Management (New Primary Model) ───────────────────────────
+
+    /**
+     * Resolve and validate a payment group by order_id + manage_token.
+     * Aborts 404 if not found, 403 if token invalid or tenant mismatch.
+     */
+    private function resolvePaymentGroup(string $orderId, ?string $token): Payment
+    {
+        $payment = Payment::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where('order_id', $orderId)
+            ->first();
+
+        if (!$payment) {
+            abort(404, 'Data pembayaran reservasi tidak ditemukan.');
+        }
+
+        // Validate manage_token using constant-time hash_equals
+        $validToken = $token && hash_equals((string) $payment->manage_token, (string) $token);
+
+        if (!$validToken) {
+            abort(403, 'Token tidak valid. Pastikan Anda menggunakan link yang dikirim ke email Anda.');
+        }
+
+        if ($payment->tipe !== 'booking') {
+            abort(403, 'Transaksi ini bukan merupakan pembayaran booking.');
+        }
+
+        // Set tenant context
+        app(\App\Support\TenantContext::class)->setTenantId($payment->idtenant);
+
+        // Load all bookings associated with this payment
+        $bookings = Booking::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where('idpayment', $payment->id)
+            ->with(['layanan', 'schedule', 'tenant.user', 'review'])
+            ->orderBy('tanggalbooking')
+            ->orderBy('jam')
+            ->get();
+
+        if ($bookings->isEmpty()) {
+            Log::error('Inconsistent Payment Group: Payment has 0 bookings', ['order_id' => $orderId, 'payment_id' => $payment->id]);
+            abort(404, 'Data reservasi tidak ditemukan.');
+        }
+
+        // Tenant safety check
+        foreach ($bookings as $bk) {
+            if ((int) $bk->idtenant !== (int) $payment->idtenant || (int) $bk->idpayment !== (int) $payment->id) {
+                Log::error('Inconsistent Payment Group: Booking tenant mismatch', [
+                    'payment_id' => $payment->id,
+                    'booking_id' => $bk->id,
+                    'payment_tenant' => $payment->idtenant,
+                    'booking_tenant' => $bk->idtenant,
+                ]);
+                abort(403, 'Akses data reservasi tidak konsisten.');
+            }
+        }
+
+        $payment->setRelation('bookings', $bookings);
+        $payment->load('tenant');
+
+        return $payment;
+    }
+
+    /**
+     * Show payment-level group management page.
+     */
+    public function showPaymentGroup(Request $request, string $orderId)
+    {
+        $token   = $request->query('token');
+        $payment = $this->resolvePaymentGroup($orderId, $token);
+        $bookings = $payment->bookings;
+        $tenant   = $payment->tenant;
+
+        // Log view event for the payment group (throttled)
+        $viewKey = "manage:payment_viewed:{$payment->id}:" . session()->getId();
+        if (!Cache::has($viewKey)) {
+            foreach ($bookings as $bk) {
+                BookingLog::record($bk->id, 'viewed', 'Halaman manajemen reservasi dibuka oleh customer (Payment Group).');
+            }
+            Cache::put($viewKey, true, now()->addMinutes(30));
+        }
+
+        $isMultiSlot = $bookings->count() > 1;
+
+        return view('customer.manage.payment-show', [
+            'payment'     => $payment,
+            'bookings'    => $bookings,
+            'tenant'      => $tenant,
+            'token'       => $token,
+            'isMultiSlot' => $isMultiSlot,
+        ]);
+    }
+
+    /**
+     * Show payment-level group invoice page.
+     */
+    public function invoicePaymentGroup(Request $request, string $orderId)
+    {
+        $token   = $request->query('token');
+        $payment = $this->resolvePaymentGroup($orderId, $token);
+
+        if ($payment->status !== 'sukses') {
+            abort(404, 'Invoice hanya tersedia untuk pembayaran yang berhasil.');
+        }
+
+        $bookings = $payment->bookings;
+        $tenant   = $payment->tenant;
+        $booking  = $bookings->first();
+
+        return view('customer.manage.payment-invoice', [
+            'payment'  => $payment,
+            'bookings' => $bookings,
+            'booking'  => $booking,
+            'tenant'   => $tenant,
+            'token'    => $token,
+        ]);
+    }
+
+    // ── Shared token validation (Legacy) ───────────────────────────────────────
 
     /**
      * Resolve and validate a booking by booking_code + token.

@@ -22,6 +22,7 @@ class Payment extends Model
         'metode',
         'external_id',
         'order_id',
+        'manage_token',
         'snap_token',
         'expired_at',
         'nama_pembayar',
@@ -58,10 +59,37 @@ class Payment extends Model
 
     /**
      * Backward-compatibility relasi single booking.
+     * @deprecated Use bookings() for booking payments.
      */
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class, 'idbooking');
+    }
+
+    /**
+     * Dapatkan URL manajemen reservasi customer level payment.
+     */
+    public function getManageUrl(): string
+    {
+        if (!$this->order_id) {
+            return '#';
+        }
+
+        return route('booking.manage.payment', ['order_id' => $this->order_id])
+            . ($this->manage_token ? '?token=' . $this->manage_token : '');
+    }
+
+    /**
+     * Dapatkan URL invoice reservasi customer level payment.
+     */
+    public function getInvoiceUrl(): string
+    {
+        if (!$this->order_id) {
+            return '#';
+        }
+
+        return route('booking.manage.payment.invoice', ['order_id' => $this->order_id])
+            . ($this->manage_token ? '?token=' . $this->manage_token : '');
     }
 
     /**
