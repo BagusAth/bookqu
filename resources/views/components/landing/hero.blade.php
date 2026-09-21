@@ -22,7 +22,7 @@
         <div class="mt-12">
             <div class="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900/90 to-slate-800 p-3 shadow-2xl">
                 <img
-                    src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1600&q=80"
+                    src="{{ asset('images/dashboard.png') }}"
                     alt="Dashboard preview"
                     class="animate-[float-slow_8s_ease-in-out_infinite] rounded-xl border border-slate-200 bg-white shadow-xl"
                 >

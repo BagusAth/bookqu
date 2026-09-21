@@ -39,7 +39,7 @@
                         </div>
                         <div class="card-image-container">
                             <div class="card-image-wrapper">
-                                <img src="https://images.unsplash.com/photo-1544396821-4dd40b938ad3?q=80&w=800&auto=format&fit=crop" alt="Booking Dashboard">
+                                <img src="{{ asset('images/booking.png') }}"  alt="Booking Dashboard">
                             </div>
                         </div>
                     </div>
@@ -66,7 +66,7 @@
                         </div>
                         <div class="card-image-container">
                             <div class="card-image-wrapper">
-                                <img src="https://images.unsplash.com/photo-1506784365847-bbad939e9335?q=80&w=800&auto=format&fit=crop" alt="Real-time Schedule">
+                                <img src="{{ asset('images/schedule.png') }}" alt="Real-time Schedule">
                             </div>
                         </div>
                     </div>
@@ -96,7 +96,7 @@
                         </div>
                         <div class="card-image-container">
                             <div class="card-image-wrapper">
-                                <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=800&auto=format&fit=crop" alt="Payment Integration">
+                                <img src="{{ asset('images/payment.png') }}" alt="Payment Integration">
                             </div>
                         </div>
                     </div>
@@ -123,7 +123,7 @@
                         </div>
                         <div class="card-image-container">
                             <div class="card-image-wrapper">
-                                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop" alt="Analytics Dashboard Chart">
+                                <img src="{{ asset('images/analytics.png') }}" alt="Analytics Dashboard Chart">
                             </div>
                         </div>
                     </div>
