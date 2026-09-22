@@ -96,7 +96,10 @@
                     <tbody class="divide-y divide-slate-50">
                         @foreach($bookings as $idx => $bk)
                             @php
-                                $s = \Carbon\Carbon::parse($bk->tanggalbooking . ' ' . $bk->jam);
+                                $bkDate = $bk->tanggalbooking instanceof \Carbon\CarbonInterface
+                                    ? $bk->tanggalbooking->format('Y-m-d')
+                                    : \Carbon\Carbon::parse($bk->tanggalbooking)->format('Y-m-d');
+                                $s = \Carbon\Carbon::parse($bkDate . ' ' . $bk->jam);
                                 $e = (clone $s)->addMinutes($durasiMenit);
                             @endphp
                             <tr>

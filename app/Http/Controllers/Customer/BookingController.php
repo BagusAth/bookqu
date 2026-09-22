@@ -151,12 +151,17 @@ class BookingController extends Controller
 
         session()->put('booking.tenant_id', $tenant->id);
 
-        $minDate = Carbon::today('Asia/Jakarta');
-        $maxDate = Carbon::today('Asia/Jakarta')->addDays(30);
+        $wib = 'Asia/Jakarta';
+        $nowWib = Carbon::now($wib);
+        $minDate = Carbon::today($wib);
+        $maxDate = Carbon::today($wib)->addDays(30);
+
+        $todayStr = $minDate->toDateString();
+        $nowTimeStr = $nowWib->format('H:i');
 
         $availabilityKey = $this->getAvailabilityCacheKey($tenant->id, $service->id);
 
-        $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(300), function () use ($tenant, $service, $minDate, $maxDate) {
+        $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(60), function () use ($tenant, $service, $minDate, $maxDate, $todayStr, $nowTimeStr) {
             $rows = DB::table('schedules')
                 ->leftJoin('bookings', function ($join) {
                     $join->on('schedules.id', '=', 'bookings.idschedule')
@@ -177,7 +182,7 @@ class BookingController extends Controller
                 ->select([
                     'schedules.tanggal',
                     DB::raw('count(distinct schedules.id) as total_slots'),
-                    DB::raw('count(distinct case when bookings.id is null then schedules.id end) as available_slots'),
+                    DB::raw("count(distinct case when bookings.id is null and (substr(schedules.tanggal, 1, 10) > '{$todayStr}' or (substr(schedules.tanggal, 1, 10) = '{$todayStr}' and substr(schedules.jam_mulai, 1, 5) > '{$nowTimeStr}')) then schedules.id end) as available_slots"),
                 ])
                 ->get();
 
@@ -313,7 +318,11 @@ class BookingController extends Controller
                 ->withErrors(['tanggal' => 'Tanggal ini sedang ditutup oleh pemilik bisnis.']);
         }
 
-        $availableSlots = DB::table('schedules')
+        $wib = 'Asia/Jakarta';
+        $nowWib = Carbon::now($wib);
+        $isToday = Carbon::parse($selectedDate, $wib)->isSameDay($nowWib);
+
+        $availableSlotsQuery = DB::table('schedules')
             ->leftJoin('bookings', function ($join) {
                 $join->on('schedules.id', '=', 'bookings.idschedule')
                     ->where(function ($q) {
@@ -328,8 +337,14 @@ class BookingController extends Controller
             ->where('schedules.idlayanan', $service->id)
             ->where('schedules.status', 'tersedia')
             ->whereDate('schedules.tanggal', $selectedDate)
-            ->whereNull('bookings.id')
-            ->count();
+            ->whereNull('bookings.id');
+
+        if ($isToday) {
+            $nowTimeStr = $nowWib->format('H:i');
+            $availableSlotsQuery->whereRaw("substr(schedules.jam_mulai, 1, 5) > ?", [$nowTimeStr]);
+        }
+
+        $availableSlots = $availableSlotsQuery->count();
 
         if ($availableSlots < 1) {
             return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)

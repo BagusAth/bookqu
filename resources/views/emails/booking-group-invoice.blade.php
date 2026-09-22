@@ -91,7 +91,10 @@
                 <h3>Jadwal Sesi Terpilih</h3>
                 @foreach($bookings as $idx => $bk)
                     @php
-                        $start = \Carbon\Carbon::parse($bk->tanggalbooking . ' ' . $bk->jam);
+                        $bkDate = $bk->tanggalbooking instanceof \Carbon\CarbonInterface
+                            ? $bk->tanggalbooking->format('Y-m-d')
+                            : \Carbon\Carbon::parse($bk->tanggalbooking)->format('Y-m-d');
+                        $start = \Carbon\Carbon::parse($bkDate . ' ' . $bk->jam);
                         $end = (clone $start)->addMinutes($durasi);
                     @endphp
                     <div class="slot-item">

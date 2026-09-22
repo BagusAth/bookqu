@@ -30,8 +30,8 @@ trait ClearsBookingCache
      */
     protected function getAvailabilityCacheKey(int $tenantId, int $serviceId): string
     {
-        $minDate = Carbon::today()->toDateString();
-        $maxDate = Carbon::today()->addDays(30)->toDateString();
+        $minDate = Carbon::today('Asia/Jakarta')->toDateString();
+        $maxDate = Carbon::today('Asia/Jakarta')->addDays(30)->toDateString();
         return "tenant:{$tenantId}:service:{$serviceId}:availability:{$minDate}:{$maxDate}";
     }
 

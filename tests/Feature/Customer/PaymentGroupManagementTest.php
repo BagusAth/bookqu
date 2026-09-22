@@ -507,4 +507,128 @@ class PaymentGroupManagementTest extends TestCase
         $this->assertEquals(200000, $data['total_spent']);
         $this->assertEquals('Rp 200.000', $data['formatted_spent']);
     }
+
+    public function test_payment_group_invoice_renders_without_carbon_double_time_exception(): void
+    {
+        $payment = Payment::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'order_id' => 'BQ-INV-TEST-' . time(),
+            'manage_token' => Booking::generateSecureToken(),
+            'tipe' => 'booking',
+            'metode' => 'midtrans',
+            'status' => 'sukses',
+            'jumlah' => 200000,
+        ]);
+
+        Booking::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $this->slot10->id,
+            'idpayment' => $payment->id,
+            'namapelanggan' => 'Invoice Customer',
+            'email' => 'invoice@customer.com',
+            'nomorhp' => '081234567890',
+            'tanggalbooking' => $this->date,
+            'jam' => '10:00:00',
+            'status' => 'paid',
+            'booking_code' => 'BKQ-INV-1',
+        ]);
+
+        $response = $this->get('/manage/payment/' . $payment->order_id . '/invoice?token=' . $payment->manage_token);
+        $response->assertStatus(200);
+        $response->assertSee('Bukti Reservasi Resmi');
+        $response->assertSee($payment->order_id);
+    }
+
+    public function test_past_slots_on_today_are_not_counted_as_available_in_date_selection(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-22 14:00:00', 'Asia/Jakarta'));
+
+        $today = '2026-09-22';
+
+        // Slot 1: past (09:00 - 10:00)
+        Schedule::create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => $today,
+            'jam_mulai' => '09:00:00',
+            'jam_selesai' => '10:00:00',
+            'status' => 'tersedia',
+        ]);
+
+        // Slot 2: future (16:00 - 17:00)
+        Schedule::create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => $today,
+            'jam_mulai' => '16:00:00',
+            'jam_selesai' => '17:00:00',
+            'status' => 'tersedia',
+        ]);
+
+        $response = $this->withSession([
+            'booking' => [
+                'tenant_id' => $this->tenant->id,
+                'service_id' => $this->service->id,
+            ],
+        ])->get('/' . $this->tenant->slug . '/booking/date');
+
+        $response->assertStatus(200);
+        $payload = $response->viewData('availabilityPayload');
+
+        $todayAvailability = collect($payload)->firstWhere('date', $today);
+        $this->assertNotNull($todayAvailability);
+        $this->assertEquals(2, $todayAvailability['total_slots']);
+        // Only 1 slot (16:00) is available, slot 09:00 must NOT be counted!
+        $this->assertEquals(1, $todayAvailability['available_slots']);
+
+        Carbon::setTestNow(); // reset
+    }
+
+    public function test_today_with_only_past_slots_shows_zero_available_and_select_date_fails(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-22 18:00:00', 'Asia/Jakarta'));
+
+        $today = '2026-09-22';
+
+        // Only past slots (10:00 and 11:00)
+        Schedule::create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => $today,
+            'jam_mulai' => '10:00:00',
+            'jam_selesai' => '11:00:00',
+            'status' => 'tersedia',
+        ]);
+
+        // 1. Check date selection availability payload
+        $response = $this->withSession([
+            'booking' => [
+                'tenant_id' => $this->tenant->id,
+                'service_id' => $this->service->id,
+            ],
+        ])->get('/' . $this->tenant->slug . '/booking/date');
+
+        $response->assertStatus(200);
+        $payload = $response->viewData('availabilityPayload');
+        $todayAvailability = collect($payload)->firstWhere('date', $today);
+
+        $this->assertNotNull($todayAvailability);
+        $this->assertEquals(1, $todayAvailability['total_slots']);
+        $this->assertEquals(0, $todayAvailability['available_slots']);
+
+        // 2. Submitting selectDate for today should fail
+        $selectResponse = $this->withSession([
+            'booking' => [
+                'tenant_id' => $this->tenant->id,
+                'service_id' => $this->service->id,
+            ],
+        ])->post('/' . $this->tenant->slug . '/booking/select-date', [
+            'tanggal' => $today,
+        ]);
+
+        $selectResponse->assertSessionHasErrors('tanggal');
+
+        Carbon::setTestNow(); // reset
+    }
 }

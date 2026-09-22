@@ -334,10 +334,15 @@ class BookingManageController extends Controller
         }
 
         // Build availability payload (same logic as BookingController)
-        $minDate = Carbon::today();
-        $maxDate = Carbon::today()->addDays(30);
+        $wib     = 'Asia/Jakarta';
+        $nowWib  = Carbon::now($wib);
+        $minDate = Carbon::today($wib);
+        $maxDate = Carbon::today($wib)->addDays(30);
         $tenant  = $booking->tenant;
         $service = $booking->layanan;
+
+        $todayStr   = $minDate->toDateString();
+        $nowTimeStr = $nowWib->format('H:i');
 
         $availabilityKey = sprintf(
             'tenant:%s:service:%s:availability:%s:%s:reschedule:%s',
@@ -348,7 +353,7 @@ class BookingManageController extends Controller
             $booking->id
         );
 
-        $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(1800), function () use ($tenant, $service, $minDate, $maxDate, $booking) {
+        $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(60), function () use ($tenant, $service, $minDate, $maxDate, $booking, $todayStr, $nowTimeStr) {
             $rows = DB::table('schedules')
                 ->leftJoin('bookings', function ($join) use ($booking) {
                     $join->on('schedules.id', '=', 'bookings.idschedule')
@@ -364,7 +369,7 @@ class BookingManageController extends Controller
                 ->select([
                     'schedules.tanggal',
                     DB::raw('count(distinct schedules.id) as total_slots'),
-                    DB::raw('count(distinct case when bookings.id is null then schedules.id end) as available_slots'),
+                    DB::raw("count(distinct case when bookings.id is null and (substr(schedules.tanggal, 1, 10) > '{$todayStr}' or (substr(schedules.tanggal, 1, 10) = '{$todayStr}' and substr(schedules.jam_mulai, 1, 5) > '{$nowTimeStr}')) then schedules.id end) as available_slots"),
                 ])
                 ->get();
 
