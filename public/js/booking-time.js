@@ -21,6 +21,7 @@ document.addEventListener('alpine:init', () => {
         simulateAvailability: false,
         isSubmitting: false,
         errorMessage: '',
+        hasBounced: false,
 
         init() {
             const root = document.getElementById('booking-time-root');
@@ -292,10 +293,18 @@ document.addEventListener('alpine:init', () => {
             if (followsLatest || precedesEarliest) {
                 this.selectedTimes.push({ id: slot.id, time: slot.time });
                 slot.isSelected = true;
+                this.triggerBounce();
             } else {
                 // Prescriptive copy from Section 22 & 52 (NO window.alert)
                 this.errorMessage = 'Slot harus berurutan. Pilih sesi yang berdekatan terlebih dahulu.';
             }
+        },
+
+        triggerBounce() {
+            this.hasBounced = true;
+            setTimeout(() => {
+                this.hasBounced = false;
+            }, 350);
         },
 
         formatDate(dateString) {

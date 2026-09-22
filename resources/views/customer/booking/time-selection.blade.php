@@ -42,15 +42,6 @@
         {{-- Left Column: Session Slot Choices --}}
         <section>
             <div class="mb-6">
-                <a
-                    href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug) }}"
-                    class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#64748B] hover:text-[#4F46E5] transition-colors mb-2"
-                >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    Kembali ke Pemilihan Tanggal
-                </a>
                 <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Pilih Waktu</h1>
                 <p class="mt-1 text-sm text-[#64748B]" x-text="selectedCount > 0 ? 'Pilih sesi yang berdekatan untuk melanjutkan.' : 'Pilih satu waktu, atau beberapa waktu yang berurutan untuk memesan sesi lebih lama.'">
                     Pilih satu waktu, atau beberapa waktu yang berurutan untuk memesan sesi lebih lama.
@@ -201,7 +192,7 @@
                 <div class="mt-4">
                     <div class="flex items-center justify-between mb-2">
                         <p class="text-xs font-semibold uppercase tracking-wider text-[#64748B]">Waktu Terpilih</p>
-                        <span class="text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] px-2 py-0.5 rounded-full" x-show="selectedCount > 0" x-text="selectedCount + ' sesi'" x-cloak></span>
+                        <span class="text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] px-2.5 py-0.5 rounded-full" x-show="selectedCount > 0" x-text="selectedCount + ' sesi' + (service?.duration ? ' (' + (selectedCount * service.duration) + ' ' + (service.duration_unit || 'menit') + ')' : '')" x-cloak></span>
                     </div>
 
                     {{-- Empty state --}}
@@ -268,25 +259,15 @@
                     </template>
                     <span x-text="isSubmitting ? 'Memproses...' : (canSubmit ? 'Lanjut ke Data Pemesan →' : 'Pilih minimal 1 waktu')"></span>
                 </button>
-
-                <a
-                    href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug) }}"
-                    class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-white py-2.5 px-4 text-xs font-semibold text-[#64748B] transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
-                >
-                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    Kembali ke Pilih Tanggal
-                </a>
             </div>
         </aside>
     </form>
 
     {{-- Mobile Bottom Floating Action Bar (Section 27 & 51) --}}
-    <div class="booking-mobile-bar lg:hidden" x-show="selectedCount > 0" x-cloak x-transition>
+    <div class="booking-mobile-bar lg:hidden" :class="hasBounced ? 'booking-mobile-bar--bounce' : ''" x-show="selectedCount > 0" x-cloak x-transition>
         <div class="max-w-4xl mx-auto flex items-center justify-between gap-3">
             <div class="min-w-0 flex-1">
-                <p class="text-[11px] text-[#64748B] truncate" x-text="selectedCount + ' sesi terpilih'"></p>
+                <p class="text-[11px] text-[#64748B] truncate" x-text="selectedCount + ' sesi terpilih' + (service?.duration ? ' (' + (selectedCount * service.duration) + ' ' + (service.duration_unit || 'menit') + ')' : '')"></p>
                 <div class="flex items-baseline gap-1.5">
                     <p class="text-xs sm:text-sm font-bold text-[#0F172A] truncate" x-text="selectedTimesLabel"></p>
                 </div>

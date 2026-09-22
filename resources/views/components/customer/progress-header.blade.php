@@ -46,7 +46,7 @@
                 </div>
 
                 @if (!$loop->last)
-                    <div class="mx-1.5 md:mx-3 h-[2px] flex-1 rounded-full {{ $stepNum < $currentStep ? 'bg-emerald-500' : 'bg-[#E2E8F0]' }}"></div>
+                    <div class="booking-step-connector mx-1.5 md:mx-3 h-[2px] flex-1 rounded-full transition-all duration-500 ease-out {{ $stepNum < $currentStep ? 'bg-emerald-500' : 'bg-[#E2E8F0]' }}"></div>
                 @endif
             </li>
         @endforeach
@@ -67,7 +67,7 @@
         </div>
         <div class="flex gap-1">
             @foreach ($steps as $stepNum => $stepName)
-                <span class="h-1.5 w-3.5 rounded-full transition-all {{ $stepNum < $currentStep ? 'bg-emerald-500' : ($stepNum === $currentStep ? 'bg-[#4F46E5] w-5' : 'bg-[#E2E8F0]') }}"></span>
+                <span class="h-1.5 rounded-full transition-all duration-300 ease-out {{ $stepNum < $currentStep ? 'w-3.5 bg-emerald-500' : ($stepNum === $currentStep ? 'bg-[#4F46E5] w-5' : 'w-3.5 bg-[#E2E8F0]') }}"></span>
             @endforeach
         </div>
     </div>

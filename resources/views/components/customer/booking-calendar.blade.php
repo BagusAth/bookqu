@@ -43,7 +43,7 @@
     </div>
 
     {{-- Calendar Days Grid --}}
-    <div class="booking-calendar__grid mt-2 grid grid-cols-7 gap-1 sm:gap-2">
+    <div class="booking-calendar__grid mt-2 grid grid-cols-7 gap-1 sm:gap-2 transition-opacity duration-200">
         <template x-for="day in calendarDays" :key="day.key">
             <button
                 type="button"
@@ -59,9 +59,17 @@
                 }"
                 :disabled="day.isDisabled"
                 :aria-selected="day.isSelected"
+                :title="day.isFull ? 'Semua slot penuh pada tanggal ini' : (day.isBlocked ? 'Jadwal ditutup oleh pemilik' : (day.isDisabled ? 'Tanggal tidak tersedia' : (day.isSelected ? 'Tanggal terpilih' : 'Klik untuk memilih tanggal ini')))"
                 @click="selectDate(day.date)"
             >
                 <span class="text-xs sm:text-sm font-semibold" :class="day.isSelected ? 'text-white' : 'text-[#0F172A]'" x-text="day.label"></span>
+
+                {{-- Hari Ini Indicator (S2.3) --}}
+                <template x-if="day.isToday && !day.isSelected">
+                    <span class="text-[8px] font-extrabold text-[#4F46E5] uppercase tracking-wider leading-none mt-0.5">
+                        Hari Ini
+                    </span>
+                </template>
                 
                 <template x-if="day.showSlots">
                     <span

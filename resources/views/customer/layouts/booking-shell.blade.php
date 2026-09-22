@@ -185,6 +185,31 @@
         <script>
             window.addEventListener('pageshow', function (event) {
                 window.dispatchEvent(new CustomEvent('booking-reset-submitting'));
+                const main = document.querySelector('main.booking-shell');
+                if (main) {
+                    main.style.opacity = '1';
+                }
+            });
+
+            // Smooth fade-out before navigation on form submit (G1)
+            document.addEventListener('submit', function (e) {
+                if (!e.defaultPrevented) {
+                    const main = document.querySelector('main.booking-shell');
+                    if (main) {
+                        main.style.opacity = '0.4';
+                        main.style.transition = 'opacity 0.2s ease';
+                    }
+                }
+            });
+
+            // Auto-scroll to error banner on mobile/desktop (G3)
+            document.addEventListener('DOMContentLoaded', function () {
+                const errorBanner = document.querySelector('[role="alert"], .border-red-200, .bg-red-50');
+                if (errorBanner) {
+                    errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    errorBanner.classList.add('animate-pulse');
+                    setTimeout(() => errorBanner.classList.remove('animate-pulse'), 2500);
+                }
             });
         </script>
         @yield('scripts')

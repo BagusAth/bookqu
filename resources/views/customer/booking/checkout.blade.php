@@ -6,7 +6,52 @@
 @section('back_label', 'Pilih Waktu')
 
 @section('content')
-<div id="booking-checkout-root" data-tenant-slug="{{ $tenant->slug }}">
+<div id="booking-checkout-root"
+     data-tenant-slug="{{ $tenant->slug }}"
+     x-data="{
+        name: '{{ old('namapelanggan', '') }}',
+        email: '{{ old('email', '') }}',
+        phone: '{{ old('nomorhp', '') }}',
+        nameError: '',
+        emailError: '',
+        phoneError: '',
+        touched: { name: false, email: false, phone: false },
+        validateName() {
+            if (!this.touched.name) return;
+            const val = (this.name || '').trim();
+            if (!val) {
+                this.nameError = 'Nama lengkap wajib diisi.';
+            } else if (val.length < 3) {
+                this.nameError = 'Nama lengkap minimal 3 karakter.';
+            } else {
+                this.nameError = '';
+            }
+        },
+        validateEmail() {
+            if (!this.touched.email) return;
+            const val = (this.email || '').trim();
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!val) {
+                this.emailError = 'Alamat email wajib diisi.';
+            } else if (!re.test(val)) {
+                this.emailError = 'Format email tidak valid (contoh: nama@domain.com).';
+            } else {
+                this.emailError = '';
+            }
+        },
+        validatePhone() {
+            if (!this.touched.phone) return;
+            const val = (this.phone || '').trim();
+            const digits = val.replace(/\D/g, '');
+            if (!val) {
+                this.phoneError = 'Nomor WhatsApp / HP wajib diisi.';
+            } else if (digits.length < 10 || digits.length > 15) {
+                this.phoneError = 'Nomor HP harus antara 10 - 15 digit.';
+            } else {
+                this.phoneError = '';
+            }
+        }
+     }">
     <form
         id="booking-checkout-form"
         class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
@@ -18,15 +63,6 @@
         {{-- Left Column: Form Fields --}}
         <section>
             <div class="mb-6">
-                <a
-                    href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug) }}"
-                    class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#64748B] hover:text-[#4F46E5] transition-colors mb-2"
-                >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    Kembali ke Pilih Waktu
-                </a>
                 <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Data Pemesan<span class="sr-only"> Isi Data Diri</span></h1>
                 <p class="mt-1 text-sm text-[#64748B]">
                     Pastikan nama, email, dan nomor WhatsApp Anda sudah benar.
@@ -56,6 +92,14 @@
                     <p class="text-xs text-[#64748B] mt-0.5">Pastikan data yang dimasukkan aktif dan valid.</p>
                 </div>
 
+                {{-- Security Trust Banner (S4.3) --}}
+                <div class="flex items-center gap-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/70 px-3.5 py-2.5 text-xs text-emerald-800">
+                    <svg class="h-4 w-4 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span class="font-medium">Data kontak Anda aman, terenkripsi, dan hanya digunakan untuk konfirmasi reservasi.</span>
+                </div>
+
                 {{-- Nama Lengkap --}}
                 <div>
                     <label for="namapelanggan" class="block text-xs sm:text-sm font-bold text-[#0F172A] mb-1.5">
@@ -67,11 +111,23 @@
                             name="namapelanggan"
                             id="namapelanggan"
                             required
-                            class="w-full rounded-xl border @error('namapelanggan') border-red-400 bg-red-50/30 @else border-[#CBD5E1] bg-[#F8FAFC] @enderror px-4 py-3 text-sm text-[#0F172A] transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
+                            x-model="name"
+                            @blur="touched.name = true; validateName()"
+                            @input="validateName()"
+                            :class="nameError ? 'border-red-400 bg-red-50/30' : (touched.name && !nameError && name ? 'border-emerald-400 bg-emerald-50/20' : 'border-[#CBD5E1] bg-[#F8FAFC]')"
+                            class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
                             value="{{ old('namapelanggan') }}"
                             placeholder="Contoh: Budi Santoso"
                         />
+                        <template x-if="touched.name && !nameError && name">
+                            <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-600">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </span>
+                        </template>
                     </div>
+                    <p x-show="nameError" x-text="nameError" x-cloak class="mt-1.5 text-xs text-red-600 font-medium"></p>
                     @error('namapelanggan')
                         <p class="mt-1.5 text-xs text-red-600 font-medium">{{ $message }}</p>
                     @enderror
@@ -82,15 +138,29 @@
                     <label for="email" class="block text-xs sm:text-sm font-bold text-[#0F172A] mb-1.5">
                         Alamat Email <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="email"
-                        name="email"
-                        id="email"
-                        required
-                        class="w-full rounded-xl border @error('email') border-red-400 bg-red-50/30 @else border-[#CBD5E1] bg-[#F8FAFC] @enderror px-4 py-3 text-sm text-[#0F172A] transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
-                        value="{{ old('email') }}"
-                        placeholder="Contoh: budi@gmail.com"
-                    />
+                    <div class="relative">
+                        <input
+                            type="email"
+                            name="email"
+                            id="email"
+                            required
+                            x-model="email"
+                            @blur="touched.email = true; validateEmail()"
+                            @input="validateEmail()"
+                            :class="emailError ? 'border-red-400 bg-red-50/30' : (touched.email && !emailError && email ? 'border-emerald-400 bg-emerald-50/20' : 'border-[#CBD5E1] bg-[#F8FAFC]')"
+                            class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
+                            value="{{ old('email') }}"
+                            placeholder="Contoh: budi@gmail.com"
+                        />
+                        <template x-if="touched.email && !emailError && email">
+                            <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-600">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </span>
+                        </template>
+                    </div>
+                    <p x-show="emailError" x-text="emailError" x-cloak class="mt-1.5 text-xs text-red-600 font-medium"></p>
                     <p class="mt-1.5 text-xs text-[#64748B]">Bukti reservasi &amp; e-ticket invoice akan dikirimkan ke email ini.</p>
                     @error('email')
                         <p class="mt-1.5 text-xs text-red-600 font-medium">{{ $message }}</p>
@@ -102,15 +172,29 @@
                     <label for="nomorhp" class="block text-xs sm:text-sm font-bold text-[#0F172A] mb-1.5">
                         Nomor WhatsApp / HP <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="tel"
-                        name="nomorhp"
-                        id="nomorhp"
-                        required
-                        class="w-full rounded-xl border @error('nomorhp') border-red-400 bg-red-50/30 @else border-[#CBD5E1] bg-[#F8FAFC] @enderror px-4 py-3 text-sm text-[#0F172A] transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
-                        value="{{ old('nomorhp') }}"
-                        placeholder="Contoh: 081234567890"
-                    />
+                    <div class="relative">
+                        <input
+                            type="tel"
+                            name="nomorhp"
+                            id="nomorhp"
+                            required
+                            x-model="phone"
+                            @blur="touched.phone = true; validatePhone()"
+                            @input="validatePhone()"
+                            :class="phoneError ? 'border-red-400 bg-red-50/30' : (touched.phone && !phoneError && phone ? 'border-emerald-400 bg-emerald-50/20' : 'border-[#CBD5E1] bg-[#F8FAFC]')"
+                            class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
+                            value="{{ old('nomorhp') }}"
+                            placeholder="Contoh: 081234567890"
+                        />
+                        <template x-if="touched.phone && !phoneError && phone">
+                            <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-600">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </span>
+                        </template>
+                    </div>
+                    <p x-show="phoneError" x-text="phoneError" x-cloak class="mt-1.5 text-xs text-red-600 font-medium"></p>
                     <p class="mt-1.5 text-xs text-[#64748B]">Digunakan untuk pengingat jadwal dan konfirmasi langsung.</p>
                     @error('nomorhp')
                         <p class="mt-1.5 text-xs text-red-600 font-medium">{{ $message }}</p>
@@ -210,6 +294,36 @@
                             Rp {{ number_format($hargaAkhir, 0, ',', '.') }}
                         </span>
                     </div>
+
+                    {{-- Expandable Price Breakdown (S4.2) --}}
+                    @if(count($selectedTimes) > 1)
+                        <details class="group rounded-xl border border-[#E2E8F0] bg-white p-3 text-xs">
+                            <summary class="flex items-center justify-between cursor-pointer font-semibold text-[#475569] hover:text-[#4F46E5] transition-colors list-none select-none">
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="h-3.5 w-3.5 text-[#4F46E5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                    <span>Rincian Harga Tiap Sesi</span>
+                                </span>
+                                <svg class="h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-180 text-[#64748B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </summary>
+                            <div class="mt-2.5 pt-2 border-t border-[#F1F5F9] space-y-1.5">
+                                @foreach ($selectedTimes as $i => $time)
+                                    @php
+                                        $st = \Carbon\Carbon::createFromFormat('H:i', substr($time, 0, 5));
+                                        $et = (clone $st)->addMinutes($service->durasi);
+                                        $slotPrice = $schedules[$i]?->harga_override ?? $service->harga;
+                                    @endphp
+                                    <div class="flex justify-between items-center text-[#64748B]">
+                                        <span>Sesi {{ $i + 1 }} ({{ $st->format('H:i') }} – {{ $et->format('H:i') }})</span>
+                                        <span class="font-medium text-[#0F172A]">Rp {{ number_format($slotPrice, 0, ',', '.') }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </details>
+                    @endif
                 </div>
             </div>
 
@@ -297,6 +411,36 @@
                     <p class="mt-1 text-[11px] text-[#94A3B8]">Sudah termasuk pajak &amp; biaya layanan</p>
                 </div>
 
+                {{-- Expandable Price Breakdown (S4.2) --}}
+                @if(count($selectedTimes) > 1)
+                    <details class="group mt-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-xs">
+                        <summary class="flex items-center justify-between cursor-pointer font-semibold text-[#475569] hover:text-[#4F46E5] transition-colors list-none select-none">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="h-3.5 w-3.5 text-[#4F46E5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                <span>Rincian Harga Tiap Sesi</span>
+                            </span>
+                            <svg class="h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-180 text-[#64748B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </summary>
+                        <div class="mt-2.5 pt-2 border-t border-[#E2E8F0] space-y-1.5">
+                            @foreach ($selectedTimes as $i => $time)
+                                @php
+                                    $st = \Carbon\Carbon::createFromFormat('H:i', substr($time, 0, 5));
+                                    $et = (clone $st)->addMinutes($service->durasi);
+                                    $slotPrice = $schedules[$i]?->harga_override ?? $service->harga;
+                                @endphp
+                                <div class="flex justify-between items-center text-[#64748B]">
+                                    <span>Sesi {{ $i + 1 }} ({{ $st->format('H:i') }} – {{ $et->format('H:i') }})</span>
+                                    <span class="font-medium text-[#0F172A]">Rp {{ number_format($slotPrice, 0, ',', '.') }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </details>
+                @endif
+
                 {{-- Submit CTA --}}
                 <button
                     type="submit"
@@ -308,16 +452,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                 </button>
-
-                <a
-                    href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug) }}"
-                    class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-white py-2.5 px-4 text-xs font-semibold text-[#64748B] transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
-                >
-                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    Kembali ke Pilih Waktu
-                </a>
 
                 <div class="mt-4 flex items-center justify-center gap-1.5 text-xs text-[#64748B]">
                     <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -354,6 +488,10 @@
     </form>
 </div>
 
+@endsection
+
+@section('scripts')
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const inputName = document.getElementById('namapelanggan');
@@ -372,9 +510,18 @@
             if (savedData) {
                 const parsed = JSON.parse(savedData);
                 if (parsed && typeof parsed === 'object') {
-                    if (inputName && !inputName.value && parsed.name) inputName.value = parsed.name;
-                    if (inputEmail && !inputEmail.value && parsed.email) inputEmail.value = parsed.email;
-                    if (inputPhone && !inputPhone.value && parsed.phone) inputPhone.value = parsed.phone;
+                    if (inputName && !inputName.value && parsed.name) {
+                        inputName.value = parsed.name;
+                        inputName.dispatchEvent(new Event('input'));
+                    }
+                    if (inputEmail && !inputEmail.value && parsed.email) {
+                        inputEmail.value = parsed.email;
+                        inputEmail.dispatchEvent(new Event('input'));
+                    }
+                    if (inputPhone && !inputPhone.value && parsed.phone) {
+                        inputPhone.value = parsed.phone;
+                        inputPhone.dispatchEvent(new Event('input'));
+                    }
                     if (chkRemember) chkRemember.checked = true;
                 }
             }

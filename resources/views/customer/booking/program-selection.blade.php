@@ -95,7 +95,25 @@
                 </div>
             @endif
 
-            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {{-- Skeleton Cards (shown until Alpine mounts) --}}
+            <div x-show="!mounted" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                @for ($i = 0; $i < min(3, max(1, count($services))); $i++)
+                    <div class="animate-pulse rounded-2xl border border-[#E2E8F0] bg-white overflow-hidden shadow-xs">
+                        <div class="h-44 sm:h-48 bg-gradient-to-br from-[#F1F5F9] to-[#E2E8F0]"></div>
+                        <div class="p-4 sm:p-5 space-y-3">
+                            <div class="h-3 w-20 rounded-full bg-[#E2E8F0]"></div>
+                            <div class="flex justify-between items-center">
+                                <div class="h-4 w-32 rounded-full bg-[#E2E8F0]"></div>
+                                <div class="h-4 w-20 rounded-full bg-[#E2E8F0]"></div>
+                            </div>
+                            <div class="h-3 w-full rounded-full bg-[#F1F5F9]"></div>
+                            <div class="h-8 w-full rounded-xl bg-[#F1F5F9] mt-3"></div>
+                        </div>
+                    </div>
+                @endfor
+            </div>
+
+            <div x-show="mounted" x-cloak class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 @forelse ($services as $service)
                     @php
                         $priceUnit = $service->satuan_harga ?: 'sesi';
@@ -111,7 +129,7 @@
                     @endphp
                     <article
                         class="booking-card group relative flex flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white transition-all cursor-pointer select-none hover:border-[#4F46E5] hover:shadow-md"
-                        :class="isSubmitting && selectedServiceId === {{ $service->id }} ? 'border-[#4F46E5] ring-2 ring-[#4F46E5] bg-[#F5F5FF]' : ''"
+                        :class="isSubmitting && selectedServiceId === {{ $service->id }} ? 'booking-card--submitting' : ''"
                         x-show="isCardVisible({{ $service->id }}, '{{ $service->category?->id ?? '' }}', '{{ addslashes($service->namalayanan) }}')"
                         @click="selectServiceById({{ $service->id }})"
                         tabindex="0"
@@ -190,7 +208,7 @@
                                 <span
                                     class="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition-all bg-[#F1F5F9] text-[#475569] group-hover:bg-[#4F46E5] group-hover:text-white"
                                 >
-                                    <span>Pilih Layanan Ini</span>
+                                    <span x-text="isSubmitting && selectedServiceId === {{ $service->id }} ? 'Memproses...' : 'Pilih Layanan Ini'"></span>
                                     <svg class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                                     </svg>
@@ -200,13 +218,18 @@
                     </article>
                 @empty
                     <div class="col-span-full rounded-2xl border border-dashed border-[#CBD5E1] bg-white p-12 text-center">
-                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#EEF2FF] text-[#4F46E5] mb-3">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
+                        <div class="mx-auto w-20 h-20 mb-4 relative flex items-center justify-center">
+                            <div class="absolute inset-0 rounded-full bg-[#EEF2FF] animate-ping opacity-25"></div>
+                            <div class="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#4F46E5] shadow-xs">
+                                <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                            </div>
                         </div>
-                        <h4 class="text-sm font-bold text-[#0F172A]">Belum Ada Layanan Tersedia</h4>
-                        <p class="text-xs text-[#64748B] mt-1">Layanan sedang dipersiapkan oleh pemilik usaha. Silakan periksa kembali nanti.</p>
+                        <h4 class="text-base font-bold text-[#0F172A]">Belum Ada Layanan Tersedia</h4>
+                        <p class="text-xs sm:text-sm text-[#64748B] mt-1.5 max-w-sm mx-auto leading-relaxed">
+                            Layanan sedang dipersiapkan oleh pemilik usaha. Silakan periksa kembali nanti atau hubungi kami melalui tombol bantuan.
+                        </p>
                     </div>
                 @endforelse
 

@@ -112,23 +112,57 @@
         </div>
 
         <div class="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-8 shadow-sm mb-6">
-            {{-- 1. Total Tagihan (Primary Hero Amount) --}}
+            {{-- 1. Total Tagihan & Prominent Countdown (S5.1) --}}
             <div class="text-center pb-6 border-b border-[#F1F5F9]">
                 <p class="text-xs font-bold uppercase tracking-wider text-[#64748B] mb-1">Total Tagihan</p>
                 <p class="text-3xl sm:text-4xl font-black text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</p>
-                <div class="mt-2.5 inline-flex items-center justify-center flex-wrap max-w-full gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 border border-amber-200/70">
-                    <span class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-                    @php
-                        $expiredTime = $payment->expired_at ? \Carbon\Carbon::parse($payment->expired_at)->timezone('Asia/Jakarta') : now('Asia/Jakarta')->addMinutes(15);
-                    @endphp
-                    <span>Bayar sebelum <strong class="font-bold">{{ $expiredTime->format('H:i') }} WIB</strong></span>
-                    <span class="text-amber-600 mx-1">•</span>
-                    <span id="countdown" class="font-mono font-bold text-[#EA580C]">Memuat...</span>
+                
+                @php
+                    $expiredTime = $payment->expired_at ? \Carbon\Carbon::parse($payment->expired_at)->timezone('Asia/Jakarta') : now('Asia/Jakarta')->addMinutes(15);
+                @endphp
+                <div id="countdown-card" class="mt-4 mx-auto max-w-sm rounded-2xl border border-amber-200 bg-amber-50/70 p-3 sm:p-4 transition-all duration-300">
+                    <p id="countdown-title" class="text-[11px] font-bold uppercase tracking-wider text-amber-800 flex items-center justify-center gap-1.5">
+                        <span id="countdown-dot" class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span id="countdown-title-text">Selesaikan Pembayaran Dalam:</span>
+                    </p>
+                    <div class="mt-2.5 flex items-center justify-center gap-2">
+                        <div class="flex flex-col items-center">
+                            <span id="countdown-min" class="inline-flex h-11 w-12 items-center justify-center rounded-xl bg-amber-600 text-white font-mono text-xl sm:text-2xl font-black shadow-xs transition-colors">00</span>
+                            <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider mt-1">Menit</span>
+                        </div>
+                        <span id="countdown-colon" class="text-2xl font-black text-amber-600 -mt-4 transition-colors">:</span>
+                        <div class="flex flex-col items-center">
+                            <span id="countdown-sec" class="inline-flex h-11 w-12 items-center justify-center rounded-xl bg-amber-600 text-white font-mono text-xl sm:text-2xl font-black shadow-xs transition-colors">00</span>
+                            <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider mt-1">Detik</span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-[#64748B] mt-2">
+                        Batas waktu: <strong class="text-[#0F172A]">{{ $expiredTime->format('H:i') }} WIB</strong>
+                    </p>
                 </div>
             </div>
 
-            {{-- 2. Primary CTA: [ Bayar Sekarang ] (Explicit customer action, NO auto-open) --}}
+            {{-- 2. Primary CTA & Step Guide (S5.2) --}}
             <div class="py-6 border-b border-[#F1F5F9]">
+                {{-- Quick Step Guide (S5.2) --}}
+                <div class="rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 mb-4 text-xs text-[#475569]">
+                    <p class="font-bold text-[#0F172A] text-xs mb-2">Panduan Pembayaran Cepat:</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div class="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-[#F1F5F9]">
+                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white text-[10px] font-bold mt-0.5">1</span>
+                            <span>Klik <strong>"Bayar Sekarang"</strong></span>
+                        </div>
+                        <div class="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-[#F1F5F9]">
+                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white text-[10px] font-bold mt-0.5">2</span>
+                            <span>Pilih metode (QRIS, VA, E-Wallet)</span>
+                        </div>
+                        <div class="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-[#F1F5F9]">
+                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white text-[10px] font-bold mt-0.5">3</span>
+                            <span>Selesai, e-ticket otomatis terbit</span>
+                        </div>
+                    </div>
+                </div>
+
                 <button
                     id="pay-button"
                     type="button"
@@ -524,13 +558,13 @@
         if (loadingSpinner) loadingSpinner.classList.add('hidden');
         if (successIcon) {
             successIcon.classList.remove('hidden');
-            successIcon.classList.add('flex');
+            successIcon.classList.add('flex', 'animate-bounce-in');
         }
         if (overlayTitle) {
-            overlayTitle.innerText = 'Pembayaran berhasil dikonfirmasi!';
-            overlayTitle.classList.add('text-emerald-600');
+            overlayTitle.innerHTML = 'Pembayaran Berhasil Dikonfirmasi! 🎉';
+            overlayTitle.className = 'text-lg sm:text-xl font-black text-emerald-600';
         }
-        if (overlayDesc) overlayDesc.innerText = 'Mengarahkan ke halaman invoice...';
+        if (overlayDesc) overlayDesc.innerText = 'Mengalihkan Anda ke bukti reservasi...';
         if (realtimeStatusText) realtimeStatusText.innerText = '✓ Pembayaran berhasil diterima!';
 
         setTimeout(() => {
@@ -617,7 +651,13 @@
     document.addEventListener('DOMContentLoaded', function () {
         const payButton = document.getElementById('pay-button');
         const checkStatusBtn = document.getElementById('check-status-btn');
-        const countdownEl = document.getElementById('countdown');
+        const countdownCard = document.getElementById('countdown-card');
+        const countdownTitle = document.getElementById('countdown-title');
+        const countdownTitleText = document.getElementById('countdown-title-text');
+        const countdownDot = document.getElementById('countdown-dot');
+        const countdownMin = document.getElementById('countdown-min');
+        const countdownSec = document.getElementById('countdown-sec');
+        const countdownColon = document.getElementById('countdown-colon');
 
         // Expiry countdown: synchronized with server remaining seconds
         let remainingSeconds = {{ max(0, $payment->expired_at ? (int) now()->diffInSeconds($payment->expired_at, false) : 900) }};
@@ -626,10 +666,17 @@
             if (remainingSeconds <= 0) {
                 if (timer) clearInterval(timer);
                 stopAutoPolling();
-                if (countdownEl) {
-                    countdownEl.innerHTML = "Waktu Habis";
-                    countdownEl.classList.replace('text-[#EA580C]', 'text-red-600');
+                if (countdownCard) {
+                    countdownCard.className = "mt-4 mx-auto max-w-sm rounded-2xl border border-red-200 bg-red-50 p-3 sm:p-4 text-center";
                 }
+                if (countdownTitle) {
+                    countdownTitle.className = "text-[11px] font-bold uppercase tracking-wider text-red-700 flex items-center justify-center gap-1.5";
+                }
+                if (countdownTitleText) {
+                    countdownTitleText.innerText = "Waktu Pembayaran Habis";
+                }
+                if (countdownMin) countdownMin.innerText = "00";
+                if (countdownSec) countdownSec.innerText = "00";
                 showExpiredState();
                 return;
             }
@@ -637,8 +684,22 @@
             const minutes = Math.floor(remainingSeconds / 60);
             const seconds = remainingSeconds % 60;
 
-            if (countdownEl) {
-                countdownEl.innerHTML = minutes + "m " + String(seconds).padStart(2, '0') + "s";
+            const minStr = String(minutes).padStart(2, '0');
+            const secStr = String(seconds).padStart(2, '0');
+
+            if (countdownMin) countdownMin.innerText = minStr;
+            if (countdownSec) countdownSec.innerText = secStr;
+
+            // S5.1: Urgency state change when <= 3 minutes (180 seconds)
+            if (remainingSeconds <= 180) {
+                if (countdownCard && !countdownCard.classList.contains('border-red-300')) {
+                    countdownCard.className = "mt-4 mx-auto max-w-sm rounded-2xl border border-red-300 bg-red-50/90 p-3 sm:p-4 transition-all duration-300";
+                    if (countdownTitle) countdownTitle.className = "text-[11px] font-bold uppercase tracking-wider text-red-700 flex items-center justify-center gap-1.5";
+                    if (countdownDot) countdownDot.className = "h-2 w-2 rounded-full bg-red-500 animate-ping";
+                    if (countdownMin) countdownMin.className = "inline-flex h-11 w-12 items-center justify-center rounded-xl bg-red-600 text-white font-mono text-xl sm:text-2xl font-black shadow-xs transition-colors";
+                    if (countdownColon) countdownColon.className = "text-2xl font-black text-red-600 -mt-4 transition-colors";
+                    if (countdownSec) countdownSec.className = "inline-flex h-11 w-12 items-center justify-center rounded-xl bg-red-600 text-white font-mono text-xl sm:text-2xl font-black shadow-xs transition-colors";
+                }
             }
         }
 

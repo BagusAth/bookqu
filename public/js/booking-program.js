@@ -9,6 +9,7 @@ document.addEventListener('alpine:init', () => {
         isSubmitting: false,
         searchQuery: '',
         activeCategory: 'all',
+        mounted: false,
 
         isCardVisible(serviceId, categoryId, serviceName) {
             const matchesCat = this.activeCategory === 'all' || String(categoryId) === String(this.activeCategory);
@@ -55,6 +56,8 @@ document.addEventListener('alpine:init', () => {
             window.addEventListener('pagehide', resetState);
             window.addEventListener('popstate', resetState);
             window.addEventListener('booking-reset-submitting', resetState);
+
+            this.mounted = true;
         },
 
         selectServiceById(id) {

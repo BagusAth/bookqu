@@ -54,10 +54,20 @@
 @endphp
 
 @section('content')
-<div class="mx-auto max-w-2xl">
-    {{-- Success Hero Banner --}}
-    <div class="text-center mb-8">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mb-4 shadow-sm">
+<div class="mx-auto max-w-2xl" x-data="{ copiedCode: false, copiedOrderId: false }">
+    {{-- Success Hero Banner with Celebration Confetti (S6.1) --}}
+    <div class="text-center mb-8 relative overflow-hidden py-3">
+        {{-- Decorative Confetti Particles --}}
+        <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+            <span class="confetti-dot bg-[#4F46E5]" style="left: 12%; top: 5px; animation-delay: 0.1s;"></span>
+            <span class="confetti-dot bg-emerald-500" style="left: 26%; top: 15px; animation-delay: 0.35s;"></span>
+            <span class="confetti-dot bg-amber-400" style="left: 45%; top: 0px; animation-delay: 0.2s;"></span>
+            <span class="confetti-dot bg-indigo-400" style="left: 65%; top: 12px; animation-delay: 0.4s;"></span>
+            <span class="confetti-dot bg-pink-500" style="left: 78%; top: 8px; animation-delay: 0.15s;"></span>
+            <span class="confetti-dot bg-emerald-400" style="left: 90%; top: 18px; animation-delay: 0.5s;"></span>
+        </div>
+
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 mb-4 shadow-sm animate-bounce-in">
             <svg class="h-9 w-9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -84,21 +94,56 @@
             </div>
         </div>
 
-        {{-- Order Identifiers Bar --}}
-        <div class="bg-[#F8FAFC] px-6 py-4 border-b border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+        {{-- Order Identifiers Bar (S6.2) --}}
+        @php
+            $bookingCodes = (isset($bookings) && $bookings->count() > 1)
+                ? $bookings->pluck('booking_code')->join(', ')
+                : ($booking->booking_code ?? '');
+        @endphp
+        <div class="bg-[#F8FAFC] px-6 py-4 border-b border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
             <div>
-                <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider">Kode Booking</span>
-                <span class="font-mono text-base font-bold text-[#4F46E5] tracking-wide">
-                    @if (isset($bookings) && $bookings->count() > 1)
-                        {{ $bookings->pluck('booking_code')->join(', ') }}
-                    @else
-                        {{ $booking->booking_code ?? '-' }}
+                <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider mb-1">Kode Booking</span>
+                <div class="flex items-center gap-2">
+                    <span class="font-mono text-base font-bold text-[#4F46E5] tracking-wide break-all">
+                        {{ $bookingCodes ?: '-' }}
+                    </span>
+                    @if(!empty($bookingCodes))
+                        <button
+                            type="button"
+                            @click="navigator.clipboard.writeText('{{ $bookingCodes }}'); copiedCode = true; setTimeout(() => copiedCode = false, 2000)"
+                            class="inline-flex items-center gap-1 rounded-lg bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#4F46E5] px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer shrink-0"
+                            :title="copiedCode ? 'Tersalin!' : 'Salin Kode Booking'"
+                        >
+                            <svg x-show="!copiedCode" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <svg x-show="copiedCode" x-cloak class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span x-text="copiedCode ? 'Tersalin' : 'Salin'">Salin</span>
+                        </button>
                     @endif
-                </span>
+                </div>
             </div>
             <div class="sm:text-right">
-                <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider">Order ID</span>
-                <span class="font-mono text-xs sm:text-sm font-semibold text-[#0F172A]">{{ $payment->order_id }}</span>
+                <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider mb-1">Order ID</span>
+                <div class="flex items-center sm:justify-end gap-2">
+                    <span class="font-mono text-xs sm:text-sm font-semibold text-[#0F172A]">{{ $payment->order_id }}</span>
+                    <button
+                        type="button"
+                        @click="navigator.clipboard.writeText('{{ $payment->order_id }}'); copiedOrderId = true; setTimeout(() => copiedOrderId = false, 2000)"
+                        class="inline-flex items-center gap-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer shrink-0"
+                        :title="copiedOrderId ? 'Tersalin!' : 'Salin Order ID'"
+                    >
+                        <svg x-show="!copiedOrderId" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <svg x-show="copiedOrderId" x-cloak class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span x-text="copiedOrderId ? 'Tersalin' : 'Salin'">Salin</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -308,4 +353,8 @@
     </div>
 </div>
 
+@endsection
+
+@section('scripts')
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 @endsection

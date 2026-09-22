@@ -33,16 +33,24 @@
 
         {{-- Left Column: Calendar & Details --}}
         <section>
-            <div class="mb-6">
-                <a
-                    href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
-                    class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#64748B] hover:text-[#4F46E5] transition-colors mb-2"
-                >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+            {{-- Service Context Bar (S2.1) --}}
+            <div class="mb-6 flex items-center gap-3.5 rounded-2xl border border-[#E2E8F0] bg-white p-3.5 sm:p-4 shadow-xs">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4F46E5]">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
-                    Kembali ke Pilih Layanan
-                </a>
+                </span>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">Layanan Terpilih</p>
+                    <p class="text-sm font-bold text-[#0F172A] truncate">{{ $service->namalayanan ?? 'Layanan' }}</p>
+                </div>
+                <div class="text-right shrink-0">
+                    <p class="text-sm sm:text-base font-extrabold text-[#4F46E5]">Rp {{ number_format($service->harga ?? 0, 0, ',', '.') }}</p>
+                    <p class="text-[11px] text-[#64748B]">{{ $service->durasi ?? 60 }} {{ $service->satuan_durasi ?: 'menit' }}</p>
+                </div>
+            </div>
+
+            <div class="mb-6">
                 <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Pilih Tanggal</h1>
                 <p class="mt-1 text-sm text-[#64748B]">Pilih tanggal yang tersedia untuk reservasi Anda.</p>
             </div>

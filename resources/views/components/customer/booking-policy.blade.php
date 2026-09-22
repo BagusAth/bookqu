@@ -8,7 +8,7 @@
         <div>
             <h4 class="text-xs sm:text-sm font-bold text-[#0F172A]">Ketentuan &amp; Kebijakan Booking</h4>
             <p class="mt-1 text-xs text-[#64748B] leading-relaxed">
-                Pembatalan atau reschedule jadwal dapat dilakukan melalui link kelola booking paling lambat 24 jam sebelum sesi dimulai. Mohon hadir tepat waktu.
+                Pembatalan atau reschedule jadwal dapat dilakukan melalui link kelola booking paling lambat <strong>{{ (isset($tenant) && $tenant->cancel_before_hours) ? $tenant->cancel_before_hours : 24 }} jam</strong> sebelum sesi dimulai. Mohon hadir tepat waktu.
             </p>
         </div>
     </div>
