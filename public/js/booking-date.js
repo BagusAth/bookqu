@@ -30,7 +30,6 @@ document.addEventListener('alpine:init', () => {
             this.tenantSlug = root?.dataset.tenantSlug || '';
             this.minDate = root?.dataset.minDate || '';
             this.maxDate = root?.dataset.maxDate || '';
-            this.selectedDate = root?.dataset.selectedDate || '';
             this.simulateAvailability = root?.dataset.simulate === 'true';
 
             this.service = serviceEl ? JSON.parse(serviceEl.textContent || 'null') : null;
@@ -51,23 +50,22 @@ document.addEventListener('alpine:init', () => {
                 this.seedSimulatedAvailability();
             }
 
-            // No date selected by default on enter or back navigation
-            this.selectedDate = '';
+            // Restore date from session if available (Section 26: Date persistence on back navigation)
+            this.selectedDate = root?.dataset.selectedDate || '';
             this.isSubmitting = false;
 
-            const baseDate = this.today;
+            const baseDate = this.selectedDate ? (this.parseDate(this.selectedDate) || this.today) : this.today;
             this.currentYear = baseDate.getFullYear();
             this.currentMonth = baseDate.getMonth();
 
-            const resetState = () => {
+            const resetSubmit = () => {
                 this.isSubmitting = false;
-                this.selectedDate = '';
             };
 
-            window.addEventListener('pageshow', resetState);
-            window.addEventListener('pagehide', resetState);
-            window.addEventListener('popstate', resetState);
-            window.addEventListener('booking-reset-submitting', resetState);
+            window.addEventListener('pageshow', resetSubmit);
+            window.addEventListener('pagehide', resetSubmit);
+            window.addEventListener('popstate', resetSubmit);
+            window.addEventListener('booking-reset-submitting', resetSubmit);
         },
 
         seedSimulatedAvailability() {
@@ -85,6 +83,7 @@ document.addEventListener('alpine:init', () => {
                     date: dateString,
                     total_slots: slots,
                     available_slots: slots,
+                    is_blocked: false,
                 };
                 cursor.setDate(cursor.getDate() + 1);
             }
@@ -127,22 +126,24 @@ document.addEventListener('alpine:init', () => {
 
         buildDay(date, isCurrentMonth) {
             const dateString = this.formatDateString(date);
+            const blocked = this.isBlocked(dateString);
             const available = this.isAvailable(dateString);
             const full = this.isFull(dateString);
             const outsideRange = this.isOutsideRange(dateString);
-            const disabled = !isCurrentMonth || outsideRange || !available;
+            const disabled = !isCurrentMonth || outsideRange || !available || blocked;
 
             return {
                 key: `${dateString}-${isCurrentMonth ? 'current' : 'adjacent'}`,
                 date: dateString,
                 label: date.getDate(),
                 isCurrentMonth,
-                isAvailable: isCurrentMonth && available,
+                isAvailable: isCurrentMonth && available && !blocked,
                 isFull: isCurrentMonth && full,
+                isBlocked: isCurrentMonth && blocked,
                 isDisabled: disabled,
                 isSelected: this.selectedDate === dateString,
                 isToday: this.isToday(dateString),
-                showSlots: isCurrentMonth && !outsideRange && (available || full),
+                showSlots: isCurrentMonth && !outsideRange && (available || full || blocked),
             };
         },
 
@@ -196,13 +197,14 @@ document.addEventListener('alpine:init', () => {
 
         selectDate(date) {
             if (this.isSubmitting) return;
-            if (!date || this.isOutsideRange(date) || !this.isAvailable(date)) {
+
+            const dayObj = this.calendarDays.find(d => d.date === date && d.isCurrentMonth);
+            if (dayObj && dayObj.isDisabled) {
                 return;
             }
 
             this.selectedDate = date;
 
-            // Update DOM input synchronously so native form.submit() immediately receives the tanggal
             const form = this.$refs?.confirmForm || document.getElementById('booking-date-form');
             if (form) {
                 let input = form.querySelector('input[name="tanggal"]');
@@ -224,7 +226,16 @@ document.addEventListener('alpine:init', () => {
                 return false;
             }
 
-            return entry.available_slots > 0;
+            return !entry.is_blocked && entry.available_slots > 0;
+        },
+
+        isBlocked(date) {
+            const entry = this.availabilityByDate[date];
+            if (!entry) {
+                return false;
+            }
+
+            return entry.is_blocked === true;
         },
 
         isFull(date) {
@@ -233,7 +244,7 @@ document.addEventListener('alpine:init', () => {
                 return false;
             }
 
-            return entry.available_slots === 0 && entry.total_slots > 0;
+            return !entry.is_blocked && entry.available_slots === 0 && entry.total_slots > 0;
         },
 
         isOutsideRange(date) {
@@ -260,10 +271,19 @@ document.addEventListener('alpine:init', () => {
             return entry ? entry.available_slots : 0;
         },
 
+        /**
+         * Prescriptive Semantics (Section 24 & 25)
+         * is_blocked === true -> "Tidak tersedia"
+         * available_slots === 0 && !is_blocked -> "Penuh"
+         */
         slotLabel(date) {
             const entry = this.availabilityByDate[date];
             if (!entry) {
                 return '';
+            }
+
+            if (entry.is_blocked === true) {
+                return 'Tutup';
             }
 
             if (entry.available_slots === 0) {
@@ -322,9 +342,6 @@ document.addEventListener('alpine:init', () => {
             }
             if (this.isSubmitting) return;
             this.isSubmitting = true;
-            setTimeout(() => {
-                this.isSubmitting = false;
-            }, 1200);
             const form = this.$refs?.confirmForm || document.getElementById('booking-date-form');
             if (form) {
                 let input = form.querySelector('input[name="tanggal"]');

@@ -75,7 +75,7 @@
             <div class="booking-shell mx-auto flex w-full max-w-[1280px] items-center justify-between px-4 sm:px-6 py-3.5">
                 {{-- Business & Platform Identity --}}
                 <div class="flex items-center gap-3">
-                    <a href="{{ url('/' . ($tenant->slug ?? '')) }}" class="flex items-center gap-2.5 transition hover:opacity-90">
+                    <a href="{{ isset($tenant) && $tenant ? route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) : url('/') }}" class="flex items-center gap-2.5 transition hover:opacity-90">
                         @if(isset($tenant) && $tenant->logo_path)
                             <img src="{{ Storage::url($tenant->logo_path) }}" alt="{{ $tenant->namabisnis }}" class="h-9 w-9 rounded-xl object-cover border border-[#E2E8F0] shadow-xs" />
                         @else
@@ -136,6 +136,32 @@
 
         {{-- Main Page Content --}}
         <main class="booking-shell mx-auto w-full max-w-[1280px] px-4 sm:px-6 pb-28 sm:pb-24 pt-6 sm:pt-8 flex-grow">
+            {{-- Flash Messages --}}
+            @if(session('info'))
+                <div class="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs sm:text-sm text-blue-800 shadow-2xs flex items-center gap-2">
+                    <svg class="h-4 w-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{{ session('info') }}</span>
+                </div>
+            @endif
+            @if(session('success'))
+                <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs sm:text-sm text-emerald-800 shadow-2xs flex items-center gap-2">
+                    <svg class="h-4 w-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{{ session('success') }}</span>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-800 shadow-2xs flex items-center gap-2">
+                    <svg class="h-4 w-4 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
+
             @yield('content')
         </main>
 

@@ -157,10 +157,11 @@ class BookingManageController extends Controller
             abort(404, 'Booking tidak ditemukan.');
         }
 
-        // Token must match either cancellation or reschedule token
+        // Token must match either cancellation, reschedule token, or payment manage_token
         $validToken = $token && (
             hash_equals((string) $booking->cancellation_token, $token) ||
-            hash_equals((string) $booking->reschedule_token, $token)
+            hash_equals((string) $booking->reschedule_token, $token) ||
+            ($booking->payment && !empty($booking->payment->manage_token) && hash_equals((string) $booking->payment->manage_token, $token))
         );
 
         if (!$validToken) {

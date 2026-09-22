@@ -1,4 +1,4 @@
-<div class="booking-calendar rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-xs">
+<div class="booking-calendar rounded-2xl border border-[#E2E8F0] bg-white p-3.5 sm:p-6 shadow-xs">
     {{-- Month Navigator --}}
     <div class="flex items-center justify-between pb-4 border-b border-[#F1F5F9]">
         <div>
@@ -8,7 +8,7 @@
         <div class="flex items-center gap-1.5 sm:gap-2">
             <button
                 type="button"
-                class="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#475569] shadow-2xs transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] disabled:opacity-30 disabled:pointer-events-none"
+                class="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#475569] shadow-2xs transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                 @click="prevMonth"
                 :disabled="!canGoPrev"
                 aria-label="Bulan sebelumnya"
@@ -19,7 +19,7 @@
             </button>
             <button
                 type="button"
-                class="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#475569] shadow-2xs transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] disabled:opacity-30 disabled:pointer-events-none"
+                class="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#475569] shadow-2xs transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                 @click="nextMonth"
                 :disabled="!canGoNext"
                 aria-label="Bulan berikutnya"
@@ -32,7 +32,7 @@
     </div>
 
     {{-- Indonesian Day Headers --}}
-    <div class="mt-4 grid grid-cols-7 gap-1 sm:gap-2 text-center text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#64748B]">
+    <div class="mt-4 grid grid-cols-7 gap-1 sm:gap-2 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#64748B]">
         <span>Sen</span>
         <span>Sel</span>
         <span>Rab</span>
@@ -47,14 +47,15 @@
         <template x-for="day in calendarDays" :key="day.key">
             <button
                 type="button"
-                class="booking-calendar__cell min-h-[56px] sm:min-h-[64px] rounded-xl flex flex-col items-center justify-center transition-all relative select-none"
+                class="booking-calendar__cell min-h-[50px] sm:min-h-[64px] p-1 sm:p-2 rounded-xl flex flex-col items-center justify-center transition-all relative select-none"
                 :class="{
                     'opacity-25 pointer-events-none': !day.isCurrentMonth,
                     'booking-calendar__cell--available hover:bg-[#EEF2FF] hover:border-[#C7D2FE] cursor-pointer': day.isAvailable && !day.isSelected,
                     'booking-calendar__cell--selected bg-[#4F46E5] text-white shadow-md font-bold': day.isSelected,
                     'booking-calendar__cell--disabled opacity-35 cursor-not-allowed': day.isDisabled && day.isCurrentMonth,
                     'border border-[#4F46E5] font-bold': day.isToday && !day.isSelected,
-                    'bg-red-50 text-red-600 cursor-not-allowed': day.isFull && day.isCurrentMonth
+                    'bg-red-50 text-red-600 cursor-not-allowed': day.isFull && day.isCurrentMonth,
+                    'bg-slate-50 text-slate-400 cursor-not-allowed': day.isBlocked && day.isCurrentMonth
                 }"
                 :disabled="day.isDisabled"
                 :aria-selected="day.isSelected"
@@ -68,7 +69,8 @@
                         :class="{
                             'text-white/90': day.isSelected,
                             'bg-emerald-100 text-emerald-700': day.isAvailable && !day.isSelected,
-                            'bg-red-100 text-red-600 font-bold': day.isFull && !day.isSelected
+                            'bg-red-100 text-red-600 font-bold': day.isFull && !day.isSelected,
+                            'bg-slate-100 text-slate-500': day.isBlocked && !day.isSelected
                         }"
                         x-text="slotLabel(day.date)"
                     ></span>
@@ -77,7 +79,7 @@
         </template>
     </div>
 
-    {{-- Legend --}}
+    {{-- Legend (Section 25: Tersedia, Penuh, Tidak tersedia) --}}
     <div class="mt-5 pt-4 border-t border-[#F1F5F9] flex flex-wrap items-center justify-between gap-3 text-xs text-[#64748B]">
         <div class="flex items-center gap-1.5">
             <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
@@ -88,8 +90,8 @@
             <span>Penuh</span>
         </div>
         <div class="flex items-center gap-1.5">
-            <span class="h-2.5 w-2.5 rounded-full bg-[#E2E8F0]"></span>
-            <span>Tidak Tersedia</span>
+            <span class="h-2.5 w-2.5 rounded-full bg-[#CBD5E1]"></span>
+            <span>Tidak tersedia</span>
         </div>
     </div>
 </div>

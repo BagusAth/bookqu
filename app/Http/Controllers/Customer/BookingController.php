@@ -201,6 +201,7 @@ class BookingController extends Controller
                     'date' => $dateStr,
                     'total_slots' => (int) $row->total_slots,
                     'available_slots' => $isBlocked ? 0 : (int) $row->available_slots,
+                    'is_blocked' => $isBlocked,
                 ];
             })->values()->all();
         });
@@ -216,7 +217,7 @@ class BookingController extends Controller
             'duration_unit' => $service->satuan_durasi ?: 'menit',
         ];
 
-        $selectedDate = null;
+        $selectedDate = $booking['tanggal'] ?? null;
 
         return view('customer.booking.date-selection', [
             'tenant' => $tenant,
@@ -469,11 +470,17 @@ class BookingController extends Controller
             $isBooked = $row['booking_count'] > 0;
             $isAvailable = !$isPast && !$isBooked;
             $slotPrice = $row['harga_override'] !== null ? (float) $row['harga_override'] : (float) $service->harga;
+            $durasiMenit = (int) ($service->durasi ?: 60);
+            $slotEndDateTime = (clone $slotDateTime)->addMinutes($durasiMenit);
+            $timeRangeLabel = $slotDateTime->format('H:i') . ' – ' . $slotEndDateTime->format('H:i');
 
             return [
                 'id' => $row['id'],
                 'time' => $slotDateTime->format('H:i'),
-                'label' => $slotDateTime->format('H:i'),
+                'label' => $timeRangeLabel,
+                'start_time' => $slotDateTime->format('H:i'),
+                'end_time' => $slotEndDateTime->format('H:i'),
+                'range_label' => $timeRangeLabel,
                 'period' => 'WIB',
                 'session' => $session,
                 'price' => $slotPrice,
@@ -1225,31 +1232,53 @@ class BookingController extends Controller
             return CustomerBookingRoutes::route('customer.booking.invoice', [$slug_usaha, $payment]);
         }
 
-        if ($payment->isExpired() && $payment->status === 'pending') {
-            DB::transaction(function () use ($payment) {
-                $lockedPayment = Payment::lockForUpdate()->find($payment->id);
-                if ($lockedPayment && $lockedPayment->status === 'pending') {
-                    $lockedPayment->update(['status' => 'gagal']);
-                    $bookings = Booking::lockForUpdate()->where('idpayment', $lockedPayment->id)->get();
-                    foreach ($bookings as $bk) {
-                        $bk->update(['status' => 'cancelled']);
-                    }
+        if ($payment->status === 'gagal') {
+            $payment->load(['bookings.layanan']);
+            return view('customer.booking.payment', [
+                'tenant' => $tenant,
+                'payment' => $payment,
+                'paymentState' => 'failed',
+                'snapToken' => null,
+                'clientKey' => config('midtrans.client_key'),
+                'snapUrl' => config('midtrans.snap_url'),
+            ]);
+        }
 
-                    DB::afterCommit(function () use ($bookings) {
+        if ($payment->status === 'kadaluarsa' || ($payment->isExpired() && $payment->status === 'pending')) {
+            if ($payment->status === 'pending') {
+                DB::transaction(function () use ($payment) {
+                    $lockedPayment = Payment::lockForUpdate()->find($payment->id);
+                    if ($lockedPayment && $lockedPayment->status === 'pending') {
+                        $lockedPayment->update(['status' => 'kadaluarsa']);
+                        $bookings = Booking::lockForUpdate()->where('idpayment', $lockedPayment->id)->get();
                         foreach ($bookings as $bk) {
-                            if ($bk->idlayanan && $bk->tanggalbooking) {
-                                $tanggal = is_string($bk->tanggalbooking)
-                                    ? $bk->tanggalbooking
-                                    : $bk->tanggalbooking->format('Y-m-d');
-                                $this->clearBookingAvailabilityCache((int) $bk->idtenant, (int) $bk->idlayanan, $tanggal);
-                            }
+                            $bk->update(['status' => 'cancelled']);
                         }
-                    });
-                }
-            });
 
-            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha)
-                ->with('error', 'Waktu pembayaran telah habis.');
+                        DB::afterCommit(function () use ($bookings) {
+                            foreach ($bookings as $bk) {
+                                if ($bk->idlayanan && $bk->tanggalbooking) {
+                                    $tanggal = is_string($bk->tanggalbooking)
+                                        ? $bk->tanggalbooking
+                                        : $bk->tanggalbooking->format('Y-m-d');
+                                    $this->clearBookingAvailabilityCache((int) $bk->idtenant, (int) $bk->idlayanan, $tanggal);
+                                }
+                            }
+                        });
+                    }
+                });
+                $payment->refresh();
+            }
+
+            $payment->load(['bookings.layanan']);
+            return view('customer.booking.payment', [
+                'tenant' => $tenant,
+                'payment' => $payment,
+                'paymentState' => 'expired',
+                'snapToken' => null,
+                'clientKey' => config('midtrans.client_key'),
+                'snapUrl' => config('midtrans.snap_url'),
+            ]);
         }
 
         $payment->load(['bookings.layanan']);
@@ -1257,6 +1286,7 @@ class BookingController extends Controller
         return view('customer.booking.payment', [
             'tenant' => $tenant,
             'payment' => $payment,
+            'paymentState' => 'pending',
             'snapToken' => $payment->snap_token,
             'clientKey' => config('midtrans.client_key'),
             'snapUrl' => config('midtrans.snap_url'),

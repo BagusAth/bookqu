@@ -16,7 +16,7 @@
     {{-- ── Elevated Header ── --}}
     <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
         <div class="mx-auto flex w-full max-w-5xl items-center justify-between px-4 sm:px-6 py-3.5">
-            <a href="{{ $booking->tenant?->slug ? url('/' . $booking->tenant->slug) : '/' }}" class="flex items-center gap-2.5 group">
+            <a href="{{ $booking->tenant?->slug ? route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $booking->tenant->slug) : '/' }}" class="flex items-center gap-2.5 group">
                 <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-xs group-hover:scale-105 transition-transform">
                     {{ strtoupper(substr($booking->tenant?->namabisnis ?? 'B', 0, 1)) }}
                 </div>

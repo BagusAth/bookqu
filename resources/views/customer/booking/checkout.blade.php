@@ -1,9 +1,9 @@
 @extends('customer.layouts.booking-shell')
 
-@section('title', 'Isi Data Diri')
+@section('title', 'Data Pemesan')
 @section('current_step', 4)
 @section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug))
-@section('back_label', 'Pilih Jam')
+@section('back_label', 'Pilih Waktu')
 
 @section('content')
 <div id="booking-checkout-root" data-tenant-slug="{{ $tenant->slug }}">
@@ -25,11 +25,11 @@
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                     </svg>
-                    Kembali ke Pemilihan Jam
+                    Kembali ke Pilih Waktu
                 </a>
-                <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Isi Data Diri</h1>
+                <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Data Pemesan<span class="sr-only"> Isi Data Diri</span></h1>
                 <p class="mt-1 text-sm text-[#64748B]">
-                    Lengkapi informasi kontak Anda untuk menerima konfirmasi booking dan bukti invoice.
+                    Pastikan nama, email, dan nomor WhatsApp Anda sudah benar.
                 </p>
             </div>
 
@@ -50,10 +50,7 @@
                 </div>
             @endif
 
-
-
-
-            <div class="rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-7 shadow-xs space-y-5">
+            <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-7 shadow-xs space-y-5">
                 <div class="border-b border-[#F1F5F9] pb-3">
                     <h2 class="text-base font-bold text-[#0F172A]">Informasi Pemesan</h2>
                     <p class="text-xs text-[#64748B] mt-0.5">Pastikan data yang dimasukkan aktif dan valid.</p>
@@ -136,20 +133,85 @@
 
                 {{-- Remember Me / Auto-fill Checkbox --}}
                 <div class="pt-1 border-t border-[#F1F5F9]">
-                    <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                    <label class="flex items-start sm:items-center gap-2.5 cursor-pointer select-none">
                         <input
                             type="checkbox"
                             id="remember-customer-data"
-                            class="h-4 w-4 rounded border-gray-300 text-[#4F46E5] focus:ring-[#EEF2FF] cursor-pointer"
+                            class="mt-0.5 sm:mt-0 h-4 w-4 rounded border-gray-300 text-[#4F46E5] focus:ring-[#EEF2FF] cursor-pointer"
                         />
                         <span class="text-xs font-semibold text-[#475569]">
-                            Ingat data saya di browser ini untuk kemudahan pemesanan berikutnya
+                            Simpan data kontak di perangkat ini untuk pemesanan berikutnya.
                         </span>
                     </label>
                 </div>
             </div>
 
+            {{-- Mobile Reservation Review Card (Section 28) --}}
+            <div class="block lg:hidden mt-6 rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-5 shadow-xs">
+                <div class="border-b border-[#F1F5F9] pb-3 mb-4">
+                    <h2 class="text-base font-bold text-[#0F172A]">Detail Reservasi</h2>
+                    <p class="text-xs text-[#64748B] mt-0.5">Tinjau kembali rincian pemesanan Anda sebelum membayar</p>
+                </div>
 
+                <div class="space-y-3.5">
+                    {{-- Layanan --}}
+                    <div class="flex items-start gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Layanan</p>
+                            <p class="text-sm font-bold text-[#0F172A] truncate">{{ $service->namalayanan }}</p>
+                            <p class="text-xs text-[#64748B] mt-0.5">{{ $service->durasi }} {{ $service->satuan_durasi ?: 'menit' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Tanggal & Sesi --}}
+                    <div class="flex items-start gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Jadwal Terpilih</p>
+                            <p class="text-sm font-bold text-[#0F172A]">
+                                {{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d F Y') }}
+                            </p>
+                            <div class="mt-2 flex flex-wrap gap-1.5">
+                                @foreach ($selectedTimes as $time)
+                                    @php
+                                        $st = \Carbon\Carbon::createFromFormat('H:i', substr($time, 0, 5));
+                                        $et = (clone $st)->addMinutes($service->durasi);
+                                    @endphp
+                                    <span class="inline-flex items-center gap-1 rounded-lg bg-[#4F46E5]/10 px-2 py-1 text-xs font-bold text-[#4F46E5]">
+                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        {{ substr($time, 0, 5) }} – {{ $et->format('H:i') }} WIB
+                                    </span>
+                                @endforeach
+                            </div>
+                            <p class="text-[11px] text-[#64748B] mt-1.5 font-medium">
+                                {{ count($selectedTimes) }} sesi ({{ count($selectedTimes) * $service->durasi }} {{ $service->satuan_durasi ?: 'menit' }})
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- Total Harga --}}
+                    <div class="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-[#64748B]">Total Bayar</p>
+                            <p class="text-[11px] text-[#94A3B8]">Termasuk biaya layanan</p>
+                        </div>
+                        <span class="text-lg font-extrabold text-[#4F46E5]">
+                            Rp {{ number_format($hargaAkhir, 0, ',', '.') }}
+                        </span>
+                    </div>
+                </div>
+            </div>
 
             {{-- Policy --}}
             <div class="mt-6">
@@ -194,17 +256,21 @@
                             </p>
                             <div class="mt-1.5 flex flex-wrap gap-1.5">
                                 @foreach ($selectedTimes as $time)
+                                    @php
+                                        $st = \Carbon\Carbon::createFromFormat('H:i', substr($time, 0, 5));
+                                        $et = (clone $st)->addMinutes($service->durasi);
+                                    @endphp
                                     <span class="inline-flex items-center gap-1 rounded-lg bg-[#4F46E5]/10 px-2 py-1 text-xs font-bold text-[#4F46E5]">
                                         <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
-                                        {{ $time }} WIB
+                                        {{ substr($time, 0, 5) }} – {{ $et->format('H:i') }} WIB
                                     </span>
                                 @endforeach
                             </div>
-                            @if (count($selectedTimes) > 1)
-                                <p class="text-[11px] text-[#64748B] mt-1 font-medium">{{ count($selectedTimes) }} slot waktu dipilih</p>
-                            @endif
+                            <p class="text-[11px] text-[#64748B] mt-1 font-medium">
+                                {{ count($selectedTimes) }} sesi ({{ count($selectedTimes) * $service->durasi }} {{ $service->satuan_durasi ?: 'menit' }})
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -216,19 +282,11 @@
                 </div>
                 @endif
 
-                {{-- Total Biaya & Rincian Add-ons --}}
+                {{-- Total Biaya --}}
                 <div class="mt-5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
                     <div class="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
                         <span>Biaya Layanan{{ count($selectedTimes) > 1 ? ' (' . count($selectedTimes) . ' slot)' : '' }}</span>
                         <span class="font-medium text-[#0F172A]">Rp {{ number_format($hargaAkhir, 0, ',', '.') }}</span>
-                    </div>
-                    <div id="summary-addons-row" class="hidden items-center justify-between text-xs text-[#64748B] mb-2">
-                        <span>Item Tambahan (<span id="summary-addons-count">0</span>)</span>
-                        <span id="summary-addons-total" class="font-medium text-[#4F46E5]">+ Rp 0</span>
-                    </div>
-                    <div id="summary-discount-row" class="hidden items-center justify-between text-xs text-emerald-600 mb-2 font-semibold">
-                        <span>Diskon Kupon (<span id="summary-voucher-code"></span>)</span>
-                        <span id="summary-discount-total">- Rp 0</span>
                     </div>
                     <div class="border-t border-[#E2E8F0] pt-2 mt-2 flex items-center justify-between">
                         <span class="text-sm font-bold text-[#0F172A]">Total Bayar</span>
@@ -258,7 +316,7 @@
                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                     </svg>
-                    Kembali ke Pilih Jam
+                    Kembali ke Pilih Waktu
                 </a>
 
                 <div class="mt-4 flex items-center justify-center gap-1.5 text-xs text-[#64748B]">
@@ -272,23 +330,21 @@
 
         {{-- Mobile Bottom Floating Action Bar --}}
         <div class="booking-mobile-bar lg:hidden">
-            <div class="flex items-center justify-between gap-3">
+            <div class="max-w-4xl mx-auto flex items-center justify-between gap-3">
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] text-[#64748B] truncate">{{ $service->namalayanan }}</p>
                     <div class="flex items-baseline gap-1.5">
                         <p id="mobile-total-display" class="text-base font-black text-[#4F46E5]">
                             Rp {{ number_format($hargaAkhir, 0, ',', '.') }}
                         </p>
-                        <span id="mobile-discount-badge" class="hidden text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
-                            Diskon Aktif
-                        </span>
                     </div>
                 </div>
                 <button
                     type="submit"
+                    id="mobile-submit-checkout-btn"
                     class="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all active:scale-95 shrink-0"
                 >
-                    <span>Lanjut Bayar</span>
+                    <span>Lanjut ke Pembayaran</span>
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
@@ -300,39 +356,13 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const basePrice = {{ (int) $hargaAkhir }};
-        const serviceId = {{ (int) $service->id }};
-        const validateVoucherUrl = '{{ route("customer.booking.validate-voucher", $tenant->slug) }}';
-        const csrfToken = '{{ csrf_token() }}';
-
-        // Elements
-        const addonCheckboxes = document.querySelectorAll('.addon-checkbox');
-        const desktopTotal = document.getElementById('desktop-total-display');
-        const mobileTotal = document.getElementById('mobile-total-display');
-        const mobileDiscountBadge = document.getElementById('mobile-discount-badge');
-        const addonsRow = document.getElementById('summary-addons-row');
-        const addonsCount = document.getElementById('summary-addons-count');
-        const addonsTotal = document.getElementById('summary-addons-total');
-
-        const voucherInput = document.getElementById('voucher_code_input');
-        const btnApplyVoucher = document.getElementById('btn-apply-voucher');
-        const btnApplyText = document.getElementById('btn-apply-text');
-        const appliedVoucherCodeInput = document.getElementById('applied_voucher_code');
-        const voucherStatusBox = document.getElementById('voucher-status-box');
-        const voucherIcon = document.getElementById('voucher-icon');
-        const voucherMessage = document.getElementById('voucher-message');
-        const btnRemoveVoucher = document.getElementById('btn-remove-voucher');
-
-        const summaryDiscountRow = document.getElementById('summary-discount-row');
-        const summaryVoucherCode = document.getElementById('summary-voucher-code');
-        const summaryDiscountTotal = document.getElementById('summary-discount-total');
-
-        // Customer Info fields & Remember Me
         const inputName = document.getElementById('namapelanggan');
         const inputEmail = document.getElementById('email');
         const inputPhone = document.getElementById('nomorhp');
         const chkRemember = document.getElementById('remember-customer-data');
         const checkoutForm = document.getElementById('booking-checkout-form');
+        const submitBtn = document.getElementById('submit-checkout-btn');
+        const mobileSubmitBtn = document.getElementById('mobile-submit-checkout-btn');
 
         const STORAGE_KEY = 'bookqu_saved_customer';
 
@@ -352,7 +382,7 @@
             console.warn('LocalStorage not accessible:', e);
         }
 
-        // Save or remove customer data upon submit
+        // Save or remove customer data upon submit & prevent double submission
         if (checkoutForm) {
             checkoutForm.addEventListener('submit', function () {
                 if (chkRemember && chkRemember.checked) {
@@ -365,182 +395,16 @@
                 } else {
                     localStorage.removeItem(STORAGE_KEY);
                 }
-            });
-        }
 
-        let appliedDiscount = 0;
-        let appliedCode = appliedVoucherCodeInput ? appliedVoucherCodeInput.value.trim() : '';
-
-        function formatRupiah(num) {
-            return 'Rp ' + new Intl.NumberFormat('id-ID').format(num);
-        }
-
-        function getSubtotal() {
-            let addonSum = 0;
-            addonCheckboxes.forEach(cb => {
-                if (cb.checked) {
-                    addonSum += parseInt(cb.dataset.price || '0', 10);
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+                }
+                if (mobileSubmitBtn) {
+                    mobileSubmitBtn.disabled = true;
+                    mobileSubmitBtn.classList.add('opacity-75', 'cursor-not-allowed');
                 }
             });
-            return basePrice + addonSum;
-        }
-
-        function recalculate() {
-            let addonSum = 0;
-            let count = 0;
-            addonCheckboxes.forEach(cb => {
-                if (cb.checked) {
-                    addonSum += parseInt(cb.dataset.price || '0', 10);
-                    count++;
-                }
-            });
-
-            const subtotal = basePrice + addonSum;
-            const grandTotal = Math.max(0, subtotal - appliedDiscount);
-
-            if (desktopTotal) desktopTotal.textContent = formatRupiah(grandTotal);
-            if (mobileTotal) mobileTotal.textContent = formatRupiah(grandTotal);
-
-            if (addonsRow) {
-                if (count > 0) {
-                    addonsRow.classList.remove('hidden');
-                    addonsRow.classList.add('flex');
-                    if (addonsCount) addonsCount.textContent = count;
-                    if (addonsTotal) addonsTotal.textContent = '+ ' + formatRupiah(addonSum);
-                } else {
-                    addonsRow.classList.add('hidden');
-                    addonsRow.classList.remove('flex');
-                }
-            }
-
-            if (summaryDiscountRow) {
-                if (appliedDiscount > 0) {
-                    summaryDiscountRow.classList.remove('hidden');
-                    summaryDiscountRow.classList.add('flex');
-                    if (summaryVoucherCode) summaryVoucherCode.textContent = appliedCode;
-                    if (summaryDiscountTotal) summaryDiscountTotal.textContent = '- ' + formatRupiah(appliedDiscount);
-                    if (mobileDiscountBadge) mobileDiscountBadge.classList.remove('hidden');
-                } else {
-                    summaryDiscountRow.classList.add('hidden');
-                    summaryDiscountRow.classList.remove('flex');
-                    if (mobileDiscountBadge) mobileDiscountBadge.classList.add('hidden');
-                }
-            }
-        }
-
-        async function validateAndApplyVoucher(code, silent = false) {
-            const cleanCode = code.trim().toUpperCase();
-            if (!cleanCode) return;
-
-            const currentSubtotal = getSubtotal();
-
-            if (!silent) {
-                btnApplyVoucher.disabled = true;
-                btnApplyText.textContent = 'Mengecek...';
-            }
-
-            try {
-                const res = await fetch(validateVoucherUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        voucher_code: cleanCode,
-                        amount: currentSubtotal,
-                        service_id: serviceId
-                    })
-                });
-
-                const data = await res.json();
-
-                if (data.valid) {
-                    appliedDiscount = data.discount_amount;
-                    appliedCode = data.code;
-                    appliedVoucherCodeInput.value = data.code;
-                    voucherInput.value = data.code;
-
-                    // Show success status
-                    voucherStatusBox.className = 'rounded-xl p-3 text-xs flex items-center justify-between gap-2 border border-emerald-200 bg-emerald-50 text-emerald-800';
-                    voucherIcon.innerHTML = `<svg class="h-4 w-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
-                    voucherMessage.textContent = `Kupon ${data.code} berhasil diterapkan! Hemat ${formatRupiah(data.discount_amount)}`;
-                    btnRemoveVoucher.classList.remove('hidden');
-                    voucherStatusBox.classList.remove('hidden');
-                } else {
-                    appliedDiscount = 0;
-                    appliedCode = '';
-                    appliedVoucherCodeInput.value = '';
-
-                    // Show error status
-                    voucherStatusBox.className = 'rounded-xl p-3 text-xs flex items-center justify-between gap-2 border border-red-200 bg-red-50 text-red-700';
-                    voucherIcon.innerHTML = `<svg class="h-4 w-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>`;
-                    voucherMessage.textContent = data.message || 'Kupon tidak dapat digunakan.';
-                    btnRemoveVoucher.classList.add('hidden');
-                    voucherStatusBox.classList.remove('hidden');
-                }
-            } catch (err) {
-                console.error('Voucher check error:', err);
-                if (!silent) {
-                    alert('Gagal memvalidasi kupon. Silakan coba lagi.');
-                }
-            } finally {
-                btnApplyVoucher.disabled = false;
-                btnApplyText.textContent = 'Terapkan';
-                recalculate();
-            }
-        }
-
-        function removeVoucher() {
-            appliedDiscount = 0;
-            appliedCode = '';
-            appliedVoucherCodeInput.value = '';
-            voucherInput.value = '';
-            voucherStatusBox.classList.add('hidden');
-            btnRemoveVoucher.classList.add('hidden');
-            recalculate();
-        }
-
-        if (btnApplyVoucher) {
-            btnApplyVoucher.addEventListener('click', function () {
-                const code = voucherInput.value;
-                if (!code.trim()) {
-                    voucherInput.focus();
-                    return;
-                }
-                validateAndApplyVoucher(code, false);
-            });
-        }
-
-        if (voucherInput) {
-            voucherInput.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    btnApplyVoucher.click();
-                }
-            });
-        }
-
-        if (btnRemoveVoucher) {
-            btnRemoveVoucher.addEventListener('click', removeVoucher);
-        }
-
-        addonCheckboxes.forEach(cb => {
-            cb.addEventListener('change', function () {
-                if (appliedCode) {
-                    validateAndApplyVoucher(appliedCode, true);
-                } else {
-                    recalculate();
-                }
-            });
-        });
-
-        // If old voucher_code exists on page load (e.g. from validation error redirect)
-        if (appliedCode) {
-            validateAndApplyVoucher(appliedCode, true);
-        } else {
-            recalculate();
         }
     });
 </script>

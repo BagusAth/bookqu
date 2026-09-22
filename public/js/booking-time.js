@@ -20,6 +20,7 @@ document.addEventListener('alpine:init', () => {
         },
         simulateAvailability: false,
         isSubmitting: false,
+        errorMessage: '',
 
         init() {
             const root = document.getElementById('booking-time-root');
@@ -39,7 +40,6 @@ document.addEventListener('alpine:init', () => {
                 try {
                     prevTimes = JSON.parse(prevTimesRaw);
                 } catch (_) {
-                    // If it's a single time string from old session format
                     if (prevTimesRaw && prevTimesRaw !== '[]') {
                         prevTimes = [prevTimesRaw];
                     }
@@ -51,6 +51,8 @@ document.addEventListener('alpine:init', () => {
             if (this.simulateAvailability && rawSlots.length === 0) {
                 rawSlots = this.buildSimulatedSlots();
             }
+
+            const duration = this.service?.duration || 60;
 
             this.timeSlots = rawSlots.map((slot, index) => {
                 const isAvailable = slot.is_available ?? true;
@@ -64,9 +66,24 @@ document.addEventListener('alpine:init', () => {
                     statusBadge = 'Sudah Dipesan';
                 }
 
+                const startTime = slot.start_time || slot.time;
+                let endTime = slot.end_time;
+                if (!endTime && startTime) {
+                    const [sh, sm] = startTime.split(':').map(Number);
+                    const totalMins = sh * 60 + sm + duration;
+                    const eh = Math.floor((totalMins / 60) % 24).toString().padStart(2, '0');
+                    const em = (totalMins % 60).toString().padStart(2, '0');
+                    endTime = `${eh}:${em}`;
+                }
+                const rangeLabel = slot.range_label || `${startTime} – ${endTime}`;
+
                 return {
                     ...slot,
                     id: slot.id ?? index + 1,
+                    time: startTime,
+                    start_time: startTime,
+                    end_time: endTime,
+                    range_label: rangeLabel,
                     isAvailable: isAvailable,
                     isDisabled: !isAvailable,
                     isBooked: isBooked,
@@ -90,51 +107,60 @@ document.addEventListener('alpine:init', () => {
                     }
                 });
             }
-            // Do NOT auto-select any slot on first visit
 
-            window.addEventListener('pageshow', () => {
+            const resetSubmit = () => {
                 this.isSubmitting = false;
-            });
-            window.addEventListener('pagehide', () => {
-                this.isSubmitting = false;
-            });
-            window.addEventListener('popstate', () => {
-                this.isSubmitting = false;
-            });
-            window.addEventListener('booking-reset-submitting', () => {
-                this.isSubmitting = false;
-            });
+            };
+
+            window.addEventListener('pageshow', resetSubmit);
+            window.addEventListener('pagehide', resetSubmit);
+            window.addEventListener('popstate', resetSubmit);
+            window.addEventListener('booking-reset-submitting', resetSubmit);
         },
 
         buildSimulatedSlots() {
             const template = [
                 '08:00',
-                '09:30',
+                '09:00',
+                '10:00',
                 '11:00',
-                '11:30',
                 '13:00',
-                '14:30',
+                '14:00',
+                '15:00',
                 '16:00',
-                '17:30',
-                '19:00',
+                '17:00',
             ];
 
             const selectedDate = this.parseDate(this.selectedDate);
             const now = new Date();
             const isToday = selectedDate ? this.isSameDay(selectedDate, now) : false;
+            const duration = this.service?.duration || 60;
+            const price = this.service?.price || 0;
+            const priceLabel = this.service?.price_label || ('Rp ' + new Intl.NumberFormat('id-ID').format(price));
 
             return template.map((time, index) => {
                 const session = this.resolveSession(time);
                 const period = 'WIB';
                 const isPast = isToday ? this.isTimePast(selectedDate, time, now) : false;
                 const isAvailable = !isPast;
+                const [sh, sm] = time.split(':').map(Number);
+                const totalMins = sh * 60 + sm + duration;
+                const eh = Math.floor((totalMins / 60) % 24).toString().padStart(2, '0');
+                const em = (totalMins % 60).toString().padStart(2, '0');
+                const endTime = `${eh}:${em}`;
+                const rangeLabel = `${time} – ${endTime}`;
 
                 return {
                     id: index + 1,
                     time,
-                    label: time,
+                    start_time: time,
+                    end_time: endTime,
+                    range_label: rangeLabel,
+                    label: rangeLabel,
                     period,
                     session,
+                    price: price,
+                    price_label: priceLabel,
                     is_available: isAvailable,
                     is_disabled: !isAvailable,
                     is_booked: false,
@@ -198,25 +224,77 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
-         * Toggle a slot's selection on/off (multi-select).
-         * No auto-submit — user must press the "Lanjut" button.
+         * Returns selected slot objects sorted chronologically.
+         */
+        get sortedSelectedSlots() {
+            return this.timeSlots
+                .filter(s => this.selectedTimes.some(st => st.id === s.id))
+                .sort((a, b) => a.time.localeCompare(b.time));
+        },
+
+        /**
+         * Early contiguous validation & slot selection.
+         * Enforces that multiple slots MUST be contiguous without gaps.
          */
         selectSlot(slot) {
             if (this.isSubmitting) return;
             if (!slot || slot.isDisabled) return;
+
+            this.errorMessage = '';
 
             const existingIndex = this.selectedTimes.findIndex(
                 (item) => item.id === slot.id
             );
 
             if (existingIndex >= 0) {
-                // Deselect
-                this.selectedTimes.splice(existingIndex, 1);
-                slot.isSelected = false;
-            } else {
-                // Select
+                // Deselection handling
+                if (this.selectedTimes.length <= 1) {
+                    this.selectedTimes = [];
+                    slot.isSelected = false;
+                    return;
+                }
+
+                const sorted = this.sortedSelectedSlots;
+                const isFirst = sorted[0].id === slot.id;
+                const isLast = sorted[sorted.length - 1].id === slot.id;
+
+                if (isFirst || isLast) {
+                    // Clicking an outer boundary slot simply removes it
+                    this.selectedTimes = this.selectedTimes.filter(item => item.id !== slot.id);
+                    slot.isSelected = false;
+                } else {
+                    // Clicking a middle slot trims the selection from that slot onwards
+                    const slotIndexInSorted = sorted.findIndex(s => s.id === slot.id);
+                    const slotsToKeep = sorted.slice(0, slotIndexInSorted);
+                    sorted.slice(slotIndexInSorted).forEach(s => {
+                        s.isSelected = false;
+                    });
+                    this.selectedTimes = slotsToKeep.map(s => ({ id: s.id, time: s.time }));
+                }
+                return;
+            }
+
+            // Selecting a new slot
+            if (this.selectedTimes.length === 0) {
                 this.selectedTimes.push({ id: slot.id, time: slot.time });
                 slot.isSelected = true;
+                return;
+            }
+
+            // Verify contiguousness against current selected range
+            const sorted = this.sortedSelectedSlots;
+            const earliest = sorted[0];
+            const latest = sorted[sorted.length - 1];
+
+            const followsLatest = slot.start_time === latest.end_time || slot.time === latest.end_time;
+            const precedesEarliest = slot.end_time === earliest.start_time || slot.end_time === earliest.time;
+
+            if (followsLatest || precedesEarliest) {
+                this.selectedTimes.push({ id: slot.id, time: slot.time });
+                slot.isSelected = true;
+            } else {
+                // Prescriptive copy from Section 22 & 52 (NO window.alert)
+                this.errorMessage = 'Slot harus berurutan. Pilih sesi yang berdekatan terlebih dahulu.';
             }
         },
 
@@ -253,33 +331,33 @@ document.addEventListener('alpine:init', () => {
             return this.selectedDate ? this.formatDate(this.selectedDate) : 'Pilih tanggal';
         },
 
-        /**
-         * Returns a sorted array of selected time strings for display.
-         */
         get sortedSelectedTimes() {
             return [...this.selectedTimes].sort((a, b) => a.time.localeCompare(b.time));
         },
 
         /**
-         * Human-readable label for all selected times.
+         * Prescriptive Mobile Time Summary (Section 27)
+         * If 1 slot: '10:00 – 11:00 WIB'
+         * If >= 2 slots: '2 sesi: 10:00 – 12:00 WIB' (compact, won't truncate on 360px phones)
          */
         get selectedTimesLabel() {
-            if (this.selectedTimes.length === 0) {
-                return 'Belum ada jam yang dipilih';
+            const slots = this.sortedSelectedSlots;
+            if (slots.length === 0) {
+                return 'Belum ada waktu yang dipilih';
             }
-            return this.sortedSelectedTimes.map((t) => t.time + ' WIB').join(', ');
+            if (slots.length === 1) {
+                const s = slots[0];
+                return (s.range_label || `${s.time} – ${s.end_time}`) + ' WIB';
+            }
+            const earliest = slots[0];
+            const latest = slots[slots.length - 1];
+            return `${slots.length} sesi: ${earliest.start_time || earliest.time} – ${latest.end_time} WIB`;
         },
 
-        /**
-         * How many slots are selected.
-         */
         get selectedCount() {
             return this.selectedTimes.length;
         },
 
-        /**
-         * Price label × number of selected slots (respecting per-slot price override).
-         */
         get totalLabel() {
             if (!this.service) return 'Rp 0';
             if (this.selectedTimes.length === 0) {
@@ -298,9 +376,6 @@ document.addEventListener('alpine:init', () => {
             return 'Rp ' + new Intl.NumberFormat('id-ID').format(total);
         },
 
-        /**
-         * Price per slot label.
-         */
         get perSlotLabel() {
             return this.service ? this.service.price_label : 'Rp 0';
         },
@@ -313,14 +388,16 @@ document.addEventListener('alpine:init', () => {
             return this.selectedTimes.length > 0 && !this.isSubmitting;
         },
 
+        /**
+         * Lifecycle-bound submission locking (Section 28)
+         */
         handleConfirm() {
             if (!this.canSubmit) return;
             this.isSubmitting = true;
-            setTimeout(() => {
-                this.isSubmitting = false;
-            }, 5000);
             const form = this.$refs?.confirmForm || document.getElementById('booking-time-form');
-            if (form) form.submit();
+            if (form) {
+                form.submit();
+            }
         }
     }));
 });

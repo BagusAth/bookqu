@@ -1,6 +1,6 @@
 @extends('customer.layouts.booking-shell')
 
-@section('title', 'Pilih Jam')
+@section('title', 'Pilih Waktu')
 @section('current_step', 3)
 @section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug))
 @section('back_label', 'Pilih Tanggal')
@@ -51,22 +51,41 @@
                     </svg>
                     Kembali ke Pemilihan Tanggal
                 </a>
-                <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Pilih Jam Sesi</h1>
-                <p class="mt-1 text-sm text-[#64748B]">
-                    Slot waktu yang tersedia untuk <strong class="text-[#0F172A]">{{ $selectedDateLabel }}</strong>.
-                    <span class="text-[#4F46E5] font-semibold">Anda bisa memilih lebih dari 1 jam.</span>
+                <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Pilih Waktu</h1>
+                <p class="mt-1 text-sm text-[#64748B]" x-text="selectedCount > 0 ? 'Pilih sesi yang berdekatan untuk melanjutkan.' : 'Pilih satu waktu, atau beberapa waktu yang berurutan untuk memesan sesi lebih lama.'">
+                    Pilih satu waktu, atau beberapa waktu yang berurutan untuk memesan sesi lebih lama.
                 </p>
             </div>
 
+            {{-- Backend Validation Errors --}}
             @if ($errors->any())
-                <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-700">
+                <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-700" role="alert">
                     {{ $errors->first() }}
                 </div>
             @endif
 
+            {{-- Frontend Contiguous Slot Inline Error Banner (Section 22 & 52: NO alert()) --}}
+            <div
+                x-show="errorMessage"
+                x-cloak
+                class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs sm:text-sm text-amber-800 flex items-center justify-between gap-2"
+                role="alert"
+                aria-live="polite"
+            >
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span x-text="errorMessage"></span>
+                </div>
+                <button type="button" @click="errorMessage = ''" class="text-amber-600 hover:text-amber-800 p-1 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
             <div class="space-y-6">
                 {{-- Sesi Pagi --}}
-                <div x-show="groupedSlots.morning.length" x-cloak class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-2xs">
+                <div x-show="groupedSlots.morning.length" x-cloak class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-6 shadow-2xs">
                     <div class="flex items-center gap-2 mb-4 pb-3 border-b border-[#F1F5F9]">
                         <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -84,7 +103,7 @@
                 </div>
 
                 {{-- Sesi Siang & Sore --}}
-                <div x-show="groupedSlots.afternoon.length" x-cloak class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-2xs">
+                <div x-show="groupedSlots.afternoon.length" x-cloak class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-6 shadow-2xs">
                     <div class="flex items-center gap-2 mb-4 pb-3 border-b border-[#F1F5F9]">
                         <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -102,7 +121,7 @@
                 </div>
 
                 {{-- Sesi Malam --}}
-                <div x-show="groupedSlots.evening.length" x-cloak class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-2xs">
+                <div x-show="groupedSlots.evening.length" x-cloak class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-6 shadow-2xs">
                     <div class="flex items-center gap-2 mb-4 pb-3 border-b border-[#F1F5F9]">
                         <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -148,7 +167,7 @@
             <div class="rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm transition-all"
                  :class="selectedCount > 0 ? 'border-[#4F46E5]/30 shadow-md shadow-[#4F46E5]/5' : ''">
                 <div class="border-b border-[#F1F5F9] pb-4">
-                    <h2 class="text-base font-bold text-[#0F172A]">Ringkasan Jam Terpilih</h2>
+                    <h2 class="text-base font-bold text-[#0F172A]">Ringkasan Waktu Terpilih</h2>
                     <p class="text-xs text-[#64748B] mt-0.5">Pilih satu atau lebih slot waktu lalu klik Lanjut</p>
                 </div>
 
@@ -181,8 +200,8 @@
                 {{-- Selected Times List --}}
                 <div class="mt-4">
                     <div class="flex items-center justify-between mb-2">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-[#64748B]">Jam Terpilih</p>
-                        <span class="text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] px-2 py-0.5 rounded-full" x-show="selectedCount > 0" x-text="selectedCount + ' slot'" x-cloak></span>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-[#64748B]">Waktu Terpilih</p>
+                        <span class="text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] px-2 py-0.5 rounded-full" x-show="selectedCount > 0" x-text="selectedCount + ' sesi'" x-cloak></span>
                     </div>
 
                     {{-- Empty state --}}
@@ -203,10 +222,10 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                         </svg>
                                     </span>
-                                    <span class="text-sm font-bold text-[#0F172A]" x-text="item.time + ' WIB'"></span>
+                                    <span class="text-xs sm:text-sm font-bold font-mono text-[#0F172A]" x-text="(timeSlots.find(s => s.id === item.id)?.range_label || item.time) + ' WIB'"></span>
                                 </div>
                                 <button type="button"
-                                    class="flex h-6 w-6 items-center justify-center rounded-full text-[#64748B] hover:bg-red-100 hover:text-red-600 transition-colors"
+                                    class="flex h-6 w-6 items-center justify-center rounded-full text-[#64748B] hover:bg-red-100 hover:text-red-600 transition-colors cursor-pointer"
                                     @click.prevent="selectSlot(timeSlots.find(s => s.id === item.id))"
                                     title="Hapus"
                                 >
@@ -228,7 +247,7 @@
                         <span class="text-sm font-bold text-[#0F172A]">Total Estimasi</span>
                         <span class="text-xl font-extrabold text-[#4F46E5]" x-text="totalLabel"></span>
                     </div>
-                    <p class="mt-1 text-[11px] text-[#94A3B8]">Harga final akan dikonfirmasi di halaman checkout</p>
+                    <p class="mt-1 text-[11px] text-[#94A3B8]">Harga final akan dikonfirmasi di halaman data pemesan</p>
                 </div>
 
                 {{-- Submit CTA --}}
@@ -247,7 +266,7 @@
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </template>
-                    <span x-text="isSubmitting ? 'Memproses...' : (canSubmit ? 'Lanjut ke Data Diri →' : 'Pilih minimal 1 jam')"></span>
+                    <span x-text="isSubmitting ? 'Memproses...' : (canSubmit ? 'Lanjut ke Data Pemesan →' : 'Pilih minimal 1 waktu')"></span>
                 </button>
 
                 <a
@@ -263,13 +282,13 @@
         </aside>
     </form>
 
-    {{-- Mobile Bottom Floating Action Bar --}}
+    {{-- Mobile Bottom Floating Action Bar (Section 27 & 51) --}}
     <div class="booking-mobile-bar lg:hidden" x-show="selectedCount > 0" x-cloak x-transition>
-        <div class="flex items-center justify-between gap-3">
+        <div class="max-w-4xl mx-auto flex items-center justify-between gap-3">
             <div class="min-w-0 flex-1">
-                <p class="text-[11px] text-[#64748B] truncate" x-text="selectedCount + ' jam terpilih'"></p>
+                <p class="text-[11px] text-[#64748B] truncate" x-text="selectedCount + ' sesi terpilih'"></p>
                 <div class="flex items-baseline gap-1.5">
-                    <p class="text-sm font-bold text-[#0F172A]" x-text="selectedTimesLabel"></p>
+                    <p class="text-xs sm:text-sm font-bold text-[#0F172A] truncate" x-text="selectedTimesLabel"></p>
                 </div>
             </div>
             <button
@@ -278,8 +297,14 @@
                 :disabled="!canSubmit"
                 class="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all active:scale-95 shrink-0"
             >
-                <span>Lanjut</span>
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <template x-if="isSubmitting">
+                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </template>
+                <span x-text="isSubmitting ? 'Memproses...' : 'Lanjut'"></span>
+                <svg x-show="!isSubmitting" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
             </button>
@@ -290,7 +315,7 @@
 {{-- Data Contracts --}}
 <script type="application/json" id="booking-service-data">@json($servicePayload)</script>
 <script type="application/json" id="booking-services-data">@json($servicePayload)</script>
-<script type="application/json" id="booking-time-slots-data">@json($timeSlotsPayload ?? $slotsPayload ?? [])</script>
+<script type="application/json" id="booking-time-slots-data">{!! json_encode($timeSlotsPayload ?? $slotsPayload ?? [], JSON_UNESCAPED_UNICODE) !!}</script>
 @endsection
 
 @section('scripts')

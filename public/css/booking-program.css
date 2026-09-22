@@ -98,6 +98,16 @@ body.booking-page {
     border-top: 1px solid var(--bq-border);
     box-shadow: 0 -8px 24px -4px rgba(15, 23, 42, 0.08);
     padding: 0.875rem 1.25rem;
+    padding-bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── No Scrollbar Utility ── */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 /* ── Time Slots ── */
@@ -105,6 +115,13 @@ body.booking-page {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 0.75rem;
+}
+
+@media (max-width: 380px) {
+    .booking-time-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
 }
 
 .booking-time-slot {

@@ -21,7 +21,7 @@
             <div class="mb-6">
                 <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Pilih Layanan</h1>
                 <p class="mt-1 text-sm text-[#64748B]">
-                    Silakan klik pada salah satu layanan di bawah ini untuk memulai pemesanan.
+                    Pilih salah satu layanan untuk memulai pemesanan.
                 </p>
 
                 {{-- Search & Filter Controls --}}
@@ -36,7 +36,7 @@
                         <input
                             type="text"
                             x-model="searchQuery"
-                            placeholder="Cari nama layanan, paket, atau durasi..."
+                            placeholder="Cari layanan..."
                             class="h-11 sm:h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-[#0F172A] placeholder:text-slate-400 shadow-xs transition-all focus:border-[#4F46E5] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#EEF2FF] hover:border-slate-300"
                         />
                         <button

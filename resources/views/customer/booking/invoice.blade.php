@@ -1,8 +1,8 @@
 @extends('customer.layouts.booking-shell')
 
-@section('title', 'Konfirmasi Booking & Invoice')
+@section('title', 'Bukti Reservasi & Pembayaran')
 @section('current_step', 6)
-@section('back_url', url('/' . $tenant->slug))
+@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug))
 @section('back_label', 'Beranda')
 
 @php
@@ -25,7 +25,7 @@
             ? route('booking.manage', ['booking_code' => $booking->booking_code]) . ($booking->cancellation_token ? '?token=' . $booking->cancellation_token : '')
             : '#');
 
-    $eventDetails = 'Reservasi resmi di ' . $tenant->namabisnis . "\nOrder ID: " . $payment->order_id . ($manageUrl !== '#' ? "\nKelola Reservasi: " . $manageUrl : '');
+    $eventDetails = 'Reservasi resmi di ' . $tenant->namabisnis . "\nOrder ID: " . $payment->order_id;
 
     // Google Calendar URL (spans from earliest slot start to latest slot end)
     $gCalDates = $startDateTime->format('Ymd\THis') . '/' . $endDateTime->format('Ymd\THis');
@@ -35,7 +35,7 @@
         . '&details=' . urlencode($eventDetails)
         . '&location=' . urlencode($eventLocation);
 
-    // WhatsApp Share URL (lists all slots and 1 management link)
+    // WhatsApp Share URL (lists all slots without management credentials)
     $slotListText = $allBookings->map(function($b) {
         $dur = (int) ($b->layanan->durasi ?? 60);
         $start = \Carbon\Carbon::parse($b->jam);
@@ -46,8 +46,7 @@
     $waText = "Halo! Saya telah melakukan booking sesi *" . ($firstSlot->layanan->namalayanan ?? 'Layanan') . "* di *" . $tenant->namabisnis . "*\n"
         . "📅 Tanggal: " . \Carbon\Carbon::parse($firstSlot->tanggalbooking)->translatedFormat('l, d F Y') . "\n"
         . "⏰ Jadwal:\n" . $slotListText . "\n"
-        . "🔖 Order ID: " . $payment->order_id . "\n"
-        . ($manageUrl !== '#' ? "Kelola Reservasi: " . $manageUrl : '');
+        . "🔖 Order ID: " . $payment->order_id;
     $waShareUrl = 'https://api.whatsapp.com/send?text=' . urlencode($waText);
 
     // Google Maps Search URL
@@ -63,9 +62,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
             </svg>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">Booking Berhasil Dikonfirmasi!</h1>
+        <h1 class="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">Bukti Reservasi &amp; Pembayaran</h1>
         <p class="mt-2 text-sm text-[#64748B] max-w-md mx-auto">
-            Terima kasih! Pembayaran Anda telah diterima dan sesi jadwal Anda sudah resmi terdaftar.
+            Booking Berhasil Dikonfirmasi! Pembayaran Anda telah diterima dan sesi jadwal Anda sudah resmi terdaftar.
         </p>
     </div>
 
@@ -230,7 +229,7 @@
                     </svg>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="font-bold truncate">Google Calendar</p>
+                    <p class="font-bold truncate">Tambahkan ke Google Calendar</p>
                     <p class="text-[11px] text-[#64748B] truncate">Simpan ke kalender</p>
                 </div>
             </a>
@@ -298,7 +297,7 @@
         </a>
 
         <a
-            href="{{ url('/' . $tenant->slug) }}"
+            href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] hover:bg-[#F1F5F9] hover:border-[#94A3B8] px-5 py-3 text-sm font-bold text-[#1E293B] shadow-2xs transition active:scale-98 cursor-pointer"
         >
             <svg class="h-4 w-4 text-[#475569]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">

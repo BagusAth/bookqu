@@ -21,9 +21,14 @@
         </span>
     </template>
 
-    {{-- Time Value --}}
-    <span class="text-base sm:text-lg font-bold" :class="{{ $slotVar }}.isSelected ? 'text-white' : 'text-[#0F172A]'" x-text="{{ $slotVar }}.label"></span>
+    {{-- Time Range (Section 20 & 23: 10:00 – 11:00) --}}
+    <span class="text-xs sm:text-sm md:text-base font-bold font-mono tracking-tight whitespace-nowrap" :class="{{ $slotVar }}.isSelected ? 'text-white' : 'text-[#0F172A]'" x-text="{{ $slotVar }}.range_label || {{ $slotVar }}.label"></span>
     <span class="text-[11px] font-medium" :class="{{ $slotVar }}.isSelected ? 'text-white/80' : 'text-[#64748B]'">WIB</span>
+
+    {{-- Slot Price (Section 23) --}}
+    <template x-if="{{ $slotVar }}.price_label">
+        <span class="mt-1 text-xs font-semibold" :class="{{ $slotVar }}.isSelected ? 'text-white/90' : 'text-[#4F46E5]'" x-text="{{ $slotVar }}.price_label"></span>
+    </template>
 
     {{-- Status Badge --}}
     <span

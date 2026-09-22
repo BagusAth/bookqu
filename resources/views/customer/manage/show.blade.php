@@ -52,7 +52,7 @@
     <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
         <div class="mx-auto flex w-full max-w-5xl items-center justify-between px-4 sm:px-6 py-3.5">
             <div class="flex items-center gap-3">
-                <a href="{{ $booking->tenant->slug ? url('/' . $booking->tenant->slug) : '/' }}" class="flex items-center gap-2.5 group">
+                <a href="{{ $booking->tenant->slug ? route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $booking->tenant->slug) : '/' }}" class="flex items-center gap-2.5 group">
                     <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-xs group-hover:scale-105 transition-transform">
                         {{ strtoupper(substr($booking->tenant->namabisnis, 0, 1)) }}
                     </div>
@@ -78,7 +78,7 @@
                     </a>
                 @endif
                 <a
-                    href="{{ $booking->tenant->slug ? url('/' . $booking->tenant->slug) : '/' }}"
+                    href="{{ $booking->tenant->slug ? route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $booking->tenant->slug) : '/' }}"
                     class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
                 >
                     <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

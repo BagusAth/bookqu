@@ -1,177 +1,284 @@
 @extends('customer.layouts.booking-shell')
 
-@section('title', 'Pembayaran')
+@section('title', 'Selesaikan Pembayaran')
 @section('current_step', 5)
-@section('back_url', route('customer.booking.program', $tenant->slug))
+@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug))
 @section('back_label', 'Pilih Layanan Lain')
 
 @section('head')
+@if(!empty($snapUrl) && !empty($clientKey))
 <script src="{{ $snapUrl }}" data-client-key="{{ $clientKey }}"></script>
+@endif
 @endsection
 
 @section('content')
 <div class="mx-auto max-w-2xl" x-data="{ showCancelModal: false, copied: false }">
-    {{-- Header Content --}}
-    <div class="text-center mb-6">
-        <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Selesaikan Pembayaran</h1>
-        <p class="mt-1 text-sm text-[#64748B]">Selesaikan transaksi Anda sebelum batas waktu pembayaran berakhir.</p>
+    @php
+        $currentState = $paymentState ?? ($payment->status === 'sukses' ? 'success' : ($payment->status === 'gagal' ? 'failed' : ($payment->status === 'kadaluarsa' || $payment->isExpired() ? 'expired' : 'pending')));
+        $displayBookings = $payment->bookings && $payment->bookings->isNotEmpty() ? $payment->bookings : ($payment->booking ? collect([$payment->booking]) : collect());
+        $firstBooking = $displayBookings->first();
+        $layanan = $firstBooking?->layanan;
+        $durasiMenit = (int) ($layanan?->durasi ?? 60);
+    @endphp
+
+    {{-- State: FAILED (Server-rendered or dynamically revealed) --}}
+    <div id="state-failed-card" class="{{ $currentState === 'failed' ? 'block' : 'hidden' }} relative overflow-hidden rounded-2xl border border-red-200 bg-white p-6 sm:p-8 shadow-sm mb-6 text-center">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4">
+            <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Pembayaran Tidak Berhasil</h1>
+        <p class="mt-2 text-sm text-[#64748B] max-w-md mx-auto">
+            Pembayaran belum berhasil diproses. Reservasi Anda belum dikonfirmasi.
+        </p>
+
+        <div class="mt-4 rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] max-w-md mx-auto text-xs text-[#475569] space-y-1.5 text-left">
+            <div class="flex justify-between">
+                <span class="text-[#64748B]">Order ID:</span>
+                <span class="font-mono font-bold text-[#0F172A]">{{ $payment->order_id }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-[#64748B]">Total:</span>
+                <span class="font-bold text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</span>
+            </div>
+        </div>
+
+        <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            @if(!empty($payment->snap_token) && $payment->status === 'pending')
+                <button
+                    type="button"
+                    onclick="openSnapPayment()"
+                    class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#4338CA] transition-colors cursor-pointer"
+                >
+                    Coba Bayar Lagi
+                </button>
+            @else
+                <a
+                    href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
+                    class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#4338CA] transition-colors"
+                >
+                    Buat Reservasi Baru
+                </a>
+            @endif
+            <a
+                href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
+                class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl border border-[#CBD5E1] bg-white px-6 py-3 text-sm font-semibold text-[#334155] hover:bg-[#F8FAFC] transition-colors"
+            >
+                Kembali ke Pemesanan
+            </a>
+        </div>
     </div>
 
-    {{-- Main Payment Card --}}
-    <div class="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-sm mb-6">
-        {{-- Order ID & Status & Total --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-[#F1F5F9]">
-            <div>
-                <div class="flex items-center gap-2 mb-1.5">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-[#64748B]">Kode Pesanan</span>
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 border border-amber-200/70">
+    {{-- State: EXPIRED (Server-rendered or dynamically revealed) --}}
+    <div id="state-expired-card" class="{{ $currentState === 'expired' ? 'block' : 'hidden' }} relative overflow-hidden rounded-2xl border border-amber-200 bg-white p-6 sm:p-8 shadow-sm mb-6 text-center">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600 mb-4">
+            <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Waktu Pembayaran Habis</h1>
+        <p class="mt-2 text-sm text-[#64748B] max-w-md mx-auto">
+            Batas waktu pembayaran telah berakhir sehingga reservasi ini tidak dapat dilanjutkan.
+        </p>
+
+        <div class="mt-4 rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] max-w-md mx-auto text-xs text-[#475569] space-y-1.5 text-left">
+            <div class="flex justify-between">
+                <span class="text-[#64748B]">Order ID:</span>
+                <span class="font-mono font-bold text-[#0F172A]">{{ $payment->order_id }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-[#64748B]">Status:</span>
+                <span class="font-bold text-red-600">Kadaluarsa</span>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <a
+                href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
+                class="inline-flex justify-center items-center rounded-xl bg-[#4F46E5] px-6 py-3.5 text-sm font-bold text-white shadow-md hover:bg-[#4338CA] transition-colors"
+            >
+                Buat Reservasi Baru
+            </a>
+        </div>
+    </div>
+
+    {{-- State: PENDING (Primary Payment Card adhering strictly to Section 9 Information Hierarchy) --}}
+    <div id="state-pending-card" class="{{ $currentState === 'pending' ? 'block' : 'hidden' }}">
+        {{-- Header Content --}}
+        <div class="text-center mb-6">
+            <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Selesaikan Pembayaran</h1>
+            <p class="mt-1 text-sm text-[#64748B]">Selesaikan pembayaran sebelum batas waktu agar reservasi Anda tetap aktif.</p>
+        </div>
+
+        <div class="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-8 shadow-sm mb-6">
+            {{-- 1. Total Tagihan (Primary Hero Amount) --}}
+            <div class="text-center pb-6 border-b border-[#F1F5F9]">
+                <p class="text-xs font-bold uppercase tracking-wider text-[#64748B] mb-1">Total Tagihan</p>
+                <p class="text-3xl sm:text-4xl font-black text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</p>
+                <div class="mt-2.5 inline-flex items-center justify-center flex-wrap max-w-full gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 border border-amber-200/70">
+                    <span class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    @php
+                        $expiredTime = $payment->expired_at ? \Carbon\Carbon::parse($payment->expired_at)->timezone('Asia/Jakarta') : now('Asia/Jakarta')->addMinutes(15);
+                    @endphp
+                    <span>Bayar sebelum <strong class="font-bold">{{ $expiredTime->format('H:i') }} WIB</strong></span>
+                    <span class="text-amber-600 mx-1">•</span>
+                    <span id="countdown" class="font-mono font-bold text-[#EA580C]">Memuat...</span>
+                </div>
+            </div>
+
+            {{-- 2. Primary CTA: [ Bayar Sekarang ] (Explicit customer action, NO auto-open) --}}
+            <div class="py-6 border-b border-[#F1F5F9]">
+                <button
+                    id="pay-button"
+                    type="button"
+                    class="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#4F46E5] px-6 py-4 text-base font-bold text-white shadow-lg shadow-[#4F46E5]/25 transition-all hover:bg-[#4338CA] hover:shadow-xl hover:shadow-[#4F46E5]/30 active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4F46E5]"
+                >
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    <span>Bayar Sekarang</span>
+                </button>
+                <p class="mt-2.5 text-center text-xs text-[#94A3B8]">
+                    Mendukung QRIS, GoPay, ShopeePay, Virtual Account BCA/Mandiri/BNI/BRI &amp; E-Wallet
+                </p>
+
+                {{-- Inline Feedback Notice (replaces window.alert) --}}
+                <div id="inline-feedback-banner" class="hidden mt-4 rounded-xl p-3 text-xs border" role="alert" aria-live="polite">
+                    <div class="flex items-center gap-2">
+                        <span id="inline-feedback-icon" class="shrink-0"></span>
+                        <span id="inline-feedback-text" class="flex-1 font-medium"></span>
+                        <button type="button" onclick="hideInlineFeedback()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- 3. Detail Reservasi (Layanan, Tanggal, Sesi Range) --}}
+            <div class="py-6 border-b border-[#F1F5F9]">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-[#64748B] mb-3">Detail Reservasi</h2>
+                @if ($displayBookings->isNotEmpty())
+                    <div class="space-y-2.5">
+                        @foreach ($displayBookings as $bItem)
+                            @php
+                                $slotStart = \Carbon\Carbon::parse(($bItem->tanggalbooking ? \Carbon\Carbon::parse($bItem->tanggalbooking)->format('Y-m-d') : now()->format('Y-m-d')) . ' ' . $bItem->jam);
+                                $slotEnd = (clone $slotStart)->addMinutes($durasiMenit);
+                            @endphp
+                            <div class="rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                        </svg>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <span class="text-[#64748B] text-xs block">Layanan</span>
+                                        <strong class="text-[#0F172A] font-semibold truncate block">{{ $bItem->layanan->namalayanan ?? 'Layanan' }}</strong>
+                                    </div>
+                                </div>
+                                <div class="flex items-center sm:justify-end gap-2.5">
+                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <div class="sm:text-right">
+                                        <span class="text-[#64748B] text-xs block">Tanggal &amp; Waktu</span>
+                                        <strong class="text-[#0F172A] font-semibold">
+                                            {{ \Carbon\Carbon::parse($bItem->tanggalbooking)->translatedFormat('d M Y') }},
+                                            <span class="font-mono text-[#4F46E5]">{{ $slotStart->format('H:i') }} – {{ $slotEnd->format('H:i') }}</span> WIB
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
+            {{-- 4. Secondary Metadata: Order ID & Status --}}
+            <div class="pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-[#64748B] block mb-1">Order ID</span>
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono text-sm font-bold text-[#0F172A]">{{ $payment->order_id }}</span>
+                        <button
+                            type="button"
+                            @click="navigator.clipboard.writeText('{{ $payment->order_id }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                            class="inline-flex items-center gap-1 rounded-lg bg-slate-100 hover:bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-[#475569] transition-colors cursor-pointer"
+                            title="Salin Order ID"
+                        >
+                            <svg x-show="!copied" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span x-text="copied ? 'Tersalin' : 'Salin'">Salin</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="sm:text-right">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-[#64748B] block mb-1">Status</span>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700 border border-amber-200/70">
                         <span class="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                         Menunggu Pembayaran
                     </span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="font-mono text-base sm:text-lg font-bold text-[#0F172A]">{{ $payment->order_id }}</span>
-                    <button
-                        type="button"
-                        @click="navigator.clipboard.writeText('{{ $payment->order_id }}'); copied = true; setTimeout(() => copied = false, 2000)"
-                        class="inline-flex items-center gap-1 rounded-lg bg-slate-100 hover:bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-[#475569] transition-colors cursor-pointer"
-                        title="Salin Order ID"
-                    >
-                        <svg x-show="!copied" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                        </svg>
-                        <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span x-text="copied ? 'Tersalin' : 'Salin'">Salin</span>
-                    </button>
-                </div>
             </div>
-            <div class="sm:text-right">
-                <p class="text-xs font-semibold uppercase tracking-wider text-[#64748B] mb-1">Total Tagihan</p>
-                <p class="text-2xl sm:text-3xl font-black text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</p>
-            </div>
-        </div>
 
-        {{-- Booking Details Preview --}}
-        @php
-            $displayBookings = $payment->bookings && $payment->bookings->isNotEmpty() ? $payment->bookings : ($payment->booking ? collect([$payment->booking]) : collect());
-        @endphp
-        @if ($displayBookings->isNotEmpty())
-            <div class="py-4 border-b border-[#F1F5F9] space-y-2">
-                @foreach ($displayBookings as $bItem)
-                    <div class="rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
-                        <div class="flex items-center gap-2.5">
-                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                </svg>
-                            </div>
-                            <div>
-                                <span class="text-[#64748B] text-xs block">Layanan</span>
-                                <strong class="text-[#0F172A] font-semibold">{{ $bItem->layanan->namalayanan ?? 'Layanan' }}</strong>
-                            </div>
-                        </div>
-                        <div class="flex items-center sm:justify-end gap-2.5">
-                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                            <div class="sm:text-right">
-                                <span class="text-[#64748B] text-xs block">Jadwal Sesi</span>
-                                <strong class="text-[#0F172A] font-semibold">
-                                    {{ \Carbon\Carbon::parse($bItem->tanggalbooking)->translatedFormat('d M Y') }}, {{ substr($bItem->jam, 0, 5) }} WIB
-                                </strong>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
+            {{-- Realtime Auto-Detect Status Monitoring (Section 10 Standard Copy) --}}
+            <div class="mt-6 pt-4 border-t border-[#F1F5F9] flex items-center justify-center gap-2 text-xs text-[#64748B]" aria-live="polite">
+                <span class="relative flex h-2 w-2">
+                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                </span>
+                <span class="sr-only">Sistem memantau pembayaran Anda secara otomatis</span>
+                <span id="realtime-status-text">Kami sedang memantau status pembayaran Anda.</span>
             </div>
-        @endif
 
-        {{-- Countdown Timer Box --}}
-        <div class="pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-[#64748B] mb-1">Batas Waktu Pembayaran</p>
-                <div class="flex items-center gap-2 text-[#EA580C] font-bold text-lg">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            {{-- Loading & Success Overlay --}}
+            <div id="loading-overlay" class="absolute inset-0 z-20 hidden flex-col items-center justify-center bg-white/95 backdrop-blur-sm p-6 text-center transition-all" aria-live="polite">
+                <div id="loading-spinner" class="loader mb-4"></div>
+                <div id="success-icon" class="hidden mb-4 h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 animate-bounce">
+                    <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span id="countdown">Memuat...</span>
                 </div>
+                <h3 id="overlay-title" class="text-base sm:text-lg font-bold text-[#0F172A]">
+                    Memverifikasi pembayaran...
+                </h3>
+                <p id="overlay-desc" class="mt-1 text-xs text-[#64748B]">
+                    Mohon jangan tutup halaman ini.
+                </p>
             </div>
-            <p class="text-xs text-[#94A3B8] sm:text-right">
-                Hingga {{ \Carbon\Carbon::parse($payment->expired_at)->translatedFormat('d M Y, H:i') }} WIB
-            </p>
         </div>
 
-        {{-- Action Button --}}
-        <div class="mt-7">
+        {{-- Bottom Action Buttons --}}
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
-                id="pay-button"
+                id="check-status-btn"
                 type="button"
-                class="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#4F46E5] px-6 py-4 text-sm sm:text-base font-bold text-white shadow-lg shadow-[#4F46E5]/25 transition-all hover:bg-[#4338CA] hover:shadow-xl hover:shadow-[#4F46E5]/30 active:scale-[0.99] cursor-pointer"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[#CBD5E1] bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#334155] shadow-2xs hover:bg-[#F8FAFC] hover:border-[#94A3B8] transition-all cursor-pointer"
             >
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span>Buka Pilihan Pembayaran</span>
+                <span>Periksa Status Pembayaran</span>
             </button>
-            <p class="mt-2.5 text-center text-xs text-[#94A3B8]">
-                Mendukung QRIS, GoPay, ShopeePay, Virtual Account BCA/Mandiri/BNI/BRI &amp; E-Wallet
-            </p>
-        </div>
 
-        {{-- Realtime Auto-Detect Status Indicator (Subtle) --}}
-        <div class="mt-6 pt-4 border-t border-[#F1F5F9] flex items-center justify-center gap-2 text-xs text-[#64748B]">
-            <span class="relative flex h-2 w-2">
-                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-            </span>
-            <span id="realtime-status-text">Sistem memantau pembayaran Anda secara otomatis</span>
-        </div>
-
-        {{-- Loading & Success Overlay --}}
-        <div id="loading-overlay" class="absolute inset-0 z-20 hidden flex-col items-center justify-center bg-white/95 backdrop-blur-sm p-6 text-center transition-all">
-            <div id="loading-spinner" class="loader mb-4"></div>
-            <div id="success-icon" class="hidden mb-4 h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 animate-bounce">
-                <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            <button
+                type="button"
+                @click="showCancelModal = true"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl border border-transparent px-4 py-2.5 text-xs sm:text-sm font-medium text-[#64748B] hover:text-red-600 hover:bg-red-50/70 transition-all cursor-pointer"
+            >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-            </div>
-            <h3 id="overlay-title" class="text-base sm:text-lg font-bold text-[#0F172A]">
-                Memproses Pembayaran...
-            </h3>
-            <p id="overlay-desc" class="mt-1 text-xs text-[#64748B]">
-                Mohon jangan tutup halaman ini.
-            </p>
+                <span>Batalkan &amp; Ganti Jadwal</span>
+            </button>
         </div>
-    </div>
-
-    {{-- Bottom Action Buttons --}}
-    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <button
-            id="check-status-btn"
-            type="button"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[#CBD5E1] bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#334155] shadow-2xs hover:bg-[#F8FAFC] hover:border-[#94A3B8] transition-all cursor-pointer"
-        >
-            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>Cek Status Pembayaran</span>
-        </button>
-
-        <button
-            type="button"
-            @click="showCancelModal = true"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl border border-transparent px-4 py-2.5 text-xs sm:text-sm font-medium text-[#64748B] hover:text-red-600 hover:bg-red-50/70 transition-all cursor-pointer"
-        >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <span>Batalkan &amp; Ganti Jadwal</span>
-        </button>
     </div>
 
     {{-- Modal Konfirmasi Batalkan & Ganti Jadwal --}}
@@ -182,7 +289,6 @@
         role="dialog"
         aria-modal="true"
     >
-        {{-- Backdrop --}}
         <div
             x-show="showCancelModal"
             x-transition:enter="ease-out duration-200"
@@ -195,7 +301,6 @@
             class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
         ></div>
 
-        {{-- Modal Card --}}
         <div
             x-show="showCancelModal"
             x-transition:enter="ease-out duration-200"
@@ -241,7 +346,7 @@
                 >
                     Kembali ke Pembayaran
                 </button>
-                <form method="POST" action="{{ route('customer.booking.cancel', [$tenant->slug, $payment]) }}" class="inline">
+                <form method="POST" action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.cancel'), [$tenant->slug, $payment]) }}" class="inline">
                     @csrf
                     <button
                         type="submit"
@@ -259,184 +364,297 @@
 @section('scripts')
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const payButton = document.getElementById('pay-button');
-        const checkStatusBtn = document.getElementById('check-status-btn');
+    const snapToken = @json($payment->snap_token ?? null);
+    const callbackUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.callback"), [$tenant->slug, $payment]) }}';
+    const checkStatusUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.check-status"), [$tenant->slug, $payment]) }}';
+    const csrfToken = '{{ csrf_token() }}';
+
+    function showInlineFeedback(message, type = 'error') {
+        const banner = document.getElementById('inline-feedback-banner');
+        const text = document.getElementById('inline-feedback-text');
+        const icon = document.getElementById('inline-feedback-icon');
+        if (!banner || !text) return;
+
+        text.innerText = message;
+        if (type === 'error') {
+            banner.className = 'mt-4 rounded-xl p-3 text-xs border border-red-200 bg-red-50 text-red-700 flex items-center gap-2';
+            icon.innerHTML = '<svg class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+        } else {
+            banner.className = 'mt-4 rounded-xl p-3 text-xs border border-blue-200 bg-blue-50 text-blue-700 flex items-center gap-2';
+            icon.innerHTML = '<svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+        }
+    }
+
+    function hideInlineFeedback() {
+        const banner = document.getElementById('inline-feedback-banner');
+        if (banner) banner.classList.add('hidden');
+    }
+
+    function showFailedState() {
+        const pendingCard = document.getElementById('state-pending-card');
+        const failedCard = document.getElementById('state-failed-card');
+        const expiredCard = document.getElementById('state-expired-card');
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        if (pendingCard) pendingCard.classList.add('hidden');
+        if (expiredCard) expiredCard.classList.add('hidden');
+        if (failedCard) {
+            failedCard.classList.remove('hidden');
+            failedCard.classList.add('block');
+        }
+    }
+
+    function showExpiredState() {
+        const pendingCard = document.getElementById('state-pending-card');
+        const failedCard = document.getElementById('state-failed-card');
+        const expiredCard = document.getElementById('state-expired-card');
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        if (pendingCard) pendingCard.classList.add('hidden');
+        if (failedCard) failedCard.classList.add('hidden');
+        if (expiredCard) {
+            expiredCard.classList.remove('hidden');
+            expiredCard.classList.add('block');
+        }
+    }
+
+    function openSnapPayment() {
+        if (!snapToken) {
+            showInlineFeedback('Token pembayaran tidak tersedia atau telah kadaluarsa.', 'error');
+            return;
+        }
+
+        if (typeof snap === 'undefined') {
+            showInlineFeedback('Sistem pembayaran (Midtrans Snap) belum termuat. Periksa koneksi internet Anda lalu coba lagi.', 'error');
+            return;
+        }
+
+        hideInlineFeedback();
+
+        snap.pay(snapToken, {
+            onSuccess: function (result) {
+                sendPaymentCallback(result);
+            },
+            onPending: function (result) {
+                sendPaymentCallback(result);
+            },
+            onError: function (result) {
+                sendPaymentCallback(result);
+            },
+            onClose: function () {
+                checkPaymentStatus(true);
+            }
+        });
+    }
+
+    let isProcessingSuccess = false;
+    let pollInterval = null;
+    let isChecking = false;
+
+    async function sendPaymentCallback(result) {
+        if (isProcessingSuccess) return;
+
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+            if (overlayTitle) overlayTitle.innerText = 'Memverifikasi pembayaran...';
+            if (overlayDesc) overlayDesc.innerText = 'Mohon tunggu sebentar.';
+        }
+
+        try {
+            const response = await fetch(callbackUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ result })
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'sukses' && data.redirect) {
+                showSuccessRedirect(data.redirect);
+            } else if (data.status === 'pending') {
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                }
+                const realtimeText = document.getElementById('realtime-status-text');
+                if (realtimeText) realtimeText.innerText = 'Menunggu penyelesaian pembayaran oleh penyedia...';
+            } else if (data.status === 'gagal') {
+                showFailedState();
+            } else {
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                }
+            }
+        } catch (error) {
+            console.error('Callback error:', error);
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+                loadingOverlay.classList.remove('flex');
+            }
+        }
+    }
+
+    function showSuccessRedirect(redirectUrl) {
+        if (isProcessingSuccess) return;
+        isProcessingSuccess = true;
+        stopAutoPolling();
+
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingSpinner = document.getElementById('loading-spinner');
         const successIcon = document.getElementById('success-icon');
         const overlayTitle = document.getElementById('overlay-title');
         const overlayDesc = document.getElementById('overlay-desc');
-        const countdownEl = document.getElementById('countdown');
         const realtimeStatusText = document.getElementById('realtime-status-text');
-        const realtimeStatusBanner = document.getElementById('realtime-status-banner');
-        const csrfToken = '{{ csrf_token() }}';
 
-        // Robust route URLs bound to order_id
-        const callbackUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.callback"), [$tenant->slug, $payment]) }}';
-        const checkStatusUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.check-status"), [$tenant->slug, $payment]) }}';
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+        }
+        if (loadingSpinner) loadingSpinner.classList.add('hidden');
+        if (successIcon) {
+            successIcon.classList.remove('hidden');
+            successIcon.classList.add('flex');
+        }
+        if (overlayTitle) {
+            overlayTitle.innerText = 'Pembayaran berhasil dikonfirmasi!';
+            overlayTitle.classList.add('text-emerald-600');
+        }
+        if (overlayDesc) overlayDesc.innerText = 'Mengarahkan ke halaman invoice...';
+        if (realtimeStatusText) realtimeStatusText.innerText = '✓ Pembayaran berhasil diterima!';
 
-        let isProcessingSuccess = false;
-        let pollInterval = null;
-        let isChecking = false;
+        setTimeout(() => {
+            window.location.href = redirectUrl;
+        }, 1200);
+    }
 
-        // Expiry countdown
-        const expiredAt = new Date('{{ \Carbon\Carbon::parse($payment->expired_at)->toISOString() }}').getTime();
+    async function checkPaymentStatus(isSilent = false) {
+        if (isProcessingSuccess || isChecking) return;
+        isChecking = true;
 
-        const timer = setInterval(function() {
-            const now = new Date().getTime();
-            const distance = expiredAt - now;
+        const checkStatusBtn = document.getElementById('check-status-btn');
+        if (!isSilent && checkStatusBtn) {
+            checkStatusBtn.innerText = 'Memverifikasi...';
+            checkStatusBtn.disabled = true;
+        }
 
-            if (distance < 0) {
-                clearInterval(timer);
-                stopPolling();
-                countdownEl.innerHTML = "WAKTU HABIS";
-                countdownEl.classList.replace('text-[#EA580C]', 'text-red-600');
-                payButton.disabled = true;
-                payButton.classList.replace('bg-[#4F46E5]', 'bg-gray-400');
-                payButton.innerText = 'Waktu Pembayaran Telah Habis';
+        try {
+            const response = await fetch(checkStatusUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
 
-                setTimeout(() => window.location.reload(), 2000);
+            const data = await response.json();
+
+            if (data.status === 'sukses' && data.redirect) {
+                showSuccessRedirect(data.redirect);
                 return;
             }
 
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            if (data.status === 'gagal') {
+                stopAutoPolling();
+                showFailedState();
+                return;
+            }
 
-            countdownEl.innerHTML = minutes + "m " + seconds + "s";
+            if (data.status === 'kadaluarsa') {
+                stopAutoPolling();
+                showExpiredState();
+                return;
+            }
+
+            if (!isSilent && data.message) {
+                showInlineFeedback(data.message, 'info');
+            }
+        } catch (error) {
+            console.error('Status check error:', error);
+            if (!isSilent) {
+                showInlineFeedback('Gagal memeriksa status pembayaran. Periksa koneksi internet Anda.', 'error');
+            }
+        } finally {
+            isChecking = false;
+            if (!isSilent && checkStatusBtn) {
+                checkStatusBtn.innerHTML = `
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Periksa Status Pembayaran</span>
+                `;
+                checkStatusBtn.disabled = false;
+            }
+        }
+    }
+
+    function startAutoPolling() {
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(() => {
+            if (!document.hidden) {
+                checkPaymentStatus(true);
+            }
+        }, 2500);
+    }
+
+    function stopAutoPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const payButton = document.getElementById('pay-button');
+        const checkStatusBtn = document.getElementById('check-status-btn');
+        const countdownEl = document.getElementById('countdown');
+
+        // Expiry countdown: synchronized with server remaining seconds
+        let remainingSeconds = {{ max(0, $payment->expired_at ? (int) now()->diffInSeconds($payment->expired_at, false) : 900) }};
+
+        function updateCountdown() {
+            if (remainingSeconds <= 0) {
+                if (timer) clearInterval(timer);
+                stopAutoPolling();
+                if (countdownEl) {
+                    countdownEl.innerHTML = "Waktu Habis";
+                    countdownEl.classList.replace('text-[#EA580C]', 'text-red-600');
+                }
+                showExpiredState();
+                return;
+            }
+
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+
+            if (countdownEl) {
+                countdownEl.innerHTML = minutes + "m " + String(seconds).padStart(2, '0') + "s";
+            }
+        }
+
+        updateCountdown();
+        const timer = setInterval(function() {
+            remainingSeconds--;
+            updateCountdown();
         }, 1000);
 
-        const showSuccessState = (redirectUrl) => {
-            if (isProcessingSuccess) return;
-            isProcessingSuccess = true;
-            stopPolling();
+        if (payButton) {
+            payButton.addEventListener('click', openSnapPayment);
+        }
 
-            loadingOverlay.classList.remove('hidden');
-            loadingOverlay.classList.add('flex');
-            loadingSpinner.classList.add('hidden');
-            successIcon.classList.remove('hidden');
-            successIcon.classList.add('flex');
-            overlayTitle.innerText = 'Pembayaran Berhasil Dikonfirmasi!';
-            overlayTitle.classList.add('text-emerald-600');
-            overlayDesc.innerText = 'Mengarahkan ke halaman e-ticket invoice...';
-
-            if (realtimeStatusBanner) {
-                realtimeStatusBanner.classList.replace('border-emerald-200', 'border-emerald-400');
-                realtimeStatusBanner.classList.replace('bg-emerald-50/90', 'bg-emerald-100');
-                realtimeStatusText.innerText = '✓ Pembayaran berhasil diterima!';
-            } else if (realtimeStatusText) {
-                realtimeStatusText.innerText = '✓ Pembayaran berhasil diterima!';
-            }
-
-            setTimeout(() => {
-                window.location.href = redirectUrl;
-            }, 1200);
-        };
-
-        const sendCallback = async (result) => {
-            if (isProcessingSuccess) return;
-
-            loadingOverlay.classList.remove('hidden');
-            loadingOverlay.classList.add('flex');
-            overlayTitle.innerText = 'Memverifikasi Pembayaran...';
-            overlayDesc.innerText = 'Mohon tunggu sebentar.';
-
-            try {
-                const response = await fetch(callbackUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: JSON.stringify({ result })
-                });
-
-                const data = await response.json();
-
-                if (data.status === 'sukses' && data.redirect) {
-                    showSuccessState(data.redirect);
-                } else if (data.status === 'pending') {
-                    loadingOverlay.classList.add('hidden');
-                    loadingOverlay.classList.remove('flex');
-                    if (realtimeStatusText) {
-                        realtimeStatusText.innerText = 'Menunggu pembayaran diselesaikan oleh bank...';
-                    }
-                } else {
-                    loadingOverlay.classList.add('hidden');
-                    loadingOverlay.classList.remove('flex');
-                }
-            } catch (error) {
-                console.error('Callback error:', error);
-                loadingOverlay.classList.add('hidden');
-                loadingOverlay.classList.remove('flex');
-            }
-        };
-
-        const checkPaymentStatus = async (isSilent = false) => {
-            if (isProcessingSuccess || isChecking) return;
-            isChecking = true;
-
-            if (!isSilent) {
-                checkStatusBtn.innerText = 'Mengecek...';
-                checkStatusBtn.disabled = true;
-            }
-
-            try {
-                const response = await fetch(checkStatusUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    }
-                });
-
-                const data = await response.json();
-
-                if (data.status === 'sukses' && data.redirect) {
-                    showSuccessState(data.redirect);
-                    return;
-                }
-
-                if (data.status === 'gagal') {
-                    stopPolling();
-                    window.location.reload();
-                    return;
-                }
-
-                if (!isSilent && data.message) {
-                    alert(data.message);
-                }
-            } catch (error) {
-                console.error('Status check error:', error);
-            } finally {
-                isChecking = false;
-                if (!isSilent) {
-                    checkStatusBtn.innerHTML = `
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        <span>Cek Status Pembayaran Manual</span>
-                    `;
-                    checkStatusBtn.disabled = false;
-                }
-            }
-        };
-
-        const startAutoPolling = () => {
-            if (pollInterval) clearInterval(pollInterval);
-            pollInterval = setInterval(() => {
-                if (!document.hidden) {
-                    checkPaymentStatus(true);
-                }
-            }, 2500);
-        };
-
-        const stopPolling = () => {
-            if (pollInterval) {
-                clearInterval(pollInterval);
-                pollInterval = null;
-            }
-        };
+        if (checkStatusBtn) {
+            checkStatusBtn.addEventListener('click', () => checkPaymentStatus(false));
+        }
 
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && !isProcessingSuccess) {
@@ -444,39 +662,11 @@
             }
         });
 
-        payButton.addEventListener('click', function () {
-            if (typeof snap === 'undefined') {
-                alert('Midtrans Snap SDK gagal dimuat. Periksa koneksi internet Anda.');
-                return;
-            }
-
-            snap.pay('{{ $snapToken }}', {
-                onSuccess: function (result) {
-                    sendCallback(result);
-                },
-                onPending: function (result) {
-                    sendCallback(result);
-                },
-                onError: function (result) {
-                    sendCallback(result);
-                },
-                onClose: function () {
-                    checkPaymentStatus(true);
-                }
-            });
-        });
-
-        checkStatusBtn.addEventListener('click', () => checkPaymentStatus(false));
-
-        // Start real-time background monitoring
+        // Start real-time background monitoring only if pending
+        @if($currentState === 'pending')
         startAutoPolling();
-
-        // Auto-launch Snap popup modal smoothly after initial render
-        setTimeout(() => {
-            if (typeof snap !== 'undefined' && payButton && !isProcessingSuccess) {
-                payButton.click();
-            }
-        }, 500);
+        @endif
+        // NOTE: Auto-launch of Snap popup modal on page load is REMOVED per Phase 3 prescriptive specification.
     });
 </script>
 @endsection
