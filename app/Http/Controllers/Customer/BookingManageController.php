@@ -437,6 +437,13 @@ class BookingManageController extends Controller
                     throw new \Exception('SLOT_NOT_FOUND');
                 }
 
+                $wib = 'Asia/Jakarta';
+                $nowWib = Carbon::now($wib);
+                $slotDateTime = Carbon::parse($newDate . ' ' . $schedule->jam_mulai, $wib);
+                if ($slotDateTime->lessThanOrEqualTo($nowWib)) {
+                    throw new \Exception('SLOT_NOT_FOUND');
+                }
+
                 // Check no active booking already occupies this slot (excluding current booking)
                 $slotTaken = DB::table('bookings')
                     ->where('idschedule', $newScheduleId)
@@ -571,15 +578,20 @@ class BookingManageController extends Controller
                 ])
                 ->get()
                 ->map(function ($row) use ($selectedDate) {
-                    $start       = Carbon::createFromFormat('H:i:s', $row->jam_mulai);
+                    $wib = 'Asia/Jakarta';
+                    $nowWib = Carbon::now($wib);
+                    $selectedDateCarbon = Carbon::parse($selectedDate, $wib);
+                    $isToday = $selectedDateCarbon->isSameDay($nowWib);
+                    $isPastDate = $selectedDateCarbon->lt($nowWib->copy()->startOfDay());
+                    $slotDateTime = Carbon::parse($selectedDate . ' ' . $row->jam_mulai, $wib);
                     $isBooked    = $row->booking_count > 0;
-                    $isPast      = Carbon::parse($selectedDate)->isToday() && $start->lessThanOrEqualTo(now());
+                    $isPast      = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
                     $isAvailable = !$isBooked && !$isPast;
 
                     return [
                         'id'           => (int) $row->id,
-                        'jam_mulai'    => $start->format('H:i'),
-                        'jam_selesai'  => Carbon::createFromFormat('H:i:s', $row->jam_selesai)->format('H:i'),
+                        'jam_mulai'    => $slotDateTime->format('H:i'),
+                        'jam_selesai'  => Carbon::parse($selectedDate . ' ' . $row->jam_selesai, $wib)->format('H:i'),
                         'is_available' => $isAvailable,
                         'is_booked'    => $isBooked,
                         'is_past'      => $isPast,
@@ -597,6 +609,10 @@ class BookingManageController extends Controller
     {
         $token   = $request->query('token');
         $booking = $this->resolveBooking($bookingCode, $token);
+
+        if (!$booking->payment || $booking->payment->status !== 'sukses' || !in_array($booking->status, ['paid', 'completed'])) {
+            abort(404, 'Invoice hanya tersedia untuk pembayaran yang berhasil.');
+        }
 
         return view('customer.manage.invoice', [
             'booking'    => $booking,
