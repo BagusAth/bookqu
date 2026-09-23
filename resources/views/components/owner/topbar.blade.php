@@ -401,18 +401,6 @@
                         </svg>
                         <span>Profil &amp; Bisnis</span>
                     </a>
-                    <a href="{{ route('owner.settings.appearance') }}" class="craft-btn flex items-center gap-2.5 rounded-xl px-3 py-2 text-[#231a3d] hover:bg-[#f3effe] hover:text-[#382186] transition">
-                        <svg class="h-4 w-4 text-[#6e6584]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4 5 5 0 014-4h4a4 4 0 014 4 5 5 0 01-4 4H7zm0 0l2.5-5.5m7-10.5a3.5 3.5 0 115 5L12 21l-4.5-1 1-4.5 9.5-9.5z"/>
-                        </svg>
-                        <span>Tampilan Publik</span>
-                    </a>
-                    <a href="{{ route('owner.settings.payment-setting') }}" class="craft-btn flex items-center gap-2.5 rounded-xl px-3 py-2 text-[#231a3d] hover:bg-[#f3effe] hover:text-[#382186] transition">
-                        <svg class="h-4 w-4 text-[#6e6584]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                        </svg>
-                        <span>Metode Pembayaran</span>
-                    </a>
                     <a href="{{ route('owner.subscription') }}" class="craft-btn flex items-center gap-2.5 rounded-xl px-3 py-2 text-[#231a3d] hover:bg-[#f3effe] hover:text-[#382186] transition">
                         <svg class="h-4 w-4 text-[#6e6584]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
