@@ -2,6 +2,7 @@
 
 namespace App\Actions\Booking;
 
+use App\Actions\Payment\CreateBookingPayment;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
 use App\Mail\BookingGroupInvoiceMail;
@@ -18,11 +19,17 @@ use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Midtrans\Snap;
 
 class CreateBooking
 {
     use ClearsBookingCache;
+
+    protected CreateBookingPayment $bookingPaymentAction;
+
+    public function __construct(?CreateBookingPayment $bookingPaymentAction = null)
+    {
+        $this->bookingPaymentAction = $bookingPaymentAction ?? app(CreateBookingPayment::class);
+    }
 
     /**
      * Execute the customer booking checkout workflow.
@@ -151,20 +158,7 @@ class CreateBooking
 
             // 5. Free booking path ($0)
             if ($hargaAkhir <= 0) {
-                $orderId = 'FREE-' . $tenant->id . '-' . time() . '-' . rand(100, 999);
-                $payment = Payment::create([
-                    'idtenant'       => $tenant->id,
-                    'tipe'           => 'booking',
-                    'jumlah'         => 0,
-                    'status'         => 'sukses',
-                    'metode'         => 'gratis',
-                    'order_id'       => $orderId,
-                    'manage_token'   => Booking::generateSecureToken(),
-                    'nama_pembayar'  => $customerData['namapelanggan'],
-                    'email_pembayar' => $customerData['email'],
-                    'hp_pembayar'    => $customerData['nomorhp'],
-                    'catatan'        => $fullCatatan ?: null,
-                ]);
+                $payment = $this->bookingPaymentAction->createFreePayment($tenant, $customerData, $fullCatatan);
 
                 $createdBookings = [];
                 foreach ($orderedSchedules as $schedule) {
@@ -202,22 +196,8 @@ class CreateBooking
             }
 
             // 6. Paid booking path: create single payment and N bookings with status 'pending'
-            $orderId = 'BKG-' . $tenant->id . '-' . time() . '-' . rand(100, 999);
-
-            $payment = Payment::create([
-                'idtenant'       => $tenant->id,
-                'tipe'           => 'booking',
-                'jumlah'         => $hargaAkhir,
-                'status'         => BookingState::STATUS_PENDING,
-                'metode'         => 'midtrans',
-                'order_id'       => $orderId,
-                'manage_token'   => Booking::generateSecureToken(),
-                'expired_at'     => now()->addMinutes(15),
-                'nama_pembayar'  => $customerData['namapelanggan'],
-                'email_pembayar' => $customerData['email'],
-                'hp_pembayar'    => $customerData['nomorhp'],
-                'catatan'        => $fullCatatan ?: null,
-            ]);
+            $payment = $this->bookingPaymentAction->createPendingPayment($tenant, $hargaAkhir, $customerData, $fullCatatan);
+            $orderId = $payment->order_id;
 
             $createdBookings = [];
             foreach ($orderedSchedules as $schedule) {
@@ -304,41 +284,13 @@ class CreateBooking
         $hargaAkhir = $result['hargaAkhir'];
         $orderId    = $result['orderId'];
 
-        $itemName = 'Booking: ' . $service->namalayanan;
-        if (count($bookings) > 1) {
-            $itemName .= ' (' . count($bookings) . ' slot)';
-        }
-
-        $params = [
-            'transaction_details' => [
-                'order_id'     => $orderId,
-                'gross_amount' => (int) $hargaAkhir,
-            ],
-            'customer_details' => [
-                'first_name' => $customerData['namapelanggan'],
-                'email'      => $customerData['email'],
-                'phone'      => $customerData['nomorhp'],
-            ],
-            'item_details' => [
-                [
-                    'id'       => 'SRV-' . $service->id,
-                    'price'    => (int) $hargaAkhir,
-                    'quantity' => 1,
-                    'name'     => $itemName,
-                ],
-            ],
-            'expiry' => [
-                'start_time' => now()->format('Y-m-d H:i:s O'),
-                'unit'       => 'minute',
-                'duration'   => 15,
-            ],
-        ];
-
         try {
-            $snapToken = app()->environment('testing')
-                ? 'mocked-snap-token'
-                : Snap::getSnapToken($params);
-            $payment->update(['snap_token' => $snapToken]);
+            $snapToken = $this->bookingPaymentAction->generateSnapToken(
+                $payment,
+                $service,
+                $customerData,
+                count($bookings)
+            );
         } catch (Exception $e) {
             Log::error('Midtrans Snap Error (Booking): ' . $e->getMessage());
             // Snap token failed — cancel payment and all bookings, release slots

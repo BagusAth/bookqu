@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Payment\CreateSubscriptionPayment;
 use App\Http\Controllers\Controller;
-
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
@@ -13,31 +13,9 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Midtrans\Config as MidtransConfig;
-use Midtrans\Snap;
-use Midtrans\Transaction as MidtransTransaction;
 
 class OwnerCheckoutController extends Controller
 {
-    public function __construct()
-    {
-        MidtransConfig::$serverKey = config('midtrans.server_key');
-        MidtransConfig::$isProduction = config('midtrans.is_production');
-        MidtransConfig::$isSanitized = config('midtrans.is_sanitized');
-        MidtransConfig::$is3ds = config('midtrans.is_3ds');
-        
-        // P0-17: SSL Hardening
-        $curlOptions = [CURLOPT_HTTPHEADER => []];
-        if (app()->environment('local')) {
-            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 0;
-            $curlOptions[CURLOPT_SSL_VERIFYPEER] = 0;
-        } else {
-            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
-            $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
-        }
-        MidtransConfig::$curlOptions = $curlOptions;
-    }
-
     /**
      * Resolve tenant dari session / auth user.
      */
@@ -93,9 +71,9 @@ class OwnerCheckoutController extends Controller
     }
 
     /**
-     * Proses checkout: buat Payment record & generate Snap token.
+     * Proses checkout: buat Payment record & generate Snap token via CreateSubscriptionPayment action.
      */
-    public function processCheckout(Request $request)
+    public function processCheckout(Request $request, CreateSubscriptionPayment $createSubscriptionPayment)
     {
         $request->validate([
             'plan_id' => 'required|exists:plans,id',
@@ -112,71 +90,20 @@ class OwnerCheckoutController extends Controller
         }
 
         $plan = Plan::findOrFail($request->plan_id);
-        $biayaPlatform = 0;
-        $totalBayar = $plan->hargabulanan + $biayaPlatform;
-
-        // Generate order ID unik
-        $orderId = $this->generateOrderId();
-
-        // Buat record payment
-        $payment = Payment::create([
-            'idtenant' => $tenant->id,
-            'idplan' => $plan->id,
-            'tipe' => 'subscription',
-            'jumlah' => $totalBayar,
-            'status' => 'pending',
-            'metode' => 'midtrans',
-            'order_id' => $orderId,
-            'expired_at' => now()->addHour(),
-            'nama_pembayar' => $request->nama_pembayar,
-            'email_pembayar' => $request->email_pembayar,
-            'hp_pembayar' => $request->hp_pembayar,
-            'catatan' => $request->catatan,
-        ]);
-
-        // Params untuk Midtrans Snap
-        $params = [
-            'transaction_details' => [
-                'order_id' => $orderId,
-                'gross_amount' => (int) $totalBayar,
-            ],
-            'customer_details' => [
-                'first_name' => $request->nama_pembayar,
-                'email' => $request->email_pembayar,
-                'phone' => $request->hp_pembayar,
-            ],
-            'item_details' => [
-                [
-                    'id' => 'PLAN-' . $plan->id,
-                    'price' => (int) $plan->hargabulanan,
-                    'quantity' => 1,
-                    'name' => 'Subscription Plan ' . ucfirst($plan->namapaket) . ' (1 Bulan)',
-                ],
-            ],
-            'expiry' => [
-                'start_time' => now()->format('Y-m-d H:i:s O'),
-                'unit' => 'hour',
-                'duration' => 1,
-            ],
-        ];
-
-        // Tambahkan biaya platform ke item_details jika ada
-        if ($biayaPlatform > 0) {
-            $params['item_details'][] = [
-                'id' => 'PLATFORM-FEE',
-                'price' => (int) $biayaPlatform,
-                'quantity' => 1,
-                'name' => 'Biaya Layanan Platform',
-            ];
-        }
 
         try {
-            $snapToken = Snap::getSnapToken($params);
-            $payment->update(['snap_token' => $snapToken]);
-        } catch (\Exception $e) {
-            Log::error('Midtrans Snap Error: ' . $e->getMessage());
-
-            $payment->update(['status' => 'gagal']);
+            $payment = $createSubscriptionPayment->execute(
+                $tenant,
+                $plan,
+                [
+                    'nama_pembayar'  => $request->nama_pembayar,
+                    'email_pembayar' => $request->email_pembayar,
+                    'hp_pembayar'    => $request->hp_pembayar,
+                    'catatan'        => $request->catatan,
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::error('Owner checkout error: ' . $e->getMessage());
 
             return redirect()->route('owner.subscription')
                 ->with('pesan', 'Gagal memproses pembayaran. Silakan coba lagi. Error: ' . $e->getMessage());

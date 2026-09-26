@@ -424,30 +424,38 @@ Existing tests include multi-slot checkout, payment grouping, invoice behavior, 
 
 # 17. Payment
 
-| ID             | Requirement                | Status   | Test | Architecture   | Notes                  |
-| -------------- | -------------------------- | -------- | ---- | -------------- | ---------------------- |
-| FR-PAYMENT-001 | Booking payment            | Done     | PASS | Needs Refactor | Midtrans               |
-| FR-PAYMENT-002 | Midtrans integration       | Done     | PASS | Needs Refactor | Existing service       |
-| FR-PAYMENT-003 | Payment status             | Done     | PASS | Needs Refactor | Payment lifecycle      |
-| FR-PAYMENT-004 | External payment reference | Done     | PASS | Needs Refactor | External ID/order ID   |
-| FR-PAYMENT-005 | Trusted verification       | Verified | PASS | Needs Refactor | Callback hardening     |
-| FR-PAYMENT-006 | Webhook                    | Done     | PASS | Needs Refactor | Webhook controller     |
-| FR-PAYMENT-007 | Webhook idempotency        | Verified | PASS | Needs Refactor | Integration tests      |
-| FR-PAYMENT-008 | Payment lifecycle          | Done     | PASS | Needs Refactor | Success/failure/expiry |
-| FR-PAYMENT-009 | Booking synchronization    | Done     | PASS | Needs Refactor | Midtrans service       |
-| FR-PAYMENT-010 | Failed payment protection  | Verified | PASS | Needs Refactor | Production logic tests |
+| ID             | Requirement                | Status   | Test | Architecture | Notes                           |
+| -------------- | -------------------------- | -------- | ---- | ------------ | ------------------------------- |
+| FR-PAYMENT-001 | Booking payment            | Done     | PASS | Target       | CreateBookingPayment Action     |
+| FR-PAYMENT-002 | Midtrans integration       | Done     | PASS | Target       | MidtransPaymentGateway boundary |
+| FR-PAYMENT-003 | Payment status             | Done     | PASS | Target       | Domain PaymentState mapping     |
+| FR-PAYMENT-004 | External payment reference | Done     | PASS | Target       | PaymentRules order ID generator |
+| FR-PAYMENT-005 | Trusted verification       | Verified | PASS | Target       | CheckPaymentStatus Action       |
+| FR-PAYMENT-006 | Webhook                    | Done     | PASS | Target       | ProcessPaymentWebhook Action    |
+| FR-PAYMENT-007 | Webhook idempotency        | Verified | PASS | Target       | SynchronizePaymentStatus Action |
+| FR-PAYMENT-008 | Payment lifecycle          | Done     | PASS | Target       | SynchronizePaymentStatus/Expire |
+| FR-PAYMENT-009 | Booking synchronization    | Done     | PASS | Target       | SynchronizePaymentStatus Action |
+| FR-PAYMENT-010 | Failed payment protection  | Verified | PASS | Target       | Production logic & domain rules |
 
-### Payment Refactor Priority
+### Payment Architecture Assessment
 
-```text
-High
-
-[ ] Isolate Midtrans adapter
-[ ] Separate booking payment use case from provider API
-[ ] Separate subscription payment use case
-[ ] Centralize payment state transitions
-[ ] Improve payment integration tests
-```
+RF-02 (Payment Refactor) has been implemented:
+- Isolated Midtrans provider implementation into `app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php`.
+- Established Payment Domain in `app/Domain/Payment/`:
+  - `PaymentState.php` (constants, status mapping, terminal & transition rules)
+  - `PaymentRules.php` (expiry, eligibility, signature verification, order ID generation, subscription price calculation)
+- Established Payment Application Actions in `app/Actions/Payment/`:
+  - `CreateBookingPayment.php` (creation of paid and free booking payments, snap token generation)
+  - `CreateSubscriptionPayment.php` (owner subscription checkout and snap token generation)
+  - `CheckPaymentStatus.php` (fast-path check and gateway query synchronization)
+  - `SynchronizePaymentStatus.php` (atomic DB transactions, row-level locking, booking/subscription state sync, notifications, emails, cache invalidation)
+  - `ExpirePayment.php` (atomic payment expiration and booking slot release)
+  - `ProcessPaymentWebhook.php` (signature verification, tenant isolation context, and status sync)
+- Decomposed `MidtransPaymentService.php` from a 491-line monolithic service into an 80-line coordinator delegating to the new actions and gateway.
+- Decomposed `MidtransWebhookController` into a clean HTTP adapter over `ProcessPaymentWebhook`.
+- Decomposed `OwnerCheckoutController` and `CreateBooking` to delegate payment workflows to dedicated Actions.
+- Added comprehensive unit and feature tests covering payment domain rules, actions, and webhook flow (`PaymentStateTest`, `PaymentRulesTest`, `PaymentActionTest`).
+- Preserved 100% backward compatibility for existing callers and tests.
 
 ---
 
