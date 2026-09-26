@@ -1178,19 +1178,38 @@ class BookingController extends Controller
         ];
 
         try {
-            $snapToken = app()->environment('testing')
-                ? 'mocked-snap-token'
-                : Snap::getSnapToken($params);
-            $payment->update(['snap_token' => $snapToken]);
+            // === Menggunakan Scalev ===
+            $scalevService = app(\App\Services\ScalevPaymentService::class);
+            $customerDetails = [
+                'first_name' => $request->namapelanggan,
+                'email'      => $request->email,
+                'phone'      => $request->nomorhp,
+            ];
+            $itemDetails = [
+                [
+                    'name'     => $itemName,
+                    'price'    => (int) $hargaAkhir,
+                    'quantity' => 1,
+                ]
+            ];
+            
+            $checkoutUrl = app()->environment('testing')
+                ? 'https://mock-checkout.scalev.id/' . $orderId
+                : $scalevService->createInvoice($payment, $customerDetails, $itemDetails);
+                
+            // Gunakan kolom snap_token untuk menyimpan link checkout url
+            $payment->update(['snap_token' => $checkoutUrl]);
+
         } catch (\Exception $e) {
-            Log::error('Midtrans Snap Error (Booking): ' . $e->getMessage());
-            // Snap token failed — cancel payment and all bookings, release slots
+            Log::error('Scalev API Error (Booking): ' . $e->getMessage());
+            // Token/Link failed — cancel payment and all bookings, release slots
             DB::transaction(function () use ($payment, $bookings) {
                 $payment->update(['status' => 'gagal']);
                 foreach ($bookings as $bk) {
                     $bk->update(['status' => 'cancelled']);
                 }
             });
+
 
             // Invalidate cache so slots are free again
             $this->clearBookingAvailabilityCache(

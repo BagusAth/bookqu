@@ -23,6 +23,7 @@ use App\Http\Controllers\Owner\OwnerSubscriptionController;
 use App\Http\Controllers\Owner\OwnerVoucherController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
+use App\Http\Controllers\Webhook\ScalevWebhookController;
 use App\Models\User;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -290,6 +291,10 @@ Route::prefix('owner')
 // ── Midtrans Webhook (tanpa auth & CSRF, dipanggil oleh Midtrans) ──
 Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle'])
     ->name('midtrans.webhook');
+
+// ── Scalev Webhook (tanpa auth & CSRF, dipanggil oleh Scalev) ──
+Route::post('/scalev/webhook', [ScalevWebhookController::class, 'handle'])
+    ->name('scalev.webhook');
 
 // ── Booking Management Without Account (tokenized URLs) ──
 Route::prefix('manage')->group(function () {

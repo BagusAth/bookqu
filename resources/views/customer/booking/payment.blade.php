@@ -6,9 +6,7 @@
 @section('back_label', 'Pilih Layanan Lain')
 
 @section('head')
-@if(!empty($snapUrl) && !empty($clientKey))
-<script src="{{ $snapUrl }}" data-client-key="{{ $clientKey }}"></script>
-@endif
+{{-- Scalev tidak memerlukan SDK iframe, menggunakan direct redirect ke Checkout URL --}}
 @endsection
 
 @section('content')
@@ -456,31 +454,14 @@
 
     function openSnapPayment() {
         if (!snapToken) {
-            showInlineFeedback('Token pembayaran tidak tersedia atau telah kadaluarsa.', 'error');
-            return;
-        }
-
-        if (typeof snap === 'undefined') {
-            showInlineFeedback('Sistem pembayaran (Midtrans Snap) belum termuat. Periksa koneksi internet Anda lalu coba lagi.', 'error');
+            showInlineFeedback('Link pembayaran (Scalev) tidak tersedia atau telah kadaluarsa.', 'error');
             return;
         }
 
         hideInlineFeedback();
-
-        snap.pay(snapToken, {
-            onSuccess: function (result) {
-                sendPaymentCallback(result);
-            },
-            onPending: function (result) {
-                sendPaymentCallback(result);
-            },
-            onError: function (result) {
-                sendPaymentCallback(result);
-            },
-            onClose: function () {
-                checkPaymentStatus(true);
-            }
-        });
+        
+        // Redirect ke URL Checkout Scalev
+        window.location.href = snapToken;
     }
 
     let isProcessingSuccess = false;
