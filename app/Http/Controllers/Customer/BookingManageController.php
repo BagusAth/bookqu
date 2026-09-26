@@ -364,50 +364,8 @@ class BookingManageController extends Controller
         $tenant       = $booking->tenant;
         $service      = $booking->layanan;
 
-        $cacheKey = "tenant:{$tenant->id}:service:{$service->id}:schedules:{$selectedDate}:reschedule:{$booking->id}";
-
-        $slots = Cache::remember($cacheKey, now()->addSeconds(300), function () use ($tenant, $service, $selectedDate, $booking) {
-            return DB::table('schedules')
-                ->leftJoin('bookings', function ($join) use ($booking) {
-                    $join->on('schedules.id', '=', 'bookings.idschedule')
-                        ->whereIn('bookings.status', ['pending', 'paid', 'completed'])
-                        ->where('bookings.id', '!=', $booking->id);
-                })
-                ->where('schedules.idtenant', $tenant->id)
-                ->where('schedules.idlayanan', $service->id)
-                ->where('schedules.status', 'tersedia')
-                ->whereDate('schedules.tanggal', $selectedDate)
-                ->groupBy('schedules.id', 'schedules.jam_mulai', 'schedules.jam_selesai', 'schedules.tanggal')
-                ->orderBy('schedules.jam_mulai')
-                ->select([
-                    'schedules.id',
-                    'schedules.jam_mulai',
-                    'schedules.jam_selesai',
-                    DB::raw('count(bookings.id) as booking_count'),
-                ])
-                ->get()
-                ->map(function ($row) use ($selectedDate) {
-                    $wib = 'Asia/Jakarta';
-                    $nowWib = Carbon::now($wib);
-                    $selectedDateCarbon = Carbon::parse($selectedDate, $wib);
-                    $isToday = $selectedDateCarbon->isSameDay($nowWib);
-                    $isPastDate = $selectedDateCarbon->lt($nowWib->copy()->startOfDay());
-                    $slotDateTime = Carbon::parse($selectedDate . ' ' . $row->jam_mulai, $wib);
-                    $isBooked    = $row->booking_count > 0;
-                    $isPast      = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
-                    $isAvailable = !$isBooked && !$isPast;
-
-                    return [
-                        'id'           => (int) $row->id,
-                        'jam_mulai'    => $slotDateTime->format('H:i'),
-                        'jam_selesai'  => Carbon::parse($selectedDate . ' ' . $row->jam_selesai, $wib)->format('H:i'),
-                        'is_available' => $isAvailable,
-                        'is_booked'    => $isBooked,
-                        'is_past'      => $isPast,
-                    ];
-                })
-                ->all();
-        });
+        $slots = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+            ->getCustomerRescheduleSlots($tenant, $service, $selectedDate, (int) $booking->id);
 
         return response()->json(['slots' => $slots]);
     }

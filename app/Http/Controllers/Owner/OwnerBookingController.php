@@ -205,39 +205,23 @@ class OwnerBookingController extends Controller
             $tanggal = Carbon::parse($tanggal)->toDateString();
         }
 
-        // Cari slot jadwal pada tanggal tersebut untuk layanan yang sama
-        $slots = Schedule::where('idtenant', $tenant->id)
-            ->where('idlayanan', $booking->idlayanan)
-            ->whereDate('tanggal', $tanggal)
-            ->where('status', 'tersedia')
-            ->orderBy('jam_mulai')
-            ->get();
-
-        // Cari slot ID yang sedang terisi oleh booking aktif lain (selain booking ini)
-        $takenSlotIds = Booking::where('idtenant', $tenant->id)
-            ->whereDate('tanggalbooking', $tanggal)
-            ->whereIn('status', ['pending', 'paid', 'completed'])
-            ->where('id', '!=', $booking->id)
-            ->pluck('idschedule')
-            ->filter()
-            ->toArray();
-
         $service = $booking->layanan;
+        $slots = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+            ->getSlotsForReschedule($tenant, (int) $booking->idlayanan, $tanggal, (int) $booking->id);
 
-        $mappedSlots = $slots->map(function ($slot) use ($takenSlotIds, $service, $booking) {
-            $isOccupied = in_array($slot->id, $takenSlotIds);
-            $isCurrentSlot = ($slot->id === $booking->idschedule);
+        $mappedSlots = $slots->map(function ($item) use ($service, $booking) {
+            $slot = $item['schedule'];
             $price = $slot->harga_override ?? ($service ? $service->harga : 0);
 
             return [
                 'id'              => $slot->id,
-                'jam_mulai'       => substr($slot->jam_mulai, 0, 5),
-                'jam_selesai'     => substr($slot->jam_selesai, 0, 5),
-                'formatted_time'  => substr($slot->jam_mulai, 0, 5) . ' - ' . substr($slot->jam_selesai, 0, 5),
+                'jam_mulai'       => $item['jam_mulai'],
+                'jam_selesai'     => $item['jam_selesai'],
+                'formatted_time'  => $item['jam_mulai'] . ' - ' . $item['jam_selesai'],
                 'price'           => $price,
                 'formatted_price' => 'Rp ' . number_format($price, 0, ',', '.'),
-                'is_available'    => !$isOccupied,
-                'is_current'      => $isCurrentSlot,
+                'is_available'    => $item['is_available'],
+                'is_current'      => $item['is_current'],
             ];
         });
 

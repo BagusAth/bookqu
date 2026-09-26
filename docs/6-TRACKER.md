@@ -322,28 +322,28 @@ Source implementation is already covered by owner module tests.
 
 # 13. Schedule Management
 
-| ID              | Requirement                | Status      | Test | Architecture   | Notes                     |
-| --------------- | -------------------------- | ----------- | ---- | -------------- | ------------------------- |
-| FR-SCHEDULE-001 | Create schedule            | Done        | PASS | Needs Refactor | Existing schedule module  |
-| FR-SCHEDULE-002 | Bulk schedule creation     | Done        | PASS | Needs Refactor | Bulk slot generator       |
-| FR-SCHEDULE-003 | Schedule pricing           | Implemented | PASS | Needs Refactor | Pricing override exists   |
-| FR-SCHEDULE-004 | Availability configuration | Done        | PASS | Needs Refactor | Existing configuration    |
-| FR-SCHEDULE-005 | Blocked dates              | Done        | PASS | Needs Refactor | Owner blocked dates       |
-| FR-SCHEDULE-006 | Delete schedule            | Done        | PASS | Needs Refactor | Existing delete flow      |
-| FR-SCHEDULE-007 | Conflict prevention        | Done        | PASS | Needs Refactor | Tests exist               |
-| FR-SCHEDULE-008 | Tenant ownership           | Done        | PASS | Target         | Tenant isolation          |
-| FR-SCHEDULE-009 | Booking availability       | Done        | PASS | Needs Refactor | Availability logic exists |
-| FR-SCHEDULE-010 | Past schedule protection   | Done        | PASS | Needs Refactor | Customer flow hardened    |
+| ID              | Requirement                | Status | Test | Architecture | Notes                                                  |
+| --------------- | -------------------------- | ------ | ---- | ------------ | ------------------------------------------------------ |
+| FR-SCHEDULE-001 | Create schedule            | Done   | PASS | Target       | BulkCreateSchedules action                             |
+| FR-SCHEDULE-002 | Bulk schedule creation     | Done   | PASS | Target       | Bulk slot generator action                             |
+| FR-SCHEDULE-003 | Schedule pricing           | Done   | PASS | Target       | ScheduleConflictRules pricing calculation              |
+| FR-SCHEDULE-004 | Availability configuration | Done   | PASS | Target       | UpdateScheduleAvailability action                      |
+| FR-SCHEDULE-005 | Blocked dates              | Done   | PASS | Target       | Owner blocked dates & DeleteBlockedDate action         |
+| FR-SCHEDULE-006 | Delete schedule            | Done   | PASS | Target       | DeleteSchedule action with deletion safety             |
+| FR-SCHEDULE-007 | Conflict prevention        | Done   | PASS | Target       | ScheduleConflictRules & SlotCompatibilityRules         |
+| FR-SCHEDULE-008 | Tenant ownership           | Done   | PASS | Target       | Tenant isolation enforced                              |
+| FR-SCHEDULE-009 | Booking availability       | Done   | PASS | Target       | AvailabilityRules & GetAvailableSchedules operation   |
+| FR-SCHEDULE-010 | Past schedule protection   | Done   | PASS | Target       | AvailabilityRules past slot protection                 |
 
 ### Schedule Refactor Priority
 
 ```text
-High
+Status: Completed (RF-03)
 
-[ ] Extract availability rules
-[ ] Consolidate conflict validation
-[ ] Separate schedule generation from HTTP controller
-[ ] Create reusable booking availability operation
+[x] Extract availability rules
+[x] Consolidate conflict validation
+[x] Separate schedule generation from HTTP controller
+[x] Create reusable booking availability operation
 ```
 
 ---

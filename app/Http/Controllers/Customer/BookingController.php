@@ -158,55 +158,8 @@ class BookingController extends Controller
         $minDate = Carbon::today($wib);
         $maxDate = Carbon::today($wib)->addDays(30);
 
-        $todayStr = $minDate->toDateString();
-        $nowTimeStr = $nowWib->format('H:i');
-
-        $availabilityKey = $this->getAvailabilityCacheKey($tenant->id, $service->id);
-
-        $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(60), function () use ($tenant, $service, $minDate, $maxDate, $todayStr, $nowTimeStr) {
-            $rows = DB::table('schedules')
-                ->leftJoin('bookings', function ($join) {
-                    $join->on('schedules.id', '=', 'bookings.idschedule')
-                        ->where(function ($q) {
-                            $q->whereIn('bookings.status', ['paid', 'completed'])
-                              ->orWhere(function ($sub) {
-                                  $sub->where('bookings.status', 'pending')
-                                      ->where('bookings.created_at', '>=', now()->subMinutes(15));
-                              });
-                        });
-                })
-                ->where('schedules.idtenant', $tenant->id)
-                ->where('schedules.idlayanan', $service->id)
-                ->where('schedules.status', 'tersedia')
-                ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()])
-                ->groupBy('schedules.tanggal')
-                ->orderBy('schedules.tanggal')
-                ->select([
-                    'schedules.tanggal',
-                    DB::raw('count(distinct schedules.id) as total_slots'),
-                    DB::raw("count(distinct case when bookings.id is null and (substr(schedules.tanggal, 1, 10) > '{$todayStr}' or (substr(schedules.tanggal, 1, 10) = '{$todayStr}' and substr(schedules.jam_mulai, 1, 5) > '{$nowTimeStr}')) then schedules.id end) as available_slots"),
-                ])
-                ->get();
-
-            $blockedDates = DB::table('owner_blocked_dates')
-                ->where('idtenant', $tenant->id)
-                ->whereBetween('tanggal', [$minDate->toDateString(), $maxDate->toDateString()])
-                ->pluck('tanggal')
-                ->map(fn ($d) => Carbon::parse($d)->toDateString())
-                ->all();
-
-            return $rows->map(function ($row) use ($blockedDates) {
-                $dateStr = Carbon::parse($row->tanggal)->toDateString();
-                $isBlocked = in_array($dateStr, $blockedDates, true);
-
-                return [
-                    'date' => $dateStr,
-                    'total_slots' => (int) $row->total_slots,
-                    'available_slots' => $isBlocked ? 0 : (int) $row->available_slots,
-                    'is_blocked' => $isBlocked,
-                ];
-            })->values()->all();
-        });
+        $availabilityPayload = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+            ->getDateAvailability($tenant, $service, $minDate, $maxDate);
 
         $priceLabel = 'Rp ' . number_format($service->harga, 0, ',', '.');
         $servicePayload = [
@@ -321,33 +274,8 @@ class BookingController extends Controller
                 ->withErrors(['tanggal' => 'Tanggal ini sedang ditutup oleh pemilik bisnis.']);
         }
 
-        $wib = 'Asia/Jakarta';
-        $nowWib = Carbon::now($wib);
-        $isToday = Carbon::parse($selectedDate, $wib)->isSameDay($nowWib);
-
-        $availableSlotsQuery = DB::table('schedules')
-            ->leftJoin('bookings', function ($join) {
-                $join->on('schedules.id', '=', 'bookings.idschedule')
-                    ->where(function ($q) {
-                        $q->whereIn('bookings.status', ['paid', 'completed'])
-                          ->orWhere(function ($sub) {
-                              $sub->where('bookings.status', 'pending')
-                                  ->where('bookings.created_at', '>=', now()->subMinutes(15));
-                          });
-                    });
-            })
-            ->where('schedules.idtenant', $tenant->id)
-            ->where('schedules.idlayanan', $service->id)
-            ->where('schedules.status', 'tersedia')
-            ->whereDate('schedules.tanggal', $selectedDate)
-            ->whereNull('bookings.id');
-
-        if ($isToday) {
-            $nowTimeStr = $nowWib->format('H:i');
-            $availableSlotsQuery->whereRaw("substr(schedules.jam_mulai, 1, 5) > ?", [$nowTimeStr]);
-        }
-
-        $availableSlots = $availableSlotsQuery->count();
+        $availableSlots = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+            ->countAvailableSlotsOnDate($tenant, $service, $selectedDate);
 
         if ($availableSlots < 1) {
             return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
@@ -409,90 +337,8 @@ class BookingController extends Controller
                 ->withErrors(['tanggal' => 'Tanggal ini telah ditutup oleh pemilik bisnis.']);
         }
 
-        $scheduleCacheKey = $this->getSchedulesCacheKey($tenant->id, $service->id, $selectedDate);
-
-        $scheduleRows = Cache::remember($scheduleCacheKey, now()->addSeconds(300), function () use ($tenant, $service, $selectedDate) {
-            return DB::table('schedules')
-                ->leftJoin('bookings', function ($join) {
-                    $join->on('schedules.id', '=', 'bookings.idschedule')
-                        ->where(function ($q) {
-                            $q->whereIn('bookings.status', ['paid', 'completed'])
-                              ->orWhere(function ($sub) {
-                                  $sub->where('bookings.status', 'pending')
-                                      ->where('bookings.created_at', '>=', now()->subMinutes(15));
-                              });
-                        });
-                })
-                ->where('schedules.idtenant', $tenant->id)
-                ->where('schedules.idlayanan', $service->id)
-                ->where('schedules.status', 'tersedia')
-                ->whereDate('schedules.tanggal', $selectedDate)
-                ->groupBy('schedules.id', 'schedules.jam_mulai', 'schedules.jam_selesai', 'schedules.tanggal', 'schedules.harga_override')
-                ->orderBy('schedules.jam_mulai')
-                ->select([
-                    'schedules.id',
-                    'schedules.jam_mulai',
-                    'schedules.jam_selesai',
-                    'schedules.tanggal',
-                    'schedules.harga_override',
-                    DB::raw('count(bookings.id) as booking_count'),
-                ])
-                ->get()
-                ->map(function ($row) {
-                    return [
-                        'id' => (int) $row->id,
-                        'jam_mulai' => $row->jam_mulai,
-                        'jam_selesai' => $row->jam_selesai,
-                        'tanggal' => $row->tanggal,
-                        'harga_override' => $row->harga_override !== null ? (float) $row->harga_override : null,
-                        'booking_count' => (int) $row->booking_count,
-                    ];
-                })
-                ->all();
-        });
-
-        $wib = 'Asia/Jakarta';
-        $nowWib = Carbon::now($wib);
-        $selectedDateCarbon = Carbon::parse($selectedDate, $wib);
-        $isToday = $selectedDateCarbon->isSameDay($nowWib);
-        $isPastDate = $selectedDateCarbon->lt($nowWib->copy()->startOfDay());
-
-        $timeSlotsPayload = collect($scheduleRows)->map(function (array $row) use ($isToday, $isPastDate, $nowWib, $selectedDate, $wib, $service) {
-            $slotDateTime = Carbon::parse($selectedDate . ' ' . $row['jam_mulai'], $wib);
-            $hour = (int) $slotDateTime->format('H');
-            $session = 'evening';
-
-            if ($hour >= 5 && $hour <= 11) {
-                $session = 'morning';
-            } elseif ($hour >= 12 && $hour <= 17) {
-                $session = 'afternoon';
-            }
-
-            $isPast = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
-            $isBooked = $row['booking_count'] > 0;
-            $isAvailable = !$isPast && !$isBooked;
-            $slotPrice = $row['harga_override'] !== null ? (float) $row['harga_override'] : (float) $service->harga;
-            $durasiMenit = (int) ($service->durasi ?: 60);
-            $slotEndDateTime = (clone $slotDateTime)->addMinutes($durasiMenit);
-            $timeRangeLabel = $slotDateTime->format('H:i') . ' – ' . $slotEndDateTime->format('H:i');
-
-            return [
-                'id' => $row['id'],
-                'time' => $slotDateTime->format('H:i'),
-                'label' => $timeRangeLabel,
-                'start_time' => $slotDateTime->format('H:i'),
-                'end_time' => $slotEndDateTime->format('H:i'),
-                'range_label' => $timeRangeLabel,
-                'period' => 'WIB',
-                'session' => $session,
-                'price' => $slotPrice,
-                'price_label' => 'Rp ' . number_format($slotPrice, 0, ',', '.'),
-                'is_available' => $isAvailable,
-                'is_disabled' => !$isAvailable,
-                'is_booked' => $isBooked,
-                'is_past' => $isPast,
-            ];
-        })->values()->all();
+        $timeSlotsPayload = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+            ->getTimeSlots($tenant, $service, $selectedDate);
 
         $priceLabel = 'Rp ' . number_format($service->harga, 0, ',', '.');
         $servicePayload = [

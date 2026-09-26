@@ -1,18 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Traits;
 
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache;
+use App\Services\Schedule\ScheduleAvailabilityCache;
 
 trait ClearsBookingCache
 {
+    protected function getAvailabilityCacheService(): ScheduleAvailabilityCache
+    {
+        return app(ScheduleAvailabilityCache::class);
+    }
+
     /**
      * Get the cache key for active services of a tenant.
      */
     protected function getActiveServicesCacheKey(int $tenantId): string
     {
-        return "tenant:{$tenantId}:services:active";
+        return $this->getAvailabilityCacheService()->getActiveServicesCacheKey($tenantId);
     }
 
     /**
@@ -20,19 +26,15 @@ trait ClearsBookingCache
      */
     protected function getServiceCacheKey(int $tenantId, int $serviceId): string
     {
-        return "tenant:{$tenantId}:service:{$serviceId}";
+        return $this->getAvailabilityCacheService()->getServiceCacheKey($tenantId, $serviceId);
     }
 
     /**
-     * Get the cache key for availability of a service.
-     * NOTE: The key is computed with today's date as the base window (today → +30 days),
-     * matching exactly how showDateSelection builds it.
+     * Get the cache key for availability of a service (today → +30 days window).
      */
     protected function getAvailabilityCacheKey(int $tenantId, int $serviceId): string
     {
-        $minDate = Carbon::today('Asia/Jakarta')->toDateString();
-        $maxDate = Carbon::today('Asia/Jakarta')->addDays(30)->toDateString();
-        return "tenant:{$tenantId}:service:{$serviceId}:availability:{$minDate}:{$maxDate}";
+        return $this->getAvailabilityCacheService()->getAvailabilityCacheKey($tenantId, $serviceId);
     }
 
     /**
@@ -40,28 +42,23 @@ trait ClearsBookingCache
      */
     protected function getSchedulesCacheKey(int $tenantId, int $serviceId, string $date): string
     {
-        return "tenant:{$tenantId}:service:{$serviceId}:schedules:{$date}";
+        return $this->getAvailabilityCacheService()->getSchedulesCacheKey($tenantId, $serviceId, $date);
     }
 
     /**
-     * Clear all cache related to a service (when updating/deleting service).
+     * Clear all cache related to a service.
      */
     protected function clearServiceCache(int $tenantId, int $serviceId): void
     {
-        Cache::forget($this->getActiveServicesCacheKey($tenantId));
-        Cache::forget($this->getServiceCacheKey($tenantId, $serviceId));
-        // We might also want to clear availability just in case, though usually
-        // availability changes when schedules change.
-        Cache::forget($this->getAvailabilityCacheKey($tenantId, $serviceId));
+        $this->getAvailabilityCacheService()->clearServiceCache($tenantId, $serviceId);
     }
 
     /**
      * Clear the broad availability cache for a service (date-range level).
-     * Call this whenever a booking status changes and affects slot availability.
      */
     protected function clearAvailabilityCache(int $tenantId, int $serviceId): void
     {
-        Cache::forget($this->getAvailabilityCacheKey($tenantId, $serviceId));
+        $this->getAvailabilityCacheService()->clearAvailabilityCache($tenantId, $serviceId);
     }
 
     /**
@@ -69,11 +66,7 @@ trait ClearsBookingCache
      */
     protected function clearScheduleCache(int $tenantId, int $serviceId, array $dates): void
     {
-        Cache::forget($this->getAvailabilityCacheKey($tenantId, $serviceId));
-
-        foreach (array_unique($dates) as $date) {
-            Cache::forget($this->getSchedulesCacheKey($tenantId, $serviceId, $date));
-        }
+        $this->getAvailabilityCacheService()->clearScheduleCache($tenantId, $serviceId, $dates);
     }
 
     /**
@@ -81,38 +74,22 @@ trait ClearsBookingCache
      */
     protected function clearActiveServicesCache(int $tenantId): void
     {
-        Cache::forget($this->getActiveServicesCacheKey($tenantId));
+        $this->getAvailabilityCacheService()->clearActiveServicesCache($tenantId);
     }
 
     /**
-     * Clear availability cache for all services of a tenant (e.g. when blocking dates).
+     * Clear availability cache for all services of a tenant.
      */
     protected function clearAllServicesAvailability(int $tenantId): void
     {
-        $serviceIds = \App\Models\Service::withoutGlobalScopes()
-            ->where('idtenant', $tenantId)
-            ->pluck('id');
-
-        foreach ($serviceIds as $sId) {
-            Cache::forget($this->getAvailabilityCacheKey($tenantId, (int) $sId));
-        }
+        $this->getAvailabilityCacheService()->clearAllServicesAvailability($tenantId);
     }
 
     /**
-     * Convenience: clear both the per-date schedule cache and the broad availability cache.
-     * Use this after any booking status transition that affects slot availability
-     * (pending→paid, pending→cancelled, paid→completed, etc.)
-     *
-     * @param int         $tenantId
-     * @param int         $serviceId
-     * @param string|null $date      Y-m-d
+     * Clear both the per-date schedule cache and the broad availability cache.
      */
     protected function clearBookingAvailabilityCache(int $tenantId, int $serviceId, ?string $date = null): void
     {
-        if ($date) {
-            Cache::forget($this->getSchedulesCacheKey($tenantId, $serviceId, $date));
-        }
-        Cache::forget($this->getAvailabilityCacheKey($tenantId, $serviceId));
+        $this->getAvailabilityCacheService()->clearBookingAvailabilityCache($tenantId, $serviceId, $date);
     }
 }
-

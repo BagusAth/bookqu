@@ -1,28 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Schedule\BulkCreateSchedules;
+use App\Actions\Schedule\DeleteBlockedDate;
+use App\Actions\Schedule\DeleteSchedule;
+use App\Actions\Schedule\UpdateScheduleAvailability;
 use App\Http\Controllers\Controller;
-
+use App\Http\Requests\Schedule\BulkCreateScheduleRequest;
+use App\Http\Requests\Schedule\UpdateAvailabilityRequest;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Tenant;
+use App\Services\Schedule\ScheduleAvailabilityCache;
+use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use App\Traits\ClearsBookingCache;
+use Illuminate\View\View;
 
 class OwnerScheduleController extends Controller
 {
-    use ClearsBookingCache;
-    use \App\Traits\ResolvesOwnerTenant;
+    use ResolvesOwnerTenant;
 
     /**
      * Halaman manajemen jadwal.
      */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
@@ -114,148 +122,50 @@ class OwnerScheduleController extends Controller
     /**
      * Simpan bulk slots jadwal.
      */
-    public function bulkStore(Request $request)
+    public function bulkStore(BulkCreateScheduleRequest $request, BulkCreateSchedules $bulkCreateSchedules): RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $datavalid = $request->validate([
-            'jenisslot' => 'required|in:harian,rentang',
-            'idlayanan' => [
-                'required',
-                Rule::exists('services', 'id')->where('idtenant', $tenant->id),
-            ],
-            'tanggal' => 'nullable|date',
-            'tanggalmulai' => 'nullable|date',
-            'tanggalselesai' => 'nullable|date|after_or_equal:tanggalmulai',
-            'jammulai' => 'required|date_format:H:i',
-            'jamselesai' => 'required|date_format:H:i|after:jammulai',
-            'intervalslot' => 'required|integer|min:5|max:480',
-        ]);
+        $result = $bulkCreateSchedules->execute($tenant, $request->validated());
 
-        // Validasi silang: intervalslot harus sama dengan durasi layanan
-        $layanan = Service::where('idtenant', $tenant->id)->find($datavalid['idlayanan']);
-
-        if (!$layanan) {
-            return redirect('/owner/schedule')->withErrors(['idlayanan' => 'Program tidak ditemukan.']);
-        }
-
-        if ((int) $datavalid['intervalslot'] !== (int) $layanan->durasi) {
+        if (!$result['success']) {
             return redirect('/owner/schedule')->withErrors([
-                'intervalslot' => 'Durasi slot harus sesuai dengan durasi program (' . $layanan->durasi . ' menit).',
+                $result['error_field'] ?? 'idlayanan' => $result['error'],
             ]);
         }
 
-        // Tentukan daftar tanggal
-        $daftartanggal = [];
-        if ($datavalid['jenisslot'] === 'harian') {
-            $daftartanggal[] = $datavalid['tanggal'];
-        } else {
-            $tanggalcursor = Carbon::parse($datavalid['tanggalmulai']);
-            $tanggalakhir = Carbon::parse($datavalid['tanggalselesai']);
-            while ($tanggalcursor->lte($tanggalakhir)) {
-                $daftartanggal[] = $tanggalcursor->format('Y-m-d');
-                $tanggalcursor->addDay();
-            }
-        }
-
-        $blocked = OwnerBlockedDate::where('idtenant', $tenant->id)
-            ->whereIn('tanggal', $daftartanggal)
-            ->pluck('tanggal')
-            ->map(fn($tanggal) => Carbon::parse($tanggal)->format('Y-m-d'))
-            ->toArray();
-
-        $daftartanggal = array_values(array_filter($daftartanggal, fn($tanggal) => !in_array($tanggal, $blocked, true)));
-
-        // Generate slots per tanggal
-        $jumlahslot = 0;
-        $intervalslot = (int) $datavalid['intervalslot'];
-
-        $jumlahslot = \Illuminate\Support\Facades\DB::transaction(function () use ($daftartanggal, $datavalid, $layanan, $tenant, $intervalslot) {
-            $createdCount = 0;
-            foreach ($daftartanggal as $tanggalnya) {
-                $jamcursor = Carbon::parse($tanggalnya . ' ' . $datavalid['jammulai']);
-                $jamakhir = Carbon::parse($tanggalnya . ' ' . $datavalid['jamselesai']);
-
-                $hargaOverride = null;
-                if ($layanan && Carbon::parse($tanggalnya)->isWeekend()) {
-                    if ($tenant->weekend_price_type === 'multiplier' && $tenant->weekend_price_value) {
-                        $hargaOverride = $layanan->harga * $tenant->weekend_price_value;
-                    } elseif ($tenant->weekend_price_type === 'fixed' && $tenant->weekend_price_value) {
-                        $hargaOverride = $tenant->weekend_price_value;
-                    }
-                }
-
-                while ($jamcursor->copy()->addMinutes($intervalslot)->lte($jamakhir)) {
-                    $jammulainya = $jamcursor->format('H:i:s');
-                    // Subtract 1 minute to meet the requirement (e.g. 11:00 - 11:59 instead of 12:00)
-                    $jamselesainya = $jamcursor->copy()->addMinutes($intervalslot)->subMinute()->format('H:i:s');
-
-                    $slotConflict = Schedule::where('idtenant', $tenant->id)
-                        ->where('idlayanan', $datavalid['idlayanan'])
-                        ->whereDate('tanggal', $tanggalnya)
-                        ->where(function ($query) use ($jammulainya, $jamselesainya) {
-                            $query->where('jam_mulai', '<=', $jamselesainya)
-                                  ->where('jam_selesai', '>=', $jammulainya);
-                        })
-                        ->exists();
-
-                    if (!$slotConflict) {
-                        Schedule::create([
-                            'idtenant' => $tenant->id,
-                            'idlayanan' => $datavalid['idlayanan'],
-                            'tanggal' => $tanggalnya,
-                            'jam_mulai' => $jammulainya,
-                            'jam_selesai' => $jamselesainya,
-                            'harga_override' => $hargaOverride,
-                            'status' => 'tersedia',
-                        ]);
-                        $createdCount++;
-                    }
-
-                    $jamcursor->addMinutes($intervalslot);
-                }
-            }
-            return $createdCount;
-        });
-
-        if ($jumlahslot > 0) {
-            $this->clearScheduleCache($tenant->id, $datavalid['idlayanan'], $daftartanggal);
-        }
-
-        return redirect('/owner/schedule')->with('sukses', $jumlahslot . ' slot jadwal berhasil dibuat untuk ' . count($daftartanggal) . ' hari!');
+        return redirect('/owner/schedule')->with(
+            'sukses',
+            $result['created_count'] . ' slot jadwal berhasil dibuat untuk ' . $result['days_count'] . ' hari!'
+        );
     }
 
     /**
      * Hapus slot jadwal.
      */
-    public function destroy($id)
+    public function destroy($id, DeleteSchedule $deleteSchedule): RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $targetId = $id instanceof Schedule ? $id->id : (int) $id;
-        $slot = Schedule::where('idtenant', $tenant->id)->findOrFail($targetId);
+        $result = $deleteSchedule->execute($tenant, $id);
 
-        $adaBooking = $slot->bookings()->where('status', '!=', 'cancelled')->exists();
-        if ($adaBooking) {
-            abort(403, 'Slot memiliki booking aktif.');
+        if (!$result['success']) {
+            abort($result['code'] ?? 403, $result['error'] ?? 'Tidak dapat menghapus slot.');
         }
-
-        $idlayanan = $slot->idlayanan;
-        $tanggal = $slot->tanggal->format('Y-m-d');
-        $slot->delete();
-
-        $this->clearScheduleCache($tenant->id, $idlayanan, [$tanggal]);
 
         return redirect('/owner/schedule')->with('sukses', 'Slot berhasil dihapus.');
     }
 
-    public function updateDefaultPricing(Request $request)
+    /**
+     * Perbarui harga default layanan.
+     */
+    public function updateDefaultPricing(Request $request, ScheduleAvailabilityCache $cacheService): RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
@@ -274,58 +184,44 @@ class OwnerScheduleController extends Controller
             ->where('id', $data['idlayanan'])
             ->update(['harga' => $data['harga']]);
 
-        $this->clearServiceCache($tenant->id, $data['idlayanan']);
+        $cacheService->clearServiceCache((int) $tenant->id, (int) $data['idlayanan']);
 
         return redirect('/owner/schedule')->with('sukses', 'Harga default berhasil diperbarui.');
     }
 
-    public function updateAvailability(Request $request)
-    {
+    /**
+     * Perbarui pengaturan ketersediaan dan tanggal blokir.
+     */
+    public function updateAvailability(
+        UpdateAvailabilityRequest $request,
+        UpdateScheduleAvailability $updateScheduleAvailability
+    ): RedirectResponse {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $data = $request->validate([
-            'tanggal_block' => 'nullable|date',
-            'alasan' => 'nullable|string|max:200',
-            'weekend_price_type' => 'required|in:none,multiplier,fixed',
-            'weekend_price_value' => 'nullable|numeric|min:0',
-        ]);
-
-        if (!empty($data['tanggal_block'])) {
-            OwnerBlockedDate::updateOrCreate(
-                ['idtenant' => $tenant->id, 'tanggal' => $data['tanggal_block']],
-                ['alasan' => $data['alasan'] ?? null]
-            );
-        }
-
-        $tenant->weekend_price_type = $data['weekend_price_type'];
-        $tenant->weekend_price_value = $data['weekend_price_type'] === 'none'
-            ? null
-            : ($data['weekend_price_value'] ?? null);
-        $tenant->save();
-
-        \Illuminate\Support\Facades\Cache::forget("tenant:slug:{$tenant->slug}");
-        $this->clearAllServicesAvailability($tenant->id);
+        $updateScheduleAvailability->execute($tenant, $request->validated());
 
         return redirect('/owner/schedule')->with('sukses', 'Pengaturan availability berhasil disimpan.');
     }
 
-    public function deleteBlockedDate($blockedDate)
+    /**
+     * Hapus tanggal blokir.
+     */
+    public function deleteBlockedDate($blockedDate, DeleteBlockedDate $deleteBlockedDate): RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $targetId = $blockedDate instanceof OwnerBlockedDate ? $blockedDate->id : (int) $blockedDate;
-        $bDate = OwnerBlockedDate::where('idtenant', $tenant->id)->findOrFail($targetId);
-        $bDate->delete();
+        $result = $deleteBlockedDate->execute($tenant, $blockedDate);
 
-        $this->clearAllServicesAvailability($tenant->id);
+        if (!$result['success']) {
+            abort($result['code'] ?? 404, $result['error'] ?? 'Tanggal blokir tidak ditemukan.');
+        }
 
         return redirect('/owner/schedule')->with('sukses', 'Tanggal blokir berhasil dihapus.');
     }
 }
-
