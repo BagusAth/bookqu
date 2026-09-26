@@ -242,14 +242,9 @@ class BookingController extends Controller
             ]);
         }
 
-        // Subscription monthly booking limit check
+        // Subscription monthly booking limit check via EntitlementRules
         $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
-        $isUnlimitedBooking = ($subscription && $subscription->status === 'trial')
-            || ($subscription?->plan?->isunlimited ?? false)
-            || (($subscription?->plan?->namapaket ?? '') === 'pro')
-            || (($subscription?->plan?->maxbooking ?? 0) <= 0);
-
-        if (!$isUnlimitedBooking && ($subscription?->plan?->maxbooking ?? 0) > 0) {
+        if (!\App\Domain\Subscription\EntitlementRules::isUnlimitedBooking($subscription)) {
             $dateCarbon = Carbon::parse($selectedDate);
             $totalMonthlyBookings = DB::table('bookings')
                 ->where('idtenant', $tenant->id)
@@ -258,7 +253,8 @@ class BookingController extends Controller
                 ->whereIn('status', ['pending', 'paid', 'completed'])
                 ->count();
 
-            if ($totalMonthlyBookings >= $subscription->plan->maxbooking) {
+            $bookingQuota = \App\Domain\Subscription\EntitlementRules::canCreateBooking($subscription, $totalMonthlyBookings, 1);
+            if (!$bookingQuota['allowed']) {
                 return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
                     ->withErrors(['tanggal' => 'Kapasitas kuota booking bulanan bisnis ini telah penuh (maksimal ' . $subscription->plan->maxbooking . ' booking/bulan). Silakan hubungi pemilik bisnis.']);
             }

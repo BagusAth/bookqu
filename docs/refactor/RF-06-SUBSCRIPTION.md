@@ -4,7 +4,7 @@
 > **Phase:** Subscription Architecture
 > **Baseline Branch:** `Refactor`
 > **Baseline Commit:** `ccbcef00ad8726c1cef4ee56e6a2345c5941fbf8`
-> **Status:** Planned
+> **Status:** Completed
 > **Depends On:** RF-00 Foundation, RF-02 Payment, RF-04 Application Layer
 > **Related Phase:** RF-07 Cleanup & Alignment
 > **Primary Areas:** Subscription, Plan, entitlement, usage limits, feature gating, subscription checkout

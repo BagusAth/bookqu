@@ -133,25 +133,7 @@ class SynchronizePaymentStatus
                     'metode' => $paymentType ?? $payment->metode ?? PaymentState::METODE_MIDTRANS,
                 ]);
 
-                $hasActiveSub = Subscription::where('idtenant', $payment->idtenant)
-                    ->where('idplan', $payment->idplan)
-                    ->where('status', 'active')
-                    ->where('created_at', '>=', $payment->created_at)
-                    ->exists();
-
-                if (!$hasActiveSub) {
-                    Subscription::where('idtenant', $payment->idtenant)
-                        ->whereIn('status', ['trial', 'active'])
-                        ->update(['status' => 'expired']);
-
-                    Subscription::create([
-                        'idtenant'           => $payment->idtenant,
-                        'idplan'             => $payment->idplan,
-                        'status'             => 'active',
-                        'langganan_mulai'    => now(),
-                        'langganan_berakhir' => now()->addMonth(),
-                    ]);
-                }
+                app(\App\Actions\Subscription\ActivateSubscription::class)->execute($payment);
             }
 
             // 2. Booking Payment

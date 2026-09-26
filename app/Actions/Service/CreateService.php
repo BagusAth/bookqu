@@ -29,13 +29,12 @@ class CreateService
         app(TenantContext::class)->setTenantId($tenant->id);
 
         $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
-        if ($subscription && $subscription->plan && !$subscription->plan->isunlimited && $subscription->plan->maxlayanan > 0) {
-            $currentServices = Service::where('idtenant', $tenant->id)->count();
-            if ($currentServices >= $subscription->plan->maxlayanan) {
-                throw ValidationException::withMessages([
-                    'namalayanan' => 'Batas maksimum layanan (' . $subscription->plan->maxlayanan . ') telah tercapai. Silakan upgrade paket Anda.',
-                ]);
-            }
+        $currentServices = Service::where('idtenant', $tenant->id)->count();
+        $serviceQuota = \App\Domain\Subscription\EntitlementRules::canCreateService($subscription, $currentServices);
+        if (!$serviceQuota['allowed'] && $serviceQuota['message']) {
+            throw ValidationException::withMessages([
+                'namalayanan' => $serviceQuota['message'],
+            ]);
         }
 
         $imageUrl = null;

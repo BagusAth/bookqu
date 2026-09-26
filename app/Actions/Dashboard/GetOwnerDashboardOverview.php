@@ -155,17 +155,16 @@ class GetOwnerDashboardOverview
             ->limit(10)
             ->get();
 
-        // ── Subscription / Trial ──
+        // ── Subscription / Trial via SubscriptionState ──
         $langganan = Subscription::where('idtenant', $idtenant)
             ->latest()
             ->first();
 
-        $sisahari = 0;
-        $statustrial = false;
-        if ($langganan && $langganan->status === 'trial' && $langganan->trial_berakhir) {
-            $statustrial = true;
-            $sisahari = (int) max(0, ceil(Carbon::now()->diffInDays($langganan->trial_berakhir, false)));
-        }
+        $sisahari = \App\Domain\Subscription\SubscriptionState::getRemainingTrialDays($langganan);
+        $statustrial = ($langganan !== null
+            && $langganan->status === \App\Domain\Subscription\SubscriptionState::STATUS_TRIAL
+            && !\App\Domain\Subscription\SubscriptionState::isExpired($langganan)
+            && $langganan->trial_berakhir !== null);
 
         $totalpelanggan = DB::table('bookings')
             ->where('idtenant', $idtenant)

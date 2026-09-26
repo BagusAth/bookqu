@@ -68,12 +68,7 @@ class CreateBooking
                 DB::table('tenants')->where('id', $tenant->id)->lockForUpdate()->first();
             }
 
-            $isUnlimitedBooking = ($subscription && $subscription->status === 'trial')
-                || ($subscription?->plan?->isunlimited ?? false)
-                || (($subscription?->plan?->namapaket ?? '') === 'pro')
-                || (($subscription?->plan?->maxbooking ?? 0) <= 0);
-
-            if (!$isUnlimitedBooking && ($subscription?->plan?->maxbooking ?? 0) > 0) {
+            if (!\App\Domain\Subscription\EntitlementRules::isUnlimitedBooking($subscription)) {
                 $dateCarbon = Carbon::parse($selectedDate, $wib);
                 $totalMonthlyBookings = DB::table('bookings')
                     ->where('idtenant', $tenant->id)
@@ -82,10 +77,11 @@ class CreateBooking
                     ->whereIn('status', [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
                     ->count();
 
-                if (($totalMonthlyBookings + $slotCount) > $subscription->plan->maxbooking) {
+                $bookingQuota = \App\Domain\Subscription\EntitlementRules::canCreateBooking($subscription, $totalMonthlyBookings, $slotCount);
+                if (!$bookingQuota['allowed'] && $bookingQuota['message']) {
                     return [
                         'quota_error' => true,
-                        'error'       => 'Kapasitas kuota booking bulanan bisnis ini tidak mencukupi (tersisa ' . max(0, $subscription->plan->maxbooking - $totalMonthlyBookings) . ' dari ' . $subscription->plan->maxbooking . '). Silakan kurangi jumlah slot atau hubungi pemilik bisnis.',
+                        'error'       => $bookingQuota['message'],
                     ];
                 }
             }

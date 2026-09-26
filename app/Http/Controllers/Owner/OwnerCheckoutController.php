@@ -21,25 +21,6 @@ class OwnerCheckoutController extends Controller
      */
     use \App\Traits\ResolvesOwnerTenant;
 
-    /**
-     * Generate unique order ID format: BQ-YYYYMMDD-XXXX
-     */
-    private function generateOrderId(): string
-    {
-        $prefix = 'BQ-' . now()->format('Ymd') . '-';
-        $lastPayment = Payment::where('order_id', 'like', $prefix . '%')
-            ->orderByDesc('order_id')
-            ->first();
-
-        if ($lastPayment) {
-            $lastNumber = (int) substr($lastPayment->order_id, -4);
-            $nextNumber = $lastNumber + 1;
-        } else {
-            $nextNumber = 1;
-        }
-
-        return $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-    }
 
     /**
      * Halaman 1: Review Pesanan & Data Kontak.

@@ -135,23 +135,8 @@ Route::middleware('guest')->group(function () {
             'slug'        => $slug,
         ]);
 
-        // FS-018: Buat Subscription trial 7 hari setara paket Pro
-        $proPlan = \App\Models\Plan::firstOrCreate(
-            ['namapaket' => 'pro'],
-            [
-                'hargabulanan' => 499000,
-                'maxlayanan'   => 0,
-                'maxbooking'   => 0,
-                'isunlimited'  => true,
-            ]
-        );
-
-        \App\Models\Subscription::create([
-            'idtenant'      => $tenant->id,
-            'idplan'        => $proPlan->id,
-            'status'        => 'trial',
-            'trial_berakhir' => now()->addDays(7),
-        ]);
+        // FS-018: Buat Subscription trial 7 hari setara paket Pro via CreateTrialSubscription action
+        app(\App\Actions\Subscription\CreateTrialSubscription::class)->execute($tenant);
 
         Auth::login($user);
         $request->session()->regenerate();

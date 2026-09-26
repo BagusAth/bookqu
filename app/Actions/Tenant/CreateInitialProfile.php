@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenant;
 
-use App\Models\Plan;
-use App\Models\Subscription;
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\TenantContext;
@@ -14,6 +13,12 @@ use Illuminate\Validation\ValidationException;
 
 class CreateInitialProfile
 {
+    public function __construct(
+        protected ?CreateTrialSubscription $createTrialSubscription = null
+    ) {
+        $this->createTrialSubscription = $createTrialSubscription ?? app(CreateTrialSubscription::class);
+    }
+
     /**
      * Store initial business profile and setup free trial subscription.
      *
@@ -57,22 +62,7 @@ class CreateInitialProfile
         );
 
         if ($isNewTenant) {
-            $proPlan = Plan::firstOrCreate(
-                ['namapaket' => 'pro'],
-                [
-                    'hargabulanan' => 100000,
-                    'maxlayanan'   => 10,
-                    'maxbooking'   => 500,
-                    'isunlimited'  => false,
-                ]
-            );
-
-            Subscription::create([
-                'idtenant'       => $tenant->id,
-                'idplan'         => $proPlan->id,
-                'status'         => 'trial',
-                'trial_berakhir' => now()->addDays(7),
-            ]);
+            $this->createTrialSubscription->execute($tenant);
         }
 
         app(TenantContext::class)->setTenantId($tenant->id);
