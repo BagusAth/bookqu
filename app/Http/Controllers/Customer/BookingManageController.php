@@ -144,13 +144,13 @@ class BookingManageController extends Controller
         ]);
     }
 
-    // ── Shared token validation (Legacy) ───────────────────────────────────────
+    // ── Shared token validation (Scoped) ───────────────────────────────────────
 
     /**
-     * Resolve and validate a booking by booking_code + token.
-     * Aborts 404 if not found, 403 if token invalid.
+     * Resolve and validate a booking by booking_code + token scoped by operation.
+     * Aborts 404 if not found, 403 if token invalid or wrong scope.
      */
-    private function resolveBooking(string $bookingCode, ?string $token): Booking
+    private function resolveBooking(string $bookingCode, ?string $token, string $scope = 'show'): Booking
     {
         $booking = Booking::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
             ->where('booking_code', $bookingCode)
@@ -160,15 +160,30 @@ class BookingManageController extends Controller
             abort(404, 'Booking tidak ditemukan.');
         }
 
-        // Token must match either cancellation, reschedule token, or payment manage_token
-        $validToken = $token && (
-            hash_equals((string) $booking->cancellation_token, $token) ||
-            hash_equals((string) $booking->reschedule_token, $token) ||
-            ($booking->payment && !empty($booking->payment->manage_token) && hash_equals((string) $booking->payment->manage_token, $token))
-        );
+        if (!$token) {
+            abort(403, 'Token tidak valid. Pastikan Anda menggunakan link yang dikirim ke email Anda.');
+        }
+
+        $payment = $booking->payment;
+        $manageToken = $payment?->manage_token;
+
+        $matchesManageToken = !empty($manageToken) && hash_equals((string) $manageToken, (string) $token);
+        $matchesCancelToken = !empty($booking->cancellation_token) && hash_equals((string) $booking->cancellation_token, (string) $token);
+        $matchesRescheduleToken = !empty($booking->reschedule_token) && hash_equals((string) $booking->reschedule_token, (string) $token);
+
+        $matchesAnyToken = $matchesManageToken || $matchesCancelToken || $matchesRescheduleToken;
+
+        $validToken = match ($scope) {
+            'cancel'     => $matchesCancelToken,
+            'reschedule' => $matchesRescheduleToken,
+            'invoice'    => $matchesAnyToken,
+            'review'     => $matchesAnyToken,
+            'show'       => $matchesAnyToken,
+            default      => false,
+        };
 
         if (!$validToken) {
-            abort(403, 'Token tidak valid. Pastikan Anda menggunakan link yang dikirim ke email Anda.');
+            abort(403, 'Token tidak valid untuk operasi ini. Pastikan Anda menggunakan link yang sesuai.');
         }
 
         app(\App\Support\TenantContext::class)->setTenantId($booking->idtenant);
@@ -183,7 +198,7 @@ class BookingManageController extends Controller
     public function show(Request $request, string $bookingCode)
     {
         $token   = $request->query('token');
-        $booking = $this->resolveBooking($bookingCode, $token);
+        $booking = $this->resolveBooking($bookingCode, $token, 'show');
 
         // Log the view event (throttled — only once per session per booking)
         $viewKey = "manage:viewed:{$booking->id}:" . session()->getId();
@@ -225,7 +240,7 @@ class BookingManageController extends Controller
     public function cancel(Request $request, string $bookingCode, CancelBooking $cancelBooking)
     {
         $token   = $request->query('token');
-        $booking = $this->resolveBooking($bookingCode, $token);
+        $booking = $this->resolveBooking($bookingCode, $token, 'cancel');
 
         $result = $cancelBooking->execute($booking, 'customer');
 
@@ -243,7 +258,7 @@ class BookingManageController extends Controller
     public function showReschedule(Request $request, string $bookingCode)
     {
         $token   = $request->query('token');
-        $booking = $this->resolveBooking($bookingCode, $token);
+        $booking = $this->resolveBooking($bookingCode, $token, 'reschedule');
 
         if ($booking->isMultiSlot()) {
             return redirect()
@@ -288,7 +303,13 @@ class BookingManageController extends Controller
             $rows = DB::table('schedules')
                 ->leftJoin('bookings', function ($join) use ($booking) {
                     $join->on('schedules.id', '=', 'bookings.idschedule')
-                        ->whereIn('bookings.status', ['pending', 'paid', 'completed'])
+                        ->where(function ($q) {
+                            $q->whereIn('bookings.status', ['paid', 'completed'])
+                              ->orWhere(function ($sub) {
+                                  $sub->where('bookings.status', 'pending')
+                                      ->where('bookings.created_at', '>=', now()->subMinutes(15));
+                              });
+                        })
                         ->where('bookings.id', '!=', $booking->id); // Exclude current booking's slot
                 })
                 ->where('schedules.idtenant', $tenant->id)
@@ -327,7 +348,7 @@ class BookingManageController extends Controller
     public function reschedule(Request $request, string $bookingCode, RescheduleBooking $rescheduleBooking)
     {
         $token   = $request->query('token');
-        $booking = $this->resolveBooking($bookingCode, $token);
+        $booking = $this->resolveBooking($bookingCode, $token, 'reschedule');
 
         $validated = $request->validate([
             'tanggal'     => ['required', 'date', 'after_or_equal:today'],
@@ -353,7 +374,7 @@ class BookingManageController extends Controller
     public function getTimeSlots(Request $request, string $bookingCode)
     {
         $token   = $request->query('token');
-        $booking = $this->resolveBooking($bookingCode, $token);
+        $booking = $this->resolveBooking($bookingCode, $token, 'reschedule');
 
         $tanggal = $request->query('tanggal');
         if (!$tanggal) {
@@ -375,7 +396,7 @@ class BookingManageController extends Controller
     public function invoice(Request $request, string $bookingCode)
     {
         $token   = $request->query('token');
-        $booking = $this->resolveBooking($bookingCode, $token);
+        $booking = $this->resolveBooking($bookingCode, $token, 'invoice');
 
         if (!$booking->payment || $booking->payment->status !== 'sukses' || !in_array($booking->status, ['paid', 'completed'])) {
             abort(404, 'Invoice hanya tersedia untuk pembayaran yang berhasil.');
@@ -393,7 +414,7 @@ class BookingManageController extends Controller
     public function storeReview(Request $request, string $bookingCode)
     {
         $token   = $request->input('token') ?? $request->query('token');
-        $booking = $this->resolveBooking($bookingCode, $token);
+        $booking = $this->resolveBooking($bookingCode, $token, 'review');
 
         // Guard: only completed bookings can be reviewed
         if ($booking->status !== 'completed') {

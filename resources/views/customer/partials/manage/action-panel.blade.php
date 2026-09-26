@@ -49,7 +49,7 @@
                                     @endif
                                     <a
                                         id="btn-reschedule"
-                                        href="{{ route('booking.manage.reschedule.show', ['booking_code' => $booking->booking_code, 'token' => $token]) }}"
+                                        href="{{ route('booking.manage.reschedule.show', ['booking_code' => $booking->booking_code, 'token' => $booking->reschedule_token ?: $token]) }}"
                                         class="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700 active:scale-[0.98] transition-all cursor-pointer"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

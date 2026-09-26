@@ -158,19 +158,7 @@ class Booking extends Model
      */
     public function canBeCancelled(): bool
     {
-        if ($this->status !== 'paid') {
-            return false;
-        }
-
-        $tenant = $this->tenant;
-        if (!$tenant) {
-            return false;
-        }
-
-        $cancelBeforeHours = $tenant->cancel_before_hours ?? 24;
-        $bookingDateTime   = Carbon::parse($this->tanggalbooking->toDateString() . ' ' . $this->jam);
-
-        return now()->addHours($cancelBeforeHours)->lessThan($bookingDateTime);
+        return \App\Domain\Booking\BookingRules::canCancel($this);
     }
 
     /**
@@ -178,19 +166,7 @@ class Booking extends Model
      */
     public function canBeRescheduled(): bool
     {
-        if ($this->status !== 'paid') {
-            return false;
-        }
-
-        $tenant = $this->tenant;
-        if (!$tenant) {
-            return false;
-        }
-
-        $rescheduleBeforeHours = $tenant->reschedule_before_hours ?? 24;
-        $bookingDateTime       = Carbon::parse($this->tanggalbooking->toDateString() . ' ' . $this->jam);
-
-        return now()->addHours($rescheduleBeforeHours)->lessThan($bookingDateTime);
+        return \App\Domain\Booking\BookingRules::canReschedule($this);
     }
 
     /**

@@ -20,7 +20,6 @@ class BookingStateTest extends TestCase
     {
         $this->assertTrue(BookingState::canTransition(BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED));
         $this->assertTrue(BookingState::canTransition(BookingState::STATUS_PAID, BookingState::STATUS_CANCELLED));
-        $this->assertTrue(BookingState::canTransition(BookingState::STATUS_PAID, BookingState::STATUS_REFUNDED));
         $this->assertFalse(BookingState::canTransition(BookingState::STATUS_PAID, BookingState::STATUS_PENDING));
     }
 
@@ -28,7 +27,6 @@ class BookingStateTest extends TestCase
     {
         $this->assertTrue(BookingState::isTerminal(BookingState::STATUS_CANCELLED));
         $this->assertTrue(BookingState::isTerminal(BookingState::STATUS_COMPLETED));
-        $this->assertTrue(BookingState::isTerminal(BookingState::STATUS_REFUNDED));
 
         $this->assertFalse(BookingState::canTransition(BookingState::STATUS_CANCELLED, BookingState::STATUS_PAID));
         $this->assertFalse(BookingState::canTransition(BookingState::STATUS_COMPLETED, BookingState::STATUS_PAID));
@@ -39,7 +37,6 @@ class BookingStateTest extends TestCase
         $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PAID));
         $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_COMPLETED));
         $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_CANCELLED));
-        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_REFUNDED));
 
         // Pending within 15 min grace window
         $recent = Carbon::now()->subMinutes(5);

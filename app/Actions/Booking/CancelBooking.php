@@ -59,16 +59,14 @@ class CancelBooking
                 // 1. Update status
                 $booking->update(['status' => BookingState::STATUS_CANCELLED]);
 
-                // 2. Create refund record if payment was successful
-                if ($booking->payment && $booking->payment->status === 'sukses') {
+                // 2. Create refund record if customer cancelled and payment was successful
+                if ($actor === 'customer' && $booking->payment && $booking->payment->status === 'sukses') {
                     Refund::create([
                         'booking_id' => $booking->id,
                         'payment_id' => $booking->payment->id,
                         'jumlah'     => $booking->payment->jumlah,
                         'status'     => 'pending',
-                        'catatan'    => $reason ?? ($actor === 'owner'
-                            ? 'Refund dari pembatalan booking oleh owner.'
-                            : 'Refund otomatis dari pembatalan booking oleh customer.'),
+                        'catatan'    => $reason ?? 'Refund otomatis dari pembatalan booking oleh customer.',
                     ]);
                 }
 
@@ -105,18 +103,20 @@ class CancelBooking
                 }
             }
 
-            // 6. Notify owner
-            try {
-                $owner = $booking->tenant?->user;
-                if ($owner) {
-                    $owner->notify(new BookingStatusChangedOwnerNotification(
-                        $booking,
-                        BookingState::STATUS_CANCELLED,
-                        ['updated_by' => $actor]
-                    ));
+            // 6. Notify owner (only if cancelled by customer)
+            if ($actor !== 'owner') {
+                try {
+                    $owner = $booking->tenant?->user;
+                    if ($owner) {
+                        $owner->notify(new BookingStatusChangedOwnerNotification(
+                            $booking,
+                            BookingState::STATUS_CANCELLED,
+                            ['updated_by' => $actor]
+                        ));
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('CancelBooking: Failed to notify owner', ['error' => $e->getMessage()]);
                 }
-            } catch (\Throwable $e) {
-                Log::warning('CancelBooking: Failed to notify owner', ['error' => $e->getMessage()]);
             }
 
             return ['success' => true, 'booking' => $booking];

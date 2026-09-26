@@ -1275,3 +1275,25 @@ Testable Architecture
 The goal is not to make every file small.
 
 The goal is to make every responsibility have a clear owner.
+
+---
+
+# 25. Post-Refactor Stabilization: RF-09 — Booking Flow Stability & Production Hardening
+
+After completing RF-00 to RF-08, RF-09 resolves residual production hardening tasks:
+- **P0-01 Timezone**: Set `Asia/Jakarta` uniformly across Laravel and Carbon.
+- **P0-02 Payment Expiry**: Harmonize DB `payments.status` (`gagal`) and trigger cancellation + slot release via `ExpirePayment`.
+- **P0-03 Production Scheduler**: Document crontab `* * * * * cd /path/to/bookqu && php artisan schedule:run >> /dev/null 2>&1` in development documentation.
+- **P0-04 Active Booking Definition**: Centralized semantic definition via `BookingState::occupiesSlot()`.
+- **P0-05 Cache & Pending Expiry**: Shortened cache TTL and verified authoritative DB transactions with row locking.
+- **P1-01 Scoped Token Isolation**: Differentiate `cancellation_token` (cancel only) and `reschedule_token` (reschedule only).
+- **P1-02 Refunded State**: Removed non-existent `STATUS_REFUNDED` from `BookingState` (refunds tracked in `refunds` table).
+- **P1-03 Owner Cancellation Policy**: Owner cancellations bypass automatic customer refund records and owner self-notifications.
+- **P1-04 Checkout Validation**: Authoritative date-slot matching during checkout.
+- **P1-05 JS Escaping**: Replaced manual interpolation with `Js::from(...)`.
+- **P1-06 Indonesian Locale**: Configured `id` locale and Carbon translation.
+- **P2-01 Duplicate Booking Rules**: Delegated model methods to `BookingRules`.
+- **P2-02 Availability Centralization**: Centralized availability query and status evaluation.
+- **P2-03 Cache Key Audit**: Verified tenant/service isolated cache keys.
+- **P2-04 CI Regression**: Added `.github/workflows/tests.yml`.
+

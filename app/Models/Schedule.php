@@ -56,7 +56,13 @@ class Schedule extends Model
     public function activeBooking(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Booking::class, 'idschedule')
-            ->whereIn('status', ['pending', 'paid', 'completed']);
+            ->where(function ($q) {
+                $q->whereIn('status', ['paid', 'completed'])
+                  ->orWhere(function ($sub) {
+                      $sub->where('status', 'pending')
+                          ->where('created_at', '>=', now()->subMinutes(15));
+                  });
+            });
     }
 
     /**

@@ -11,7 +11,6 @@ class BookingState
     public const STATUS_PAID      = 'paid';
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_COMPLETED = 'completed';
-    public const STATUS_REFUNDED  = 'refunded';
 
     /**
      * Allowed status transitions mapped from current status to target statuses.
@@ -25,11 +24,9 @@ class BookingState
         self::STATUS_PAID => [
             self::STATUS_COMPLETED,
             self::STATUS_CANCELLED,
-            self::STATUS_REFUNDED,
         ],
         self::STATUS_CANCELLED => [],
         self::STATUS_COMPLETED => [],
-        self::STATUS_REFUNDED  => [],
     ];
 
     /**
@@ -93,7 +90,6 @@ class BookingState
             self::STATUS_COMPLETED => 'selesai',
             self::STATUS_CANCELLED => 'dibatalkan',
             self::STATUS_PENDING   => 'menunggu pembayaran',
-            self::STATUS_REFUNDED  => 'dikembalikan',
             default                => $status,
         };
     }

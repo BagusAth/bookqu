@@ -1215,6 +1215,7 @@ Track major tracker-level changes here.
 
 | Date       | Change                                                 | Reason                                                                  |
 | ---------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| 2026-09-26 | Completed RF-09 Booking Flow Stability & Hardening     | 309/309 tests passing, timezone, token scopes, payment expiry, CI regression workflow |
 | 2026-09-26 | Completed RF-08 Final Audit & Sign-off                 | 301/301 tests passing, all RF-00 to RF-08 phases verified and signed off as REFACTOR COMPLETE |
 | 2026-09-26 | Completed RF-07 Route Cleanup & Shared Alignment       | Extracted auth closures to dedicated controllers, cleaned unused routes and imports |
 | 2026-09-26 | Completed RF-06 Subscription & Entitlement Refactor    | Domain rules (SubscriptionState, PlanCapability, EntitlementRules) & actions |

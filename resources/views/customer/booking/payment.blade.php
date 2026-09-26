@@ -14,7 +14,7 @@
 @section('content')
 <div class="mx-auto max-w-2xl" x-data="{ showCancelModal: false, copied: false }">
     @php
-        $currentState = $paymentState ?? ($payment->status === 'sukses' ? 'success' : ($payment->status === 'gagal' ? 'failed' : ($payment->status === 'kadaluarsa' || $payment->isExpired() ? 'expired' : 'pending')));
+        $currentState = $paymentState ?? ($payment->status === 'sukses' ? 'success' : ($payment->status === 'gagal' ? 'failed' : ($payment->isExpired() ? 'expired' : 'pending')));
         $displayBookings = $payment->bookings && $payment->bookings->isNotEmpty() ? $payment->bookings : ($payment->booking ? collect([$payment->booking]) : collect());
         $firstBooking = $displayBookings->first();
         $layanan = $firstBooking?->layanan;

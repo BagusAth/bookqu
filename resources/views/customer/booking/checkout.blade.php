@@ -9,9 +9,9 @@
 <div id="booking-checkout-root"
      data-tenant-slug="{{ $tenant->slug }}"
      x-data="{
-        name: '{{ old('namapelanggan', '') }}',
-        email: '{{ old('email', '') }}',
-        phone: '{{ old('nomorhp', '') }}',
+        name: {{ \Illuminate\Support\Js::from(old('namapelanggan', '')) }},
+        email: {{ \Illuminate\Support\Js::from(old('email', '')) }},
+        phone: {{ \Illuminate\Support\Js::from(old('nomorhp', '')) }},
         nameError: '',
         emailError: '',
         phoneError: '',

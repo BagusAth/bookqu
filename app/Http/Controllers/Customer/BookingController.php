@@ -588,17 +588,27 @@ class BookingController extends Controller
             if ($sid) {
                 $schedule = Schedule::where('idtenant', $tenant->id)
                     ->where('idlayanan', $service->id)
+                    ->whereDate('tanggal', $selectedDate)
                     ->find($sid);
             }
             if (!$schedule) {
                 $schedule = Schedule::where('idtenant', $tenant->id)
                     ->where('idlayanan', $service->id)
                     ->whereDate('tanggal', $selectedDate)
-                    ->where('jam_mulai', $time . ':00')
+                    ->where(function ($q) use ($time) {
+                        $q->where('jam_mulai', $time)
+                          ->orWhere('jam_mulai', $time . ':00');
+                    })
                     ->first();
             }
+
+            if (!$schedule) {
+                return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+                    ->withErrors(['jam' => 'Pilihan jadwal sudah tidak tersedia.']);
+            }
+
             $schedules[] = $schedule;
-            $hargaPerSlot[] = $schedule && $schedule->harga_override !== null ? (float) $schedule->harga_override : (float) $service->harga;
+            $hargaPerSlot[] = $schedule->harga_override !== null ? (float) $schedule->harga_override : (float) $service->harga;
         }
 
         $hargaAkhir = array_sum($hargaPerSlot);
@@ -752,29 +762,9 @@ class BookingController extends Controller
             ]);
         }
 
-        if ($payment->status === 'kadaluarsa' || ($payment->isExpired() && $payment->status === 'pending')) {
-            if ($payment->status === 'pending') {
-                DB::transaction(function () use ($payment) {
-                    $lockedPayment = Payment::lockForUpdate()->find($payment->id);
-                    if ($lockedPayment && $lockedPayment->status === 'pending') {
-                        $lockedPayment->update(['status' => 'kadaluarsa']);
-                        $bookings = Booking::lockForUpdate()->where('idpayment', $lockedPayment->id)->get();
-                        foreach ($bookings as $bk) {
-                            $bk->update(['status' => 'cancelled']);
-                        }
-
-                        DB::afterCommit(function () use ($bookings) {
-                            foreach ($bookings as $bk) {
-                                if ($bk->idlayanan && $bk->tanggalbooking) {
-                                    $tanggal = is_string($bk->tanggalbooking)
-                                        ? $bk->tanggalbooking
-                                        : $bk->tanggalbooking->format('Y-m-d');
-                                    $this->clearBookingAvailabilityCache((int) $bk->idtenant, (int) $bk->idlayanan, $tanggal);
-                                }
-                            }
-                        });
-                    }
-                });
+        if ($payment->isExpired() || $payment->status === 'gagal') {
+            if ($payment->status === 'pending' && $payment->isExpired()) {
+                app(\App\Actions\Payment\ExpirePayment::class)->execute($payment);
                 $payment->refresh();
             }
 
@@ -782,7 +772,7 @@ class BookingController extends Controller
             return view('customer.booking.payment', [
                 'tenant' => $tenant,
                 'payment' => $payment,
-                'paymentState' => 'expired',
+                'paymentState' => $payment->isExpired() ? 'expired' : ($payment->status === 'gagal' ? 'failed' : 'pending'),
                 'snapToken' => null,
                 'clientKey' => config('midtrans.client_key'),
                 'snapUrl' => config('midtrans.snap_url'),
@@ -851,6 +841,20 @@ class BookingController extends Controller
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil dikonfirmasi!',
                 'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
+            ]);
+        }
+
+        // Fast-path: jika payment sudah kedaluwarsa
+        if ($payment->isExpired()) {
+            if ($payment->status === 'pending') {
+                app(\App\Actions\Payment\ExpirePayment::class)->execute($payment);
+                $payment->refresh();
+            }
+
+            return response()->json([
+                'status' => 'gagal',
+                'is_expired' => true,
+                'message' => 'Waktu pembayaran telah habis. Silakan buat reservasi baru.',
             ]);
         }
 

@@ -202,11 +202,15 @@
 
             if (data.status === 'gagal') {
                 stopAutoPolling();
-                showFailedState();
+                if (data.is_expired) {
+                    showExpiredState();
+                } else {
+                    showFailedState();
+                }
                 return;
             }
 
-            if (data.status === 'kadaluarsa') {
+            if (data.status === 'kadaluarsa' || data.is_expired) {
                 stopAutoPolling();
                 showExpiredState();
                 return;

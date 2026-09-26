@@ -1793,3 +1793,44 @@ The goal is not to eliminate every imperfection from the codebase immediately.
 The goal is to ensure that from this point forward:
 
 > **Every change has a reason, every reason has a requirement, every implementation has an architectural home, and every important behavior has verification.**
+
+---
+
+# 69. Production Scheduler Configuration
+
+Production servers must run the Laravel Task Scheduler to ensure automated payment expiration and subscription lifecycle tasks execute on time.
+
+### 69.1 System Cron Entry
+
+Add the following cron entry to the server (e.g. via `crontab -e` for user `www-data` or deployment user):
+
+```cron
+* * * * * cd /path/to/bookqu && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### 69.2 Registered Scheduled Tasks
+
+| Command | Frequency | Purpose |
+| :--- | :--- | :--- |
+| `php artisan bookings:expire-payments` | Every 15 minutes (`*/15 * * * *`) | Automatically cancels pending bookings whose payment deadline has expired, updates payment status to `gagal`, releases schedule slots, and invalidates availability cache. |
+| `php artisan app:check-expired-subscriptions` | Daily at 00:00 (`0 0 * * *`) | Evaluates tenant subscription expiration dates and transitions lapsed subscriptions to expired. |
+
+### 69.3 Verification & Manual Execution
+
+To verify scheduled tasks:
+
+```bash
+php artisan schedule:list
+```
+
+To run dry-run simulation of payment expiry without mutating data:
+
+```bash
+php artisan bookings:expire-payments --dry-run
+```
+
+To execute manually:
+
+```bash
+php artisan bookings:expire-payments
+```
