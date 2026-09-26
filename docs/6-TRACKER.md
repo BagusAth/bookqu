@@ -803,22 +803,22 @@ This section tracks architectural problems independently from feature completion
 Priority: Critical
 
 ```text
-Status: Needs Refactor
+Status: Done (RF-01)
 ```
 
 Tasks:
 
 ```text
-[ ] Audit BookingController
-[ ] Extract booking creation action
-[ ] Extract availability logic
-[ ] Extract checkout orchestration
-[ ] Extract cancellation logic
-[ ] Extract reschedule logic
-[ ] Centralize booking state transitions
-[ ] Centralize booking pricing
-[ ] Reduce controller dependency count
-[ ] Add characterization tests
+[x] Audit BookingController
+[x] Extract booking creation action
+[x] Extract availability logic
+[x] Extract checkout orchestration
+[x] Extract cancellation logic
+[x] Extract reschedule logic
+[x] Centralize booking state transitions
+[x] Centralize booking pricing
+[x] Reduce controller dependency count
+[x] Add characterization tests
 ```
 
 ---
@@ -828,18 +828,18 @@ Tasks:
 Priority: High
 
 ```text
-Status: Needs Refactor
+Status: Done (RF-02)
 ```
 
 Tasks:
 
 ```text
-[ ] Separate booking payment from subscription payment
-[ ] Isolate Midtrans-specific implementation
-[ ] Centralize payment state transitions
-[ ] Extract payment operations
-[ ] Audit webhook handling
-[ ] Audit transaction boundaries
+[x] Separate booking payment from subscription payment
+[x] Isolate Midtrans-specific implementation
+[x] Centralize payment state transitions
+[x] Extract payment operations
+[x] Audit webhook handling
+[x] Audit transaction boundaries
 ```
 
 ---
@@ -849,17 +849,17 @@ Tasks:
 Priority: High
 
 ```text
-Status: Needs Refactor
+Status: Done (RF-03)
 ```
 
 Tasks:
 
 ```text
-[ ] Extract availability calculation
-[ ] Extract conflict checking
-[ ] Extract bulk slot generation
-[ ] Centralize blocked-date rules
-[ ] Consolidate cache invalidation
+[x] Extract availability calculation
+[x] Extract conflict checking
+[x] Extract bulk slot generation
+[x] Centralize blocked-date rules
+[x] Consolidate cache invalidation
 ```
 
 ---
@@ -869,7 +869,7 @@ Tasks:
 Priority: High
 
 ```text
-Status: Needs Refactor
+Status: Done (RF-04)
 ```
 
 Current candidates:
@@ -886,12 +886,12 @@ OwnerProgramController
 Tasks:
 
 ```text
-[ ] Identify responsibility boundaries
-[ ] Extract Actions
-[ ] Extract Form Requests
-[ ] Remove duplicated tenant resolution
-[ ] Remove repeated query logic
-[ ] Reduce controller size
+[x] Identify responsibility boundaries
+[x] Extract Actions
+[x] Extract Form Requests
+[x] Remove duplicated tenant resolution
+[x] Remove repeated query logic
+[x] Reduce controller size
 ```
 
 ---
@@ -913,12 +913,12 @@ customer/booking/payment.blade.php
 Tasks:
 
 ```text
-[ ] Identify reusable components
-[ ] Extract repeated modal structures
-[ ] Extract repeated form fields
-[ ] Separate page sections
-[ ] Reduce embedded business logic
-[ ] Reduce oversized Alpine state
+[x] Identify reusable components
+[x] Extract repeated modal structures
+[x] Extract repeated form fields
+[x] Separate page sections
+[x] Reduce embedded business logic
+[x] Reduce oversized Alpine state
 ```
 
 ---
@@ -945,11 +945,11 @@ Service
 Tasks:
 
 ```text
-[ ] Identify legacy terminology
-[ ] Identify database compatibility impact
-[ ] Identify route compatibility impact
-[ ] Identify test impact
-[ ] Perform incremental migration
+[x] Identify legacy terminology
+[x] Identify database compatibility impact
+[x] Identify route compatibility impact
+[x] Identify test impact
+[x] Perform incremental migration
 ```
 
 ---
@@ -958,14 +958,18 @@ Tasks:
 
 Priority: Medium
 
+```text
+Status: Done (RF-07)
+```
+
 Tasks:
 
 ```text
-[ ] Audit route organization
-[ ] Remove unnecessary duplicate route aliases
-[ ] Standardize route naming
-[ ] Extract route groups where useful
-[ ] Keep business logic out of routes
+[x] Audit route organization
+[x] Remove unnecessary duplicate route aliases
+[x] Standardize route naming
+[x] Extract route groups where useful
+[x] Keep business logic out of routes
 ```
 
 ---
@@ -974,49 +978,36 @@ Tasks:
 
 Priority: Medium
 
+```text
+Status: Done (RF-03 / RF-04 / RF-06 / RF-07)
+```
+
 Tasks:
 
 ```text
-[ ] Audit Traits
-[ ] Audit Support classes
-[ ] Identify duplicated booking logic
-[ ] Identify duplicated tenant resolution
-[ ] Identify generic utility accumulation
+[x] Audit Traits
+[x] Audit Support classes
+[x] Identify duplicated booking logic
+[x] Identify duplicated tenant resolution
+[x] Identify generic utility accumulation
 ```
 
 ---
 
 # 44. Current High-Priority Refactor Queue
 
-The current recommended refactor order is:
+The recommended refactor queue status:
 
 ```text id="tqijv7"
-R-001
-Booking domain extraction
-
-R-002
-Payment boundary extraction
-
-R-003
-Schedule / availability extraction
-
-R-004
-Owner controller decomposition
-
-R-005
-Large Blade decomposition
-
-R-006
-Subscription entitlement centralization
-
-R-007
-Terminology normalization
-
-R-008
-Route cleanup
-
-R-009
-Shared utility / trait cleanup
+[x] R-001 Booking domain extraction (RF-01) - Completed
+[x] R-002 Payment boundary extraction (RF-02) - Completed
+[x] R-003 Schedule / availability extraction (RF-03) - Completed
+[x] R-004 Owner controller decomposition (RF-04) - Completed
+[x] R-005 Large Blade decomposition (RF-05) - Completed
+[x] R-006 Subscription entitlement centralization (RF-06) - Completed
+[x] R-007 Terminology normalization (RF-01/RF-04/RF-07) - Completed
+[x] R-008 Route cleanup (RF-07) - Completed
+[x] R-009 Shared utility / trait cleanup (RF-03/RF-04/RF-07) - Completed
 ```
 
 This queue is a technical roadmap, not a product feature roadmap.
@@ -1053,9 +1044,10 @@ Current documentation state:
 [✓] REQUIREMENTS.md
 [✓] ARCHITECTURE.md
 [✓] DEVELOPMENT.md
-[ ] TRACKER.md
-[ ] AGENTS.md
-[ ] docs/README.md
+[✓] TRACKER.md
+[✓] AGENTS.md
+[✓] docs/README.md
+[✓] docs/refactor/ (RF-00 through RF-08)
 ```
 
 This file becomes complete once the current implementation audit has been synchronized with the final requirement mapping.
@@ -1064,31 +1056,31 @@ This file becomes complete once the current implementation audit has been synchr
 
 # 47. Feature vs Architecture Matrix
 
-This matrix is important for the current BookQu state.
+This matrix represents the post-refactor consolidated BookQu state.
 
 | Area                | Product State | Functional State | Architecture State   |
 | ------------------- | ------------- | ---------------- | -------------------- |
-| Authentication      | Core          | Implemented      | Legacy               |
-| Tenant              | Core          | Implemented      | Target / Needs Audit |
-| Service             | Core          | Done             | Needs Refactor       |
-| Schedule            | Core          | Done             | Needs Refactor       |
-| Booking             | Core          | Done             | Needs Major Refactor |
-| Customer            | Core          | Done             | Needs Refactor       |
-| Payment             | Core          | Done             | Needs Refactor       |
-| Calendar            | Core          | Done             | Needs Refactor       |
-| Dashboard           | Core          | Done             | Needs Refactor       |
-| Categories          | Supporting    | Implemented      | Needs Refactor       |
-| Staff/Resources     | Supporting    | Implemented      | Needs Refactor       |
-| Additional Items    | Supporting    | Implemented      | Needs Refactor       |
-| Vouchers            | Supporting    | Implemented      | Needs Refactor       |
-| Reviews             | Supporting    | Implemented      | Needs Refactor       |
-| Analytics           | Supporting    | Implemented      | Needs Refactor       |
-| Reports             | Supporting    | Implemented      | Needs Refactor       |
-| Assets              | Supporting    | Implemented      | Needs Refactor       |
-| Appearance          | Supporting    | Implemented      | Needs Refactor       |
-| Notifications       | Supporting    | Implemented      | Needs Refactor       |
-| Subscription        | Platform      | Implemented      | Needs Refactor       |
-| Admin               | Platform      | Implemented      | Needs Verification   |
+| Authentication      | Core          | Implemented      | Done (Refactored)    |
+| Tenant              | Core          | Implemented      | Done (Verified Fail-Closed) |
+| Service             | Core          | Done             | Done (Actions & Requests) |
+| Schedule            | Core          | Done             | Done (Domain & Cache) |
+| Booking             | Core          | Done             | Done (Actions & State Machine) |
+| Customer            | Core          | Done             | Done (Actions & Partials) |
+| Payment             | Core          | Done             | Done (Gateway Boundary) |
+| Calendar            | Core          | Done             | Done (Partials & Actions) |
+| Dashboard           | Core          | Done             | Done (Service / Action) |
+| Categories          | Supporting    | Implemented      | Done (Actions & Requests) |
+| Staff/Resources     | Supporting    | Implemented      | Done (Actions & Requests) |
+| Additional Items    | Supporting    | Implemented      | Done (Actions & Requests) |
+| Vouchers            | Supporting    | Implemented      | Done (Actions & Requests) |
+| Reviews             | Supporting    | Implemented      | Done (Actions & Requests) |
+| Analytics           | Supporting    | Implemented      | Done (Entitlement Gated) |
+| Reports             | Supporting    | Implemented      | Done (Actions & Requests) |
+| Assets              | Supporting    | Implemented      | Done (Actions & Requests) |
+| Appearance          | Supporting    | Implemented      | Done (Actions & Requests) |
+| Notifications       | Supporting    | Implemented      | Done (Actions & Requests) |
+| Subscription        | Platform      | Implemented      | Done (Domain & Entitlements) |
+| Admin               | Platform      | Implemented      | Done (Verified)      |
 | Future Integrations | Future        | Not Baseline     | Not Started          |
 | AI Insights         | Future        | Not Baseline     | Not Started          |
 | Advanced CRM        | Future        | Not Baseline     | Not Started          |
@@ -1101,7 +1093,7 @@ This matrix is important for the current BookQu state.
 BookQu should currently be considered in:
 
 ```text
-PHASE: Stabilization + Architecture Consolidation
+PHASE: Post-Refactor Baseline Established (v2.0)
 ```
 
 The project is not currently in:
@@ -1223,6 +1215,9 @@ Track major tracker-level changes here.
 
 | Date       | Change                                                 | Reason                                                                  |
 | ---------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| 2026-09-26 | Completed RF-08 Final Audit & Sign-off                 | 301/301 tests passing, all RF-00 to RF-08 phases verified and signed off as REFACTOR COMPLETE |
+| 2026-09-26 | Completed RF-07 Route Cleanup & Shared Alignment       | Extracted auth closures to dedicated controllers, cleaned unused routes and imports |
+| 2026-09-26 | Completed RF-06 Subscription & Entitlement Refactor    | Domain rules (SubscriptionState, PlanCapability, EntitlementRules) & actions |
 | 2026-09-26 | Completed RF-05 Presentation Layer Refactor            | Decomposed monolithic Blade views into cohesive partials across owner & customer flows |
 | 2026-09-26 | Replaced legacy tracker with requirement-based tracker | Establish single implementation source                                  |
 | 2026-09-26 | Added functional vs architecture state                 | Current code is functionally developed but architecturally inconsistent |
