@@ -306,7 +306,7 @@ Traits are useful for cross-cutting behavior, but they must not become a place w
 
 ## 5.6 Large Shared Controllers
 
-The `OwnerPortalController` currently hosts unrelated capabilities such as:
+Historically, `OwnerPortalController` hosted unrelated capabilities such as:
 
 * calendar;
 * schedule reporting;
@@ -315,7 +315,15 @@ The `OwnerPortalController` currently hosts unrelated capabilities such as:
 * balance;
 * integrations.
 
-This is a sign that a controller can become a technical dumping ground even if each method individually works.
+Under RF-04, `OwnerPortalController` was decomposed into dedicated, cohesive controllers:
+* `OwnerCalendarController`
+* `OwnerScheduleReportController`
+* `OwnerAppearanceController`
+* `OwnerPaymentSettingsController`
+* `OwnerBalanceController`
+* `OwnerIntegrationController`
+
+`OwnerPortalController` was preserved as a thin, delegating adapter ensuring 100% backwards compatibility for legacy callers.
 
 ---
 

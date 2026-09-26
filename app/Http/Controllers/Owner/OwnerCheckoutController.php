@@ -73,23 +73,15 @@ class OwnerCheckoutController extends Controller
     /**
      * Proses checkout: buat Payment record & generate Snap token via CreateSubscriptionPayment action.
      */
-    public function processCheckout(Request $request, CreateSubscriptionPayment $createSubscriptionPayment)
+    public function processCheckout(\App\Http\Requests\Subscription\ProcessSubscriptionCheckoutRequest $request, CreateSubscriptionPayment $createSubscriptionPayment)
     {
-        $request->validate([
-            'plan_id' => 'required|exists:plans,id',
-            'nama_pembayar' => 'required|string|max:100',
-            'email_pembayar' => 'required|email|max:100',
-            'hp_pembayar' => 'required|string|max:20',
-            'catatan' => 'nullable|string|max:500',
-        ]);
-
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             return redirect()->route('owner.subscription')
                 ->with('pesan', 'Tenant tidak ditemukan.');
         }
 
-        $plan = Plan::findOrFail($request->plan_id);
+        $plan = Plan::findOrFail($request->validated()['plan_id']);
 
         try {
             $payment = $createSubscriptionPayment->execute(

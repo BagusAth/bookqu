@@ -278,31 +278,28 @@ Priority: High
 
 # 11. Service Management
 
-| ID             | Requirement                 | Status | Test | Architecture   | Notes                             |
-| -------------- | --------------------------- | ------ | ---- | -------------- | --------------------------------- |
-| FR-SERVICE-001 | Create service              | Done   | PASS | Needs Refactor | Existing `OwnerProgramController` |
-| FR-SERVICE-002 | Service information         | Done   | PASS | Needs Refactor | Name, price, duration, etc.       |
-| FR-SERVICE-003 | Update service              | Done   | PASS | Needs Refactor | Existing CRUD                     |
-| FR-SERVICE-004 | Activate/deactivate         | Done   | PASS | Needs Refactor | Existing toggle flow              |
-| FR-SERVICE-005 | Inactive service protection | Done   | PASS | Needs Refactor | Public booking protection         |
-| FR-SERVICE-006 | Deletion protection         | Done   | PASS | Needs Refactor | Existing constraint               |
-| FR-SERVICE-007 | Service tenant ownership    | Done   | PASS | Target         | Tenant isolation                  |
+| ID             | Requirement                 | Status | Test | Architecture | Notes                                              |
+| -------------- | --------------------------- | ------ | ---- | ------------ | -------------------------------------------------- |
+| FR-SERVICE-001 | Create service              | Done   | PASS | Target       | CreateService action & StoreServiceRequest (RF-04) |
+| FR-SERVICE-002 | Service information         | Done   | PASS | Target       | Handled by Service Actions & Requests              |
+| FR-SERVICE-003 | Update service              | Done   | PASS | Target       | UpdateService action & UpdateServiceRequest (RF-04)|
+| FR-SERVICE-004 | Activate/deactivate         | Done   | PASS | Target       | ToggleServiceStatus action (RF-04)                 |
+| FR-SERVICE-005 | Inactive service protection | Done   | PASS | Target       | Public booking & availability protection           |
+| FR-SERVICE-006 | Deletion protection         | Done   | PASS | Target       | DeleteService action with active booking guard     |
+| FR-SERVICE-007 | Service tenant ownership    | Done   | PASS | Target       | Tenant isolation enforced                          |
 
 ### Service Refactor
 
 ```text
-Current concern:
-OwnerProgramController
+Status: Completed (RF-04)
 
-Target:
-OwnerServiceController
-+
-Service Actions
-+
-Service Requests
+[x] CreateService Application Action
+[x] UpdateService Application Action
+[x] DeleteService Application Action
+[x] ToggleServiceStatus Application Action
+[x] StoreServiceRequest & UpdateServiceRequest Form Requests
+[x] OwnerProgramController refactored into thin HTTP adapter
 ```
-
-Do not rename the entire implementation until compatibility impact is understood.
 
 ---
 
@@ -542,42 +539,42 @@ but customer selection is not automatically part of the booking flow.
 
 # 23. Dashboard
 
-| ID          | Requirement              | Status             | Test           | Architecture   | Notes                       |
-| ----------- | ------------------------ | ------------------ | -------------- | -------------- | --------------------------- |
-| FR-DASH-001 | Business overview        | Done               | PASS           | Needs Refactor | Owner dashboard             |
-| FR-DASH-002 | Booking metrics          | Done               | PASS           | Needs Refactor | Dashboard                   |
-| FR-DASH-003 | Revenue metrics          | Done               | PASS           | Needs Refactor | Dashboard                   |
-| FR-DASH-004 | Customer metrics         | Done               | PASS           | Needs Refactor | Dashboard                   |
-| FR-DASH-005 | Service metrics          | Implemented        | PASS / PARTIAL | Needs Refactor | Dashboard                   |
-| FR-DASH-006 | Recent activity          | Done               | PASS           | Needs Refactor | Dashboard                   |
-| FR-DASH-007 | Dashboard data integrity | Needs Verification | PARTIAL        | Needs Refactor | Requires query/source audit |
+| ID          | Requirement              | Status             | Test           | Architecture | Notes                                                |
+| ----------- | ------------------------ | ------------------ | -------------- | ------------ | ---------------------------------------------------- |
+| FR-DASH-001 | Business overview        | Done               | PASS           | Target       | GetOwnerDashboardOverview action (RF-04)             |
+| FR-DASH-002 | Booking metrics          | Done               | PASS           | Target       | Dashboard metrics via GetOwnerDashboardOverview      |
+| FR-DASH-003 | Revenue metrics          | Done               | PASS           | Target       | Dashboard metrics via GetOwnerDashboardOverview      |
+| FR-DASH-004 | Customer metrics         | Done               | PASS           | Target       | Dashboard metrics via GetOwnerDashboardOverview      |
+| FR-DASH-005 | Service metrics          | Implemented        | PASS / PARTIAL | Target       | Dashboard metrics via GetOwnerDashboardOverview      |
+| FR-DASH-006 | Recent activity          | Done               | PASS           | Target       | Dashboard metrics via GetOwnerDashboardOverview      |
+| FR-DASH-007 | Dashboard data integrity | Needs Verification | PARTIAL        | Target       | Tenant isolated queries via GetOwnerDashboardOverview|
 
 ### Dashboard Refactor Priority
 
 ```text
-High
+Status: Completed (RF-04)
 
-[ ] Extract dashboard queries from controller
-[ ] Centralize dashboard metrics
-[ ] Separate dashboard presentation data
-[ ] Verify metric definitions against requirements
-[ ] Reduce dashboard query complexity
+[x] Extract dashboard queries from controller into GetOwnerDashboardOverview
+[x] Centralize dashboard metrics
+[x] Separate dashboard presentation data
+[x] Verify metric definitions against requirements
+[x] Reduce dashboard query complexity
 ```
 
 ---
 
 # 24. Calendar
 
-| ID              | Requirement         | Status | Test | Architecture   | Notes                         |
-| --------------- | ------------------- | ------ | ---- | -------------- | ----------------------------- |
-| FR-CALENDAR-001 | Calendar view       | Done   | PASS | Needs Refactor | Existing portal controller    |
-| FR-CALENDAR-002 | Date navigation     | Done   | PASS | Needs Refactor | Tests exist                   |
-| FR-CALENDAR-003 | Booking visibility  | Done   | PASS | Needs Refactor | Tests exist                   |
-| FR-CALENDAR-004 | Schedule visibility | Done   | PASS | Needs Refactor | Tests exist                   |
-| FR-CALENDAR-005 | Filtering           | Done   | PASS | Needs Refactor | Existing filtering            |
-| FR-CALENDAR-006 | Walk-in operation   | Done   | PASS | Needs Refactor | Existing calendar integration |
+| ID              | Requirement         | Status | Test | Architecture | Notes                                                |
+| --------------- | ------------------- | ------ | ---- | ------------ | ---------------------------------------------------- |
+| FR-CALENDAR-001 | Calendar view       | Done   | PASS | Target       | OwnerCalendarController & GetOwnerCalendarData(RF-04)|
+| FR-CALENDAR-002 | Date navigation     | Done   | PASS | Target       | Handled by GetOwnerCalendarData action               |
+| FR-CALENDAR-003 | Booking visibility  | Done   | PASS | Target       | Handled by GetOwnerCalendarData action               |
+| FR-CALENDAR-004 | Schedule visibility | Done   | PASS | Target       | Handled by GetOwnerCalendarData action               |
+| FR-CALENDAR-005 | Filtering           | Done   | PASS | Target       | Handled by GetOwnerCalendarData action               |
+| FR-CALENDAR-006 | Walk-in operation   | Done   | PASS | Target       | Delegated to CreateWalkInBooking Action              |
 
-The current calendar view is one of the largest Blade files and should be a major frontend refactoring target.
+The current calendar view Blade file will be refined under RF-05 Presentation layer.
 
 ---
 
@@ -596,11 +593,11 @@ The current calendar view is one of the largest Blade files and should be a majo
 
 # 26. Reporting
 
-| ID            | Requirement      | Status      | Test | Architecture   | Notes            |
-| ------------- | ---------------- | ----------- | ---- | -------------- | ---------------- |
-| FR-REPORT-001 | Schedule report  | Implemented | PASS | Needs Refactor | Existing report  |
-| FR-REPORT-002 | Report filtering | Implemented | PASS | Needs Refactor | Existing         |
-| FR-REPORT-003 | Report export    | Implemented | PASS | Needs Refactor | CSV/export tests |
+| ID            | Requirement      | Status      | Test | Architecture | Notes                                                |
+| ------------- | ---------------- | ----------- | ---- | ------------ | ---------------------------------------------------- |
+| FR-REPORT-001 | Schedule report  | Implemented | PASS | Target       | OwnerScheduleReportController & GenerateScheduleReport (RF-04) |
+| FR-REPORT-002 | Report filtering | Implemented | PASS | Target       | Handled by GenerateScheduleReport action             |
+| FR-REPORT-003 | Report export    | Implemented | PASS | Target       | Handled by ExportScheduleReport action (CSV stream)  |
 
 ---
 

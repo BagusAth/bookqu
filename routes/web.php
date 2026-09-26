@@ -5,18 +5,24 @@ use App\Http\Controllers\Customer\BookingController;
 use App\Http\Controllers\Customer\BookingManageController;
 use App\Http\Controllers\Owner\OwnerAdditionalItemController;
 use App\Http\Controllers\Owner\OwnerAnalyticsController;
+use App\Http\Controllers\Owner\OwnerAppearanceController;
 use App\Http\Controllers\Owner\OwnerAssetController;
+use App\Http\Controllers\Owner\OwnerBalanceController;
 use App\Http\Controllers\Owner\OwnerBookingController;
+use App\Http\Controllers\Owner\OwnerCalendarController;
 use App\Http\Controllers\Owner\OwnerCategoryController;
 use App\Http\Controllers\Owner\OwnerCheckoutController;
 use App\Http\Controllers\Owner\OwnerCustomerController;
 use App\Http\Controllers\Owner\OwnerDashboardController;
+use App\Http\Controllers\Owner\OwnerIntegrationController;
 use App\Http\Controllers\Owner\OwnerLandingPageController;
 use App\Http\Controllers\Owner\OwnerNotificationController;
+use App\Http\Controllers\Owner\OwnerPaymentSettingsController;
 use App\Http\Controllers\Owner\OwnerPortalController;
 use App\Http\Controllers\Owner\OwnerProgramController;
 use App\Http\Controllers\Owner\OwnerReviewController;
 use App\Http\Controllers\Owner\OwnerScheduleController;
+use App\Http\Controllers\Owner\OwnerScheduleReportController;
 use App\Http\Controllers\Owner\OwnerSettingController;
 use App\Http\Controllers\Owner\OwnerStaffResourceController;
 use App\Http\Controllers\Owner\OwnerSubscriptionController;
@@ -231,9 +237,9 @@ Route::prefix('owner')
         Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware('subscription:pro');
 
         // ── Extended Core Business Modules (Tahap 2) ──
-        Route::get('/calendar', [OwnerPortalController::class, 'calendar'])->name('owner.calendar');
-        Route::get('/schedule-report', [OwnerPortalController::class, 'scheduleReport'])->name('owner.schedule-report');
-        Route::get('/schedule-report/export', [OwnerPortalController::class, 'exportScheduleReport'])->name('owner.schedule-report.export');
+        Route::get('/calendar', [OwnerCalendarController::class, 'index'])->name('owner.calendar');
+        Route::get('/schedule-report', [OwnerScheduleReportController::class, 'index'])->name('owner.schedule-report');
+        Route::get('/schedule-report/export', [OwnerScheduleReportController::class, 'export'])->name('owner.schedule-report.export');
 
         // Services & Programs
         Route::get('/services', [OwnerProgramController::class, 'index'])->name('owner.services');
@@ -287,15 +293,15 @@ Route::prefix('owner')
 
         // Settings & Configurations
         Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
-        Route::get('/settings/appearance', [OwnerPortalController::class, 'appearance'])->name('owner.settings.appearance');
-        Route::post('/settings/appearance', [OwnerPortalController::class, 'updateAppearance'])->name('owner.settings.appearance.update');
-        Route::get('/settings/payment-setting', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payment-setting');
-        Route::get('/settings/payments', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payments');
+        Route::get('/settings/appearance', [OwnerAppearanceController::class, 'index'])->name('owner.settings.appearance');
+        Route::post('/settings/appearance', [OwnerAppearanceController::class, 'update'])->name('owner.settings.appearance.update');
+        Route::get('/settings/payment-setting', [OwnerPaymentSettingsController::class, 'index'])->name('owner.settings.payment-setting');
+        Route::get('/settings/payments', [OwnerPaymentSettingsController::class, 'index'])->name('owner.settings.payments');
         Route::get('/settings/assets', [OwnerAssetController::class, 'index'])->name('owner.settings.assets');
         Route::post('/settings/assets', [OwnerAssetController::class, 'store'])->name('owner.settings.assets.store');
         Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->name('owner.settings.assets.destroy');
-        Route::get('/settings/balance', [OwnerPortalController::class, 'balance'])->name('owner.settings.balance');
-        Route::get('/settings/integrations', [OwnerPortalController::class, 'integrations'])->name('owner.settings.integrations');
+        Route::get('/settings/balance', [OwnerBalanceController::class, 'index'])->name('owner.settings.balance');
+        Route::get('/settings/integrations', [OwnerIntegrationController::class, 'index'])->name('owner.settings.integrations');
     });
 });
 

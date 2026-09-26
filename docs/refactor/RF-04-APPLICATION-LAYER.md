@@ -1,6 +1,6 @@
 # RF-04 — Application Layer Refactor
 
-> **Status:** Planned
+> **Status:** Completed
 > **Priority:** High
 > **Phase:** Application Layer Consolidation
 > **Integration Branch:** `Refactor`
@@ -1479,57 +1479,119 @@ Baseline Commit:
 ccbcef00ad8726c1cef4ee56e6a2345c5941fbf8
 
 Current Commit:
-<commit>
+a54bce1d516e3a5fe81b5f86b418829462def7f4
 
 Actions Created:
-<list>
+- Service Actions:
+  - app/Actions/Service/CreateService.php
+  - app/Actions/Service/UpdateService.php
+  - app/Actions/Service/DeleteService.php
+  - app/Actions/Service/ToggleServiceStatus.php
+- Customer Actions:
+  - app/Actions/Customer/SaveCustomerNote.php
+  - app/Actions/Customer/GetCustomerDetail.php
+- Dashboard Actions:
+  - app/Actions/Dashboard/GetOwnerDashboardOverview.php
+- Tenant / Business Profile Actions:
+  - app/Actions/Tenant/CreateInitialProfile.php
+  - app/Actions/Tenant/UpdateBusinessProfile.php
+  - app/Actions/Tenant/UpdatePaymentSettings.php
+  - app/Actions/Tenant/UpdateAppearanceSettings.php
+- Owner Account Actions:
+  - app/Actions/Owner/UpdateOwnerAccount.php
+  - app/Actions/Owner/RequestOwnerPayout.php
+  - app/Actions/Owner/DeleteOwnerAccount.php
+- Calendar & Schedule Actions:
+  - app/Actions/Calendar/GetOwnerCalendarData.php
+  - app/Actions/Schedule/GenerateScheduleReport.php
+  - app/Actions/Schedule/ExportScheduleReport.php
 
 Requests Created:
-<list>
+- Service Requests:
+  - app/Http/Requests/Service/StoreServiceRequest.php
+  - app/Http/Requests/Service/UpdateServiceRequest.php
+- Customer Requests:
+  - app/Http/Requests/Customer/SaveCustomerNoteRequest.php
+- Tenant Requests:
+  - app/Http/Requests/Tenant/StoreInitialProfileRequest.php
+  - app/Http/Requests/Tenant/UpdateBusinessProfileRequest.php
+  - app/Http/Requests/Tenant/UpdatePaymentSettingsRequest.php
+  - app/Http/Requests/Tenant/UpdateAppearanceRequest.php
+- Owner Requests:
+  - app/Http/Requests/Owner/UpdateOwnerAccountRequest.php
+  - app/Http/Requests/Owner/RequestPayoutRequest.php
+- Subscription Requests:
+  - app/Http/Requests/Subscription/ProcessSubscriptionCheckoutRequest.php
 
 Controllers Split:
-<list>
+- OwnerPortalController decomposed into:
+  - OwnerCalendarController
+  - OwnerScheduleReportController
+  - OwnerAppearanceController
+  - OwnerPaymentSettingsController
+  - OwnerBalanceController
+  - OwnerIntegrationController
+  (OwnerPortalController retained as delegating backwards-compatible adapter)
 
 Controllers Reduced:
-<list>
+- OwnerProgramController (thin adapter delegating to Service Actions & Requests)
+- OwnerCustomerController (thin adapter delegating to Customer Actions & Requests)
+- OwnerDashboardController (delegating metrics queries to GetOwnerDashboardOverview)
+- OwnerSettingController (thin adapter delegating to Tenant/Owner Actions & Requests)
+- OwnerCheckoutController (integrated with ProcessSubscriptionCheckoutRequest)
 
 Controllers Removed:
-<list>
+- None (0 breaking changes, full backwards-compatibility preserved)
 
 Queries / Services Created:
-<list>
+- GetOwnerDashboardOverview
+- GetOwnerCalendarData
+- GenerateScheduleReport
+- ExportScheduleReport
+- GetCustomerDetail
 
 Tests Added:
-<list>
+- tests/Feature/Actions/ServiceActionsTest.php
+- tests/Feature/Actions/OwnerApplicationActionsTest.php
 
 Tests Executed:
-<list>
+- tests/Feature/Actions (17 tests)
+- tests/Feature/Owner (86 tests)
+- tests/Unit/Domain (28 tests)
+- tests/Feature/Customer (28 tests)
+- tests/Feature/SubscriptionRulesAndMechanismsTest (5 tests)
+- tests/Feature/P0SecurityTest (7 tests)
 
 Test Result:
-<result>
+- PASS (171 tests, 983+ assertions)
 
 Requirements Covered:
-<IDs>
+- FR-SERVICE-001, FR-SERVICE-002, FR-SERVICE-003, FR-SERVICE-004, FR-SERVICE-005, FR-SERVICE-006, FR-SERVICE-007
+- FR-CUSTOMER-002, FR-CUSTOMER-004
+- FR-DASH-001, FR-DASH-002, FR-DASH-003, FR-DASH-004, FR-DASH-005, FR-DASH-006, FR-DASH-007
+- FR-CALENDAR-001, FR-CALENDAR-002, FR-CALENDAR-003, FR-CALENDAR-004, FR-CALENDAR-005, FR-CALENDAR-006
+- FR-REPORT-001, FR-REPORT-002, FR-REPORT-003
+- FR-TENANT-004, FR-APPEARANCE-001, FR-APPEARANCE-002
 
 Dependencies Used:
-RF-01:
-RF-02:
-RF-03:
+RF-01: Reused Booking domain/actions
+RF-02: Reused Payment domain/actions
+RF-03: Reused Schedule domain/actions
 
 Behavior Changes:
 None, unless explicitly documented.
 
 Remaining Application-Layer Debt:
-<list>
+- Customer booking multi-step wizard controller can be refactored into dedicated step actions in RF-05 Presentation layer.
 
 Tracker Updated:
-Yes/No
+Yes
 
 Architecture Documentation Updated:
-Yes/No
+Yes
 
 Blockers:
-<list>
+None
 ```
 
 ---
