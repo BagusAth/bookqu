@@ -46,19 +46,7 @@
         </div>
     @endif
 
-    @if ($showPaymentPrompt)
-        <div class="rounded-xl border border-sky-200 bg-sky-50 px-5 py-4" id="payment-verification-banner">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm font-semibold text-sky-900">Pengaturan pembayaran belum diverifikasi</p>
-                    <p class="text-xs text-sky-800">Lengkapi kredensial Midtrans dan tunggu verifikasi admin.</p>
-                </div>
-                <a href="{{ route('owner.settings') }}" class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-sky-700" id="btn-payment-settings">
-                    Buka Settings
-                </a>
-            </div>
-        </div>
-    @endif
+
 
     {{-- ── Trial Banner ── --}}
     @if ($statustrial)
@@ -194,13 +182,12 @@
                     </div>
                 @endforelse
             </div>
-            @if ($trendlayanan->count() > 0)
-                <div class="mt-5 border-t border-bq-border pt-4">
-                    <a href="{{ route('owner.analytics') }}" class="text-sm font-medium text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-full-report">
-                        View Full Report →
-                    </a>
-                </div>
-            @endif
+            <div class="mt-5 border-t border-bq-border pt-4">
+                <a href="{{ route('owner.analytics') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-full-report">
+                    <span>View Full Report</span>
+                    <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 uppercase">🔒 Terkunci</span>
+                </a>
+            </div>
         </div>
     </div>
 

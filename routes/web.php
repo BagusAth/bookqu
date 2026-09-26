@@ -35,6 +35,18 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/kebijakan-privasi', function () {
+    return view('privacy-policy');
+})->name('privacy-policy');
+
+Route::permanentRedirect('/privacy-policy', '/kebijakan-privasi');
+
+Route::get('/syarat-ketentuan', function () {
+    return view('terms-conditions');
+})->name('terms-conditions');
+
+Route::permanentRedirect('/terms-conditions', '/syarat-ketentuan');
+
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // ── Authentication Routes ──
@@ -393,7 +405,7 @@ Route::domain('{custom_domain}')
 // All /{slug_usaha}/booking/... routes follow.
 // bookqu.my.id/ is NOT included here — it stays as the welcome page (defined above at line 33).
 Route::prefix('{slug_usaha}')
-    ->where(['slug_usaha' => '^(?!sitemap\.xml$)[^/]+$'])
+    ->where(['slug_usaha' => '^(?!(sitemap\.xml|kebijakan-privasi|privacy-policy|syarat-ketentuan|terms-conditions)$)[^/]+$'])
     ->middleware('tenant')
     ->group(function () use ($bookingSubRoutes) {
         Route::get('/', [BookingController::class, 'showProgramSelection'])

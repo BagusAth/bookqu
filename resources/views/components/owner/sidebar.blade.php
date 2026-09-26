@@ -90,18 +90,6 @@
                     'route' => ['owner.categories'],
                     'icon'  => 'categories',
                 ],
-                [
-                    'label' => 'Staff & Resources',
-                    'href'  => '/owner/staff-resources',
-                    'route' => ['owner.staff-resources'],
-                    'icon'  => 'staff-resources',
-                ],
-                [
-                    'label' => 'Additional Items',
-                    'href'  => '/owner/additional-items',
-                    'route' => ['owner.additional-items'],
-                    'icon'  => 'additional-items',
-                ],
             ],
         ],
         [
@@ -119,12 +107,6 @@
             'title' => 'MARKETING',
             'items' => [
                 [
-                    'label' => 'Vouchers',
-                    'href'  => '/owner/vouchers',
-                    'route' => ['owner.vouchers'],
-                    'icon'  => 'vouchers',
-                ],
-                [
                     'label' => 'Reviews',
                     'href'  => '/owner/reviews',
                     'route' => ['owner.reviews'],
@@ -140,12 +122,16 @@
                     'href'  => '/owner/analytics',
                     'route' => ['owner.analytics', 'owner.analytics.export'],
                     'icon'  => 'analytics',
+                    'badge' => 'Terkunci',
+                    'badge_type' => 'lock',
                 ],
                 [
                     'label' => 'Schedule Report',
                     'href'  => '/owner/schedule-report',
                     'route' => ['owner.schedule-report'],
                     'icon'  => 'schedule-report',
+                    'badge' => 'Terkunci',
+                    'badge_type' => 'lock',
                 ],
             ],
         ],
@@ -159,24 +145,6 @@
                     'icon'  => 'business-setting',
                 ],
                 [
-                    'label' => 'Appearance',
-                    'href'  => '/owner/settings/appearance',
-                    'route' => ['owner.settings.appearance'],
-                    'icon'  => 'appearance-setting',
-                ],
-                [
-                    'label' => 'Payments',
-                    'href'  => '/owner/settings/payment-setting',
-                    'route' => ['owner.settings.payment-setting', 'owner.settings.payment'],
-                    'icon'  => 'payment-setting',
-                ],
-                [
-                    'label' => 'Assets',
-                    'href'  => '/owner/settings/assets',
-                    'route' => ['owner.settings.assets'],
-                    'icon'  => 'assets',
-                ],
-                [
                     'label' => 'Integrations',
                     'href'  => '/owner/settings/integrations',
                     'route' => ['owner.settings.integrations'],
@@ -187,18 +155,6 @@
                     'href'  => '/owner/subscription',
                     'route' => ['owner.subscription'],
                     'icon'  => 'subscription',
-                ],
-            ],
-        ],
-        [
-            'title' => null, // Standalone bottom product feature
-            'items' => [
-                [
-                    'label' => 'Landing Page',
-                    'href'  => '/owner/landing-page',
-                    'route' => ['owner.landing-page', 'owner.landing-page.store'],
-                    'icon'  => 'landing-page',
-                    'badge' => 'PRO',
                 ],
             ],
         ],
@@ -503,6 +459,13 @@
                                 @if (!empty($item['badge_type']) && $item['badge_type'] === 'counter')
                                     <span class="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-extrabold text-white shadow-2xs">
                                         {{ $item['badge'] }}
+                                    </span>
+                                @elseif (!empty($item['badge_type']) && $item['badge_type'] === 'lock')
+                                    <span class="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider uppercase {{ $active ? 'bg-[#382186] text-white' : 'bg-amber-50 text-amber-800 border border-amber-300' }}">
+                                        <svg class="h-3 w-3 {{ $active ? 'text-white' : 'text-amber-600' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                        </svg>
+                                        <span>{{ $item['badge'] }}</span>
                                     </span>
                                 @else
                                     <span class="ml-auto inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-black tracking-wider uppercase {{ $active ? 'bg-[#382186] text-white' : 'bg-[#fff8eb] text-[#875000] border border-[#ffb84d]/60' }}">

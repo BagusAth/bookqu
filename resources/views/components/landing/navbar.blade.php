@@ -4,10 +4,10 @@
             <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-8 w-auto" />
         </a>
         <nav class="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
-            <a href="#hero" data-scroll-target="hero" class="nav-link text-slate-600">Solutions</a>
-            <a href="#features" data-scroll-target="features" class="nav-link text-slate-600">Features</a>
-            <a href="#pricing" data-scroll-target="pricing" class="nav-link text-slate-600">Pricing</a>
-            <a href="#about" data-scroll-target="about" class="nav-link text-slate-600">About</a>
+            <a href="{{ url('/#hero') }}" data-scroll-target="hero" class="nav-link text-slate-600">Solutions</a>
+            <a href="{{ url('/#features') }}" data-scroll-target="features" class="nav-link text-slate-600">Features</a>
+            <a href="{{ url('/#pricing') }}" data-scroll-target="pricing" class="nav-link text-slate-600">Pricing</a>
+            <a href="{{ url('/#about') }}" data-scroll-target="about" class="nav-link text-slate-600">About</a>
         </nav>
         <div class="flex items-center gap-4">
             @php($user = auth()->user())
