@@ -193,7 +193,7 @@
                                 01
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Tentang BookQu
+                                1. Tentang BookQu
                             </h2>
                         </div>
                         <p class="text-sm sm:text-base leading-relaxed text-slate-600">
@@ -208,7 +208,7 @@
                                 02
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Akun Pengguna
+                                2. Akun Pengguna
                             </h2>
                         </div>
                         <p class="text-sm sm:text-base leading-relaxed text-slate-600 mb-4">
@@ -252,7 +252,7 @@
                                 03
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Penggunaan Layanan
+                                3. Penggunaan Layanan
                             </h2>
                         </div>
                         <p class="text-sm sm:text-base leading-relaxed text-slate-600 mb-4">
@@ -305,7 +305,7 @@
                                 04
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Booking dan Transaksi
+                                4. Booking dan Transaksi
                             </h2>
                         </div>
                         <p class="text-sm sm:text-base leading-relaxed text-slate-600 mb-4">
@@ -358,7 +358,7 @@
                                 05
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Pembayaran
+                                5. Pembayaran
                             </h2>
                         </div>
                         <div class="space-y-4 text-sm sm:text-base leading-relaxed text-slate-600">
@@ -378,7 +378,7 @@
                                 06
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Paket dan Biaya Layanan
+                                6. Paket dan Biaya Layanan
                             </h2>
                         </div>
                         <div class="space-y-3 text-sm sm:text-base leading-relaxed text-slate-600">
@@ -401,7 +401,7 @@
                                 07
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Konten dan Data Pengguna
+                                7. Konten dan Data Pengguna
                             </h2>
                         </div>
                         <div class="space-y-3 text-sm sm:text-base leading-relaxed text-slate-600">
@@ -421,7 +421,7 @@
                                 08
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Hak Kekayaan Intelektual
+                                8. Hak Kekayaan Intelektual
                             </h2>
                         </div>
                         <div class="space-y-3 text-sm sm:text-base leading-relaxed text-slate-600">
@@ -444,7 +444,7 @@
                                 09
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Ketersediaan Layanan
+                                9. Ketersediaan Layanan
                             </h2>
                         </div>
                         <div class="space-y-3 text-sm sm:text-base leading-relaxed text-slate-600">
@@ -464,7 +464,7 @@
                                 10
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Batasan Tanggung Jawab
+                                10. Batasan Tanggung Jawab
                             </h2>
                         </div>
                         <p class="text-sm sm:text-base leading-relaxed text-slate-600 mb-3">
@@ -514,7 +514,7 @@
                                 11
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Penghentian Akun
+                                11. Penghentian Akun
                             </h2>
                         </div>
                         <p class="text-sm sm:text-base leading-relaxed text-slate-600 mb-4">
@@ -558,7 +558,7 @@
                                 12
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Perubahan Syarat &amp; Ketentuan
+                                12. Perubahan Syarat &amp; Ketentuan
                             </h2>
                         </div>
                         <div class="space-y-3 text-sm sm:text-base leading-relaxed text-slate-600">
@@ -578,7 +578,7 @@
                                 13
                             </span>
                             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                                Kontak
+                                13. Kontak
                             </h2>
                         </div>
                         <p class="text-sm sm:text-base leading-relaxed text-slate-600 mb-6">

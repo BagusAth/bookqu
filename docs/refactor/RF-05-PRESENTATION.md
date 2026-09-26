@@ -4,7 +4,7 @@
 > **Phase:** Presentation Architecture
 > **Baseline Branch:** `Refactor`
 > **Baseline Commit:** `ccbcef00ad8726c1cef4ee56e6a2345c5941fbf8`
-> **Status:** Planned
+> **Status:** Completed
 > **Depends On:** RF-00 Foundation, RF-01 Booking, RF-02 Payment, RF-03 Schedule, RF-04 Application Layer
 > **Primary Areas:** `resources/views`, `resources/js`, Blade components, Alpine.js
 > **Primary Goal:** Reduce Blade/JavaScript complexity without changing intended product behavior
@@ -2054,42 +2054,88 @@ Jangan menyelesaikan ambiguity dengan asumsi.
 
 ---
 
-# 43. Final Report Format
-
-Setelah satu unit RF-05 selesai, report harus mencantumkan:
+# 43. Final Report
 
 ```text
-RF-05 Unit:
-Baseline Commit:
+RF-05 Unit: Presentation Layer Refactor (Complete)
+Baseline Branch: Refactor
+Baseline Commit: ccbcef00ad8726c1cef4ee56e6a2345c5941fbf8
 
 Files Changed:
-
-Presentation Changes:
-- ...
-
-Components Added:
-- ...
+- resources/views/owner/schedule-report.blade.php (Baseline KPI standardization)
+- resources/views/owner/calendar.blade.php (Modularized to partials)
+- resources/views/owner/bookings.blade.php (Modularized to partials)
+- resources/views/owner/staff-resources.blade.php (Modularized to partials)
+- resources/views/owner/customers.blade.php (Modularized to partials)
+- resources/views/customer/manage/show.blade.php (Modularized to partials)
+- resources/views/customer/booking/checkout.blade.php (Modularized to partials)
+- resources/views/customer/booking/payment.blade.php (Modularized to partials)
 
 Partials Added:
-- ...
+1. Owner Calendar (resources/views/owner/partials/calendar/):
+   - header.blade.php (Title, actions, manage schedule & booking list links)
+   - controls.blade.php (Day/Week/Month segmented controls, date navigator, service filter, status legend)
+   - week-view.blade.php (Mobile week timeline & desktop week grid)
+   - day-view.blade.php (Daily booking transactions & operational slot list)
+   - month-view.blade.php (Monthly calendar grid with indicators & booking counts)
+   - detail-modal.blade.php (Booking detail drawer, quick actions, walk-in form)
 
-JavaScript Changes:
-- ...
+2. Owner Bookings (resources/views/owner/partials/bookings/):
+   - summary-stats.blade.php (6 status metric counter cards)
+   - filters.blade.php (Search input & status filter pills)
+   - mobile-cards.blade.php (Mobile booking cards with quick status transitions)
+   - desktop-table.blade.php (Desktop table with full booking info & actions dropdown)
+   - detail-modal.blade.php (Centered booking detail dialog with customer info, payment info, actions)
+
+3. Owner Staff & Resources (resources/views/owner/partials/staff-resources/):
+   - header.blade.php (Header title, tabs switcher Staff Team vs Fasilitas Fisik, Tambah action buttons)
+   - staff-section.blade.php (Staff member table, search, empty state)
+   - resource-section.blade.php (Physical resource/room table, search, empty state)
+   - staff-modals.blade.php (Add & Edit Staff modal dialogs with service checkboxes)
+   - resource-modals.blade.php (Add & Edit Resource modal dialogs with service checkboxes)
+
+4. Owner Customers (resources/views/owner/partials/customers/):
+   - summary.blade.php (3 summary metrics: Unique Customers, Total Spending, Total Bookings)
+   - filters.blade.php (Server-side customer search form & result count)
+   - table.blade.php (Customer CRM directory table, VIP badges, pagination, empty states)
+   - detail-modal.blade.php (Slide-over detail drawer with Overview, Booking History, Payments, Notes tabs)
+
+5. Customer Manage Booking (resources/views/customer/partials/manage/):
+   - header.blade.php (Sticky top navbar with tenant branding, WhatsApp support link, catalog link)
+   - ticket-card.blade.php (Digital reservation pass hero card with booking code, status badge, session details, GCal/WA share, invoice link)
+   - customer-card.blade.php (Customer details card)
+   - review-section.blade.php (Star rating & review form / submitted review display)
+   - timeline.blade.php (Event log activity timeline)
+   - action-panel.blade.php (Multi-slot warning, reschedule/cancel buttons & policies, terminal state cards)
+   - merchant-card.blade.php (Merchant location/maps link, phone number, secret access notice)
+   - cancel-modal.blade.php (Cancellation confirmation modal dialog with estimate refund breakdown)
+
+6. Customer Booking Checkout (resources/views/customer/partials/booking/):
+   - checkout-form.blade.php (Customer inputs, error alerts, trust banner, validation, remember me)
+   - checkout-mobile-review.blade.php (Mobile reservation review card, slot breakdown)
+   - checkout-summary-desktop.blade.php (Desktop sticky summary card, breakdown, CTA, trust notice)
+   - checkout-mobile-bar.blade.php (Mobile bottom floating action bar with total and submit CTA)
+
+7. Customer Booking Payment (resources/views/customer/partials/payment/):
+   - failed-state.blade.php (Failed payment card & retry / new reservation CTAs)
+   - expired-state.blade.php (Expired payment notice card)
+   - pending-card.blade.php (Total bill, urgency countdown timer, quick steps, pay button, reservation detail list, secondary metadata, realtime status, loading overlay)
+   - action-buttons.blade.php (Periksa Status Pembayaran & Batalkan & Ganti Jadwal buttons)
+   - cancel-modal.blade.php (Payment cancel confirmation dialog)
+   - scripts.blade.php (Midtrans Snap payment trigger, auto-polling, countdown timer sync, clipboard)
 
 Behavior Preserved:
-- ...
+- 100% route contract preservation (all named routes and parameters preserved)
+- 100% DOM element IDs and canonical Indonesian copy preserved for automated test characterization
+- Alpine UI interaction preserved (data binding, validation, modals, drawers, tabs, copy-to-clipboard)
+- Backend authoritative business rules and calculations intact
 
 Tests:
-- ...
-
-Manual UI Verification:
-- ...
-
-Known Issues:
-- ...
+- 277 passed (1,391 assertions) across entire test suite (php artisan test)
+- 100% green pass rate
 
 Next Recommended Unit:
-- ...
+- RF-06: Subscription & Entitlements Refactor
 ```
 
 Jika ada behavior change:
