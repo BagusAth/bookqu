@@ -10,6 +10,11 @@ use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Tenant;
 use App\Traits\ClearsBookingCache;
+use App\Actions\Booking\CreateWalkInBooking;
+use App\Actions\Booking\UpdateBookingStatus;
+use App\Actions\Booking\RescheduleBooking;
+use App\Http\Requests\Booking\UpdateBookingStatusRequest;
+use App\Http\Requests\Booking\RescheduleBookingRequest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -110,7 +115,7 @@ class OwnerBookingController extends Controller
      *   paid    → completed | cancelled
      *   pending → paid | completed | cancelled
      */
-    public function updateStatus(Request $request, $booking)
+    public function updateStatus(UpdateBookingStatusRequest $request, $booking, UpdateBookingStatus $updateBookingStatus)
     {
         $tenant = $this->resolveTenant();
 
@@ -123,68 +128,15 @@ class OwnerBookingController extends Controller
             abort(404, 'Booking tidak ditemukan.');
         }
 
-        $validated = $request->validate([
-            'status' => ['required', 'string', 'in:paid,completed,cancelled'],
-        ]);
-
-        $statusLama = $booking->status;
+        $validated = $request->validated();
         $statusBaru = $validated['status'];
 
-        $transisi = [
-            'paid'    => ['completed', 'cancelled'],
-            'pending' => ['paid', 'completed', 'cancelled'],
-        ];
+        $result = $updateBookingStatus->execute($booking, $statusBaru, 'owner');
 
-        if (!in_array($statusBaru, $transisi[$statusLama] ?? [])) {
+        if (!$result['success']) {
             return back()->withErrors([
-                'error' => "Status tidak dapat diubah dari '{$statusLama}' ke '{$statusBaru}'.",
+                'error' => $result['error'],
             ]);
-        }
-
-        if ($statusBaru === 'cancelled' && $booking->isMultiSlot()) {
-            return back()->withErrors([
-                'error' => 'Booking ini merupakan bagian dari multi-slot booking dan tidak dapat dibatalkan per slot secara individual.',
-            ]);
-        }
-
-        $booking->update(['status' => $statusBaru]);
-
-        // If marked as paid or completed, ensure management tokens exist and payment status is updated
-        if ($statusBaru === 'paid' || $statusBaru === 'completed') {
-            if (!$booking->booking_code) {
-                $booking->assignManagementTokens();
-            }
-            if ($booking->payment && $booking->payment->status !== 'sukses') {
-                $booking->payment->update(['status' => 'sukses']);
-            }
-        }
-
-        // Invalidate availability cache when a cancellation or completion frees/affects a slot
-        if (in_array($statusBaru, ['cancelled', 'completed']) && $booking->idlayanan && $booking->tanggalbooking) {
-            $tanggal = $booking->tanggalbooking instanceof Carbon
-                ? $booking->tanggalbooking->toDateString()
-                : Carbon::parse($booking->tanggalbooking)->toDateString();
-
-            $this->clearBookingAvailabilityCache(
-                (int) $booking->idtenant,
-                (int) $booking->idlayanan,
-                $tanggal
-            );
-        }
-
-        // Notifikasi perubahan status
-        try {
-            $booking->load(['tenant.user', 'layanan']);
-            $owner = $booking->tenant?->user;
-            if ($owner) {
-                $owner->notify(new \App\Notifications\BookingStatusChangedOwnerNotification(
-                    $booking,
-                    $statusBaru,
-                    ['updated_by' => 'owner']
-                ));
-            }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Owner update status notification failed: ' . $e->getMessage());
         }
 
         $label = match ($statusBaru) {
@@ -200,7 +152,7 @@ class OwnerBookingController extends Controller
     /**
      * Walk-in booking creation by owner (directly from Calendar / Booking module)
      */
-    public function walkinStore(Request $request)
+    public function walkinStore(Request $request, CreateWalkInBooking $createWalkInBooking)
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
@@ -223,72 +175,11 @@ class OwnerBookingController extends Controller
 
         $validated = $validator->validate();
 
-        $booking = DB::transaction(function () use ($tenant, $validated) {
-            $schedule = Schedule::where('id', $validated['idschedule'])
-                ->where('idtenant', $tenant->id)
-                ->where('status', 'tersedia')
-                ->lockForUpdate()
-                ->first();
-
-            if (!$schedule) {
-                return null;
-            }
-
-            // Check if slot already has an active booking
-            $isBooked = Booking::where('idschedule', $schedule->id)
-                ->whereIn('status', ['pending', 'paid', 'completed'])
-                ->exists();
-
-            if ($isBooked) {
-                return null;
-            }
-
-            $service = $schedule->layanan;
-            $amount = $schedule->harga_override ?? ($service ? $service->harga : 0);
-
-            // Create Payment record for Walk-in
-            $orderId = 'WLK-' . strtoupper(Str::random(10));
-            $payment = Payment::create([
-                'idtenant'       => $tenant->id,
-                'tipe'           => 'booking',
-                'jumlah'         => $amount,
-                'status'         => 'sukses',
-                'metode'         => $validated['metode'] ?? 'cash',
-                'order_id'       => $orderId,
-                'nama_pembayar'  => $validated['namapelanggan'],
-                'email_pembayar' => $validated['email'] ?? ($tenant->user->email ?? 'walkin@example.com'),
-                'hp_pembayar'    => $validated['nomorhp'],
-            ]);
-
-            // Create Booking record
-            $booking = Booking::create([
-                'idtenant'       => $tenant->id,
-                'idlayanan'      => $schedule->idlayanan,
-                'idschedule'     => $schedule->id,
-                'idpayment'      => $payment->id,
-                'namapelanggan'  => $validated['namapelanggan'],
-                'nomorhp'        => $validated['nomorhp'],
-                'email'          => $validated['email'] ?? null,
-                'tanggalbooking' => $schedule->tanggal,
-                'jam'            => $schedule->jam_mulai,
-                'status'         => 'paid',
-                'catatan'        => $validated['catatan'] ?? 'Walk-in booking via Owner Calendar',
-            ]);
-
-            $booking->assignManagementTokens();
-
-            return $booking;
-        });
+        $booking = $createWalkInBooking->execute($tenant, $validated);
 
         if (!$booking) {
             return back()->withErrors(['error' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.']);
         }
-
-        $this->clearBookingAvailabilityCache(
-            (int) $booking->idtenant,
-            (int) $booking->idlayanan,
-            $booking->tanggalbooking instanceof Carbon ? $booking->tanggalbooking->toDateString() : (string) $booking->tanggalbooking
-        );
 
         return back()->with('sukses', "Walk-in booking atas nama {$booking->namapelanggan} berhasil dibuat!");
     }
@@ -363,7 +254,7 @@ class OwnerBookingController extends Controller
      * Reschedule / Ubah Jadwal Booking oleh Owner (Walk-in & On-site Direct Reschedule)
      * Tidak memerlukan token dari pelanggan.
      */
-    public function reschedule(Request $request, $booking)
+    public function reschedule(RescheduleBookingRequest $request, $booking, RescheduleBooking $rescheduleBooking)
     {
         $tenant = $this->resolveTenant();
         if (!$booking instanceof Booking) {
@@ -374,129 +265,32 @@ class OwnerBookingController extends Controller
             abort(404, 'Booking tidak ditemukan.');
         }
 
-        // Booking yang sudah dibatalkan atau selesai tidak dapat diubah jadwalnya
-        if (in_array($booking->status, ['cancelled', 'refunded'])) {
-            $msg = 'Booking dengan status "' . $booking->status . '" tidak dapat dijadwalkan ulang.';
-            if ($request->wantsJson() || $request->ajax()) {
-                return response()->json(['success' => false, 'message' => $msg], 422);
-            }
-            return back()->withErrors(['error' => $msg]);
-        }
-
-        if ($booking->isMultiSlot()) {
-            $msg = 'Booking multi-slot tidak dapat dijadwalkan ulang per slot secara individual.';
-            if ($request->wantsJson() || $request->ajax()) {
-                return response()->json(['success' => false, 'message' => $msg], 422);
-            }
-            return back()->withErrors(['error' => $msg]);
-        }
-
-        $validated = $request->validate([
-            'schedule_id' => ['required', 'integer'],
-            'alasan'      => ['nullable', 'string', 'max:255'],
-        ]);
-
+        $validated = $request->validated();
         $newScheduleId = (int) $validated['schedule_id'];
         $alasan = $validated['alasan'] ?? 'Permintaan langsung customer walk-in di studio';
 
-        $oldDate       = $booking->tanggalbooking instanceof Carbon
-            ? $booking->tanggalbooking->toDateString()
-            : Carbon::parse($booking->tanggalbooking)->toDateString();
-        $oldTime       = substr($booking->jam, 0, 5);
-        $oldScheduleId = $booking->idschedule;
+        $result = $rescheduleBooking->execute($booking, $newScheduleId, 'owner', $alasan);
 
-        if ($oldScheduleId === $newScheduleId) {
-            $msg = 'Slot jadwal yang dipilih sama dengan jadwal booking saat ini.';
+        if (!$result['success']) {
             if ($request->wantsJson() || $request->ajax()) {
-                return response()->json(['success' => false, 'message' => $msg], 422);
+                return response()->json(['success' => false, 'message' => $result['error']], 422);
             }
-            return back()->withErrors(['error' => $msg]);
+            return back()->withErrors(['error' => $result['error']]);
         }
 
-        try {
-            DB::transaction(function () use ($booking, $newScheduleId, $tenant, $oldDate, $oldTime, $oldScheduleId, $alasan) {
-                // Lock and validate new schedule slot
-                $newSchedule = Schedule::where('id', $newScheduleId)
-                    ->where('idtenant', $tenant->id)
-                    ->where('status', 'tersedia')
-                    ->lockForUpdate()
-                    ->first();
+        $tglFormatted = Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y');
+        $jamFormatted = substr($booking->jam, 0, 5) . ' WIB';
+        $successMsg = "Jadwal booking #{$booking->booking_code} ({$booking->namapelanggan}) berhasil diubah ke {$tglFormatted} pukul {$jamFormatted}!";
 
-                if (!$newSchedule) {
-                    throw new \Exception('Slot jadwal baru tidak ditemukan atau statusnya tidak tersedia.');
-                }
-
-                // Check conflict with other active bookings
-                $slotTaken = Booking::where('idschedule', $newScheduleId)
-                    ->whereIn('status', ['pending', 'paid', 'completed'])
-                    ->where('id', '!=', $booking->id)
-                    ->exists();
-
-                if ($slotTaken) {
-                    throw new \Exception('Slot jadwal yang dipilih sudah terisi oleh pelanggan lain.');
-                }
-
-                $newDate = $newSchedule->tanggal instanceof Carbon
-                    ? $newSchedule->tanggal->toDateString()
-                    : Carbon::parse($newSchedule->tanggal)->toDateString();
-                $newTime = substr($newSchedule->jam_mulai, 0, 5);
-
-                // Update booking
-                $booking->update([
-                    'idschedule'               => $newScheduleId,
-                    'tanggalbooking'           => $newDate,
-                    'jam'                      => $newSchedule->jam_mulai,
-                    'rescheduled_from_date'    => $oldDate,
-                    'rescheduled_from_time'    => $oldTime,
-                    'rescheduled_from_schedule'=> $oldScheduleId,
-                ]);
-
-                // Record BookingLog
-                BookingLog::record(
-                    $booking->id,
-                    'rescheduled',
-                    'Jadwal diubah oleh Owner (Walk-in / On-site): ' . $alasan,
-                    [
-                        'from_date'     => $oldDate,
-                        'from_time'     => $oldTime,
-                        'from_schedule' => $oldScheduleId,
-                        'to_date'       => $newDate,
-                        'to_time'       => $newSchedule->jam_mulai,
-                        'to_schedule'   => $newScheduleId,
-                        'actor'         => auth()->user()->namalengkap ?? 'Owner',
-                        'role'          => 'owner',
-                    ]
-                );
-
-                // Clear caches for old and new dates
-                $this->clearBookingAvailabilityCache((int) $tenant->id, (int) $booking->idlayanan, $oldDate);
-                $this->clearBookingAvailabilityCache((int) $tenant->id, (int) $booking->idlayanan, $newDate);
-            });
-
-            $tglFormatted = Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y');
-            $jamFormatted = substr($booking->jam, 0, 5) . ' WIB';
-            $successMsg = "Jadwal booking #{$booking->booking_code} ({$booking->namapelanggan}) berhasil diubah ke {$tglFormatted} pukul {$jamFormatted}!";
-
-            if ($request->wantsJson() || $request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => $successMsg,
-                    'booking' => $booking->fresh()->load('layanan'),
-                ]);
-            }
-
-            return back()->with('sukses', $successMsg);
-
-        } catch (\Throwable $e) {
-            if ($request->wantsJson() || $request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                ], 422);
-            }
-
-            return back()->withErrors(['error' => $e->getMessage()]);
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $successMsg,
+                'booking' => $booking->fresh()->load('layanan'),
+            ]);
         }
+
+        return back()->with('sukses', $successMsg);
     }
 }
 

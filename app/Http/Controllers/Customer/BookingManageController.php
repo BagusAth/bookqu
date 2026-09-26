@@ -15,6 +15,9 @@ use App\Models\Schedule;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use App\Actions\Booking\CancelBooking;
+use App\Actions\Booking\RescheduleBooking;
+use App\Http\Requests\Booking\RescheduleBookingRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -219,93 +222,20 @@ class BookingManageController extends Controller
 
     // ── Cancel booking ─────────────────────────────────────────────────────────
 
-    public function cancel(Request $request, string $bookingCode)
+    public function cancel(Request $request, string $bookingCode, CancelBooking $cancelBooking)
     {
         $token   = $request->query('token');
         $booking = $this->resolveBooking($bookingCode, $token);
 
-        // ── Guard: multi-slot booking cannot be cancelled individually ──
-        if ($booking->isMultiSlot()) {
-            return back()->withErrors(['cancel' => 'Booking multi-slot tidak dapat dibatalkan per slot secara individual. Silakan hubungi pengelola bisnis.']);
+        $result = $cancelBooking->execute($booking, 'customer');
+
+        if (!$result['success']) {
+            return back()->withErrors(['cancel' => $result['error']]);
         }
 
-        // ── Guard: only paid bookings can be cancelled ──
-        if ($booking->status !== 'paid') {
-            return back()->withErrors(['cancel' => 'Booking ini tidak dapat dibatalkan (status: ' . $booking->status . ').']);
-        }
-
-        // ── Guard: cancellation policy ──
-        if (!$booking->canBeCancelled()) {
-            $cancelHours = $booking->tenant->cancel_before_hours ?? 24;
-            return back()->withErrors([
-                'cancel' => "Booking tidak dapat dibatalkan. Pembatalan hanya diizinkan minimal {$cancelHours} jam sebelum jadwal.",
-            ]);
-        }
-
-        try {
-            DB::transaction(function () use ($booking) {
-                // 1. Update booking status
-                $booking->update(['status' => 'cancelled']);
-
-                // 2. Release schedule slot (status stays 'tersedia', just the booking is gone)
-                //    The slot becomes available again automatically since booking status changed.
-
-                // 3. Create refund record
-                if ($booking->payment && $booking->payment->status === 'sukses') {
-                    Refund::create([
-                        'booking_id' => $booking->id,
-                        'payment_id' => $booking->payment->id,
-                        'jumlah'     => $booking->payment->jumlah,
-                        'status'     => 'pending',
-                        'catatan'    => 'Refund otomatis dari pembatalan booking oleh customer.',
-                    ]);
-                }
-
-                // 4. Audit log
-                BookingLog::record(
-                    $booking->id,
-                    'cancelled',
-                    'Booking dibatalkan oleh customer.',
-                    ['cancelled_at' => now()->toIso8601String()]
-                );
-
-                // 5. Clear availability cache
-                $this->clearBookingCaches(
-                    $booking->idtenant,
-                    $booking->idlayanan,
-                    $booking->tanggalbooking->toDateString()
-                );
-            });
-
-            // 6. Send cancellation email
-            try {
-                $booking->refresh()->load(['tenant.user', 'layanan', 'payment', 'refund']);
-                Mail::to($booking->email)->send(new BookingCancelledMail($booking));
-            } catch (\Throwable $e) {
-                Log::warning('BookingManage: Failed to send cancellation email', ['error' => $e->getMessage()]);
-            }
-
-            // 7. Notify owner about cancellation
-            try {
-                $owner = $booking->tenant?->user;
-                if ($owner) {
-                    $owner->notify(new \App\Notifications\BookingStatusChangedOwnerNotification($booking, 'cancelled'));
-                }
-            } catch (\Throwable $e) {
-                Log::warning('BookingManage: Failed to notify owner about cancellation', ['error' => $e->getMessage()]);
-            }
-
-            return redirect()
-                ->route('booking.manage', ['booking_code' => $bookingCode, 'token' => $token])
-                ->with('success', 'Booking berhasil dibatalkan. Email konfirmasi telah dikirim.');
-        } catch (\Throwable $e) {
-            Log::error('BookingManage: Cancel failed', [
-                'booking_id' => $booking->id,
-                'error'      => $e->getMessage(),
-            ]);
-
-            return back()->withErrors(['cancel' => 'Terjadi kesalahan saat membatalkan booking. Silakan coba lagi.']);
-        }
+        return redirect()
+            ->route('booking.manage', ['booking_code' => $bookingCode, 'token' => $token])
+            ->with('success', 'Booking berhasil dibatalkan. Email konfirmasi telah dikirim.');
     }
 
     // ── Show reschedule form ───────────────────────────────────────────────────
@@ -394,22 +324,10 @@ class BookingManageController extends Controller
 
     // ── Process reschedule ─────────────────────────────────────────────────────
 
-    public function reschedule(Request $request, string $bookingCode)
+    public function reschedule(Request $request, string $bookingCode, RescheduleBooking $rescheduleBooking)
     {
         $token   = $request->query('token');
         $booking = $this->resolveBooking($bookingCode, $token);
-
-        if ($booking->isMultiSlot()) {
-            return back()->withErrors(['reschedule' => 'Booking multi-slot tidak dapat dibatalkan atau dijadwalkan ulang per slot secara individual. Silakan hubungi pengelola bisnis.']);
-        }
-
-        if ($booking->status !== 'paid') {
-            return back()->withErrors(['reschedule' => 'Booking tidak dapat dijadwalkan ulang.']);
-        }
-
-        if (!$booking->canBeRescheduled()) {
-            return back()->withErrors(['reschedule' => 'Waktu reschedule telah habis.']);
-        }
 
         $validated = $request->validate([
             'tanggal'     => ['required', 'date', 'after_or_equal:today'],
@@ -418,131 +336,16 @@ class BookingManageController extends Controller
 
         $newDate       = Carbon::parse($validated['tanggal'])->toDateString();
         $newScheduleId = (int) $validated['schedule_id'];
-        $tenant        = $booking->tenant;
-        $service       = $booking->layanan;
 
-        $oldDate       = $booking->tanggalbooking instanceof Carbon
-            ? $booking->tanggalbooking->toDateString()
-            : Carbon::parse($booking->tanggalbooking)->toDateString();
-        $oldTime       = $booking->jam;
-        $oldScheduleId = $booking->idschedule;
+        $result = $rescheduleBooking->execute($booking, $newScheduleId, 'customer', null, $newDate);
 
-        try {
-            DB::transaction(function () use ($booking, $newDate, $newScheduleId, $tenant, $service, $oldDate, $oldTime, $oldScheduleId) {
-                // Lock and validate new schedule slot
-                $schedule = DB::table('schedules')
-                    ->where('id', $newScheduleId)
-                    ->where('idtenant', $tenant->id)
-                    ->where('idlayanan', $service->id)
-                    ->whereDate('tanggal', $newDate)
-                    ->where('status', 'tersedia')
-                    ->lockForUpdate()
-                    ->first();
-
-                if (!$schedule) {
-                    throw new \Exception('SLOT_NOT_FOUND');
-                }
-
-                $wib = 'Asia/Jakarta';
-                $nowWib = Carbon::now($wib);
-                $slotDateTime = Carbon::parse($newDate . ' ' . $schedule->jam_mulai, $wib);
-                if ($slotDateTime->lessThanOrEqualTo($nowWib)) {
-                    throw new \Exception('SLOT_NOT_FOUND');
-                }
-
-                // Check no active booking already occupies this slot (excluding current booking)
-                $slotTaken = DB::table('bookings')
-                    ->where('idschedule', $newScheduleId)
-                    ->whereIn('status', ['pending', 'paid', 'completed'])
-                    ->where('id', '!=', $booking->id)
-                    ->exists();
-
-                if ($slotTaken) {
-                    throw new \Exception('SLOT_TAKEN');
-                }
-
-                // Update booking to new slot
-                $booking->update([
-                    'idschedule'               => $newScheduleId,
-                    'tanggalbooking'            => $newDate,
-                    'jam'                       => Carbon::createFromFormat('H:i:s', $schedule->jam_mulai)->format('H:i'),
-                    'rescheduled_from_date'     => $oldDate,
-                    'rescheduled_from_time'     => $oldTime,
-                    'rescheduled_from_schedule' => $oldScheduleId,
-                ]);
-
-                // Audit log
-                BookingLog::record(
-                    $booking->id,
-                    'rescheduled',
-                    'Jadwal booking diubah oleh customer.',
-                    [
-                        'from_date'     => $oldDate,
-                        'from_time'     => $oldTime,
-                        'from_schedule' => $oldScheduleId,
-                        'to_date'       => $newDate,
-                        'to_time'       => $schedule->jam_mulai,
-                        'to_schedule'   => $newScheduleId,
-                    ]
-                );
-
-                // Clear caches for both old and new dates
-                $this->clearBookingCaches($tenant->id, $service->id, $oldDate);
-                $this->clearBookingCaches($tenant->id, $service->id, $newDate);
-            });
-
-            // Send reschedule email
-            try {
-                $booking->refresh()->load(['tenant.user', 'layanan']);
-                Mail::to($booking->email)->send(new BookingRescheduledMail($booking));
-            } catch (\Throwable $e) {
-                Log::warning('BookingManage: Failed to send reschedule email', ['error' => $e->getMessage()]);
-            }
-
-            // Notify owner about the reschedule
-            try {
-                $booking->loadMissing(['tenant.user', 'layanan']);
-                $owner = $booking->tenant?->user ?? ($tenant?->iduser ? \App\Models\User::find($tenant->iduser) : null);
-                if ($owner) {
-                    $notification = new \App\Notifications\BookingStatusChangedOwnerNotification(
-                        $booking,
-                        'rescheduled',
-                        [
-                            'old_date' => $oldDate,
-                            'old_time' => $oldTime,
-                            'new_date' => $newDate,
-                            'new_time' => $booking->jam,
-                        ]
-                    );
-
-                    try {
-                        $owner->notify($notification);
-                    } catch (\Throwable $mailException) {
-                        Log::warning('BookingManage: Mail notification to owner failed, ensuring database notification', [
-                            'error' => $mailException->getMessage(),
-                        ]);
-                        $owner->notifyNow($notification, ['database']);
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::warning('BookingManage: Failed to notify owner about reschedule', ['error' => $e->getMessage()]);
-            }
-
-            return redirect()
-                ->route('booking.manage', ['booking_code' => $bookingCode, 'token' => $token])
-                ->with('success', 'Jadwal booking berhasil diubah. Email konfirmasi telah dikirim.');
-        } catch (\Exception $e) {
-            if (in_array($e->getMessage(), ['SLOT_NOT_FOUND', 'SLOT_TAKEN'])) {
-                return back()->withErrors(['reschedule' => 'Slot waktu yang dipilih tidak tersedia. Silakan pilih waktu lain.']);
-            }
-
-            Log::error('BookingManage: Reschedule failed', [
-                'booking_id' => $booking->id,
-                'error'      => $e->getMessage(),
-            ]);
-
-            return back()->withErrors(['reschedule' => 'Terjadi kesalahan. Silakan coba lagi.']);
+        if (!$result['success']) {
+            return back()->withErrors(['reschedule' => $result['error']]);
         }
+
+        return redirect()
+            ->route('booking.manage', ['booking_code' => $bookingCode, 'token' => $token])
+            ->with('success', 'Jadwal booking berhasil diubah. Email konfirmasi telah dikirim.');
     }
 
     // ── Get available time slots for reschedule (AJAX) ─────────────────────────

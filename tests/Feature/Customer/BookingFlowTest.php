@@ -406,5 +406,62 @@ class BookingFlowTest extends TestCase
         $this->assertEquals('gagal', $payment->status);
         $this->assertEquals('cancelled', $booking->status);
     }
+
+    public function test_customer_can_process_free_checkout_without_payment_gateway(): void
+    {
+        $freeService = \App\Models\Service::withoutGlobalScopes()->create([
+            'idtenant'     => $this->tenant->id,
+            'namalayanan'  => 'Konsultasi Gratis',
+            'durasi'       => 60,
+            'harga'        => 0,
+            'is_active'    => true,
+            'category_id'  => $this->service->category_id,
+        ]);
+
+        $freeSchedule = \App\Models\Schedule::withoutGlobalScopes()->create([
+            'idtenant'       => $this->tenant->id,
+            'idlayanan'      => $freeService->id,
+            'tanggal'        => $this->tomorrow,
+            'jam_mulai'      => '14:00',
+            'jam_selesai'    => '15:00',
+            'status'         => 'tersedia',
+            'harga_override' => null,
+        ]);
+
+        $response = $this->withSession([
+            'booking' => [
+                'tenant_id'    => $this->tenant->id,
+                'service_id'   => $freeService->id,
+                'tanggal'      => $this->tomorrow,
+                'jam'          => '14:00',
+                'schedule_id'  => $freeSchedule->id,
+                'schedule_ids' => [$freeSchedule->id],
+            ]
+        ])->post('/my-business/booking/checkout', [
+            'namapelanggan' => 'Diana Free',
+            'email'         => 'diana@example.com',
+            'nomorhp'       => '081299998888',
+            'catatan'       => 'Sesi konsultasi gratis',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        $this->assertNull(session('booking'));
+
+        $this->assertDatabaseHas('payments', [
+            'idtenant' => $this->tenant->id,
+            'jumlah'   => 0,
+            'status'   => 'sukses',
+            'metode'   => 'gratis',
+        ]);
+
+        $this->assertDatabaseHas('bookings', [
+            'idtenant'       => $this->tenant->id,
+            'idlayanan'      => $freeService->id,
+            'idschedule'     => $freeSchedule->id,
+            'namapelanggan'  => 'Diana Free',
+            'status'         => 'paid',
+        ]);
+    }
 }
 

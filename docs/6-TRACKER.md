@@ -352,65 +352,46 @@ High
 
 Booking is currently the most important implementation domain.
 
-| ID             | Requirement               | Status   | Test | Architecture   | Notes                        |
-| -------------- | ------------------------- | -------- | ---- | -------------- | ---------------------------- |
-| FR-BOOKING-001 | Service selection         | Done     | PASS | Needs Refactor | Customer flow                |
-| FR-BOOKING-002 | Date selection            | Done     | PASS | Needs Refactor | Customer flow                |
-| FR-BOOKING-003 | Time selection            | Done     | PASS | Needs Refactor | Customer flow                |
-| FR-BOOKING-004 | Customer information      | Done     | PASS | Needs Refactor | Checkout                     |
-| FR-BOOKING-005 | Booking creation          | Done     | PASS | Needs Refactor | Main customer flow           |
-| FR-BOOKING-006 | Booking code              | Done     | PASS | Target         | Booking model                |
-| FR-BOOKING-007 | Booking status            | Done     | PASS | Needs Refactor | State logic distributed      |
-| FR-BOOKING-008 | Booking detail            | Done     | PASS | Needs Refactor | Owner/customer               |
-| FR-BOOKING-009 | Owner status management   | Done     | PASS | Needs Refactor | OwnerBookingController       |
-| FR-BOOKING-010 | Walk-in booking           | Done     | PASS | Needs Refactor | Current owner implementation |
-| FR-BOOKING-011 | Owner reschedule          | Done     | PASS | Needs Refactor | Existing implementation      |
-| FR-BOOKING-012 | Customer reschedule       | Done     | PASS | Needs Refactor | Tokenized management         |
-| FR-BOOKING-013 | Customer cancellation     | Done     | PASS | Needs Refactor | Tokenized management         |
-| FR-BOOKING-014 | Owner cancellation        | Done     | PASS | Needs Refactor | Existing status handling     |
-| FR-BOOKING-015 | Booking security          | Done     | PASS | Needs Refactor | Management token             |
-| FR-BOOKING-016 | Management token          | Done     | PASS | Target         | Secure token flow            |
-| FR-BOOKING-017 | Availability protection   | Done     | PASS | Needs Refactor | Validation                   |
-| FR-BOOKING-018 | Double booking protection | Verified | PASS | Target         | Concurrency tests            |
-| FR-BOOKING-019 | Tenant validation         | Verified | PASS | Target         | Integration/security tests   |
+| ID             | Requirement               | Status   | Test | Architecture   | Notes                                           |
+| -------------- | ------------------------- | -------- | ---- | -------------- | ----------------------------------------------- |
+| FR-BOOKING-001 | Service selection         | Done     | PASS | Needs Refactor | Customer flow                                   |
+| FR-BOOKING-002 | Date selection            | Done     | PASS | Needs Refactor | Customer flow                                   |
+| FR-BOOKING-003 | Time selection            | Done     | PASS | Needs Refactor | Customer flow                                   |
+| FR-BOOKING-004 | Customer information      | Done     | PASS | Target         | Validated via CreateBookingRequest              |
+| FR-BOOKING-005 | Booking creation          | Done     | PASS | Target         | Refactored to CreateBooking Action              |
+| FR-BOOKING-006 | Booking code              | Done     | PASS | Target         | Booking model                                   |
+| FR-BOOKING-007 | Booking status            | Done     | PASS | Target         | Centralized in BookingState domain              |
+| FR-BOOKING-008 | Booking detail            | Done     | PASS | Target         | Tokenized management / owner detail             |
+| FR-BOOKING-009 | Owner status management   | Done     | PASS | Target         | Refactored to UpdateBookingStatus Action        |
+| FR-BOOKING-010 | Walk-in booking           | Done     | PASS | Target         | Refactored to CreateWalkInBooking Action        |
+| FR-BOOKING-011 | Owner reschedule          | Done     | PASS | Target         | Shared RescheduleBooking Action                 |
+| FR-BOOKING-012 | Customer reschedule       | Done     | PASS | Target         | Shared RescheduleBooking Action                 |
+| FR-BOOKING-013 | Customer cancellation     | Done     | PASS | Target         | Shared CancelBooking Action                     |
+| FR-BOOKING-014 | Owner cancellation        | Done     | PASS | Target         | Shared CancelBooking Action                     |
+| FR-BOOKING-015 | Booking security          | Done     | PASS | Target         | Secure tokens + constant-time hash_equals       |
+| FR-BOOKING-016 | Management token          | Done     | PASS | Target         | Secure token flow                               |
+| FR-BOOKING-017 | Availability protection   | Done     | PASS | Target         | Centralized in BookingRules                     |
+| FR-BOOKING-018 | Double booking protection | Verified | PASS | Target         | Concurrency tests                               |
+| FR-BOOKING-019 | Tenant validation         | Verified | PASS | Target         | Integration/security tests                      |
 
 ### Booking Architecture Assessment
 
-Current implementation is functional but requires major architectural cleanup.
-
-Primary concerns:
-
-```text
-BookingController.php
-≈ 1,500 lines
-
-processCheckout()
-≈ 400+ lines
-
-Multiple controllers independently implement booking logic.
-```
-
-Target:
-
-```text
-Booking
-├── Actions
-│   ├── CreateBooking
-│   ├── CreateWalkInBooking
-│   ├── CancelBooking
-│   ├── RescheduleBooking
-│   └── UpdateBookingStatus
-│
-├── Domain
-│   ├── Availability
-│   ├── StateTransition
-│   └── BookingRules
-│
-└── Requests
-    ├── CreateBookingRequest
-    ├── RescheduleBookingRequest
-    └── UpdateBookingRequest
-```
+RF-01 (Booking Refactor) has been implemented:
+- Extracted heavy business workflows out of `BookingController`, `OwnerBookingController`, and `BookingManageController`.
+- Established `app/Actions/Booking/`:
+  - `CreateBooking`
+  - `CreateWalkInBooking`
+  - `CancelBooking`
+  - `RescheduleBooking`
+  - `UpdateBookingStatus`
+- Established `app/Domain/Booking/`:
+  - `BookingRules`
+  - `BookingState`
+- Established `app/Http/Requests/Booking/`:
+  - `CreateBookingRequest`
+  - `RescheduleBookingRequest`
+  - `UpdateBookingStatusRequest`
+- All regression and specification tests pass without changes to product behavior.
 
 ---
 
