@@ -39,8 +39,8 @@
         <div class="mt-10 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-6 text-xs text-slate-400 md:flex-row">
             <span>Copyright (c) 2026 BookQu. Hak Cipta Dilindungi Undang-Undang.</span>
             <div class="flex items-center gap-4">
-                <a href="#" class="hover:text-slate-600">Kebijakan Privasi</a>
-                <a href="#" class="hover:text-slate-600">Syarat & Ketentuan</a>
+                <a href="{{ route('privacy-policy') }}" class="hover:text-slate-600 transition-colors">Kebijakan Privasi</a>
+                <a href="{{ route('terms-conditions') }}" class="hover:text-slate-600 transition-colors">Syarat & Ketentuan</a>
             </div>
         </div>
     </div>

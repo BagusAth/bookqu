@@ -1,9 +1,10 @@
+@props(['title' => 'BookQu - Kelola Booking Bisnis Anda'])
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BookQu - Kelola Booking Bisnis Anda</title>
+    <title>{{ $title }}</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('logo_icon.png') }}">

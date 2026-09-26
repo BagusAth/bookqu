@@ -43,6 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const target = document.getElementById(targetId);
+            if (!target) {
+                return;
+            }
+
             event.preventDefault();
             setActiveLink(targetId);
             scrollToTarget(targetId);

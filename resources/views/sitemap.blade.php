@@ -5,6 +5,16 @@
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
     </url>
+    <url>
+        <loc>{{ url('/kebijakan-privasi') }}</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>{{ url('/syarat-ketentuan') }}</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
 @foreach ($tenants as $tenant)
     <url>
         <loc>{{ url('/' . $tenant->slug) }}</loc>
