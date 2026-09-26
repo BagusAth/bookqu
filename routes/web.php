@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Customer\BookingController;
 use App\Http\Controllers\Customer\BookingManageController;
 use App\Http\Controllers\Owner\OwnerAdditionalItemController;
@@ -18,7 +21,6 @@ use App\Http\Controllers\Owner\OwnerIntegrationController;
 use App\Http\Controllers\Owner\OwnerLandingPageController;
 use App\Http\Controllers\Owner\OwnerNotificationController;
 use App\Http\Controllers\Owner\OwnerPaymentSettingsController;
-use App\Http\Controllers\Owner\OwnerPortalController;
 use App\Http\Controllers\Owner\OwnerProgramController;
 use App\Http\Controllers\Owner\OwnerReviewController;
 use App\Http\Controllers\Owner\OwnerScheduleController;
@@ -29,13 +31,7 @@ use App\Http\Controllers\Owner\OwnerSubscriptionController;
 use App\Http\Controllers\Owner\OwnerVoucherController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
-use App\Models\User;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Validation\Rules\Password;
 
 Route::get('/', function () {
     return view('welcome');
@@ -57,119 +53,26 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 
 // ── Authentication Routes ──
 Route::middleware('guest')->group(function () {
-    Route::get('/login', function () {
-        return view('auth.login');
-    })->name('login');
-    
-    Route::post('/login', function (Request $request) {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
-
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()
-                ->withErrors(['email' => 'Email atau password salah.'])
-                ->onlyInput('email');
-        }
-
-        $request->session()->regenerate();
-
-        $request->session()->forget('current_tenant_id');
-
-        $user = $request->user();
-
-        if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && !$user->hasVerifiedEmail()) {
-            return redirect()->route('verification.notice');
-        }
-
-        if ($user?->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-
-        if ($user?->isOwner()) {
-            return redirect()->route('owner.dashboard');
-        }
-
-        return redirect('/');
-    })->name('login.store');
-    
-    Route::get('/register', function () {
-        return view('auth.register');
-    })->name('register');
-    
-    Route::post('/register', function (Request $request) {
-        $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:100'],
-            'email'        => ['required', 'email', 'max:100', 'unique:users,email'],
-            'nomorhp'      => ['required', 'string', 'max:20'],
-            'nama_bisnis'  => ['required', 'string', 'max:150'],
-            'jenis_bisnis' => ['required', 'string', 'max:150'],
-            'alamat'       => ['required', 'string', 'max:255'],
-            'password'     => ['required', 'confirmed', Password::min(8)],
-            'terms'        => ['accepted'],
-        ]);
-
-        $user = User::create([
-            'namalengkap' => $validated['name'],
-            'email'       => $validated['email'],
-            'password'    => Hash::make($validated['password']),
-            'nomorhp'     => $validated['nomorhp'],
-            'role'        => 'owner',
-        ]);
-
-        // FS-002 & FS-003: Buat Tenant dengan auto-generate slug dari nama bisnis
-        $slug     = \Illuminate\Support\Str::slug($validated['nama_bisnis']);
-        $slugBase = $slug;
-        $counter  = 1;
-        while (\App\Models\Tenant::where('slug', $slug)->exists()) {
-            $slug = $slugBase . '-' . $counter++;
-        }
-
-        $tenant = \App\Models\Tenant::create([
-            'iduser'      => $user->id,
-            'namabisnis'  => $validated['nama_bisnis'],
-            'jenisbisnis' => $validated['jenis_bisnis'],
-            'alamat'      => $validated['alamat'],
-            'nomorhp'     => $validated['nomorhp'],
-            'slug'        => $slug,
-        ]);
-
-        // FS-018: Buat Subscription trial 7 hari setara paket Pro via CreateTrialSubscription action
-        app(\App\Actions\Subscription\CreateTrialSubscription::class)->execute($tenant);
-
-        Auth::login($user);
-        $request->session()->regenerate();
-        $request->session()->put('current_tenant_id', $tenant->id);
-        $user->sendEmailVerificationNotification();
-
-        return redirect()->route('verification.notice');
-    })->name('register.store');
-
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+    Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 });
 
-Route::get('/email/verify', function () {
-    return view('auth.verify-email');
-})->middleware('auth')->name('verification.notice');
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
+    ->middleware('auth')
+    ->name('verification.notice');
 
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();
-    Auth::logout();
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['auth', 'signed', 'throttle:6,1'])
+    ->name('verification.verify');
 
-    return redirect()->route('login')->with('status', 'Akun berhasil diaktivasi. Silakan login.');
-})->middleware(['auth', 'signed', 'throttle:6,1'])->name('verification.verify');
-
-Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-
-    return back()->with('status', 'Link verifikasi baru sudah dikirim ke email Anda.');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.send');
 
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', function () {
-        Auth::logout();
-        return redirect('/');
-    })->name('logout');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
 
