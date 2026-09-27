@@ -88,25 +88,25 @@
         </button>
 
         {{-- Dynamic Breadcrumb --}}
-        <nav class="flex items-center gap-1.5 text-xs font-semibold text-[#6e6584]" aria-label="Breadcrumb">
-            <a href="{{ route('owner.dashboard') }}" class="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#382186] transition" title="Dashboard">
+        <nav class="flex items-center gap-1 sm:gap-1.5 text-xs font-semibold text-[#6e6584] min-w-0" aria-label="Breadcrumb">
+            <a href="{{ route('owner.dashboard') }}" class="inline-flex items-center justify-center h-8 w-8 rounded-lg text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#382186] transition shrink-0" title="Dashboard">
                 <svg class="h-3.5 w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
             </a>
             @if ($parentSection)
-                <span class="text-[#cbd5e1]">/</span>
-                <span class="hidden sm:inline-block text-[#6e6584]">{{ $parentSection }}</span>
+                <span class="text-[#cbd5e1] hidden sm:inline">/</span>
+                <span class="hidden sm:inline-block text-[#6e6584] truncate">{{ $parentSection }}</span>
             @endif
             <span class="text-[#cbd5e1]">/</span>
-            <span class="inline-flex items-center rounded-lg bg-[#f3effe] px-2.5 py-1 text-xs font-bold text-[#382186] border border-[#b499ff]/30 shadow-2xs">
+            <span class="inline-flex items-center rounded-lg bg-[#f3effe] px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-bold text-[#382186] border border-[#b499ff]/30 shadow-2xs truncate">
                 {{ $currentBreadcrumbLabel }}
             </span>
         </nav>
     </div>
 
     {{-- Right: Quick Action, View/Copy Public Link, Profile Dropdown --}}
-    <div class="flex items-center gap-2 sm:gap-3">
+    <div class="flex items-center gap-1.5 sm:gap-3">
         @if ($tenant && $tenant->slug)
             {{-- Unified Public Booking Page Action Group --}}
             <div class="inline-flex items-stretch rounded-xl border border-[#b499ff]/40 bg-[#f3effe] p-0.5 shadow-2xs">
@@ -114,11 +114,11 @@
                     href="/{{ $tenant->slug }}"
                     target="_blank"
                     rel="noopener"
-                    class="craft-btn inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold text-[#382186] hover:bg-white transition-all active:scale-[0.98]"
+                    class="craft-btn inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 sm:py-1 text-xs font-bold text-[#382186] hover:bg-white transition-all active:scale-[0.98]"
                     title="Lihat reservasi publik di tab baru"
                     id="btn-topbar-view-booking-page"
                 >
-                    <svg class="h-3.5 w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg class="h-4 w-4 sm:h-3.5 sm:w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                     </svg>
                     <span class="hidden md:inline">Booking Page</span>
@@ -133,14 +133,14 @@
                         setTimeout(() => copied = false, 2500);
                         $dispatch('toast', { message: 'Link reservasi berhasil disalin ke clipboard!', type: 'success' });
                     "
-                    class="craft-btn inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-[#382186] hover:bg-white transition-all active:scale-[0.98] cursor-pointer"
+                    class="craft-btn inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 sm:py-1 text-xs font-bold text-[#382186] hover:bg-white transition-all active:scale-[0.98] cursor-pointer"
                     title="Salin tautan reservasi publik"
                     id="btn-topbar-copy-link"
                 >
-                    <svg x-show="!copied" class="h-3.5 w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg x-show="!copied" class="h-4 w-4 sm:h-3.5 sm:w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                     </svg>
-                    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg x-show="copied" x-cloak class="h-4 w-4 sm:h-3.5 sm:w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                     <span class="hidden lg:inline text-[11px]" x-text="copied ? 'Tersalin!' : 'Salin'"></span>
@@ -207,7 +207,7 @@
                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                 x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
                 x-cloak
-                class="absolute right-0 mt-2.5 w-84 sm:w-[410px] origin-top-right rounded-3xl border border-[#e7e2f7] bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_-12px_rgba(35,26,61,0.18)] z-50 overflow-hidden divide-y divide-[#f2eefc]"
+                class="absolute right-0 mt-2.5 w-[calc(100vw-2rem)] sm:w-[390px] max-w-sm origin-top-right rounded-3xl border border-[#e7e2f7] bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_-12px_rgba(35,26,61,0.18)] z-50 overflow-hidden divide-y divide-[#f2eefc]"
                 style="display: none;"
                 id="owner-notifications-dropdown"
             >

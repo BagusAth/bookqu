@@ -3,43 +3,44 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="mx-auto max-w-7xl space-y-6">
+<div class="mx-auto max-w-7xl space-y-4 sm:space-y-6">
 
     {{-- ── Welcome Header ── --}}
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-bq-text sm:text-3xl" id="welcome-heading">
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-bq-text tracking-tight" id="welcome-heading">
                 Welcome back, {{ $tenant->user->namalengkap ?? 'Owner' }}
             </h1>
-            <p class="mt-1 text-sm text-bq-text-muted">Here's what's happening with your business today.</p>
+            <p class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-bq-text-muted">Here's what's happening with your business today.</p>
         </div>
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2 sm:gap-2.5">
             {{-- Date Indicator Badge --}}
-            <div class="hidden sm:inline-flex items-center gap-2 rounded-xl border border-bq-border bg-bq-surface px-3.5 py-2 text-xs font-semibold text-bq-text shadow-2xs">
-                <svg class="h-4 w-4 text-[#4F46E5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <div class="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl border border-bq-border bg-bq-surface px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-bq-text shadow-2xs">
+                <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#4F46E5] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                <span>{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
+                <span class="sm:hidden">{{ \Carbon\Carbon::now()->translatedFormat('d M Y') }}</span>
+                <span class="hidden sm:inline">{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
             </div>
             {{-- Quick Calendar Link --}}
-            <a href="{{ route('owner.calendar') }}" class="inline-flex items-center gap-1.5 rounded-xl border border-[#4F46E5]/20 bg-[#4F46E5]/5 px-3.5 py-2 text-xs font-bold text-[#4F46E5] hover:bg-[#4F46E5]/10 transition-colors shadow-2xs" id="btn-quick-calendar">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <a href="{{ route('owner.calendar') }}" class="inline-flex items-center gap-1.5 rounded-xl border border-[#4F46E5]/20 bg-[#4F46E5]/5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-bold text-[#4F46E5] hover:bg-[#4F46E5]/10 transition-colors shadow-2xs active:scale-95" id="btn-quick-calendar">
+                <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                <span>Kalender Reservasi</span>
+                <span class="whitespace-nowrap">Kalender</span>
             </a>
         </div>
     </div>
 
     {{-- ── Profile Completion Prompt --}}
     @if ($showProfilePrompt)
-        <div class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4" id="profile-completion-banner">
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:px-5 sm:py-4" id="profile-completion-banner">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p class="text-sm font-semibold text-amber-900">Lengkapi profil bisnis Anda</p>
                     <p class="text-xs text-amber-800">Isi data bisnis agar akun Anda siap digunakan dan URL bisnis bisa dibuat.</p>
                 </div>
-                <button @click="$dispatch('open-complete-profile')" class="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-amber-700" id="btn-complete-profile">
+                <button @click="$dispatch('open-complete-profile')" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-white transition-all hover:bg-amber-700 active:scale-95 cursor-pointer" id="btn-complete-profile">
                     Lengkapi Profil
                 </button>
             </div>
@@ -53,8 +54,8 @@
         @include('components.owner.trial-banner', ['sisahari' => $sisahari])
     @endif
 
-    {{-- ── Stat Cards (4 Overview Cards) ── --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" id="stats-grid">
+    {{-- ── Stat Cards (4 Overview Cards: 2x2 Grid on Mobile, 4 Cols on Desktop) ── --}}
+    <div class="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4" id="stats-grid">
         @include('components.owner.stat-card', [
             'ikon' => 'booking',
             'label' => 'Total Bookings',
@@ -74,24 +75,23 @@
         ])
 
         {{-- Customers Card --}}
-        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 shadow-xs transition-all hover:border-bq-border-strong hover:shadow-sm" id="stat-customers">
-            <div class="flex items-center justify-between">
-                <p class="text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Total Customers</p>
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <div class="group rounded-xl border border-bq-border bg-bq-surface p-3.5 sm:p-5 shadow-xs transition-all duration-300 hover:border-bq-border-strong hover:shadow-md" id="stat-customers">
+            <div class="flex items-start justify-between gap-1">
+                <div class="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
+                    <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                 </div>
-            </div>
-            <p class="mt-2 text-2xl font-extrabold text-bq-text tracking-tight" id="stat-customers-value">{{ number_format($totalpelanggan ?? 0) }}</p>
-            <div class="mt-2 flex items-center gap-1.5 text-xs text-bq-text-muted">
-                <span class="inline-flex items-center gap-1 font-semibold text-emerald-600">
-                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <div class="inline-flex items-center gap-1 font-semibold text-emerald-600 text-[10px] sm:text-xs shrink-0">
+                    <svg class="h-2.5 w-2.5 sm:h-3 sm:w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
                     </svg>
                     CRM
-                </span>
-                <span>Unique Clients</span>
+                </div>
+            </div>
+            <div class="mt-2.5 sm:mt-4">
+                <p class="text-[10px] sm:text-xs font-semibold tracking-wide text-bq-text-muted uppercase truncate">Total Customers</p>
+                <p class="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-extrabold text-bq-text tracking-tight truncate" id="stat-customers-value">{{ number_format($totalpelanggan ?? 0) }}</p>
             </div>
         </div>
 
@@ -108,18 +108,18 @@
     {{-- ── Revenue Chart & Daily Trends ── --}}
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {{-- Revenue Growth Chart --}}
-        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 lg:col-span-3" id="revenue-chart-card">
+        <div class="rounded-xl border border-bq-border bg-bq-surface p-4 sm:p-5 lg:col-span-3 flex flex-col justify-between" id="revenue-chart-card">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 class="text-base font-semibold text-bq-text">Revenue Growth</h2>
-                    <p class="text-sm text-bq-text-muted" id="revenue-chart-subtitle">Monthly earnings overview</p>
+                    <h2 class="text-sm sm:text-base font-semibold text-bq-text">Revenue Growth</h2>
+                    <p class="text-xs sm:text-sm text-bq-text-muted" id="revenue-chart-subtitle">Monthly earnings overview</p>
                 </div>
                 {{-- Period Toggle --}}
-                <div x-data="{ periodnya: 'monthly' }" class="flex rounded-lg border border-bq-border bg-bq-background p-0.5">
+                <div x-data="{ periodnya: 'monthly' }" class="flex rounded-lg border border-bq-border bg-bq-background p-0.5 self-start">
                     <button
                         @click="periodnya = 'weekly'; switchRevenuePeriod('weekly')"
                         :class="periodnya === 'weekly' ? 'bg-bq-primary text-white shadow-sm' : 'text-bq-text-muted hover:text-bq-text'"
-                        class="rounded-md px-3.5 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer"
+                        class="rounded-md px-3 py-1.5 sm:px-3.5 text-xs font-medium transition-all duration-200 cursor-pointer"
                         id="btn-period-weekly"
                     >
                         Weekly
@@ -127,15 +127,15 @@
                     <button
                         @click="periodnya = 'monthly'; switchRevenuePeriod('monthly')"
                         :class="periodnya === 'monthly' ? 'bg-bq-primary text-white shadow-sm' : 'text-bq-text-muted hover:text-bq-text'"
-                        class="rounded-md px-3.5 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer"
+                        class="rounded-md px-3 py-1.5 sm:px-3.5 text-xs font-medium transition-all duration-200 cursor-pointer"
                         id="btn-period-monthly"
                     >
                         Monthly
                     </button>
                 </div>
             </div>
-            <div class="mt-6">
-                <canvas id="revenue-chart" height="220"></canvas>
+            <div class="mt-4 relative h-52 sm:h-64 md:h-72 w-full">
+                <canvas id="revenue-chart"></canvas>
             </div>
         </div>
 
@@ -194,14 +194,52 @@
     {{-- ── Recent Activity & Upcoming Bookings Grid ── --}}
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {{-- Recent Bookings --}}
-        <div class="rounded-xl border border-bq-border bg-bq-surface lg:col-span-3" id="recent-activity-card">
-            <div class="flex items-center justify-between border-b border-bq-border px-5 py-4">
-                <h2 class="text-base font-semibold text-bq-text">Recent Bookings</h2>
-                <a href="{{ route('owner.bookings') }}" class="text-sm font-medium text-bq-text-muted transition-colors hover:text-bq-primary" id="link-all-activity">
-                    View All Activity →
+        <div class="rounded-xl border border-bq-border bg-bq-surface lg:col-span-3 flex flex-col" id="recent-activity-card">
+            <div class="flex items-center justify-between border-b border-bq-border px-4 py-3.5 sm:px-5 sm:py-4">
+                <div>
+                    <h2 class="text-sm sm:text-base font-semibold text-bq-text">Recent Bookings</h2>
+                    <p class="text-[11px] sm:text-xs text-bq-text-muted">Latest client reservations</p>
+                </div>
+                <a href="{{ route('owner.bookings') }}" class="text-xs sm:text-sm font-semibold text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-all-activity">
+                    View All &rarr;
                 </a>
             </div>
-            <div class="overflow-x-auto">
+
+            {{-- Mobile Card Feed View (< md screens) --}}
+            <div class="divide-y divide-bq-border md:hidden" id="activity-mobile-list">
+                @forelse ($aktivitasterbaru as $aktivitas)
+                    <div class="p-3.5 transition hover:bg-bq-background/40">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-xs font-bold text-bq-text">{{ $aktivitas->layanan->namalayanan ?? 'Layanan' }}</p>
+                                <p class="text-[11px] text-bq-text-muted mt-0.5 truncate">{{ $aktivitas->namapelanggan }}</p>
+                            </div>
+                            @php
+                                $warnastatus = match($aktivitas->status) {
+                                    'completed', 'paid' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+                                    'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
+                                    'cancelled' => 'bg-rose-50 text-rose-700 ring-rose-600/20',
+                                    default => 'bg-gray-50 text-gray-700 ring-gray-600/20',
+                                };
+                            @endphp
+                            <span class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ring-inset {{ $warnastatus }}">
+                                {{ $aktivitas->status === 'paid' ? 'confirmed' : $aktivitas->status }}
+                            </span>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between text-[11px] text-bq-text-subtle">
+                            <span>{{ $aktivitas->tanggalbooking instanceof \Carbon\Carbon ? $aktivitas->tanggalbooking->format('d M Y') : \Carbon\Carbon::parse($aktivitas->tanggalbooking)->format('d M Y') }}</span>
+                            <span class="font-medium text-bq-text">{{ substr($aktivitas->jam ?? '', 0, 5) }} WIB</span>
+                        </div>
+                    </div>
+                @empty
+                    <div class="py-8 text-center text-xs text-bq-text-muted">
+                        No booking records found yet.
+                    </div>
+                @endforelse
+            </div>
+
+            {{-- Tablet & Desktop Table View (>= md screens) --}}
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full" id="activity-table">
                     <thead>
                         <tr class="border-b border-bq-border">
@@ -390,7 +428,10 @@
                         grid: { display: false },
                         ticks: {
                             color: '#9ca3af',
-                            font: { size: 12, weight: '500' }
+                            font: { size: window.innerWidth < 640 ? 10 : 12, weight: '500' },
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: window.innerWidth < 640 ? 4 : 7,
                         },
                         border: { display: false }
                     },
@@ -401,7 +442,7 @@
                         },
                         ticks: {
                             color: '#9ca3af',
-                            font: { size: 11 },
+                            font: { size: window.innerWidth < 640 ? 10 : 11 },
                             callback: function(value) {
                                 if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
                                 if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
@@ -471,31 +512,72 @@
                 servVal.textContent = new Intl.NumberFormat('id-ID').format(data.active_services);
             }
 
-            // Update Recent Activity
+            // Update Recent Activity (Both Table & Mobile Cards)
             const tbody = document.getElementById('activity-tbody');
-            if (tbody && data.recent_activities) {
-                tbody.innerHTML = '';
-                data.recent_activities.forEach(item => {
-                    const statusText = item.status === 'paid' ? 'confirmed' : item.status;
-                    let colorClass = 'bg-gray-50 text-gray-700 ring-gray-600/20';
-                    if (item.status === 'completed' || item.status === 'paid') colorClass = 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
-                    else if (item.status === 'pending') colorClass = 'bg-amber-50 text-amber-700 ring-amber-600/20';
-                    else if (item.status === 'cancelled') colorClass = 'bg-rose-50 text-rose-700 ring-rose-600/20';
+            const mobileList = document.getElementById('activity-mobile-list');
 
-                    const row = `
-                        <tr class="transition-colors hover:bg-bq-background/50">
-                            <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">${item.program_name}</td>
-                            <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.customer_name}</td>
-                            <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.date}</td>
-                            <td class="whitespace-nowrap px-5 py-3.5 text-center">
-                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset ${colorClass}">
-                                    ${statusText}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
+            if (data.recent_activities) {
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    if (data.recent_activities.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-sm text-bq-text-muted">No booking records found yet.</td></tr>';
+                    } else {
+                        data.recent_activities.forEach(item => {
+                            const statusText = item.status === 'paid' ? 'confirmed' : item.status;
+                            let colorClass = 'bg-gray-50 text-gray-700 ring-gray-600/20';
+                            if (item.status === 'completed' || item.status === 'paid') colorClass = 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
+                            else if (item.status === 'pending') colorClass = 'bg-amber-50 text-amber-700 ring-amber-600/20';
+                            else if (item.status === 'cancelled') colorClass = 'bg-rose-50 text-rose-700 ring-rose-600/20';
+
+                            const row = `
+                                <tr class="transition-colors hover:bg-bq-background/50">
+                                    <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">${item.program_name}</td>
+                                    <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.customer_name}</td>
+                                    <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.date}</td>
+                                    <td class="whitespace-nowrap px-5 py-3.5 text-center">
+                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset ${colorClass}">
+                                            ${statusText}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `;
+                            tbody.innerHTML += row;
+                        });
+                    }
+                }
+
+                if (mobileList) {
+                    mobileList.innerHTML = '';
+                    if (data.recent_activities.length === 0) {
+                        mobileList.innerHTML = '<div class="py-8 text-center text-xs text-bq-text-muted">No booking records found yet.</div>';
+                    } else {
+                        data.recent_activities.forEach(item => {
+                            const statusText = item.status === 'paid' ? 'confirmed' : item.status;
+                            let colorClass = 'bg-gray-50 text-gray-700 ring-gray-600/20';
+                            if (item.status === 'completed' || item.status === 'paid') colorClass = 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
+                            else if (item.status === 'pending') colorClass = 'bg-amber-50 text-amber-700 ring-amber-600/20';
+                            else if (item.status === 'cancelled') colorClass = 'bg-rose-50 text-rose-700 ring-rose-600/20';
+
+                            const card = `
+                                <div class="p-3.5 transition hover:bg-bq-background/40">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="min-w-0 flex-1">
+                                            <p class="truncate text-xs font-bold text-bq-text">${item.program_name}</p>
+                                            <p class="text-[11px] text-bq-text-muted mt-0.5 truncate">${item.customer_name}</p>
+                                        </div>
+                                        <span class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ring-inset ${colorClass}">
+                                            ${statusText}
+                                        </span>
+                                    </div>
+                                    <div class="mt-2 flex items-center justify-between text-[11px] text-bq-text-subtle">
+                                        <span>${item.date}</span>
+                                    </div>
+                                </div>
+                            `;
+                            mobileList.innerHTML += card;
+                        });
+                    }
+                }
             }
         }
 
