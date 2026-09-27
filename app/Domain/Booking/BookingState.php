@@ -12,6 +12,8 @@ class BookingState
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_COMPLETED = 'completed';
 
+    public const PENDING_GRACE_MINUTES = BookingRules::PENDING_GRACE_MINUTES;
+
     /**
      * Allowed status transitions mapped from current status to target statuses.
      */
@@ -62,7 +64,7 @@ class BookingState
     /**
      * Determine if a booking with the given status and creation time occupies a schedule slot.
      */
-    public static function occupiesSlot(string $status, ?DateTimeInterface $createdAt = null, int $pendingGraceMinutes = 15): bool
+    public static function occupiesSlot(string $status, ?DateTimeInterface $createdAt = null, int $pendingGraceMinutes = self::PENDING_GRACE_MINUTES): bool
     {
         if (in_array($status, [self::STATUS_PAID, self::STATUS_COMPLETED], true)) {
             return true;

@@ -57,11 +57,7 @@ class Schedule extends Model
     {
         return $this->hasOne(Booking::class, 'idschedule')
             ->where(function ($q) {
-                $q->whereIn('status', ['paid', 'completed'])
-                  ->orWhere(function ($sub) {
-                      $sub->where('status', 'pending')
-                          ->where('created_at', '>=', now()->subMinutes(15));
-                  });
+                \App\Domain\Booking\BookingRules::applyOccupiesSlotCondition($q, '');
             });
     }
 

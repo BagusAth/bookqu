@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Schedule;
 
+use App\Domain\Booking\BookingRules;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
@@ -74,19 +75,7 @@ class AvailabilityRules
         }
 
         // 6. Slot is already booked by an active booking
-        $hasActiveBooking = Booking::withoutGlobalScopes()
-            ->where('idschedule', $schedule->id)
-            ->when($excludeBookingId !== null, fn($q) => $q->where('id', '!=', $excludeBookingId))
-            ->where(function ($q) {
-                $q->whereIn('status', ['paid', 'completed'])
-                  ->orWhere(function ($sub) {
-                      $sub->where('status', 'pending')
-                          ->where('created_at', '>=', now()->subMinutes(15));
-                  });
-            })
-            ->exists();
-
-        if ($hasActiveBooking) {
+        if (BookingRules::isSlotOccupied((int) $schedule->id, $excludeBookingId)) {
             return self::STATUS_BOOKED;
         }
 
@@ -107,7 +96,7 @@ class AvailabilityRules
     /**
      * Check if a pending booking is still holding the slot within the grace window.
      */
-    public static function isPendingBookingHoldingSlot(?DateTimeInterface $createdAt, int $graceMinutes = 15): bool
+    public static function isPendingBookingHoldingSlot(?DateTimeInterface $createdAt, int $graceMinutes = BookingRules::PENDING_GRACE_MINUTES): bool
     {
         if ($createdAt === null) {
             return false;

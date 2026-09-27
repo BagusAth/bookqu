@@ -16,9 +16,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # =========================
+      # 1. Checkout repository
+      # =========================
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # =========================
+      # 2. Setup PHP
+      # =========================
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -26,13 +32,43 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, sqlite3, curl, bcmath, fileinfo, tokenizer
           coverage: none
 
+      # =========================
+      # 3. Setup Node.js
+      # =========================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # =========================
+      # 4. Install Composer dependencies
+      # =========================
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      # =========================
+      # 5. Install Node dependencies
+      # =========================
+      - name: Install Node dependencies
+        run: npm ci
+
+      # =========================
+      # 6. Build frontend
+      # =========================
+      - name: Build frontend
+        run: npm run build
+
+      # =========================
+      # 7. Setup environment CI
+      # =========================
       - name: Prepare environment
         run: |
           cp .env.example .env.ci
           php artisan key:generate --env=ci
 
+      # =========================
+      # 8. Run Tests
+      # =========================
       - name: Run Tests
         run: php artisan test

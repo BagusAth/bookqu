@@ -55,7 +55,7 @@ class RescheduleBooking
                 return ['success' => false, 'error' => 'Waktu reschedule telah habis.'];
             }
         } else {
-            if (in_array($booking->status, [BookingState::STATUS_CANCELLED, BookingState::STATUS_REFUNDED], true)) {
+            if ($booking->status === BookingState::STATUS_CANCELLED) {
                 return ['success' => false, 'error' => 'Booking dengan status "' . $booking->status . '" tidak dapat dijadwalkan ulang.'];
             }
         }
@@ -110,6 +110,9 @@ class RescheduleBooking
                 if ($slotDateTime->lessThanOrEqualTo($nowWib)) {
                     throw new Exception('SLOT_NOT_FOUND');
                 }
+
+                // Evict any stale pending booking on the target schedule
+                app(\App\Actions\Booking\EvictStalePendingBookings::class)->execute($newScheduleId);
 
                 // Check conflict with other active bookings (excluding this booking)
                 $slotTaken = BookingRules::isSlotOccupied($newScheduleId, $booking->id);

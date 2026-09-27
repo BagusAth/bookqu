@@ -17,6 +17,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class RF09StabilityAndHardeningTest extends TestCase
@@ -442,5 +443,399 @@ class RF09StabilityAndHardeningTest extends TestCase
         // 12. Customer views invoice
         $resInvoice = $this->get('/manage/' . $booking->booking_code . '/invoice?token=' . $booking->cancellation_token);
         $resInvoice->assertStatus(200);
+    }
+
+    /**
+     * Requirement 4 & 5: Expired pending booking allows new customer booking on the same slot.
+     * Stale pending is evicted and cancelled, payment marked gagal, no unique constraint failure.
+     */
+    public function test_expired_pending_allows_new_customer_booking_and_evicts_stale_without_unique_constraint_conflict(): void
+    {
+        $targetDate = Carbon::tomorrow('Asia/Jakarta')->addDays(3)->format('Y-m-d');
+        $slot = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => $targetDate,
+            'jam_mulai'   => '15:00:00',
+            'jam_selesai' => '16:00:00',
+            'status'      => 'tersedia',
+        ]);
+
+        // Customer A booking created 25 minutes ago (exceeding 15 min grace period)
+        $stalePayment = Payment::create([
+            'idtenant'     => $this->tenant->id,
+            'order_id'     => 'ORDER-STALE-001',
+            'jumlah'       => 50000,
+            'tipe'         => 'booking',
+            'metode'       => 'midtrans',
+            'status'       => 'pending',
+            'snap_token'   => 'snap-token-stale',
+            'manage_token' => Booking::generateSecureToken(),
+            'created_at'   => Carbon::now('Asia/Jakarta')->subMinutes(25),
+        ]);
+
+        $bookingA = Booking::create([
+            'idtenant'           => $this->tenant->id,
+            'idlayanan'          => $this->service->id,
+            'idschedule'         => $slot->id,
+            'idpayment'          => $stalePayment->id,
+            'namapelanggan'      => 'Customer A Stale',
+            'nomorhp'            => '08123456701',
+            'email'              => 'customerA@example.com',
+            'tanggalbooking'     => $targetDate,
+            'jam'                => $slot->jam_mulai,
+            'status'             => BookingState::STATUS_PENDING,
+            'booking_code'       => 'BK-STALE-001',
+            'cancellation_token' => Booking::generateSecureToken(),
+            'reschedule_token'   => Booking::generateSecureToken(),
+            'created_at'         => Carbon::now('Asia/Jakarta')->subMinutes(25),
+        ]);
+
+        DB::table('payments')->where('id', $stalePayment->id)->update(['created_at' => Carbon::now('Asia/Jakarta')->subMinutes(25)]);
+        DB::table('bookings')->where('id', $bookingA->id)->update(['created_at' => Carbon::now('Asia/Jakarta')->subMinutes(25)]);
+        $bookingA->refresh();
+        $stalePayment->refresh();
+
+        // Semantic checks: stale pending booking does not occupy slot
+        $this->assertFalse(BookingState::occupiesSlot($bookingA->status, $bookingA->created_at));
+        $this->assertFalse(BookingRules::isSlotOccupied($slot->id));
+        $this->assertTrue(\App\Domain\Schedule\AvailabilityRules::isSlotAvailable($slot));
+
+        // Customer B books the same slot via full application checkout flow
+        $response = $this->withSession([
+            'booking' => [
+                'tenant_id'    => $this->tenant->id,
+                'service_id'   => $this->service->id,
+                'tanggal'      => $targetDate,
+                'jam'          => ['15:00'],
+                'schedule_ids' => [$slot->id],
+            ],
+        ])->post('/' . $this->tenant->slug . '/booking/checkout', [
+            'namapelanggan' => 'Customer B Fresh',
+            'nomorhp'       => '08123456702',
+            'email'         => 'customerB@example.com',
+            'catatan'       => 'Booking baru menggantikan yang stale',
+        ]);
+
+        // Must succeed without unique_active_booking_slot constraint violation
+        $response->assertStatus(302);
+        $this->assertDatabaseHas('bookings', [
+            'email'      => 'customerB@example.com',
+            'idschedule' => $slot->id,
+            'status'     => BookingState::STATUS_PENDING,
+        ]);
+
+        // Booking A must have been evicted and marked cancelled
+        $bookingA->refresh();
+        $this->assertSame(BookingState::STATUS_CANCELLED, $bookingA->status);
+
+        // Payment A must have been marked gagal
+        $stalePayment->refresh();
+        $this->assertSame('gagal', $stalePayment->status);
+
+        // Slot is now occupied by Customer B
+        $this->assertTrue(BookingRules::isSlotOccupied($slot->id));
+        $slot->refresh();
+        $this->assertFalse($slot->isAvailable());
+    }
+
+    /**
+     * Requirement 3: Unified pending grace period boundary semantics.
+     * 5 min -> occupied, 14 min -> occupied, 15+ min -> expired/not occupied.
+     */
+    public function test_grace_period_boundary_semantics(): void
+    {
+        $testDate = Carbon::tomorrow('Asia/Jakarta')->addDays(4)->format('Y-m-d');
+        $slot = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => $testDate,
+            'jam_mulai'   => '16:00:00',
+            'jam_selesai' => '17:00:00',
+            'status'      => 'tersedia',
+        ]);
+
+        // Case: 5 minutes old -> occupied
+        $fiveMinOld = Carbon::now('Asia/Jakarta')->subMinutes(5);
+        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $fiveMinOld));
+
+        // Case: 14 minutes old -> occupied
+        $fourteenMinOld = Carbon::now('Asia/Jakarta')->subMinutes(14);
+        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $fourteenMinOld));
+
+        // Case: 15+ minutes old -> expired / not occupied
+        $fifteenMinOld = Carbon::now('Asia/Jakarta')->subMinutes(15)->subSecond();
+        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $fifteenMinOld));
+
+        $twentyMinOld = Carbon::now('Asia/Jakarta')->subMinutes(20);
+        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $twentyMinOld));
+    }
+
+    /**
+     * Requirement 6: Owner Reschedule Regression Tests (Cases A, B, C).
+     * Ensures STATUS_REFUNDED removal did not break reschedule and enforces business rules.
+     */
+    public function test_owner_reschedule_case_a_valid_reschedule_to_empty_slot(): void
+    {
+        $date1 = Carbon::tomorrow('Asia/Jakarta')->addDays(5)->format('Y-m-d');
+        $date2 = Carbon::tomorrow('Asia/Jakarta')->addDays(6)->format('Y-m-d');
+
+        $slot1 = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => $date1,
+            'jam_mulai'   => '09:00:00',
+            'jam_selesai' => '10:00:00',
+            'status'      => 'tersedia',
+        ]);
+
+        $slot2 = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => $date2,
+            'jam_mulai'   => '11:00:00',
+            'jam_selesai' => '12:00:00',
+            'status'      => 'tersedia',
+        ]);
+
+        $payment = Payment::create([
+            'idtenant'     => $this->tenant->id,
+            'order_id'     => 'ORDER-OWNER-RESCHED-01',
+            'jumlah'       => 50000,
+            'tipe'         => 'booking',
+            'metode'       => 'midtrans',
+            'status'       => 'sukses',
+            'snap_token'   => 'fake-snap-token',
+            'manage_token' => Booking::generateSecureToken(),
+        ]);
+
+        $booking = Booking::create([
+            'idtenant'           => $this->tenant->id,
+            'idlayanan'          => $this->service->id,
+            'idschedule'         => $slot1->id,
+            'idpayment'          => $payment->id,
+            'namapelanggan'      => 'Owner Reschedule Test User',
+            'nomorhp'            => '08123456703',
+            'email'              => 'ownerresched@example.com',
+            'tanggalbooking'     => $date1,
+            'jam'                => $slot1->jam_mulai,
+            'status'             => BookingState::STATUS_PAID,
+            'booking_code'       => 'BK-OWN-RES-01',
+            'cancellation_token' => Booking::generateSecureToken(),
+            'reschedule_token'   => Booking::generateSecureToken(),
+        ]);
+
+        $this->assertTrue(BookingRules::isSlotOccupied($slot1->id));
+        $this->assertFalse(BookingRules::isSlotOccupied($slot2->id));
+
+        // Case A: Owner reschedules to empty slot2
+        $response = $this->actingAs($this->owner)
+            ->post("/owner/bookings/{$booking->id}/reschedule", [
+                'schedule_id' => $slot2->id,
+                'alasan'      => 'Permintaan langsung customer walk-in di studio',
+            ]);
+
+        $response->assertSessionHas('sukses');
+        $booking->refresh();
+
+        // 1. Reschedule succeeded and moved to slot2
+        $this->assertSame($slot2->id, (int) $booking->idschedule);
+        $this->assertSame($date2, Carbon::parse($booking->tanggalbooking)->toDateString());
+        $this->assertSame(substr($slot2->jam_mulai, 0, 5), substr($booking->jam, 0, 5));
+
+        // 2. Status remains paid
+        $this->assertSame(BookingState::STATUS_PAID, $booking->status);
+
+        // 3. Payment reference consistent
+        $this->assertSame($payment->id, (int) $booking->idpayment);
+
+        // 4. Old slot no longer occupied
+        $this->assertFalse(BookingRules::isSlotOccupied($slot1->id));
+
+        // 5. New slot is occupied
+        $this->assertTrue(BookingRules::isSlotOccupied($slot2->id));
+    }
+
+    public function test_owner_reschedule_case_b_to_occupied_slot_is_rejected(): void
+    {
+        $date = Carbon::tomorrow('Asia/Jakarta')->addDays(7)->format('Y-m-d');
+
+        $slot1 = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => $date,
+            'jam_mulai'   => '13:00:00',
+            'jam_selesai' => '14:00:00',
+            'status'      => 'tersedia',
+        ]);
+
+        $slot2 = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => $date,
+            'jam_mulai'   => '14:00:00',
+            'jam_selesai' => '15:00:00',
+            'status'      => 'tersedia',
+        ]);
+
+        $booking1 = Booking::create([
+            'idtenant'           => $this->tenant->id,
+            'idlayanan'          => $this->service->id,
+            'idschedule'         => $slot1->id,
+            'namapelanggan'      => 'User One',
+            'nomorhp'            => '08123456704',
+            'email'              => 'userone@example.com',
+            'tanggalbooking'     => $date,
+            'jam'                => $slot1->jam_mulai,
+            'status'             => BookingState::STATUS_PAID,
+            'booking_code'       => 'BK-OWN-RES-02A',
+            'cancellation_token' => Booking::generateSecureToken(),
+            'reschedule_token'   => Booking::generateSecureToken(),
+        ]);
+
+        $booking2 = Booking::create([
+            'idtenant'           => $this->tenant->id,
+            'idlayanan'          => $this->service->id,
+            'idschedule'         => $slot2->id,
+            'namapelanggan'      => 'User Two Occupying Slot 2',
+            'nomorhp'            => '08123456705',
+            'email'              => 'usertwo@example.com',
+            'tanggalbooking'     => $date,
+            'jam'                => $slot2->jam_mulai,
+            'status'             => BookingState::STATUS_PAID,
+            'booking_code'       => 'BK-OWN-RES-02B',
+            'cancellation_token' => Booking::generateSecureToken(),
+            'reschedule_token'   => Booking::generateSecureToken(),
+        ]);
+
+        // Case B: Owner tries to reschedule booking1 to already occupied slot2
+        $response = $this->actingAs($this->owner)
+            ->post("/owner/bookings/{$booking1->id}/reschedule", [
+                'schedule_id' => $slot2->id,
+            ]);
+
+        $response->assertSessionHasErrors('error');
+        $booking1->refresh();
+
+        // Booking 1 must remain on slot1 without partial mutation
+        $this->assertSame($slot1->id, (int) $booking1->idschedule);
+        $this->assertSame(substr($slot1->jam_mulai, 0, 5), substr($booking1->jam, 0, 5));
+    }
+
+    public function test_owner_reschedule_case_c_cancelled_booking_is_rejected_without_fatal_error(): void
+    {
+        $date = Carbon::tomorrow('Asia/Jakarta')->addDays(8)->format('Y-m-d');
+
+        $slot1 = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => $date,
+            'jam_mulai'   => '15:00:00',
+            'jam_selesai' => '16:00:00',
+            'status'      => 'tersedia',
+        ]);
+
+        $slot2 = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => $date,
+            'jam_mulai'   => '16:00:00',
+            'jam_selesai' => '17:00:00',
+            'status'      => 'tersedia',
+        ]);
+
+        $cancelledBooking = Booking::create([
+            'idtenant'           => $this->tenant->id,
+            'idlayanan'          => $this->service->id,
+            'idschedule'         => $slot1->id,
+            'namapelanggan'      => 'Cancelled User',
+            'nomorhp'            => '08123456706',
+            'email'              => 'cancelleduser@example.com',
+            'tanggalbooking'     => $date,
+            'jam'                => $slot1->jam_mulai,
+            'status'             => BookingState::STATUS_CANCELLED,
+            'booking_code'       => 'BK-OWN-RES-03',
+            'cancellation_token' => Booking::generateSecureToken(),
+            'reschedule_token'   => Booking::generateSecureToken(),
+        ]);
+
+        // Case C: Owner tries to reschedule a cancelled booking.
+        // Must be rejected with a clean validation error and NOT crash with undefined constant STATUS_REFUNDED.
+        $response = $this->actingAs($this->owner)
+            ->post("/owner/bookings/{$cancelledBooking->id}/reschedule", [
+                'schedule_id' => $slot2->id,
+            ]);
+
+        $response->assertSessionHasErrors('error');
+        $cancelledBooking->refresh();
+        $this->assertSame(BookingState::STATUS_CANCELLED, $cancelledBooking->status);
+        $this->assertSame($slot1->id, (int) $cancelledBooking->idschedule);
+    }
+
+    /**
+     * Requirement 4 & 5: Concurrency / duplicate booking attempt protection.
+     * Ensures only one booking succeeds and no duplicate active booking is created.
+     */
+    public function test_concurrent_duplicate_booking_attempt_results_in_only_one_active_booking(): void
+    {
+        $targetDate = Carbon::tomorrow('Asia/Jakarta')->addDays(9)->format('Y-m-d');
+        $slot = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => $targetDate,
+            'jam_mulai'   => '10:00:00',
+            'jam_selesai' => '11:00:00',
+            'status'      => 'tersedia',
+        ]);
+
+        // Attempt 1: Customer 1 books the slot via full checkout flow
+        $res1 = $this->withSession([
+            'booking' => [
+                'tenant_id'    => $this->tenant->id,
+                'service_id'   => $this->service->id,
+                'tanggal'      => $targetDate,
+                'jam'          => ['10:00'],
+                'schedule_ids' => [$slot->id],
+            ],
+        ])->post('/' . $this->tenant->slug . '/booking/checkout', [
+            'namapelanggan' => 'First Concurrent User',
+            'nomorhp'       => '08123456711',
+            'email'         => 'first@example.com',
+            'catatan'       => null,
+        ]);
+
+        $res1->assertStatus(302);
+        $this->assertDatabaseHas('bookings', [
+            'email'      => 'first@example.com',
+            'idschedule' => $slot->id,
+            'status'     => BookingState::STATUS_PENDING,
+        ]);
+
+        // Attempt 2: Customer 2 attempts to book the exact same slot immediately
+        $res2 = $this->withSession([
+            'booking' => [
+                'tenant_id'    => $this->tenant->id,
+                'service_id'   => $this->service->id,
+                'tanggal'      => $targetDate,
+                'jam'          => ['10:00'],
+                'schedule_ids' => [$slot->id],
+            ],
+        ])->post('/' . $this->tenant->slug . '/booking/checkout', [
+            'namapelanggan' => 'Second Concurrent User',
+            'nomorhp'       => '08123456712',
+            'email'         => 'second@example.com',
+            'catatan'       => null,
+        ]);
+
+        // Attempt 2 must be cleanly rejected
+        $res2->assertSessionHasErrors('jam');
+
+        // Exactly 1 active booking must exist for this schedule
+        $activeBookingsCount = Booking::withoutGlobalScopes()
+            ->where('idschedule', $slot->id)
+            ->whereIn('status', [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
+            ->count();
+
+        $this->assertSame(1, $activeBookingsCount);
     }
 }

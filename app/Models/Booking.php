@@ -186,4 +186,12 @@ class Booking extends Model
         $amount = (float) ($this->schedule?->harga_override ?? $this->layanan?->harga ?? 0);
         return 'Rp ' . number_format($amount, 0, ',', '.');
     }
+
+    /**
+     * Scope query to bookings that actively occupy a schedule slot.
+     */
+    public function scopeOccupiesSlot($query, string $prefix = '')
+    {
+        return \App\Domain\Booking\BookingRules::applyOccupiesSlotCondition($query, $prefix);
+    }
 }

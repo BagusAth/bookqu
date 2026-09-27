@@ -97,6 +97,9 @@ class CreateBooking
                 return ['error' => 'Satu atau lebih jadwal tidak ditemukan atau tidak tersedia.'];
             }
 
+            // Evict stale pending bookings older than grace period on the selected schedules
+            app(\App\Actions\Booking\EvictStalePendingBookings::class)->execute($scheduleIds);
+
             $orderedSchedules = [];
             foreach ($scheduleIds as $sid) {
                 $schedule = $lockedSchedules->get($sid);

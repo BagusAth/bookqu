@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class BookingRules
 {
+    public const PENDING_GRACE_MINUTES = 15;
     /**
      * Validate that multi-slot schedules are contiguous without any gaps.
      * Assumes schedules are already sorted by jam_mulai ascending.
@@ -61,21 +62,45 @@ class BookingRules
     }
 
     /**
+     * Apply the slot-occupying conditions to a query builder, join clause, or eloquent builder.
+     *
+     * ACTIVE/OCCUPIED:
+     * - paid
+     * - completed
+     * - pending only if within PENDING_GRACE_MINUTES (15 minutes)
+     *
+     * NOT OCCUPIED:
+     * - cancelled
+     * - pending exceeding PENDING_GRACE_MINUTES
+     *
+     * @param mixed $query
+     * @param string $prefix
+     * @return mixed
+     */
+    public static function applyOccupiesSlotCondition(mixed $query, string $prefix = 'bookings.'): mixed
+    {
+        $prefix = $prefix !== '' ? rtrim($prefix, '.') . '.' : '';
+        $cutoff = now()->subMinutes(self::PENDING_GRACE_MINUTES);
+
+        return $query->where(function ($q) use ($prefix, $cutoff) {
+            $q->whereIn($prefix . 'status', [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
+              ->orWhere(function ($sub) use ($prefix, $cutoff) {
+                  $sub->where($prefix . 'status', BookingState::STATUS_PENDING)
+                      ->where($prefix . 'created_at', '>=', $cutoff);
+              });
+        });
+    }
+
+    /**
      * Check if a slot is already occupied by an active booking.
      */
     public static function isSlotOccupied(int $scheduleId, ?int $excludeBookingId = null): bool
     {
-        return DB::table('bookings')
+        $query = DB::table('bookings')
             ->where('idschedule', $scheduleId)
-            ->when($excludeBookingId !== null, fn($q) => $q->where('id', '!=', $excludeBookingId))
-            ->where(function ($q) {
-                $q->whereIn('status', [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
-                  ->orWhere(function ($sub) {
-                      $sub->where('status', BookingState::STATUS_PENDING)
-                          ->where('created_at', '>=', now()->subMinutes(15));
-                  });
-            })
-            ->exists();
+            ->when($excludeBookingId !== null, fn($q) => $q->where('id', '!=', $excludeBookingId));
+
+        return self::applyOccupiesSlotCondition($query, '')->exists();
     }
 
     /**

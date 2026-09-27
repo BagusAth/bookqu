@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Schedule;
 
+use App\Domain\Booking\BookingRules;
 use App\Domain\Schedule\AvailabilityRules;
 use App\Models\Booking;
 use App\Models\Schedule;
@@ -49,14 +50,8 @@ class GetAvailableSchedules
         return Cache::remember($cacheKey, now()->addSeconds(60), function () use ($tenant, $service, $minDate, $maxDate, $todayStr, $nowTimeStr) {
             $rows = DB::table('schedules')
                 ->leftJoin('bookings', function ($join) {
-                    $join->on('schedules.id', '=', 'bookings.idschedule')
-                        ->where(function ($q) {
-                            $q->whereIn('bookings.status', ['paid', 'completed'])
-                              ->orWhere(function ($sub) {
-                                  $sub->where('bookings.status', 'pending')
-                                      ->where('bookings.created_at', '>=', now()->subMinutes(15));
-                              });
-                        });
+                    $join->on('schedules.id', '=', 'bookings.idschedule');
+                    BookingRules::applyOccupiesSlotCondition($join, 'bookings.');
                 })
                 ->where('schedules.idtenant', $tenant->id)
                 ->where('schedules.idlayanan', $service->id)
@@ -108,14 +103,8 @@ class GetAvailableSchedules
 
         $query = DB::table('schedules')
             ->leftJoin('bookings', function ($join) {
-                $join->on('schedules.id', '=', 'bookings.idschedule')
-                    ->where(function ($q) {
-                        $q->whereIn('bookings.status', ['paid', 'completed'])
-                          ->orWhere(function ($sub) {
-                              $sub->where('bookings.status', 'pending')
-                                  ->where('bookings.created_at', '>=', now()->subMinutes(15));
-                          });
-                    });
+                $join->on('schedules.id', '=', 'bookings.idschedule');
+                BookingRules::applyOccupiesSlotCondition($join, 'bookings.');
             })
             ->where('schedules.idtenant', $tenant->id)
             ->where('schedules.idlayanan', $service->id)
@@ -147,14 +136,8 @@ class GetAvailableSchedules
         $scheduleRows = Cache::remember($cacheKey, now()->addSeconds(300), function () use ($tenant, $service, $dateStr) {
             return DB::table('schedules')
                 ->leftJoin('bookings', function ($join) {
-                    $join->on('schedules.id', '=', 'bookings.idschedule')
-                        ->where(function ($q) {
-                            $q->whereIn('bookings.status', ['paid', 'completed'])
-                              ->orWhere(function ($sub) {
-                                  $sub->where('bookings.status', 'pending')
-                                      ->where('bookings.created_at', '>=', now()->subMinutes(15));
-                              });
-                        });
+                    $join->on('schedules.id', '=', 'bookings.idschedule');
+                    BookingRules::applyOccupiesSlotCondition($join, 'bookings.');
                 })
                 ->where('schedules.idtenant', $tenant->id)
                 ->where('schedules.idlayanan', $service->id)
@@ -255,8 +238,8 @@ class GetAvailableSchedules
         $takenSlotIds = Booking::withoutGlobalScopes()
             ->where('idtenant', $tenant->id)
             ->whereDate('tanggalbooking', $date)
-            ->whereIn('status', ['pending', 'paid', 'completed'])
             ->when($excludeBookingId !== null, fn($q) => $q->where('id', '!=', $excludeBookingId))
+            ->tap(fn($q) => BookingRules::applyOccupiesSlotCondition($q, ''))
             ->pluck('idschedule')
             ->filter()
             ->toArray();
@@ -297,8 +280,8 @@ class GetAvailableSchedules
             return DB::table('schedules')
                 ->leftJoin('bookings', function ($join) use ($excludeBookingId) {
                     $join->on('schedules.id', '=', 'bookings.idschedule')
-                        ->whereIn('bookings.status', ['pending', 'paid', 'completed'])
                         ->where('bookings.id', '!=', $excludeBookingId);
+                    BookingRules::applyOccupiesSlotCondition($join, 'bookings.');
                 })
                 ->where('schedules.idtenant', $tenant->id)
                 ->where('schedules.idlayanan', $service->id)

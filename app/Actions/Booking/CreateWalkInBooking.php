@@ -44,6 +44,9 @@ class CreateWalkInBooking
                 return null;
             }
 
+            // Evict any stale pending booking on the target schedule
+            app(\App\Actions\Booking\EvictStalePendingBookings::class)->execute((int) $schedule->id);
+
             // Check if slot already has an active booking via domain rule
             if (BookingRules::isSlotOccupied((int) $schedule->id)) {
                 return null;
