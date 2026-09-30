@@ -1406,55 +1406,66 @@ Baseline Commit:
 ccbcef00ad8726c1cef4ee56e6a2345c5941fbf8
 
 Current Commit:
-<commit>
+5ff9784
 
 Payment Application Operations:
-<list>
+- app/Actions/Payment/CreateBookingPayment.php
+- app/Actions/Payment/CreateSubscriptionPayment.php
+- app/Actions/Payment/CheckPaymentStatus.php
+- app/Actions/Payment/SynchronizePaymentStatus.php
+- app/Actions/Payment/ExpirePayment.php
+- app/Actions/Payment/ProcessPaymentWebhook.php
 
 Payment Domain Components:
-<list>
+- app/Domain/Payment/PaymentState.php
+- app/Domain/Payment/PaymentRules.php
 
 Provider / Infrastructure Components:
-<list>
+- app/Infrastructure/Payments/Contracts/PaymentGatewayInterface.php
+- app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php
 
 Midtrans Coupling Removed:
-<summary>
+Midtrans direct SDK calls isolated behind PaymentGatewayInterface and MidtransPaymentGateway; domain and application actions operate on payment abstractions.
 
 Controllers Changed:
-<list>
+- app/Http/Controllers/Customer/MidtransWebhookController.php
+- app/Http/Controllers/Owner/OwnerCheckoutController.php
 
 Services Changed:
-<list>
+- app/Services/MidtransPaymentService.php
 
 Models Changed:
-<list>
+- app/Models/Payment.php
 
 Tests Added:
-<list>
+- tests/Unit/Domain/PaymentStateTest.php
+- tests/Unit/Domain/PaymentRulesTest.php
+- tests/Feature/Payment/PaymentActionTest.php
 
 Tests Executed:
-<list>
+- php artisan test tests/Feature/Payment/PaymentActionTest.php
+- php artisan test tests/Feature/Owner/CheckoutMidtransTest.php
 
 Test Result:
-<result>
+PASS
 
 Requirements Covered:
-<IDs>
+FR-PAYMENT-001 through FR-PAYMENT-010
 
 Behavior Changes:
 None, unless explicitly documented.
 
 Remaining Payment Debt:
-<list>
+None for RF-02 scope.
 
 Tracker Updated:
-Yes/No
+Yes
 
 Architecture Documentation Updated:
-Yes/No
+Yes
 
 Blockers:
-<list>
+None
 ```
 
 ---

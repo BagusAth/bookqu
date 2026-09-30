@@ -50,10 +50,11 @@ Foundation Deliverables
 │   ├── RF-05-PRESENTATION.md
 │   ├── RF-06-SUBSCRIPTION.md
 │   ├── RF-07-CLEANUP-ALIGNMENT.md
-│   └── RF-08-FINAL-AUDIT.md
+│   ├── RF-08-FINAL-AUDIT.md
+│   └── RF-09-HARDENING.md
 │
 └── Test Baseline & Characterization
-    └── php artisan test baseline recording (301 tests passing)
+    └── php artisan test baseline recording (315 tests passing)
 ```
 
 ---
@@ -73,6 +74,7 @@ The refactoring roadmap is executed strictly in bounded, test-gated phases:
 | **RF-06** | **Subscription** | `SubscriptionState`, `PlanCapability`, `EntitlementRules`, `SubscriptionUsage`, subscription actions | **Completed** |
 | **RF-07** | **Cleanup & Alignment** | Route closure extraction into Auth controllers, form requests, dead code removal | **Completed** |
 | **RF-08** | **Final Audit** | Complete multi-dimensional audit, cross-domain integrity verification, sign-off | **Completed** |
+| **RF-09** | **Stability & Hardening** | Booking flow stability, timezone hardening, payment expiry lifecycle, token scoping, CI regression | **Completed** |
 
 ---
 

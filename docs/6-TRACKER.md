@@ -7,9 +7,9 @@
 > **Requirements:** `docs/REQUIREMENTS.md`
 > **Architecture:** `docs/ARCHITECTURE.md`
 > **Development Workflow:** `docs/DEVELOPMENT.md`
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-30
 >
-> This document tracks the implementation state of BookQu against the current requirements baseline.
+> This document tracks the implementation state of BookQu against the current requirements baseline (Post-Refactor RF-00 through RF-09, 315 tests passing).
 >
 > This tracker replaces the previous feature tracker as the primary implementation tracking reference.
 
@@ -351,9 +351,9 @@ Booking is currently the most important implementation domain.
 
 | ID             | Requirement               | Status   | Test | Architecture   | Notes                                           |
 | -------------- | ------------------------- | -------- | ---- | -------------- | ----------------------------------------------- |
-| FR-BOOKING-001 | Service selection         | Done     | PASS | Needs Refactor | Customer flow                                   |
-| FR-BOOKING-002 | Date selection            | Done     | PASS | Needs Refactor | Customer flow                                   |
-| FR-BOOKING-003 | Time selection            | Done     | PASS | Needs Refactor | Customer flow                                   |
+| FR-BOOKING-001 | Service selection         | Done     | PASS | Target         | Customer flow & actions (RF-01/RF-05/RF-09)     |
+| FR-BOOKING-002 | Date selection            | Done     | PASS | Target         | Customer flow & actions (RF-01/RF-05/RF-09)     |
+| FR-BOOKING-003 | Time selection            | Done     | PASS | Target         | Customer flow & actions (RF-01/RF-05/RF-09)     |
 | FR-BOOKING-004 | Customer information      | Done     | PASS | Target         | Validated via CreateBookingRequest              |
 | FR-BOOKING-005 | Booking creation          | Done     | PASS | Target         | Refactored to CreateBooking Action              |
 | FR-BOOKING-006 | Booking code              | Done     | PASS | Target         | Booking model                                   |
@@ -396,12 +396,12 @@ RF-01 (Booking Refactor) has been implemented:
 
 | ID               | Requirement             | Status   | Test | Architecture   | Notes                      |
 | ---------------- | ----------------------- | -------- | ---- | -------------- | -------------------------- |
-| FR-MULTIBOOK-001 | Multi-slot selection    | Done     | PASS | Needs Refactor | Production logic tests     |
-| FR-MULTIBOOK-002 | Slot compatibility      | Verified | PASS | Needs Refactor | Contiguous-slot validation |
-| FR-MULTIBOOK-003 | Unified payment         | Verified | PASS | Needs Refactor | Payment group              |
-| FR-MULTIBOOK-004 | Unified invoice         | Verified | PASS | Needs Refactor | Group invoice              |
-| FR-MULTIBOOK-005 | Multi-slot cancellation | Verified | PASS | Needs Refactor | Explicit restrictions      |
-| FR-MULTIBOOK-006 | Multi-slot reschedule   | Verified | PASS | Needs Refactor | Explicit restrictions      |
+| FR-MULTIBOOK-001 | Multi-slot selection    | Done     | PASS | Target         | Multi-slot checkout flow & validation      |
+| FR-MULTIBOOK-002 | Slot compatibility      | Verified | PASS | Target         | SlotCompatibilityRules & contiguous check  |
+| FR-MULTIBOOK-003 | Unified payment         | Verified | PASS | Target         | Payment group management (CreateBooking)   |
+| FR-MULTIBOOK-004 | Unified invoice         | Verified | PASS | Target         | Group invoice & payment synchronization    |
+| FR-MULTIBOOK-005 | Multi-slot cancellation | Verified | PASS | Target         | Atomic group cancellation (CancelBooking)  |
+| FR-MULTIBOOK-006 | Multi-slot reschedule   | Verified | PASS | Target         | Reschedule restrictions (RescheduleBooking)|
 
 Existing tests include multi-slot checkout, payment grouping, invoice behavior, cancellation, and rescheduling constraints.
 
@@ -411,11 +411,11 @@ Existing tests include multi-slot checkout, payment grouping, invoice behavior, 
 
 | ID              | Requirement        | Status      | Test           | Architecture       | Notes                        |
 | --------------- | ------------------ | ----------- | -------------- | ------------------ | ---------------------------- |
-| FR-CUSTOMER-001 | Customer record    | Done        | PASS           | Needs Refactor     | Booking-linked customer data |
-| FR-CUSTOMER-002 | Customer directory | Done        | PASS           | Needs Refactor     | Owner module                 |
-| FR-CUSTOMER-003 | Booking history    | Done        | PASS           | PARTIAL            | Owner/customer flows         |
-| FR-CUSTOMER-004 | Customer notes     | Implemented | PASS           | Needs Refactor     | CustomerNote model           |
-| FR-CUSTOMER-005 | Customer privacy   | Implemented | PASS / PARTIAL | Needs Verification | Requires ongoing audit       |
+| FR-CUSTOMER-001 | Customer record    | Done        | PASS           | Target         | Booking-linked customer data               |
+| FR-CUSTOMER-002 | Customer directory | Done        | PASS           | Target         | GetCustomerDetail action & partials (RF-04)|
+| FR-CUSTOMER-003 | Booking history    | Done        | PASS           | Target         | Owner customer history queries             |
+| FR-CUSTOMER-004 | Customer notes     | Implemented | PASS           | Target         | SaveCustomerNote action & request (RF-04)  |
+| FR-CUSTOMER-005 | Customer privacy   | Implemented | PASS           | Target         | Tenant isolation fail-closed protection    |
 
 ---
 
@@ -460,13 +460,13 @@ RF-02 (Payment Refactor) has been implemented:
 
 | ID            | Requirement           | Status | Test | Architecture   | Notes               |
 | ------------- | --------------------- | ------ | ---- | -------------- | ------------------- |
-| FR-MANAGE-001 | Secure booking access | Done   | PASS | Needs Refactor | `/manage`           |
-| FR-MANAGE-002 | Secure token          | Done   | PASS | Needs Refactor | Token-based access  |
-| FR-MANAGE-003 | Booking details       | Done   | PASS | Needs Refactor | Customer management |
-| FR-MANAGE-004 | Payment information   | Done   | PASS | Needs Refactor | Payment group       |
-| FR-MANAGE-005 | Cancellation          | Done   | PASS | Needs Refactor | Customer manage     |
-| FR-MANAGE-006 | Rescheduling          | Done   | PASS | Needs Refactor | Customer manage     |
-| FR-MANAGE-007 | Review submission     | Done   | PASS | Needs Refactor | Customer review     |
+| FR-MANAGE-001 | Secure booking access | Done   | PASS | Target         | BookingManageController & partials (RF-05) |
+| FR-MANAGE-002 | Secure token          | Done   | PASS | Target         | Scoped token isolation (RF-09 P1-01)       |
+| FR-MANAGE-003 | Booking details       | Done   | PASS | Target         | Tokenized guest booking management         |
+| FR-MANAGE-004 | Payment information   | Done   | PASS | Target         | Payment group detail & status sync         |
+| FR-MANAGE-005 | Cancellation          | Done   | PASS | Target         | CancelBooking action & scoped token guard  |
+| FR-MANAGE-006 | Rescheduling          | Done   | PASS | Target         | RescheduleBooking action & scoped token    |
+| FR-MANAGE-007 | Review submission     | Done   | PASS | Target         | Customer review submission                 |
 
 ---
 
@@ -605,10 +605,10 @@ The current calendar view Blade file will be refined under RF-05 Presentation la
 
 | ID                | Requirement         | Status      | Test             | Architecture   | Notes               |
 | ----------------- | ------------------- | ----------- | ---------------- | -------------- | ------------------- |
-| FR-APPEARANCE-001 | Logo                | Implemented | MANUAL / PARTIAL | Needs Refactor | Public presentation |
-| FR-APPEARANCE-002 | Brand color         | Implemented | MANUAL           | Needs Refactor | Current appearance  |
-| FR-APPEARANCE-003 | Banner / cover      | Implemented | MANUAL           | Needs Refactor | Asset integration   |
-| FR-APPEARANCE-004 | Public presentation | Implemented | MANUAL / PARTIAL | Needs Refactor | Needs visual QA     |
+| FR-APPEARANCE-001 | Logo                | Implemented | MANUAL / PARTIAL | Target         | OwnerAppearanceController & Action (RF-04) |
+| FR-APPEARANCE-002 | Brand color         | Implemented | MANUAL           | Target         | UpdateAppearanceSettings Action (RF-04)    |
+| FR-APPEARANCE-003 | Banner / cover      | Implemented | MANUAL           | Target         | Asset integration via appearance action    |
+| FR-APPEARANCE-004 | Public presentation | Implemented | MANUAL / PARTIAL | Target         | Public appearance presentation             |
 
 ---
 
@@ -639,17 +639,17 @@ The current calendar view Blade file will be refined under RF-05 Presentation la
 
 | ID         | Requirement            | Status      | Test           | Architecture   | Notes                   |
 | ---------- | ---------------------- | ----------- | -------------- | -------------- | ----------------------- |
-| FR-SUB-001 | Subscription plans     | Done        | PASS           | Needs Refactor | Plan model              |
-| FR-SUB-002 | Tenant subscription    | Done        | PASS           | Needs Refactor | Subscription model      |
-| FR-SUB-003 | Trial                  | Implemented | PASS           | Needs Refactor | Existing lifecycle      |
-| FR-SUB-004 | Subscription status    | Done        | PASS           | Needs Refactor | Lifecycle states        |
-| FR-SUB-005 | Feature access         | Implemented | PASS           | Needs Refactor | Middleware              |
-| FR-SUB-006 | Feature entitlement    | Implemented | PARTIAL        | Needs Refactor | Centralization required |
-| FR-SUB-007 | Subscription payment   | Implemented | PASS           | Needs Refactor | Owner checkout          |
-| FR-SUB-008 | Subscription callback  | Implemented | PASS           | Needs Refactor | Payment lifecycle       |
-| FR-SUB-009 | Subscription lifecycle | Implemented | PASS           | Needs Refactor | Scheduler/console       |
-| FR-SUB-010 | Usage limits           | Implemented | PASS / PARTIAL | Needs Refactor | Requires central rule   |
-| FR-SUB-011 | Usage tracking         | Implemented | PARTIAL        | Needs Refactor | UsageLog                |
+| FR-SUB-001 | Subscription plans     | Done        | PASS           | Target         | PlanCapability domain enum (RF-06)         |
+| FR-SUB-002 | Tenant subscription    | Done        | PASS           | Target         | Subscription model & tenant isolation      |
+| FR-SUB-003 | Trial                  | Implemented | PASS           | Target         | CreateTrialSubscription action (RF-06)     |
+| FR-SUB-004 | Subscription status    | Done        | PASS           | Target         | SubscriptionState domain state (RF-06)     |
+| FR-SUB-005 | Feature access         | Implemented | PASS           | Target         | CheckSubscriptionStatus middleware (RF-06) |
+| FR-SUB-006 | Feature entitlement    | Implemented | PASS           | Target         | EntitlementRules domain service (RF-06)    |
+| FR-SUB-007 | Subscription payment   | Implemented | PASS           | Target         | CreateSubscriptionPayment action (RF-02/06)|
+| FR-SUB-008 | Subscription callback  | Implemented | PASS           | Target         | SynchronizePaymentStatus & idempotent sync |
+| FR-SUB-009 | Subscription lifecycle | Implemented | PASS           | Target         | Activate/CancelSubscription actions        |
+| FR-SUB-010 | Usage limits           | Implemented | PASS           | Target         | EntitlementRules quota enforcement (RF-06) |
+| FR-SUB-011 | Usage tracking         | Implemented | PASS           | Target         | SubscriptionUsage domain service (RF-06)   |
 
 ---
 
@@ -670,10 +670,10 @@ The current calendar view Blade file will be refined under RF-05 Presentation la
 | ----------- | -------------------------- | ----------- | -------------- | -------------- | -------------------------- |
 | FR-DATA-001 | Referential integrity      | Implemented | PASS / PARTIAL | Target         | DB relationships           |
 | FR-DATA-002 | Tenant integrity           | Verified    | PASS           | Target         | Tenant isolation           |
-| FR-DATA-003 | Booking integrity          | Verified    | PASS           | Needs Refactor | Production logic tests     |
-| FR-DATA-004 | Payment integrity          | Verified    | PASS           | Needs Refactor | Payment tests              |
-| FR-DATA-005 | Atomic critical operations | Implemented | PASS / PARTIAL | Needs Refactor | Transaction audit required |
-| FR-DATA-006 | Double booking prevention  | Verified    | PASS           | Target         | Concurrency protection     |
+| FR-DATA-003 | Booking integrity          | Verified    | PASS           | Target         | BookingRules & EvictStaleBookings (RF-09)  |
+| FR-DATA-004 | Payment integrity          | Verified    | PASS           | Target         | PaymentRules & SynchronizePayment (RF-02)  |
+| FR-DATA-005 | Atomic critical operations | Implemented | PASS           | Target         | DB transactions & row-level locking        |
+| FR-DATA-006 | Double booking prevention  | Verified    | PASS           | Target         | Concurrency protection                     |
 
 ---
 
@@ -686,10 +686,10 @@ The current calendar view Blade file will be refined under RF-05 Presentation la
 | NFR-SEC-003 | SQL injection protection  | Implemented        | PASS / PARTIAL | Target             | ORM/query usage               |
 | NFR-SEC-004 | XSS protection            | Implemented        | PARTIAL        | Needs Verification | Requires broader audit        |
 | NFR-SEC-005 | CSRF protection           | Implemented        | PASS / PARTIAL | Target             | Web framework                 |
-| NFR-SEC-006 | Authorization             | Implemented        | PASS / PARTIAL | Needs Refactor     | Requires route/action audit   |
+| NFR-SEC-006 | Authorization             | Implemented        | PASS           | Target             | Auth controllers & FormRequests (RF-07)       |
 | NFR-SEC-007 | Tenant isolation          | Verified           | PASS           | Target             | Critical                      |
-| NFR-SEC-008 | IDOR protection           | Verified           | PASS           | Needs Refactor     | Security tests exist          |
-| NFR-SEC-009 | Payment callback security | Verified           | PASS           | Needs Refactor     | Callback hardening            |
+| NFR-SEC-008 | IDOR protection           | Verified           | PASS           | Target             | Fail-closed scopes & scoped tokens (RF-09)    |
+| NFR-SEC-009 | Payment callback security | Verified           | PASS           | Target             | Signature check & idempotency (RF-02)        |
 | NFR-SEC-010 | Secret protection         | Needs Verification | PARTIAL        | Deployment         | Requires repository/env audit |
 
 ---
@@ -762,12 +762,12 @@ The current calendar view Blade file will be refined under RF-05 Presentation la
 
 | ID            | Requirement                    | Status         | Test | Architecture   | Notes                             |
 | ------------- | ------------------------------ | -------------- | ---- | -------------- | --------------------------------- |
-| NFR-MAINT-001 | Separation of responsibilities | Needs Refactor | N/A  | Needs Refactor | Major current concern             |
-| NFR-MAINT-002 | Modular design                 | Needs Refactor | N/A  | Needs Refactor | Target architecture               |
-| NFR-MAINT-003 | Reusable components            | Needs Refactor | N/A  | Needs Refactor | Large Blade files                 |
-| NFR-MAINT-004 | Consistent naming              | Needs Refactor | N/A  | Needs Refactor | Legacy terminology                |
-| NFR-MAINT-005 | Technical documentation        | In Progress    | N/A  | Target         | Current documentation rebuild     |
-| NFR-MAINT-006 | Technical debt visibility      | In Progress    | N/A  | Target         | This tracker establishes baseline |
+| NFR-MAINT-001 | Separation of responsibilities | Done           | PASS | Target         | Actions, Domain, Infrastructure layers established |
+| NFR-MAINT-002 | Modular design                 | Done           | PASS | Target         | Thin controllers & bounded contexts               |
+| NFR-MAINT-003 | Reusable components            | Done           | PASS | Target         | Blade partials decomposed (RF-05)                 |
+| NFR-MAINT-004 | Consistent naming              | Done           | PASS | Target         | Domain state constants aligned                    |
+| NFR-MAINT-005 | Technical documentation        | Done           | PASS | Target         | Comprehensive docs & RF specifications            |
+| NFR-MAINT-006 | Technical debt visibility      | Done           | PASS | Target         | Tracker & audit sign-off established              |
 
 ---
 
@@ -787,7 +787,7 @@ The current calendar view Blade file will be refined under RF-05 Presentation la
 
 | ID          | Requirement                | Status         | Test           | Architecture   | Notes                       |
 | ----------- | -------------------------- | -------------- | -------------- | -------------- | --------------------------- |
-| NFR-EXT-001 | Payment provider boundary  | Needs Refactor | PASS / PARTIAL | Needs Refactor | Midtrans currently coupled  |
+| NFR-EXT-001 | Payment provider boundary  | Done           | PASS           | Target         | PaymentGatewayInterface & Midtrans isolation (RF-02) |
 | NFR-EXT-002 | Notification extensibility | Needs Refactor | PARTIAL        | Needs Refactor | Future channels             |
 | NFR-EXT-003 | Feature expansion          | Needs Refactor | N/A            | Target         | Main architecture objective |
 | NFR-EXT-004 | Tenant-safe expansion      | Implemented    | PASS           | Target         | Existing tenant mechanism   |
@@ -1008,6 +1008,7 @@ The recommended refactor queue status:
 [x] R-007 Terminology normalization (RF-01/RF-04/RF-07) - Completed
 [x] R-008 Route cleanup (RF-07) - Completed
 [x] R-009 Shared utility / trait cleanup (RF-03/RF-04/RF-07) - Completed
+[x] R-010 Booking flow stability & production hardening (RF-09) - Completed
 ```
 
 This queue is a technical roadmap, not a product feature roadmap.
@@ -1047,7 +1048,7 @@ Current documentation state:
 [✓] TRACKER.md
 [✓] AGENTS.md
 [✓] docs/README.md
-[✓] docs/refactor/ (RF-00 through RF-08)
+[✓] docs/refactor/ (RF-00 through RF-09)
 ```
 
 This file becomes complete once the current implementation audit has been synchronized with the final requirement mapping.
@@ -1093,7 +1094,7 @@ This matrix represents the post-refactor consolidated BookQu state.
 BookQu should currently be considered in:
 
 ```text
-PHASE: Post-Refactor Baseline Established (v2.0)
+PHASE: Post-Refactor Baseline & Production Hardening Established (v2.1)
 ```
 
 The project is not currently in:
@@ -1215,6 +1216,7 @@ Track major tracker-level changes here.
 
 | Date       | Change                                                 | Reason                                                                  |
 | ---------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| 2026-09-30 | Synchronized Tracker & Refactor Work Orders (RF-00-09) | 315/315 tests passing, updated module architecture states, completed RF-09 sign-off |
 | 2026-09-26 | Completed RF-09 Booking Flow Stability & Hardening     | 309/309 tests passing, timezone, token scopes, payment expiry, CI regression workflow |
 | 2026-09-26 | Completed RF-08 Final Audit & Sign-off                 | 301/301 tests passing, all RF-00 to RF-08 phases verified and signed off as REFACTOR COMPLETE |
 | 2026-09-26 | Completed RF-07 Route Cleanup & Shared Alignment       | Extracted auth closures to dedicated controllers, cleaned unused routes and imports |

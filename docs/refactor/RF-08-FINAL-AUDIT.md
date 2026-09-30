@@ -2618,5 +2618,5 @@ REFACTOR COMPLETE
 
 - **Phase:** `RF-09 — BOOKING FLOW STABILITY & PRODUCTION HARDENING`
 - **Scope:** Post-refactor stability fixes, timezone hardening (`Asia/Jakarta`), payment expiry lifecycle alignment (`gagal` status + slot release), scoped management token isolation, checkout schedule validation, Indonesian locale, and CI regression workflow.
-- **Reference Document:** [rf 09.md](file:///c:/laragon/www/bookqu/docs/refactor/rf%2009.md)
+- **Reference Document:** [RF-09-HARDENING.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-09-HARDENING.md)
 

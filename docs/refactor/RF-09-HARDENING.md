@@ -1,5 +1,12 @@
 # RF-09 — BOOKING FLOW STABILITY & PRODUCTION HARDENING
 
+> **Status:** Completed
+> **Priority:** P0 → P1 → P2
+> **Phase:** RF-09 Stability & Production Hardening
+> **Branch:** `Refactor`
+> **Test Baseline:** 315 tests passing (1564 assertions, 0 failure)
+> **Completed Date:** 2026-09-28
+
 ## 1. Metadata
 
 **Project:** BookQu
@@ -1777,3 +1784,34 @@ Produce final RF-09 report
 ```
 
 Agent wajib berhenti dan memperbaiki masalah pada step sebelumnya apabila regression test menunjukkan behavior lebih buruk daripada baseline.
+
+---
+
+# 16. Completion Report & Final Sign-Off
+
+### Execution Summary
+- **Phase:** RF-09 Booking Flow Stability & Production Hardening
+- **Status:** Completed
+- **Branch:** `Refactor`
+- **Completed Date:** 2026-09-28
+- **Key Deliverables Completed:**
+  - **P0-01 Timezone:** Set `Asia/Jakarta` uniformly across Laravel (`config/app.php`) and Carbon.
+  - **P0-02 Payment Expiry Lifecycle:** Harmonized DB payment status `gagal` and automated slot release through `ExpirePayment`.
+  - **P0-03 Production Scheduler:** Configured scheduled task in `docs/5-DEVELOPMENT.md` for production cron execution.
+  - **P0-04 Active Booking Definition:** Centralized slot occupancy semantics in `BookingState::occupiesSlot()`.
+  - **P0-05 Cache & Pending Expiry:** Shortened cache TTL, unified pending grace period, and implemented `EvictStalePendingBookings`.
+  - **P1-01 Scoped Token Isolation:** Differentiated `cancellation_token` (cancel only) and `reschedule_token` (reschedule only) with strict validation.
+  - **P1-02 Refund State:** Removed non-existent `STATUS_REFUNDED` from `BookingState`, tracking refunds cleanly in the `refunds` table.
+  - **P1-03 Owner Cancellation Policy:** Owner cancellation bypasses automatic customer refund records and owner self-notifications.
+  - **P1-04 Checkout Validation:** Authoritative validation ensuring selected schedules match service and date.
+  - **P1-05 JS Escaping:** Replaced manual JSON interpolation with secure Blade `@js` / `Js::from(...)`.
+  - **P1-06 Indonesian Locale:** Configured Indonesian locale formatting.
+  - **P2-01 Duplicate Booking Rules:** Delegated booking model helper methods to `BookingRules`.
+  - **P2-02 Availability Centralization:** Centralized availability query logic in `AvailabilityRules` and `GetAvailableSchedules`.
+  - **P2-03 Cache Key Audit:** Verified tenant/service isolated cache keys.
+  - **P2-04 CI Regression:** Configured GitHub Actions workflow `.github/workflows/tests.yml`.
+
+### Verification & Test Results
+- **Dedicated Test:** `tests/Feature/RF09StabilityAndHardeningTest.php` (14/14 tests pass)
+- **Full Test Suite:** 315 tests, 1564 assertions, 0 failures (100% green).
+- **Result:** PASS

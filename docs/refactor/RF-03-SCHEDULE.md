@@ -1291,52 +1291,61 @@ Baseline Commit:
 ccbcef00ad8726c1cef4ee56e6a2345c5941fbf8
 
 Current Commit:
-<commit>
+37a432c
 
 Schedule Actions:
-<list>
+- app/Actions/Schedule/BulkCreateSchedules.php
+- app/Actions/Schedule/DeleteSchedule.php
+- app/Actions/Schedule/UpdateScheduleAvailability.php
+- app/Actions/Schedule/DeleteBlockedDate.php
+- app/Actions/Schedule/GetAvailableSchedules.php
 
 Availability Components:
-<list>
+- app/Domain/Schedule/AvailabilityRules.php
 
 Conflict Rules:
-<list>
+- app/Domain/Schedule/ScheduleConflictRules.php
+- app/Domain/Schedule/SlotCompatibilityRules.php
 
 Cache Components:
-<list>
+- app/Services/ScheduleAvailabilityCache.php
 
 Controllers Changed:
-<list>
+- app/Http/Controllers/Owner/OwnerScheduleController.php
+- app/Http/Controllers/Customer/BookingController.php
 
 Models Changed:
-<list>
+- app/Models/Schedule.php
 
 Tests Added:
-<list>
+- tests/Unit/Domain/AvailabilityRulesTest.php
+- tests/Unit/Domain/ScheduleConflictRulesTest.php
+- tests/Feature/Schedule/ScheduleActionTest.php
 
 Tests Executed:
-<list>
+- php artisan test tests/Feature/Schedule/ScheduleActionTest.php
+- php artisan test tests/Feature/Owner/OwnerScheduleManagementTest.php
 
 Test Result:
-<result>
+PASS
 
 Requirements Covered:
-<IDs>
+FR-SCHEDULE-001 through FR-SCHEDULE-010
 
 Behavior Changes:
 None, unless explicitly documented.
 
 Remaining Schedule Debt:
-<list>
+None for RF-03 scope.
 
 Tracker Updated:
-Yes/No
+Yes
 
 Architecture Documentation Updated:
-Yes/No
+Yes
 
 Blockers:
-<list>
+None
 ```
 
 ---

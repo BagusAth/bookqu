@@ -1274,52 +1274,64 @@ Baseline Commit:
 ccbcef00ad8726c1cef4ee56e6a2345c5941fbf8
 
 Current Commit:
-<commit>
+46be0a2
 
 Implemented:
-<summary>
+Booking application actions, domain state and rules extraction, form requests, and controller slimming without breaking existing customer booking flows.
 
 Actions Created:
-<list>
+- app/Actions/Booking/CreateBooking.php
+- app/Actions/Booking/CreateWalkInBooking.php
+- app/Actions/Booking/CancelBooking.php
+- app/Actions/Booking/RescheduleBooking.php
+- app/Actions/Booking/UpdateBookingStatus.php
 
 Requests Created:
-<list>
+- app/Http/Requests/Booking/CreateBookingRequest.php
+- app/Http/Requests/Booking/RescheduleBookingRequest.php
+- app/Http/Requests/Booking/UpdateBookingStatusRequest.php
 
 Domain Components Created:
-<list>
+- app/Domain/Booking/BookingRules.php
+- app/Domain/Booking/BookingState.php
 
 Controllers Changed:
-<list>
+- app/Http/Controllers/Customer/BookingController.php
+- app/Http/Controllers/Customer/BookingManageController.php
+- app/Http/Controllers/Owner/OwnerBookingController.php
 
 Models Changed:
-<list>
+- app/Models/Booking.php
 
 Tests Added:
-<list>
+- tests/Unit/Domain/BookingStateTest.php
+- tests/Unit/Domain/BookingRulesTest.php
+- tests/Feature/Booking/BookingActionsTest.php
 
 Tests Executed:
-<list>
+- php artisan test tests/Unit/Domain
+- php artisan test tests/Feature/Booking
 
 Test Result:
-<result>
+PASS
 
 Requirements Covered:
-<IDs>
+FR-BOOKING-001 through FR-BOOKING-019
 
 Behavior Changes:
 None, unless explicitly documented.
 
 Remaining Booking Debt:
-<list>
+None for RF-01 scope.
 
 Tracker Updated:
-Yes/No
+Yes
 
 Architecture Documentation Updated:
-Yes/No
+Yes
 
 Blockers:
-<list>
+None
 ```
 
 ---
