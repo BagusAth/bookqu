@@ -62,19 +62,15 @@ Before making a non-trivial change, read the relevant documentation in this orde
 7. docs/6-TRACKER.md
 ```
 
-For architectural decisions, also inspect:
+Planned future technical documentation (Phase C):
 
 ```text
-docs/adr/
+docs/7-SYSTEM-DESIGN.md      [planned Phase C]
+docs/8-OPERATIONS.md         [planned Phase C]
+docs/adr/                    [planned Phase C]
 ```
 
-Historical documentation under:
-
-```text
-docs/archive/
-```
-
-is reference-only and must not be treated as current authority.
+Historical refactor work (RF-00 through RF-09) has already been completed and integrated into the active implementation. Historical evolution is preserved in Git history.
 
 ---
 
@@ -111,9 +107,9 @@ Tests
     ↓
 Provide evidence of verified behavior
 
-docs/archive/
+Git History
     ↓
-Historical reference only
+Historical implementation and refactor record
 ```
 
 When two sources disagree, do not silently choose one.
@@ -1572,29 +1568,23 @@ Create an ADR when a decision:
 
 ---
 
-# 71. Never Use Historical Documentation as Current Authority
+# 71. Never Use Historical Material as Current Authority
 
-Files under:
-
-```text
-docs/archive/
-```
-
-may explain why BookQu previously behaved differently.
+Historical refactor plans, past pull requests, or previous system iterations preserved in Git history may explain why BookQu previously behaved differently.
 
 They must not be used as the current implementation target when they conflict with:
 
 ```text
-PRODUCT.md
-REQUIREMENTS.md
-ARCHITECTURE.md
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
+docs/4-ARCHITECTURE.md
 ```
 
 ---
 
 # 72. Never Use the Tracker as a Product Definition
 
-`TRACKER.md` tells the agent:
+`docs/6-TRACKER.md` tells the agent:
 
 ```text
 what has been implemented
@@ -1609,8 +1599,8 @@ what the product should become
 Product decisions belong in:
 
 ```text
-PRODUCT.md
-REQUIREMENTS.md
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
 ```
 
 ---
@@ -1759,10 +1749,10 @@ For product changes:
 ```text
 1. Identify affected product concept
 2. Decide whether the change is accepted
-3. Update PRODUCT.md
-4. Update REQUIREMENTS.md
-5. Update ARCHITECTURE.md if necessary
-6. Update TRACKER.md
+3. Update docs/2-PRODUCT.md
+4. Update docs/3-REQUIREMENT.md
+5. Update docs/4-ARCHITECTURE.md if necessary
+6. Update docs/6-TRACKER.md
 7. Implement
 8. Test
 9. Verify UI and business behavior
@@ -1870,16 +1860,14 @@ docs/5-DEVELOPMENT.md
 docs/6-TRACKER.md
 ```
 
-Architecture decisions:
+Planned future technical documentation (Phase C):
 
 ```text
+docs/7-SYSTEM-DESIGN.md
+docs/8-OPERATIONS.md
 docs/adr/
 ```
 
-Historical documents:
-
-```text
-docs/archive/
-```
+Historical refactor and implementation evolution is preserved in Git history.
 
 All AI agents working on BookQu must respect this documentation structure.

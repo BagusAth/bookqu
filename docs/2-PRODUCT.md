@@ -1411,16 +1411,7 @@ docs/8-OPERATIONS.md
 docs/adr/
 ```
 
-Historical refactor documents are located in:
-
-```text
-docs/REFACTOR.md
-docs/REFACTOR-PLAN.md
-docs/refactor/
-docs/archive/
-```
-
-Historical documents must not be treated as current product authority.
+Historical evolution and refactor milestones (RF-00 through RF-09) are preserved in Git history.
 
 ---
 

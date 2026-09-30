@@ -574,7 +574,7 @@ Status: Completed (RF-04)
 | FR-CALENDAR-005 | Filtering           | Done   | PASS | Target       | Handled by GetOwnerCalendarData action               |
 | FR-CALENDAR-006 | Walk-in operation   | Done   | PASS | Target       | Delegated to CreateWalkInBooking Action              |
 
-The current calendar view Blade file will be refined under RF-05 Presentation layer.
+The calendar view Blade structure was refined and decomposed into partials under RF-05 Presentation layer.
 
 ---
 
@@ -994,9 +994,9 @@ Tasks:
 
 ---
 
-# 44. Current High-Priority Refactor Queue
+# 44. Refactor History & Completed Milestone Queue
 
-The recommended refactor queue status:
+The completed architectural refactor queue:
 
 ```text id="tqijv7"
 [x] R-001 Booking domain extraction (RF-01) - Completed
@@ -1011,7 +1011,7 @@ The recommended refactor queue status:
 [x] R-010 Booking flow stability & production hardening (RF-09) - Completed
 ```
 
-This queue is a technical roadmap, not a product feature roadmap.
+All 10 refactoring work orders (RF-00 through RF-09) are completed, verified (315 tests passing), and integrated into the active codebase.
 
 ---
 
@@ -1048,7 +1048,9 @@ Current documentation state:
 [✓] docs/4-ARCHITECTURE.md
 [✓] docs/5-DEVELOPMENT.md
 [✓] docs/6-TRACKER.md
-[✓] docs/refactor/ (RF-00 through RF-09)
+[ ] docs/7-SYSTEM-DESIGN.md (Planned Phase C)
+[ ] docs/8-OPERATIONS.md (Planned Phase C)
+[ ] docs/adr/ (Planned Phase C)
 ```
 
 This file becomes complete once the current implementation audit has been synchronized with the final requirement mapping.

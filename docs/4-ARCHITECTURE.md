@@ -2707,11 +2707,7 @@ Architectural decisions with long-term consequences are stored in:
 docs/adr/
 ```
 
-Historical documents are stored in:
-
-```text
-docs/archive/
-```
+Historical evolution and refactoring history are preserved in Git history.
 
 ---
 

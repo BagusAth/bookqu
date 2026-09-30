@@ -32,27 +32,10 @@ bookqu/
     ├── 4-ARCHITECTURE.md
     ├── 5-DEVELOPMENT.md
     ├── 6-TRACKER.md
-    ├── REFACTOR-PLAN.md
-    ├── REFACTOR.md
     │
-    ├── refactor/
-    │   ├── README.md
-    │   ├── RF-00-FOUNDATION.md
-    │   ├── RF-01-BOOKING.md
-    │   ├── RF-02-PAYMENT.md
-    │   ├── RF-03-SCHEDULE.md
-    │   ├── RF-04-APPLICATION-LAYER.md
-    │   ├── RF-05-PRESENTATION.md
-    │   ├── RF-06-SUBSCRIPTION.md
-    │   ├── RF-07-CLEANUP-ALIGNMENT.md
-    │   ├── RF-08-FINAL-AUDIT.md
-    │   └── RF-09-HARDENING.md
-    │
-    ├── (planned: 7-SYSTEM-DESIGN.md)
-    ├── (planned: 8-OPERATIONS.md)
-    ├── (planned: adr/)
-    └── archive/
-        └── ...
+    ├── (planned Phase C: 7-SYSTEM-DESIGN.md)
+    ├── (planned Phase C: 8-OPERATIONS.md)
+    └── (planned Phase C: adr/)
 ```
 
 ---
@@ -278,31 +261,7 @@ It only tracks implementation against the accepted requirements.
 
 ---
 
-# 10. Refactor Work Orders & Execution Plans
-
-Location:
-
-```text
-/docs/REFACTOR-PLAN.md
-/docs/REFACTOR.md
-/docs/refactor/
-```
-
-Question answered:
-
-> **How was the architecture refactored and stabilized?**
-
-Contains:
-
-* Master Refactor Plan (`docs/REFACTOR-PLAN.md`);
-* Executable work orders (`RF-00-FOUNDATION.md` through `RF-09-HARDENING.md`);
-* Final audit and completion sign-off (`RF-08-FINAL-AUDIT.md`, `RF-09-HARDENING.md`).
-
-These documents record the historical execution of the architecture refactor (RF-00 to RF-09). They represent completed milestones and historical context, not current behavioral authorities.
-
----
-
-# 11. Planned Technical & Operational Documents
+# 10. Planned Technical & Operational Documents
 
 The documentation architecture plans for the following dedicated documents (to be established in Phase C):
 
@@ -316,34 +275,7 @@ Until these documents are created, high-level architecture principles are govern
 
 ---
 
-# 12. Archive Directory
-
-Location:
-
-```text
-/docs/archive/
-```
-
-Contains historical documentation that is no longer authoritative.
-
-Examples:
-
-```text
-SRS-v1.md
-MVP-scope-v1.md
-development-tracker-v1.md
-original-requirements.md
-```
-
-Historical files are preserved because they explain how BookQu evolved.
-
-However:
-
-> Historical documentation must not be treated as the current product specification.
-
----
-
-# 13. Which Document Should I Read?
+# 11. Which Document Should I Read?
 
 ## "What is BookQu?"
 
@@ -427,19 +359,17 @@ docs/4-ARCHITECTURE.md
 
 ---
 
-## "How did BookQu work previously?"
+## "How did BookQu evolve historically?"
 
 Read:
 
 ```text
-docs/archive/
-docs/REFACTOR-PLAN.md
-docs/refactor/
+Git history (commit log, pull requests, and release tags)
 ```
 
 ---
 
-# 14. Recommended Reading by Task
+# 12. Recommended Reading by Task
 
 ## New Feature
 
@@ -523,7 +453,7 @@ docs/5-DEVELOPMENT.md
 
 ---
 
-# 15. Source-of-Truth Rules
+# 13. Source-of-Truth Rules
 
 Use the following rules when information conflicts.
 
@@ -577,13 +507,12 @@ docs/6-TRACKER.md
 
 ---
 
-### Historical Context
+### Historical Evolution & Changes
 
 Use:
 
 ```text
-archive/
-docs/refactor/
+Git history (commits, pull requests, releases)
 ```
 
 ---
@@ -599,7 +528,7 @@ docs/4-ARCHITECTURE.md
 
 ---
 
-# 16. Conflict Handling
+# 14. Conflict Handling
 
 When documents or code disagree:
 
@@ -623,7 +552,7 @@ Then update the appropriate authoritative document before allowing the conflict 
 
 ---
 
-# 17. Documentation Change Principle
+# 15. Documentation Change Principle
 
 Documentation should be changed when the underlying product or architecture changes.
 
@@ -657,7 +586,7 @@ unless the code represents an explicitly accepted product change.
 
 ---
 
-# 18. Documentation Minimalism
+# 16. Documentation Minimalism
 
 Do not create a new documentation file simply because a new topic appears.
 
@@ -681,7 +610,7 @@ Create a new documentation category only when the existing documents become genu
 
 ---
 
-# 19. Agent Documentation Rule
+# 17. Agent Documentation Rule
 
 AI agents should prefer reading the smallest relevant portion of the documentation needed for the task.
 
@@ -705,7 +634,7 @@ The agent does not need to reinterpret unrelated modules unless the task affects
 
 ---
 
-# 20. Current Development Model
+# 18. Current Development Model
 
 BookQu follows:
 
@@ -731,16 +660,11 @@ Architecture decisions are recorded through:
 ADR (docs/adr/)
 ```
 
-Historical context is preserved through:
-
-```text
-docs/archive/
-docs/refactor/
-```
+Historical evolution is preserved in Git history.
 
 ---
 
-# 21. Final Principle
+# 19. Final Principle
 
 The documentation system exists to ensure that:
 
