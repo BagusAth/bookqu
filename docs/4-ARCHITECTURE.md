@@ -1,121 +1,150 @@
 # BookQu Architecture Specification
 
-> **Document Status:** Current Architecture + Target Architecture
-> **Version:** 1.0
-> **Authority:** Authoritative technical architecture direction
+> **Document Status:** Active Architectural Specification
+> **Version:** 1.1
+> **Authority:** Architectural direction and stable structural rules
 > **Related Product Definition:** `docs/2-PRODUCT.md`
 > **Related Requirements:** `docs/3-REQUIREMENT.md`
+> **Related System Design:** `docs/7-SYSTEM-DESIGN.md`
+> **Development Workflow:** `docs/5-DEVELOPMENT.md`
+> **Architectural Decisions:** `docs/adr/`
 > **Last Updated:** 2026-09-30
 >
-> This document defines how BookQu should be structured, how responsibilities should be separated, and how the current implementation should evolve toward a maintainable and scalable architecture.
+> This document defines how BookQu should be structured, how responsibilities should be separated, and which architectural rules must be preserved as the system evolves.
 >
-> This document is a technical specification. It does not define product scope. Product behavior is defined in `docs/2-PRODUCT.md` and `docs/3-REQUIREMENT.md`.
+> It is not a historical refactor record and does not define every detail of the current implementation.
 
 ---
 
 # 1. Purpose
 
-The purpose of this document is to establish a consistent architecture for BookQu so that:
+The purpose of this document is to establish a stable architectural foundation for BookQu.
 
-* all developers structure code consistently;
-* AI agents follow the same technical boundaries;
-* business logic does not become concentrated in controllers;
-* UI logic does not become concentrated in large Blade files;
-* tenant isolation remains a first-class security boundary;
-* new modules can be introduced without destabilizing unrelated modules;
-* refactoring can happen incrementally;
-* technical debt can be reduced without changing intended product behavior.
+The architecture must allow BookQu to:
 
-The architecture must optimize for:
+* preserve correct business behavior;
+* maintain strong tenant isolation;
+* prevent booking and payment inconsistencies;
+* keep HTTP concerns separate from business logic;
+* keep important business operations explicit;
+* isolate external integrations;
+* support automated testing;
+* evolve without repeatedly restructuring the entire application;
+* allow future features to be added without unnecessary coupling;
+* make the system understandable to developers and AI agents.
+
+The architecture should optimize for:
 
 ```text
 Correctness
 Maintainability
 Testability
+Security
 Tenant Isolation
 Modularity
-Scalability
 Understandability
+Extensibility
 ```
 
-Performance optimization is important, but premature abstraction is discouraged.
+Performance and scalability remain important, but abstraction must have a clear responsibility and should not be introduced merely for stylistic reasons.
 
 ---
 
-# 2. Architectural Context
+# 2. Architectural Scope
 
-BookQu is a Laravel-based multi-tenant web application.
-
-The current implementation uses:
+This document defines architectural rules for:
 
 ```text
-Backend
-- PHP 8.3+
-- Laravel 13
-
-Frontend
-- Blade
-- Alpine.js
-- Tailwind CSS
-
-Build
-- Vite
-
-Database
-- MySQL / compatible relational database
-
+Application Structure
+Domain Boundaries
+Layer Responsibilities
+Request Handling
+Application Actions
+Domain Logic
+Infrastructure
+Persistence
+Tenant Isolation
+Authorization
+Booking
 Payment
-- Midtrans
-
+Scheduling
+Subscription
+Notifications
 Testing
-- PHPUnit / Laravel test suite
+External Integrations
+Future Extension
 ```
 
-The current repository already contains:
+This document does not define:
 
 ```text
-app/Actions
-app/Domain
-app/Http/Controllers
-app/Http/Middleware
-app/Http/Requests
-app/Infrastructure
-app/Models
-app/Policies
-app/Services
-app/Support
-app/Traits
-app/Mail
-app/Notifications
-database/migrations
-database/seeders
-resources/views
-tests
-```
+Product Scope
+    → docs/2-PRODUCT.md
 
-These existing structures should be preserved where they are conceptually appropriate.
+Required Behavior
+    → docs/3-REQUIREMENT.md
+
+Detailed Current Implementation
+    → docs/7-SYSTEM-DESIGN.md
+
+Development Workflow
+    → docs/5-DEVELOPMENT.md
+
+Operational Procedures
+    → docs/8-OPERATIONS.md
+
+Project Status
+    → docs/6-TRACKER.md
+
+Architectural Decision Rationale
+    → docs/adr/
+```
 
 ---
 
-# 3. Architecture Goals
+# 3. Architectural Principles
 
-The target architecture has the following goals.
+## 3.1 Requirement-Driven Architecture
 
-## 3.1 Clear Responsibility
+Architecture exists to support accepted product requirements.
 
-Every layer should have one primary responsibility.
+The architecture must not introduce product behavior merely because a particular technical design makes it possible.
+
+The relationship is:
+
+```text
+Product
+    ↓
+Requirement
+    ↓
+Architecture
+    ↓
+Implementation
+    ↓
+Tests
+```
 
 ---
 
-## 3.2 Domain-Oriented Structure
+## 3.2 Clear Responsibility
 
-Code should be organized around meaningful BookQu domains rather than arbitrary technical groupings alone.
+Every component should have a clearly defined primary responsibility.
 
-Primary domains include:
+A component should not become a dumping ground for unrelated behavior.
+
+When a class performs multiple unrelated responsibilities, the design should be reconsidered.
+
+---
+
+## 3.3 Domain-Oriented Organization
+
+The application should be understood in terms of meaningful BookQu domains.
+
+Important domains include:
 
 ```text
-Authentication
 Tenant
+Authentication
 Service
 Schedule
 Booking
@@ -126,63 +155,345 @@ Review
 Voucher
 Staff
 Resource
-Analytics
 Notification
-Asset
+Analytics
 ```
 
----
+Not every domain requires an independent architectural layer or package.
 
-## 3.3 Thin HTTP Layer
-
-Controllers should coordinate HTTP requests and delegate business operations.
-
-Controllers should not become large business-logic containers.
+The purpose of domain-oriented organization is to make responsibilities and dependencies understandable.
 
 ---
 
-## 3.4 Explicit Business Operations
+## 3.4 Thin HTTP Layer
 
-Important business operations should exist as explicit application actions or services.
+HTTP controllers should primarily coordinate:
 
-Examples:
+```text
+Request
+    ↓
+Validation / Authorization
+    ↓
+Application Operation
+    ↓
+Response
+```
+
+Controllers should not become the primary location of complex business rules.
+
+Business rules involving booking, payment, availability, subscription, or other critical domains should be delegated to the appropriate application/domain boundary.
+
+---
+
+## 3.5 Explicit Application Operations
+
+Important business operations should be explicit.
+
+Examples include:
 
 ```text
 CreateBooking
+CreateWalkInBooking
 CancelBooking
 RescheduleBooking
-CreateWalkInBooking
 CreateSchedule
 ProcessBookingPayment
-ApplyVoucher
-ChangeBookingStatus
+ExpirePayment
+CreateSubscription
+ProcessRefund
 ```
 
----
-
-## 3.5 Testability
-
-Business rules must be testable without requiring the full browser request flow whenever practical.
+An application operation should represent a meaningful action rather than exist merely to satisfy a folder structure.
 
 ---
 
-## 3.6 Tenant Safety
+## 3.6 Domain Rules Must Be Centralized
 
-Tenant isolation must be enforced consistently and must not rely on individual developer discipline.
+Rules that determine the correctness of a domain operation should not be duplicated across controllers, views, commands, and unrelated services.
+
+Examples include:
+
+```text
+Booking availability
+Occupied-slot determination
+Booking state transitions
+Tenant ownership
+Payment state handling
+Subscription entitlement
+Customer token authorization
+```
+
+A rule that affects correctness should have a clear authoritative implementation.
 
 ---
 
-## 3.7 Incremental Refactoring
+## 3.7 Infrastructure Must Remain Replaceable
 
-The target architecture must be achievable gradually.
+External systems should not become deeply embedded in core business logic.
 
-A working feature should not be rewritten solely for stylistic reasons if doing so introduces unnecessary product risk.
+Examples include:
+
+```text
+Midtrans
+Email delivery
+External messaging
+Storage providers
+Caching infrastructure
+Other external APIs
+```
+
+The application should depend on clear internal responsibilities rather than scattering provider-specific logic throughout business operations.
 
 ---
 
-# 4. Current Architecture
+## 3.8 Tenant Isolation Is a First-Class Boundary
 
-The current BookQu post-RF-09 implementation follows this structure:
+Tenant isolation is not optional.
+
+Every tenant-scoped operation must execute within the correct tenant context.
+
+A feature is architecturally incomplete if it works functionally but can violate tenant boundaries.
+
+---
+
+## 3.9 Transactional Integrity Over Convenience
+
+Critical business operations must prioritize consistency over implementation convenience.
+
+This is particularly important for:
+
+```text
+Booking
+Availability
+Payment
+Refund
+Subscription
+```
+
+A simpler implementation must not be chosen if it can create inconsistent business state.
+
+---
+
+## 3.10 Tests Must Follow Business Risk
+
+Testing effort should be strongest around operations where incorrect behavior can damage:
+
+```text
+Bookings
+Availability
+Payments
+Refunds
+Tenant Isolation
+Authorization
+Subscription Entitlement
+```
+
+The architecture should make these areas testable without requiring unnecessarily large end-to-end flows.
+
+---
+
+# 4. Architectural Context
+
+BookQu is a Laravel-based multi-tenant web application.
+
+The current technology baseline is:
+
+```text
+Backend
+PHP 8.3+
+Laravel 13
+
+Frontend
+Blade
+Alpine.js
+Tailwind CSS
+
+Build
+Vite
+
+Database
+MySQL / compatible relational database
+
+Payment
+Midtrans
+
+Testing
+Laravel/PHPUnit test suite
+```
+
+The architecture should remain compatible with this technology baseline while avoiding unnecessary coupling to individual framework implementation details.
+
+---
+
+# 5. Architectural Model
+
+The conceptual BookQu architecture is:
+
+```text
+                 Presentation
+                      │
+                      ▼
+             HTTP / UI Interface
+                      │
+                      ▼
+                Application
+                      │
+          ┌───────────┴───────────┐
+          ▼                       ▼
+       Domain              Supporting Services
+          │                       │
+          └───────────┬───────────┘
+                      ▼
+               Infrastructure
+                      │
+          ┌───────────┼───────────┐
+          ▼           ▼           ▼
+       Database    Payments    External Systems
+```
+
+The exact implementation may contain additional framework-level components.
+
+The architectural responsibilities should remain understandable even when individual files move.
+
+---
+
+# 6. Architectural Layers
+
+## 6.1 Presentation Layer
+
+The Presentation layer is responsible for interaction with users and external requests.
+
+Typical responsibilities include:
+
+```text
+HTTP Controllers
+Form Requests
+Middleware
+Blade Views
+UI Components
+Authentication Entry Points
+Webhook Entry Points
+```
+
+Presentation code should:
+
+* receive input;
+* invoke the appropriate application operation;
+* return a response;
+* handle presentation-specific concerns.
+
+Presentation code should not contain large amounts of reusable business logic.
+
+---
+
+## 6.2 Application Layer
+
+The Application layer coordinates business operations.
+
+Typical responsibilities include:
+
+```text
+Create Booking
+Cancel Booking
+Reschedule Booking
+Create Walk-In Booking
+Create Schedule
+Process Payment
+Process Refund
+Expire Payment
+Manage Subscription
+```
+
+Application operations may:
+
+* validate application preconditions;
+* coordinate multiple domain concepts;
+* open transactions;
+* acquire required locks;
+* invoke domain rules;
+* persist changes;
+* trigger appropriate side effects.
+
+The Application layer is responsible for orchestration.
+
+It should not become a replacement for the Domain layer.
+
+---
+
+## 6.3 Domain Layer
+
+The Domain layer contains business concepts and rules that should remain independent from HTTP presentation.
+
+Important domain concepts include:
+
+```text
+Booking
+Schedule
+Payment
+Availability
+Subscription
+Tenant
+```
+
+Domain responsibilities include:
+
+* business invariants;
+* state transitions;
+* domain rules;
+* reusable business calculations;
+* domain-specific validation.
+
+Domain code should not depend unnecessarily on HTTP request details or presentation concerns.
+
+---
+
+## 6.4 Infrastructure Layer
+
+Infrastructure provides implementations for external or technical concerns.
+
+Examples include:
+
+```text
+Payment Providers
+External APIs
+Storage
+Framework Integration
+Infrastructure-specific Services
+```
+
+Infrastructure may depend on external providers.
+
+Core business rules should not depend directly on provider-specific implementation details where a stable boundary is appropriate.
+
+---
+
+## 6.5 Persistence
+
+Persistence is responsible for storing and retrieving system state.
+
+BookQu uses a relational database.
+
+Persistence concerns include:
+
+```text
+Models
+Relationships
+Migrations
+Indexes
+Constraints
+Transactions
+Queries
+```
+
+Database constraints should be used where they provide a meaningful final integrity boundary.
+
+Application logic must not assume that application-level validation alone is sufficient for critical concurrency rules.
+
+---
+
+# 7. Current Structural Organization
+
+The current architecture follows a domain-oriented Laravel structure similar to:
 
 ```text
 app/
@@ -190,10 +501,12 @@ app/
 │   ├── Booking/
 │   ├── Payment/
 │   └── Schedule/
+│
 ├── Domain/
 │   ├── Booking/
 │   ├── Payment/
 │   └── Schedule/
+│
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Admin/
@@ -201,14 +514,18 @@ app/
 │   │   ├── Customer/
 │   │   ├── Owner/
 │   │   └── Webhook/
+│   │
 │   ├── Middleware/
+│   │
 │   └── Requests/
 │       ├── Booking/
 │       ├── Customer/
 │       ├── Owner/
 │       └── Schedule/
+│
 ├── Infrastructure/
 │   └── Midtrans/
+│
 ├── Models/
 ├── Policies/
 ├── Services/
@@ -218,2524 +535,1636 @@ app/
 └── Notifications/
 ```
 
-The frontend is primarily organized as:
+This structure is an implementation representation of the architectural responsibilities described by this document.
+
+The exact directory layout may evolve.
+
+Future changes should preserve the underlying responsibilities even if files move between directories.
+
+Detailed current mappings belong in `docs/7-SYSTEM-DESIGN.md`.
+
+---
+
+# 8. HTTP and Controller Rules
+
+Controllers should remain focused on HTTP concerns.
+
+A controller should generally perform:
 
 ```text
-resources/views/
-├── admin/
-├── auth/
-├── components/
-│   ├── customer/
-│   ├── landing/
-│   └── owner/
-├── customer/
-│   └── partials/
-├── emails/
-├── layouts/
-└── owner/
-    └── partials/
-```
-
-The current structure provides a solid, domain-oriented foundation with decoupled actions, form requests, and extracted view partials.
-
----
-
-# 5. Pre-Refactor Architecture Debt (Addressed via RF-01 to RF-09)
-
-The following issues were recognized architectural debt from the initial baseline, systematically addressed across refactoring work orders RF-01 through RF-09:
-
-## 5.1 Oversized Controllers
-
-Some controllers contain too many responsibilities.
-
-The most significant example is the customer booking controller, which currently contains the complete flow for:
-
-* service selection;
-* date selection;
-* time selection;
-* checkout;
-* voucher validation;
-* payment;
-* payment callback;
-* invoice.
-
-The resulting controller is too large to remain a good long-term architectural boundary.
-
----
-
-## 5.2 Business Logic Inside Controllers
-
-Controllers currently perform operations such as:
-
-* database queries;
-* validation;
-* business-rule checks;
-* transaction management;
-* cache management;
-* payment interaction;
-* booking state transitions;
-* notification-related operations.
-
-This makes the logic harder to reuse and test.
-
----
-
-## 5.3 Large Blade Files
-
-Several owner and customer Blade files are very large.
-
-Large page files may contain a mixture of:
-
-* markup;
-* UI state;
-* modal markup;
-* Alpine state;
-* form logic;
-* repeated presentation logic;
-* JavaScript;
-* business-specific conditions.
-
-This makes changes risky and encourages duplication.
-
----
-
-## 5.4 Inconsistent Naming
-
-The current repository contains legacy naming from different development stages.
-
-Examples include:
-
-```text
-Program
-Service
-Layanan
-idlayanan
-namalayanan
-```
-
-Product terminology has been standardized around `Service`.
-
-Code refactoring may happen gradually.
-
----
-
-## 5.5 Generic Utility Accumulation
-
-The current repository includes traits and support classes.
-
-Traits are useful for cross-cutting behavior, but they must not become a place where unrelated business logic accumulates.
-
----
-
-## 5.6 Large Shared Controllers
-
-Historically, `OwnerPortalController` hosted unrelated capabilities such as:
-
-* calendar;
-* schedule reporting;
-* appearance;
-* payment settings;
-* balance;
-* integrations.
-
-Under RF-04, `OwnerPortalController` was decomposed into dedicated, cohesive controllers:
-* `OwnerCalendarController`
-* `OwnerScheduleReportController`
-* `OwnerAppearanceController`
-* `OwnerPaymentSettingsController`
-* `OwnerBalanceController`
-* `OwnerIntegrationController`
-
-`OwnerPortalController` was preserved as a thin, delegating adapter ensuring 100% backwards compatibility for legacy callers.
-
----
-
-## 5.7 Route File Growth
-
-The main web route file contains a large number of routes across:
-
-* authentication;
-* owner operations;
-* customer booking;
-* booking management;
-* admin;
-* payment webhooks;
-* tenant public routing.
-
-Route definitions are valid, but the file should remain primarily declarative.
-
-Business logic must not move into route definitions.
-
----
-
-# 6. Target Architecture
-
-The target architecture is a pragmatic layered/domain-oriented Laravel architecture.
-
-It is intentionally not a fully isolated enterprise architecture.
-
-The target is:
-
-```text
-HTTP
-  ↓
-Application
-  ↓
-Domain
-  ↓
-Infrastructure
-```
-
-with presentation views remaining above the application layer.
-
-Conceptually:
-
-```text
-                 ┌─────────────────────┐
-                 │   HTTP / Web / UI   │
-                 └──────────┬──────────┘
-                            │
-                            ▼
-                 ┌─────────────────────┐
-                 │    Application     │
-                 │ Actions / Use Cases│
-                 └──────────┬──────────┘
-                            │
-                            ▼
-                 ┌─────────────────────┐
-                 │       Domain       │
-                 │ Business Rules     │
-                 │ Domain Services    │
-                 └──────────┬──────────┘
-                            │
-                ┌───────────┴───────────┐
-                ▼                       ▼
-       ┌────────────────┐      ┌────────────────┐
-       │ Infrastructure │      │   Persistence  │
-       │ Midtrans/Mail  │      │ Eloquent/DB    │
-       └────────────────┘      └────────────────┘
-```
-
-Not every BookQu operation needs every layer explicitly.
-
-The architecture should remain practical.
-
----
-
-# 7. Target Folder Structure
-
-The target structure is:
-
-```text
-app/
-├── Actions/
-│   ├── Booking/
-│   ├── Customer/
-│   ├── Payment/
-│   ├── Schedule/
-│   ├── Service/
-│   ├── Subscription/
-│   └── Tenant/
-│
-├── Domain/
-│   ├── Booking/
-│   ├── Customer/
-│   ├── Payment/
-│   ├── Schedule/
-│   ├── Service/
-│   ├── Subscription/
-│   └── Tenant/
-│
-├── Http/
-│   ├── Controllers/
-│   │   ├── Admin/
-│   │   ├── Customer/
-│   │   ├── Owner/
-│   │   └── Webhook/
-│   │
-│   ├── Requests/
-│   │   ├── Booking/
-│   │   ├── Customer/
-│   │   ├── Schedule/
-│   │   └── Service/
-│   │
-│   └── Middleware/
-│
-├── Models/
-│
-├── Services/
-│   ├── Payment/
-│   ├── Notification/
-│   ├── Storage/
-│   └── External/
-│
-├── Infrastructure/
-│   ├── Payments/
-│   ├── Notifications/
-│   └── Storage/
-│
-├── Support/
-│
-└── Traits/
-```
-
-This is the target direction, not a requirement to create every directory immediately.
-
-Empty abstractions should not be created merely for the sake of architecture.
-
----
-
-# 8. Layer Responsibilities
-
-## 8.1 HTTP Layer
-
-Responsible for:
-
-* receiving HTTP requests;
-* selecting the appropriate action;
-* authentication context;
-* authorization coordination;
-* request validation;
-* returning views or redirects.
-
-Should not contain complex business rules.
-
----
-
-## 8.2 Form Requests
-
-Form Requests are responsible for:
-
-* input validation;
-* authorization checks that belong to request validation;
-* normalization of request input where appropriate.
-
-Example:
-
-```text
-StoreBookingRequest
-UpdateBookingRequest
-RescheduleBookingRequest
-StoreServiceRequest
-UpdateServiceRequest
-```
-
-Controllers should not contain large inline validation blocks when a dedicated Form Request improves clarity.
-
----
-
-## 8.3 Controllers
-
-Controllers should be thin.
-
-Ideal controller flow:
-
-```text
-Request
-   ↓
+Receive Request
+      ↓
 Authorize / Validate
-   ↓
-Action
-   ↓
-Response
+      ↓
+Invoke Application Operation
+      ↓
+Prepare Response
 ```
 
-Example:
+Controllers should avoid directly implementing complex rules for:
 
-```php
-public function store(StoreBookingRequest $request)
-{
-    $booking = $this->createBooking->execute(
-        $request->validated()
-    );
-
-    return redirect()->route(...);
-}
+```text
+Availability
+Double-Booking
+Payment State
+Refund Logic
+Subscription Entitlement
+Tenant Isolation
+Complex Booking Transitions
 ```
 
-The controller should not contain the entire booking algorithm.
+These concerns belong in appropriate application/domain boundaries.
+
+A controller may coordinate multiple operations when the use case genuinely requires it.
 
 ---
 
-# 9. Application Actions
+# 9. Form Request Rules
 
-Actions represent business use cases from the application's perspective.
+Form Requests should be used for request-level validation and authorization concerns where appropriate.
 
-Examples:
+They may validate:
+
+```text
+Required fields
+Format
+Input type
+Basic constraints
+Request authorization
+```
+
+They should not become the authoritative location for reusable domain business rules.
+
+For example:
+
+```text
+"email is required"
+```
+
+is request validation.
+
+Whereas:
+
+```text
+"this schedule cannot be booked because it is already occupied"
+```
+
+is a domain/application rule.
+
+---
+
+# 10. Application Action Rules
+
+Application Actions should represent meaningful application operations.
+
+An Action should have:
+
+```text
+One clear purpose
+Defined inputs
+Defined outputs/effects
+Predictable error behavior
+Relevant transaction boundary
+```
+
+Good:
 
 ```text
 CreateBooking
 CancelBooking
 RescheduleBooking
 CreateWalkInBooking
-UpdateBookingStatus
-CreateSchedule
-BulkCreateSchedules
-CreateService
-UpdateService
-ProcessPayment
-ApplyVoucher
-SubmitReview
+ExpirePayment
 ```
 
-An Action should represent one meaningful operation.
-
-Good:
+Poor:
 
 ```text
-CreateWalkInBooking
+DoBookingStuff
+HandleEverything
+CommonAction
+UtilityAction
 ```
 
-Bad:
+Actions should not exist solely because a controller became large.
 
-```text
-BusinessManager
-```
-
-which performs unrelated operations.
+They should represent meaningful application responsibilities.
 
 ---
 
-# 10. Domain Layer
+# 11. Domain Service Rules
 
-The Domain layer contains business concepts and rules that should remain understandable independently of the HTTP interface.
+A domain service is justified when business logic:
 
-Examples:
+* does not naturally belong to one entity;
+* requires coordination of domain concepts;
+* represents a reusable domain operation.
 
-```text
-BookingStateTransition
-BookingAvailability
-ScheduleConflict
-VoucherEligibility
-SubscriptionEntitlement
-TenantAccess
-```
+Do not create a domain service merely to move arbitrary code out of a controller.
 
-Domain logic should not depend directly on:
-
-* Blade;
-* route parameters;
-* HTTP request objects;
-* UI-specific strings.
+A domain service should have a clear domain responsibility.
 
 ---
 
-# 11. Domain Services
+# 12. Model Rules
 
-Domain Services are appropriate when a business rule:
+Models represent persistent business data and its persistence relationships.
 
-* spans multiple models;
-* does not naturally belong to one model;
-* is complex enough to justify explicit representation.
+Models may contain:
 
-Examples:
-
-```text
-BookingAvailabilityService
-BookingPricingService
-SubscriptionEntitlementService
-VoucherValidationService
-```
-
-A service should not become a generic container for all business logic.
-
----
-
-# 12. Models
-
-Eloquent Models are responsible for:
-
-* persistence representation;
 * relationships;
-* attribute casting;
-* simple domain behavior closely associated with the entity;
+* casts;
+* persistence-oriented behavior;
+* simple domain-adjacent helpers;
 * query scopes where appropriate.
 
-Models should not become enormous workflow controllers.
+Models should not become large containers for unrelated application workflows.
 
-Avoid putting a complete multi-step payment workflow into a model.
-
----
-
-# 13. Repositories
-
-Repositories are not mandatory.
-
-BookQu should use Eloquent directly by default when:
-
-```text
-query is straightforward
-+
-Eloquent expresses it clearly
-+
-no alternate data source exists
-```
-
-Introduce a Repository only when it creates meaningful architectural value, such as:
-
-* multiple data sources;
-* complex persistence abstraction;
-* difficult query reuse;
-* external data source boundary.
-
-Do not create:
-
-```text
-BookingRepository
-ServiceRepository
-CustomerRepository
-```
-
-automatically for every model.
+Complex workflows should be delegated to appropriate application/domain components.
 
 ---
 
-# 14. Services
+# 13. Policy and Authorization Rules
 
-The `Services` directory should contain integrations or reusable application-level services where appropriate.
+Authorization must be enforced at the appropriate boundary.
 
-Examples:
+Policies or equivalent authorization mechanisms should protect tenant-owned resources and privileged operations.
 
-```text
-MidtransPaymentService
-NotificationService
-MediaStorageService
-```
-
-Services should have a clear responsibility.
-
-Avoid generic names such as:
+Authorization must answer:
 
 ```text
-CommonService
-HelperService
-GeneralService
-UtilityService
+Who is acting?
+        ↓
+What resource is being accessed?
+        ↓
+Does the actor have permission?
+        ↓
+Does the resource belong to the actor's authorized tenant/context?
 ```
 
-unless the responsibility is truly coherent.
+A resource identifier must never be treated as proof of authorization.
 
 ---
 
-# 15. Infrastructure
+# 14. Multi-Tenant Architecture
 
-Infrastructure contains external system concerns.
+Tenant isolation is a mandatory architectural boundary.
 
-Examples:
+The conceptual model is:
 
 ```text
-Midtrans
-Email
-File storage
-External APIs
-Future WhatsApp integration
-Future calendar integrations
+Authenticated Owner
+        ↓
+Authorized Tenant
+        ↓
+Tenant-Owned Resource
 ```
 
-The domain should not need to know the low-level details of Midtrans HTTP/API behavior.
-
-Instead:
+Tenant-scoped resources include concepts such as:
 
 ```text
-Application
+Services
+Schedules
+Bookings
+Customers
+Vouchers
+Reviews
+Assets
+Staff
+Resources
+Subscription Data
+```
+
+A tenant identifier supplied by a client must not independently establish access rights.
+
+The correct tenant context must come from trusted application context and authorization rules.
+
+---
+
+# 15. Tenant Boundary Rules
+
+Every new tenant-scoped feature must answer:
+
+```text
+What tenant owns this resource?
+How is tenant context established?
+How is authorization enforced?
+Can the resource be requested across tenants?
+What happens to cross-tenant identifiers?
+What tests prove isolation?
+```
+
+A feature without clear answers to these questions is not ready for production use.
+
+---
+
+# 16. Booking Architecture
+
+Booking is a critical domain.
+
+The booking architecture must protect:
+
+```text
+Availability
+Concurrency
+State Integrity
+Tenant Isolation
+Payment Relationship
+Customer Authorization
+Cancellation
+Rescheduling
+```
+
+The conceptual booking flow is:
+
+```text
+Request
    ↓
-Payment interface/service
+Validate
    ↓
-Midtrans adapter
+Authorize
+   ↓
+Resolve Tenant
+   ↓
+Resolve Service / Schedule
+   ↓
+Check Availability
+   ↓
+Acquire Required Locks
+   ↓
+Create / Modify Booking
+   ↓
+Persist State
+   ↓
+Invalidate / Update Relevant Derived Data
+   ↓
+Return Result
 ```
+
+The detailed current implementation of this flow belongs in `docs/7-SYSTEM-DESIGN.md`.
 
 ---
 
-# 16. Payment Architecture
+# 17. Availability Architecture
 
-Payment is an external integration boundary.
+Availability is a critical domain rule rather than merely a UI concept.
 
-The conceptual architecture is:
-
-```text
-Booking / Subscription
-        ↓
-Payment Application Logic
-        ↓
-Payment Service
-        ↓
-Payment Provider Adapter
-        ↓
-Midtrans
-```
-
-Payment provider-specific code should not spread throughout unrelated controllers.
-
-A controller should not directly call Midtrans APIs.
-
----
-
-# 17. Notification Architecture
-
-Notifications should originate from meaningful system events.
-
-Conceptually:
+Availability must account for:
 
 ```text
-Domain Event
-    ↓
-Notification Handler
-    ↓
-Notification Channel
-```
-
-Potential channels:
-
-```text
-Email
-Database notification
-Future WhatsApp
-Future external messaging
-```
-
-Adding another notification channel should not require rewriting booking business logic.
-
----
-
-# 18. Multi-Tenancy Architecture
-
-Multi-tenancy is a core security boundary.
-
-Current BookQu already uses a tenant-context approach with mechanisms such as:
-
-```text
-TenantContext
-TenantMiddleware
-TenantScope
-BelongsToTenant
-ResolvesOwnerTenant
-```
-
-The target architecture retains this concept.
-
----
-
-## 18.1 Tenant Resolution
-
-Tenant context may be established through:
-
-```text
-Owner authenticated context
-        OR
-Public tenant slug
-        OR
-Configured custom domain
-```
-
-After resolution, downstream tenant-owned operations should use the established tenant context.
-
----
-
-## 18.2 Tenant Isolation
-
-Tenant isolation should occur at multiple layers:
-
-```text
-HTTP / Middleware
-       ↓
+Schedule State
+Booking State
+Pending Grace Period
+Payment State
+Cancellation
+Concurrency
 Tenant Context
-       ↓
-Model / Query Scope
-       ↓
-Authorization
-       ↓
-Database constraints
 ```
 
-No single layer should be treated as the only security mechanism.
-
----
-
-## 18.3 Fail Closed
-
-If a tenant-scoped query requires tenant context and no valid tenant context exists, the system should fail closed rather than accidentally returning records from all tenants.
-
----
-
-## 18.4 Owner Authorization
-
-Tenant context does not replace authorization.
-
-The system must still verify that the authenticated owner is permitted to operate on the resolved tenant.
-
----
-
-# 19. Tenant Context Rules
-
-Any code using tenant-owned data should follow these rules:
-
-1. Establish tenant context before tenant-scoped operations.
-2. Do not trust a client-provided tenant ID as authorization.
-3. Do not manually repeat tenant checks throughout every query when the established scope already provides the required isolation.
-4. Use explicit `withoutGlobalScopes()` only when there is a documented reason.
-5. Any intentional bypass must perform explicit authorization checks.
-6. Never use tenant bypass methods as a normal convenience.
-
----
-
-# 20. Booking Architecture
-
-Booking is the central domain.
-
-The target flow is:
+The authoritative availability calculation must be consistent across:
 
 ```text
-HTTP Request
-      ↓
-Booking Request Validation
-      ↓
-Booking Action
-      ↓
-Availability Validation
-      ↓
-Business Rules
-      ↓
-Database Transaction
-      ↓
-Booking Persistence
-      ↓
-Payment / Notification where applicable
+Customer Booking
+Owner Booking
+Rescheduling
+Calendar
+Schedule Management
+Background Expiration
 ```
 
----
-
-# 21. Booking State Management
-
-Booking state transitions should be centralized.
-
-Avoid scattering logic such as:
-
-```text
-if ($booking->status === ...)
-```
-
-through dozens of controllers.
-
-A state transition should have a clear source of truth.
-
-Conceptually:
-
-```text
-Booking
- ├── pending
- ├── paid
- ├── completed
- └── cancelled
-```
-
-Transitions should be validated by the booking domain/application layer.
+Different entry points must not implement conflicting definitions of "available".
 
 ---
 
-# 22. Schedule and Availability Architecture
+# 18. Booking State Architecture
 
-Schedule and availability must remain separate concepts.
+The current conceptual booking lifecycle is:
 
 ```text
-Service
-  ↓
-Schedule
-  ↓
-Booking
-  ↓
-Availability State
+pending
+    ↓
+paid
+    ↓
+completed
 ```
 
-Schedule defines a potential bookable period.
+with:
 
-Booking consumption affects current availability.
+```text
+pending → cancelled
+paid    → cancelled
+paid    → completed
+```
 
-Availability should not be duplicated independently across several controllers.
+where supported by business rules.
+
+Booking state must be changed through controlled transitions.
+
+The architecture must not allow raw client input to arbitrarily set internal booking state.
 
 ---
 
-# 23. Double-Booking Protection
+# 19. Pending Booking Architecture
 
-Double booking is a critical domain invariant.
+Pending bookings are treated differently from confirmed bookings.
 
-Protection should exist at more than one level where necessary:
-
-```text
-Application validation
-        +
-Database constraints / transaction behavior
-        +
-Concurrency-safe operation
-```
-
-A UI-level availability check alone is insufficient.
-
----
-
-# 24. Customer Booking Management
-
-Customer management links must use an explicit secure authorization mechanism.
-
-The architecture should separate:
+The architecture distinguishes:
 
 ```text
-Booking identity
+Pending within grace period
+        ↓
+temporarily occupies schedule
 ```
 
 from:
 
 ```text
-Booking management authorization
+Pending beyond grace period
+        ↓
+stale pending state
+        ↓
+must no longer block normal availability
 ```
 
-A booking code is not automatically sufficient authorization to perform protected operations.
-
----
-
-# 25. Multi-Slot Booking Architecture
-
-Multi-slot booking consists conceptually of:
+The current pending grace period is:
 
 ```text
-Customer Selection
-        ↓
-Slot Compatibility Validation
-        ↓
-Reservation Intent
-        ↓
-Payment Group
-        ↓
-Booking Records
+15 minutes
 ```
 
-The application layer should coordinate this operation.
+This rule must remain centralized.
 
-It should not be implemented independently in several controllers.
+It must not be independently reimplemented in:
+
+```text
+Controller
+Blade
+JavaScript
+Command
+Calendar
+Booking Query
+```
+
+without using the authoritative booking/availability rules.
 
 ---
 
-# 26. Payment and Booking Boundary
+# 20. Stale Pending Handling
 
-Payment and booking must remain separate domains.
+Stale pending bookings must be reconciled safely.
 
-The relationship is:
+The architecture should support:
+
+```text
+Scheduled expiration
++
+Authoritative booking transaction handling
++
+Concurrency protection
+```
+
+A stale pending booking must not permanently occupy a schedule.
+
+A new booking must not be blocked indefinitely merely because an old pending record still exists.
+
+---
+
+# 21. Double-Booking Protection
+
+Double-booking prevention is a critical architectural invariant.
+
+Protection must exist at more than one conceptual level where appropriate:
+
+```text
+Application Validation
+        +
+Transaction / Locking
+        +
+Database Integrity
+```
+
+The exact implementation may change.
+
+The invariant must not:
+
+> allow two conflicting confirmed reservations to occupy the same exclusive schedule.
+
+Database constraints should be used where appropriate as a final integrity boundary.
+
+Application validation must not be treated as sufficient by itself for high-risk concurrent operations.
+
+---
+
+# 22. Multi-Slot Booking Architecture
+
+A multi-slot booking represents one reservation intent that may span multiple schedules.
+
+The architecture should preserve:
+
+```text
+One reservation intent
+        ↓
+Compatible schedule set
+        ↓
+Coordinated availability validation
+        ↓
+Coordinated persistence
+        ↓
+Unified payment relationship where applicable
+```
+
+Partial booking must not leave the system in an invalid state.
+
+---
+
+# 23. Cancellation Architecture
+
+Cancellation is a business operation rather than a direct status update.
+
+It may involve:
+
+```text
+Authorization
+Availability restoration
+Booking state transition
+Payment relationship
+Refund processing
+Notifications
+Cache invalidation
+```
+
+Customer and owner cancellation flows may have different business effects.
+
+The cancellation operation must preserve booking and financial consistency.
+
+---
+
+# 24. Rescheduling Architecture
+
+Rescheduling is also a controlled business operation.
+
+The architecture should treat rescheduling as:
+
+```text
+Authorize
+   ↓
+Validate Current Booking
+   ↓
+Determine New Schedule
+   ↓
+Check Availability
+   ↓
+Lock Relevant Resources
+   ↓
+Update Booking
+   ↓
+Persist Atomically
+   ↓
+Update Derived State
+```
+
+The old schedule must become available only when the transaction has safely moved the booking.
+
+---
+
+# 25. Payment Architecture
+
+Payment is a separate domain from booking.
+
+The conceptual relationship is:
 
 ```text
 Booking
-   │
-   └── may have payment
+    │
+    └── may require
+           ↓
+        Payment
 ```
 
-not:
+but:
 
 ```text
-Booking = Payment
+Booking State
+≠
+Payment State
 ```
 
-A payment adapter should not own booking business rules.
+The architecture must preserve this separation.
 
-A booking action may call payment services when required.
+Payment status currently supports:
+
+```text
+pending
+sukses
+gagal
+```
+
+Payment expiration is a business condition handled within the existing payment lifecycle rather than a separate persistent status.
 
 ---
 
-# 27. Subscription Architecture
+# 26. Payment Provider Boundary
 
-Subscription is a platform capability.
+The current supported payment provider is Midtrans.
+
+Provider-specific communication belongs behind an infrastructure boundary.
+
+The core booking domain should not depend directly on raw Midtrans-specific details.
+
+The architecture should make it possible to:
+
+```text
+Replace Provider
+Add Provider
+Mock Provider
+Test Provider Failures
+```
+
+without rewriting core booking rules.
+
+---
+
+# 27. Payment Verification
+
+Payment success must be based on trusted evidence.
+
+The architecture must distinguish:
+
+```text
+Customer / Client Request
+```
+
+from:
+
+```text
+Trusted Payment Provider Result
+```
+
+A client-side claim must not by itself establish successful payment state.
+
+Webhook or equivalent trusted verification must be validated appropriately before financial state is changed.
+
+---
+
+# 28. Payment Idempotency
+
+External payment providers may repeat callbacks.
+
+Payment processing must therefore be idempotent.
+
+Repeated delivery of the same external event must not produce:
+
+```text
+Duplicate Payment State Changes
+Duplicate Refunds
+Duplicate Booking Side Effects
+Duplicate Notifications
+```
+
+where those side effects are intended to occur only once.
+
+---
+
+# 29. Refund Architecture
+
+Refund is separate from payment and booking state.
+
+The conceptual model is:
+
+```text
+Booking
+    ↓
+Cancellation / Eligible Refund Event
+    ↓
+Refund
+    ↓
+Refund Processing
+```
+
+Refund state:
+
+```text
+pending
+processed
+failed
+```
+
+Refund processing must be idempotent and traceable.
+
+---
+
+# 30. Customer Management Token Architecture
+
+Customer-facing booking management may operate without a normal authenticated BookQu account.
+
+Therefore token security is an architectural boundary.
+
+Tokenized capabilities must be scoped appropriately.
+
+Examples include:
+
+```text
+View Booking
+View Invoice
+Submit Review
+Cancel Booking
+Reschedule Booking
+```
+
+A token valid for one capability must not automatically imply authority for another capability.
+
+A token for one booking must never grant access to another booking.
+
+Cross-booking and cross-tenant token use must be rejected.
+
+---
+
+# 31. Subscription Architecture
+
+Subscription controls the tenant's access to BookQu capabilities.
+
+The conceptual structure is:
+
+```text
+Plan
+   ↓
+Subscription
+   ↓
+Entitlement
+   ↓
+Feature Access
+```
+
+Feature access rules should have a centralized source of truth.
+
+The architecture should prevent the same entitlement logic from being independently implemented across many controllers.
+
+---
+
+# 32. Notification Architecture
+
+Notifications communicate domain events or operational state changes.
+
+Notification generation should remain separated from the core operation that creates the underlying state.
 
 Conceptually:
 
 ```text
-Plan
-  ↓
-Subscription
-  ↓
-Tenant Entitlement
-  ↓
-Feature Authorization
-```
-
-Feature gating should be centralized enough to prevent different controllers from interpreting plan rules differently.
-
----
-
-# 28. Analytics Architecture
-
-Analytics should derive from authoritative operational records.
-
-The architecture should avoid maintaining multiple conflicting "truth" systems.
-
-Example:
-
-```text
-Bookings
-Payments
-Customers
-Schedules
+Business Event
       ↓
-Analytics Queries
+Notification Decision
       ↓
-Dashboard / Reports
-```
-
-Analytics data should not independently redefine booking state.
-
----
-
-# 29. Caching Architecture
-
-Caching is allowed only where cache invalidation is well-defined.
-
-Current booking-related caching already exists.
-
-The target rules are:
-
-1. Cache read-heavy data where useful.
-2. Define cache keys consistently.
-3. Include tenant identity in tenant-scoped keys.
-4. Invalidate cache when underlying state changes.
-5. Never use stale cache as the final authority for booking correctness.
-6. Never sacrifice booking integrity for a cache optimization.
-
-For availability:
-
-```text
-Database
-    ↓
-authoritative state
-
-Cache
-    ↓
-performance optimization
-```
-
-not:
-
-```text
-Cache
-    ↓
-source of truth
-```
-
----
-
-# 30. Database Architecture
-
-BookQu uses a relational database.
-
-Primary domain entities include:
-
-```text
-users
-tenants
-services
-schedules
-bookings
-payments
-subscriptions
-plans
-reviews
-customers / customer data
-```
-
-Supporting entities include:
-
-```text
-categories
-staff
-resources
-additional_items
-vouchers
-assets
-customer_notes
-booking_logs
-refunds
-notifications
-owner_payouts
-usage_logs
-```
-
-Database relationships must follow domain ownership and tenant isolation.
-
----
-
-# 31. Database Migration Rules
-
-Migrations are the authoritative mechanism for schema changes.
-
-Rules:
-
-* Every schema change requires a migration.
-* Never modify an already-applied production migration merely to fix current development convenience.
-* Use descriptive migration names.
-* Database constraints should enforce important invariants where practical.
-* Add indexes based on actual query patterns.
-* Avoid storing redundant data unless there is a documented reason.
-* Avoid database enums when frequent state evolution would make migrations unnecessarily fragile, unless the existing model intentionally uses them.
-
----
-
-# 32. Database Naming
-
-New database schema should use consistent English naming.
-
-Recommended convention:
-
-```text
-snake_case
+Delivery Channel
 ```
 
 Examples:
 
 ```text
-tenant_id
-service_id
-booking_id
-created_at
-updated_at
+Booking Created
+Booking Status Changed
+Payment Updated
+Subscription Changed
 ```
 
-Existing legacy columns such as:
-
-```text
-idtenant
-idlayanan
-namalayanan
-tanggalbooking
-```
-
-should not be renamed casually.
-
-Such migrations must be treated as explicit refactoring projects because they can affect:
-
-* models;
-* relationships;
-* queries;
-* migrations;
-* seeders;
-* tests;
-* views;
-* existing data.
+A notification failure should not automatically corrupt the primary booking or payment transaction unless the product requirement explicitly requires transactional coupling.
 
 ---
 
-# 33. PHP Naming Convention
+# 33. Cache Architecture
 
-New PHP code must follow standard Laravel/PHP conventions.
+Caching is a performance mechanism, not a source of business truth.
 
-Classes:
+Cached data must never override authoritative booking state.
 
-```text
-PascalCase
-```
-
-Examples:
+Caching may be used for:
 
 ```text
-BookingController
-CreateBooking
-BookingAvailabilityService
-TenantContext
+Availability
+Public Business Data
+Read-Heavy Views
+Derived Analytics
 ```
 
-Methods:
+where safe.
 
-```text
-camelCase
-```
+Critical booking correctness must ultimately depend on authoritative persistent state and transactional rules.
 
-Examples:
-
-```text
-createBooking()
-resolveTenant()
-calculatePrice()
-```
-
-Variables:
-
-```text
-camelCase
-```
-
-Examples:
-
-```text
-$booking
-$tenantId
-$serviceId
-```
-
-Constants:
-
-```text
-UPPER_SNAKE_CASE
-```
+Cache keys must include all dimensions required to prevent cross-tenant or cross-service contamination.
 
 ---
 
-# 34. Legacy Indonesian Variable Names
+# 34. Scheduler Architecture
 
-The current codebase contains legacy Indonesian variable names.
+Scheduled processing is used for background reconciliation and time-based business behavior.
 
-Examples may include:
+Examples include:
 
 ```text
-$namabisnis
-$nomorhp
-$tanggalbooking
+Payment Expiration
+Subscription Expiration
+Other Time-Based Maintenance
 ```
 
-New code must not introduce additional Indonesian variable naming unless a clear compatibility reason exists.
+Scheduler responsibilities should invoke application operations rather than duplicating business rules in the scheduler itself.
 
-Existing names may be migrated gradually when the affected area is already being refactored.
+The conceptual model is:
 
-Avoid massive rename-only changes unrelated to the feature being developed.
+```text
+Scheduler
+   ↓
+Application Command / Action
+   ↓
+Business Rules
+   ↓
+Persistent State
+```
+
+Operational execution details belong in `docs/8-OPERATIONS.md`.
 
 ---
 
-# 35. Controller Naming
+# 35. Database Architecture
 
-Use resource/domain-oriented controller names.
+The relational database is an authoritative persistence layer.
 
-Examples:
-
-```text
-OwnerBookingController
-OwnerScheduleController
-OwnerServiceController
-CustomerBookingController
-AdminDashboardController
-```
-
-Avoid generic controllers such as:
+Database design should provide:
 
 ```text
-PortalController
-ManagerController
-SystemController
-GeneralController
+Referential Integrity
+Unique Constraints
+Foreign Keys
+Indexes
+Atomic Transactions
+Critical Integrity Boundaries
 ```
 
-when the responsibility can be named more precisely.
+Application code remains responsible for business behavior.
 
-Existing controllers such as `OwnerProgramController` should be treated as legacy terminology and may be renamed during the relevant refactor.
+Database constraints remain responsible for integrity that must hold even under concurrent requests.
 
 ---
 
-# 36. Controller Size Guideline
+# 36. Transaction Boundaries
 
-There is no absolute line-count limit.
+Transactions should be used whenever a business operation requires multiple changes to remain consistent.
 
-However, a controller should be considered a refactoring candidate when:
-
-* one method performs multiple major business operations;
-* business rules dominate the method;
-* the controller contains repeated query logic;
-* payment logic is embedded directly in it;
-* transaction orchestration is repeated;
-* the controller becomes difficult to test independently.
-
-The goal is responsibility clarity, not arbitrary line limits.
-
----
-
-# 37. View Architecture
-
-Blade is the presentation layer.
-
-Views should primarily handle:
-
-* rendering;
-* presentation conditions;
-* forms;
-* user interaction state.
-
-Views should not perform:
-
-* database queries;
-* major business decisions;
-* payment-provider calls;
-* booking mutation;
-* authorization logic that should occur server-side.
-
----
-
-# 38. Blade Component Rules
-
-Repeated UI elements should be extracted into reusable Blade components.
-
-Examples:
+Examples include:
 
 ```text
-components/owner/
-components/customer/
-components/shared/
+Create Booking
+Reschedule Booking
+Cancel Booking
+Expire Payment
+Process Refund
+Subscription State Change
+Multi-Slot Booking
 ```
 
-Good candidates include:
+A transaction should define a clear consistency boundary.
+
+The architecture should avoid long-running transactions around unrelated external I/O where possible.
+
+---
+
+# 37. External Integration Rules
+
+External integrations should be isolated from the core domain.
+
+An integration should have clear boundaries for:
 
 ```text
-Modal
-Sidebar
+Request
+Response
+Failure
+Timeout
+Retry
+Idempotency
+Logging
+Security
+```
+
+External provider failures must not be allowed to leave internal state in an ambiguous condition.
+
+The integration boundary should make provider-specific behavior testable.
+
+---
+
+# 38. Frontend Architecture
+
+The BookQu frontend is primarily server-rendered through Blade with interactive behavior provided by Alpine.js and supporting frontend tooling.
+
+The frontend should be organized around:
+
+```text
+Page Responsibility
+Component Responsibility
+Presentation State
+Reusable UI
+```
+
+Blade views should not become repositories for large application workflows.
+
+Business decisions should remain in the application/domain layers.
+
+Frontend JavaScript may:
+
+```text
+Display State
+Collect Input
+Perform UI Interaction
+Request Server Operations
+```
+
+but must not become the authoritative source for security-sensitive or business-critical rules.
+
+---
+
+# 39. UI Component Rules
+
+Reusable UI components should be used where repeated presentation responsibility exists.
+
+Examples include:
+
+```text
+Owner Navigation
 Topbar
-StatCard
-PageHeader
-Table
-Pagination
-FormField
-StatusBadge
-EmptyState
-ConfirmationDialog
+Alerts
+Modals
+Booking Components
+Form Components
+Public Page Components
 ```
 
-A component should encapsulate reusable presentation behavior.
+A component should remain focused on presentation.
+
+It should not silently introduce business behavior.
 
 ---
 
-# 39. Page View Rules
+# 40. Validation Boundary
 
-A page should primarily compose sections and components.
-
-Avoid very large files that contain:
+Validation exists at multiple levels.
 
 ```text
-page
-+
-all modals
-+
-all forms
-+
-all repeated cards
-+
-all JavaScript
-+
-all business logic
+Request Validation
+        ↓
+Application Preconditions
+        ↓
+Domain Invariants
+        ↓
+Database Integrity
+```
+
+These layers are complementary.
+
+Request validation cannot replace domain validation.
+
+Domain validation cannot replace database constraints when concurrent integrity requires database enforcement.
+
+---
+
+# 41. Error Handling Architecture
+
+Errors should be classified according to responsibility.
+
+Examples:
+
+```text
+Validation Error
+Authorization Error
+Not Found
+Business Rule Violation
+Concurrency Conflict
+External Provider Failure
+Infrastructure Failure
+Unexpected Application Error
+```
+
+Business operations should return or raise meaningful failure conditions that can be translated appropriately by the presentation layer.
+
+Sensitive infrastructure details must not be exposed directly to users.
+
+---
+
+# 42. Logging Architecture
+
+Logging should support operational investigation without becoming a substitute for structured domain state.
+
+High-value events include:
+
+```text
+Authentication
+Booking Creation
+Booking Cancellation
+Booking Reschedule
+Payment State Change
+Refund State Change
+Webhook Processing
+Subscription State Change
+Security Failures
+Unexpected Errors
+```
+
+Logs must avoid exposing secrets or unnecessary sensitive customer data.
+
+---
+
+# 43. Security Architecture
+
+Security is cross-cutting.
+
+The architecture must preserve:
+
+```text
+Authentication
+Authorization
+Tenant Isolation
+Input Validation
+CSRF Protection
+XSS Protection
+SQL Injection Protection
+Secret Protection
+Webhook Verification
+IDOR Protection
+Token Scope
+```
+
+Security controls should be enforced at appropriate architectural boundaries rather than relying solely on frontend behavior.
+
+---
+
+# 44. Testing Architecture
+
+Testing should exist at multiple levels.
+
+```text
+Domain / Rule Tests
+        ↓
+Application Operation Tests
+        ↓
+Integration Tests
+        ↓
+HTTP / Feature Tests
+        ↓
+UI / Browser Verification where required
+```
+
+The exact distribution may change.
+
+Critical invariants should have targeted automated tests.
+
+Especially important are:
+
+```text
+Tenant Isolation
+Booking Concurrency
+Availability
+Pending Grace Handling
+Payment Idempotency
+Refund Idempotency
+Authorization
+Token Scope
+Subscription Entitlement
+```
+
+---
+
+# 45. Architecture and Testing Relationship
+
+Every architectural boundary should make the relevant behavior easier to test.
+
+For example:
+
+```text
+Application Action
+    ↓
+Can be tested independently
+
+Domain Rule
+    ↓
+Can be tested directly
+
+Infrastructure Provider
+    ↓
+Can be mocked or integration-tested
+```
+
+Architecture should not introduce unnecessary indirection that makes testing harder without providing meaningful value.
+
+---
+
+# 46. Dependency Direction
+
+Dependencies should generally flow toward stable business responsibilities.
+
+Conceptually:
+
+```text
+Presentation
+      ↓
+Application
+      ↓
+Domain
+      ↓
+Infrastructure / Persistence
+```
+
+Framework-specific and provider-specific details should not become the foundation of core business rules.
+
+Where practical:
+
+```text
+Core Business Logic
+        ↓
+Stable Interface / Responsibility
+        ↓
+Concrete Infrastructure
+```
+
+The exact mechanism may be interface-based or another appropriate Laravel design.
+
+Abstraction must be justified by a real dependency boundary.
+
+---
+
+# 47. Domain Dependency Rules
+
+The following rules should be preserved.
+
+### Booking
+
+May depend on:
+
+```text
+Service
+Schedule
+Customer
+Payment relationship
+Tenant context
+```
+
+but must not depend on:
+
+```text
+Blade
+HTTP Request
+Controller
+Browser JavaScript
+```
+
+---
+
+### Payment
+
+May depend on:
+
+```text
+Booking/payment context
+External provider boundary
+Transaction state
+```
+
+but core payment rules should not depend directly on UI implementation.
+
+---
+
+### Schedule
+
+May depend on:
+
+```text
+Service
+Tenant
+Booking availability rules
+```
+
+but should not depend on controller-specific input structures.
+
+---
+
+# 48. Feature Boundary Rule
+
+A new feature should be introduced through the existing architectural boundaries before introducing a new architecture layer.
+
+Before creating a new directory, service, interface, or framework pattern, ask:
+
+```text
+What responsibility requires this?
+Which existing boundary cannot represent it?
+What invariant does it protect?
+What tests justify it?
+```
+
+Do not create abstractions merely because the codebase is growing.
+
+---
+
+# 49. Extension Points
+
+BookQu should remain extensible in the following areas:
+
+```text
+Payment Providers
+Notification Channels
+Storage Providers
+External Integrations
+Subscription Features
+Reporting
+Analytics
+Customer Capabilities
+```
+
+Future extension should preferably occur behind stable responsibilities.
+
+For example:
+
+```text
+Payment
+   ↓
+Payment Provider Boundary
+   ├── Midtrans
+   ├── Future Provider A
+   └── Future Provider B
+```
+
+rather than:
+
+```text
+Booking
+   ↓
+Direct Provider-Specific Calls
+```
+
+---
+
+# 50. Architecture Evolution Rules
+
+Architecture is expected to evolve.
+
+Future changes should follow these rules:
+
+1. Preserve accepted product behavior unless behavior change is intentional.
+2. Preserve tenant isolation.
+3. Preserve critical booking invariants.
+4. Preserve payment/booking separation.
+5. Preserve authorization boundaries.
+6. Avoid unnecessary new abstractions.
+7. Prefer incremental changes.
+8. Update System Design when current implementation changes materially.
+9. Create or update ADRs for significant long-lived architectural decisions.
+10. Keep Tracker status synchronized with actual implementation.
+
+---
+
+# 51. Current Implementation vs Architectural Authority
+
+The architecture document defines:
+
+```text
+What boundaries should exist.
+What responsibilities belong where.
+What invariants must be protected.
+What direction the system should evolve.
+```
+
+The System Design document defines:
+
+```text
+How those responsibilities are implemented now.
+```
+
+Therefore:
+
+```text
+ARCHITECTURE
+→ Normative
+
+SYSTEM DESIGN
+→ Descriptive + Current
+```
+
+A current implementation detail may be temporarily different from the architectural target.
+
+Such a difference should be visible and intentional rather than silently redefining the architecture.
+
+---
+
+# 52. Architecture Decision Records
+
+Important architectural decisions should be recorded in:
+
+```text
+docs/adr/
+```
+
+An ADR is justified when a decision:
+
+* has long-term consequences;
+* establishes a system-wide boundary;
+* affects multiple domains;
+* constrains future implementation;
+* would be difficult to reconstruct later;
+* resolves a significant architectural trade-off.
+
+Examples include:
+
+```text
+Multi-Tenancy Strategy
+Booking Concurrency Model
+Payment State Separation
+Customer Token Scope
+External Payment Provider Boundary
+```
+
+Minor implementation decisions do not require ADRs.
+
+---
+
+# 53. Operational Boundary
+
+Architecture defines what operational capabilities must exist.
+
+Detailed procedures belong to:
+
+```text
+docs/8-OPERATIONS.md
+```
+
+For example, architecture may require:
+
+```text
+Scheduled payment expiration
+Cache consistency
+Background processing
+External payment reconciliation
+Production observability
+```
+
+Operations defines:
+
+```text
+How the scheduler is configured
+How it is verified
+How failures are diagnosed
+How production is recovered
+```
+
+This separation keeps architecture stable while operational procedures can evolve.
+
+---
+
+# 54. Documentation Boundary
+
+Architecture documentation should not duplicate:
+
+```text
+Product requirements
+Current implementation details
+Operational runbooks
+Historical refactor plans
 ```
 
 Instead:
 
 ```text
-Page
-├── Header
-├── Filters
-├── Data Section
-├── Modal Components
-├── Form Components
-└── Page-specific interaction
+Product
+→ docs/2-PRODUCT.md
+
+Requirements
+→ docs/3-REQUIREMENT.md
+
+Architecture
+→ docs/4-ARCHITECTURE.md
+
+Current System
+→ docs/7-SYSTEM-DESIGN.md
+
+Operations
+→ docs/8-OPERATIONS.md
+
+Development
+→ docs/5-DEVELOPMENT.md
+
+Status
+→ docs/6-TRACKER.md
+
+Rationale
+→ docs/adr/
 ```
 
 ---
 
-# 40. Alpine.js Rules
+# 55. Architecture Change Process
 
-Alpine.js is appropriate for localized client-side interaction.
-
-Good use cases:
+An architectural change should normally follow:
 
 ```text
-Modal visibility
-Dropdown state
-Tabs
-Local form interaction
-UI toggles
-Small interactive components
+Identify Problem
+       ↓
+Identify Affected Requirement
+       ↓
+Inspect Current System Design
+       ↓
+Define Architectural Change
+       ↓
+Evaluate Consequences
+       ↓
+Create / Update ADR if Significant
+       ↓
+Implement Incrementally
+       ↓
+Test
+       ↓
+Update System Design
+       ↓
+Update Tracker
 ```
 
-Avoid using Alpine state as the authoritative source for business state.
-
-The server remains authoritative for:
-
-```text
-booking availability
-payment status
-subscription state
-authorization
-tenant identity
-```
+A significant architectural decision should not be introduced only through code without documenting the resulting architectural rule.
 
 ---
 
-# 41. JavaScript Rules
+# 56. Definition of Architectural Compliance
 
-JavaScript should enhance the UI.
+A feature is architecturally compliant when:
 
-It must not bypass server-side business rules.
+```text
+Responsibilities are clear
+        ↓
+Tenant boundaries are preserved
+        ↓
+Business rules have appropriate ownership
+        ↓
+Controllers remain appropriately thin
+        ↓
+External integrations remain isolated
+        ↓
+Critical operations preserve transaction safety
+        ↓
+Important invariants are testable
+        ↓
+The implementation follows the intended architectural direction
+```
 
-Any important validation performed in JavaScript must also be validated server-side.
+Architectural compliance does not mean every file must perfectly match a theoretical structure.
+
+The goal is meaningful responsibility separation and safe evolution.
 
 ---
 
-# 42. Route Architecture
+# 57. Anti-Patterns to Avoid
 
-Routes should be declarative.
+The following patterns should be treated as architectural warnings.
 
-A route should primarily define:
+## God Controller
 
-```text
-HTTP method
-URI
-Controller/action
-Middleware
-Route name
-```
-
-Avoid putting business logic directly into route closures for production functionality.
-
-Route groups should be used for:
+A controller containing:
 
 ```text
-authentication
-role
-tenant
-owner
-customer/public tenant
-admin
-webhook
+Validation
+Business Rules
+Database Orchestration
+Payment Logic
+Notification Logic
+Availability Logic
 ```
+
+without clear delegation.
 
 ---
 
-# 43. Route Naming
+## God Service
 
-Use consistent route naming.
-
-Recommended pattern:
-
-```text
-owner.bookings.index
-owner.bookings.store
-owner.bookings.update
-owner.bookings.cancel
-
-owner.services.index
-owner.services.store
-owner.services.update
-
-customer.booking.service
-customer.booking.date
-customer.booking.time
-```
-
-Legacy aliases may remain temporarily when required for compatibility.
-
-New route aliases must not be added without a clear reason.
-
----
-
-# 44. Request Validation
-
-Validation should occur before business operations.
-
-Preferred order:
-
-```text
-Request
-  ↓
-Form Request validation
-  ↓
-Authorization
-  ↓
-Action
-```
-
-Do not rely on client-side validation as the primary security mechanism.
-
----
-
-# 45. Authorization
-
-Authorization must happen on the server.
-
-Use the appropriate mechanism:
-
-```text
-Middleware
-Policies
-Authorization checks
-Tenant authorization
-Subscription/entitlement checks
-```
-
-Do not rely on hidden UI elements as authorization.
-
----
-
-# 46. Error Handling
-
-Expected business errors should be handled predictably.
-
-Examples:
-
-```text
-Invalid booking
-Unavailable schedule
-Unauthorized tenant
-Expired payment
-Invalid voucher
-Expired subscription
-Invalid state transition
-```
-
-Errors should return an appropriate:
-
-* redirect;
-* validation error;
-* HTTP response;
-* user-facing message.
-
-Do not expose internal exception details to end users.
-
----
-
-# 47. Transactions
-
-Database transactions should be used when an operation changes multiple related records and partial completion would cause inconsistent state.
-
-Examples:
-
-```text
-Create multi-slot booking
-Process successful payment
-Cancel booking and release related state
-Create subscription payment result
-Create walk-in booking with related records
-```
-
-Transactions should not be added mechanically to every query.
-
----
-
-# 48. Events
-
-Events should be used when a domain occurrence has multiple independent consequences.
+A generic service responsible for unrelated domains.
 
 Example:
 
 ```text
-BookingCreated
-    ├── notification
-    ├── logging
-    └── analytics side effect
+BookQuService
 ```
 
-Events should not be introduced merely to make simple code appear more sophisticated.
+containing booking, payment, subscription, analytics, and customer logic without clear boundaries.
 
 ---
 
-# 49. Notifications and Side Effects
+## Generic Utility Dump
 
-Side effects such as:
-
-* sending email;
-* creating notifications;
-* logging external integration events;
-
-should be separated from the core transaction where possible.
-
-A booking operation should first establish the correct business state.
-
-Then asynchronous or secondary effects can occur safely.
+A helper or utility class containing unrelated business rules simply because they are shared.
 
 ---
 
-# 50. Queues and Background Jobs
+## Direct Provider Coupling
 
-Background jobs are appropriate for work that:
+Core business operations directly calling provider-specific APIs throughout the application.
 
-* is slow;
-* can run asynchronously;
-* does not need to block the HTTP response;
-* may require retries.
+---
 
-Examples:
+## Business Logic in Blade
+
+Critical rules implemented inside:
 
 ```text
-Email delivery
-Large report generation
-Non-critical notification
-External synchronization
+Blade
+JavaScript
+UI Component
 ```
 
-Do not move critical booking state changes to asynchronous jobs if doing so could expose inconsistent booking state to the user.
+instead of the appropriate backend/domain boundary.
 
 ---
 
-# 51. Testing Architecture
+## Client-Side Security
 
-Testing is part of the architecture.
-
-BookQu should have multiple levels of testing.
+Relying on:
 
 ```text
-Unit
- ↓
-Domain/Application
- ↓
-Feature
- ↓
-Integration
- ↓
-End-to-End where justified
+Hidden Input
+Frontend Condition
+Disabled Button
+JavaScript Check
 ```
 
----
-
-# 52. Unit Tests
-
-Use unit tests for:
-
-* pure business rules;
-* calculations;
-* state transition rules;
-* voucher calculation;
-* pricing;
-* utility logic.
+as authorization.
 
 ---
 
-# 53. Feature Tests
+## Duplicate Business Rules
 
-Use feature tests for:
-
-* HTTP behavior;
-* authorization;
-* tenant isolation;
-* booking flows;
-* customer management;
-* owner modules;
-* payment callbacks.
+Implementing the same booking/payment rule differently in multiple controllers, commands, and services.
 
 ---
 
-# 54. Integration Tests
+## Architecture by Folder
 
-Integration tests should verify important boundaries.
-
-Examples:
+Creating directories such as:
 
 ```text
-Booking + Schedule + Database
-Booking + Payment
-Tenant + Authorization
-Subscription + Feature Access
-```
-
----
-
-# 55. Security Tests
-
-Critical security invariants must have explicit tests.
-
-Examples:
-
-```text
-cross-tenant access
-IDOR
-unauthorized role access
-double booking
-malicious callback
-payment manipulation
-token leakage
-```
-
----
-
-# 56. Test Naming
-
-Tests should describe behavior.
-
-Good:
-
-```text
-test_owner_cannot_access_other_tenant_bookings
-test_customer_cannot_book_an_unavailable_schedule
-test_duplicate_payment_callback_does_not_duplicate_booking_state
-```
-
-Avoid vague names:
-
-```text
-test_booking
-test_function
-test_feature
-test_it_works
-```
-
----
-
-# 57. Refactoring Strategy
-
-Refactoring must preserve product behavior unless the refactoring is explicitly intended to change behavior.
-
-The correct sequence is:
-
-```text
-Existing Behavior
-      ↓
-Characterization Tests
-      ↓
-Small Refactor
-      ↓
-Run Tests
-      ↓
-Small Refactor
-      ↓
-Run Tests
-```
-
-Do not combine:
-
-```text
-architecture refactor
-+
-product redesign
-+
-database redesign
-+
-UI redesign
-```
-
-into one uncontrolled change.
-
----
-
-# 58. Refactoring Priority
-
-Current refactoring should prioritize:
-
-```text
-1. Booking domain
-2. Payment integration boundary
-3. Schedule / availability logic
-4. Owner controllers
-5. Large Blade views
-6. Route organization
-7. Legacy terminology
-8. Shared traits / utility cleanup
-```
-
-The order may change based on risk and active development.
-
----
-
-# 59. Refactoring Rule: Behavior First
-
-Before refactoring a legacy module:
-
-1. Understand what it currently does.
-2. Identify the requirements it implements.
-3. Identify relevant tests.
-4. Identify important edge cases.
-5. Extract responsibility.
-6. Keep behavior stable.
-7. Run tests.
-8. Document architectural changes if significant.
-
----
-
-# 60. Refactoring Rule: Do Not Rewrite Everything
-
-Do not replace working code simply because it is not architecturally ideal.
-
-The target architecture should be reached incrementally.
-
-Use a "refactor while touching" strategy when practical:
-
-```text
-Feature change
-    ↓
-Relevant old code touched
-    ↓
-Improve the affected boundary
-    ↓
-Keep unrelated legacy code stable
-```
-
----
-
-# 61. Architecture Decision Records
-
-Significant technical decisions should be documented in:
-
-```text
-docs/adr/
-```
-
-Examples include:
-
-```text
-ADR-001 Multi-Tenancy Strategy
-ADR-002 Public Tenant URL Strategy
-ADR-003 Booking Domain Structure
-ADR-004 Payment Provider Boundary
-ADR-005 Subscription Entitlement Strategy
-```
-
-An ADR should answer:
-
-```text
-Context
-Decision
-Alternatives
-Consequences
-```
-
----
-
-# 62. Architecture Change Rule
-
-If a change affects:
-
-* domain boundaries;
-* folder architecture;
-* data ownership;
-* tenant strategy;
-* payment integration;
-* state management;
-* external integrations;
-
-the architecture documentation should be updated.
-
-Do not silently introduce a new architectural pattern in one feature.
-
----
-
-# 63. AI Agent Architecture Rules
-
-AI agents working on BookQu must follow these rules.
-
-## Rule 1 — Do Not Copy Legacy Structure Blindly
-
-Existing code is evidence of current implementation, not automatically the correct architecture.
-
----
-
-## Rule 2 — Follow Target Architecture for New Code
-
-When adding new functionality, use the target architecture.
-
-Do not reproduce an existing anti-pattern just because an older module uses it.
-
----
-
-## Rule 3 — Prefer Existing Patterns When They Are Valid
-
-Do not introduce a new abstraction if an existing appropriate pattern already exists.
-
----
-
-## Rule 4 — Do Not Create Abstractions Without Need
-
-Do not create:
-
-```text
+Domain
+Service
 Repository
-Service
-Factory
-Interface
-DTO
-Event
-```
-
-merely because they appear architecturally sophisticated.
-
-Create them when they provide a real responsibility boundary.
-
----
-
-## Rule 5 — Preserve Tenant Isolation
-
-Every tenant-owned operation must respect tenant context and authorization.
-
----
-
-## Rule 6 — Business Logic Must Not Live in Blade
-
-Blade may display business state.
-
-Blade must not define authoritative business behavior.
-
----
-
-## Rule 7 — Business Logic Must Not Be Hidden in JavaScript
-
-Client-side code is not a trusted source of business truth.
-
----
-
-## Rule 8 — Do Not Trust IDs
-
-A user-provided:
-
-```text tenant_id
-booking_id
-service_id
-schedule_id
-payment_id
-```
-
-must never be treated as authorization by itself.
-
----
-
-## Rule 9 — Reuse Domain Logic
-
-Do not implement booking validation separately for:
-
-```text customer booking
-walk-in booking
-reschedule
-API-like endpoint
-admin operation
-```
-
-when the same domain rule applies.
-
----
-
-## Rule 10 — Update Tests
-
-Behavioral changes require corresponding test updates.
-
----
-
-# 64. Forbidden Architecture Patterns
-
-The following patterns are discouraged or prohibited for new code.
-
-## 64.1 Fat Controller
-
-Do not place a complete business workflow into a controller method.
-
----
-
-## 64.2 God Service
-
-Do not create a single service responsible for unrelated modules.
-
----
-
-## 64.3 God Model
-
-Do not turn one model into the entire application.
-
----
-
-## 64.4 Generic Helper
-
-Do not create generic helper files that become dumping grounds.
-
----
-
-## 64.5 View-Level Database Access
-
-Do not perform database queries directly in Blade.
-
----
-
-## 64.6 Client-Side Authorization
-
-Do not rely on UI visibility to enforce access.
-
----
-
-## 64.7 Duplicated Business Rules
-
-Do not copy the same booking/schedule/payment rule across multiple controllers.
-
----
-
-## 64.8 Silent Architectural Drift
-
-Do not introduce a new structural pattern without documenting why it exists.
-
----
-
-# 65. Code Organization Principle
-
-The preferred dependency direction is:
-
-```text
-Presentation
-    ↓
-Application
-    ↓
-Domain
-    ↓
-Infrastructure / Persistence
-```
-
-Lower-level infrastructure must not force product-level concepts into the UI.
-
-For example:
-
-```text
-Midtrans
-```
-
-must not define what a booking means.
-
-BookQu's booking domain defines the business behavior.
-
-Midtrans is an integration detail.
-
----
-
-# 66. Dependency Rule
-
-A module should depend on a more stable concept rather than a more volatile implementation detail.
-
-For example:
-
-```text
-Booking Application
-    ↓
-Payment Capability
-    ↓
-Midtrans Adapter
-```
-
-instead of:
-
-```text
-Booking Controller
-    ↓
-Midtrans SDK directly
-```
-
-This makes provider replacement and testing easier.
-
----
-
-# 67. Domain Boundary Rule
-
-The most important BookQu boundaries are:
-
-```text
-Booking
-Schedule
-Service
-Payment
-Subscription
-Tenant
-Customer
-```
-
-Supporting modules may interact with these domains but should not redefine them.
-
----
-
-# 68. Ownership Rule
-
-Every piece of data should have an identifiable owner.
-
-Example:
-
-```text
-Service
-→ Tenant
-
-Schedule
-→ Service / Tenant
-
-Booking
-→ Tenant / Service / Schedule / Customer context
-
-Payment
-→ Tenant / Business purpose
-
-Subscription
-→ Tenant / Plan
-```
-
-If ownership is ambiguous, the model should be reviewed before implementing additional logic.
-
----
-
-# 69. Shared Code Rule
-
-Shared code must be genuinely shared.
-
-Do not move unrelated logic into a shared class merely because two files appear similar.
-
-Shared abstractions should emerge from repeated stable behavior.
-
----
-
-# 70. Utility Rule
-
-Utility code should remain small and focused.
-
-If a utility begins making business decisions, it likely belongs in:
-
-```text
-Domain
-or
-Application
-```
-
-instead of:
-
-```text
-Support
-or
+Manager
 Helper
+Utility
+```
+
+without a clear responsibility.
+
+Folders are organizational tools, not architecture by themselves.
+
+---
+
+# 58. Future-Ready Architecture
+
+The architecture must support future capabilities without predicting them as requirements.
+
+Potential expansion areas include:
+
+```text
+Additional Payment Providers
+Additional Notification Channels
+External Calendar Integrations
+Additional Customer Capabilities
+Multi-Location Support
+Advanced Analytics
+Additional Tenant Features
+```
+
+Future capabilities should be introduced through existing boundaries whenever possible.
+
+A new architectural layer should be created only when the new requirement genuinely introduces a new responsibility.
+
+---
+
+# 59. Architecture Success Criteria
+
+The architecture is considered healthy when:
+
+```text
+Product behavior has a clear requirement
+        ↓
+Requirement has an architectural home
+        ↓
+Current implementation has a clear system-design mapping
+        ↓
+Critical behavior has tests
+        ↓
+Tenant isolation is enforced
+        ↓
+Booking invariants are protected
+        ↓
+Payment boundaries are clear
+        ↓
+External integrations are isolated
+        ↓
+Future changes can be introduced incrementally
 ```
 
 ---
 
-# 71. View Data Rule
+# 60. Final Architectural Model
 
-Controllers or application services should prepare the data required by views.
-
-Views should not reconstruct domain data through complicated queries or business calculations.
-
----
-
-# 72. API Boundary
-
-BookQu currently operates primarily as a server-rendered web application.
-
-An API should only be introduced when an actual product requirement requires it.
-
-Do not build a complete REST API solely for architectural appearance.
-
-If an API is introduced later, it must reuse the same application/domain operations rather than duplicating business logic.
-
----
-
-# 73. External Integration Boundary
-
-Every external provider should have a clear boundary.
-
-Examples:
+The BookQu architecture can be summarized as:
 
 ```text
-Payment Provider
-Email Provider
-Storage Provider
-Calendar Provider
-Messaging Provider
+                    PRODUCT
+                       ↓
+                  REQUIREMENTS
+                       ↓
+                 ARCHITECTURAL
+                   PRINCIPLES
+                       ↓
+        ┌──────────────┼──────────────┐
+        ↓              ↓              ↓
+   PRESENTATION    APPLICATION      DOMAIN
+        │              │              │
+        └──────────────┼──────────────┘
+                       ↓
+                 INFRASTRUCTURE
+                       ↓
+              DATABASE / PROVIDERS
 ```
 
-The application should not become tightly coupled to provider-specific behavior.
-
----
-
-# 74. Configuration Rule
-
-Environment-specific configuration belongs in:
+with cross-cutting concerns:
 
 ```text
-.env
-config/
-```
-
-Business behavior must not depend directly on environment variables scattered throughout controllers.
-
-Preferred pattern:
-
-```text
-Environment
-    ↓
-Configuration
-    ↓
-Application / Service
-```
-
----
-
-# 75. Security Boundary Rule
-
-The following are security-sensitive boundaries:
-
-```text
-Authentication
+Tenant Isolation
 Authorization
-Tenant Resolution
-Tenant Scope
-Booking Management Token
-Payment Callback
-Subscription Entitlement
-File Upload
-External Integrations
+Security
+Transactions
+Caching
+Logging
+Testing
 ```
 
-Changes to these areas require extra review and tests.
-
----
-
-# 76. File Upload Architecture
-
-User-provided assets must:
-
-* be validated;
-* be stored through the configured storage mechanism;
-* belong to the correct tenant;
-* not allow unauthorized path manipulation;
-* use appropriate file type/size restrictions.
-
-File paths should not be treated as authorization.
-
----
-
-# 77. Logging Rule
-
-Logs should help answer:
+and supporting documentation:
 
 ```text
-What happened?
-When?
-For which tenant?
-For which entity?
-Why did it fail?
-```
+SYSTEM DESIGN
+→ Current implementation model
 
-Logs must not expose sensitive credentials or payment secrets.
+OPERATIONS
+→ Runtime and operational procedures
 
----
-
-# 78. Performance Architecture Rule
-
-Performance work should begin with evidence.
-
-Do not add:
-
-```text
-cache
-queue
-repository
-Redis
-complex optimization
-```
-
-merely because the system may someday need it.
-
-Preferred process:
-
-```text
-Measure
-   ↓
-Identify bottleneck
-   ↓
-Optimize
-   ↓
-Measure again
+ADR
+→ Architectural rationale
 ```
 
 ---
 
-# 79. Scalability Architecture Rule
+# 61. Final Principle
 
-Scalability should be achieved primarily through clear boundaries.
+The BookQu architecture must evolve without losing the boundaries that protect its critical behavior.
 
-The first priority is:
+The fundamental principles are:
 
 ```text
-correct domain boundaries
-+
-efficient queries
-+
-proper indexes
-+
-safe transactions
-+
-controlled external integrations
+Clear Responsibilities
+        +
+Strong Tenant Isolation
+        +
+Explicit Business Operations
+        +
+Centralized Critical Rules
+        +
+Safe Transactions
+        +
+Separated External Integrations
+        +
+Testable Design
+        +
+Incremental Evolution
 ```
 
-Infrastructure scaling can follow once application architecture supports it.
+The architecture exists to make correct product behavior easier to maintain, verify, and extend.
 
----
+> **Architecture should provide stable boundaries while allowing implementation details to evolve.**
 
-# 80. Current-to-Target Migration Strategy
-
-The BookQu codebase should not be rewritten in one step.
-
-The migration should occur incrementally.
-
----
-
-## Phase 1 — Documentation Alignment
-
-Create and stabilize:
+The source of truth for product meaning remains:
 
 ```text
-AGENT.md
-docs/1-README.md
 docs/2-PRODUCT.md
+```
+
+The source of truth for required behavior remains:
+
+```text
 docs/3-REQUIREMENT.md
-docs/4-ARCHITECTURE.md
-docs/5-DEVELOPMENT.md
-docs/6-TRACKER.md
 ```
 
----
-
-## Phase 2 — Characterize Existing Behavior
-
-Identify:
+The source of truth for current implementation design is:
 
 ```text
-Requirement
-+
-Current implementation
-+
-Current test
+docs/7-SYSTEM-DESIGN.md
 ```
 
-for critical modules.
-
----
-
-## Phase 3 — Stabilize Critical Domains
-
-Prioritize:
+The source of truth for operational procedures is:
 
 ```text
-Tenant
-Service
-Schedule
-Booking
-Payment
-Subscription
+docs/8-OPERATIONS.md
 ```
 
----
-
-## Phase 4 — Extract Application Actions
-
-Start with the most complex operations.
-
-Examples:
-
-```text
-CreateBooking
-CreateWalkInBooking
-CancelBooking
-RescheduleBooking
-ProcessBookingPayment
-ProcessSubscriptionPayment
-```
-
----
-
-## Phase 5 — Refactor Controllers
-
-Move business workflows out of oversized controllers.
-
-Keep controllers focused on HTTP concerns.
-
----
-
-## Phase 6 — Refactor Blade
-
-Extract repeated components and large UI sections.
-
-Do not change product behavior unnecessarily.
-
----
-
-## Phase 7 — Normalize Terminology
-
-Gradually migrate legacy naming such as:
-
-```text
-Program
-→ Service
-```
-
-where doing so is safe and useful.
-
----
-
-## Phase 8 — Improve Database Consistency
-
-Only after the application layer is stable should major naming/schema refactors be considered.
-
----
-
-# 81. Refactoring Safety Rule
-
-Every substantial refactor must have one of the following:
-
-```text
-Existing tests
-or
-Characterization test
-or
-Explicit manual verification procedure
-```
-
-No large refactor should depend solely on visual inspection.
-
----
-
-# 82. Architecture Completeness
-
-The target architecture is considered sufficiently implemented when:
-
-```text
-HTTP responsibilities are clear
-+
-business operations are explicit
-+
-tenant isolation is centralized
-+
-payment integration is isolated
-+
-critical domain rules are testable
-+
-large controllers are reduced
-+
-large views are decomposed
-+
-new features follow the same architecture
-```
-
-It does not require the repository to be perfectly abstract.
-
----
-
-# 83. Definition of Architectural Completion
-
-A module is architecturally considered healthy when:
-
-* responsibilities are clear;
-* dependencies are understandable;
-* business rules are not duplicated;
-* tenant isolation is preserved;
-* tests can exercise important behavior;
-* external integrations are isolated;
-* adding another feature does not require modifying unrelated modules;
-* future contributors can understand the module without reconstructing the entire application.
-
----
-
-# 84. Architecture Change Checklist
-
-Before merging an architectural change, check:
-
-```text
-[ ] Product behavior remains aligned with docs/2-PRODUCT.md
-[ ] Requirement remains aligned with docs/3-REQUIREMENT.md
-[ ] Tenant isolation is preserved
-[ ] Authorization remains correct
-[ ] Existing critical tests pass
-[ ] New behavior has tests
-[ ] No business logic was added to Blade
-[ ] No unnecessary logic was added to controllers
-[ ] No unnecessary abstraction was introduced
-[ ] External integrations remain isolated
-[ ] Database changes have migrations
-[ ] Architecture documentation updated if needed
-[ ] Relevant ADR created if the decision is significant
-[ ] docs/6-TRACKER.md updated
-```
-
----
-
-# 85. Final Architecture Principles
-
-BookQu follows these architectural principles:
-
-```text
-1. Product behavior comes before implementation.
-2. Controllers coordinate; they do not own the whole business.
-3. Business rules should have identifiable owners.
-4. Booking is the central operational domain.
-5. Tenant isolation is a security boundary.
-6. Payment is an external integration boundary.
-7. UI is not a source of business truth.
-8. Database is not a substitute for business architecture.
-9. Do not introduce abstraction without a real need.
-10. Prefer incremental refactoring over uncontrolled rewrites.
-11. Existing code is evidence, not necessarily the target architecture.
-12. New code follows the target architecture.
-13. Important architectural decisions must be documented.
-14. Tests are part of the architecture.
-15. Correctness comes before optimization.
-```
-
----
-
-# 86. Architecture Decision Priority
-
-When architectural concerns conflict, prioritize them in this order:
-
-```text
-1. Data correctness
-2. Security / tenant isolation
-3. Business-rule correctness
-4. Maintainability
-5. Testability
-6. Performance
-7. Convenience
-```
-
-Performance or coding convenience must not justify breaking tenant isolation or business correctness.
-
----
-
-# 87. AI Agent Implementation Decision Flow
-
-When an AI agent receives an implementation task, the agent should reason through:
-
-```text
-Task
- ↓
-Which product capability?
- ↓
-Which requirement ID?
- ↓
-Which domain?
- ↓
-Which application operation?
- ↓
-Which HTTP entry point?
- ↓
-Which persistence model?
- ↓
-Which existing test?
- ↓
-What new test is needed?
- ↓
-Does the architecture need to change?
- ↓
-Implement
-```
-
-The agent should not begin by creating a new controller or editing the nearest file without understanding the domain boundary.
-
----
-
-# 88. When to Create a New Class
-
-Create a new class when at least one of these is true:
-
-* responsibility is independently meaningful;
-* logic is reused;
-* logic is complex enough to require isolation;
-* logic needs independent testing;
-* logic crosses multiple models;
-* external integration should be isolated.
-
-Do not create a new class solely to reduce a file by a few lines.
-
----
-
-# 89. When to Refactor Existing Code
-
-Refactor when:
-
-```text
-the feature is actively being changed
-and
-the existing structure blocks safe implementation
-```
-
-or when:
-
-```text
-the existing structure introduces meaningful security,
-correctness, or maintainability risk.
-```
-
-Do not perform large architecture rewrites merely because a file is aesthetically unpleasant.
-
----
-
-# 90. When Architecture Documentation Must Change
-
-Update this document when introducing:
-
-* a new major domain;
-* a new application layer;
-* a new external integration;
-* a new tenant strategy;
-* a major persistence strategy;
-* a new authentication mechanism;
-* a major frontend architecture;
-* a new architectural pattern.
-
-Small implementation details do not require architecture-document changes.
-
----
-
-# 91. Relationship With Other Documentation
-
-The documentation system is:
-
-```text
-AGENT.md
-    │
-    ├── how agents work
-    │
-    ▼
-docs/1-README.md
-    │
-    ├── documentation map
-    │
-    ▼
-docs/2-PRODUCT.md
-    │
-    ├── what BookQu is
-    │
-    ▼
-docs/3-REQUIREMENT.md
-    │
-    ├── what BookQu must do
-    │
-    ▼
-docs/4-ARCHITECTURE.md
-    │
-    ├── how BookQu is structured
-    │
-    ▼
-docs/5-DEVELOPMENT.md
-    │
-    ├── how contributors work
-    │
-    ▼
-docs/6-TRACKER.md
-    │
-    └── implementation status
-```
-
-Architectural decisions with long-term consequences are stored in:
+The rationale for significant architectural decisions is maintained in:
 
 ```text
 docs/adr/
 ```
-
-Historical evolution and refactoring history are preserved in Git history.
-
----
-
-# 92. Final Statement
-
-The purpose of the BookQu architecture is not to make the codebase look sophisticated.
-
-The purpose is to make the system:
-
-```text
-understandable
-+
-predictable
-+
-safe
-+
-testable
-+
-maintainable
-+
-scalable
-```
-
-BookQu should evolve from its current implementation into the target architecture incrementally while preserving the product behavior defined in:
-
-```text
-docs/2-PRODUCT.md
-docs/3-REQUIREMENT.md
-```
-
-The architecture is a means to support those requirements, not a replacement for them.

@@ -1,67 +1,104 @@
 # BookQu System Requirements
 
 > **Document Status:** Current Requirement Baseline
-> **Version:** 1.0
-> **Authority:** Authoritative for current product behavior
+> **Version:** 1.1
+> **Authority:** Current behavioral and system requirement source of truth
 > **Related Product Definition:** `docs/2-PRODUCT.md`
-> **Related Architecture Definition:** `docs/4-ARCHITECTURE.md`
+> **Related Architecture:** `docs/4-ARCHITECTURE.md`
+> **Related System Design:** `docs/7-SYSTEM-DESIGN.md`
+> **Related Development Workflow:** `docs/5-DEVELOPMENT.md`
+> **Current Status:** `docs/6-TRACKER.md`
 > **Last Updated:** 2026-09-30
 >
-> This document defines what the BookQu system is required to do.
+> This document defines what BookQu is required to do.
 >
-> It is based on the current BookQu product definition and the verified implementation baseline across RF-00 through RF-09 (historically derived from `mergeV2`).
+> It represents the current accepted requirement baseline and is intended to remain stable while implementation evolves.
 >
-> Historical SRS documents are not authoritative when they conflict with this document.
+> Historical specifications do not override this document.
 
 ---
 
 # 1. Purpose
 
-This document translates the current BookQu product definition into explicit system requirements.
+This document translates the BookQu product definition into explicit system requirements.
 
 The objectives are:
 
 * establish a single functional baseline;
-* eliminate ambiguity between historical requirements and current behavior;
-* provide a common implementation target for developers;
-* provide a reliable context source for AI agents;
+* establish explicit business rules;
+* prevent undocumented behavior from being introduced through code;
+* provide a reliable source of context for developers and AI agents;
 * provide a basis for acceptance testing;
-* provide traceability between requirements, implementation, and tests;
-* prevent undocumented product behavior from being introduced through code.
+* provide requirement traceability;
+* distinguish intended behavior from implementation details;
+* provide a stable baseline for future development.
+
+The requirement document answers:
+
+> **What must BookQu do?**
+
+It does not define detailed implementation structure.
+
+Technical structure belongs to:
+
+```text
+docs/4-ARCHITECTURE.md
+docs/7-SYSTEM-DESIGN.md
+```
+
+Development workflow belongs to:
+
+```text
+docs/5-DEVELOPMENT.md
+```
+
+Current implementation status belongs to:
+
+```text
+docs/6-TRACKER.md
+```
 
 ---
 
 # 2. Requirement Authority
 
-The current requirement hierarchy is:
+The BookQu documentation authority model is responsibility-based.
 
 ```text
-AGENT.md
-    ↓
-docs/1-README.md
-    ↓
 docs/2-PRODUCT.md
     ↓
+Defines what BookQu is
+
 docs/3-REQUIREMENT.md
     ↓
+Defines what BookQu must do
+
 docs/4-ARCHITECTURE.md
     ↓
-IMPLEMENTATION
+Defines how BookQu should be structured
+
+docs/7-SYSTEM-DESIGN.md
     ↓
-TESTS
+Defines how the current implementation actually works
+
+docs/5-DEVELOPMENT.md
+    ↓
+Defines how changes should be performed
+
+docs/6-TRACKER.md
+    ↓
+Defines current implementation status
 ```
 
-`docs/2-PRODUCT.md` defines what BookQu is.
+Requirements take precedence when the question is:
 
-`docs/3-REQUIREMENT.md` defines what the system must do.
+> What behavior is required?
 
-`docs/4-ARCHITECTURE.md` defines how the system should be built.
+Implementation is evidence of what currently exists.
 
-`docs/5-DEVELOPMENT.md` defines how work should be performed.
+Tests are evidence of verified behavior.
 
-`docs/6-TRACKER.md` defines current implementation status.
-
-Historical documents are reference material only.
+Neither source code nor historical documentation should silently redefine accepted product behavior.
 
 ---
 
@@ -69,17 +106,19 @@ Historical documents are reference material only.
 
 Each requirement may have one of the following statuses.
 
-| Status               | Meaning                                                                       |
-| -------------------- | ----------------------------------------------------------------------------- |
-| `Baseline`           | Accepted as part of the current product requirement                           |
-| `Implemented`        | Implemented in the current codebase                                           |
-| `Verified`           | Implemented and verified by an appropriate test or explicit evidence          |
-| `Needs Verification` | Intended requirement exists, but complete verification is not yet established |
-| `Planned`            | Accepted requirement that has not yet been implemented                        |
-| `Deprecated`         | No longer part of the current product                                         |
-| `Proposed`           | Suggested change that has not yet been accepted                               |
+| Status               | Meaning                                                                         |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `Baseline`           | Accepted as part of the current product requirement                             |
+| `Implemented`        | Implemented in the current codebase                                             |
+| `Verified`           | Implemented and verified by appropriate evidence                                |
+| `Needs Verification` | Intended requirement exists, but sufficient verification is not yet established |
+| `Planned`            | Accepted requirement not yet implemented                                        |
+| `Deprecated`         | No longer part of the current product                                           |
+| `Proposed`           | Suggested change that has not yet been accepted                                 |
 
-A feature must not be marked `Verified` merely because a UI screen exists.
+A requirement must not be marked `Verified` merely because a UI screen or code path exists.
+
+Verification requires evidence appropriate to the requirement.
 
 ---
 
@@ -87,7 +126,7 @@ A feature must not be marked `Verified` merely because a UI screen exists.
 
 Every functional requirement must have a stable identifier.
 
-The format is:
+Functional requirements use:
 
 ```text
 FR-{DOMAIN}-{NUMBER}
@@ -130,6 +169,10 @@ AC-FR-BOOKING-003-01
 AC-FR-BOOKING-003-02
 ```
 
+Existing requirement IDs should remain stable.
+
+Renumbering requires a deliberate documentation change because other documents, tests, and implementation references may depend on them.
+
 ---
 
 # 5. Actors
@@ -154,9 +197,11 @@ A customer does not require a normal BookQu owner account for the public booking
 
 ## 5.3 Platform Admin
 
-A platform-level administrator responsible for managing BookQu platform activity.
+A platform-level administrator responsible for permitted BookQu platform operations.
 
 The admin is separate from a tenant owner.
+
+Platform-level permissions must not be treated as an extension of normal owner permissions.
 
 ---
 
@@ -199,7 +244,9 @@ Platform Capabilities
 └── Platform Administration
 ```
 
-Future capabilities that have not been accepted into the current baseline are documented separately in the Product Definition.
+A future capability is not automatically part of the requirement baseline merely because implementation or experimentation exists.
+
+New product capabilities require explicit requirement acceptance.
 
 ---
 
@@ -209,17 +256,15 @@ Future capabilities that have not been accepted into the current baseline are do
 
 The system shall allow a prospective owner to create a BookQu account.
 
-The registration process shall collect the information required by the current product onboarding flow.
-
-At minimum, the system shall associate the account with the owner identity.
+The registration process shall collect the information required by the current onboarding flow.
 
 ---
 
 ## FR-AUTH-002 — Owner Login
 
-The system shall allow a registered owner to authenticate using the supported credentials.
+The system shall allow a registered owner to authenticate using supported credentials.
 
-Authentication failure shall not grant access to authenticated owner functionality.
+Authentication failure shall not grant access to protected owner functionality.
 
 ---
 
@@ -231,9 +276,9 @@ The system shall allow an authenticated owner to terminate the current authentic
 
 ## FR-AUTH-004 — Email Verification
 
-The system shall support email verification for owner accounts where email verification is required by the authentication flow.
+The system shall support email verification where required by the authentication flow.
 
-Unverified accounts shall not be treated as fully verified owners where a verified identity is required.
+An account requiring verification shall not be treated as fully verified before the verification requirement is satisfied.
 
 ---
 
@@ -246,7 +291,7 @@ owner
 admin
 ```
 
-and shall prevent a user from accessing functionality outside the user's role.
+A user must not access functionality outside the permissions associated with the user's role.
 
 ---
 
@@ -254,17 +299,15 @@ and shall prevent a user from accessing functionality outside the user's role.
 
 Passwords shall never be stored as plaintext.
 
-Passwords shall be stored using a secure password hashing mechanism supported by Laravel.
+Passwords shall use a secure password hashing mechanism.
 
 ---
 
 # 8. Tenant and Business Requirements
 
-## FR-TENANT-001 — Tenant Creation
+## FR-TENANT-001 — Tenant Association
 
-The system shall associate an owner with a tenant/business.
-
-Each owner account shall operate within the correct tenant context.
+The system shall associate an owner with the correct tenant/business.
 
 ---
 
@@ -272,7 +315,7 @@ Each owner account shall operate within the correct tenant context.
 
 The system shall isolate tenant-owned operational data.
 
-A tenant must not be able to access another tenant's:
+A tenant must not access another tenant's:
 
 * services;
 * schedules;
@@ -288,9 +331,9 @@ A tenant must not be able to access another tenant's:
 
 ## FR-TENANT-003 — Tenant Context
 
-The system shall establish the appropriate tenant context for tenant-specific operations.
+Tenant-specific operations shall execute within the correct tenant context.
 
-Tenant-specific business logic shall not rely on arbitrary client-provided tenant identifiers without authorization validation.
+Client-provided tenant identifiers must not independently establish authorization.
 
 ---
 
@@ -298,7 +341,7 @@ Tenant-specific business logic shall not rely on arbitrary client-provided tenan
 
 The owner shall be able to manage business information used by the public booking page and owner portal.
 
-The business profile may include:
+Business information may include:
 
 * business name;
 * business type;
@@ -312,7 +355,7 @@ The business profile may include:
 
 ## FR-TENANT-005 — Business Slug
 
-The system shall provide a unique public slug for each tenant where the public slug is used as the default public access identifier.
+The system shall provide a unique public slug for each tenant where the slug is used as the default public identity.
 
 ---
 
@@ -320,7 +363,7 @@ The system shall provide a unique public slug for each tenant where the public s
 
 The system shall provide a public customer-facing page based on the tenant's public identity.
 
-The default URL pattern is:
+The default public access pattern is:
 
 ```text
 /{tenant-slug}
@@ -330,9 +373,9 @@ The default URL pattern is:
 
 ## FR-TENANT-007 — Custom Domain
 
-Where custom-domain capability is enabled and configured, the system may expose the tenant's public booking page through the configured custom domain.
+Where supported and configured, a tenant may expose its public page through a custom domain.
 
-Custom domain functionality must resolve the correct tenant context.
+The custom domain must resolve to the correct tenant.
 
 ---
 
@@ -340,9 +383,9 @@ Custom domain functionality must resolve the correct tenant context.
 
 ## FR-PUBLIC-001 — Public Business Page
 
-The system shall provide a customer-facing page for an active tenant.
+The system shall provide a public customer-facing page for an eligible tenant.
 
-The page shall provide sufficient business information to allow the customer to understand the available booking offering.
+The page shall provide sufficient information for customers to understand the available booking offering.
 
 ---
 
@@ -350,26 +393,26 @@ The page shall provide sufficient business information to allow the customer to 
 
 The public page shall display eligible active services for the tenant.
 
-Inactive services shall not normally appear as bookable services.
+Inactive services shall not normally appear as new bookable services.
 
 ---
 
 ## FR-PUBLIC-003 — Public Branding
 
-Where configured, the public page shall use the tenant's approved branding information.
+Where configured, the public page shall use the tenant's supported branding information.
 
 Branding may include:
 
 * logo;
 * brand color;
-* cover/banner;
+* banner;
 * business imagery.
 
 ---
 
 ## FR-PUBLIC-004 — Booking Entry Point
 
-The public page shall provide a clear path into the customer booking flow.
+The public page shall provide a clear entry point into the customer booking flow.
 
 ---
 
@@ -379,7 +422,7 @@ The public page shall provide a clear path into the customer booking flow.
 
 The owner shall be able to create a service.
 
-A service shall contain the information necessary to make it bookable.
+A service shall contain information sufficient to make it bookable.
 
 ---
 
@@ -488,7 +531,7 @@ The owner shall be able to generate multiple schedules through a supported bulk 
 
 ## FR-SCHEDULE-003 — Schedule Pricing
 
-The system shall support the schedule pricing model accepted by the current product.
+The system shall support the accepted schedule pricing model.
 
 Schedule-specific pricing may override a service's default price where configured.
 
@@ -496,7 +539,7 @@ Schedule-specific pricing may override a service's default price where configure
 
 ## FR-SCHEDULE-004 — Availability Configuration
 
-The owner shall be able to configure scheduling availability.
+The owner shall be able to configure schedule availability.
 
 ---
 
@@ -508,13 +551,13 @@ The owner shall be able to define dates that should not be available for normal 
 
 ## FR-SCHEDULE-006 — Delete Schedule
 
-The owner shall be able to remove an eligible schedule that has not violated an existing reservation constraint.
+The owner shall be able to remove an eligible schedule where doing so does not violate existing reservation constraints.
 
 ---
 
 ## FR-SCHEDULE-007 — Schedule Conflict Prevention
 
-The system shall prevent invalid overlapping or conflicting schedule records where such conflicts would make the booking model ambiguous.
+The system shall prevent invalid overlapping or conflicting schedules where such conflicts would make the booking model ambiguous.
 
 ---
 
@@ -528,9 +571,9 @@ A tenant must not manipulate another tenant's schedules.
 
 ## FR-SCHEDULE-009 — Booking Availability
 
-The system shall calculate whether a schedule is currently available for booking.
+The system shall determine whether a schedule is currently eligible for booking.
 
-Availability shall take into account relevant booking state and business rules.
+Availability shall take relevant booking state and business rules into account.
 
 ---
 
@@ -556,13 +599,13 @@ A customer shall be able to select an eligible booking date.
 
 ## FR-BOOKING-003 — Time Selection
 
-A customer shall be able to select an available time schedule.
+A customer shall be able to select an available schedule.
 
 ---
 
 ## FR-BOOKING-004 — Customer Information
 
-The customer shall provide the customer information required to create a booking.
+The customer shall provide the information required to create the booking.
 
 This may include:
 
@@ -575,21 +618,21 @@ This may include:
 
 ## FR-BOOKING-005 — Booking Creation
 
-The system shall create a structured booking record after the customer completes the applicable booking process.
+The system shall create a structured booking record after the applicable booking process is completed.
 
 ---
 
 ## FR-BOOKING-006 — Booking Code
 
-Each booking shall have a unique booking identifier or booking code that can be used for customer-facing management.
+Each booking shall have a unique booking identifier or booking code suitable for customer-facing management.
 
 ---
 
 ## FR-BOOKING-007 — Booking Status
 
-The system shall maintain the booking lifecycle state.
+The system shall maintain the booking lifecycle.
 
-The current implementation includes states such as:
+The current booking status model is:
 
 ```text
 pending
@@ -598,7 +641,7 @@ cancelled
 completed
 ```
 
-Any future state addition must be explicitly documented.
+Future status additions require an explicit requirement change.
 
 ---
 
@@ -606,7 +649,7 @@ Any future state addition must be explicitly documented.
 
 The owner shall be able to view booking details.
 
-Booking details shall provide the relevant customer, service, schedule, payment, and operational information.
+Booking details shall provide relevant customer, service, schedule, payment, and operational information.
 
 ---
 
@@ -622,11 +665,11 @@ Invalid state transitions shall be rejected.
 
 The owner shall be able to create a booking on behalf of a customer who books directly through the business.
 
-A walk-in booking shall remain part of the same booking domain as online customer bookings.
+Walk-in booking remains part of the same booking domain as online customer booking.
 
 ---
 
-## FR-BOOKING-011 — Booking Reschedule
+## FR-BOOKING-011 — Owner Reschedule
 
 The owner shall be able to reschedule an eligible booking to another available schedule.
 
@@ -636,7 +679,7 @@ The owner shall be able to reschedule an eligible booking to another available s
 
 The customer shall be able to reschedule an eligible booking through the secure booking management mechanism.
 
-Eligibility shall be determined by booking policy and current booking state.
+Eligibility is determined by the booking policy and current state.
 
 ---
 
@@ -646,21 +689,21 @@ The customer shall be able to cancel an eligible booking through the secure book
 
 ---
 
-## FR-BOOKING-014 — Owner Cancellation Handling
+## FR-BOOKING-014 — Owner Cancellation
 
-The owner shall be able to manage booking cancellation state according to the supported operational flow.
+The owner shall be able to cancel an eligible booking through the supported operational flow.
 
 ---
 
 ## FR-BOOKING-015 — Booking Security
 
-A customer shall not be able to manage another customer's booking merely by changing an exposed booking identifier.
+A customer shall not be able to manage another customer's booking merely by changing a public booking identifier.
 
 ---
 
-## FR-BOOKING-016 — Booking Token
+## FR-BOOKING-016 — Booking Management Authorization
 
-Where tokenized customer management is used, the system shall generate a secure management mechanism that cannot be easily guessed.
+Customer booking management shall require an appropriate valid authorization mechanism.
 
 ---
 
@@ -672,7 +715,7 @@ A booking shall not be created against a schedule that is no longer available.
 
 ## FR-BOOKING-018 — Double Booking Protection
 
-The system shall protect against two valid booking operations successfully occupying the same mutually exclusive schedule.
+The system shall prevent two incompatible booking operations from successfully occupying the same exclusive schedule.
 
 ---
 
@@ -694,37 +737,35 @@ The system shall support eligible reservations consisting of multiple compatible
 
 ## FR-MULTIBOOK-002 — Slot Compatibility
 
-Selected slots within one multi-slot reservation must satisfy the supported compatibility rules.
+Selected slots within one multi-slot reservation must satisfy the applicable compatibility rules.
 
-Non-contiguous or otherwise incompatible schedules must be rejected where the current booking policy requires contiguous slots.
+Where the booking policy requires contiguous slots, non-contiguous slots shall be rejected.
 
 ---
 
 ## FR-MULTIBOOK-003 — Unified Payment
 
-Eligible multi-slot bookings shall be processed as one customer payment transaction where the current payment flow treats them as a single reservation payment group.
+Eligible multi-slot bookings shall use one customer payment transaction when the booking flow treats them as one reservation payment group.
 
 ---
 
 ## FR-MULTIBOOK-004 — Unified Invoice
 
-The customer-facing invoice shall represent all booking slots belonging to the same payment group.
+The customer-facing invoice shall represent all schedules belonging to the same payment group.
 
 ---
 
-## FR-MULTIBOOK-005 — Multi-Slot Cancellation Rules
+## FR-MULTIBOOK-005 — Multi-Slot Cancellation
 
-The system shall apply the defined cancellation policy to multi-slot bookings.
-
-A multi-slot booking must not accidentally behave like unrelated independent bookings.
+The system shall apply the applicable cancellation policy consistently to all schedules belonging to the reservation.
 
 ---
 
-## FR-MULTIBOOK-006 — Multi-Slot Reschedule Rules
+## FR-MULTIBOOK-006 — Multi-Slot Reschedule
 
-The system shall apply the defined rescheduling policy to multi-slot bookings.
+The system shall apply the applicable rescheduling policy to a multi-slot reservation.
 
-Unsupported multi-slot customer rescheduling must be explicitly rejected rather than partially applied.
+Unsupported operations must be rejected rather than partially applied.
 
 ---
 
@@ -738,7 +779,7 @@ The system shall maintain customer information associated with bookings.
 
 ## FR-CUSTOMER-002 — Customer Directory
 
-The owner shall be able to view relevant customers belonging to the owner’s tenant.
+The owner shall be able to view customers belonging to the owner's tenant.
 
 ---
 
@@ -778,9 +819,9 @@ The current supported online payment provider is Midtrans.
 
 ## FR-PAYMENT-003 — Payment Status
 
-The system shall maintain the financial status of a payment independently from the booking status.
+The system shall maintain payment state independently from booking state.
 
-The current implementation supports states such as:
+The current payment status model is:
 
 ```text
 pending
@@ -788,7 +829,7 @@ sukses
 gagal
 ```
 
-The canonical technical and user-facing wording may be standardized during architecture and UI refinement, but the distinction between payment state and booking state must remain.
+Payment expiration is a business condition and shall not be represented as an additional payment status unless explicitly introduced by a future requirement.
 
 ---
 
@@ -802,11 +843,11 @@ Each external payment transaction shall maintain the relevant external reference
 
 The system shall not mark a payment as successful solely because a client-side request claims that payment succeeded.
 
-Payment success shall be based on a trusted verification mechanism.
+Payment success shall rely on a trusted verification mechanism.
 
 ---
 
-## FR-PAYMENT-006 — Webhook Handling
+## FR-PAYMENT-006 — Payment Webhook
 
 The system shall support payment-provider callback/webhook processing where required.
 
@@ -818,21 +859,39 @@ Repeated delivery of the same payment-provider event shall not create duplicate 
 
 ---
 
-## FR-PAYMENT-008 — Payment Lifecycle
+## FR-PAYMENT-008 — Payment Expiration
 
-The system shall correctly process supported payment states including successful, failed, pending, cancelled, and expired cases where applicable.
+An expired payment shall be handled as a failed payment outcome for payment state purposes.
+
+Expiration may additionally affect the associated booking and schedule according to the booking expiration rules.
 
 ---
 
 ## FR-PAYMENT-009 — Booking Synchronization
 
-Where a booking payment determines booking eligibility, the system shall synchronize the booking state according to the defined business rules.
+Where payment determines booking eligibility, the system shall synchronize the booking state according to the defined booking and payment rules.
 
 ---
 
 ## FR-PAYMENT-010 — Failed Payment Protection
 
-A failed or expired payment shall not leave the booking in an incorrect confirmed state.
+A failed or expired payment shall not leave a booking in an incorrectly confirmed payment state.
+
+---
+
+## FR-PAYMENT-011 — Refund Record
+
+Where a customer cancellation or other supported operation requires a refund, the system shall maintain a refund record.
+
+Supported refund states are:
+
+```text
+pending
+processed
+failed
+```
+
+Refund state is separate from both booking state and payment state.
 
 ---
 
@@ -846,37 +905,37 @@ A customer shall be able to access eligible booking management functionality wit
 
 ## FR-MANAGE-002 — Secure Access Token
 
-The system shall use an appropriate tokenized mechanism to authorize access to the customer's booking management page.
+The system shall use secure tokenized authorization for customer booking management.
 
 ---
 
 ## FR-MANAGE-003 — Booking Details
 
-The customer shall be able to view eligible booking details through the management link.
+The customer shall be able to view eligible booking details through an authorized management link.
 
 ---
 
 ## FR-MANAGE-004 — Payment Information
 
-The customer shall be able to access applicable payment and invoice information.
+The customer shall be able to access applicable payment and invoice information through valid authorization.
 
 ---
 
-## FR-MANAGE-005 — Cancellation
+## FR-MANAGE-005 — Cancellation Authorization
 
-The customer shall be able to cancel an eligible booking through the management interface.
-
----
-
-## FR-MANAGE-006 — Rescheduling
-
-The customer shall be able to access the supported rescheduling flow for eligible bookings.
+Customer cancellation shall require the valid cancellation authorization associated with the booking.
 
 ---
 
-## FR-MANAGE-007 — Review Submission
+## FR-MANAGE-006 — Reschedule Authorization
 
-A customer shall be able to submit a review for an eligible completed booking.
+Customer rescheduling shall require the valid rescheduling authorization associated with the booking.
+
+---
+
+## FR-MANAGE-007 — Review Authorization
+
+Review submission shall require valid authorization for the eligible booking.
 
 ---
 
@@ -896,7 +955,7 @@ The owner shall be able to update an additional item.
 
 ## FR-ADDON-003 — Activate or Deactivate Additional Item
 
-The owner shall be able to control whether the additional item is currently offered.
+The owner shall be able to control whether an additional item is currently offered.
 
 ---
 
@@ -947,7 +1006,7 @@ A voucher belonging to one tenant shall not be usable by another tenant.
 
 ## FR-VOUCHER-005 — Voucher Calculation
 
-The system shall calculate the resulting booking price according to the defined voucher rule.
+The system shall calculate the resulting booking price according to the accepted voucher rules.
 
 ---
 
@@ -979,7 +1038,7 @@ Inactive staff or resources must not be used by booking flows that require activ
 
 ## FR-STAFFRESOURCE-003 — Customer Selection Boundary
 
-Staff/resource management does not automatically imply that customers may select staff or resources during booking.
+Staff/resource management does not automatically imply customer selection during booking.
 
 Customer-facing staff/resource selection requires an explicit product requirement.
 
@@ -1019,7 +1078,7 @@ A review must remain associated with the correct tenant and booking.
 
 ## FR-REVIEW-006 — Review Management
 
-The owner shall be able to manage supported review visibility or reply behavior.
+The owner shall be able to manage supported review visibility or response behavior.
 
 ---
 
@@ -1155,21 +1214,19 @@ Analytics must derive from the same authoritative operational records used by th
 
 ## FR-REPORT-001 — Schedule Report
 
-The owner shall be able to access a report concerning schedule and booking performance.
+The owner shall be able to access reports concerning schedule and booking performance.
 
 ---
 
 ## FR-REPORT-002 — Report Filtering
 
-Where supported, the owner shall be able to filter reports by relevant time period or operational dimension.
+Where supported, the owner shall be able to filter reports by relevant time periods or operational dimensions.
 
 ---
 
 ## FR-REPORT-003 — Report Export
 
 The system shall support export of supported report data.
-
-The output format should match the current supported export mechanism.
 
 ---
 
@@ -1235,7 +1292,7 @@ The system shall support owner notification for relevant booking events.
 
 ## FR-NOTIFICATION-002 — Booking Status Notification
 
-The system shall support notifications when relevant booking state changes occur.
+The system shall support notifications for relevant booking state changes.
 
 ---
 
@@ -1253,7 +1310,7 @@ The system shall support relevant subscription lifecycle notifications where app
 
 ## FR-NOTIFICATION-005 — Notification Isolation
 
-Owner notifications must only represent events belonging to the owner's tenant or account.
+Owner notifications must only represent events belonging to the owner's tenant or authorized account.
 
 ---
 
@@ -1281,7 +1338,7 @@ The platform may provide a trial period for eligible new tenants according to th
 
 The system shall maintain subscription status.
 
-Current supported conceptual states include:
+Current conceptual subscription states include:
 
 ```text
 trial
@@ -1300,13 +1357,13 @@ The platform shall be able to restrict access to features based on subscription 
 
 ## FR-SUB-006 — Feature Entitlement
 
-Feature access must be determined using the tenant's current subscription state and plan configuration.
+Feature access shall be determined using the tenant's current subscription state and plan configuration.
 
 ---
 
 ## FR-SUB-007 — Subscription Payment
 
-The owner shall be able to make a supported payment for the BookQu subscription.
+The owner shall be able to make supported payments for the BookQu subscription.
 
 ---
 
@@ -1358,7 +1415,7 @@ The admin view must respect the platform security model.
 
 ## FR-ADMIN-004 — Platform Boundary
 
-Platform administration must not be implemented as an extension of ordinary owner permissions.
+Platform administration must remain separate from ordinary owner permissions.
 
 ---
 
@@ -1390,13 +1447,13 @@ Payment records must remain associated with their intended business purpose and 
 
 ## FR-DATA-005 — Atomic Critical Operations
 
-Critical multi-record operations must be performed atomically where partial completion would create invalid business state.
+Critical multi-record operations shall be performed atomically where partial completion would create invalid business state.
 
 ---
 
 ## FR-DATA-006 — Double Booking Prevention
 
-The system shall provide a database/application-level mechanism preventing conflicting confirmed reservations from occupying the same exclusive schedule.
+The system shall provide application and/or database-level protection preventing conflicting reservations from occupying the same exclusive schedule.
 
 ---
 
@@ -1464,39 +1521,39 @@ API keys, payment credentials, and application secrets must not be committed int
 
 # 33. Performance Requirements
 
-The following values originate from the historical system requirements and remain performance targets rather than verified claims.
+The following are performance targets rather than automatically verified claims.
 
 ## NFR-PERF-001 — General Response Time
 
-Normal operations should target a response time of no more than approximately 2 seconds under expected operating conditions.
+Normal operations should target a response time of approximately 2 seconds or less under expected operating conditions.
 
-This requirement requires formal performance testing before it may be marked verified.
+This requirement requires formal performance measurement before it can be marked verified.
 
 ---
 
 ## NFR-PERF-002 — Heavy Operations
 
-Heavy operations such as booking/payment processing should target a response time of no more than approximately 5 seconds where practical.
+Heavy operations such as booking and payment processing should target approximately 5 seconds or less where practical.
 
 External payment-provider latency may be outside direct application control.
 
 ---
 
-## NFR-PERF-003 — Availability Data
+## NFR-PERF-003 — Availability Data Freshness
 
-Availability checks should provide sufficiently fresh data for the booking process to prevent stale availability from creating an invalid booking.
+Availability information should be sufficiently fresh to prevent stale availability from producing an invalid booking.
 
 ---
 
 ## NFR-PERF-004 — Query Efficiency
 
-The system should avoid unnecessary repeated database queries, unbounded dataset retrieval, and redundant computation in frequently accessed owner and customer flows.
+The system should avoid unnecessary repeated queries, unbounded retrieval, and redundant computation in frequently accessed flows.
 
 ---
 
 ## NFR-PERF-005 — Caching
 
-Caching may be used where it improves performance without compromising booking correctness or data freshness.
+Caching may be used where it improves performance without compromising booking correctness or required data freshness.
 
 ---
 
@@ -1544,7 +1601,7 @@ External payment callbacks may be delivered more than once and must be handled s
 
 ## NFR-REL-003 — Error Recovery
 
-Expected external-service and application failure conditions should result in predictable recovery behavior.
+Expected external-service and application failures should produce predictable recovery behavior.
 
 ---
 
@@ -1558,7 +1615,7 @@ Production data should be backed up using an appropriate operational backup mech
 
 The production environment should have a documented recovery procedure.
 
-Backup and recovery requirements require operational verification.
+Backup and recovery require operational verification.
 
 ---
 
@@ -1568,9 +1625,9 @@ Backup and recovery requirements require operational verification.
 
 The production service should target high availability.
 
-The historical target was approximately 99% uptime.
+A target of approximately 99% uptime may be used as an operational baseline.
 
-This target must be validated through actual production monitoring rather than assumed from code.
+This target must be validated through actual monitoring.
 
 ---
 
@@ -1598,11 +1655,11 @@ The customer booking process should remain understandable and predictable.
 
 ---
 
-## NFR-UX-004 — Booking Step Count
+## NFR-UX-004 — Concise Booking Flow
 
-The main booking operation should remain reasonably concise.
+The primary booking operation should remain reasonably concise.
 
-The historical target was no more than approximately five major user steps, excluding externally controlled payment interactions where applicable.
+The approximate five-step historical target should be treated as a usability target rather than a rigid technical constraint.
 
 ---
 
@@ -1622,7 +1679,7 @@ Users should be able to understand:
 
 ## NFR-COMP-001 — Browser Support
 
-The system shall support current mainstream browsers, including modern:
+The system shall support current mainstream browsers including:
 
 * Chrome;
 * Firefox;
@@ -1641,7 +1698,7 @@ Critical functionality shall remain usable across supported screen sizes.
 
 ## NFR-MAINT-001 — Separation of Responsibilities
 
-Controllers, views, models, services, and domain/application logic shall have clear responsibilities.
+Controllers, views, models, services, domain/application logic, and infrastructure shall have clear responsibilities.
 
 Business logic shall not be unnecessarily concentrated in controllers.
 
@@ -1655,27 +1712,27 @@ The system shall be organized so that new features can be added without unnecess
 
 ## NFR-MAINT-003 — Reusable Components
 
-Repeated UI and application behavior should be extracted into reusable components or services when appropriate.
+Repeated UI and application behavior should be extracted into reusable components where appropriate.
 
 ---
 
 ## NFR-MAINT-004 — Consistent Naming
 
-New code must follow the naming conventions defined in `docs/4-ARCHITECTURE.md`.
+New code must follow naming conventions defined by `docs/4-ARCHITECTURE.md`.
 
-Historical naming inconsistencies may remain temporarily but should not be propagated into new code.
+Historical naming inconsistencies may remain temporarily but should not be propagated into new work.
 
 ---
 
 ## NFR-MAINT-005 — Documentation
 
-Important domain and architectural decisions shall be documented.
+Important domain, system, and architectural decisions shall be documented in their appropriate authority.
 
 ---
 
 ## NFR-MAINT-006 — Technical Debt Visibility
 
-Known implementation defects that do not invalidate product behavior shall be recorded explicitly rather than silently ignored.
+Known technical debt shall be recorded explicitly rather than silently treated as intended behavior.
 
 ---
 
@@ -1701,7 +1758,7 @@ Important payment state transitions should be traceable.
 
 ## NFR-OBS-004 — Application Errors
 
-Production application errors should be observable through the configured monitoring/logging mechanism.
+Production application errors should be observable through the configured logging or monitoring mechanism.
 
 ---
 
@@ -1721,7 +1778,7 @@ Payment integration shall be isolated sufficiently to allow future provider chan
 
 ## NFR-EXT-002 — Notification Integration
 
-Notification delivery should be sufficiently modular to allow future channels such as email or messaging integrations.
+Notification delivery should be modular enough to allow future channels.
 
 ---
 
@@ -1733,7 +1790,7 @@ Future modules should be addable without unnecessarily rewriting the booking dom
 
 ## NFR-EXT-004 — Multi-Tenant Expansion
 
-New tenant-level modules must respect the established tenant isolation mechanism.
+New tenant-level modules must respect the established tenant isolation model.
 
 ---
 
@@ -1741,87 +1798,75 @@ New tenant-level modules must respect the established tenant isolation mechanism
 
 The following business rules are fundamental to BookQu.
 
-## BR-CORE-001 — Every Operational Record Belongs to a Tenant
+## BR-CORE-001 — Tenant Ownership
 
-Tenant-owned operational data must have a valid tenant association.
-
----
-
-## BR-CORE-002 — A Service Belongs to One Tenant
-
-A service cannot be shared across unrelated tenants.
+Every tenant-owned operational record must belong to a valid tenant.
 
 ---
 
-## BR-CORE-003 — A Schedule Belongs to One Service
+## BR-CORE-002 — Service Ownership
 
-A schedule must reference the service for which it is available.
-
----
-
-## BR-CORE-004 — A Booking Belongs to One Tenant
-
-A booking must remain associated with the correct tenant throughout its lifecycle.
+A service belongs to one tenant.
 
 ---
 
-## BR-CORE-005 — A Booking References a Service
+## BR-CORE-003 — Schedule Ownership
 
-The booking must reference the service being reserved.
-
----
-
-## BR-CORE-006 — A Booking References an Eligible Schedule
-
-The schedule used for a booking must belong to the correct service and tenant.
+A schedule belongs to one service and the service's tenant.
 
 ---
 
-## BR-CORE-007 — Unavailable Schedules Cannot Be Booked
+## BR-CORE-004 — Booking Ownership
 
-The system shall reject attempts to book schedules that are no longer eligible.
-
----
-
-## BR-CORE-008 — Double Booking Must Be Prevented
-
-Two incompatible reservations must not successfully occupy the same exclusive schedule.
+A booking remains associated with the correct tenant throughout its lifecycle.
 
 ---
 
-## BR-CORE-009 — Payment and Booking State Are Distinct
+## BR-CORE-005 — Booking References
 
-Booking status must not be inferred solely from generic payment status without applying the accepted booking rules.
-
----
-
-## BR-CORE-010 — Customer Management Requires Authorization
-
-A customer must only be able to manage bookings to which the customer has valid access.
+A booking must reference a valid service and eligible schedule belonging to the correct tenant.
 
 ---
 
-## BR-CORE-011 — Owner Access Requires Tenant Authorization
+## BR-CORE-006 — Availability Protection
 
-An authenticated owner may only operate on the tenant/business they are authorized to manage.
-
----
-
-## BR-CORE-012 — Deactivated Services Are Not New Booking Targets
-
-Deactivation affects new booking eligibility but must not destroy historical booking data.
+Unavailable schedules cannot be booked.
 
 ---
 
-## BR-CORE-013 — Historical Records Must Remain Traceable
+## BR-CORE-007 — Double Booking Prevention
 
-Booking and payment history must remain usable for reporting and operational traceability after normal lifecycle changes.
+Two incompatible reservations cannot successfully occupy the same exclusive schedule.
 
 ---
 
-# 43. Business Rule: Booking State
+## BR-CORE-008 — Payment and Booking Separation
 
-The booking lifecycle currently includes concepts such as:
+Payment state and booking state are separate concepts.
+
+---
+
+## BR-CORE-009 — Customer Authorization
+
+A customer may only manage bookings for which valid management authorization exists.
+
+---
+
+## BR-CORE-010 — Owner Authorization
+
+An owner may only operate on the tenant they are authorized to manage.
+
+---
+
+## BR-CORE-011 — Historical Data Preservation
+
+Deactivation or normal lifecycle transitions must not unnecessarily destroy historical booking or payment information required for traceability.
+
+---
+
+# 43. Booking State Rules
+
+The current booking lifecycle is:
 
 ```text
 pending
@@ -1830,139 +1875,265 @@ cancelled
 completed
 ```
 
-Allowed transitions must be explicitly defined and tested.
+A booking state must not be changed arbitrarily through client-provided input.
 
-An arbitrary status assignment from a client request must not bypass business rules.
+Supported transitions must be enforced by business rules.
 
 ---
 
-# 44. Business Rule: Payment State
+# 44. Active Booking and Occupied-Slot Rules
 
-Payment state is separate from booking state.
+A schedule is considered occupied according to the current booking rules.
 
-Example conceptual flow:
+The current occupied states are:
+
+```text
+paid
+completed
+```
+
+A `pending` booking occupies a schedule only while it remains within the configured pending-payment grace period.
+
+The current grace period is:
+
+```text
+15 minutes
+```
+
+Therefore:
+
+```text
+pending + within grace period
+        ↓
+occupies schedule
+
+pending + beyond grace period
+        ↓
+does not remain an active occupied reservation
+
+cancelled
+        ↓
+available
+```
+
+The application must not treat all historical `pending` records as permanently occupying a schedule.
+
+---
+
+# 45. Stale Pending Booking Rules
+
+When a pending booking exceeds the payment grace period, it must be treated as expired for availability purposes.
+
+Stale pending handling must not produce a false double-booking condition.
+
+Where a new booking competes with a stale pending booking, the system must resolve the stale state within the authoritative booking operation before allowing the new reservation to proceed.
+
+The implementation must preserve transactional safety and concurrency protection.
+
+---
+
+# 46. Payment State Rules
+
+The current payment status model is:
+
+```text
+pending
+sukses
+gagal
+```
+
+Payment expiration is not a separate persistent payment status.
+
+An expired payment is handled as a failed payment outcome and must trigger the applicable booking expiration behavior.
+
+Payment state must remain distinct from booking state.
+
+---
+
+# 47. Payment Expiration Rules
+
+When a payment expires:
 
 ```text
 Payment
-pending
-   ↓
-success
-   ↓
-booking may become confirmed/paid
+    ↓
+gagal
 ```
 
-or:
+and the associated pending booking must no longer remain an active confirmed reservation.
+
+The affected schedule must become eligible according to the booking availability rules.
+
+Payment expiration must not result in a permanently occupied schedule.
+
+---
+
+# 48. Refund Rules
+
+Refunds are separate from payment status and booking status.
+
+Supported refund states are:
 
 ```text
-Payment
 pending
-   ↓
-failed / expired / cancelled
-   ↓
-booking must not remain falsely confirmed
+processed
+failed
 ```
 
-The exact transition implementation belongs to the payment and booking architecture.
-
----
-
-# 45. Business Rule: Tenant Isolation
-
-All tenant-scoped queries and mutations must use the correct tenant context.
-
-A request must never rely solely on a client-provided tenant identifier to establish authorization.
-
----
-
-# 46. Business Rule: Subscription Entitlement
-
-A tenant's access to restricted functionality must be derived from its current subscription state and plan.
-
-A feature gate must not be duplicated inconsistently across unrelated controllers.
-
----
-
-# 47. Business Rule: Customer Management Token
-
-Customer booking-management access must use a secure authorization mechanism.
-
-Management URLs must not expose secrets unnecessarily.
-
----
-
-# 48. Business Rule: Multi-Slot Booking
-
-Where a customer books multiple schedules in one transaction:
+Where an eligible paid booking is cancelled by a customer and a refund is required:
 
 ```text
-selected slots
-      ↓
-one reservation intent
-      ↓
-one payment group where applicable
-      ↓
-corresponding booking records
+Booking cancellation
+        ↓
+Refund record
+        ↓
+Refund processing
 ```
 
-The implementation may use multiple records internally, but the customer experience must remain coherent.
+A duplicate refund record must not be created for the same cancellation event.
+
+Owner cancellation must follow the defined owner-cancellation policy and must not automatically imply a refund unless the accepted requirement explicitly requires one.
 
 ---
 
-# 49. Business Rule: Walk-In Booking
+# 49. Token Authorization Rules
 
-Walk-in bookings are bookings created by an authorized owner on behalf of a customer.
+Customer booking management uses scoped token authorization.
 
-They share the same core booking domain as online bookings.
+The system must distinguish the purpose of a tokenized operation.
 
-They must still obey:
+Examples include:
 
-* schedule availability;
+```text
+show / management access
+invoice access
+review submission
+cancellation
+rescheduling
+```
+
+A valid token for one purpose must not automatically authorize unrelated operations.
+
+A token belonging to one booking must not authorize operations on another booking.
+
+Cross-booking token use must be rejected.
+
+---
+
+# 50. Multi-Slot Booking Rules
+
+Where multiple schedules form one reservation:
+
+```text
+Selected schedules
+        ↓
+Compatibility validation
+        ↓
+One reservation intent
+        ↓
+Payment group where applicable
+        ↓
+Corresponding booking records
+```
+
+The customer-facing behavior must remain coherent.
+
+Partial success must not leave an invalid reservation state.
+
+---
+
+# 51. Walk-In Booking Rules
+
+Walk-in bookings are created by authorized owners on behalf of customers.
+
+They use the same core booking rules as online bookings.
+
+They must respect:
+
 * tenant isolation;
+* schedule availability;
 * booking constraints;
-* financial recording requirements where applicable.
+* applicable payment requirements;
+* booking lifecycle rules.
 
 ---
 
-# 50. Authorization Matrix
+# 52. Subscription Entitlement Rules
+
+A tenant's restricted feature access shall be derived from:
+
+```text
+Plan
++
+Subscription state
++
+Applicable entitlement rules
+```
+
+Feature gating should not be implemented through inconsistent independent checks across unrelated modules.
+
+---
+
+# 53. Scheduler and Expiration Rules
+
+The system has scheduled processing for payment expiration and related stale booking handling.
+
+The payment-expiration command is expected to run periodically so that expired payment states do not remain indefinitely.
+
+The operational scheduler must execute the registered expiration command according to the current runtime configuration.
+
+Exact production scheduler configuration belongs in:
+
+```text
+docs/8-OPERATIONS.md
+```
+
+The requirement is behavioral:
+
+> Expired payment and stale pending booking states must eventually be reconciled without requiring manual customer intervention.
+
+---
+
+# 54. Authorization Matrix
 
 The baseline authorization model is:
 
-| Capability             | Owner |              Customer |                                     Admin |
-| ---------------------- | ----: | --------------------: | ----------------------------------------: |
-| Manage own business    |   Yes |                    No |           Platform-level where authorized |
-| Manage services        |   Yes |                    No |                Not normal owner operation |
-| Manage schedules       |   Yes |                    No | Platform-level oversight where authorized |
-| View own bookings      |   Yes | Own eligible bookings |           Platform-level where authorized |
-| Create walk-in booking |   Yes |                    No |           Not a normal customer operation |
-| Create public booking  |    No |                   Yes |                                        No |
-| Manage own booking     |    No |      Yes, if eligible |           Platform-level where authorized |
-| Manage customers       |   Yes |                    No |           Platform-level where authorized |
-| Manage categories      |   Yes |                    No |           Platform-level where authorized |
-| Manage staff/resources |   Yes |                    No |           Platform-level where authorized |
-| Manage vouchers        |   Yes |                    No |           Platform-level where authorized |
-| Submit review          |    No |      Yes, if eligible |                                        No |
-| Manage subscription    |   Yes |                    No |           Platform-level where authorized |
-| Access admin dashboard |    No |                    No |                                       Yes |
+| Capability               | Owner |              Customer |                           Admin |
+| ------------------------ | ----: | --------------------: | ------------------------------: |
+| Manage own business      |   Yes |                    No | Platform-level where authorized |
+| Manage services          |   Yes |                    No | Platform-level where authorized |
+| Manage schedules         |   Yes |                    No | Platform-level where authorized |
+| View own tenant bookings |   Yes | Own eligible bookings | Platform-level where authorized |
+| Create walk-in booking   |   Yes |                    No | Not a normal customer operation |
+| Create public booking    |    No |                   Yes |                              No |
+| Manage own booking       |    No |      Yes, if eligible | Platform-level where authorized |
+| Manage customers         |   Yes |                    No | Platform-level where authorized |
+| Manage categories        |   Yes |                    No | Platform-level where authorized |
+| Manage staff/resources   |   Yes |                    No | Platform-level where authorized |
+| Manage vouchers          |   Yes |                    No | Platform-level where authorized |
+| Submit review            |    No |      Yes, if eligible |                              No |
+| Manage subscription      |   Yes |                    No | Platform-level where authorized |
+| Access admin dashboard   |    No |                    No |                             Yes |
 
 This matrix is intentionally high-level.
 
-Detailed authorization policy belongs in the architecture and security implementation.
+Detailed authorization policy belongs to the architecture and implementation.
 
 ---
 
-# 51. Acceptance Criteria Rules
+# 55. Acceptance Criteria Rules
 
-Every implemented requirement must eventually have acceptance criteria.
+Every implemented functional requirement should have acceptance criteria appropriate to its risk.
 
-Acceptance criteria must describe observable behavior.
+Acceptance criteria must describe observable behavior rather than code structure.
 
-Bad example:
+Bad:
 
 ```text
 The controller should be clean.
 ```
 
-Good example:
+Good:
 
 ```text
 Given an owner authenticated for Tenant A,
@@ -1970,45 +2141,45 @@ when the owner opens the booking list,
 then only bookings belonging to Tenant A are returned.
 ```
 
-Acceptance criteria must focus on behavior rather than implementation details.
+Architecture quality is verified through architecture criteria, tests, code review, or architectural inspection rather than pretending it is a functional requirement.
 
 ---
 
-# 52. Global Acceptance Criteria
+# 56. Global Acceptance Criteria
 
-The following criteria apply to all relevant tenant-scoped features.
+The following criteria apply to relevant tenant-scoped functionality.
 
 ## AC-GLOBAL-001 — Tenant Isolation
 
-Given an owner of Tenant A, the owner must not be able to retrieve or modify Tenant B data.
+Given an owner of Tenant A, the owner must not retrieve or modify Tenant B data.
 
 ---
 
 ## AC-GLOBAL-002 — Authorization
 
-A user without the required permission must receive an authorization failure rather than the requested protected data.
+A user without the required permission must receive an authorization failure instead of the protected operation or data.
 
 ---
 
 ## AC-GLOBAL-003 — Invalid Resource
 
-A request for a nonexistent or inaccessible resource must not reveal data belonging to another tenant.
+A request for a nonexistent or inaccessible resource must not reveal another tenant's data.
 
 ---
 
 ## AC-GLOBAL-004 — Validation
 
-Invalid input must be rejected before destructive or invalid business operations occur.
+Invalid input must be rejected before an invalid or destructive operation occurs.
 
 ---
 
 ## AC-GLOBAL-005 — Transaction Safety
 
-Critical multi-record operations must either complete successfully according to business rules or leave the system in a valid previous state.
+Critical multi-record operations must either complete according to business rules or leave the system in a valid state.
 
 ---
 
-# 53. Traceability Model
+# 57. Traceability Model
 
 Every accepted requirement should eventually be traceable to implementation and verification.
 
@@ -2017,15 +2188,13 @@ The intended relationship is:
 ```text
 Requirement
     ↓
-Feature
-    ↓
-Module
+Product Area
     ↓
 Implementation
     ↓
-Automated Test
+Test
     ↓
-Acceptance
+Verification
 ```
 
 Example:
@@ -2035,51 +2204,53 @@ FR-BOOKING-010
     ↓
 Walk-In Booking
     ↓
-Booking Module
+Booking Application Flow
     ↓
-Owner booking implementation
+Owner Booking Tests
     ↓
-Owner booking tests
-    ↓
-PASS
+Verified
 ```
 
 ---
 
-# 54. Requirement Traceability Table
+# 58. Requirement Traceability
 
-This table will be expanded as the implementation audit progresses.
+The current traceability baseline should be maintained against `docs/6-TRACKER.md`.
 
-| Requirement      | Product Area      | Implementation                  | Test                   | Status             |
-| ---------------- | ----------------- | ------------------------------- | ---------------------- | ------------------ |
-| FR-AUTH-001      | Authentication    | Existing auth flow              | Auth tests             | Needs Verification |
-| FR-AUTH-002      | Authentication    | Existing auth flow              | Auth tests             | Implemented        |
-| FR-TENANT-002    | Multi-Tenancy     | Tenant context/scope            | Isolation tests        | Verified           |
-| FR-SERVICE-001   | Services          | Service management              | Service tests          | Implemented        |
-| FR-SCHEDULE-001  | Schedule          | Schedule management             | Schedule tests         | Implemented        |
-| FR-BOOKING-005   | Booking           | Customer booking flow           | Booking tests          | Implemented        |
-| FR-BOOKING-010   | Walk-In           | Owner booking flow              | Owner booking tests    | Implemented        |
-| FR-BOOKING-018   | Booking Integrity | Database/application protection | Concurrency tests      | Verified           |
-| FR-PAYMENT-001   | Payment           | Midtrans integration            | Payment tests          | Implemented        |
-| FR-PAYMENT-007   | Payment           | Webhook handling                | Payment tests          | Verified           |
-| FR-MULTIBOOK-001 | Multi-Slot        | Booking/payment group flow      | Production logic tests | Implemented        |
-| FR-REVIEW-001    | Reviews           | Customer review flow            | Review tests           | Implemented        |
-| FR-ANALYTICS-001 | Analytics         | Owner analytics                 | Analytics tests        | Implemented        |
-| FR-SUB-001       | Subscription      | Subscription module             | Subscription tests     | Implemented        |
+Representative entries include:
 
-This table is a baseline and must be synchronized with `docs/6-TRACKER.md`.
+| Requirement      | Product Area      | Evidence                     | Status                              |
+| ---------------- | ----------------- | ---------------------------- | ----------------------------------- |
+| FR-AUTH-001      | Authentication    | Auth flow/tests              | Needs Verification / current status |
+| FR-AUTH-002      | Authentication    | Auth tests                   | Verified where covered              |
+| FR-TENANT-002    | Multi-Tenancy     | Tenant isolation tests       | Verified                            |
+| FR-SERVICE-001   | Services          | Service management/tests     | Implemented                         |
+| FR-SCHEDULE-001  | Schedule          | Schedule management/tests    | Implemented                         |
+| FR-BOOKING-005   | Booking           | Customer booking flow/tests  | Implemented                         |
+| FR-BOOKING-010   | Walk-In           | Owner booking flow/tests     | Implemented                         |
+| FR-BOOKING-018   | Booking Integrity | Concurrency protection/tests | Verified                            |
+| FR-PAYMENT-001   | Payment           | Midtrans payment flow/tests  | Implemented                         |
+| FR-PAYMENT-007   | Payment           | Webhook tests                | Verified                            |
+| FR-MULTIBOOK-001 | Multi-Slot        | Multi-slot flow/tests        | Implemented                         |
+| FR-REVIEW-001    | Reviews           | Review tests                 | Implemented                         |
+| FR-ANALYTICS-001 | Analytics         | Analytics flow/tests         | Implemented                         |
+| FR-SUB-001       | Subscription      | Subscription module/tests    | Implemented                         |
+
+The tracker remains the authority for current implementation status.
+
+This requirement document remains the authority for what the requirement means.
 
 ---
 
-# 55. Current Implementation Evidence
+# 59. Current Verification Evidence
 
-The current repository contains automated tests covering important areas of the product, including:
+The repository contains automated tests covering important requirement areas including:
 
 * tenant isolation;
 * schedule ownership;
 * duplicate and overlapping schedule protection;
-* double-booking concurrency;
 * booking ownership;
+* double-booking concurrency;
 * payment/webhook idempotency;
 * customer isolation;
 * voucher isolation;
@@ -2093,60 +2264,42 @@ The current repository contains automated tests covering important areas of the 
 * owner modules;
 * subscription behavior.
 
-The existence of a test does not automatically prove that all possible acceptance criteria are satisfied.
+Tests provide evidence of covered behavior.
 
-A test must be mapped to the appropriate requirement.
+The existence of a passing test does not automatically mean every acceptance criterion for a requirement has been verified.
 
 ---
 
-# 56. Non-Functional Verification Policy
+# 60. Non-Functional Verification Policy
 
-A non-functional requirement must not be marked `Verified` without evidence.
+A non-functional requirement must not be marked `Verified` without appropriate evidence.
 
 Examples:
 
 ```text
 NFR-PERF-001
-requires performance measurement.
+→ performance measurement
 
 NFR-SCALE-004
-requires deployment/load architecture evidence.
+→ architecture/infrastructure validation
 
 NFR-REL-004
-requires backup evidence.
+→ backup evidence
+
+NFR-REL-005
+→ recovery exercise/documentation
 
 NFR-AVAIL-001
-requires operational monitoring evidence.
+→ production monitoring
 ```
 
-Code inspection alone is insufficient for these requirements.
+Code inspection alone is insufficient for these claims.
 
 ---
 
-# 57. Historical Requirement Mapping
+# 61. Deprecated or Superseded Concepts
 
-The original SRS contains requirements that are now represented differently.
-
-Examples include:
-
-* subdomain terminology;
-* subscription and trial requirements;
-* package-based access;
-* payment;
-* custom landing page;
-* notification behavior;
-* usage limits;
-* scheduling automation.
-
-The current requirement baseline retains accepted product concepts while standardizing terminology and separating product behavior from implementation details.
-
-The historical SRS must not be copied directly into new implementation tasks.
-
----
-
-# 58. Deprecated or Superseded Concepts
-
-The following concepts should not be introduced as new independent domain concepts without an explicit requirement change:
+The following concepts should not be introduced as new independent domain concepts without an explicit product and requirement decision:
 
 ```text
 Program as a separate domain from Service
@@ -2157,34 +2310,34 @@ Payment and Booking as one lifecycle
 Subdomain as the name for /tenant-slug
 ```
 
-Legacy code may still contain these names.
+Legacy implementation may still contain these terms.
 
-Refactoring them is an architecture task, not a requirement change by itself.
+Changing legacy terminology is an architecture or implementation task, not a requirement change by itself.
 
 ---
 
-# 59. Out of Scope
+# 62. Out of Scope
 
-The following are not part of the current baseline unless explicitly accepted later:
+Unless explicitly accepted through product and requirement change control, the following are outside the current baseline:
 
 ```text
-- Full accounting/financial management
-- Full ERP capabilities
-- Full general-purpose CRM
-- General inventory management
-- Social media management
-- Full marketing automation
-- AI-generated business decisions
-- Unspecified external integrations
-- Unspecified multi-location management
-- Unspecified advanced payment automation
+Full accounting / financial management
+Full ERP capabilities
+Full general-purpose CRM
+General inventory management
+Social media management
+Full marketing automation
+AI-generated business decisions
+Unspecified external integrations
+Unspecified multi-location management
+Unspecified advanced payment automation
 ```
 
-Future functionality must be added through an explicit requirement change.
+A new capability must not be treated as accepted simply because it is technically possible.
 
 ---
 
-# 60. Change Control
+# 63. Requirement Change Control
 
 A change to BookQu behavior must not be introduced only through source code.
 
@@ -2193,73 +2346,115 @@ When a proposed change modifies product behavior:
 ```text
 Proposal
    ↓
+Determine affected product concept
+   ↓
 Determine affected requirement
    ↓
 Accept / reject product change
    ↓
+Update docs/2-PRODUCT.md when scope changes
+   ↓
 Update docs/3-REQUIREMENT.md
    ↓
-Update affected architecture documentation
+Update docs/4-ARCHITECTURE.md when architecture changes
+   ↓
+Update docs/7-SYSTEM-DESIGN.md when current implementation changes
+   ↓
+Update implementation
+   ↓
+Update tests
    ↓
 Update docs/6-TRACKER.md
-   ↓
-Implement
-   ↓
-Test
 ```
+
+Operational changes should additionally update:
+
+```text
+docs/8-OPERATIONS.md
+```
+
+Important architectural decisions should additionally be recorded through:
+
+```text
+docs/adr/
+```
+
+where appropriate.
 
 ---
 
-# 61. Requirement Conflict Rule
+# 64. Requirement Conflict Rule
 
 When a conflict is found between:
 
 * source code;
 * tests;
 * tracker;
-* historical SRS;
 * product definition;
-* current requirements;
+* requirements;
+* architecture;
+* system design;
 
 the conflict must be explicitly identified.
 
-A developer or AI agent must not silently select whichever interpretation is easiest to implement.
+An agent must not silently select whichever interpretation is easiest to implement.
 
-The current product and requirement documents are the authority for intended behavior.
+The following distinction must be maintained:
 
-Source code represents current implementation.
+```text
+Product
+→ What BookQu should provide.
 
-Tests represent verified behavior.
+Requirement
+→ What behavior is required.
 
-Historical documents represent past decisions.
+Architecture
+→ How the system should be structured.
+
+System Design
+→ How the current system actually works.
+
+Source Code
+→ Current implementation.
+
+Tests
+→ Verified behavior.
+
+Tracker
+→ Current implementation status.
+```
+
+If current code conflicts with an accepted requirement, that is an implementation/documentation conflict and must be resolved intentionally.
 
 ---
 
-# 62. Rule for AI Agents
+# 65. Rule for AI Agents
 
 AI agents working on BookQu must:
 
 1. read `AGENT.md`;
 2. read the relevant section of `docs/2-PRODUCT.md`;
 3. identify the applicable requirement ID;
-4. inspect the current implementation;
-5. inspect relevant tests;
-6. determine whether the requested task changes product behavior;
-7. implement only within the accepted scope;
-8. update tests where behavior changes;
-9. update documentation when the accepted behavior changes.
+4. inspect the current system design where relevant;
+5. inspect the implementation;
+6. inspect relevant tests;
+7. determine whether the task changes product behavior;
+8. implement only within accepted scope;
+9. update tests when behavior changes;
+10. update documentation when the accepted behavior changes;
+11. update the tracker when implementation status changes.
 
 An AI agent must not create a new product capability merely because it appears technically useful.
 
-An AI agent must not remove an existing capability merely because it does not exist in the historical SRS.
+An AI agent must not remove an existing capability merely because it is absent from an older specification.
 
-When uncertain, the agent must identify the requirement conflict instead of inventing product behavior.
+When uncertain, the agent should identify the requirement conflict instead of inventing product behavior.
 
 ---
 
-# 63. Definition of Requirement Completeness
+# 66. Definition of Requirement Completeness
 
-A requirement is considered sufficiently defined when it specifies:
+A requirement is sufficiently defined when it specifies, where applicable:
 
 ```text
 Who
@@ -2270,14 +2465,14 @@ Under what conditions
 ↓
 Expected behavior
 ↓
-Important business rules
+Business rules
 ↓
 Expected result
 ↓
-Relevant constraints
+Constraints
 ```
 
-For example:
+Example:
 
 ```text
 FR-BOOKING-010
@@ -2289,23 +2484,24 @@ What:
 Create a walk-in booking
 
 Condition:
-Customer arrives directly at the business
+A customer books directly through the business
 
 Expected behavior:
-The owner can create a booking on behalf of that customer
+The owner creates a booking on behalf of the customer
 
 Constraints:
 The selected schedule must be available
+Tenant authorization must be valid
 
 Result:
-A valid booking record is created
+A valid booking is created
 ```
 
 ---
 
-# 64. Definition of Done for Functional Requirements
+# 67. Definition of Done for Functional Requirements
 
-A functional requirement is considered `Done` when:
+A functional requirement is considered complete when:
 
 ```text
 Requirement defined
@@ -2320,37 +2516,174 @@ Authorization verified
         ↓
 Tenant isolation verified where applicable
         ↓
-UI/UX flow verified
+User-facing behavior verified
+        ↓
+Documentation synchronized
         ↓
 Tracker updated
 ```
 
-A feature that works but violates the target architecture may be marked:
+A functional requirement being implemented does not automatically mean its architecture is optimal.
 
-```text
-Implemented
-Architecture: Needs Refactor
-```
-
-It should not be misrepresented as architecturally complete.
+Architectural status is tracked separately.
 
 ---
 
-# 65. Final Requirement Principle
+# 68. Requirement Maintenance Principle
 
-BookQu development follows one fundamental rule:
+Requirements should remain stable as long as the intended product behavior remains stable.
 
-> **Code implements requirements; code does not define requirements.**
+Implementation changes should not require requirement changes merely because:
 
-The intended product behavior must be established first.
+* a class moved;
+* a controller became thinner;
+* an Action was introduced;
+* a service was renamed;
+* a cache implementation changed;
+* a database optimization was introduced.
 
-The implementation must then realize that behavior.
+Requirement changes are justified when the intended product/system behavior changes.
 
-Tests must verify it.
+---
 
-Documentation must remain synchronized with it.
+# 69. Requirement-to-Architecture Boundary
 
-Therefore:
+The requirement document may state constraints that affect architecture, for example:
+
+```text
+Tenant data must remain isolated.
+Booking operations must prevent double booking.
+Payment state must remain distinct from booking state.
+```
+
+However, it should not prescribe the exact implementation.
+
+For example, this is a requirement:
+
+```text
+The system must prevent double booking.
+```
+
+This is architecture/system design:
+
+```text
+The authoritative booking transaction uses
+the designated availability and concurrency mechanism.
+```
+
+The distinction allows implementation to evolve without invalidating the requirement baseline.
+
+---
+
+# 70. Requirement-to-System-Design Boundary
+
+`3-REQUIREMENT.md` states what behavior must hold.
+
+`7-SYSTEM-DESIGN.md` will explain how the current implementation achieves that behavior.
+
+Example:
+
+```text
+Requirement:
+
+A stale pending booking must not permanently occupy a schedule.
+```
+
+System Design will explain:
+
+```text
+Current occupancy rule
+Current pending grace handling
+Current stale-booking eviction path
+Current transactional boundary
+Current cache invalidation
+```
+
+This keeps detailed implementation knowledge out of the requirement document.
+
+---
+
+# 71. Requirement-to-Operations Boundary
+
+Operational requirements may exist here when they affect required system behavior.
+
+For example:
+
+```text
+Expired payment must eventually be reconciled.
+```
+
+The detailed operational mechanism belongs in:
+
+```text
+docs/8-OPERATIONS.md
+```
+
+This distinction prevents the requirement document from becoming a production runbook.
+
+---
+
+# 72. Final Requirement Model
+
+The BookQu requirement model follows:
+
+```text
+PRODUCT
+   ↓
+WHAT THE PRODUCT IS
+
+REQUIREMENT
+   ↓
+WHAT THE SYSTEM MUST DO
+
+ARCHITECTURE
+   ↓
+HOW THE SYSTEM SHOULD BE STRUCTURED
+
+SYSTEM DESIGN
+   ↓
+HOW THE CURRENT SYSTEM ACTUALLY WORKS
+
+IMPLEMENTATION
+   ↓
+CODE THAT REALIZES THE REQUIREMENTS
+
+TESTS
+   ↓
+EVIDENCE OF VERIFIED BEHAVIOR
+
+TRACKER
+   ↓
+CURRENT IMPLEMENTATION STATUS
+```
+
+Operations and ADR provide supporting dimensions:
+
+```text
+OPERATIONS
+→ How the running system is operated and verified.
+
+ADR
+→ Why significant architectural decisions were made.
+```
+
+---
+
+# 73. Final Requirement Principle
+
+The fundamental rule of BookQu development is:
+
+> **Code implements requirements; code does not silently define requirements.**
+
+The intended behavior must be established first.
+
+The implementation must realize that behavior.
+
+Tests must provide evidence.
+
+Documentation must remain synchronized.
+
+The resulting development chain is:
 
 ```text
 PRODUCT
@@ -2359,43 +2692,46 @@ REQUIREMENT
    ↓
 ARCHITECTURE
    ↓
+SYSTEM DESIGN
+   ↓
 IMPLEMENTATION
    ↓
 TEST
+   ↓
+TRACKER
 ```
-
-This chain is the foundation for future BookQu development.
 
 ---
 
-# 66. Document Status
+# 74. Document Status
 
 This document is the current functional and non-functional requirement baseline for BookQu.
 
-It supersedes conflicting portions of historical requirement documents.
+It is authoritative for accepted system behavior.
 
-It intentionally does not define detailed code structure.
-
-Technical structure, folder organization, layer responsibilities, coding conventions, and architectural constraints are defined in:
+It intentionally does not serve as:
 
 ```text
-docs/4-ARCHITECTURE.md
+Product specification
+        → docs/2-PRODUCT.md
+
+Architectural specification
+        → docs/4-ARCHITECTURE.md
+
+Current implementation design
+        → docs/7-SYSTEM-DESIGN.md
+
+Development workflow
+        → docs/5-DEVELOPMENT.md
+
+Operational procedures
+        → docs/8-OPERATIONS.md
+
+Architectural rationale
+        → docs/adr/
+
+Current project status
+        → docs/6-TRACKER.md
 ```
 
-Development procedures are defined in:
-
-```text
-docs/5-DEVELOPMENT.md
-```
-
-Current implementation status is defined in:
-
-```text
-docs/6-TRACKER.md
-```
-
-Agent-specific rules are defined in:
-
-```text
-AGENT.md
-```
+The requirement baseline should be changed when accepted product or behavioral requirements change, not merely when the implementation structure changes.

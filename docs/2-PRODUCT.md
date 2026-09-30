@@ -1,36 +1,39 @@
-# BookQu Product Specification
+# BookQu Product Definition
 
 > **Document Status:** Current Product Definition
 > **Version:** 1.0
 > **Authority:** Current Product Source of Truth
-> **Applies To:** Current BookQu implementation and future development
+> **Applies To:** Current BookQu product and future product development
 > **Last Updated:** 2026-09-30
 >
-> This document defines what BookQu is, who it serves, what capabilities are part of the current product, and how the product domain should be understood.
+> This document defines what BookQu is, who it serves, what capabilities belong to the product, and how the product domain should be understood.
 >
-> This document is not a technical architecture document and does not define implementation details. Technical decisions are defined in `docs/4-ARCHITECTURE.md`.
+> This document defines product meaning and scope. It does not define detailed technical architecture, implementation structure, operational procedures, or architectural rationale.
 
 ---
 
-# 1. Purpose of This Document
+# 1. Purpose
 
-This document establishes a single, shared definition of the BookQu product.
+This document establishes a shared and stable definition of the BookQu product.
 
-BookQu has evolved significantly during development. Some product capabilities were introduced or expanded after the original SRS was created. Those changes became part of the current implementation but were not consistently reflected in the original requirements documentation.
+Its purpose is to ensure that:
 
-This document therefore defines the product from the perspective of its current intended state.
+* developers understand the same product scope;
+* AI agents interpret product behavior consistently;
+* business concepts use consistent terminology;
+* future requirements can be derived from a common product definition;
+* technical implementation can evolve without silently changing the meaning of the product;
+* new capabilities are evaluated against the existing product boundary.
 
-The purpose is to ensure that:
+This document is the authority for determining:
 
-* all developers understand the same product;
-* all AI agents interpret the same product scope;
-* features are described using consistent terminology;
-* product concepts are not inferred differently by different contributors;
-* future requirements can be derived consistently from this document;
-* technical implementation can be refactored without changing the intended product behavior;
-* historical requirements do not accidentally override the current product definition.
+> **What BookQu is as a product.**
 
-The original SRS and previous development documents remain historical references only. They are not authoritative when they conflict with the current product definition.
+Detailed system behavior belongs in `docs/3-REQUIREMENT.md`.
+
+Technical structure belongs in `docs/4-ARCHITECTURE.md` and `docs/7-SYSTEM-DESIGN.md`.
+
+Development procedures belong in `docs/5-DEVELOPMENT.md`.
 
 ---
 
@@ -40,7 +43,7 @@ The original SRS and previous development documents remain historical references
 
 BookQu is a multi-tenant web-based booking and reservation management platform for businesses that provide time-based or schedule-based services.
 
-BookQu allows a business owner to:
+BookQu enables a business to:
 
 * establish a public business presence;
 * define bookable services;
@@ -48,20 +51,41 @@ BookQu allows a business owner to:
 * receive and manage customer bookings;
 * manage booking operations;
 * maintain customer information and booking history;
-* manage supporting business capabilities such as categories, additional items, vouchers, reviews, staff, resources, and analytics;
-* receive or manage booking-related payments;
-* manage the business's BookQu subscription;
-* customize the public presentation of the business.
+* manage supporting business capabilities;
+* handle booking-related payments;
+* manage its BookQu subscription;
+* monitor business activity and operational performance;
+* customize the presentation of its public business page.
 
-Customers can access a business's public BookQu page, select a service, select a date and available time, complete a booking, make the required payment, and manage eligible bookings afterward.
+Customers can use BookQu to:
 
-BookQu is therefore primarily an **operational booking platform**, not a general-purpose e-commerce platform, CRM, accounting platform, or marketing automation platform.
+* access a business's public booking page;
+* discover available services;
+* select a valid date and time;
+* provide booking information;
+* complete payment where required;
+* receive booking information;
+* manage eligible bookings after creation;
+* provide reviews where eligible.
+
+BookQu is primarily an **operational booking platform**.
+
+It is not intended to be interpreted as a general-purpose:
+
+* accounting system;
+* ERP;
+* full CRM;
+* marketing automation platform;
+* social media management platform;
+* general inventory management platform.
+
+Supporting capabilities may exist around the booking workflow, but booking and scheduling remain the central purpose of the product.
 
 ---
 
 # 3. Product Problem
 
-Many small and medium service businesses manage reservations using a combination of:
+Many schedule-based businesses manage reservations through combinations of:
 
 * chat applications;
 * spreadsheets;
@@ -71,21 +95,28 @@ Many small and medium service businesses manage reservations using a combination
 * handwritten records;
 * manually maintained schedules.
 
-These approaches make it difficult to maintain consistent availability, prevent scheduling conflicts, track booking history, and provide customers with a structured booking experience.
+These approaches can make it difficult to:
 
-BookQu centralizes the operational booking process into a single system.
+* maintain consistent availability;
+* prevent scheduling conflicts;
+* maintain booking history;
+* organize customer information;
+* provide a structured customer booking experience;
+* monitor business activity.
 
-The central problem BookQu solves is:
+BookQu centralizes the booking operation into one system.
 
-> **How can a schedule-based business provide customers with a structured booking process while allowing the business owner to manage availability, reservations, customers, and business activity from one system?**
+The central problem BookQu addresses is:
+
+> **How can a schedule-based business provide customers with a structured booking experience while allowing the business owner to manage services, schedules, reservations, customers, and business activity from one system?**
 
 ---
 
 # 4. Product Goal
 
-The primary goal of BookQu is to provide a reliable and structured booking workflow from service configuration through reservation management.
+The primary goal of BookQu is to provide a reliable and structured booking workflow from business configuration through reservation management.
 
-The product should make the following process straightforward:
+The core product loop is:
 
 ```text
 Business Setup
@@ -105,7 +136,7 @@ Customer History
 Business Insight
 ```
 
-Supporting capabilities should strengthen this flow rather than replace it as the primary purpose of the platform.
+Supporting capabilities should strengthen this workflow rather than replace it as the primary purpose of the platform.
 
 ---
 
@@ -117,15 +148,15 @@ BookQu currently serves three principal user groups.
 
 The business owner operates a business through BookQu.
 
-The owner is responsible for:
+The owner is responsible for activities such as:
 
 * configuring business information;
 * managing services;
-* managing availability;
+* managing schedules;
 * managing bookings;
-* managing customers;
+* managing customer information;
 * monitoring business activity;
-* managing optional supporting capabilities;
+* managing supporting business capabilities;
 * managing the business's BookQu subscription.
 
 The owner is the primary authenticated operational user.
@@ -136,7 +167,7 @@ The owner is the primary authenticated operational user.
 
 A customer is a person who wants to book a service provided by a business.
 
-The customer can:
+A customer can:
 
 * access a business's public booking page;
 * view available services;
@@ -144,110 +175,111 @@ The customer can:
 * select an available time;
 * provide booking information;
 * complete payment when required;
-* receive booking/payment information;
-* access booking management through a secure management link;
-* perform permitted post-booking actions such as cancellation or rescheduling;
+* receive booking and payment information;
+* access eligible booking management functions;
+* cancel or reschedule an eligible booking;
 * submit a review where eligible.
 
-A customer does not currently need a full BookQu account to perform the public booking process.
+A customer does not need to maintain a normal BookQu owner account to use the public booking flow.
 
-Customer identity for a booking is primarily represented through booking information such as name, phone number, and email.
+Customer identity is represented through customer and booking information associated with the reservation.
 
 ---
 
 ## 5.3 Platform Admin
 
-The platform admin operates at the BookQu platform level rather than at the individual business level.
+The platform admin operates at the BookQu platform level rather than within an individual business.
 
 The platform admin is separate from a business owner.
 
-The platform admin is responsible for platform-level oversight and administration capabilities.
+The platform admin is responsible for platform-level administration and oversight capabilities supported by BookQu.
 
-The current implementation provides a platform administration area, but BookQu should not assume that every future platform management capability already exists.
+The existence of an administrative role does not imply that every possible platform management capability is part of the product.
 
 ---
 
-# 6. Core Product Concept
+# 6. Core Product Model
 
-BookQu is based on the following primary domain relationship:
+The conceptual BookQu model is:
 
 ```text
 User
   │
-  └── owns
-       │
-       ▼
-     Tenant
-       │
-       ├── Services
-       │      │
-       │      └── Schedules
-       │
-       ├── Bookings
-       │      │
-       │      ├── Customer information
-       │      └── Payment information
-       │
-       ├── Customers
-       ├── Staff / Resources
-       ├── Categories
-       ├── Additional Items
-       ├── Vouchers
-       ├── Reviews
-       ├── Assets / Appearance
-       └── Subscription
+  └── operates
+        │
+        ▼
+      Tenant
+        │
+        ├── Services
+        │      │
+        │      └── Schedules
+        │
+        ├── Bookings
+        │      │
+        │      ├── Customer information
+        │      └── Payment information
+        │
+        ├── Customers
+        ├── Categories
+        ├── Staff
+        ├── Resources
+        ├── Additional Items
+        ├── Vouchers
+        ├── Reviews
+        ├── Assets / Appearance
+        └── Subscription
 ```
 
-This relationship is the conceptual foundation of BookQu.
+This model describes the product domain conceptually.
+
+It does not prescribe the technical database structure.
 
 ---
 
-# 7. Canonical Domain Terminology
+# 7. Canonical Product Terminology
 
-Terminology must remain consistent throughout product documentation, requirements, code, UI copy, tests, and agent instructions.
+Terminology must remain consistent across product documentation, requirements, UI language, implementation discussions, tests, and AI-agent instructions.
 
 ## 7.1 User
 
 `User` represents an authenticated identity in the BookQu platform.
 
-A user may have a platform role such as:
+A user may operate with a platform role such as:
 
 * owner;
 * admin.
 
-A user is not the same concept as a business.
+A user is not the same concept as a business or tenant.
 
 ---
 
 ## 7.2 Tenant
 
-`Tenant` is the canonical technical/domain term for a business entity operating inside BookQu.
+`Tenant` is the canonical domain term for a business operating inside BookQu.
 
-A tenant represents one business account and its isolated operational data.
+A tenant represents one business account and its isolated operational context.
 
-For user-facing language, the term **Business** may be used.
+For user-facing language, the term **Business** may be used where natural.
 
 Therefore:
 
 ```text
-Technical/domain term:
+Domain term:
 Tenant
 
 User-facing term:
 Business
 ```
 
-Contributors should not introduce a separate `Business` domain entity unless a future requirement explicitly requires one.
+A separate `Business` domain entity should not be introduced unless a future requirement explicitly requires such a distinction.
 
 ---
 
 ## 7.3 Owner
 
-`Owner` is the person who operates and manages a tenant/business through the BookQu owner portal.
+`Owner` is the person who operates and manages a tenant/business through BookQu.
 
-The owner is represented by a `User`.
-
-The current product model assumes a business is associated with its owner.
+The owner is represented by an authenticated BookQu user.
 
 ---
 
@@ -255,15 +287,15 @@ The current product model assumes a business is associated with its owner.
 
 `Customer` represents the person making or receiving a booking.
 
-A customer is distinct from the authenticated BookQu user.
+A customer is distinct from an authenticated BookQu owner/admin user.
 
-A customer can interact with the booking system without maintaining a normal BookQu owner account.
+A customer can use the public booking flow without maintaining a normal BookQu owner account.
 
 ---
 
 ## 7.5 Service
 
-`Service` is the canonical term for something that customers can book.
+`Service` is the canonical product term for something a customer can book.
 
 Examples include:
 
@@ -272,7 +304,7 @@ Examples include:
 * music studio session;
 * consultation session.
 
-The following terms should not be treated as separate domain concepts unless explicitly required:
+The following terms should not be introduced as separate product concepts unless a future requirement explicitly defines them:
 
 ```text
 Program
@@ -281,39 +313,34 @@ Business Service
 Bookable Program
 ```
 
-These are legacy or presentation terms.
-
-The canonical product/domain term is:
+The canonical product concept is:
 
 > **Service**
-
-The existing `/programs` naming in the implementation may remain temporarily for compatibility, but new requirements and architecture documentation should use `Service`.
 
 ---
 
 ## 7.6 Schedule
 
-`Schedule` represents a bookable time slot associated with a service.
+`Schedule` represents a bookable time period associated with a service.
 
-A schedule has at minimum:
+Conceptually, a schedule defines:
 
-* service;
 * date;
 * start time;
 * end time;
-* availability state.
+* booking availability.
 
-A schedule is not the same as a business's general operating hours.
+A schedule is not the same as general business operating hours.
 
 ---
 
 ## 7.7 Availability
 
-`Availability` represents whether a service can currently be booked for a particular date/time.
+`Availability` represents whether a service can currently be booked for a particular date and time.
 
-Availability is a business state derived from scheduling and booking conditions.
+Availability is a business concept derived from schedule and booking conditions.
 
-Availability should not be treated as a separate primary domain entity unless future requirements require persistent availability rules.
+It should not automatically be treated as a separate primary product entity.
 
 ---
 
@@ -321,27 +348,25 @@ Availability should not be treated as a separate primary domain entity unless fu
 
 `Booking` represents a reservation made for a service at one or more eligible schedules.
 
-A booking is the central transaction of the BookQu operational domain.
+Booking is the central operational transaction of BookQu.
 
-A booking may be created through:
+A booking may originate from:
 
-* customer booking;
-* owner walk-in booking.
+* a customer booking;
+* an owner-created walk-in booking.
 
 ---
 
 ## 7.9 Payment
 
-`Payment` represents a financial transaction associated with BookQu operations.
+`Payment` represents a financial transaction associated with a BookQu business operation.
 
-Current product usage includes payment flows related to:
+BookQu currently includes payment contexts such as:
 
-* customer booking payments;
-* business subscription payments.
+* booking payment;
+* subscription payment.
 
-Payment state and booking state are related but should remain conceptually separate.
-
-A payment being successful does not mean every booking-related state should be inferred without applying the relevant booking business rules.
+Payment and booking remain separate product concepts.
 
 ---
 
@@ -349,60 +374,59 @@ A payment being successful does not mean every booking-related state should be i
 
 `Plan` represents a BookQu subscription package definition.
 
-A plan defines the capability and/or usage entitlement associated with a subscription level.
+A plan defines the package-level capabilities or entitlements associated with a subscription level.
 
 ---
 
 ## 7.11 Subscription
 
-`Subscription` represents the subscription state of a tenant/business.
+`Subscription` represents a tenant's relationship with a BookQu plan.
 
-A subscription is an instance of a plan for a tenant.
-
-Therefore:
+Conceptually:
 
 ```text
 Plan
 =
-available package definition
+Available subscription package
 
 Subscription
 =
-a tenant's active/trial/expired/cancelled entitlement
+A tenant's subscription state and entitlement
 ```
 
-These terms must not be used interchangeably.
+Plan and Subscription must not be treated as interchangeable concepts.
 
 ---
 
 ## 7.12 Staff
 
-`Staff` represents a person/resource participant associated with a business's operation.
+`Staff` represents a person participating in a business's operational activities.
 
-Staff management is a supporting operational capability.
+Staff management is a supporting capability.
 
-Customer-facing staff selection is not assumed to be part of the core booking flow unless explicitly defined by a future requirement.
+Staff does not automatically imply that customers can select a staff member during booking unless such behavior is explicitly defined by product requirements.
 
 ---
 
 ## 7.13 Resource
 
-`Resource` represents a physical or operational asset that may be associated with a service.
+`Resource` represents a physical or operational asset associated with a business or service.
 
 Examples may include:
 
-* studio room;
 * court;
 * room;
-* equipment/resource unit.
+* studio;
+* equipment;
+* facility.
 
-Staff and resources are related concepts but should not be treated as the same entity.
+Staff and Resource are related operational concepts but are not the same concept.
 
 ---
 
 ## 7.14 Additional Item
 
-`Additional Item` represents an optional add-on that may be selected together with a service where the feature is enabled.
+`Additional Item` represents an optional extra associated with a service or booking.
 
 Examples may include:
 
@@ -410,15 +434,15 @@ Examples may include:
 * additional facilities;
 * optional extras.
 
-Additional items are supporting booking capabilities, not standalone primary bookings.
+Additional Items extend a booking; they do not replace the service being booked.
 
 ---
 
 ## 7.15 Voucher
 
-`Voucher` represents a promotional discount rule that may be applied to an eligible booking.
+`Voucher` represents a promotional discount mechanism that may be applied to an eligible booking.
 
-Voucher functionality is part of the supporting commercial layer of BookQu.
+The exact discount rules belong to the requirements authority.
 
 ---
 
@@ -426,27 +450,28 @@ Voucher functionality is part of the supporting commercial layer of BookQu.
 
 `Review` represents customer feedback associated with an eligible booking.
 
-A review is a post-booking customer experience capability.
-
-It is not part of the primary booking creation transaction.
+Reviews belong to the post-booking customer experience rather than the core booking creation process.
 
 ---
 
-## 7.17 Tenant Page / Public Booking Page
+## 7.17 Public Business Page
 
-The public page of a tenant is the customer-facing entry point for that business.
+The public business page is the customer-facing entry point for a tenant.
 
-It allows customers to discover available services and begin a booking.
+It allows customers to:
 
-The default access mechanism is based on the tenant's slug.
+* discover the business;
+* view available services;
+* begin the booking flow;
+* access customer-facing business information.
 
-BookQu also supports the concept of a custom domain for eligible businesses where configured.
+The canonical public identity is associated with the tenant's public slug and may support custom-domain access where configured.
 
 ---
 
-# 8. Product Architecture at the Conceptual Level
+# 8. Product Areas
 
-The product is divided into three major user-facing areas.
+BookQu is conceptually divided into three major user-facing areas:
 
 ```text
                     BOOKQU
@@ -460,7 +485,7 @@ The product is divided into three major user-facing areas.
  Business Ops     Booking Flow    Platform Ops
 ```
 
-These areas must remain conceptually separated.
+These areas have different responsibilities.
 
 ---
 
@@ -470,22 +495,22 @@ The Owner Portal is the primary operational workspace for a business.
 
 ## 9.1 Dashboard
 
-The dashboard provides a concise overview of business activity.
+The dashboard provides an overview of business activity.
 
-Current dashboard concepts include information related to:
+Current dashboard concepts include:
 
 * bookings;
-* revenue;
+* revenue-related information;
 * customers;
 * services;
 * trends;
 * upcoming schedules;
-* recent booking activity;
+* recent activity;
 * operational statistics.
 
 The dashboard is an aggregation and monitoring surface.
 
-It should not become the primary location for unrelated business operations.
+It should not become the conceptual source of truth for unrelated business domains.
 
 ---
 
@@ -493,88 +518,83 @@ It should not become the primary location for unrelated business operations.
 
 The calendar provides a time-oriented operational view of schedules and bookings.
 
-It allows the owner to understand:
+It helps owners understand:
 
-* schedule availability;
+* available schedules;
 * occupied schedules;
 * booking activity;
 * dates;
-* operational periods.
+* operating periods.
 
-Calendar is a view of booking and scheduling data.
-
-It is not a replacement for the underlying schedule domain.
+The calendar is a view of scheduling and booking information rather than a separate scheduling domain.
 
 ---
 
-## 9.3 Schedule Management
+## 9.3 Service Management
 
-Schedule Management defines when services are available for booking.
+Service Management defines what customers can book.
 
-Current capabilities include concepts such as:
+A service may contain concepts such as:
 
-* creating available slots;
-* bulk slot generation;
-* default pricing;
-* availability configuration;
-* blocked dates;
-* removing schedule slots;
-* preventing conflicts.
-
-Schedule configuration is one of the core operational capabilities of BookQu.
-
----
-
-## 9.4 Booking Management
-
-Booking Management allows the owner to operate reservations after they are created.
-
-Current capabilities include:
-
-* viewing bookings;
-* viewing booking details;
-* changing booking status;
-* creating walk-in bookings;
-* checking available reschedule slots;
-* rescheduling eligible bookings;
-* viewing booking/payment information;
-* completing operational actions.
-
-Booking Management is part of the core BookQu product.
-
----
-
-## 9.5 Service Management
-
-Service Management allows a business to define what customers can book.
-
-Current service concepts include:
-
-* service name;
+* name;
 * description;
 * price;
 * duration;
 * capacity;
 * active/inactive state;
-* service image;
-* category association where applicable.
+* presentation information;
+* category association.
 
-Service Management defines the inventory of bookable offerings.
+Service Management forms one of the core product capabilities.
+
+---
+
+## 9.4 Schedule Management
+
+Schedule Management defines when services are available for booking.
+
+The product supports concepts such as:
+
+* creating schedules;
+* generating schedules in bulk;
+* configuring availability;
+* defining pricing-related schedule information;
+* blocking unavailable periods;
+* removing schedules;
+* preventing scheduling conflicts.
+
+Schedule Management is a core product capability.
+
+---
+
+## 9.5 Booking Management
+
+Booking Management allows an owner to operate reservations after they are created.
+
+It includes capabilities such as:
+
+* viewing bookings;
+* viewing booking details;
+* managing booking status;
+* creating walk-in bookings;
+* rescheduling eligible bookings;
+* viewing booking and payment information;
+* performing supported operational actions.
 
 ---
 
 ## 9.6 Customer Management
 
-Customer Management provides the business with access to customer information and booking history.
+Customer Management allows the business to access customer information and booking history.
 
-Current capabilities include:
+It provides an operational view of:
 
-* customer listing;
+* customers;
 * customer details;
 * booking history;
-* customer notes where supported.
+* customer-related information supported by the product.
 
-The customer module is operational rather than a full CRM system.
+Customer Management is an operational capability rather than a full CRM system.
 
 ---
 
@@ -582,9 +602,9 @@ The customer module is operational rather than a full CRM system.
 
 Categories organize services into meaningful groups.
 
-Categories improve service organization and discovery.
+Categories support organization and discovery.
 
-Categories do not represent a replacement for services.
+They do not replace services as the core bookable offering.
 
 ---
 
@@ -592,304 +612,316 @@ Categories do not represent a replacement for services.
 
 Staff and Resources provide additional operational structure for businesses that need to manage people or physical resources.
 
-This module should remain optional.
-
-A business does not need staff/resource management to operate the core booking workflow.
+These capabilities are supporting features and are not required for every booking scenario.
 
 ---
 
 ## 9.9 Additional Items
 
-Additional Items allow businesses to offer optional extras together with services.
+Additional Items allow a business to provide optional extras together with a service.
 
-This capability extends a basic booking rather than replacing it.
+They extend the booking experience without replacing the primary service.
 
 ---
 
 ## 9.10 Vouchers
 
-Vouchers provide promotional discount capabilities.
+Vouchers provide promotional discount functionality.
 
-Voucher rules may include:
+The product may support concepts such as:
 
 * discount type;
 * discount amount;
-* validity period;
+* validity;
 * minimum transaction;
-* usage limitation.
+* usage limits.
 
-Exact business rules belong in `docs/3-REQUIREMENT.md`.
+Detailed voucher behavior is defined in `docs/3-REQUIREMENT.md`.
 
 ---
 
 ## 9.11 Reviews
 
-Reviews provide customer feedback after an eligible booking.
+Reviews provide a mechanism for customers to submit feedback after eligible bookings.
 
-The owner can view feedback and manage supported review presentation behaviors.
-
-Reviews are a supporting customer-experience capability.
+Reviews support the customer experience and business feedback loop.
 
 ---
 
 ## 9.12 Analytics and Reports
 
-Analytics and reports summarize operational data.
+Analytics and reports provide summarized business information.
 
-Current capabilities include concepts such as:
+Current product concepts include:
 
 * booking metrics;
 * revenue-related metrics;
 * customer metrics;
 * service performance;
 * schedule utilization;
-* schedule-related reports;
-* report export.
+* report generation;
+* reporting/export capabilities where supported.
 
-Analytics should consume operational data.
+Analytics and reports consume operational information.
 
-Analytics must not become a separate source of truth for booking or financial records.
+They should not become an alternative source of truth for booking records.
 
 ---
 
-## 9.13 Appearance and Landing Page
+## 9.13 Appearance and Public Presentation
 
-BookQu allows a business to customize its public presence.
+BookQu provides capabilities for customizing the business's public presentation.
 
-Current appearance concepts include:
+These may include:
 
 * logo;
-* brand identity;
+* branding;
 * colors;
-* banner/cover assets;
-* public landing page configuration.
+* banners;
+* cover imagery;
+* public page presentation.
 
-Appearance affects presentation.
-
-It must not change the underlying operational rules of booking.
+Appearance affects presentation rather than the fundamental booking rules.
 
 ---
 
 ## 9.14 Assets
 
-Assets provide a media management layer for business presentation.
+Assets support the business's public presentation and media needs.
 
-Potential assets include:
+Examples include:
 
-* business logo;
+* logos;
 * service images;
 * banners;
 * public page media.
 
-Assets are presentation resources rather than core booking records.
+Assets are supporting presentation resources rather than core booking records.
 
 ---
 
 ## 9.15 Notifications
 
-Notifications communicate operational events to the owner.
+Notifications communicate important business events.
 
 Examples include:
 
 * new booking;
-* booking status change;
+* booking status changes;
 * payment-related events;
 * subscription-related events.
 
-Notification behavior should be event-driven from the relevant domain state.
+Notifications support operational awareness rather than defining the underlying business state.
 
 ---
 
-## 9.16 Subscription
+## 9.16 Subscription Management
 
-Subscription management controls the tenant's relationship with the BookQu service.
+Subscription Management controls the tenant's relationship with the BookQu platform.
 
-Current product concepts include:
+Product concepts include:
 
-* subscription plans;
-* subscription status;
-* trial state;
+* plans;
+* subscriptions;
+* trial;
 * package-based access;
+* feature entitlements;
 * subscription payment;
 * subscription lifecycle.
 
-Exact entitlement and lifecycle rules are defined separately in `docs/3-REQUIREMENT.md`.
+Detailed subscription rules belong in `docs/3-REQUIREMENT.md`.
 
 ---
 
 # 10. Customer Portal
 
-The Customer Portal is the public-facing booking experience.
+The Customer Portal provides the public booking experience.
 
 The primary customer flow is:
 
 ```text
-Business Page
-     ↓
+Public Business Page
+        ↓
 Select Service
-     ↓
+        ↓
 Select Date
-     ↓
+        ↓
 Select Time
-     ↓
+        ↓
 Review Booking
-     ↓
+        ↓
 Payment
-     ↓
-Booking Confirmation / Invoice
+        ↓
+Booking Confirmation
 ```
 
 ---
 
 ## 10.1 Service Selection
 
-The customer chooses a service from the tenant's active bookable services.
-
-Inactive services must not be treated as normally bookable.
+The customer selects an active service that is available for booking.
 
 ---
 
 ## 10.2 Date Selection
 
-The customer chooses a valid booking date.
+The customer selects a valid booking date.
 
-Only dates that are relevant to the service's availability should be presented as available.
-
-Past or invalid booking periods must not become valid booking targets.
+The available dates should correspond to the service's scheduling and availability rules.
 
 ---
 
 ## 10.3 Time Selection
 
-The customer selects an available time slot.
+The customer selects an available time.
 
-The system must prevent selection of unavailable or already occupied schedules.
+Unavailable or occupied schedules must not be represented as normally bookable.
 
 ---
 
 ## 10.4 Checkout
 
-Checkout summarizes the reservation before payment or final booking completion.
+Checkout presents the reservation before completion.
 
-The checkout process may include:
+Relevant concepts may include:
 
 * customer information;
 * selected service;
 * selected schedule;
 * pricing;
-* eligible additional items;
-* applicable voucher;
+* additional items;
+* voucher;
 * total amount;
-* applicable booking policy.
+* applicable booking information.
 
 ---
 
 ## 10.5 Payment
 
-When payment is required, the customer proceeds through the supported payment process.
+Where payment is required, the customer proceeds through the supported payment flow.
 
-BookQu currently integrates with Midtrans for online payment processing.
+BookQu currently supports online payment through its payment integration.
 
-Payment state must remain distinct from booking state.
+Payment remains a separate product concept from booking status.
 
 ---
 
-## 10.6 Invoice
+## 10.6 Booking Confirmation and Invoice
 
-Successful booking/payment flows provide customer-facing financial and reservation information.
+After the booking/payment flow succeeds, the customer can receive booking and financial information associated with the transaction.
 
-Invoice presentation should represent recorded transaction data and must not independently redefine financial truth.
+The confirmation and invoice represent recorded transaction information.
 
 ---
 
 # 11. Customer Booking Management
 
-Customers can access booking management through secure, tokenized links.
+Customers can manage eligible bookings without requiring a normal owner account.
 
-This supports customers who do not have a full authenticated BookQu account.
-
-The management flow may include:
+The product supports a secure management flow that can provide capabilities such as:
 
 * viewing booking information;
 * viewing payment information;
-* cancellation where eligible;
-* rescheduling where eligible;
-* viewing invoice;
-* submitting a review where eligible.
+* cancelling eligible bookings;
+* rescheduling eligible bookings;
+* viewing invoice information;
+* submitting reviews where eligible.
 
-Access to management functions must be controlled by the booking's management authorization mechanism.
+Access to management capabilities is restricted according to the booking's management authorization rules.
 
 ---
 
 # 12. Walk-In Booking
 
-BookQu supports bookings created directly by the owner for customers who arrive or reserve directly through the business.
+BookQu supports bookings created by an owner on behalf of a customer.
 
-The conceptual distinction is:
+Conceptually:
 
 ```text
 Online Booking
-Customer → BookQu → Booking
+
+Customer
+   ↓
+BookQu
+   ↓
+Booking
+
 
 Walk-In Booking
-Owner → BookQu → Booking
+
+Owner
+   ↓
+BookQu
+   ↓
+Booking
 ```
 
-Both produce a booking record inside the same operational booking system.
+Both flows produce bookings within the same core booking system.
 
-They should not become two separate booking domains.
+Walk-in booking is therefore a booking-entry method, not a separate product domain.
 
 ---
 
 # 13. Multi-Slot Booking
 
-BookQu supports booking scenarios involving more than one contiguous schedule slot where the business rules allow it.
+BookQu supports booking scenarios involving multiple eligible schedules where the product rules allow it.
 
-Multiple selected schedules that belong to the same reservation should be treated as one customer booking operation rather than unrelated independent customer transactions.
+Conceptually:
 
-The implementation may represent the resulting schedule reservations as multiple booking records where necessary, but the product concept remains one reservation transaction.
+```text
+Customer
+   ↓
+Select multiple compatible schedules
+   ↓
+One booking operation
+   ↓
+One reservation context
+```
+
+A multi-slot reservation remains one customer booking concept even when the implementation internally represents multiple schedule reservations.
 
 This distinction is important for:
 
 * payment;
+* booking management;
 * cancellation;
+* rescheduling;
 * invoice;
-* availability;
-* booking management.
+* availability.
 
 ---
 
-# 14. Payment Domain
+# 14. Payment Product Model
 
-Payment is a supporting but important part of the BookQu product.
-
-The product currently has two major payment contexts:
+BookQu currently has two major payment contexts:
 
 ```text
 Booking Payment
       ↓
-Customer pays for a reservation
+Payment for a customer reservation
 
 Subscription Payment
       ↓
-Owner pays for BookQu subscription
+Payment for the business's BookQu subscription
 ```
 
-These contexts must not be conflated.
+These are different business purposes.
 
-A payment record should always have a clear business purpose.
+A booking payment and a subscription payment must not be treated as the same product operation merely because they use a common payment provider.
 
-Midtrans is the currently supported external payment gateway.
+Payment state is also conceptually separate from booking state.
 
-External payment-provider integration details belong in `docs/4-ARCHITECTURE.md`.
+Detailed payment behavior is defined in `docs/3-REQUIREMENT.md`.
+
+Technical payment integration belongs in `docs/4-ARCHITECTURE.md` and `docs/7-SYSTEM-DESIGN.md`.
 
 ---
 
-# 15. Subscription Domain
+# 15. Subscription Product Model
 
 BookQu operates as a subscription-based platform.
 
-The subscription domain contains:
+The conceptual model is:
 
 ```text
 Plan
@@ -901,22 +933,22 @@ Tenant Entitlement
 Feature / Usage Access
 ```
 
-The product may distinguish between:
+The product may support lifecycle concepts such as:
 
 * trial;
 * active subscription;
 * expired subscription;
 * cancelled subscription.
 
-Exact lifecycle transitions, limits, entitlements, and upgrade/downgrade behavior are requirement-level rules and must be defined in `docs/3-REQUIREMENT.md`.
+The exact transition rules and entitlement behavior are requirements-level concerns.
 
 ---
 
 # 16. Multi-Tenancy
 
-BookQu is a multi-tenant system.
+BookQu is fundamentally multi-tenant.
 
-Each business operates within an isolated tenant context.
+Each business operates inside an isolated tenant context.
 
 Conceptually:
 
@@ -942,54 +974,44 @@ BookQu
      └── Customers
 ```
 
-Data belonging to one tenant must not become accessible to another tenant.
+Tenant isolation is a fundamental product property.
 
-Tenant isolation is a fundamental product property, not an optional technical enhancement.
+Operational data belonging to one tenant must not become accessible to another tenant.
 
 ---
 
-# 17. Tenant Public Access
+# 17. Public Tenant Access
 
-A tenant/business has a public customer-facing booking page.
+Each tenant has a public-facing booking presence.
 
-The canonical concept is:
+The conceptual model is:
 
 ```text
-BookQu Platform
-      ↓
+BookQu
+   ↓
 Tenant
-      ↓
-Public Booking Page
+   ↓
+Public Business Page
+   ↓
+Customer Booking
 ```
 
-The current implementation supports:
+The product supports a tenant-specific public identity and may support custom-domain access where configured.
 
-```text
-/{tenant-slug}
-```
-
-as the primary public access pattern.
-
-Custom domain support may also be used where configured.
-
-The concept is therefore:
-
-> **Tenant public identity = slug-based public URL, with optional custom-domain support.**
-
-The term "subdomain" should not be used to describe the default `/tenant-slug` URL because a path-based URL and a subdomain are different concepts.
+The public business page is the primary entry point into the customer booking experience.
 
 ---
 
 # 18. Core Product Loop
 
-The core BookQu product loop is:
+The core BookQu loop is:
 
 ```text
 1. Business Setup
         ↓
-2. Configure Services
+2. Service Configuration
         ↓
-3. Configure Schedule
+3. Schedule Configuration
         ↓
 4. Customer Selects Service
         ↓
@@ -999,111 +1021,114 @@ The core BookQu product loop is:
         ↓
 7. Customer Completes Booking
         ↓
-8. Payment / Booking Confirmation
+8. Payment / Confirmation
         ↓
-9. Booking Stored
+9. Booking Record
         ↓
 10. Owner Manages Booking
         ↓
-11. Customer and Booking History Retained
+11. Customer and Booking History
         ↓
-12. Dashboard / Reporting Provides Operational Insight
+12. Business Insight
 ```
 
-A feature should be considered part of the core product when it directly strengthens this loop.
+This loop defines the primary purpose of the product.
 
-Features that do not directly strengthen the loop should be treated as supporting or future capabilities.
+New capabilities should be evaluated according to whether they:
+
+* strengthen this loop;
+* support an existing domain;
+* introduce a new product capability that requires explicit acceptance.
 
 ---
 
 # 19. Product Scope Classification
 
-To prevent future scope confusion, current BookQu capabilities are divided into four conceptual groups.
+Current BookQu capabilities can be grouped into four conceptual categories.
 
 ## 19.1 Core Operations
 
-These capabilities form the main purpose of BookQu.
+These capabilities form the central purpose of BookQu:
 
 ```text
-- Business setup
-- Business profile
-- Service management
-- Schedule management
-- Availability
-- Customer booking
-- Booking management
-- Customer records
-- Walk-in booking
-- Booking payment
-- Dashboard
-- Calendar
-- Public booking page
+Business Setup
+Business Profile
+Service Management
+Schedule Management
+Availability
+Customer Booking
+Booking Management
+Customer Records
+Walk-In Booking
+Booking Payment
+Dashboard
+Calendar
+Public Booking Page
 ```
 
 ---
 
 ## 19.2 Supporting Operations
 
-These capabilities strengthen the core booking product but are not the fundamental booking transaction itself.
+These capabilities strengthen the core booking product:
 
 ```text
-- Categories
-- Staff
-- Resources
-- Additional items
-- Vouchers
-- Reviews
-- Analytics
-- Schedule reports
-- Assets
-- Appearance
-- Notifications
-- Customer notes
+Categories
+Staff
+Resources
+Additional Items
+Vouchers
+Reviews
+Analytics
+Reports
+Assets
+Appearance
+Notifications
 ```
 
 ---
 
 ## 19.3 Platform Capabilities
 
-These capabilities operate at the BookQu platform level.
+These capabilities operate across the BookQu platform:
 
 ```text
-- Authentication
-- Subscription
-- Plans
-- Trial lifecycle
-- Feature entitlement
-- Subscription payments
-- Platform administration
-- Tenant isolation
+Authentication
+Multi-Tenancy
+Subscription
+Plans
+Trial
+Feature Entitlements
+Subscription Payments
+Platform Administration
 ```
 
 ---
 
-## 19.4 Future / Expansion Capabilities
+## 19.4 Expansion Capabilities
 
-The following concepts may be part of BookQu's future roadmap but are not automatically part of the current product definition unless implemented and explicitly accepted:
+Potential future capabilities must not automatically be treated as current product requirements.
+
+Examples of possible future expansion areas include:
 
 ```text
-- Google Calendar synchronization
-- Advanced external integrations
-- Advanced AI insights
-- Automated marketing
-- Advanced CRM
-- Customer segmentation
-- Multi-location management
-- Advanced payment automation
-- WhatsApp automation
-- Advanced analytics beyond current reporting
+Google Calendar synchronization
+Advanced external integrations
+Advanced CRM
+Automated marketing
+Advanced customer segmentation
+Multi-location management
+Advanced analytics
+WhatsApp automation
+Additional payment integrations
+AI-assisted business insights
 ```
 
-The existence of a route, placeholder page, database field, or unfinished code does not by itself make a future capability part of the current product.
+These become part of the current product only when they are explicitly accepted and documented.
 
 ---
 
 # 20. Product Boundaries
-
-BookQu should not be interpreted as a general-purpose platform for every business operation.
 
 BookQu's primary responsibility is:
 
@@ -1112,33 +1137,37 @@ Booking
 +
 Scheduling
 +
-Customer Reservation Management
+Reservation Management
 +
-Booking-related Operations
+Customer Booking Operations
++
+Booking-related Business Operations
 ```
 
-BookQu may provide supporting features around those responsibilities, but it does not automatically become:
+Supporting capabilities may exist around these responsibilities.
 
-* a full accounting system;
-* a complete ERP;
-* a general CRM;
-* a full marketing automation platform;
-* a general inventory management platform;
-* a social media management platform.
+However, BookQu should not automatically be interpreted as:
 
-Future expansion into those areas must be explicitly documented.
+```text
+Full Accounting System
+Full ERP
+Full CRM
+Full Marketing Automation Platform
+General Inventory System
+Social Media Management Platform
+```
+
+Expansion into these areas requires explicit product definition and requirements.
 
 ---
 
-# 21. Important Product Rules
-
-The following principles apply to the current product definition.
+# 21. Important Product Principles
 
 ## 21.1 Booking Is the Central Transaction
 
-Booking is the central operational object of BookQu.
+Booking is the central operational transaction of BookQu.
 
-Supporting modules must not create conflicting booking concepts.
+Supporting modules should strengthen the booking domain rather than create competing reservation concepts.
 
 ---
 
@@ -1152,186 +1181,246 @@ A schedule defines:
 
 > When the customer can book it.
 
-These concepts must not be merged.
+These concepts must remain distinct.
 
 ---
 
-## 21.3 Booking and Payment Are Different States
+## 21.3 Booking and Payment Are Different Concepts
 
-A booking has its own business lifecycle.
+A booking describes the reservation.
 
-A payment has its own financial lifecycle.
+A payment describes the financial transaction.
 
-The system must not assume that one state is always identical to the other.
+The product must not treat them as the same lifecycle.
 
 ---
 
 ## 21.4 Tenant Isolation Is Fundamental
 
-All tenant-owned operational data belongs to a specific tenant.
-
-A feature is incomplete if it can operate correctly for one tenant but improperly expose another tenant's data.
+Tenant isolation is part of BookQu's product model, not merely an implementation optimization.
 
 ---
 
 ## 21.5 Customer Does Not Equal User
 
-An owner/admin is an authenticated BookQu user.
+An authenticated BookQu user and a booking customer are different product concepts.
 
-A booking customer is a customer entity represented by booking information.
-
-The product should not assume every customer has a BookQu account.
+A customer does not need to become an owner/admin user merely to make or manage a reservation.
 
 ---
 
-## 21.6 Supporting Features Must Not Redefine the Core Product
+## 21.6 Supporting Features Must Not Redefine Core Concepts
 
-Analytics, vouchers, reviews, add-ons, assets, staff, and similar features should consume and extend the core booking domain.
+Analytics, vouchers, reviews, additional items, staff, resources, assets, and similar capabilities should extend existing product concepts rather than introduce competing definitions of:
 
-They should not duplicate or redefine booking, schedule, customer, or payment concepts.
-
----
-
-# 22. Current Product Terminology Rules
-
-The following terminology is canonical for new work:
-
-| Concept                   | Canonical Term  | Avoid as a New Domain Term                 |
-| ------------------------- | --------------- | ------------------------------------------ |
-| Business entity           | Tenant          | Business entity, Merchant entity           |
-| Business operator         | Owner           | Seller                                     |
-| Bookable offering         | Service         | Program                                    |
-| Available time            | Schedule        | Slot entity, Time program                  |
-| Person making reservation | Customer        | User                                       |
-| Reservation               | Booking         | Order, Reservation record                  |
-| Financial transaction     | Payment         | Transaction, unless used generically       |
-| Subscription package      | Plan            | Package, if ambiguous                      |
-| Tenant entitlement        | Subscription    | Membership                                 |
-| Optional booking extra    | Additional Item | Add-on entity, unless explicitly specified |
-| Promotional discount      | Voucher         | Coupon, unless explicitly specified        |
-| Customer feedback         | Review          | Rating entity                              |
-
-User-facing copy may use natural Indonesian terminology where appropriate.
-
-However, the underlying domain concept should remain aligned with the canonical terminology.
+```text
+Service
+Schedule
+Booking
+Customer
+Payment
+Tenant
+```
 
 ---
 
-# 23. Legacy Terminology Compatibility
+# 22. Product Terminology Rules
 
-The current codebase contains terminology from earlier development stages.
+The following terms are canonical for new product and domain work.
+
+| Concept                     | Canonical Term  | Do Not Introduce as a Separate Concept Without Explicit Requirement |
+| --------------------------- | --------------- | ------------------------------------------------------------------- |
+| Business entity             | Tenant          | Business entity                                                     |
+| Business operator           | Owner           | Seller                                                              |
+| Bookable offering           | Service         | Program                                                             |
+| Bookable time               | Schedule        | Program slot                                                        |
+| Person making a reservation | Customer        | User                                                                |
+| Reservation                 | Booking         | Order                                                               |
+| Financial transaction       | Payment         | Generic transaction as a domain replacement                         |
+| Subscription package        | Plan            | Package where ambiguous                                             |
+| Tenant subscription state   | Subscription    | Membership                                                          |
+| Optional booking extra      | Additional Item | Separate add-on domain                                              |
+| Promotional discount        | Voucher         | Separate coupon domain                                              |
+| Customer feedback           | Review          | Separate rating domain                                              |
+
+User-facing language may use natural Indonesian terms.
+
+The underlying product concepts should remain aligned with the canonical terminology.
+
+---
+
+# 23. Legacy Terminology
+
+Existing implementation may contain terminology inherited from earlier development stages.
 
 Examples may include:
 
 ```text
 Program
-namalayanan
-idlayanan
-services
-Business Services
+Layanan
+Business Service
 ```
 
-These should not be interpreted as separate product concepts.
+These terms do not automatically represent separate product concepts.
 
-The product definition standardizes them under:
+For new product, requirement, or architecture work, use:
 
 > **Service**
 
-Existing code should not necessarily be renamed immediately.
+Existing implementation terminology does not need to be renamed solely because the product terminology has been standardized.
 
-Refactoring terminology is an architectural task and should be handled separately from product definition.
-
----
-
-# 24. Current-State Interpretation Rule
-
-When an existing implementation contains behavior that is consistent with the current product definition, it should be treated as an implementation of the current product even if the behavior did not exist in the original SRS.
-
-The absence of a feature from the historical SRS does not automatically mean the feature is invalid.
-
-However:
-
-> A feature existing in source code does not automatically mean it is a permanent product requirement.
-
-A feature becomes part of the authoritative product when it is explicitly represented in the current product and requirements documentation.
-
-This distinction prevents accidental scope expansion.
+Terminology migration is a technical change and should be handled through the appropriate development and architecture process.
 
 ---
 
-# 25. Product vs Implementation
+# 24. Product Definition vs Implementation
 
-The following distinction must be maintained.
+The distinction between product and implementation must remain explicit.
 
 ## Product Definition
 
-Describes:
+Answers:
 
-* what BookQu does;
-* who uses it;
-* what concepts exist;
-* what business problem it solves;
-* what belongs to the product.
+```text
+What is BookQu?
+Who uses it?
+What problem does it solve?
+What concepts exist?
+What capabilities belong to the product?
+What boundaries does the product have?
+```
 
 ## Requirements
 
-Describes:
+Answers:
 
-* exactly what the system must do;
-* business rules;
-* acceptance criteria;
-* constraints;
-* measurable behavior.
+```text
+What exact behavior is required?
+What rules must be satisfied?
+What are the acceptance conditions?
+```
 
 ## Architecture
 
-Describes:
-
-* how the software is structured;
-* how responsibilities are separated;
-* how data flows through the system;
-* how the application should be implemented.
-
-## Development Tracker
-
-Describes:
-
-* implementation status;
-* ownership;
-* progress;
-* testing state;
-* refactoring state.
-
-These documents must not replace one another.
-
----
-
-# 26. Product Completeness Rule
-
-A feature should not be considered fully defined simply because a screen exists.
-
-A product capability should conceptually answer:
+Answers:
 
 ```text
-Who uses it?
-Why does it exist?
-What business problem does it solve?
-Which domain concept does it operate on?
-How does it affect the core product?
-What boundaries does it have?
+How should the software be structured?
+Where should responsibilities belong?
+What technical boundaries must be preserved?
 ```
 
-Detailed functional behavior belongs in `docs/3-REQUIREMENT.md`.
+## System Design
+
+Answers:
+
+```text
+How does the current implementation actually work?
+How do current components interact?
+What current invariants must be preserved?
+```
+
+## Development
+
+Answers:
+
+```text
+How should changes be performed safely?
+```
+
+## Tracker
+
+Answers:
+
+```text
+What is currently implemented?
+What remains?
+What requires verification?
+```
+
+## Operations
+
+Answers:
+
+```text
+How is the current system operated and verified?
+```
+
+These documents complement one another and must not become interchangeable.
 
 ---
 
-# 27. Current Product Definition Summary
+# 25. Product Scope Rule
+
+A capability should be treated as part of the current product only when its product meaning is explicitly established.
+
+The presence of:
+
+* a route;
+* a UI screen;
+* a database field;
+* an unfinished implementation;
+* a placeholder;
+* a temporary experiment;
+
+does not automatically establish a permanent product capability.
+
+Likewise, the absence of a capability from an older product specification does not automatically make a currently accepted capability invalid.
+
+The authoritative current product definition is this document.
+
+---
+
+# 26. Product Change Rule
+
+When a new capability is proposed:
+
+```text
+1. Determine whether it belongs to BookQu.
+2. Identify the product concept it affects.
+3. Determine whether it changes the core product loop.
+4. Update the product definition when the product scope changes.
+5. Define the required behavior in docs/3-REQUIREMENT.md.
+6. Update architectural documentation when the technical structure changes.
+7. Implement and verify the change.
+8. Update docs/6-TRACKER.md.
+```
+
+No contributor or AI agent should silently redefine BookQu through implementation.
+
+A code change that introduces a new product capability without corresponding product and requirement decisions should be treated as a scope-control problem.
+
+---
+
+# 27. Future Product Evolution
+
+The product definition is designed to remain stable while allowing BookQu to evolve.
+
+Future product changes should preserve the distinction between:
+
+```text
+Existing Product
+        +
+Accepted New Capability
+        +
+Supporting Technical Change
+```
+
+A technical refactor does not automatically change the product.
+
+A new product capability does not automatically require a new domain concept if an existing concept can represent it correctly.
+
+New concepts should be introduced only when the product meaning genuinely requires them.
+
+---
+
+# 28. Current Product Summary
 
 BookQu is:
 
-> **A multi-tenant booking and reservation management platform that enables schedule-based businesses to publish bookable services, manage availability and reservations, handle customers and booking-related payments, and monitor their business operations from a centralized platform.**
+> **A multi-tenant booking and reservation management platform that enables schedule-based businesses to publish bookable services, configure availability, receive and manage reservations, handle customer information and booking-related payments, and monitor business operations from a centralized platform.**
 
-The primary operational flow is:
+The core flow is:
 
 ```text
 Tenant
@@ -1351,80 +1440,107 @@ Customer History
 Business Insight
 ```
 
-The Owner Portal is the operational center.
+The three principal interaction areas are:
 
-The Customer Portal is the reservation interface.
+```text
+Owner Portal
+→ Business Operations
 
-The Admin Portal is the platform-level management interface.
+Customer Portal
+→ Booking Experience
 
-The booking domain is the center of the product.
+Admin Portal
+→ Platform Operations
+```
 
-All supporting capabilities must remain aligned with that model.
+The booking domain remains the center of the product.
 
----
-
-# 28. Authority and Change Rule
-
-This document represents the current product definition.
-
-When a new feature or behavior is proposed:
-
-1. Determine whether it belongs to the BookQu product.
-2. Determine which existing domain concept it affects.
-3. Determine whether it changes the core product flow.
-4. Update the appropriate requirement before treating the behavior as an official requirement.
-5. Update architecture documentation when the change affects technical structure.
-6. Update the development tracker.
-7. Implement and test the change.
-
-No contributor or AI agent should silently redefine the product through code.
-
-If the implementation and this document disagree, the disagreement must be treated as a product/documentation conflict rather than silently resolved through code.
+Supporting capabilities should extend the booking experience without creating conflicting definitions of the core product.
 
 ---
 
 # 29. Related Documents
 
-The current documentation hierarchy is:
+The BookQu documentation system is organized as follows:
 
 ```text
 AGENT.md
     ↓
+AI agent behavior and working rules
+
 docs/1-README.md
     ↓
+Documentation map and source-of-truth guide
+
 docs/2-PRODUCT.md
     ↓
+What BookQu is
+
 docs/3-REQUIREMENT.md
     ↓
+What BookQu must do
+
 docs/4-ARCHITECTURE.md
     ↓
+How BookQu should be structured
+
 docs/5-DEVELOPMENT.md
     ↓
+How changes should be performed
+
 docs/6-TRACKER.md
-```
+    ↓
+Current implementation and project status
 
-Planned future documents (Phase C):
-
-```text
 docs/7-SYSTEM-DESIGN.md
-docs/8-OPERATIONS.md
-docs/adr/
-```
+    ↓
+How the current system actually works
 
-Historical evolution and refactor milestones (RF-00 through RF-09) are preserved in Git history.
+docs/8-OPERATIONS.md
+    ↓
+How the system is operated and verified
+
+docs/adr/
+    ↓
+Why important architectural decisions were made
+```
 
 ---
 
 # 30. Document Status
 
-This document defines the current conceptual identity and scope of BookQu.
+This document is the current product definition for BookQu.
 
-It intentionally does not contain detailed technical implementation rules.
-
-The authoritative document defining requirements is:
+It defines:
 
 ```text
-docs/3-REQUIREMENT.md
+Product Identity
++
+Product Scope
++
+Product Concepts
++
+Canonical Terminology
++
+Core Product Flow
++
+Product Boundaries
++
+Product-Level Change Rules
 ```
 
-That document converts the product concepts defined here into explicit, testable functional and non-functional requirements.
+It does not define:
+
+```text
+Detailed Requirements
+Technical Architecture
+Current Implementation Mapping
+Operational Procedures
+Architectural Decision Rationale
+```
+
+Those responsibilities belong to their respective documents.
+
+The central principle is:
+
+> **Code may implement the BookQu product, but code must not silently redefine what the BookQu product is.**

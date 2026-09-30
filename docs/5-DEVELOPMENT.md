@@ -1,1843 +1,2367 @@
 # BookQu Development Guide
 
-> **Document Status:** Current Development Standard
-> **Version:** 1.0
-> **Authority:** Authoritative development workflow
+> **Document Status:** Active Development Standard
+> **Version:** 1.1
+> **Authority:** Development workflow and implementation rules
 > **Product Definition:** `docs/2-PRODUCT.md`
 > **Requirements:** `docs/3-REQUIREMENT.md`
 > **Architecture:** `docs/4-ARCHITECTURE.md`
+> **System Design:** `docs/7-SYSTEM-DESIGN.md`
+> **Operations:** `docs/8-OPERATIONS.md`
 > **Tracker:** `docs/6-TRACKER.md`
+> **ADR:** `docs/adr/`
 > **Agent Rules:** `AGENT.md`
 > **Last Updated:** 2026-09-30
 >
-> This document defines how BookQu is developed, changed, tested, refactored, and reviewed.
+> This document defines how BookQu changes are analyzed, implemented, tested, reviewed, and documented.
 >
-> The purpose of this document is to ensure that every developer and AI agent follows the same development process.
+> It applies to feature development, bug fixes, refactoring, technical improvements, documentation changes, and work performed by AI agents.
 
 ---
 
 # 1. Purpose
 
-BookQu development follows a requirement-driven workflow.
+BookQu development follows a requirement-driven and evidence-driven workflow.
 
 The development process must prevent:
 
-* undocumented feature additions;
-* silent scope expansion;
-* duplicated business logic;
-* uncontrolled architectural drift;
 * implementation based on guesswork;
-* refactoring that accidentally changes product behavior;
-* inconsistent work between developers and AI agents;
-* code that works but cannot be maintained.
+* undocumented product behavior;
+* silent scope expansion;
+* duplicated business rules;
+* tenant-isolation regressions;
+* booking and payment inconsistencies;
+* uncontrolled architectural drift;
+* unnecessary abstractions;
+* changes that pass locally but are not properly verified;
+* documentation becoming inconsistent with the system.
 
-The primary development principle is:
+The fundamental development principle is:
 
-> **Do not let source code silently redefine the product.**
+> **Understand the intended behavior before changing the implementation.**
 
-Product behavior must be defined first.
-
-Implementation follows the defined behavior.
-
----
-
-# 2. Development Principles
-
-BookQu development follows these principles.
-
-## 2.1 Requirement First
-
-Every meaningful product behavior must have an identifiable requirement.
-
-```text id="p2v3qz"
-Requirement
-    ↓
-Design / Technical Approach
-    ↓
-Implementation
-    ↓
-Test
-```
-
-Do not begin implementation by modifying code before identifying the relevant requirement.
+The implementation must follow the current product, requirement, and architectural definitions.
 
 ---
 
-## 2.2 Existing Code Is Evidence, Not Automatically the Standard
+# 2. Development Source of Truth
 
-The current codebase contains both good patterns and technical debt.
+The active documentation responsibilities are:
 
-Therefore:
-
-> Existing code shows what BookQu currently does; it does not automatically define how new code should be written.
-
-New code should follow `docs/4-ARCHITECTURE.md`.
-
-Legacy code should be improved incrementally when practical.
-
----
-
-## 2.3 Preserve Correct Existing Behavior
-
-If a feature is already considered correct from the product perspective, architectural refactoring should preserve its behavior unless a behavioral change is explicitly intended.
-
----
-
-## 2.4 Small, Traceable Changes
-
-Prefer changes that can be understood and verified independently.
-
-Avoid combining unrelated changes into one implementation task.
-
-Bad:
-
-```text id="q4kxaw"
-Refactor booking
-+
-redesign dashboard
-+
-change payment
-+
-rename database
-+
-add new feature
-```
-
-Preferred:
-
-```text id="w0m1qf"
-Task A
-→ Booking extraction
-
-Task B
-→ Payment boundary
-
-Task C
-→ Dashboard component refactor
-```
-
----
-
-## 2.5 Evidence Before Assumption
-
-Before deciding how something works, inspect:
-
-* requirements;
-* current implementation;
-* relevant models;
-* routes;
-* tests;
-* related documentation.
-
-Do not infer behavior merely from filenames.
-
----
-
-# 3. Documentation Hierarchy
-
-Before implementing a task, the contributor or agent should understand the following hierarchy:
-
-```text id="j2ubm1"
+```text
 AGENT.md
     ↓
+How AI agents should operate
+
 docs/1-README.md
     ↓
-Documentation Map
-    ↓
+Documentation map and authority guide
+
 docs/2-PRODUCT.md
     ↓
 What BookQu is
-    ↓
+
 docs/3-REQUIREMENT.md
     ↓
 What BookQu must do
-    ↓
+
 docs/4-ARCHITECTURE.md
     ↓
-How BookQu should be built
-    ↓
+How BookQu should be structured
+
 docs/5-DEVELOPMENT.md
     ↓
-How work should be performed
-    ↓
+How changes should be performed
+
 docs/6-TRACKER.md
     ↓
-What is currently being worked on
+What is currently implemented / in progress / pending
+
+docs/7-SYSTEM-DESIGN.md
+    ↓
+How the current system actually works
+
+docs/8-OPERATIONS.md
+    ↓
+How the system is run and verified operationally
+
+docs/adr/
+    ↓
+Why significant architectural decisions exist
 ```
 
-When these documents conflict with historical documentation:
+These documents have different responsibilities.
 
-> Current documentation takes precedence.
-
-Historical documents are reference material only.
+A document must not become the authority for another document's responsibility simply because it contains related information.
 
 ---
 
-# 4. Task Classification
+# 3. Development Information Hierarchy
 
-Before starting a task, classify it.
+For a normal implementation task, use this reading order:
 
-Every task should belong to one of these categories.
+```text
+1. AGENT.md
+2. docs/1-README.md
+3. docs/2-PRODUCT.md
+4. docs/3-REQUIREMENT.md
+5. docs/4-ARCHITECTURE.md
+6. docs/7-SYSTEM-DESIGN.md
+7. docs/5-DEVELOPMENT.md
+8. docs/6-TRACKER.md
+9. docs/8-OPERATIONS.md when operational behavior is involved
+10. docs/adr/ when an architectural decision is relevant
+```
 
-## 4.1 Feature
+The order is not a rigid requirement for every task.
 
-Adds or changes product capability.
+For a small bug fix, reading the entire repository documentation is unnecessary.
+
+The principle is:
+
+> Read the minimum authoritative material necessary to understand the task correctly.
+
+---
+
+# 4. Current System vs Target Structure
+
+BookQu documentation distinguishes between:
+
+```text
+Architecture
+→ How the system should be structured
+
+System Design
+→ How the current system is actually implemented
+
+Development
+→ How changes should be made
+```
+
+Do not confuse these concepts.
+
+Existing implementation may contain details that are not the preferred architectural pattern.
+
+When implementing new code:
+
+> Follow the current architectural direction unless compatibility or existing constraints require another approach.
+
+When modifying existing code:
+
+> Understand its actual behavior before restructuring it.
+
+---
+
+# 5. Task Classification
+
+Every meaningful task should first be classified.
+
+The primary categories are:
+
+```text
+Feature
+Bug Fix
+Refactor
+Technical Improvement
+Documentation
+Product Change
+Operational Change
+```
+
+## 5.1 Feature
+
+Adds an approved product capability.
 
 Example:
 
-```text id="x8c1zv"
-Add owner walk-in booking
+```text
+Add walk-in booking capability for owners.
 ```
 
----
-
-## 4.2 Bug Fix
+## 5.2 Bug Fix
 
 Corrects behavior that violates an existing requirement.
 
 Example:
 
-```text id="zqy05o"
-Customer can book an already occupied schedule.
+```text
+A customer can currently book a schedule that should be unavailable.
 ```
 
----
+## 5.3 Refactor
 
-## 4.3 Refactor
-
-Changes implementation structure without intentionally changing product behavior.
+Changes implementation structure without intentionally changing accepted product behavior.
 
 Example:
 
-```text id="84dpit"
-Extract booking logic from BookingController.
+```text
+Extract booking orchestration from a large controller.
 ```
 
----
+## 5.4 Technical Improvement
 
-## 4.4 Technical Improvement
-
-Improves infrastructure, maintainability, security, performance, testing, or developer experience.
+Improves security, performance, testing, maintainability, observability, or developer experience.
 
 Example:
 
-```text id="lf64f0"
-Add missing tenant isolation test.
+```text
+Add a missing tenant-isolation regression test.
 ```
 
----
+## 5.5 Documentation
 
-## 4.5 Documentation
+Updates an authoritative document without changing application behavior.
 
-Changes product, requirement, architecture, or development documentation.
+## 5.6 Product Change
 
----
-
-## 4.6 Product Change
-
-Changes what BookQu is expected to do.
+Changes what BookQu is intended to do.
 
 Examples:
 
-```text id="wz6xv5"
-Add customer account system.
+```text
+Allow customers to create accounts.
 Add Google Calendar synchronization.
-Allow customers to select staff.
+Allow customer staff selection.
+Change cancellation policy.
 ```
 
-A product change must not begin as an ordinary coding task.
+A product change must go through requirement and product-definition review before implementation.
 
-It must first go through requirement change control.
+## 5.7 Operational Change
 
----
+Changes how the deployed system is operated without necessarily changing product behavior.
 
-# 5. Before Starting Any Task
+Examples:
 
-Every contributor should perform the following sequence.
-
-```text id="fw9c0y"
-1. Understand the task
-2. Identify the product area
-3. Identify the requirement
-4. Inspect current implementation
-5. Inspect related tests
-6. Inspect architectural constraints
-7. Determine affected modules
-8. Define implementation scope
-9. Implement
-10. Test
-11. Review
-12. Update tracker/documentation
+```text
+Change scheduler configuration.
+Change queue worker configuration.
+Add production monitoring.
+Change operational recovery procedure.
 ```
+
+Operational changes must be coordinated with `docs/8-OPERATIONS.md`.
 
 ---
 
 # 6. Step 1 — Understand the Task
 
-The task must be understood in terms of behavior, not only implementation.
+Before changing code, identify the intended outcome.
 
-Ask:
+Answer:
 
-```text id="up9n9x"
-Who performs the action?
-What does the user want to accomplish?
+```text
+Who is acting?
+
+What are they trying to do?
+
 Under what conditions?
+
 What should happen?
-What should not happen?
+
+What must not happen?
+
 What data is affected?
-What other modules are affected?
+
+What other domains are affected?
+
+What security boundaries apply?
 ```
 
 A task such as:
 
-```text id="f1fqa4"
-"Fix booking page"
+```text
+Fix booking page
 ```
 
-is too vague.
+is insufficiently precise.
 
-The task should become something like:
+A better task definition is:
 
-```text id="ylxqz8"
-Customer cannot select a schedule that is already occupied.
-The booking page should only allow eligible schedules.
+```text
+A customer must not be able to select a schedule that is unavailable under the current booking rules.
 ```
 
 ---
 
 # 7. Step 2 — Identify the Requirement
 
-Every feature or behavior change must be mapped to a requirement ID.
+Every meaningful behavioral change should map to an existing requirement.
 
-Example:
+For example:
 
-```text id="h8x7ci"
+```text
+Requirement:
 FR-BOOKING-003
+
 Customer can select an available schedule.
 ```
 
 For a bug:
 
-```text id="7lpg2l"
+```text
 Requirement:
 FR-BOOKING-017
-Booking must not be created against an unavailable schedule.
 
-Bug:
-Current implementation allows an unavailable schedule in one flow.
+A booking must not be created against an unavailable schedule.
+
+Current defect:
+One booking path bypasses the authoritative availability check.
 ```
 
 For a refactor:
 
-```text id="y9d8ld"
-Behavior:
-FR-BOOKING-005
+```text
+Requirement:
+Existing booking behavior must remain unchanged.
 
-Task:
-Refactor booking creation without changing behavior.
+Change:
+Move orchestration into the appropriate application boundary.
 ```
+
+If there is no requirement covering the desired behavior, determine whether the task is actually a product change.
 
 ---
 
-# 8. Step 3 — Inspect Existing Implementation
+# 8. Step 3 — Inspect the Current System
 
-Before creating new files, inspect the existing code.
+Before creating or changing an implementation, inspect the relevant current system.
 
-At minimum, inspect:
+Depending on the task, inspect:
 
-```text id="x7pr1y"
+```text
 Routes
-Controller
-Request validation
+Controllers
+Form Requests
 Models
-Relevant services/actions
+Actions
+Domain classes
+Services
+Policies
 Middleware
 Views
+JavaScript
+Migrations
+Jobs
+Commands
+Notifications
+Mail
 Tests
-Related database migrations
+Configuration
+Related documentation
 ```
 
 The goal is to answer:
 
-> “Does BookQu already solve part of this problem?”
+> Where does this behavior currently live?
 
-Never assume a capability does not exist simply because its name is different.
+and:
+
+> Does BookQu already solve part of this problem?
+
+Never assume that something does not exist merely because its name is unfamiliar.
 
 ---
 
-# 9. Step 4 — Search Before Creating
+# 9. Search Before Create
 
 Before creating a new:
 
-* controller;
-* service;
-* action;
-* helper;
-* component;
-* query;
-* model method;
+```text
+Controller
+Action
+Service
+Model method
+Policy
+Query
+Component
+Helper
+Job
+Command
+Notification
+Test
+```
 
-search the repository for an existing implementation.
+search the repository.
 
-Prefer reuse when the existing abstraction is appropriate.
+Use existing implementations where they are appropriate.
 
-Do not duplicate functionality merely because the existing implementation is located in legacy code.
-
-If the existing implementation is structurally poor, consider refactoring it instead of creating a second implementation.
+If an existing implementation is structurally poor but already owns the relevant behavior, prefer improving or extracting it rather than creating a duplicate implementation.
 
 ---
 
-# 10. Step 5 — Identify the Domain
+# 10. Identify the Domain
 
-Every implementation task should have an identifiable domain.
+Every implementation task should have one or more identifiable domains.
 
-Examples:
+Common BookQu domains include:
 
-```text id="n9ezwl"
+```text
 Authentication
 Tenant
 Service
+Category
 Schedule
 Booking
 Customer
 Payment
 Subscription
-Review
 Voucher
-Analytics
+Staff
+Resource
+Review
 Notification
+Analytics
 Asset
 ```
 
-A task that touches several domains should explicitly identify the boundaries.
+If a task touches several domains, identify each boundary explicitly.
 
 For example:
 
-```text id="8gkz3x"
+```text
 Booking creation
-→ Booking domain
-→ Schedule availability
-→ Payment
-→ Notification
+    ↓
+Booking
+    ├── Service
+    ├── Schedule / Availability
+    ├── Customer
+    ├── Payment
+    └── Notification
 ```
 
-This does not mean all logic belongs in one class.
+This does not mean all logic belongs in one component.
+
+It means the dependency boundaries must be understood before implementation.
 
 ---
 
-# 11. Step 6 — Determine Whether the Task Changes Product Behavior
+# 11. Determine Whether Behavior Changes
 
-This is one of the most important development checks.
+One of the most important development questions is:
 
-Ask:
+> Does this task change user-visible behavior or business rules?
 
-> Does the user-visible behavior or business rule change?
+If no:
 
-If **No**:
-
-```text id="pfv5xy"
-Normal implementation / bug fix / refactor
+```text
+Bug Fix
+Refactor
+Technical Improvement
+Internal Documentation
 ```
 
-If **Yes**:
+may be appropriate.
 
-```text id="khf9xj"
-Requirement change required
+If yes:
+
+```text
+Product / Requirement Change
 ```
 
-Examples of product behavior changes:
+must be considered.
 
-```text id="a1ktw8"
-Allow customers to create accounts.
-Allow customers to choose staff.
-Add a new payment method.
-Change cancellation rules.
-Change subscription limits.
-Add multi-location businesses.
+Examples:
+
+```text
+Changing cancellation rules
+Adding customer accounts
+Changing booking limits
+Adding a payment method
+Changing subscription entitlements
+Changing who can access a booking
 ```
 
-These must not be silently introduced.
+These must not be silently introduced under the label of "refactor".
 
 ---
 
 # 12. Product Change Workflow
 
-When a task changes product behavior:
+For an accepted product change:
 
-```text id="mlwdd4"
-Proposal
-    ↓
-Identify affected product concept
-    ↓
-Update docs/2-PRODUCT.md if needed
-    ↓
+```text
+Product decision
+      ↓
+Update docs/2-PRODUCT.md
+      ↓
 Update docs/3-REQUIREMENT.md
-    ↓
-Update docs/4-ARCHITECTURE.md if technically relevant
-    ↓
+      ↓
+Evaluate docs/4-ARCHITECTURE.md
+      ↓
+Evaluate docs/7-SYSTEM-DESIGN.md
+      ↓
 Update docs/6-TRACKER.md
-    ↓
+      ↓
 Implement
-    ↓
+      ↓
 Test
+      ↓
+Verify
 ```
 
-If the change is significant enough to establish a long-term technical decision, create an ADR.
+If the change establishes a significant architectural decision, create or update an ADR.
 
 ---
 
 # 13. Requirement Conflict Handling
 
-If implementation, tests, tracker, and documentation disagree:
+Code, tests, documentation, and tracker state may occasionally disagree.
 
-Do not silently choose one.
+Do not silently choose whichever source is easiest to implement.
 
-Follow:
+Use:
 
-```text id="1hqn9a"
+```text
 Identify conflict
-    ↓
-Determine intended current product behavior
-    ↓
-Document decision
-    ↓
-Update relevant documentation
-    ↓
-Implement
-    ↓
-Update tests
+      ↓
+Determine intended current behavior
+      ↓
+Check Product and Requirement authority
+      ↓
+Check current System Design
+      ↓
+Resolve discrepancy explicitly
+      ↓
+Update affected source of truth
+      ↓
+Implement / test
 ```
 
-Example:
+Important distinction:
 
-```text id="4r9v9c"
-docs/3-REQUIREMENT.md:
-Customer cannot select staff.
+```text
+Product
+→ Defines what BookQu is
 
-Current code:
-Customer can select staff.
+Requirement
+→ Defines what BookQu must do
 
-Action:
-Do not automatically delete the feature.
-Do not automatically preserve it.
-Identify whether the behavior is accepted product behavior.
-Then update the requirement and implementation accordingly.
+System Design
+→ Describes how it currently works
+
+Tracker
+→ Describes implementation status
 ```
+
+The tracker must not silently redefine product behavior.
 
 ---
 
 # 14. Implementation Planning
 
-Before modifying complex code, create a short implementation plan.
+For small tasks, a short plan is enough:
 
-For a small change:
-
-```text id="yfg2kv"
-1. Add validation
-2. Update booking action
-3. Add test
-4. Verify UI
+```text
+1. Identify affected action
+2. Fix rule
+3. Add regression test
+4. Verify
 ```
 
-For a complex change:
+For larger tasks:
 
-```text id="cuyl1u"
-1. Identify existing booking path
-2. Extract availability rule
-3. Create application action
-4. Update controller
-5. Update tests
-6. Verify customer flow
-7. Verify owner flow
+```text
+Requirement:
+<requirement>
+
+Domain:
+<domain>
+
+Current implementation:
+<relevant files>
+
+Architectural boundary:
+<where responsibility belongs>
+
+Behavior to preserve:
+<existing behavior>
+
+Behavior to add/change:
+<intended behavior>
+
+Tests:
+<tests to add/update>
+
+Documentation:
+<documents affected>
 ```
 
-Do not create lengthy speculative plans for trivial changes.
+Planning should be proportional to task complexity.
+
+Do not produce a large speculative plan for a trivial change.
 
 ---
 
-# 15. Coding Rules
+# 15. Architecture Before Abstraction
 
-All new code must follow `docs/4-ARCHITECTURE.md`.
+New code must follow `docs/4-ARCHITECTURE.md`.
 
-Important rules:
+Before creating a new abstraction, ask:
 
-* keep controllers thin;
-* keep business rules outside Blade;
-* validate server-side;
-* preserve tenant isolation;
-* do not trust user-provided IDs;
-* avoid duplicated business logic;
-* keep external integrations isolated;
-* create abstractions only when justified;
-* use existing domain concepts;
-* avoid introducing new terminology casually.
+```text
+What responsibility requires this?
+
+Does an existing component already own it?
+
+Is the new abstraction actually reusable?
+
+Does it protect a meaningful boundary?
+
+Will it make testing or maintenance easier?
+```
+
+Do not create abstractions merely because a project contains:
+
+```text
+Service
+Repository
+Manager
+Helper
+Utility
+```
+
+directories.
+
+Architecture is based on responsibility, not folder count.
 
 ---
 
 # 16. Controller Development
 
-A controller should ideally perform:
+Controllers should primarily coordinate HTTP interaction:
 
-```text id="j4d12a"
-Receive Request
+```text
+Request
     ↓
-Validate / Authorize
+Validation / Authorization
     ↓
-Call Application Action
+Application Operation
     ↓
-Return Response
+Response
 ```
 
-Avoid:
+Controllers should not become the authoritative home for:
 
-```text id="rjv31o"
-Receive Request
-    ↓
-30 validation rules
-    ↓
-10 queries
-    ↓
-pricing calculation
-    ↓
-availability calculation
-    ↓
-payment API
-    ↓
-notifications
-    ↓
-cache invalidation
-    ↓
-response
+```text
+Booking availability
+Payment state transitions
+Refund processing
+Subscription entitlement
+Complex pricing rules
+Tenant isolation rules
+Multi-step business workflows
 ```
 
-The second structure is a refactoring candidate.
+These responsibilities should live at the appropriate application/domain boundary.
 
 ---
 
-# 17. Business Logic Development
+# 17. Form Request Development
 
-Business rules should have a clear owner.
+Form Requests should handle request-level concerns such as:
+
+```text
+Required fields
+Input format
+Type constraints
+Field-level validation
+Request authorization
+```
+
+They should not become the permanent home for reusable domain rules.
+
+For example:
+
+```text
+email is required
+```
+
+is request validation.
+
+Whereas:
+
+```text
+schedule is unavailable because another active booking occupies it
+```
+
+is a business rule.
+
+---
+
+# 18. Application Action Development
+
+Application Actions should represent meaningful business operations.
 
 Examples:
 
-```text id="g6f8o1"
-Availability
-→ Schedule / Booking domain
-
-Booking state transitions
-→ Booking domain
-
-Voucher eligibility
-→ Voucher domain
-
-Subscription feature entitlement
-→ Subscription domain
-
-Payment verification
-→ Payment integration/application layer
+```text
+CreateBooking
+CreateWalkInBooking
+CancelBooking
+RescheduleBooking
+CreateSchedule
+ProcessBookingPayment
+ExpirePayment
+ProcessRefund
+CreateSubscription
 ```
 
-Do not implement the same rule independently in:
+An Action should have:
 
-```text id="s2lynu"
+```text
+Clear purpose
+Defined input
+Predictable behavior
+Meaningful transaction boundary where necessary
+```
+
+Avoid generic actions such as:
+
+```text
+DoBookingStuff
+HandleEverything
+CommonAction
+GenericManager
+```
+
+---
+
+# 19. Domain Logic Development
+
+A business rule should have a clear owner.
+
+Examples:
+
+```text
+Booking availability
+→ Booking / Schedule domain
+
+Booking state transition
+→ Booking domain
+
+Payment state handling
+→ Payment domain
+
+Refund lifecycle
+→ Refund / Payment domain
+
+Subscription entitlement
+→ Subscription domain
+
+Tenant ownership
+→ Tenant / authorization boundary
+```
+
+Do not independently implement the same rule in:
+
+```text
 Controller A
 Controller B
 Blade
 JavaScript
+Command
+Job
+```
+
+unless one of those components is deliberately delegating to the authoritative rule.
+
+---
+
+# 20. Model Development
+
+Models should primarily represent:
+
+```text
+Persistent state
+Relationships
+Casts
+Scopes
+Simple domain-adjacent behavior
+```
+
+A model should not become a complete application workflow.
+
+Avoid putting large processes such as:
+
+```text
+Create booking
+Charge payment
+Send notifications
+Process refund
+```
+
+into a single model method.
+
+Use appropriate application/domain boundaries.
+
+---
+
+# 21. Service Development
+
+A service is appropriate when a coherent responsibility needs reusable coordination.
+
+Good reasons include:
+
+```text
+Logic crosses several models
+External integration is involved
+The operation is reused
+Independent testing is useful
+```
+
+Avoid generic containers such as:
+
+```text
+GeneralService
+CommonService
+UtilityService
+EverythingService
 ```
 
 ---
 
-# 18. Validation Development
+# 22. Repository Development
 
-Validation should happen at multiple appropriate levels.
+Repositories are optional.
 
-```text id="qw3w75"
-UI validation
-     ↓
-Form Request validation
-     ↓
-Business rule validation
-     ↓
-Database constraints
-```
+Do not create repositories automatically for every model.
 
-Client-side validation improves user experience.
+Use Eloquent when it is sufficient.
 
-Server-side validation protects system correctness.
+Introduce a repository only when it provides a meaningful persistence abstraction or isolates a real complexity.
 
-Database constraints protect data integrity.
+The presence of a repository layer is not itself an architectural goal.
 
 ---
 
-# 19. Database Change Workflow
+# 23. Booking Development Rules
 
-When a task requires schema changes:
+Any change touching booking must consider:
 
-```text id="m40s4e"
-Requirement
-    ↓
-Data model impact
-    ↓
-Migration
-    ↓
-Model / relationship updates
-    ↓
-Seeder/test fixture updates
-    ↓
-Application changes
-    ↓
+```text
+Tenant ownership
+Service ownership
+Schedule ownership
+Availability
+Concurrency
+Booking state
+Pending grace period
+Payment relationship
+Cancellation
+Rescheduling
+Multi-slot booking
+Walk-in booking
+```
+
+A booking implementation must use the authoritative business rules rather than creating a second availability definition.
+
+---
+
+# 24. Booking State Rules
+
+The current booking states are:
+
+```text
+pending
+paid
+cancelled
+completed
+```
+
+Changes to booking state must occur through controlled application/domain behavior.
+
+Do not let arbitrary client input directly determine internal booking state.
+
+The implementation must preserve valid state transitions.
+
+---
+
+# 25. Pending Booking Rules
+
+BookQu currently uses a 15-minute pending grace period.
+
+The development implementation must preserve the distinction between:
+
+```text
+Pending within grace
+→ still occupies the relevant schedule
+
+Pending beyond grace
+→ stale and should no longer block normal availability
+```
+
+The grace period is a centralized business rule.
+
+Do not duplicate `15 minutes` independently throughout:
+
+```text
+Controllers
+Blade
+JavaScript
+Commands
+Queries
 Tests
 ```
 
-Never change production schema by editing an old migration that has already been applied.
+Use the authoritative booking rule instead.
+
+---
+
+# 26. Stale Pending and Concurrency
+
+A stale pending booking must not permanently prevent a later booking.
+
+When an authoritative booking operation encounters stale pending state, it must handle that state safely within the relevant transaction/concurrency boundary.
+
+The development implementation must not rely solely on:
+
+```text
+UI availability
+```
+
+or:
+
+```text
+A background scheduler eventually cleaning it up
+```
+
+to preserve correctness.
+
+---
+
+# 27. Double-Booking Protection
+
+Availability validation and database persistence must be treated as separate concerns.
+
+The booking architecture should use an appropriate combination of:
+
+```text
+Business rule validation
++
+Transaction
++
+Locking where required
++
+Database integrity constraint
+```
+
+Do not assume that:
+
+```text
+"the slot was available a moment ago"
+```
+
+is sufficient protection against concurrent requests.
+
+---
+
+# 28. Multi-Slot Booking
+
+Multi-slot booking must preserve the integrity of the reservation as a whole.
+
+Implementation must consider:
+
+```text
+All requested schedules
+Compatibility
+Availability
+Concurrency
+Atomic persistence
+Payment relationship
+Cancellation / rescheduling behavior
+```
+
+A partial reservation must not leave the system in an invalid state.
+
+---
+
+# 29. Walk-In Booking
+
+Walk-in booking is an owner-facing booking operation.
+
+Its implementation must still respect:
+
+```text
+Tenant boundary
+Service ownership
+Schedule availability
+Booking state rules
+Payment behavior where applicable
+Customer information rules
+```
+
+The fact that an owner initiated the booking does not remove core domain invariants.
+
+---
+
+# 30. Payment Development Rules
+
+Payment changes must consider:
+
+```text
+Payment state
+Booking state
+Provider response
+Webhook
+Duplicate callbacks
+Expiration
+Failure
+Cancellation
+Refund
+```
+
+Current payment statuses are:
+
+```text
+pending
+sukses
+gagal
+```
+
+Payment expiration is not a separate persistent payment status.
+
+The payment lifecycle must be consistent with the requirements in `docs/3-REQUIREMENT.md`.
+
+---
+
+# 31. Payment Verification
+
+Do not trust browser state or client-side claims as the final authority for financial state.
+
+Payment success must be established through the trusted payment flow.
+
+Development work around payment should explicitly consider:
+
+```text
+Customer redirect
+Provider response
+Webhook
+Verification
+Idempotency
+Failure handling
+```
+
+---
+
+# 32. Payment Idempotency
+
+External payment callbacks may be delivered more than once.
+
+Repeated processing of the same payment event must not create unintended duplicate effects.
+
+The implementation must consider:
+
+```text
+Duplicate payment callback
+Duplicate booking state transition
+Duplicate refund
+Duplicate notification
+```
+
+where each effect should occur only once.
+
+---
+
+# 33. Refund Development Rules
+
+Refund is a separate stateful process.
+
+Current refund states are:
+
+```text
+pending
+processed
+failed
+```
+
+Do not encode refund lifecycle by overloading payment or booking status.
+
+Any refund change must consider:
+
+```text
+Eligibility
+Authorization
+Idempotency
+Provider interaction
+Booking relationship
+Notification
+Failure recovery
+```
+
+---
+
+# 34. Customer Token Rules
+
+Customer management without an authenticated BookQu account depends on scoped tokens.
+
+Token-protected capabilities must be treated independently.
+
+Examples:
+
+```text
+View booking
+View invoice
+Submit review
+Cancel booking
+Reschedule booking
+```
+
+A token must:
+
+```text
+Belong to the expected booking
+Be valid for the requested capability
+Not grant access to another booking
+Not bypass tenant or resource boundaries
+```
+
+Cross-booking or cross-scope token use must fail authorization.
+
+---
+
+# 35. Subscription Development Rules
+
+Subscription behavior must preserve:
+
+```text
+Plan
+Subscription
+Status
+Entitlement
+Usage limit
+Expiration
+Feature access
+```
+
+Feature entitlement must have a centralized source of truth.
+
+Do not implement subscription checks independently and inconsistently across many controllers.
+
+---
+
+# 36. Tenant Development Rules
+
+Every tenant-scoped implementation must answer:
+
+```text
+How is tenant context established?
+
+Who owns the resource?
+
+How is authorization checked?
+
+Can another tenant reference the resource?
+
+Can another tenant mutate it?
+
+What test proves isolation?
+```
+
+At minimum, relevant tests should establish:
+
+```text
+Tenant A can access Tenant A data.
+Tenant A cannot access Tenant B data.
+```
+
+A user-provided tenant identifier must never be treated as sufficient authorization evidence.
+
+---
+
+# 37. Authorization Development
+
+Authorization should be checked at the backend boundary.
+
+Never rely on:
+
+```text
+Hidden input
+Disabled button
+Frontend route hiding
+JavaScript condition
+Unlinked menu item
+```
+
+for security.
+
+The backend must independently verify access.
+
+---
+
+# 38. Validation Development
+
+Validation may exist at several layers:
+
+```text
+UI validation
+      ↓
+Form Request validation
+      ↓
+Application / domain rule validation
+      ↓
+Database integrity
+```
+
+These layers are complementary.
+
+Client-side validation improves UX.
+
+Server-side validation preserves application correctness.
+
+Database constraints protect final persistence integrity.
+
+---
+
+# 39. Database Change Workflow
+
+For schema changes:
+
+```text
+Requirement
+    ↓
+Identify data-model impact
+    ↓
+Create migration
+    ↓
+Update relationships / models
+    ↓
+Update fixtures / seeders where needed
+    ↓
+Update application code
+    ↓
+Update tests
+    ↓
+Verify
+```
+
+Never modify an already-applied migration merely to alter production history.
 
 Create a new migration.
 
 ---
 
-# 20. Database Safety
+# 40. Database Safety
 
-Before changing a database field or relationship, identify:
+Before changing a database field or relationship, search for:
 
-```text id="n8kvup"
-Who reads it?
-Who writes it?
-Which models use it?
-Which queries depend on it?
-Which tests depend on it?
-Which views depend on it?
-Which seeders use it?
+```text
+Model references
+Queries
+Scopes
+Controllers
+Actions
+Services
+Tests
+Seeders
+Views
+Commands
+Jobs
+Notifications
+Reports
 ```
 
-Database refactoring can have a much larger impact than the source file being changed.
+A schema change can have a much larger impact than the migration file itself suggests.
 
 ---
 
-# 21. Tenant Development Rules
+# 41. Transactions
 
-Every tenant-scoped feature must be checked against:
+Use a transaction when multiple related changes must succeed or fail together.
 
-```text id="eg9z5p"
-Tenant resolution
-Tenant authorization
-Tenant query scope
-Cross-tenant access
-Cross-tenant mutation
+Examples include:
+
+```text
+Create booking
+Reschedule booking
+Cancel booking
+Multi-slot booking
+Payment state synchronization
+Refund state changes
+Subscription state changes
 ```
 
-Before considering a tenant-scoped feature complete, test at least:
+Transaction boundaries should be meaningful.
 
-```text id="58qv2p"
-Tenant A can access Tenant A data.
-Tenant A cannot access Tenant B data.
+Do not place unrelated external network calls inside transactions merely because they happen during the same request.
+
+---
+
+# 42. Cache Rules
+
+Cache is an optimization, not the source of business truth.
+
+For booking-related behavior:
+
+```text
+Authoritative persistent state
+        ↓
+Derived / cached state
+```
+
+not:
+
+```text
+Cache
+        ↓
+Authoritative booking state
+```
+
+Any cache affecting availability or tenant data must have:
+
+```text
+Correct key scope
+Tenant isolation
+Invalidation strategy
+Stale-data tolerance
+```
+
+A cache key must include every dimension required to prevent incorrect data sharing.
+
+---
+
+# 43. Scheduler and Background Work
+
+Time-based business behavior should be implemented in application/domain operations, not duplicated in scheduler code.
+
+Conceptually:
+
+```text
+Scheduler
+    ↓
+Command / Action
+    ↓
+Business Rule
+    ↓
+Persistent State
+```
+
+For example:
+
+```text
+bookings:expire-payments
+```
+
+should invoke the appropriate application behavior rather than contain an independent copy of payment-expiration rules.
+
+Operational configuration belongs in:
+
+```text
+docs/8-OPERATIONS.md
 ```
 
 ---
 
-# 22. Booking Development Rules
+# 44. Queue and Job Rules
 
-Booking changes must be checked against:
+Use background jobs when work:
 
-```text id="0v0wcj"
+```text
+is slow;
+can safely run asynchronously;
+does not need to block the request;
+can be retried safely.
+```
+
+Do not move critical state changes into asynchronous processing if doing so would allow the system to temporarily violate a critical invariant.
+
+Jobs must be designed with:
+
+```text
+Idempotency
+Retry behavior
+Failure handling
+Logging
+```
+
+where appropriate.
+
+---
+
+# 45. External Integration Development
+
+Treat external systems as unreliable.
+
+Examples:
+
+```text
+Midtrans
+Email
+Storage
+Future messaging integrations
+Future calendar integrations
+```
+
+External systems can:
+
+```text
+timeout
+fail
+retry
+return duplicates
+return invalid data
+be temporarily unavailable
+```
+
+Integration code must have explicit behavior for these conditions.
+
+Provider-specific code should stay behind the intended infrastructure boundary.
+
+---
+
+# 46. Frontend Development
+
+The frontend should handle presentation and interaction.
+
+Appropriate frontend responsibilities include:
+
+```text
+Modal state
+Tabs
+Dropdowns
+Filtering
+Preview
+Client-side UX validation
+Loading state
+Local interaction
+```
+
+The frontend must not become the authoritative source of:
+
+```text
 Availability
-Concurrency
-Tenant ownership
-Service ownership
-Schedule ownership
+Authorization
+Tenant identity
+Payment status
+Subscription entitlement
 Booking state
-Payment state
-Cancellation
-Rescheduling
-Multi-slot behavior
 ```
-
-A booking feature is incomplete if it works only on the happy path.
 
 ---
 
-# 23. Payment Development Rules
+# 47. Blade Development
 
-Any payment change must verify:
+Blade is presentation.
 
-```text id="7z73vq"
-Client request
-Payment provider response
-Webhook
-Payment state
-Booking state
-Duplicate callback
-Failed payment
-Expired payment
-Cancelled payment
+Do not put authoritative business behavior into Blade.
+
+Avoid:
+
+```text
+Database mutations
+Complex booking rules
+Payment mutation
+Authorization implementation
+Large business calculations
 ```
 
-Do not trust browser redirects or client-side payment status as the final financial authority.
-
----
-
-# 24. Subscription Development Rules
-
-Subscription changes must verify:
-
-```text id="1d4vqf"
-Plan
-Subscription
-Status
-Entitlement
-Trial
-Expiration
-Upgrade
-Downgrade
-Usage limit
-```
-
-Feature access logic must not be implemented independently in multiple controllers.
-
----
-
-# 25. Frontend Development Rules
-
-Frontend implementation should follow:
-
-```text id="2sz20m"
-Server
-    ↓
-Authoritative business state
-
-Alpine / JavaScript
-    ↓
-Interaction and presentation
-```
-
-Frontend code may improve:
-
-* interaction;
-* responsiveness;
-* previews;
-* filtering;
-* modal behavior.
-
-Frontend code must not become the only place where business rules are enforced.
-
----
-
-# 26. Blade Development Rules
-
-When modifying a Blade page:
-
-First inspect whether:
-
-```text id="3snnw4"
-a reusable component already exists
-```
-
-Then determine whether a repeated UI element should become a component.
+Before creating repeated markup, search for existing components.
 
 Prefer:
 
-```text id="f2x8tt"
+```text
 Page
-→ Component
-→ Component
-→ Component
+    ↓
+Reusable components
 ```
 
-over:
-
-```text id="b5n4gc"
-Page
-→ thousands of repeated markup lines
-```
+instead of repeated copies of the same UI.
 
 ---
 
-# 27. Refactoring Workflow
+# 48. JavaScript / Alpine Rules
 
-Refactoring is not the same as feature development.
+JavaScript and Alpine.js should support interaction rather than duplicate server business logic.
 
-The preferred workflow is:
+Acceptable:
 
-```text id="g7exeq"
-1. Identify current behavior
-2. Identify requirement
-3. Identify tests
-4. Characterize missing behavior if necessary
-5. Define target structure
-6. Refactor one boundary
-7. Run tests
-8. Continue
+```text
+Open modal
+Toggle state
+Filter visible records
+Preview image
+Animate UI
+Prepare request payload
 ```
 
-Do not rewrite the whole module before verifying intermediate states.
+Not authoritative:
+
+```text
+Decide who may cancel
+Decide whether a schedule is truly available
+Decide whether payment succeeded
+Decide tenant identity
+Determine final subscription entitlement
+```
+
+Those decisions must be enforced server-side.
 
 ---
 
-# 28. Characterization Tests
+# 49. Route Development
 
-When a legacy module has insufficient tests, create tests that document its current important behavior before performing a risky refactor.
+Routes should remain declarative.
 
-These tests answer:
+A route should primarily define:
 
-> “What does this code actually do today?”
+```text
+HTTP method
+URI
+Controller / handler
+Middleware
+Route name
+```
 
-They do not necessarily define ideal future behavior.
+Do not put complex business logic into route closures.
 
-Once the behavior is understood, the requirement can be compared against it.
+Route naming should follow existing project conventions and canonical terminology.
 
 ---
 
-# 29. Refactoring vs Product Change
+# 50. Naming Rules
 
-A refactor should preserve:
+New PHP classes:
 
-```text id="d5mt2f"
-inputs
-outputs
-business rules
-authorization
-data integrity
-user-visible behavior
+```text
+PascalCase
 ```
 
-unless a behavior change is explicitly documented.
+Methods and variables:
 
-If behavior must change, treat it as:
-
-```text id="b6ucm5"
-Product / Requirement Change
+```text
+camelCase
 ```
 
-not merely as:
+Database fields:
 
-```text id="k8g58o"
-Refactor
+```text
+snake_case
 ```
+
+Use the canonical terminology defined by `docs/2-PRODUCT.md`.
+
+Do not casually introduce new names for an existing domain concept.
 
 ---
 
-# 30. Testing Workflow
+# 51. Legacy Compatibility
 
-Testing follows the implementation.
+When modifying existing functionality, check compatibility with:
 
-The minimum expectation is:
+```text
+Existing routes
+Public booking URLs
+Customer management links
+Database relationships
+Existing tests
+Seeders
+External integrations
+Existing tenant data
+```
 
-```text id="h9g86v"
-Code change
-    ↓
-Relevant test
-    ↓
-Run test
-    ↓
-Inspect failure
-    ↓
+Do not casually break public customer-facing URLs or management links.
+
+When a breaking change is required, treat it explicitly as such.
+
+---
+
+# 52. Refactoring Workflow
+
+Refactoring should normally follow:
+
+```text
+Understand current behavior
+        ↓
+Identify requirement
+        ↓
+Inspect tests
+        ↓
+Identify target boundary
+        ↓
+Characterize missing behavior if needed
+        ↓
+Make one coherent structural change
+        ↓
+Run tests
+        ↓
+Continue
+```
+
+Do not rewrite large portions of the application without intermediate verification.
+
+---
+
+# 53. Characterization Tests
+
+When existing behavior is poorly tested, add characterization tests before risky restructuring.
+
+The purpose is to record:
+
+> What does the current implementation actually do?
+
+Then compare it against:
+
+> What should the product do?
+
+This distinction prevents accidental preservation of incorrect legacy behavior.
+
+A characterization test is evidence of current implementation, not automatically a product requirement.
+
+---
+
+# 54. Refactor vs Product Change
+
+A refactor should preserve intended behavior unless a behavioral change is explicitly part of the task.
+
+A refactor should generally preserve:
+
+```text
+Inputs
+Outputs
+Authorization
+Tenant isolation
+Business invariants
+User-visible behavior
+Data integrity
+```
+
+If the implementation must change behavior, classify the task accordingly.
+
+Do not hide a feature change inside a refactor.
+
+---
+
+# 55. Testing Workflow
+
+Testing should happen during implementation, not only after all work is finished.
+
+Preferred sequence:
+
+```text
+Implement small change
+      ↓
+Run focused test
+      ↓
+Inspect result
+      ↓
 Fix
-    ↓
+      ↓
 Run relevant suite
+      ↓
+Run full suite when appropriate
 ```
 
-Do not wait until the end of a large task to discover whether the implementation works.
+A large implementation should not wait until the end for its first verification.
 
 ---
 
-# 31. Test Scope
+# 56. Test Scope
 
-Choose the smallest useful test scope first.
+Use the smallest useful test scope first:
 
-Example:
-
-```text id="f5j9ck"
-1. Specific test
-2. Relevant module tests
-3. Relevant integration tests
-4. Full test suite
+```text
+Specific test
+    ↓
+Related test class
+    ↓
+Related feature/module suite
+    ↓
+Full test suite
 ```
 
-This speeds up development while still allowing final verification.
+This provides fast feedback during development while preserving final confidence.
 
 ---
 
-# 32. Test Expectations
+# 57. Test Requirements
 
-A change should include or update tests when it changes:
+Meaningful behavior changes should normally add or update tests.
 
-* business rules;
-* authorization;
-* tenant isolation;
-* booking state;
-* payment behavior;
-* subscription behavior;
-* data integrity;
-* customer management;
-* important UI behavior.
+Especially when changing:
 
-Purely visual changes may require lighter testing where appropriate.
+```text
+Booking
+Availability
+Concurrency
+Payment
+Refund
+Authorization
+Tenant isolation
+Customer token access
+Subscription entitlement
+Data integrity
+```
+
+Tests should focus on observable behavior and critical invariants.
 
 ---
 
-# 33. Failed Test Handling
+# 58. Critical Booking Test Coverage
 
-When a test fails:
+Booking changes should consider, where relevant:
 
-Do not immediately modify the test to make it pass.
+```text
+Available schedule
+Unavailable schedule
+Expired pending booking
+Pending within grace period
+Concurrent booking
+Cancellation
+Rescheduling
+Multi-slot booking
+Cross-tenant access
+Cross-booking token access
+Payment-dependent booking state
+```
 
-Determine first:
+The exact test matrix depends on the feature.
 
-```text id="xmyp3r"
+---
+
+# 59. Critical Payment Test Coverage
+
+Payment changes should consider:
+
+```text
+Pending payment
+Successful payment
+Failed payment
+Expired payment
+Duplicate webhook
+Invalid webhook
+Booking synchronization
+Refund interaction
+```
+
+The goal is to prevent inconsistent financial and booking state.
+
+---
+
+# 60. Failed Test Handling
+
+A failed test does not automatically mean the test should be changed.
+
+First determine:
+
+```text
 Is the implementation wrong?
+
 Is the requirement wrong?
+
 Is the test outdated?
+
 Is the test asserting legacy behavior?
-Is there a data/setup issue?
+
+Is test setup/data incorrect?
 ```
 
-Then make the appropriate change.
+Then change the appropriate source.
 
-Tests are evidence, not automatically unquestionable truth.
+Never modify a test merely to make the suite green.
 
 ---
 
-# 34. Manual Verification
+# 61. Manual Verification
 
 Manual verification is appropriate for:
 
-* visual UI changes;
-* responsive behavior;
-* browser interaction;
-* payment sandbox flow;
-* external service behavior.
+```text
+Visual UI changes
+Responsive layout
+Browser interaction
+Complex customer booking flow
+Payment sandbox flow
+External integration behavior
+Operational procedures
+```
 
-Document important manual verification results when automated verification is impractical.
+When manual verification is important and cannot reasonably be automated, record what was verified.
 
 ---
 
-# 35. Definition of Done
+# 62. Security Verification
 
-A task is not `Done` merely because the code compiles.
+Any change involving authentication, authorization, tenant access, customer tokens, files, payments, or webhooks must include security consideration.
 
-A feature or change should satisfy:
+Check:
 
-```text id="6kh0ae"
-[ ] Requirement identified
-[ ] Product scope confirmed
-[ ] Architecture approach confirmed
-[ ] Implementation completed
-[ ] Validation completed
-[ ] Authorization verified
-[ ] Tenant isolation verified where applicable
-[ ] Relevant tests added/updated
-[ ] Tests pass
-[ ] UI verified where applicable
-[ ] No unintended scope expansion
-[ ] Documentation updated where required
-[ ] docs/6-TRACKER.md updated
+```text
+Unauthorized access
+Cross-tenant access
+IDOR
+Token scope
+Input tampering
+CSRF
+XSS
+SQL injection
+Sensitive data exposure
+Webhook authenticity
 ```
+
+Security issues take precedence over minimal diff preference.
 
 ---
 
-# 36. Definition of Done for Refactoring
+# 63. Performance Development
 
-A refactor is complete when:
+Do not optimize without evidence.
 
-```text id="9q3m4h"
-[ ] Existing behavior is understood
-[ ] Requirement remains satisfied
-[ ] Target architecture is followed
-[ ] Responsibilities are clearer
-[ ] Duplication is reduced where relevant
-[ ] Tests still pass
-[ ] No security regression
-[ ] No tenant-isolation regression
-[ ] Documentation updated when architecture changes
+Preferred process:
+
+```text
+Measure
+    ↓
+Identify bottleneck
+    ↓
+Change
+    ↓
+Measure again
 ```
+
+Do not introduce:
+
+```text
+Cache
+Queue
+Repository
+Complex abstraction
+Denormalization
+```
+
+merely because it appears more scalable.
+
+Optimization should solve an identified problem.
 
 ---
 
-# 37. Definition of Done for Bug Fixes
+# 64. Scope Discipline
 
-A bug fix is complete when:
-
-```text id="30k4n0"
-[ ] Root cause identified
-[ ] Existing requirement identified
-[ ] Failure reproduced where practical
-[ ] Fix implemented
-[ ] Regression test added or updated
-[ ] Relevant test suite passes
-[ ] No unrelated behavior changed
-[ ] Tracker updated
-```
-
----
-
-# 38. Definition of Done for Product Changes
-
-A product change is complete when:
-
-```text id="z6vgp8"
-[ ] Product change accepted
-[ ] docs/2-PRODUCT.md updated if necessary
-[ ] docs/3-REQUIREMENT.md updated
-[ ] docs/4-ARCHITECTURE.md updated if necessary
-[ ] docs/6-TRACKER.md updated
-[ ] Implementation completed
-[ ] Tests updated
-[ ] UI/UX verified
-[ ] Documentation synchronized
-```
-
----
-
-# 39. Git Branch Strategy
-
-Use branches to isolate work.
-
-Recommended naming:
-
-```text id="cb8n69"
-feature/<short-description>
-fix/<short-description>
-refactor/<short-description>
-docs/<short-description>
-test/<short-description>
-```
-
-Examples:
-
-```text id="yopq1c"
-feature/customer-booking-management
-fix/double-booking-validation
-refactor/booking-action-layer
-docs/update-requirements
-test/tenant-isolation
-```
-
-Avoid vague names such as:
-
-```text id="rsznjh"
-update
-new
-fix2
-testing
-final
-```
-
----
-
-# 40. Commit Guidelines
-
-Commits should represent a coherent change.
-
-Preferred style:
-
-```text id="8uomct"
-feat: add walk-in booking validation
-fix: prevent cross-tenant schedule access
-refactor: extract booking creation action
-test: cover duplicate payment callback
-docs: update booking requirements
-```
-
-Avoid giant commits containing unrelated work.
-
----
-
-# 41. Pull Request / Merge Review
-
-Before merging a task, review:
-
-```text id="kz1z94"
-Product correctness
-Requirement alignment
-Architecture alignment
-Security
-Tenant isolation
-Testing
-Scope
-Code readability
-```
-
-The review should ask:
-
-> “Does this implementation solve the requested problem without silently changing something else?”
-
----
-
-# 42. Scope Control
-
-Do not expand the task merely because another improvement is noticed.
+Do not expand a task simply because unrelated issues are discovered.
 
 Example:
 
+```text
 Task:
+Fix reschedule validation.
 
-```text id="xjb5i5"
-Fix booking reschedule validation.
+Discovered:
+Dashboard visual design is outdated.
 ```
 
-During implementation, the contributor notices:
+Do not redesign the dashboard within the same task unless explicitly required.
 
-```text id="p0fwe2"
-Customer dashboard is visually outdated.
-```
-
-Do not automatically redesign the dashboard.
-
-Record the issue separately.
-
-Scope discipline is required to prevent uncontrolled project expansion.
+Record unrelated improvements separately through the project tracker or issue workflow.
 
 ---
 
-# 43. Opportunistic Refactoring Rule
+# 65. Opportunistic Refactoring
 
-Small related refactoring is allowed when it clearly reduces risk.
+Small refactoring is acceptable when directly related to the task and it reduces implementation risk.
 
 Example:
 
-```text id="gzt5vw"
+```text
 Task:
-Fix booking cancellation.
+Fix duplicated cancellation logic.
 
-During the fix:
-Extract duplicated cancellation validation into one action.
+Related refactor:
+Extract the duplicated cancellation rule into the authoritative application/domain boundary.
 ```
 
-This is acceptable because the refactor directly supports the task.
+This is appropriate.
 
-Avoid unrelated large-scale refactors during the same change.
+Unrelated rewrites are not.
 
 ---
 
-# 44. Technical Debt Rule
+# 66. Minimal Coherent Diff
 
-When technical debt is discovered:
-
-Classify it as:
-
-```text id="c3vhv7"
-Critical
-High
-Medium
-Low
-```
-
-Examples:
-
-```text id="n3u2d4"
-Critical:
-Tenant data exposure.
-
-High:
-Payment state can become inconsistent.
-
-Medium:
-Large controller.
-
-Low:
-Inconsistent naming in legacy UI.
-```
-
-Critical and high-impact technical debt should not be postponed merely because a feature is otherwise functional.
-
----
-
-# 45. Legacy Code Rule
-
-Legacy code may remain temporarily.
-
-Do not:
-
-```text id="g7umfr"
-copy legacy pattern
-```
-
-unless necessary.
-
-Do:
-
-```text id="xln2wo"
-understand legacy behavior
-→ preserve it when required
-→ move new code toward target architecture
-```
-
----
-
-# 46. New Code Rule
-
-New code must not introduce known legacy anti-patterns.
-
-For example, if the target architecture says:
-
-```text id="3x0qj5"
-Booking business logic → Action / Domain layer
-```
-
-do not add another 200-line booking workflow to a controller simply because the old controller already has 1,500 lines.
-
----
-
-# 47. Duplicate Logic Rule
-
-Before implementing a rule, search for an existing implementation.
-
-If duplicate logic is found:
-
-```text id="6nnq2v"
-Reuse
-or
-Extract
-or
-Document why duplication is required
-```
-
-Do not silently create a third copy.
-
----
-
-# 48. Naming Change Rule
-
-A naming inconsistency does not automatically justify a repository-wide rename.
-
-When a legacy term such as:
-
-```text id="xv4y6v"
-Program
-```
-
-is being migrated to:
-
-```text id="wm7u2v"
-Service
-```
-
-prefer incremental migration.
-
-A large rename should be a dedicated refactoring task.
-
----
-
-# 49. AI-Assisted Development
-
-AI agents are allowed to:
-
-* inspect the repository;
-* analyze dependencies;
-* propose implementation plans;
-* write code;
-* write tests;
-* refactor code;
-* update documentation.
-
-However, AI agents must follow the same requirement and architecture boundaries as human developers.
-
-AI-generated code is not exempt from review.
-
----
-
-# 50. AI Agent Required Reading
-
-Before a complex implementation task, the agent should read:
-
-```text id="ulj9m6"
-AGENT.md
-docs/1-README.md
-docs/2-PRODUCT.md
-docs/3-REQUIREMENT.md
-docs/4-ARCHITECTURE.md
-docs/5-DEVELOPMENT.md
-docs/6-TRACKER.md
-```
-
-For small tasks, the agent may read only the relevant sections when context is already established.
-
----
-
-# 51. AI Agent Task Workflow
-
-The standard agent workflow is:
-
-```text id="5x0v74"
-Receive Task
-    ↓
-Identify Requirement
-    ↓
-Identify Domain
-    ↓
-Inspect Existing Implementation
-    ↓
-Inspect Related Tests
-    ↓
-Check Architecture
-    ↓
-Create Implementation Plan
-    ↓
-Implement
-    ↓
-Run Tests
-    ↓
-Review Result
-    ↓
-Update Documentation / Tracker
-```
-
----
-
-# 52. AI Agent Must Not
-
-AI agents must not:
-
-* invent requirements;
-* silently change product scope;
-* assume legacy code is the desired architecture;
-* create duplicate implementations unnecessarily;
-* bypass authorization;
-* bypass tenant isolation;
-* trust client-side business state;
-* remove tests simply because they fail;
-* change tests solely to make incorrect code pass;
-* add unrelated features;
-* rewrite entire modules without justification;
-* introduce abstractions without a clear purpose;
-* silently rename core domain concepts.
-
----
-
-# 53. AI Agent Conflict Rule
-
-If an agent finds:
-
-```text id="dz2j5y"
-Requirement ≠ Code
-```
-
-or:
-
-```text id="1z93f1"
-Requirement ≠ Test
-```
-
-or:
-
-```text id="t7s1w0"
-Architecture ≠ Existing implementation
-```
-
-the agent must not silently choose one.
-
-The agent should determine whether the task is:
-
-```text id="t1g8iv"
-Bug
-Refactor
-Requirement Change
-Documentation Drift
-Legacy Behavior
-```
-
-and handle it accordingly.
-
----
-
-# 54. AI Agent Minimal Change Principle
-
-When implementing a task, the agent should make the smallest change that correctly satisfies:
-
-```text id="lj6nha"
-Requirement
-+
-Security
-+
-Architecture
-+
-Tests
-```
-
-Avoid broad changes unless they are necessary.
-
----
-
-# 55. AI Agent Investigation Principle
-
-Before creating new architecture, the agent should inspect:
-
-```text id="4ndc73"
-existing classes
-existing methods
-existing routes
-existing tests
-existing components
-existing migrations
-existing services
-```
-
-The objective is to extend the system coherently rather than creating parallel solutions.
-
----
-
-# 56. Agent Output Expectations
-
-For non-trivial tasks, the agent's implementation result should make clear:
-
-```text id="z7cevk"
-What changed
-Which requirement was affected
-Which files changed
-Which tests were added/updated
-What was verified
-Any remaining limitation
-```
-
-This improves human review and future maintenance.
-
----
-
-# 57. Development Checklist
-
-Before starting:
-
-```text id="zqt6of"
-[ ] Understand task
-[ ] Identify requirement
-[ ] Identify domain
-[ ] Inspect implementation
-[ ] Inspect tests
-[ ] Check architecture
-[ ] Determine scope
-```
-
-During development:
-
-```text id="1y8n5h"
-[ ] Follow target architecture
-[ ] Preserve tenant isolation
-[ ] Preserve authorization
-[ ] Avoid duplicate logic
-[ ] Keep scope controlled
-[ ] Add/update tests
-```
-
-Before completion:
-
-```text id="2at3b0"
-[ ] Tests pass
-[ ] UI verified where applicable
-[ ] No unintended behavior changed
-[ ] Documentation updated if required
-[ ] Tracker updated
-```
-
----
-
-# 58. Emergency / Hotfix Rule
-
-For urgent production fixes, the contributor may temporarily prioritize restoration of service.
+Prefer the smallest coherent implementation.
 
 However:
 
-```text id="f6fp0r"
-Hotfix
-  ↓
-Restore stability
-  ↓
-Add regression test
-  ↓
-Document root cause
-  ↓
-Refactor if needed
-  ↓
-Synchronize requirements/architecture if behavior changed
-```
+> Minimal diff is not more important than security, data integrity, or business correctness.
 
-A hotfix must not become a permanent excuse to bypass architecture.
+A small patch that leaves a critical race condition is not a good implementation merely because its diff is small.
 
 ---
 
-# 59. Documentation Synchronization Rule
+# 67. Documentation Synchronization
 
-Whenever development changes one of the following:
+Update documentation when a change affects:
 
-```text id="p4gpg3"
+```text
 Product behavior
 Requirement
 Business rule
 Architecture
-Public domain terminology
+Current system behavior
+Operational procedure
+Canonical terminology
 ```
 
-the corresponding documentation must be updated.
+Relevant documents include:
 
-Source code and documentation must not be allowed to drift intentionally.
+```text
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
+docs/4-ARCHITECTURE.md
+docs/6-TRACKER.md
+docs/7-SYSTEM-DESIGN.md
+docs/8-OPERATIONS.md
+docs/adr/
+```
+
+Do not update every document for every code change.
+
+Only the sources whose responsibility actually changed need updating.
 
 ---
 
-# 60. Tracker Synchronization Rule
+# 68. System Design Synchronization
 
-After a meaningful task:
+Update `docs/7-SYSTEM-DESIGN.md` when a change materially affects how the current system works.
 
-```text id="w57gxt"
+Examples:
+
+```text
+New booking flow
+Changed payment flow
+Changed tenant-resolution mechanism
+Changed authorization path
+Changed scheduler behavior
+Changed important state transition
+Changed critical database invariant
+```
+
+Do not turn System Design into a chronological development log.
+
+It should describe the current system.
+
+---
+
+# 69. Operations Synchronization
+
+Update `docs/8-OPERATIONS.md` when a change affects:
+
+```text
+Scheduler
+Queue
+Cache
+Environment configuration
+Deployment prerequisites
+Production verification
+Monitoring
+Recovery
+External provider configuration
+Operational troubleshooting
+```
+
+Do not put operational procedures into `5-DEVELOPMENT.md` merely because the developer implemented them.
+
+---
+
+# 70. ADR Synchronization
+
+Create or update an ADR when a decision:
+
+```text
+Affects multiple domains
+Creates a long-lived architectural constraint
+Changes a major integration boundary
+Changes tenant strategy
+Changes booking concurrency strategy
+Changes payment architecture
+Introduces a significant new technical pattern
+```
+
+Minor implementation details do not require ADRs.
+
+---
+
+# 71. Tracker Synchronization
+
+After a meaningful task, update:
+
+```text
 docs/6-TRACKER.md
 ```
 
-must reflect the latest status.
+The tracker should reflect actual implementation status.
 
-At minimum, update:
+At minimum, status should identify:
 
-* status;
-* owner;
-* implementation state;
-* test state;
-* important notes;
-* refactor state where applicable.
+```text
+What changed
+Current status
+Verification state
+Relevant requirement
+Important notes
+```
+
+Do not mark something `Done` merely because code has been written.
 
 ---
 
-# 61. Development State Model
+# 72. Definition of Done
 
-BookQu tasks should use:
+A meaningful implementation task should satisfy the relevant items below:
 
-```text id="j3x2y6"
-Planned
-   ↓
-In Progress
-   ↓
-Testing
-   ↓
-Done
+```text
+[ ] Requirement identified
+[ ] Product scope confirmed
+[ ] Current implementation inspected
+[ ] Architecture boundary identified
+[ ] Implementation completed
+[ ] Validation handled
+[ ] Authorization handled
+[ ] Tenant isolation considered
+[ ] Relevant business invariants preserved
+[ ] Tests added/updated when appropriate
+[ ] Focused tests pass
+[ ] Relevant broader tests pass
+[ ] UI manually verified when appropriate
+[ ] No unintended scope expansion
+[ ] Documentation updated when required
+[ ] Tracker updated when required
 ```
 
-Alternative states:
-
-```text id="o0cdbf"
-Blocked
-Needs Refactor
-Deprecated
-```
+Not every task requires every item, but skipping an item should be deliberate.
 
 ---
 
-# 62. Feature Completion vs Architecture Completion
+# 73. Definition of Done for Refactoring
 
-These are separate states.
+A refactor is complete when:
 
-A feature may be:
-
-```text id="r0i6x6"
-Feature:
-Done
-
-Architecture:
-Needs Refactor
-```
-
-This means:
-
-> The product behavior currently works, but the implementation should later be improved.
-
-This distinction is intentionally important for BookQu because the current codebase contains functionality that was developed before the target architecture was defined.
-
----
-
-# 63. Product Freeze During Refactoring
-
-During major architectural refactoring, avoid introducing unrelated product changes unless required.
-
-The preferred sequence is:
-
-```text id="7i8r5q"
-Stabilize Behavior
-      ↓
-Refactor
-      ↓
-Verify
-      ↓
-Resume New Features
-```
-
-This reduces the number of moving parts during architectural work.
-
----
-
-# 64. Major Refactor Procedure
-
-A major refactor should follow:
-
-```text id="ggxgl6"
-1. Define scope
-2. Define target boundary
-3. Identify behavior
-4. Confirm tests
-5. Add characterization tests if needed
-6. Refactor incrementally
-7. Run tests after each major step
-8. Review dependencies
-9. Review tenant isolation
-10. Update architecture documentation
-11. Update tracker
+```text
+[ ] Existing behavior understood
+[ ] Intended behavior mapped to requirement
+[ ] Target architecture identified
+[ ] Responsibilities become clearer
+[ ] Business logic is not duplicated
+[ ] Tests pass
+[ ] Security boundaries preserved
+[ ] Tenant isolation preserved
+[ ] Data integrity preserved
+[ ] Documentation updated if architecture/current design changed
 ```
 
 ---
 
-# 65. Production Safety Principle
+# 74. Definition of Done for Bug Fixes
 
-Development decisions should prioritize:
+A bug fix is complete when:
 
-```text id="o7jtdq"
-Data Integrity
-Security
-Booking Correctness
-Payment Correctness
-Tenant Isolation
-```
-
-before:
-
-```text id="wmj8cn"
-Code elegance
-Minor performance optimization
-Developer convenience
+```text
+[ ] Affected requirement identified
+[ ] Root cause understood
+[ ] Bug reproduced where practical
+[ ] Correct fix implemented
+[ ] Regression test added/updated
+[ ] Relevant tests pass
+[ ] Related flow checked
+[ ] No unrelated behavior changed
+[ ] Tracker updated when appropriate
 ```
 
 ---
 
-# 66. Golden Rule
+# 75. Definition of Done for New Features
 
-The most important development rule for BookQu is:
+A new feature is complete when:
 
-> **Do not solve a problem by creating another undocumented problem.**
+```text
+[ ] Product behavior is accepted
+[ ] Requirement exists
+[ ] Domain identified
+[ ] Architecture approach identified
+[ ] Existing implementation inspected
+[ ] Authorization considered
+[ ] Tenant isolation considered
+[ ] Persistence impact considered
+[ ] Implementation complete
+[ ] Relevant tests complete
+[ ] UI verified where applicable
+[ ] Documentation synchronized
+[ ] Tracker synchronized
+```
 
-Every meaningful change should preserve the relationship:
+---
 
-```text id="2vy4pe"
+# 76. Definition of Done for Product Changes
+
+A product change is complete when:
+
+```text
+[ ] Product definition updated
+[ ] Requirements updated
+[ ] Architecture evaluated
+[ ] Current system design updated if necessary
+[ ] Tracker updated
+[ ] Implementation complete
+[ ] Tests updated
+[ ] User-visible behavior verified
+```
+
+---
+
+# 77. Agent Working Standard
+
+AI agents working on BookQu must:
+
+```text
+Read before changing.
+Search before creating.
+Use requirements before assumptions.
+Use architecture before abstractions.
+Inspect current system before restructuring.
+Treat existing code as evidence, not automatically the target.
+Protect tenant isolation.
+Protect booking correctness.
+Protect payment correctness.
+Test meaningful changes.
+Keep scope controlled.
+Synchronize documentation.
+```
+
+An AI agent must not generate code merely because a task description sounds plausible.
+
+It must first establish enough repository evidence to implement the requested change safely.
+
+---
+
+# 78. Agent Decision Rule
+
+When the intended behavior is clear from:
+
+```text
 Product
-   ↓
-Requirement
-   ↓
+Requirements
 Architecture
-   ↓
-Implementation
-   ↓
+System Design
+Existing tests
+Current implementation
+```
+
+the agent should proceed.
+
+An agent should only require clarification when:
+
+```text
+Two or more materially different product behaviors
+are both plausible
+AND
+the available repository evidence cannot distinguish them.
+```
+
+Implementation difficulty alone is not a reason to stop.
+
+---
+
+# 79. Agent Conflict Rule
+
+When sources conflict, the agent must not silently invent a resolution.
+
+The agent should determine whether the discrepancy is:
+
+```text
+Documentation drift
+Implementation drift
+Test drift
+Tracker drift
+Product ambiguity
+```
+
+Then update the correct source of truth.
+
+Historical implementation should not automatically override current product or requirements.
+
+---
+
+# 80. Agent Completion Report
+
+For non-trivial work, the agent should produce a completion summary containing:
+
+```text
+Implemented:
+<what changed>
+
+Requirement:
+<affected requirement IDs>
+
+Files:
+<important changed files>
+
+Tests:
+<tests run>
+
+Verification:
+<what was verified>
+
+Documentation:
+<documents updated>
+
+Notes:
+<important limitations or follow-up>
+```
+
+This makes implementation traceable for future contributors and agents.
+
+---
+
+# 81. No Uncontrolled Rewrite
+
+Do not rewrite BookQu from scratch unless explicitly authorized.
+
+Do not replace a stable architectural boundary simply because another pattern is more fashionable.
+
+Prefer:
+
+```text
+Understand
+    ↓
+Characterize
+    ↓
+Extract
+    ↓
 Test
+    ↓
+Replace
+    ↓
+Verify
+```
+
+over:
+
+```text
+Delete everything
+    ↓
+Rewrite everything
+    ↓
+Hope the behavior remains equivalent
+```
+
+---
+
+# 82. Historical Material
+
+Historical refactor documentation, earlier implementation plans, old branches, and previous architecture states may remain available in Git history.
+
+They are not current development authority.
+
+Current development must follow:
+
+```text
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
+docs/4-ARCHITECTURE.md
+docs/5-DEVELOPMENT.md
+docs/7-SYSTEM-DESIGN.md
+```
+
+as applicable.
+
+Git history explains how BookQu arrived at its present structure.
+
+It does not automatically define what BookQu should do next.
+
+---
+
+# 83. Development Safety Priorities
+
+When trade-offs exist, development should prioritize:
+
+```text
+1. Security
+2. Data Integrity
+3. Business Correctness
+4. Tenant Isolation
+5. Maintainability
+6. Testability
+7. Performance
+8. Convenience
+```
+
+Convenience must not override security or correctness.
+
+---
+
+# 84. Core Development Chain
+
+Every meaningful BookQu change should fit this model:
+
+```text
+PRODUCT
    ↓
-Tracker
+REQUIREMENT
+   ↓
+DOMAIN
+   ↓
+ARCHITECTURE
+   ↓
+CURRENT SYSTEM
+   ↓
+IMPLEMENTATION
+   ↓
+TEST
+   ↓
+DOCUMENTATION
+   ↓
+TRACKER
 ```
 
-If one link changes, evaluate the others.
+For operational work:
 
----
+```text
+IMPLEMENTATION
+   ↓
+OPERATIONS
+   ↓
+VERIFICATION
+```
 
-# 67. Final Development Workflow
+For significant architecture changes:
 
-The complete BookQu development lifecycle is:
-
-```text id="f1yz80"
-                    ┌──────────────────────┐
-                    │      TASK / BUG      │
-                    └──────────┬───────────┘
-                               ↓
-                    ┌──────────────────────┐
-                    │ Identify Requirement │
-                    └──────────┬───────────┘
-                               ↓
-                    ┌──────────────────────┐
-                    │  Identify the Domain │
-                    └──────────┬───────────┘
-                               ↓
-                    ┌──────────────────────┐
-                    │ Inspect Existing Code│
-                    └──────────┬───────────┘
-                               ↓
-                    ┌──────────────────────┐
-                    │ Inspect Existing Test│
-                    └──────────┬───────────┘
-                               ↓
-                    ┌──────────────────────┐
-                    │ Check Architecture  │
-                    └──────────┬───────────┘
-                               ↓
-                    ┌──────────────────────┐
-                    │ Plan Implementation │
-                    └──────────┬───────────┘
-                               ↓
-                    ┌──────────────────────┐
-                    │      Implement       │
-                    └──────────┬───────────┘
-                               ↓
-                    ┌──────────────────────┐
-                    │    Run Tests         │
-                    └──────────┬───────────┘
-                               ↓
-                    ┌──────────────────────┐
-                    │ Review & Verification│
-                    └──────────┬───────────┘
-                               ↓
-                    ┌──────────────────────┐
-                    │ Update Documentation │
-                    │     & Tracker        │
-                    └──────────┬───────────┘
-                               ↓
-                         COMPLETE
+```text
+ARCHITECTURE
+   ↓
+ADR
 ```
 
 ---
 
-# 68. Final Principle
+# 85. Final Development Principles
 
-BookQu development should remain:
+BookQu development follows these permanent principles:
 
-```text id="w0v1bd"
-Requirement-driven
-Domain-aware
-Architecture-conscious
-Tested
-Traceable
-Incremental
+```text
+1. Understand before changing.
+2. Search before creating.
+3. Requirements before implementation.
+4. Architecture before abstraction.
+5. Existing code is evidence, not automatically the target.
+6. Critical business rules must have a clear owner.
+7. Tenant isolation is mandatory.
+8. Booking correctness is critical.
+9. Payment state must be verified.
+10. External integrations must be isolated appropriately.
+11. Client-side logic is not a security boundary.
+12. Tests are part of implementation, not an afterthought.
+13. Refactor incrementally.
+14. Do not hide product changes inside technical tasks.
+15. Keep documentation synchronized.
+16. Keep scope controlled.
+17. Prefer evidence over assumption.
+18. Protect data integrity over convenience.
+19. Make important decisions traceable.
+20. Leave the repository clearer than you found it.
 ```
-
-The goal is not to eliminate every imperfection from the codebase immediately.
-
-The goal is to ensure that from this point forward:
-
-> **Every change has a reason, every reason has a requirement, every implementation has an architectural home, and every important behavior has verification.**
 
 ---
 
-# 69. Production Scheduler Configuration
+# 86. Golden Rule
 
-Production servers must run the Laravel Task Scheduler to ensure automated payment expiration and subscription lifecycle tasks execute on time.
+> **Understand first. Change second. Verify third. Document fourth.**
 
-### 69.1 System Cron Entry
-
-Add the following cron entry to the server (e.g. via `crontab -e` for user `www-data` or deployment user):
-
-```cron
-* * * * * cd /path/to/bookqu && php artisan schedule:run >> /dev/null 2>&1
-```
-
-### 69.2 Registered Scheduled Tasks
-
-| Command | Frequency | Purpose |
-| :--- | :--- | :--- |
-| `php artisan bookings:expire-payments` | Every 15 minutes (`*/15 * * * *`) | Automatically cancels pending bookings whose payment deadline has expired, updates payment status to `gagal`, releases schedule slots, and invalidates availability cache. |
-| `php artisan app:check-expired-subscriptions` | Daily at 00:00 (`0 0 * * *`) | Evaluates tenant subscription expiration dates and transitions lapsed subscriptions to expired. |
-
-### 69.3 Verification & Manual Execution
-
-To verify scheduled tasks:
-
-```bash
-php artisan schedule:list
-```
-
-To run dry-run simulation of payment expiry without mutating data:
-
-```bash
-php artisan bookings:expire-payments --dry-run
-```
-
-To execute manually:
-
-```bash
-php artisan bookings:expire-payments
-```
+BookQu development is successful when the resulting code, tests, documentation, and operational behavior all describe the same system.
