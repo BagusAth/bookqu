@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'singapay' => [
+        'base_url' => env('SINGAPAY_BASE_URL', 'https://payment-b2b.singapay.id'),
+        'client_id' => env('SINGAPAY_CLIENT_ID'),
+        'client_secret' => env('SINGAPAY_CLIENT_SECRET'),
+        'api_key' => env('SINGAPAY_API_KEY'),
+        'hmac_validation_key' => env('SINGAPAY_HMAC_VALIDATION_KEY'),
+        'expiry_minutes' => (int) env('SINGAPAY_PAYMENT_EXPIRY_MINUTES', 15),
+        'account_id' => env('SINGAPAY_ACCOUNT_ID'),
+    ],
+
 ];

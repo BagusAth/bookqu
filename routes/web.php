@@ -31,6 +31,7 @@ use App\Http\Controllers\Owner\OwnerSubscriptionController;
 use App\Http\Controllers\Owner\OwnerVoucherController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
+use App\Http\Controllers\Webhook\SingaPayWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -196,6 +197,10 @@ Route::prefix('owner')
 // ── Midtrans Webhook (tanpa auth & CSRF, dipanggil oleh Midtrans) ──
 Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle'])
     ->name('midtrans.webhook');
+
+// ── SingaPay Webhook (tanpa auth & CSRF, dipanggil oleh SingaPay) ──
+Route::post('/api/webhooks/singapay/transaction', [SingaPayWebhookController::class, 'handle'])
+    ->name('singapay.webhook.transaction');
 
 // ── Booking Management Without Account (tokenized URLs) ──
 Route::prefix('manage')->group(function () {

@@ -277,22 +277,24 @@ class CreateBooking
             return $result;
         }
 
-        // Paid booking post-processing: Snap token & cache
+        // Paid booking post-processing: SingaPay Payment link (primary) & cache
         $payment    = $result['payment'];
         $bookings   = $result['bookings'];
         $hargaAkhir = $result['hargaAkhir'];
         $orderId    = $result['orderId'];
 
         try {
-            $snapToken = $this->bookingPaymentAction->generateSnapToken(
+            $paymentUrl = $this->bookingPaymentAction->generatePaymentLink(
                 $payment,
                 $service,
                 $customerData,
                 count($bookings)
             );
+            $result['payment_url'] = $paymentUrl;
+            $result['snapToken']   = $payment->snap_token;
         } catch (Exception $e) {
-            Log::error('Midtrans Snap Error (Booking): ' . $e->getMessage());
-            // Snap token failed — cancel payment and all bookings, release slots
+            Log::error('SingaPay Payment Link Error (Booking): ' . $e->getMessage());
+            // Payment link failed — cancel payment and all bookings, release slots
             DB::transaction(function () use ($payment, $bookings) {
                 $payment->update(['status' => 'gagal']);
                 foreach ($bookings as $bk) {
