@@ -3,12 +3,12 @@
 > **Document Status:** Current Development Standard
 > **Version:** 1.0
 > **Authority:** Authoritative development workflow
-> **Product Definition:** `docs/PRODUCT.md`
-> **Requirements:** `docs/REQUIREMENTS.md`
-> **Architecture:** `docs/ARCHITECTURE.md`
-> **Tracker:** `docs/TRACKER.md`
-> **Agent Rules:** `AGENTS.md`
-> **Last Updated:** 2026-09-26
+> **Product Definition:** `docs/2-PRODUCT.md`
+> **Requirements:** `docs/3-REQUIREMENT.md`
+> **Architecture:** `docs/4-ARCHITECTURE.md`
+> **Tracker:** `docs/6-TRACKER.md`
+> **Agent Rules:** `AGENT.md`
+> **Last Updated:** 2026-09-30
 >
 > This document defines how BookQu is developed, changed, tested, refactored, and reviewed.
 >
@@ -71,7 +71,7 @@ Therefore:
 
 > Existing code shows what BookQu currently does; it does not automatically define how new code should be written.
 
-New code should follow `ARCHITECTURE.md`.
+New code should follow `docs/4-ARCHITECTURE.md`.
 
 Legacy code should be improved incrementally when practical.
 
@@ -138,23 +138,29 @@ Do not infer behavior merely from filenames.
 Before implementing a task, the contributor or agent should understand the following hierarchy:
 
 ```text id="j2ubm1"
-PRODUCT.md
+AGENT.md
+    ↓
+docs/1-README.md
+    ↓
+Documentation Map
+    ↓
+docs/2-PRODUCT.md
     ↓
 What BookQu is
     ↓
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
 What BookQu must do
     ↓
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     ↓
 How BookQu should be built
     ↓
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
     ↓
 How work should be performed
     ↓
-TRACKER.md
+docs/6-TRACKER.md
     ↓
 What is currently being worked on
 ```
@@ -463,13 +469,13 @@ Proposal
     ↓
 Identify affected product concept
     ↓
-Update PRODUCT.md if needed
+Update docs/2-PRODUCT.md if needed
     ↓
-Update REQUIREMENTS.md
+Update docs/3-REQUIREMENT.md
     ↓
-Update ARCHITECTURE.md if technically relevant
+Update docs/4-ARCHITECTURE.md if technically relevant
     ↓
-Update TRACKER.md
+Update docs/6-TRACKER.md
     ↓
 Implement
     ↓
@@ -505,7 +511,7 @@ Update tests
 Example:
 
 ```text id="4r9v9c"
-REQUIREMENTS.md:
+docs/3-REQUIREMENT.md:
 Customer cannot select staff.
 
 Current code:
@@ -551,7 +557,7 @@ Do not create lengthy speculative plans for trivial changes.
 
 # 15. Coding Rules
 
-All new code must follow `docs/ARCHITECTURE.md`.
+All new code must follow `docs/4-ARCHITECTURE.md`.
 
 Important rules:
 
@@ -1024,7 +1030,7 @@ A feature or change should satisfy:
 [ ] UI verified where applicable
 [ ] No unintended scope expansion
 [ ] Documentation updated where required
-[ ] TRACKER.md updated
+[ ] docs/6-TRACKER.md updated
 ```
 
 ---
@@ -1070,10 +1076,10 @@ A product change is complete when:
 
 ```text id="z6vgp8"
 [ ] Product change accepted
-[ ] PRODUCT.md updated if necessary
-[ ] REQUIREMENTS.md updated
-[ ] ARCHITECTURE.md updated if necessary
-[ ] TRACKER.md updated
+[ ] docs/2-PRODUCT.md updated if necessary
+[ ] docs/3-REQUIREMENT.md updated
+[ ] docs/4-ARCHITECTURE.md updated if necessary
+[ ] docs/6-TRACKER.md updated
 [ ] Implementation completed
 [ ] Tests updated
 [ ] UI/UX verified
@@ -1335,12 +1341,13 @@ AI-generated code is not exempt from review.
 Before a complex implementation task, the agent should read:
 
 ```text id="ulj9m6"
-AGENTS.md
-docs/PRODUCT.md
-docs/REQUIREMENTS.md
-docs/ARCHITECTURE.md
-docs/DEVELOPMENT.md
-docs/TRACKER.md
+AGENT.md
+docs/1-README.md
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
+docs/4-ARCHITECTURE.md
+docs/5-DEVELOPMENT.md
+docs/6-TRACKER.md
 ```
 
 For small tasks, the agent may read only the relevant sections when context is already established.
@@ -1570,7 +1577,7 @@ Source code and documentation must not be allowed to drift intentionally.
 After a meaningful task:
 
 ```text id="w57gxt"
-TRACKER.md
+docs/6-TRACKER.md
 ```
 
 must reflect the latest status.

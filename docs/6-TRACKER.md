@@ -3,10 +3,10 @@
 > **Document Status:** Current Development Tracking Baseline
 > **Version:** 1.0
 > **Authority:** Current implementation tracking document
-> **Product Definition:** `docs/PRODUCT.md`
-> **Requirements:** `docs/REQUIREMENTS.md`
-> **Architecture:** `docs/ARCHITECTURE.md`
-> **Development Workflow:** `docs/DEVELOPMENT.md`
+> **Product Definition:** `docs/2-PRODUCT.md`
+> **Requirements:** `docs/3-REQUIREMENT.md`
+> **Architecture:** `docs/4-ARCHITECTURE.md`
+> **Development Workflow:** `docs/5-DEVELOPMENT.md`
 > **Last Updated:** 2026-09-30
 >
 > This document tracks the implementation state of BookQu against the current requirements baseline (Post-Refactor RF-00 through RF-09, 315 tests passing).
@@ -37,7 +37,7 @@ Architecture State
 Development Status
 ```
 
-The tracker is not a replacement for `REQUIREMENTS.md`.
+The tracker is not a replacement for `docs/3-REQUIREMENT.md`.
 
 Requirements define what BookQu must do.
 
@@ -1041,13 +1041,13 @@ The following areas require stronger verification before being considered fully 
 Current documentation state:
 
 ```text
-[✓] PRODUCT.md
-[✓] REQUIREMENTS.md
-[✓] ARCHITECTURE.md
-[✓] DEVELOPMENT.md
-[✓] TRACKER.md
-[✓] AGENTS.md
-[✓] docs/README.md
+[✓] AGENT.md
+[✓] docs/1-README.md
+[✓] docs/2-PRODUCT.md
+[✓] docs/3-REQUIREMENT.md
+[✓] docs/4-ARCHITECTURE.md
+[✓] docs/5-DEVELOPMENT.md
+[✓] docs/6-TRACKER.md
 [✓] docs/refactor/ (RF-00 through RF-09)
 ```
 
@@ -1124,8 +1124,8 @@ Only after these are sufficiently stable should large new product capabilities b
 Before adding any new feature:
 
 ```text
-[ ] Does the capability exist in PRODUCT.md?
-[ ] Does a requirement exist in REQUIREMENTS.md?
+[ ] Does the capability exist in docs/2-PRODUCT.md?
+[ ] Does a requirement exist in docs/3-REQUIREMENT.md?
 [ ] Is the requirement ID known?
 [ ] Does the current architecture have an appropriate home?
 [ ] Does an existing implementation already solve it?

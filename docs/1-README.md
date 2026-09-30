@@ -2,7 +2,7 @@
 
 > **Document Status:** Active
 > **Purpose:** Documentation navigation and source-of-truth map
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-30
 
 ---
 
@@ -23,19 +23,34 @@ Do not use one document as a substitute for another.
 ```text
 bookqu/
 │
-├── AGENTS.md
+├── AGENT.md
 │
 └── docs/
-    ├── README.md
-    ├── PRODUCT.md
-    ├── REQUIREMENTS.md
-    ├── ARCHITECTURE.md
-    ├── DEVELOPMENT.md
-    ├── TRACKER.md
+    ├── 1-README.md
+    ├── 2-PRODUCT.md
+    ├── 3-REQUIREMENT.md
+    ├── 4-ARCHITECTURE.md
+    ├── 5-DEVELOPMENT.md
+    ├── 6-TRACKER.md
+    ├── REFACTOR-PLAN.md
+    ├── REFACTOR.md
     │
-    ├── adr/
-    │   └── ...
+    ├── refactor/
+    │   ├── README.md
+    │   ├── RF-00-FOUNDATION.md
+    │   ├── RF-01-BOOKING.md
+    │   ├── RF-02-PAYMENT.md
+    │   ├── RF-03-SCHEDULE.md
+    │   ├── RF-04-APPLICATION-LAYER.md
+    │   ├── RF-05-PRESENTATION.md
+    │   ├── RF-06-SUBSCRIPTION.md
+    │   ├── RF-07-CLEANUP-ALIGNMENT.md
+    │   ├── RF-08-FINAL-AUDIT.md
+    │   └── RF-09-HARDENING.md
     │
+    ├── (planned: 7-SYSTEM-DESIGN.md)
+    ├── (planned: 8-OPERATIONS.md)
+    ├── (planned: adr/)
     └── archive/
         └── ...
 ```
@@ -47,29 +62,31 @@ bookqu/
 The active documentation hierarchy is:
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-PRODUCT.md
+docs/1-README.md
     ↓
-REQUIREMENTS.md
+docs/2-PRODUCT.md
     ↓
-ARCHITECTURE.md
+docs/3-REQUIREMENT.md
     ↓
-DEVELOPMENT.md
+docs/4-ARCHITECTURE.md
     ↓
-TRACKER.md
+docs/5-DEVELOPMENT.md
+    ↓
+docs/6-TRACKER.md
 ```
 
 Each document has a different responsibility.
 
 ---
 
-# 4. AGENTS.md
+# 4. AGENT.md
 
 Location:
 
 ```text
-/AGENTS.md
+/AGENT.md
 ```
 
 Question answered:
@@ -93,12 +110,12 @@ This is the first document an AI agent should read.
 
 ---
 
-# 5. PRODUCT.md
+# 5. 2-PRODUCT.md
 
 Location:
 
 ```text
-/docs/PRODUCT.md
+/docs/2-PRODUCT.md
 ```
 
 Question answered:
@@ -126,12 +143,12 @@ It does not define detailed implementation.
 
 ---
 
-# 6. REQUIREMENTS.md
+# 6. 3-REQUIREMENT.md
 
 Location:
 
 ```text
-/docs/REQUIREMENTS.md
+/docs/3-REQUIREMENT.md
 ```
 
 Question answered:
@@ -167,12 +184,12 @@ This document is the primary behavioral authority.
 
 ---
 
-# 7. ARCHITECTURE.md
+# 7. 4-ARCHITECTURE.md
 
 Location:
 
 ```text
-/docs/ARCHITECTURE.md
+/docs/4-ARCHITECTURE.md
 ```
 
 Question answered:
@@ -201,12 +218,12 @@ Existing legacy code is not automatically considered the target architecture.
 
 ---
 
-# 8. DEVELOPMENT.md
+# 8. 5-DEVELOPMENT.md
 
 Location:
 
 ```text
-/docs/DEVELOPMENT.md
+/docs/5-DEVELOPMENT.md
 ```
 
 Question answered:
@@ -231,12 +248,12 @@ This document defines the operational development process.
 
 ---
 
-# 9. TRACKER.md
+# 9. 6-TRACKER.md
 
 Location:
 
 ```text
-/docs/TRACKER.md
+/docs/6-TRACKER.md
 ```
 
 Question answered:
@@ -261,43 +278,45 @@ It only tracks implementation against the accepted requirements.
 
 ---
 
-# 10. ADR Directory
+# 10. Refactor Work Orders & Execution Plans
 
 Location:
 
 ```text
-/docs/adr/
+/docs/REFACTOR-PLAN.md
+/docs/REFACTOR.md
+/docs/refactor/
 ```
 
 Question answered:
 
-> **Why was an important technical decision made?**
+> **How was the architecture refactored and stabilized?**
 
-Architecture Decision Records should be created for significant long-term decisions.
+Contains:
 
-Examples:
+* Master Refactor Plan (`docs/REFACTOR-PLAN.md`);
+* Executable work orders (`RF-00-FOUNDATION.md` through `RF-09-HARDENING.md`);
+* Final audit and completion sign-off (`RF-08-FINAL-AUDIT.md`, `RF-09-HARDENING.md`).
 
-```text
-001-multi-tenancy-strategy.md
-002-public-tenant-url-strategy.md
-003-booking-domain-structure.md
-004-payment-provider-boundary.md
-```
-
-An ADR should normally contain:
-
-```text
-Context
-Decision
-Alternatives Considered
-Consequences
-```
-
-Do not create an ADR for trivial implementation details.
+These documents record the historical execution of the architecture refactor (RF-00 to RF-09). They represent completed milestones and historical context, not current behavioral authorities.
 
 ---
 
-# 11. Archive Directory
+# 11. Planned Technical & Operational Documents
+
+The documentation architecture plans for the following dedicated documents (to be established in Phase C):
+
+```text
+/docs/7-SYSTEM-DESIGN.md (Planned: detailed component design, data flows, and state machines)
+/docs/8-OPERATIONS.md    (Planned: deployment, environment configuration, queues, and runbooks)
+/docs/adr/               (Planned: Architecture Decision Records for significant technical choices)
+```
+
+Until these documents are created, high-level architecture principles are governed by `docs/4-ARCHITECTURE.md` and workflow rules by `docs/5-DEVELOPMENT.md`.
+
+---
+
+# 12. Archive Directory
 
 Location:
 
@@ -324,14 +343,14 @@ However:
 
 ---
 
-# 12. Which Document Should I Read?
+# 13. Which Document Should I Read?
 
 ## "What is BookQu?"
 
 Read:
 
 ```text
-PRODUCT.md
+docs/2-PRODUCT.md
 ```
 
 ---
@@ -341,7 +360,7 @@ PRODUCT.md
 Read:
 
 ```text
-PRODUCT.md
+docs/2-PRODUCT.md
 ```
 
 ---
@@ -351,7 +370,7 @@ PRODUCT.md
 Read:
 
 ```text
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
 ```
 
 ---
@@ -361,7 +380,7 @@ REQUIREMENTS.md
 Read:
 
 ```text
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
 ```
 
 ---
@@ -371,7 +390,7 @@ REQUIREMENTS.md
 Read:
 
 ```text
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
 ```
 
 ---
@@ -381,8 +400,8 @@ ARCHITECTURE.md
 Read:
 
 ```text
-ARCHITECTURE.md
-DEVELOPMENT.md
+docs/4-ARCHITECTURE.md
+docs/5-DEVELOPMENT.md
 ```
 
 ---
@@ -392,7 +411,7 @@ DEVELOPMENT.md
 Read:
 
 ```text
-TRACKER.md
+docs/6-TRACKER.md
 ```
 
 ---
@@ -402,7 +421,8 @@ TRACKER.md
 Read:
 
 ```text
-docs/adr/
+docs/4-ARCHITECTURE.md
+(and planned docs/adr/ when established)
 ```
 
 ---
@@ -413,26 +433,28 @@ Read:
 
 ```text
 docs/archive/
+docs/REFACTOR-PLAN.md
+docs/refactor/
 ```
 
 ---
 
-# 13. Recommended Reading by Task
+# 14. Recommended Reading by Task
 
 ## New Feature
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-PRODUCT.md
+docs/2-PRODUCT.md
     ↓
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     ↓
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
     ↓
-TRACKER.md
+docs/6-TRACKER.md
 ```
 
 ---
@@ -440,17 +462,17 @@ TRACKER.md
 ## Bug Fix
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
-Relevant Architecture
+Relevant Architecture (docs/4-ARCHITECTURE.md)
     ↓
 Existing Implementation
     ↓
 Relevant Tests
     ↓
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
 ```
 
 ---
@@ -458,15 +480,15 @@ DEVELOPMENT.md
 ## Refactoring
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     ↓
 Relevant Tests
     ↓
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
 ```
 
 ---
@@ -474,17 +496,17 @@ DEVELOPMENT.md
 ## Product Change
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-PRODUCT.md
+docs/2-PRODUCT.md
     ↓
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     ↓
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
     ↓
-TRACKER.md
+docs/6-TRACKER.md
 ```
 
 ---
@@ -492,16 +514,16 @@ TRACKER.md
 ## Architectural Decision
 
 ```text
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     ↓
-Relevant ADR
+Relevant ADR (docs/adr/)
     ↓
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
 ```
 
 ---
 
-# 14. Source-of-Truth Rules
+# 15. Source-of-Truth Rules
 
 Use the following rules when information conflicts.
 
@@ -510,7 +532,7 @@ Use the following rules when information conflicts.
 Use:
 
 ```text
-PRODUCT.md
+docs/2-PRODUCT.md
 ```
 
 ---
@@ -520,7 +542,7 @@ PRODUCT.md
 Use:
 
 ```text
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
 ```
 
 ---
@@ -530,7 +552,7 @@ REQUIREMENTS.md
 Use:
 
 ```text
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
 ```
 
 ---
@@ -540,7 +562,7 @@ ARCHITECTURE.md
 Use:
 
 ```text
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
 ```
 
 ---
@@ -550,7 +572,7 @@ DEVELOPMENT.md
 Use:
 
 ```text
-TRACKER.md
+docs/6-TRACKER.md
 ```
 
 ---
@@ -561,6 +583,7 @@ Use:
 
 ```text
 archive/
+docs/refactor/
 ```
 
 ---
@@ -570,12 +593,13 @@ archive/
 Use:
 
 ```text
-adr/
+docs/4-ARCHITECTURE.md
+(and planned docs/adr/)
 ```
 
 ---
 
-# 15. Conflict Handling
+# 16. Conflict Handling
 
 When documents or code disagree:
 
@@ -599,7 +623,7 @@ Then update the appropriate authoritative document before allowing the conflict 
 
 ---
 
-# 16. Documentation Change Principle
+# 17. Documentation Change Principle
 
 Documentation should be changed when the underlying product or architecture changes.
 
@@ -633,7 +657,7 @@ unless the code represents an explicitly accepted product change.
 
 ---
 
-# 17. Documentation Minimalism
+# 18. Documentation Minimalism
 
 Do not create a new documentation file simply because a new topic appears.
 
@@ -642,11 +666,11 @@ First determine whether the topic belongs in an existing document.
 Use:
 
 ```text
-PRODUCT.md
-REQUIREMENTS.md
-ARCHITECTURE.md
-DEVELOPMENT.md
-TRACKER.md
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
+docs/4-ARCHITECTURE.md
+docs/5-DEVELOPMENT.md
+docs/6-TRACKER.md
 ```
 
 before creating a new top-level document.
@@ -657,65 +681,66 @@ Create a new documentation category only when the existing documents become genu
 
 ---
 
-# 18. Agent Documentation Rule
+# 19. Agent Documentation Rule
 
 AI agents should prefer reading the smallest relevant portion of the documentation needed for the task.
 
 For a booking bug, for example:
 
 ```text
-AGENTS.md
+AGENT.md
 +
-PRODUCT.md → Booking section
+docs/2-PRODUCT.md → Booking section
 +
-REQUIREMENTS.md → Booking requirements
+docs/3-REQUIREMENT.md → Booking requirements
 +
-ARCHITECTURE.md → Booking architecture
+docs/4-ARCHITECTURE.md → Booking architecture
 +
-DEVELOPMENT.md → Bug-fix workflow
+docs/5-DEVELOPMENT.md → Bug-fix workflow
 +
-TRACKER.md → Booking status
+docs/6-TRACKER.md → Booking status
 ```
 
 The agent does not need to reinterpret unrelated modules unless the task affects them.
 
 ---
 
-# 19. Current Development Model
+# 20. Current Development Model
 
 BookQu follows:
 
 ```text
-PRODUCT
+PRODUCT (docs/2-PRODUCT.md)
    ↓
-REQUIREMENTS
+REQUIREMENTS (docs/3-REQUIREMENT.md)
    ↓
-ARCHITECTURE
+ARCHITECTURE (docs/4-ARCHITECTURE.md)
    ↓
-DEVELOPMENT PROCESS
+DEVELOPMENT PROCESS (docs/5-DEVELOPMENT.md)
    ↓
 IMPLEMENTATION
    ↓
 TESTS
    ↓
-TRACKER
+TRACKER (docs/6-TRACKER.md)
 ```
 
 Architecture decisions are recorded through:
 
 ```text
-ADR
+ADR (docs/adr/)
 ```
 
 Historical context is preserved through:
 
 ```text
-ARCHIVE
+docs/archive/
+docs/refactor/
 ```
 
 ---
 
-# 20. Final Principle
+# 21. Final Principle
 
 The documentation system exists to ensure that:
 

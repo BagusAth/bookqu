@@ -3,13 +3,13 @@
 > **Document Status:** Current Requirement Baseline
 > **Version:** 1.0
 > **Authority:** Authoritative for current product behavior
-> **Related Product Definition:** `docs/PRODUCT.md`
-> **Related Architecture Definition:** `docs/ARCHITECTURE.md`
-> **Last Updated:** 2026-09-26
+> **Related Product Definition:** `docs/2-PRODUCT.md`
+> **Related Architecture Definition:** `docs/4-ARCHITECTURE.md`
+> **Last Updated:** 2026-09-30
 >
 > This document defines what the BookQu system is required to do.
 >
-> It is based on the current BookQu product definition and the current intended behavior represented by the `mergeV2` implementation.
+> It is based on the current BookQu product definition and the verified implementation baseline across RF-00 through RF-09 (historically derived from `mergeV2`).
 >
 > Historical SRS documents are not authoritative when they conflict with this document.
 
@@ -36,26 +36,30 @@ The objectives are:
 The current requirement hierarchy is:
 
 ```text
-PRODUCT.md
+AGENT.md
     ↓
-REQUIREMENTS.md
+docs/1-README.md
     ↓
-ARCHITECTURE.md
+docs/2-PRODUCT.md
+    ↓
+docs/3-REQUIREMENT.md
+    ↓
+docs/4-ARCHITECTURE.md
     ↓
 IMPLEMENTATION
     ↓
 TESTS
 ```
 
-`PRODUCT.md` defines what BookQu is.
+`docs/2-PRODUCT.md` defines what BookQu is.
 
-`REQUIREMENTS.md` defines what the system must do.
+`docs/3-REQUIREMENT.md` defines what the system must do.
 
-`ARCHITECTURE.md` defines how the system should be built.
+`docs/4-ARCHITECTURE.md` defines how the system should be built.
 
-`DEVELOPMENT.md` defines how work should be performed.
+`docs/5-DEVELOPMENT.md` defines how work should be performed.
 
-`TRACKER.md` defines current implementation status.
+`docs/6-TRACKER.md` defines current implementation status.
 
 Historical documents are reference material only.
 
@@ -1657,7 +1661,7 @@ Repeated UI and application behavior should be extracted into reusable component
 
 ## NFR-MAINT-004 — Consistent Naming
 
-New code must follow the naming conventions defined in `ARCHITECTURE.md`.
+New code must follow the naming conventions defined in `docs/4-ARCHITECTURE.md`.
 
 Historical naming inconsistencies may remain temporarily but should not be propagated into new code.
 
@@ -2063,7 +2067,7 @@ This table will be expanded as the implementation audit progresses.
 | FR-ANALYTICS-001 | Analytics         | Owner analytics                 | Analytics tests        | Implemented        |
 | FR-SUB-001       | Subscription      | Subscription module             | Subscription tests     | Implemented        |
 
-This table is a baseline and must be synchronized with `TRACKER.md`.
+This table is a baseline and must be synchronized with `docs/6-TRACKER.md`.
 
 ---
 
@@ -2193,11 +2197,11 @@ Determine affected requirement
    ↓
 Accept / reject product change
    ↓
-Update REQUIREMENTS.md
+Update docs/3-REQUIREMENT.md
    ↓
 Update affected architecture documentation
    ↓
-Update TRACKER.md
+Update docs/6-TRACKER.md
    ↓
 Implement
    ↓
@@ -2235,8 +2239,8 @@ Historical documents represent past decisions.
 
 AI agents working on BookQu must:
 
-1. read `AGENTS.md`;
-2. read the relevant section of `PRODUCT.md`;
+1. read `AGENT.md`;
+2. read the relevant section of `docs/2-PRODUCT.md`;
 3. identify the applicable requirement ID;
 4. inspect the current implementation;
 5. inspect relevant tests;
@@ -2375,23 +2379,23 @@ It intentionally does not define detailed code structure.
 Technical structure, folder organization, layer responsibilities, coding conventions, and architectural constraints are defined in:
 
 ```text
-docs/ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
 ```
 
 Development procedures are defined in:
 
 ```text
-docs/DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
 ```
 
 Current implementation status is defined in:
 
 ```text
-docs/TRACKER.md
+docs/6-TRACKER.md
 ```
 
 Agent-specific rules are defined in:
 
 ```text
-AGENTS.md
+AGENT.md
 ```

@@ -3,7 +3,7 @@
 > **Document Status:** Active
 > **Authority:** Primary AI Agent Instruction
 > **Repository:** BookQu
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-30
 >
 > This file defines how AI agents must operate when analyzing, modifying, testing, or documenting the BookQu repository.
 >
@@ -53,12 +53,13 @@ Do not optimize only for speed of implementation.
 Before making a non-trivial change, read the relevant documentation in this order:
 
 ```text
-1. AGENTS.md
-2. docs/PRODUCT.md
-3. docs/REQUIREMENTS.md
-4. docs/ARCHITECTURE.md
-5. docs/DEVELOPMENT.md
-6. docs/TRACKER.md
+1. AGENT.md
+2. docs/1-README.md
+3. docs/2-PRODUCT.md
+4. docs/3-REQUIREMENT.md
+5. docs/4-ARCHITECTURE.md
+6. docs/5-DEVELOPMENT.md
+7. docs/6-TRACKER.md
 ```
 
 For architectural decisions, also inspect:
@@ -82,23 +83,23 @@ is reference-only and must not be treated as current authority.
 Use this hierarchy:
 
 ```text
-PRODUCT.md
+docs/2-PRODUCT.md
     ↓
 Defines what BookQu is
 
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
 Defines what BookQu must do
 
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     ↓
 Defines how BookQu should be built
 
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
     ↓
 Defines how work should be performed
 
-TRACKER.md
+docs/6-TRACKER.md
     ↓
 Defines current implementation status
 
@@ -303,7 +304,7 @@ The goal is to avoid creating duplicate solutions.
 
 # 10. Domain Terminology
 
-Use the canonical terminology from `docs/PRODUCT.md`.
+Use the canonical terminology from `docs/2-PRODUCT.md`.
 
 Core terms:
 
@@ -1524,7 +1525,7 @@ Notes:
 
 # 68. Tracker Rule
 
-After a meaningful implementation task, update `docs/TRACKER.md`.
+After a meaningful implementation task, update `docs/6-TRACKER.md`.
 
 At minimum record:
 
@@ -1854,17 +1855,19 @@ When a link is missing, identify the missing link before continuing.
 The active documentation set is:
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-docs/PRODUCT.md
+docs/1-README.md
     ↓
-docs/REQUIREMENTS.md
+docs/2-PRODUCT.md
     ↓
-docs/ARCHITECTURE.md
+docs/3-REQUIREMENT.md
     ↓
-docs/DEVELOPMENT.md
+docs/4-ARCHITECTURE.md
     ↓
-docs/TRACKER.md
+docs/5-DEVELOPMENT.md
+    ↓
+docs/6-TRACKER.md
 ```
 
 Architecture decisions:

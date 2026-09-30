@@ -9,13 +9,13 @@ Use exactly one work-order document per agent task.
 Recommended sequence:
 
 ```text
-REFACTOR-PLAN.md
+docs/REFACTOR-PLAN.md
       ↓
 Select one RF document
       ↓
-Read AGENTS.md
+Read AGENT.md
       ↓
-Read relevant PRODUCT / REQUIREMENTS / ARCHITECTURE sections
+Read relevant docs/2-PRODUCT.md / docs/3-REQUIREMENT.md / docs/4-ARCHITECTURE.md sections
       ↓
 Read the complete RF document
       ↓
@@ -25,8 +25,23 @@ Test after each major subtask
       ↓
 Check acceptance criteria
       ↓
-Update TRACKER.md
+Update docs/6-TRACKER.md
 ```
+
+## Work Orders (RF-00 through RF-09 — Completed)
+
+| Work Order | Title | Scope | Status |
+|:---|:---|:---|:---:|
+| [RF-00-FOUNDATION.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-00-FOUNDATION.md) | Test Suite Baseline & Safety Net | Test baseline, factories, test runners | Completed |
+| [RF-01-BOOKING.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-01-BOOKING.md) | Booking Logic Decoupling | `CreateBooking`, domain state, slot concurrency | Completed |
+| [RF-02-PAYMENT.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-02-PAYMENT.md) | Payment & Midtrans Decoupling | `ProcessPaymentWebhook`, Midtrans client isolation | Completed |
+| [RF-03-SCHEDULE.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-03-SCHEDULE.md) | Schedule & Availability Engine | `ScheduleSlotGenerator`, slot caching, tenant safety | Completed |
+| [RF-04-AUTH-TENANT.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-04-AUTH-TENANT.md) | Auth & Tenant Isolation Hardening | Global tenant scope, policies, auth controllers | Completed |
+| [RF-05-VIEW-DECOMPOSITION.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-05-VIEW-DECOMPOSITION.md) | View Decomposition & Partials | Customer & owner blade componentization | Completed |
+| [RF-06-FORM-REQUESTS.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-06-FORM-REQUESTS.md) | Request Validation Extraction | Form requests across booking, schedule, tenant | Completed |
+| [RF-07-DATABASE-NAMING.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-07-DATABASE-NAMING.md) | DB Invariants & Virtual Column | Slot concurrency unique key, active schedule col | Completed |
+| [RF-08-FINAL-AUDIT.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-08-FINAL-AUDIT.md) | Final Architecture Audit | Codebase audit across all layers | Completed |
+| [RF-09-HARDENING.md](file:///c:/laragon/www/bookqu/docs/refactor/RF-09-HARDENING.md) | Comprehensive System Hardening | Payment expiry, race conditions, 315 tests | Completed |
 
 ## Work-Order Contract
 
@@ -65,4 +80,4 @@ Blocked
 Needs Revision
 ```
 
-Status changes belong in `TRACKER.md`; the RF file remains the stable instructions for the phase.
+Status changes belong in `docs/6-TRACKER.md`; the RF file remains the stable instructions for the phase.

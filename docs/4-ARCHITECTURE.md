@@ -3,13 +3,13 @@
 > **Document Status:** Current Architecture + Target Architecture
 > **Version:** 1.0
 > **Authority:** Authoritative technical architecture direction
-> **Related Product Definition:** `docs/PRODUCT.md`
-> **Related Requirements:** `docs/REQUIREMENTS.md`
-> **Last Updated:** 2026-09-26
+> **Related Product Definition:** `docs/2-PRODUCT.md`
+> **Related Requirements:** `docs/3-REQUIREMENT.md`
+> **Last Updated:** 2026-09-30
 >
 > This document defines how BookQu should be structured, how responsibilities should be separated, and how the current implementation should evolve toward a maintainable and scalable architecture.
 >
-> This document is a technical specification. It does not define product scope. Product behavior is defined in `docs/PRODUCT.md` and `docs/REQUIREMENTS.md`.
+> This document is a technical specification. It does not define product scope. Product behavior is defined in `docs/2-PRODUCT.md` and `docs/3-REQUIREMENT.md`.
 
 ---
 
@@ -74,9 +74,14 @@ Testing
 The current repository already contains:
 
 ```text
+app/Actions
+app/Domain
 app/Http/Controllers
 app/Http/Middleware
+app/Http/Requests
+app/Infrastructure
 app/Models
+app/Policies
 app/Services
 app/Support
 app/Traits
@@ -177,19 +182,35 @@ A working feature should not be rewritten solely for stylistic reasons if doing 
 
 # 4. Current Architecture
 
-The current BookQu implementation approximately follows this structure:
+The current BookQu post-RF-09 implementation follows this structure:
 
 ```text
 app/
+├── Actions/
+│   ├── Booking/
+│   ├── Payment/
+│   └── Schedule/
+├── Domain/
+│   ├── Booking/
+│   ├── Payment/
+│   └── Schedule/
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Admin/
+│   │   ├── Auth/
 │   │   ├── Customer/
 │   │   ├── Owner/
 │   │   └── Webhook/
-│   └── Middleware/
-│
+│   ├── Middleware/
+│   └── Requests/
+│       ├── Booking/
+│       ├── Customer/
+│       ├── Owner/
+│       └── Schedule/
+├── Infrastructure/
+│   └── Midtrans/
 ├── Models/
+├── Policies/
 ├── Services/
 ├── Support/
 ├── Traits/
@@ -208,18 +229,20 @@ resources/views/
 │   ├── landing/
 │   └── owner/
 ├── customer/
+│   └── partials/
 ├── emails/
 ├── layouts/
 └── owner/
+    └── partials/
 ```
 
-The current structure is functional, but not all responsibilities are consistently separated.
+The current structure provides a solid, domain-oriented foundation with decoupled actions, form requests, and extracted view partials.
 
 ---
 
-# 5. Current Architecture Problems
+# 5. Pre-Refactor Architecture Debt (Addressed via RF-01 to RF-09)
 
-The following issues are recognized architectural debt.
+The following issues were recognized architectural debt from the initial baseline, systematically addressed across refactoring work orders RF-01 through RF-09:
 
 ## 5.1 Oversized Controllers
 
@@ -2337,12 +2360,13 @@ The migration should occur incrementally.
 Create and stabilize:
 
 ```text
-PRODUCT.md
-REQUIREMENTS.md
-ARCHITECTURE.md
-DEVELOPMENT.md
-TRACKER.md
-AGENTS.md
+AGENT.md
+docs/1-README.md
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
+docs/4-ARCHITECTURE.md
+docs/5-DEVELOPMENT.md
+docs/6-TRACKER.md
 ```
 
 ---
@@ -2492,8 +2516,8 @@ A module is architecturally considered healthy when:
 Before merging an architectural change, check:
 
 ```text
-[ ] Product behavior remains aligned with PRODUCT.md
-[ ] Requirement remains aligned with REQUIREMENTS.md
+[ ] Product behavior remains aligned with docs/2-PRODUCT.md
+[ ] Requirement remains aligned with docs/3-REQUIREMENT.md
 [ ] Tenant isolation is preserved
 [ ] Authorization remains correct
 [ ] Existing critical tests pass
@@ -2505,7 +2529,7 @@ Before merging an architectural change, check:
 [ ] Database changes have migrations
 [ ] Architecture documentation updated if needed
 [ ] Relevant ADR created if the decision is significant
-[ ] TRACKER.md updated
+[ ] docs/6-TRACKER.md updated
 ```
 
 ---
@@ -2642,32 +2666,37 @@ Small implementation details do not require architecture-document changes.
 The documentation system is:
 
 ```text
-AGENTS.md
+AGENT.md
     │
     ├── how agents work
     │
     ▼
-docs/PRODUCT.md
+docs/1-README.md
+    │
+    ├── documentation map
+    │
+    ▼
+docs/2-PRODUCT.md
     │
     ├── what BookQu is
     │
     ▼
-docs/REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     │
     ├── what BookQu must do
     │
     ▼
-docs/ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     │
     ├── how BookQu is structured
     │
     ▼
-docs/DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
     │
     ├── how contributors work
     │
     ▼
-docs/TRACKER.md
+docs/6-TRACKER.md
     │
     └── implementation status
 ```
@@ -2709,8 +2738,8 @@ scalable
 BookQu should evolve from its current implementation into the target architecture incrementally while preserving the product behavior defined in:
 
 ```text
-docs/PRODUCT.md
-docs/REQUIREMENTS.md
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
 ```
 
 The architecture is a means to support those requirements, not a replacement for them.

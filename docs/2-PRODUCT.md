@@ -4,11 +4,11 @@
 > **Version:** 1.0
 > **Authority:** Current Product Source of Truth
 > **Applies To:** Current BookQu implementation and future development
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-30
 >
 > This document defines what BookQu is, who it serves, what capabilities are part of the current product, and how the product domain should be understood.
 >
-> This document is not a technical architecture document and does not define implementation details. Technical decisions are defined in `docs/ARCHITECTURE.md`.
+> This document is not a technical architecture document and does not define implementation details. Technical decisions are defined in `docs/4-ARCHITECTURE.md`.
 
 ---
 
@@ -618,7 +618,7 @@ Voucher rules may include:
 * minimum transaction;
 * usage limitation.
 
-Exact business rules belong in `REQUIREMENTS.md`.
+Exact business rules belong in `docs/3-REQUIREMENT.md`.
 
 ---
 
@@ -713,7 +713,7 @@ Current product concepts include:
 * subscription payment;
 * subscription lifecycle.
 
-Exact entitlement and lifecycle rules are defined separately in `REQUIREMENTS.md`.
+Exact entitlement and lifecycle rules are defined separately in `docs/3-REQUIREMENT.md`.
 
 ---
 
@@ -881,7 +881,7 @@ A payment record should always have a clear business purpose.
 
 Midtrans is the currently supported external payment gateway.
 
-External payment-provider integration details belong in `docs/ARCHITECTURE.md`.
+External payment-provider integration details belong in `docs/4-ARCHITECTURE.md`.
 
 ---
 
@@ -908,7 +908,7 @@ The product may distinguish between:
 * expired subscription;
 * cancelled subscription.
 
-Exact lifecycle transitions, limits, entitlements, and upgrade/downgrade behavior are requirement-level rules and must be defined in `REQUIREMENTS.md`.
+Exact lifecycle transitions, limits, entitlements, and upgrade/downgrade behavior are requirement-level rules and must be defined in `docs/3-REQUIREMENT.md`.
 
 ---
 
@@ -1321,7 +1321,7 @@ How does it affect the core product?
 What boundaries does it have?
 ```
 
-Detailed functional behavior belongs in `REQUIREMENTS.md`.
+Detailed functional behavior belongs in `docs/3-REQUIREMENT.md`.
 
 ---
 
@@ -1388,28 +1388,35 @@ If the implementation and this document disagree, the disagreement must be treat
 The current documentation hierarchy is:
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-docs/PRODUCT.md
+docs/1-README.md
     ↓
-docs/REQUIREMENTS.md
+docs/2-PRODUCT.md
     ↓
-docs/ARCHITECTURE.md
+docs/3-REQUIREMENT.md
     ↓
-docs/DEVELOPMENT.md
+docs/4-ARCHITECTURE.md
     ↓
-docs/TRACKER.md
+docs/5-DEVELOPMENT.md
+    ↓
+docs/6-TRACKER.md
 ```
 
-Additional architectural decisions are stored in:
+Planned future documents (Phase C):
 
 ```text
+docs/7-SYSTEM-DESIGN.md
+docs/8-OPERATIONS.md
 docs/adr/
 ```
 
-Historical project documents are stored in:
+Historical refactor documents are located in:
 
 ```text
+docs/REFACTOR.md
+docs/REFACTOR-PLAN.md
+docs/refactor/
 docs/archive/
 ```
 
@@ -1423,10 +1430,10 @@ This document defines the current conceptual identity and scope of BookQu.
 
 It intentionally does not contain detailed technical implementation rules.
 
-The next authoritative document to define is:
+The authoritative document defining requirements is:
 
 ```text
-docs/REQUIREMENTS.md
+docs/3-REQUIREMENT.md
 ```
 
-That document will convert the product concepts defined here into explicit, testable functional and non-functional requirements.
+That document converts the product concepts defined here into explicit, testable functional and non-functional requirements.

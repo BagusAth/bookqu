@@ -480,7 +480,7 @@ Pastikan scheduler benar-benar aktif di server, bukan hanya terdapat di reposito
 Dokumentasikan konfigurasi production dalam:
 
 ```text
-docs/DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
 ```
 
 atau dokumentasi deployment yang sesuai.
@@ -1606,7 +1606,7 @@ Setelah implementasi selesai, update:
 docs/REFACTOR-PLAN.md
 docs/6-TRACKER.md
 docs/refactor/RF-08-FINAL-AUDIT.md
-docs/DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
 ```
 
 Tambahkan RF-09:
