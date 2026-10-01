@@ -52,22 +52,18 @@ class SingaPayWebhookVerifier
         // 4. Construct string to sign: METHOD:ENDPOINT:ACCESS_TOKEN:HASHED_BODY:TIMESTAMP
         $stringToSign = "{$method}:{$endpoint}:{$accessToken}:{$hashedBody}:{$timestamp}";
 
-        // 5. Official signing key is Client Secret; keep HMAC_VALIDATION_KEY as fallback compatibility
+        // 5. Official signing key is Client Secret per SingaPay documentation
         $clientSecret = (string) config('services.singapay.client_secret');
-        $hmacKey      = (string) config('services.singapay.hmac_validation_key');
 
-        $keysToTry = array_filter(array_unique([$clientSecret, $hmacKey]), fn($k) => !empty($k));
-
-        if (empty($keysToTry)) {
-            Log::error('SingaPay Webhook: No validation key or client secret configured in services.singapay');
+        if (empty($clientSecret)) {
+            Log::error('SingaPay Webhook: No client secret configured in services.singapay');
             return false;
         }
 
-        foreach ($keysToTry as $signingKey) {
-            $calculatedSignature = hash_hmac('sha512', $stringToSign, $signingKey);
-            if (hash_equals($calculatedSignature, $receivedSignature)) {
-                return true;
-            }
+        $calculatedSignature = hash_hmac('sha512', $stringToSign, $clientSecret);
+
+        if (hash_equals($calculatedSignature, $receivedSignature)) {
+            return true;
         }
 
         Log::warning('SingaPay Webhook: HMAC signature mismatch', [

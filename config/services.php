@@ -40,7 +40,6 @@ return [
         'client_id' => env('SINGAPAY_CLIENT_ID'),
         'client_secret' => env('SINGAPAY_CLIENT_SECRET'),
         'api_key' => env('SINGAPAY_API_KEY'),
-        'hmac_validation_key' => env('SINGAPAY_HMAC_VALIDATION_KEY'),
         'account_id' => env('SINGAPAY_ACCOUNT_ID'),
         'expiry_minutes' => (int) env('SINGAPAY_PAYMENT_EXPIRY_MINUTES', 15),
         'webhook_tolerance_seconds' => (int) env('SINGAPAY_WEBHOOK_TOLERANCE_SECONDS', 300),

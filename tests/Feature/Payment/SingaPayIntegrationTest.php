@@ -48,7 +48,6 @@ class SingaPayIntegrationTest extends TestCase
         Config::set('services.singapay.client_id', 'test_client_id');
         Config::set('services.singapay.client_secret', $this->clientSecret);
         Config::set('services.singapay.api_key', $this->apiKey);
-        Config::set('services.singapay.hmac_validation_key', $this->hmacKey);
         Config::set('services.singapay.expiry_minutes', 15);
         Config::set('services.singapay.account_id', $this->accountId);
         Config::set('services.singapay.webhook_tolerance_seconds', 300);
@@ -273,8 +272,8 @@ class SingaPayIntegrationTest extends TestCase
                 && count($payload['items']) === 1
                 && $payload['items'][0]['quantity'] === 1
                 && $payload['items'][0]['unit_price'] === 150000
-                && is_int($payload['expired_at']) // epoch milliseconds
-                && $payload['expired_at'] > 1000000000000
+                && is_string($payload['expired_at'])
+                && preg_match('/^\d{13}$/', $payload['expired_at']) === 1
                 && $payload['required_customer_detail'] === true
                 && array_key_exists('customer_pays_fee', $payload)
                 && isset($payload['success_redirect_url'])
@@ -755,19 +754,19 @@ class SingaPayIntegrationTest extends TestCase
         $response->assertStatus(404);
     }
 
-    public function test_webhook_with_hmac_validation_key_fallback_accepted(): void
+    public function test_webhook_with_deprecated_hmac_key_rejected_requiring_official_client_secret(): void
     {
         $payload = $this->makeWebhookPayload('NONEXISTENT-AUTH', 50000, 'paid');
 
-        // Signed with hmac_validation_key for backwards compatibility
+        // Signed with non-client_secret key (e.g. deprecated hmac key) -> must be rejected
         $response = $this->postSingaPayWebhook(
             '/api/webhooks/singapay/transaction',
             $payload,
             $this->hmacKey
         );
 
-        $this->assertNotEquals(401, $response->status());
-        $response->assertStatus(404);
+        $response->assertStatus(401);
+        $response->assertJson(['status' => 'error', 'message' => 'Invalid signature']);
     }
 
     public function test_invalid_hmac_rejected(): void

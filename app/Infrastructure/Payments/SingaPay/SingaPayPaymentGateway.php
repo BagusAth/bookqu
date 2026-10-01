@@ -84,7 +84,7 @@ class SingaPayPaymentGateway
             'items'                      => $items,
             'required_customer_detail'   => true,
             'customer_pays_fee'          => (bool) config('services.singapay.customer_pays_fee', false),
-            'expired_at'                 => $expiredAt,
+            'expired_at'                 => (string) $expiredAt,
             'whitelisted_payment_method' => [],
             'redirect_url'               => $successRedirectUrl,
             'success_redirect_url'       => $successRedirectUrl,
