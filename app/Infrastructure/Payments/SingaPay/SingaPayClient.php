@@ -43,7 +43,8 @@ class SingaPayClient
     }
 
     /**
-     * Request or retrieve cached JWT access token using Client ID & Client Secret.
+     * Request or retrieve cached JWT access token using OAuth 2.0 Client Credentials.
+     * Endpoint: POST /api/v1.1/access-token/b2b
      *
      * @throws Exception
      */
@@ -54,10 +55,6 @@ class SingaPayClient
         }
 
         if (empty($this->clientId) || empty($this->clientSecret)) {
-            if (app()->environment('testing')) {
-                return 'mocked-singapay-access-token';
-            }
-
             throw new Exception('SingaPay credentials (CLIENT_ID or CLIENT_SECRET) are not configured.');
         }
 
@@ -77,25 +74,16 @@ class SingaPayClient
                 'grant_type' => 'client_credentials',
             ];
 
-            // Primary endpoint is v1.1, fallback to v1.0
             $response = Http::withHeaders($headers)
+                ->connectTimeout(5)
                 ->timeout(15)
+                ->retry(2, 200, throw: false)
                 ->post("{$this->baseUrl}/api/v1.1/access-token/b2b", $body);
 
             if (!$response->successful()) {
-                $response = Http::withHeaders($headers)
-                    ->timeout(15)
-                    ->post("{$this->baseUrl}/api/v1.0/access-token/b2b", $body);
-            }
-
-            if (!$response->successful()) {
-                if (app()->environment('testing')) {
-                    return 'mocked-singapay-access-token';
-                }
-
                 Log::error('SingaPay OAuth Token Error:', [
                     'status' => $response->status(),
-                    'body'   => $response->json() ?? $response->body(),
+                    'error'  => $response->json('message') ?? $response->json('error') ?? 'Authentication failed',
                 ]);
 
                 throw new Exception('Failed to obtain SingaPay access token: HTTP ' . $response->status());
@@ -115,65 +103,75 @@ class SingaPayClient
     }
 
     /**
-     * Resolve active Account ID (ULID) for the merchant.
-     * Uses configured account_id if available, otherwise queries /api/v1.0/accounts.
+     * Resolve active Account ID for the merchant.
+     * Uses configured account_id if available.
+     * Fallback queries /api/v1.0/accounts only if account_id is not set.
+     * If multiple active accounts exist, throws an exception to avoid ambiguity.
      *
      * @throws Exception
      */
     public function resolveAccountId(): string
     {
         if (!empty($this->accountId)) {
-            return $this->accountId;
+            return (string) $this->accountId;
+        }
+
+        if (app()->environment('testing') && !$this->isHttpFaked()) {
+            return '01JTESTACCOUNTULID00000000000';
         }
 
         $cacheKey = 'singapay_merchant_account_id_' . md5((string) $this->apiKey);
 
         return Cache::remember($cacheKey, now()->addHours(24), function () {
-            if (app()->environment('testing') && !$this->isHttpFaked()) {
-                return '01JTESTACCOUNTULID00000000000';
-            }
-
             $token = $this->getAccessToken();
 
             $response = Http::withHeaders([
                 'Authorization' => "Bearer {$token}",
                 'X-PARTNER-ID'  => (string) $this->apiKey,
                 'Accept'        => 'application/json',
-            ])->timeout(15)->get("{$this->baseUrl}/api/v1.0/accounts");
+            ])
+                ->connectTimeout(5)
+                ->timeout(15)
+                ->get("{$this->baseUrl}/api/v1.0/accounts");
 
             if (!$response->successful()) {
                 Log::error('SingaPay List Accounts Error:', [
                     'status' => $response->status(),
-                    'body'   => $response->json() ?? $response->body(),
+                    'error'  => $response->json('message') ?? $response->json('error') ?? 'Failed to list accounts',
                 ]);
 
                 throw new Exception('Failed to retrieve SingaPay merchant accounts: HTTP ' . $response->status());
             }
 
             $accounts = $response->json('data') ?? [];
-            $foundId = null;
-
-            foreach ($accounts as $acc) {
-                if (($acc['status'] ?? '') === 'active' || empty($acc['status'])) {
-                    $foundId = (string) $acc['id'];
-                    break;
-                }
+            if (!is_array($accounts)) {
+                $accounts = [];
             }
 
-            if (!$foundId && !empty($accounts[0]['id'])) {
-                $foundId = (string) $accounts[0]['id'];
+            $activeAccounts = array_values(array_filter($accounts, function ($acc) {
+                $status = strtolower((string) ($acc['status'] ?? ''));
+                return $status === 'active' || empty($status);
+            }));
+
+            if (count($activeAccounts) > 1) {
+                Log::error('SingaPay: Multiple active merchant accounts found without SINGAPAY_ACCOUNT_ID configured.', [
+                    'active_count' => count($activeAccounts),
+                ]);
+
+                throw new Exception('Multiple active SingaPay accounts found. Please configure SINGAPAY_ACCOUNT_ID explicitly in your configuration.');
             }
 
-            if (!$foundId) {
-                throw new Exception('No active SingaPay account found for this merchant.');
+            if (count($activeAccounts) === 1 && !empty($activeAccounts[0]['id'])) {
+                return (string) $activeAccounts[0]['id'];
             }
 
-            return $foundId;
+            throw new Exception('No active SingaPay account found for this merchant.');
         });
     }
 
     /**
-     * Create a payment link using SingaPay Payment Link v2 API.
+     * Create a payment link using SingaPay Payment Link API.
+     * Endpoint: POST /api/v1.0/payment-link-manage/{account_id}
      *
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
@@ -188,7 +186,7 @@ class SingaPayClient
                 'data'    => [
                     'id'          => 12345,
                     'reff_no'     => $payload['reff_no'] ?? 'MOCK-REFF',
-                    'payment_url' => 'https://sandbox-paymentlink.singapay.id/b2b/' . ($payload['reff_no'] ?? 'MOCK-REFF'),
+                    'payment_url' => 'https://payment-link.singapay.id/b2b/' . ($payload['reff_no'] ?? 'MOCK-REFF'),
                 ],
             ];
         }
@@ -201,18 +199,24 @@ class SingaPayClient
             'X-PARTNER-ID'  => (string) $this->apiKey,
             'Content-Type'  => 'application/json',
             'Accept'        => 'application/json',
-        ])->timeout(20)->post("{$this->baseUrl}/api/v2.0/payment-link/{$accountId}", $payload);
+        ])
+            ->connectTimeout(5)
+            ->timeout(20)
+            ->post("{$this->baseUrl}/api/v1.0/payment-link-manage/{$accountId}", $payload);
 
         if (!$response->successful()) {
-            Log::error('SingaPay Create Payment Link Error:', [
-                'status'  => $response->status(),
-                'payload' => array_diff_key($payload, array_flip(['customer_email', 'customer_phone'])),
-                'error'   => $response->json() ?? $response->body(),
-            ]);
-
-            $errorMsg = $response->json('error.message')
-                ?? $response->json('message')
+            $errorCode = $response->json('code') ?? $response->json('error.code');
+            $errorMsg  = $response->json('message')
+                ?? $response->json('error.message')
+                ?? $response->json('error')
                 ?? ('HTTP ' . $response->status());
+
+            Log::error('SingaPay Create Payment Link Error:', [
+                'status'     => $response->status(),
+                'error_code' => $errorCode,
+                'error_msg'  => $errorMsg,
+                'reff_no'    => $payload['reff_no'] ?? null,
+            ]);
 
             throw new Exception("SingaPay API Error: {$errorMsg}");
         }

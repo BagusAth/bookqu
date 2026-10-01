@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Payments\SingaPay;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -11,6 +12,8 @@ class SingaPayWebhookVerifier
 {
     /**
      * Verify incoming SingaPay webhook request HMAC signature according to official specification.
+     *
+     * StringToSign = METHOD:ENDPOINT:ACCESS_TOKEN:HASHED_BODY:TIMESTAMP
      *
      * @param Request $request
      * @return bool
@@ -42,33 +45,27 @@ class SingaPayWebhookVerifier
         $normalizedJson = json_encode($bodyArray, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $hashedBody     = hash('sha256', (string) $normalizedJson);
 
-        // 3. Extract exact endpoint (path and query string)
+        // 3. Extract method and exact endpoint URI
+        $method   = strtoupper($request->method());
         $endpoint = $request->getRequestUri();
 
-        // 4. Construct string to sign: POST:ENDPOINT:ACCESS_TOKEN:HASHED_BODY:TIMESTAMP
-        $stringToSign = "POST:{$endpoint}:{$accessToken}:{$hashedBody}:{$timestamp}";
+        // 4. Construct string to sign: METHOD:ENDPOINT:ACCESS_TOKEN:HASHED_BODY:TIMESTAMP
+        $stringToSign = "{$method}:{$endpoint}:{$accessToken}:{$hashedBody}:{$timestamp}";
 
-        // 5. Retrieve secret keys (Primary: HMAC_VALIDATION_KEY, Fallback: CLIENT_SECRET)
-        $hmacKey      = (string) config('services.singapay.hmac_validation_key');
+        // 5. Official signing key is Client Secret; keep HMAC_VALIDATION_KEY as fallback compatibility
         $clientSecret = (string) config('services.singapay.client_secret');
+        $hmacKey      = (string) config('services.singapay.hmac_validation_key');
 
-        $primaryKey = !empty($hmacKey) ? $hmacKey : $clientSecret;
+        $keysToTry = array_filter(array_unique([$clientSecret, $hmacKey]), fn($k) => !empty($k));
 
-        if (empty($primaryKey)) {
-            Log::error('SingaPay Webhook: No validation key configured in services.singapay');
+        if (empty($keysToTry)) {
+            Log::error('SingaPay Webhook: No validation key or client secret configured in services.singapay');
             return false;
         }
 
-        $calculatedSignature = hash_hmac('sha512', $stringToSign, $primaryKey);
-
-        if (hash_equals($calculatedSignature, $receivedSignature)) {
-            return true;
-        }
-
-        // Secondary check with client_secret if primaryKey was hmac_validation_key and differed
-        if (!empty($clientSecret) && $clientSecret !== $primaryKey) {
-            $altSignature = hash_hmac('sha512', $stringToSign, $clientSecret);
-            if (hash_equals($altSignature, $receivedSignature)) {
+        foreach ($keysToTry as $signingKey) {
+            $calculatedSignature = hash_hmac('sha512', $stringToSign, $signingKey);
+            if (hash_equals($calculatedSignature, $receivedSignature)) {
                 return true;
             }
         }
@@ -82,11 +79,63 @@ class SingaPayWebhookVerifier
     }
 
     /**
+     * Verify timestamp against replay attacks within configurable tolerance.
+     *
+     * @param Request $request
+     * @return bool
+     */
+    public function verifyTimestamp(Request $request): bool
+    {
+        $timestamp = (string) $request->header('X-Timestamp', '');
+        return $this->isValidTimestamp($timestamp);
+    }
+
+    /**
+     * Validate timestamp string (epoch seconds, epoch ms, or ISO-8601).
+     *
+     * @param string $timestamp
+     * @param int|null $toleranceSeconds
+     * @return bool
+     */
+    public function isValidTimestamp(string $timestamp, ?int $toleranceSeconds = null): bool
+    {
+        if (trim($timestamp) === '') {
+            return false;
+        }
+
+        $tolerance = $toleranceSeconds ?? (int) config('services.singapay.webhook_tolerance_seconds', 300);
+        $now = time();
+        $timestampSeconds = null;
+
+        if (is_numeric($timestamp)) {
+            $num = (int) $timestamp;
+            // Detect epoch in milliseconds (e.g. > 10^11)
+            if ($num > 9999999999) {
+                $num = (int) round($num / 1000);
+            }
+            $timestampSeconds = $num;
+        } else {
+            try {
+                $parsed = Carbon::parse($timestamp);
+                $timestampSeconds = $parsed->getTimestamp();
+            } catch (\Throwable) {
+                return false;
+            }
+        }
+
+        if ($timestampSeconds === null) {
+            return false;
+        }
+
+        return abs($now - $timestampSeconds) <= $tolerance;
+    }
+
+    /**
      * Recursively sort associative arrays by key in ascending alphabetical order.
      *
      * @param array<mixed> &$array
      */
-    protected function sortRecursive(array &$array): void
+    public function sortRecursive(array &$array): void
     {
         ksort($array, SORT_STRING);
 
@@ -105,16 +154,23 @@ class SingaPayWebhookVerifier
      * @param array<string, mixed> $body
      * @param string $timestamp
      * @param string $key
+     * @param string $method
      * @return string
      */
-    public function computeSignature(string $endpoint, string $accessToken, array $body, string $timestamp, string $key): string
-    {
+    public function computeSignature(
+        string $endpoint,
+        string $accessToken,
+        array $body,
+        string $timestamp,
+        string $key,
+        string $method = 'POST'
+    ): string {
         $sorted = $body;
         $this->sortRecursive($sorted);
         $normalized = json_encode($sorted, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $hashedBody = hash('sha256', (string) $normalized);
 
-        $stringToSign = "POST:{$endpoint}:{$accessToken}:{$hashedBody}:{$timestamp}";
+        $stringToSign = "{$method}:{$endpoint}:{$accessToken}:{$hashedBody}:{$timestamp}";
 
         return hash_hmac('sha512', $stringToSign, $key);
     }

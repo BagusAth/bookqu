@@ -21,14 +21,42 @@ class ProcessSingaPayWebhook
     }
 
     /**
-     * Process incoming SingaPay Money In webhook notification.
+     * Process incoming SingaPay Money In / Payment Link webhook notification.
      *
      * @param Request $request
      * @return array{success: bool, code: int, message: string}
      */
     public function execute(Request $request): array
     {
-        // 1. Verify HMAC Signature
+        // 1. Verify JSON body structure
+        $rawBody = (string) $request->getContent();
+        $payload = json_decode($rawBody, true);
+
+        if (!is_array($payload) || json_last_error() !== JSON_ERROR_NONE) {
+            Log::warning('ProcessSingaPayWebhook: Malformed JSON body received');
+
+            return [
+                'success' => false,
+                'code'    => 400,
+                'message' => 'Malformed JSON body',
+            ];
+        }
+
+        // 2. Replay Protection: Validate Webhook Timestamp
+        if (!$this->gateway->verifyTimestamp($request)) {
+            Log::warning('ProcessSingaPayWebhook: Webhook rejected due to invalid or expired timestamp', [
+                'timestamp' => $request->header('X-Timestamp'),
+                'ip'        => $request->ip(),
+            ]);
+
+            return [
+                'success' => false,
+                'code'    => 401,
+                'message' => 'Invalid or expired timestamp',
+            ];
+        }
+
+        // 3. Verify HMAC Signature
         if (!$this->gateway->verifyWebhook($request)) {
             Log::warning('ProcessSingaPayWebhook: Invalid HMAC signature', [
                 'uri' => $request->getRequestUri(),
@@ -42,39 +70,14 @@ class ProcessSingaPayWebhook
             ];
         }
 
-        $payload = $request->all();
-        Log::info('ProcessSingaPayWebhook received valid notification:', [
-            'event'   => $payload['event'] ?? 'unknown',
-            'reff_no' => $this->extractReffNo($payload),
-        ]);
-
-        // 2. Extract Reference / Order ID
-        $reffNo = $this->extractReffNo($payload);
-
-        if (!$reffNo) {
-            Log::warning('ProcessSingaPayWebhook: Missing reference number in payload', $payload);
-
-            return [
-                'success' => false,
-                'code'    => 400,
-                'message' => 'Missing reference number',
-            ];
-        }
-
-        // 3. Find Payment (bypassing tenant global scope)
-        /** @var Payment|null $payment */
-        $payment = Payment::withoutGlobalScope(TenantScope::class)
-            ->where('order_id', $reffNo)
-            ->first();
+        // 4. Resolve Payment using data.transaction.reff_no as primary identifier
+        $payment = $this->resolvePayment($payload);
 
         if (!$payment) {
-            $payment = Payment::withoutGlobalScope(TenantScope::class)
-                ->where('external_id', $reffNo)
-                ->first();
-        }
-
-        if (!$payment) {
-            Log::warning('ProcessSingaPayWebhook: Payment not found for reference', ['reff_no' => $reffNo]);
+            Log::warning('ProcessSingaPayWebhook: Payment not found for webhook notification', [
+                'reff_no'  => $this->extractReffNo($payload),
+                'event'    => $payload['event'] ?? 'unknown',
+            ]);
 
             return [
                 'success' => false,
@@ -83,7 +86,13 @@ class ProcessSingaPayWebhook
             ];
         }
 
-        // 4. Validate Tenant Isolation
+        Log::info('ProcessSingaPayWebhook: Processing verified webhook', [
+            'payment_id' => $payment->id,
+            'order_id'   => $payment->order_id,
+            'event'      => $payload['event'] ?? 'unknown',
+        ]);
+
+        // 5. Validate Tenant Isolation
         if (!$payment->idtenant || !$payment->tenant) {
             Log::warning('ProcessSingaPayWebhook: Payment tenant missing or invalid', [
                 'payment_id' => $payment->id,
@@ -97,7 +106,7 @@ class ProcessSingaPayWebhook
             ];
         }
 
-        // 5. Validate Transaction Amount
+        // 6. Validate Transaction Amount
         $incomingAmount = $this->extractAmount($payload);
 
         if ($incomingAmount !== null) {
@@ -118,7 +127,7 @@ class ProcessSingaPayWebhook
             }
         }
 
-        // 6. Idempotency Check
+        // 7. Idempotency Check
         if ($payment->status === PaymentState::STATUS_SUKSES) {
             Log::info('ProcessSingaPayWebhook: Duplicate webhook received for already successful payment', [
                 'payment_id' => $payment->id,
@@ -145,11 +154,17 @@ class ProcessSingaPayWebhook
             ];
         }
 
-        // 7. Synchronize Payment Status
+        // 8. Synchronize Payment Status
         app(TenantContext::class)->setTenantId($payment->idtenant);
 
         try {
-            $rawStatus    = (string) ($payload['data']['transaction']['status'] ?? $payload['data']['status'] ?? 'paid');
+            $rawStatus = (string) (
+                $payload['data']['transaction']['status']
+                ?? $payload['data']['status']
+                ?? $payload['status']
+                ?? 'paid'
+            );
+
             $domainStatus = PaymentState::mapSingaPayStatus($rawStatus);
 
             if ($domainStatus === PaymentState::STATUS_SUKSES) {
@@ -176,15 +191,75 @@ class ProcessSingaPayWebhook
     }
 
     /**
-     * Extract reference number from SingaPay payload structures.
+     * Resolve Payment using data.transaction.reff_no as primary identifier,
+     * with fallback to payment-link webhook structures.
+     *
+     * @param array<string, mixed> $payload
+     * @return Payment|null
+     */
+    protected function resolvePayment(array $payload): ?Payment
+    {
+        // 1. Primary identifier per specification: data.transaction.reff_no
+        $primaryReff = $payload['data']['transaction']['reff_no'] ?? null;
+        if (!empty($primaryReff)) {
+            $payment = Payment::withoutGlobalScope(TenantScope::class)
+                ->where('order_id', (string) $primaryReff)
+                ->first();
+
+            if ($payment) {
+                return $payment;
+            }
+
+            $payment = Payment::withoutGlobalScope(TenantScope::class)
+                ->where('external_id', (string) $primaryReff)
+                ->first();
+
+            if ($payment) {
+                return $payment;
+            }
+        }
+
+        // 2. Secondary candidate references from payment-link structures
+        $secondaryCandidates = array_filter(array_unique([
+            $payload['data']['payment']['additional_info']['payment_link']['reff_no'] ?? null,
+            $payload['data']['reff_no'] ?? null,
+            $payload['data']['payment_link']['reff_no'] ?? null,
+            $payload['order_id'] ?? null,
+            (string) ($payload['data']['payment']['additional_info']['payment_link']['id'] ?? ''),
+            (string) ($payload['data']['id'] ?? ''),
+        ]));
+
+        foreach ($secondaryCandidates as $ref) {
+            $payment = Payment::withoutGlobalScope(TenantScope::class)
+                ->where('order_id', (string) $ref)
+                ->first();
+
+            if ($payment) {
+                return $payment;
+            }
+
+            $payment = Payment::withoutGlobalScope(TenantScope::class)
+                ->where('external_id', (string) $ref)
+                ->first();
+
+            if ($payment) {
+                return $payment;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract reference number from SingaPay payload structures for logging.
      *
      * @param array<string, mixed> $payload
      * @return string|null
      */
     protected function extractReffNo(array $payload): ?string
     {
-        $reff = $payload['data']['payment']['additional_info']['payment_link']['reff_no']
-            ?? $payload['data']['transaction']['reff_no']
+        $reff = $payload['data']['transaction']['reff_no']
+            ?? $payload['data']['payment']['additional_info']['payment_link']['reff_no']
             ?? $payload['data']['reff_no']
             ?? $payload['order_id']
             ?? null;
