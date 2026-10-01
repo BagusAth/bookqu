@@ -82,7 +82,7 @@ class SingaPayPaymentGateway
             'max_usage'                  => 1,
             'total_amount'               => $totalAmount,
             'items'                      => $items,
-            'required_customer_detail'   => ['name', 'email', 'phone'],
+            'required_customer_detail'   => true,
             'customer_pays_fee'          => (bool) config('services.singapay.customer_pays_fee', false),
             'expired_at'                 => $expiredAt,
             'whitelisted_payment_method' => [],

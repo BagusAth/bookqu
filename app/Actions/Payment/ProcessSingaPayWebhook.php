@@ -106,8 +106,22 @@ class ProcessSingaPayWebhook
             ];
         }
 
-        // 6. Validate Transaction Amount
-        $incomingAmount = $this->extractAmount($payload);
+        // 6. Validate Transaction Amount & Currency
+        $incomingAmount   = $this->extractAmount($payload);
+        $incomingCurrency = $this->extractCurrency($payload);
+
+        if ($incomingCurrency !== null && strtoupper((string) $incomingCurrency) !== 'IDR') {
+            Log::warning('ProcessSingaPayWebhook: Currency mismatch', [
+                'order_id' => $payment->order_id,
+                'currency' => $incomingCurrency,
+            ]);
+
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Transaction currency mismatch',
+            ];
+        }
 
         if ($incomingAmount !== null) {
             $expectedAmount = (float) $payment->jumlah;
@@ -282,5 +296,20 @@ class ProcessSingaPayWebhook
             ?? null;
 
         return $val !== null ? (float) $val : null;
+    }
+
+    /**
+     * Extract currency string from SingaPay payload structures.
+     *
+     * @param array<string, mixed> $payload
+     * @return string|null
+     */
+    protected function extractCurrency(array $payload): ?string
+    {
+        $curr = $payload['data']['transaction']['amount']['currency']
+            ?? $payload['data']['amount']['currency']
+            ?? null;
+
+        return $curr ? (string) $curr : null;
     }
 }

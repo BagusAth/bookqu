@@ -5,10 +5,12 @@ on:
     branches:
       - Refactor
       - main
+      - payment
   pull_request:
     branches:
       - Refactor
       - main
+      - payment
 
 jobs:
   tests:

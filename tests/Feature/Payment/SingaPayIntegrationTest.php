@@ -275,7 +275,7 @@ class SingaPayIntegrationTest extends TestCase
                 && $payload['items'][0]['unit_price'] === 150000
                 && is_int($payload['expired_at']) // epoch milliseconds
                 && $payload['expired_at'] > 1000000000000
-                && is_array($payload['required_customer_detail'])
+                && $payload['required_customer_detail'] === true
                 && array_key_exists('customer_pays_fee', $payload)
                 && isset($payload['success_redirect_url'])
                 && isset($payload['expired_redirect_url'])
@@ -314,6 +314,130 @@ class SingaPayIntegrationTest extends TestCase
         $this->expectExceptionMessage('SingaPay API Error: Duplicate reference number');
 
         $bookingPayment->generatePaymentLink($payment, $service, $customerData);
+    }
+
+    public function test_payment_link_creation_401_error_handling(): void
+    {
+        Http::fake([
+            'https://payment-b2b.singapay.id/api/v1.1/access-token/b2b' => Http::response([
+                'status'  => 200,
+                'success' => true,
+                'data'    => ['access_token' => 'mocked-jwt-token', 'expires_in' => 3600],
+            ], 200),
+            'https://payment-b2b.singapay.id/api/v1.0/payment-link-manage/' . $this->accountId => Http::response([
+                'status'  => 401,
+                'success' => false,
+                'message' => 'Unauthorized partner request',
+            ], 401),
+        ]);
+
+        $service = Service::factory()->create(['idtenant' => $this->tenant->id, 'harga' => 100000]);
+        $bookingPayment = app(CreateBookingPayment::class);
+
+        $payment = $bookingPayment->createPendingPayment($this->tenant, 100000, [
+            'namapelanggan' => '401 Test',
+            'email'         => 't401@example.com',
+            'nomorhp'       => '081298765432',
+        ]);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('SingaPay API Error: Unauthorized partner request');
+
+        $bookingPayment->generatePaymentLink($payment, $service, ['namapelanggan' => '401 Test']);
+    }
+
+    public function test_payment_link_creation_422_error_handling(): void
+    {
+        Http::fake([
+            'https://payment-b2b.singapay.id/api/v1.1/access-token/b2b' => Http::response([
+                'status'  => 200,
+                'success' => true,
+                'data'    => ['access_token' => 'mocked-jwt-token', 'expires_in' => 3600],
+            ], 200),
+            'https://payment-b2b.singapay.id/api/v1.0/payment-link-manage/' . $this->accountId => Http::response([
+                'status'  => 422,
+                'success' => false,
+                'message' => 'Invalid amount format',
+            ], 422),
+        ]);
+
+        $service = Service::factory()->create(['idtenant' => $this->tenant->id, 'harga' => 100000]);
+        $bookingPayment = app(CreateBookingPayment::class);
+
+        $payment = $bookingPayment->createPendingPayment($this->tenant, 100000, [
+            'namapelanggan' => '422 Test',
+            'email'         => 't422@example.com',
+            'nomorhp'       => '081298765432',
+        ]);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('SingaPay API Error: Invalid amount format');
+
+        $bookingPayment->generatePaymentLink($payment, $service, ['namapelanggan' => '422 Test']);
+    }
+
+    public function test_payment_link_creation_500_error_handling(): void
+    {
+        Http::fake([
+            'https://payment-b2b.singapay.id/api/v1.1/access-token/b2b' => Http::response([
+                'status'  => 200,
+                'success' => true,
+                'data'    => ['access_token' => 'mocked-jwt-token', 'expires_in' => 3600],
+            ], 200),
+            'https://payment-b2b.singapay.id/api/v1.0/payment-link-manage/' . $this->accountId => Http::response([
+                'status'  => 500,
+                'success' => false,
+                'message' => 'Internal server error from SingaPay',
+            ], 500),
+        ]);
+
+        $service = Service::factory()->create(['idtenant' => $this->tenant->id, 'harga' => 100000]);
+        $bookingPayment = app(CreateBookingPayment::class);
+
+        $payment = $bookingPayment->createPendingPayment($this->tenant, 100000, [
+            'namapelanggan' => '500 Test',
+            'email'         => 't500@example.com',
+            'nomorhp'       => '081298765432',
+        ]);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('SingaPay API Error: Internal server error from SingaPay');
+
+        $bookingPayment->generatePaymentLink($payment, $service, ['namapelanggan' => '500 Test']);
+    }
+
+    public function test_payment_link_creation_missing_payment_url_throws_exception(): void
+    {
+        Http::fake([
+            'https://payment-b2b.singapay.id/api/v1.1/access-token/b2b' => Http::response([
+                'status'  => 200,
+                'success' => true,
+                'data'    => ['access_token' => 'mocked-jwt-token', 'expires_in' => 3600],
+            ], 200),
+            'https://payment-b2b.singapay.id/api/v1.0/payment-link-manage/' . $this->accountId => Http::response([
+                'status'  => 200,
+                'success' => true,
+                'data'    => [
+                    'id'          => 9999,
+                    'reff_no'     => 'BKG-NO-URL',
+                    'payment_url' => '', // Missing URL
+                ],
+            ], 200),
+        ]);
+
+        $service = Service::factory()->create(['idtenant' => $this->tenant->id, 'harga' => 100000]);
+        $bookingPayment = app(CreateBookingPayment::class);
+
+        $payment = $bookingPayment->createPendingPayment($this->tenant, 100000, [
+            'namapelanggan' => 'No URL Test',
+            'email'         => 'nourl@example.com',
+            'nomorhp'       => '081298765432',
+        ]);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Payment gateway did not return a valid payment link URL.');
+
+        $bookingPayment->generatePaymentLink($payment, $service, ['namapelanggan' => 'No URL Test']);
     }
 
     public function test_account_resolution_fallback_rejects_ambiguity(): void
@@ -369,6 +493,34 @@ class SingaPayIntegrationTest extends TestCase
         $resolved = $client->resolveAccountId();
 
         $this->assertEquals('ACC_SINGLE_ACTIVE', $resolved);
+    }
+
+    public function test_account_resolution_fallback_rejects_when_no_active_account(): void
+    {
+        Config::set('services.singapay.account_id', null);
+
+        Http::fake([
+            'https://payment-b2b.singapay.id/api/v1.1/access-token/b2b' => Http::response([
+                'status'  => 200,
+                'success' => true,
+                'data'    => ['access_token' => 'mocked-jwt-token', 'expires_in' => 3600],
+            ], 200),
+            'https://payment-b2b.singapay.id/api/v1.0/accounts' => Http::response([
+                'status'  => 200,
+                'success' => true,
+                'data'    => [
+                    ['id' => 'ACC_INACTIVE', 'status' => 'inactive'],
+                ],
+            ], 200),
+        ]);
+
+        /** @var SingaPayClient $client */
+        $client = app(SingaPayClient::class);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('No active SingaPay account found for this merchant.');
+
+        $client->resolveAccountId();
     }
 
     // ==========================================
@@ -705,6 +857,50 @@ class SingaPayIntegrationTest extends TestCase
         $response->assertJson(['status' => 'error', 'message' => 'Malformed JSON body']);
     }
 
+    public function test_malformed_signature_rejected(): void
+    {
+        $payload = $this->makeWebhookPayload('BKG-MALFORMED-SIG', 50000, 'paid');
+
+        $response = $this->withHeaders([
+            'X-Signature'   => '!!!malformed-signature-non-hex!!!',
+            'X-Timestamp'   => (string) time(),
+            'Authorization' => 'Bearer token123',
+            'Content-Type'  => 'application/json',
+        ])->postJson('/api/webhooks/singapay/transaction', $payload);
+
+        $response->assertStatus(401);
+        $response->assertJson(['status' => 'error', 'message' => 'Invalid signature']);
+    }
+
+    public function test_invalid_authorization_token_rejected(): void
+    {
+        $payload = $this->makeWebhookPayload('BKG-INVALID-AUTH', 50000, 'paid');
+        $timestamp = (string) time();
+
+        /** @var SingaPayWebhookVerifier $verifier */
+        $verifier = app(SingaPayWebhookVerifier::class);
+
+        // Signature is computed with 'expected_token'
+        $signature = $verifier->computeSignature(
+            '/api/webhooks/singapay/transaction',
+            'expected_token',
+            $payload,
+            $timestamp,
+            $this->clientSecret
+        );
+
+        // But incoming header sends different token 'tampered_token'
+        $response = $this->withHeaders([
+            'X-Signature'   => $signature,
+            'X-Timestamp'   => $timestamp,
+            'Authorization' => 'Bearer tampered_token',
+            'Content-Type'  => 'application/json',
+        ])->postJson('/api/webhooks/singapay/transaction', $payload);
+
+        $response->assertStatus(401);
+        $response->assertJson(['status' => 'error', 'message' => 'Invalid signature']);
+    }
+
     // ==========================================
     // 5. IDEMPOTENCY & STATE MACHINE TESTS
     // ==========================================
@@ -924,6 +1120,189 @@ class SingaPayIntegrationTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJson(['status' => 'error', 'message' => 'Transaction amount mismatch']);
+
+        $payment->refresh();
+        $this->assertEquals(PaymentState::STATUS_PENDING, $payment->status);
+    }
+
+    public function test_webhook_paid_followed_by_failed_remains_sukses(): void
+    {
+        $service = Service::factory()->create(['idtenant' => $this->tenant->id, 'harga' => 60000]);
+        $schedule = Schedule::factory()->create([
+            'idtenant'  => $this->tenant->id,
+            'idlayanan' => $service->id,
+            'tanggal'   => now()->addDay()->toDateString(),
+            'jam_mulai' => '19:00:00',
+        ]);
+
+        $payment = Payment::create([
+            'idtenant'       => $this->tenant->id,
+            'tipe'           => PaymentState::TIPE_BOOKING,
+            'jumlah'         => 60000,
+            'status'         => PaymentState::STATUS_PENDING,
+            'metode'         => PaymentState::METODE_SINGAPAY,
+            'provider'       => 'singapay',
+            'order_id'       => 'BKG-PAID-THEN-FAIL',
+            'expired_at'     => now()->addMinutes(15),
+            'nama_pembayar'  => 'Pelanggan PaidThenFail',
+            'email_pembayar' => 'paidfail@test.com',
+            'hp_pembayar'    => '08123456789',
+        ]);
+
+        $booking = Booking::create([
+            'idtenant'       => $this->tenant->id,
+            'idlayanan'      => $service->id,
+            'idschedule'     => $schedule->id,
+            'idpayment'      => $payment->id,
+            'namapelanggan'  => 'Pelanggan PaidThenFail',
+            'nomorhp'        => '08123456789',
+            'email'          => 'paidfail@test.com',
+            'tanggalbooking' => $schedule->tanggal,
+            'jam'            => '19:00:00',
+            'status'         => 'pending',
+            'booking_code'   => Booking::generateBookingCode(),
+        ]);
+
+        // 1. Paid webhook arrives
+        $resPaid = $this->postSingaPayWebhook(
+            '/api/webhooks/singapay/transaction',
+            $this->makeWebhookPayload($payment->order_id, 60000, 'paid')
+        );
+        $resPaid->assertStatus(200);
+
+        $payment->refresh();
+        $booking->refresh();
+        $this->assertEquals(PaymentState::STATUS_SUKSES, $payment->status);
+        $this->assertEquals('paid', $booking->status);
+
+        // 2. Delayed failed webhook arrives
+        $resFail = $this->postSingaPayWebhook(
+            '/api/webhooks/singapay/transaction',
+            $this->makeWebhookPayload($payment->order_id, 60000, 'failed')
+        );
+        $resFail->assertStatus(200);
+
+        $payment->refresh();
+        $booking->refresh();
+        // Payment and booking MUST remain sukses / paid
+        $this->assertEquals(PaymentState::STATUS_SUKSES, $payment->status);
+        $this->assertEquals('paid', $booking->status);
+    }
+
+    public function test_multi_slot_booking_does_not_affect_unrelated_bookings(): void
+    {
+        $service = Service::factory()->create(['idtenant' => $this->tenant->id, 'harga' => 50000]);
+        $scheduleA = Schedule::factory()->create([
+            'idtenant'  => $this->tenant->id,
+            'idlayanan' => $service->id,
+            'tanggal'   => now()->addDay()->toDateString(),
+            'jam_mulai' => '09:00:00',
+        ]);
+        $scheduleB = Schedule::factory()->create([
+            'idtenant'  => $this->tenant->id,
+            'idlayanan' => $service->id,
+            'tanggal'   => now()->addDay()->toDateString(),
+            'jam_mulai' => '10:00:00',
+        ]);
+
+        // Payment A (being paid)
+        $paymentA = Payment::create([
+            'idtenant'       => $this->tenant->id,
+            'tipe'           => PaymentState::TIPE_BOOKING,
+            'jumlah'         => 50000,
+            'status'         => PaymentState::STATUS_PENDING,
+            'metode'         => PaymentState::METODE_SINGAPAY,
+            'provider'       => 'singapay',
+            'order_id'       => 'BKG-UNRELATED-PAY-A',
+            'expired_at'     => now()->addMinutes(15),
+            'nama_pembayar'  => 'User A',
+            'email_pembayar' => 'a@test.com',
+            'hp_pembayar'    => '08123456789',
+        ]);
+        $bookingA = Booking::create([
+            'idtenant'       => $this->tenant->id,
+            'idlayanan'      => $service->id,
+            'idschedule'     => $scheduleA->id,
+            'idpayment'      => $paymentA->id,
+            'namapelanggan'  => 'User A',
+            'nomorhp'        => '08123456789',
+            'email'          => 'a@test.com',
+            'tanggalbooking' => $scheduleA->tanggal,
+            'jam'            => '09:00:00',
+            'status'         => 'pending',
+            'booking_code'   => Booking::generateBookingCode(),
+        ]);
+
+        // Payment B (unrelated pending booking)
+        $paymentB = Payment::create([
+            'idtenant'       => $this->tenant->id,
+            'tipe'           => PaymentState::TIPE_BOOKING,
+            'jumlah'         => 50000,
+            'status'         => PaymentState::STATUS_PENDING,
+            'metode'         => PaymentState::METODE_SINGAPAY,
+            'provider'       => 'singapay',
+            'order_id'       => 'BKG-UNRELATED-PAY-B',
+            'expired_at'     => now()->addMinutes(15),
+            'nama_pembayar'  => 'User B',
+            'email_pembayar' => 'b@test.com',
+            'hp_pembayar'    => '08123456789',
+        ]);
+        $bookingB = Booking::create([
+            'idtenant'       => $this->tenant->id,
+            'idlayanan'      => $service->id,
+            'idschedule'     => $scheduleB->id,
+            'idpayment'      => $paymentB->id,
+            'namapelanggan'  => 'User B',
+            'nomorhp'        => '08123456789',
+            'email'          => 'b@test.com',
+            'tanggalbooking' => $scheduleB->tanggal,
+            'jam'            => '10:00:00',
+            'status'         => 'pending',
+            'booking_code'   => Booking::generateBookingCode(),
+        ]);
+
+        $res = $this->postSingaPayWebhook(
+            '/api/webhooks/singapay/transaction',
+            $this->makeWebhookPayload($paymentA->order_id, 50000, 'paid')
+        );
+        $res->assertStatus(200);
+
+        $bookingA->refresh();
+        $bookingB->refresh();
+        $paymentB->refresh();
+
+        // Booking A must be paid
+        $this->assertEquals('paid', $bookingA->status);
+
+        // Unrelated Booking B and Payment B MUST remain pending!
+        $this->assertEquals('pending', $bookingB->status);
+        $this->assertEquals(PaymentState::STATUS_PENDING, $paymentB->status);
+    }
+
+    public function test_webhook_currency_mismatch_rejected(): void
+    {
+        $payment = Payment::create([
+            'idtenant'       => $this->tenant->id,
+            'tipe'           => PaymentState::TIPE_BOOKING,
+            'jumlah'         => 100000,
+            'status'         => PaymentState::STATUS_PENDING,
+            'metode'         => PaymentState::METODE_SINGAPAY,
+            'provider'       => 'singapay',
+            'order_id'       => 'BKG-CURRENCY-MISMATCH',
+            'expired_at'     => now()->addMinutes(15),
+            'nama_pembayar'  => 'Currency Test',
+            'email_pembayar' => 'curr@test.com',
+            'hp_pembayar'    => '08123456789',
+        ]);
+
+        $payload = $this->makeWebhookPayload($payment->order_id, 100000, 'paid');
+        // Manipulate currency to non-IDR
+        $payload['data']['transaction']['amount']['currency'] = 'USD';
+
+        $response = $this->postSingaPayWebhook('/api/webhooks/singapay/transaction', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJson(['status' => 'error', 'message' => 'Transaction currency mismatch']);
 
         $payment->refresh();
         $this->assertEquals(PaymentState::STATUS_PENDING, $payment->status);
