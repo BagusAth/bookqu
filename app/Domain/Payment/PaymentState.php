@@ -13,6 +13,7 @@ class PaymentState
     public const TIPE_BOOKING      = 'booking';
     public const TIPE_SUBSCRIPTION = 'subscription';
 
+    public const METODE_SINGAPAY = 'singapay';
     public const METODE_MIDTRANS = 'midtrans';
     public const METODE_GRATIS   = 'gratis';
     public const METODE_CASH     = 'cash';
@@ -90,6 +91,31 @@ class PaymentState
 
         if ($transactionStatus === 'pending') {
             return self::STATUS_PENDING;
+        }
+
+        return 'unknown';
+    }
+
+    /**
+     * Map external SingaPay transaction status to BookQu payment status.
+     *
+     * @param string|null $singaPayStatus (e.g. 'paid', 'pending', 'expired', 'failed', 'cancelled')
+     * @return string One of 'sukses', 'pending', 'gagal', or 'unknown'
+     */
+    public static function mapSingaPayStatus(?string $singaPayStatus): string
+    {
+        $status = strtolower(trim((string) $singaPayStatus));
+
+        if (in_array($status, ['paid', 'success', 'settlement'], true)) {
+            return self::STATUS_SUKSES;
+        }
+
+        if (in_array($status, ['pending', 'open'], true)) {
+            return self::STATUS_PENDING;
+        }
+
+        if (in_array($status, ['failed', 'expired', 'cancel', 'cancelled', 'deny', 'close', 'closed'], true)) {
+            return self::STATUS_GAGAL;
         }
 
         return 'unknown';

@@ -1,6 +1,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
     const snapToken = @json($payment->snap_token ?? null);
+    const paymentUrl = @json($payment->payment_url ?? null);
     const callbackUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.callback"), [$tenant->slug, $payment]) }}';
     const checkStatusUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.check-status"), [$tenant->slug, $payment]) }}';
     const csrfToken = '{{ csrf_token() }}';
@@ -57,13 +58,18 @@
     }
 
     function openSnapPayment() {
+        if (paymentUrl) {
+            window.location.href = paymentUrl;
+            return;
+        }
+
         if (!snapToken) {
             showInlineFeedback('Token pembayaran tidak tersedia atau telah kadaluarsa.', 'error');
             return;
         }
 
         if (typeof snap === 'undefined') {
-            showInlineFeedback('Sistem pembayaran (Midtrans Snap) belum termuat. Periksa koneksi internet Anda lalu coba lagi.', 'error');
+            showInlineFeedback('Sistem pembayaran belum termuat. Periksa koneksi internet Anda lalu coba lagi.', 'error');
             return;
         }
 

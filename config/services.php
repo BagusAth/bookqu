@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'singapay' => [
+        'base_url' => env('SINGAPAY_BASE_URL', 'https://payment-b2b.singapay.id'),
+        'client_id' => env('SINGAPAY_CLIENT_ID'),
+        'client_secret' => env('SINGAPAY_CLIENT_SECRET'),
+        'api_key' => env('SINGAPAY_API_KEY'),
+        'account_id' => env('SINGAPAY_ACCOUNT_ID'),
+        'expiry_minutes' => (int) env('SINGAPAY_PAYMENT_EXPIRY_MINUTES', 15),
+        'webhook_tolerance_seconds' => (int) env('SINGAPAY_WEBHOOK_TOLERANCE_SECONDS', 300),
+        'customer_pays_fee' => (bool) env('SINGAPAY_CUSTOMER_PAYS_FEE', false),
+    ],
+
 ];

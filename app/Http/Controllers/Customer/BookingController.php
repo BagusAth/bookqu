@@ -785,6 +785,7 @@ class BookingController extends Controller
             'tenant' => $tenant,
             'payment' => $payment,
             'paymentState' => 'pending',
+            'paymentUrl' => $payment->payment_url,
             'snapToken' => $payment->snap_token,
             'clientKey' => config('midtrans.client_key'),
             'snapUrl' => config('midtrans.snap_url'),
@@ -855,6 +856,31 @@ class BookingController extends Controller
                 'status' => 'gagal',
                 'is_expired' => true,
                 'message' => 'Waktu pembayaran telah habis. Silakan buat reservasi baru.',
+            ]);
+        }
+
+        // Provider SingaPay: konfirmasi melalui verified webhook
+        if ($payment->provider === 'singapay' || $payment->metode === 'singapay') {
+            $payment->refresh();
+
+            if ($payment->status === 'sukses') {
+                return response()->json([
+                    'status' => 'sukses',
+                    'message' => 'Pembayaran berhasil dikonfirmasi!',
+                    'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
+                ]);
+            }
+
+            if ($payment->status === 'gagal') {
+                return response()->json([
+                    'status' => 'gagal',
+                    'message' => 'Pembayaran gagal atau dibatalkan.',
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'pending',
+                'message' => 'Menunggu konfirmasi pembayaran dari SingaPay.',
             ]);
         }
 
