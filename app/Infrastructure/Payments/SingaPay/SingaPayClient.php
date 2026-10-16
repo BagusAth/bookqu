@@ -61,11 +61,14 @@ class SingaPayClient
         $cacheKey = 'singapay_b2b_jwt_' . md5($this->clientId . ($this->apiKey ?? ''));
 
         return Cache::remember($cacheKey, now()->addMinutes(45), function () {
-            $basicAuth = base64_encode("{$this->clientId}:{$this->clientSecret}");
+            $currentDate = \Carbon\Carbon::now('Asia/Jakarta')->format('Ymd');
+            $payload     = "{$this->clientId}_{$this->clientSecret}_{$currentDate}";
+            $signature   = hash_hmac('sha512', $payload, $this->clientSecret);
 
             $headers = [
-                'Authorization' => "Basic {$basicAuth}",
                 'X-PARTNER-ID'  => (string) $this->apiKey,
+                'X-CLIENT-ID'   => (string) $this->clientId,
+                'X-Signature'   => $signature,
                 'Content-Type'  => 'application/json',
                 'Accept'        => 'application/json',
             ];
