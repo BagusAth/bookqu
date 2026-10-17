@@ -3,7 +3,7 @@
 @section('title', 'Pilih Waktu')
 @section('current_step', 3)
 @section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug))
-@section('back_label', 'Pilih Tanggal')
+@section('back_label', 'Kembali ke Pilih Tanggal')
 
 @section('content')
 <div
@@ -257,7 +257,7 @@
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </template>
-                    <span x-text="isSubmitting ? 'Memproses...' : (canSubmit ? 'Lanjut ke Data Pemesan →' : 'Pilih minimal 1 waktu')"></span>
+                    <span x-text="isSubmitting ? 'Memproses...' : (canSubmit ? 'Lanjut ke Data Pemesan →' : 'Pilih minimal 1 waktu')">Lanjut ke Data Pemesan</span>
                 </button>
             </div>
         </aside>

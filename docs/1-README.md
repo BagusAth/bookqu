@@ -1,267 +1,491 @@
-# BookQu Documentation
+# BookQu Documentation Map
 
 > **Document Status:** Active
-> **Purpose:** Documentation navigation and source-of-truth map
-> **Last Updated:** 2026-09-26
+> **Purpose:** Documentation map and source-of-truth guide
+> **Version:** 1.0
+> **Last Updated:** 2026-09-30
+>
+> This document defines the structure, responsibility, authority, and recommended reading flow of the BookQu documentation system.
+>
+> It does not define product behavior, detailed system implementation, operational procedures, or architectural decisions itself.
 
 ---
 
 # 1. Purpose
 
-This directory contains the authoritative documentation used to understand, develop, maintain, and evolve BookQu.
+The BookQu documentation system exists to provide a clear and maintainable source of truth for development and future system evolution.
 
-The documentation is intentionally separated by responsibility.
+The documentation is intentionally separated by responsibility so that each document answers a specific question.
 
-Each document answers a different question.
+The documentation system should allow a developer or AI agent to determine:
 
-Do not use one document as a substitute for another.
+```text
+What is BookQu?
+        ↓
+What must BookQu do?
+        ↓
+How should BookQu be architected?
+        ↓
+How does the current system actually work?
+        ↓
+How should changes be performed?
+        ↓
+How is the system operated?
+        ↓
+What is currently implemented?
+        ↓
+Why were important architectural decisions made?
+```
+
+Each question has a primary documentation authority.
 
 ---
 
 # 2. Documentation Structure
 
+The active documentation structure is:
+
 ```text
 bookqu/
 │
-├── AGENTS.md
+├── AGENT.md
+│   └── AI agent behavior and development rules
 │
 └── docs/
-    ├── README.md
-    ├── PRODUCT.md
-    ├── REQUIREMENTS.md
-    ├── ARCHITECTURE.md
-    ├── DEVELOPMENT.md
-    ├── TRACKER.md
+    ├── 1-README.md
+    │   └── Documentation map and source-of-truth guide
     │
-    ├── adr/
-    │   └── ...
+    ├── 2-PRODUCT.md
+    │   └── Product definition
     │
-    └── archive/
-        └── ...
+    ├── 3-REQUIREMENT.md
+    │   └── System and behavioral requirements
+    │
+    ├── 4-ARCHITECTURE.md
+    │   └── Architectural principles and target structure
+    │
+    ├── 5-DEVELOPMENT.md
+    │   └── Development and change workflow
+    │
+    ├── 6-TRACKER.md
+    │   └── Current implementation and project status
+    │
+    ├── 7-SYSTEM-DESIGN.md
+    │   └── Current system design and implementation model
+    │
+    ├── 8-OPERATIONS.md
+    │   └── Runtime, operational, and verification guidance
+    │
+    └── adr/
+        ├── README.md
+        └── ADR-*.md
 ```
+
+The structure is intentionally small.
+
+New documentation should only be introduced when the information cannot be maintained clearly within an existing document.
 
 ---
 
-# 3. Documentation Authority
+# 3. Documentation Authority Model
 
-The active documentation hierarchy is:
+BookQu uses a responsibility-based authority model.
 
-```text
-AGENTS.md
-    ↓
-PRODUCT.md
-    ↓
-REQUIREMENTS.md
-    ↓
-ARCHITECTURE.md
-    ↓
-DEVELOPMENT.md
-    ↓
-TRACKER.md
-```
+There is no single document that is authoritative for every aspect of the system.
 
-Each document has a different responsibility.
+Each document is authoritative within its own scope.
+
+| Document                  | Authority               | Primary Question                                  |
+| ------------------------- | ----------------------- | ------------------------------------------------- |
+| `AGENT.md`                | AI agent behavior       | How must an AI agent work?                        |
+| `docs/1-README.md`        | Documentation map       | Where should information be found?                |
+| `docs/2-PRODUCT.md`       | Product definition      | What is BookQu?                                   |
+| `docs/3-REQUIREMENT.md`   | Required behavior       | What must BookQu do?                              |
+| `docs/4-ARCHITECTURE.md`  | Architectural direction | How should BookQu be structured?                  |
+| `docs/5-DEVELOPMENT.md`   | Development workflow    | How should changes be performed?                  |
+| `docs/6-TRACKER.md`       | Current project status  | What is currently implemented or incomplete?      |
+| `docs/7-SYSTEM-DESIGN.md` | Current system design   | How does the current system actually work?        |
+| `docs/8-OPERATIONS.md`    | Operational guidance    | How is the system operated and verified?          |
+| `docs/adr/`               | Architectural rationale | Why was an important architectural decision made? |
+
+This separation prevents one document from becoming a conflicting mixture of product, architecture, implementation, and operational information.
 
 ---
 
-# 4. AGENTS.md
+# 4. AGENT.md
 
 Location:
 
 ```text
-/AGENTS.md
+/AGENT.md
 ```
 
-Question answered:
+Primary responsibility:
 
-> **How must an AI agent work on BookQu?**
+> Define how AI agents must operate when working on BookQu.
 
-Contains:
+`AGENT.md` contains rules concerning:
 
-* AI agent rules;
-* mandatory reading order;
+* repository inspection;
+* documentation reading;
+* requirement identification;
 * scope control;
-* architecture rules;
-* security rules;
-* tenant isolation rules;
-* coding boundaries;
-* testing expectations;
+* tenant isolation;
+* security;
+* booking safety;
+* payment safety;
+* implementation discipline;
+* testing;
 * documentation synchronization;
-* agent behavior when conflicts are discovered.
+* conflict handling;
+* change safety.
 
-This is the first document an AI agent should read.
+`AGENT.md` does not replace the other documentation.
+
+It defines agent behavior rather than becoming the complete source of truth for BookQu.
+
+When an agent needs information about the product or system, it should consult the appropriate documentation defined in this document.
 
 ---
 
-# 5. PRODUCT.md
+# 5. 2-PRODUCT.md
 
 Location:
 
 ```text
-/docs/PRODUCT.md
+/docs/2-PRODUCT.md
 ```
 
-Question answered:
+Primary responsibility:
 
-> **What is BookQu?**
+> Define what BookQu is as a product.
 
-Defines:
+It contains product-level information such as:
 
 * product identity;
-* product goals;
+* product purpose;
 * target users;
-* domain concepts;
+* product concepts;
 * canonical terminology;
-* core business loop;
-* product scope;
+* core product loop;
+* product capabilities;
 * product boundaries;
-* core operations;
-* supporting capabilities;
-* platform capabilities;
-* future capabilities.
+* product scope.
 
-This document defines the current conceptual identity of BookQu.
+`2-PRODUCT.md` should answer:
 
-It does not define detailed implementation.
+> What is BookQu and what belongs to the product?
+
+It should not become a detailed technical implementation document.
+
+It should not depend on specific:
+
+```text
+classes
+controllers
+database migrations
+cache keys
+service wiring
+internal helper methods
+deployment details
+```
+
+unless those details are directly relevant to the product definition.
 
 ---
 
-# 6. REQUIREMENTS.md
+# 6. 3-REQUIREMENT.md
 
 Location:
 
 ```text
-/docs/REQUIREMENTS.md
+/docs/3-REQUIREMENT.md
 ```
 
-Question answered:
+Primary responsibility:
 
-> **What must BookQu do?**
+> Define what the BookQu system must do.
 
-Defines:
+It contains:
 
 * functional requirements;
 * business rules;
-* authorization requirements;
+* non-functional requirements;
 * security requirements;
-* performance requirements;
-* reliability requirements;
-* scalability requirements;
-* usability requirements;
+* authorization requirements;
 * acceptance criteria;
 * requirement identifiers;
-* requirement traceability.
+* requirement status;
+* traceability.
 
-Every meaningful product behavior should have a corresponding requirement.
+`3-REQUIREMENT.md` should answer:
 
-Examples:
+> What behavior is required from BookQu?
+
+Requirements should describe behavior and business expectations rather than implementation structure.
+
+For example, a requirement should describe:
 
 ```text
-FR-BOOKING-001
-FR-SCHEDULE-001
-FR-PAYMENT-001
-FR-SUB-001
+A customer must not be able to create a booking for an occupied slot.
 ```
 
-This document is the primary behavioral authority.
+rather than making the requirement depend on a specific implementation such as:
+
+```text
+BookingRules.php
+CreateBooking.php
+SomeController.php
+```
+
+Implementation can change while the requirement remains valid.
 
 ---
 
-# 7. ARCHITECTURE.md
+# 7. 4-ARCHITECTURE.md
 
 Location:
 
 ```text
-/docs/ARCHITECTURE.md
+/docs/4-ARCHITECTURE.md
 ```
 
-Question answered:
+Primary responsibility:
 
-> **How should BookQu be built?**
+> Define how BookQu should be structured.
 
-Defines:
+This document contains:
 
-* application architecture;
+* architectural principles;
+* application boundaries;
 * domain boundaries;
 * layer responsibilities;
-* folder structure;
 * tenant architecture;
 * booking architecture;
 * payment architecture;
-* database architecture;
-* frontend architecture;
+* schedule architecture;
+* infrastructure boundaries;
 * testing architecture;
-* coding conventions;
-* refactoring principles;
-* target architecture.
+* future-ready structural principles.
 
-This document intentionally distinguishes current architecture from target architecture.
+`4-ARCHITECTURE.md` should answer:
 
-Existing legacy code is not automatically considered the target architecture.
+> How should BookQu be built and evolved?
+
+The Architecture document should primarily describe stable architectural rules and target structure.
+
+It should not become a historical record of previous refactoring work.
+
+The completed RF-00 through RF-09 refactor is already part of the current implementation. Its execution history is preserved by Git history rather than by active refactor documentation.
+
+Architecture statements should therefore focus on durable responsibilities and boundaries rather than describing the historical sequence of implementation changes.
+
+For example:
+
+```text
+Business operations should be handled through an appropriate
+application boundary rather than becoming concentrated in HTTP
+controllers.
+```
+
+is a durable architectural rule.
 
 ---
 
-# 8. DEVELOPMENT.md
+# 8. 5-DEVELOPMENT.md
 
 Location:
 
 ```text
-/docs/DEVELOPMENT.md
+/docs/5-DEVELOPMENT.md
 ```
 
-Question answered:
+Primary responsibility:
 
-> **How should development work be performed?**
+> Define how development changes are performed.
 
-Defines:
+It governs topics such as:
 
-* task workflow;
-* feature workflow;
-* bug-fix workflow;
-* refactoring workflow;
-* product-change workflow;
-* testing workflow;
-* scope-control rules;
-* Git workflow;
+* task classification;
+* requirement-first development;
+* repository inspection;
+* implementation planning;
+* coding rules;
+* testing;
+* debugging;
+* refactoring;
+* database changes;
+* security considerations;
+* tenant safety;
+* booking safety;
+* payment safety;
+* documentation updates;
 * definition of done;
-* AI-assisted development workflow;
-* documentation synchronization.
+* AI-assisted development workflow.
 
-This document defines the operational development process.
+`5-DEVELOPMENT.md` should answer:
+
+> How should a developer or AI agent safely make changes to BookQu?
+
+It should not become:
+
+```text
+Product Specification
+System Design
+Operational Runbook
+Historical Refactor Log
+```
+
+Those responsibilities belong elsewhere.
 
 ---
 
-# 9. TRACKER.md
+# 9. 6-TRACKER.md
 
 Location:
 
 ```text
-/docs/TRACKER.md
+/docs/6-TRACKER.md
 ```
 
-Question answered:
+Primary responsibility:
 
-> **What is the current implementation state?**
+> Track the current implementation and project status.
 
-Tracks:
+It may contain:
 
-* requirement;
-* feature;
 * implementation status;
-* testing status;
+* requirement status;
+* verification status;
 * architecture status;
 * technical debt;
 * blockers;
-* refactoring queue;
-* verification queue.
+* remaining work;
+* testing status;
+* current priorities.
+
+`6-TRACKER.md` should answer:
+
+> What is currently implemented, incomplete, under verification, or requiring future work?
 
 The tracker does not define product behavior.
 
-It only tracks implementation against the accepted requirements.
+The tracker does not define the architectural rules.
+
+It records the current status of implementation against the accepted product and technical baseline.
+
+Historical completion of RF-00 through RF-09 may be referenced when useful for current status, but the tracker should not become a reconstruction of the refactor execution history.
 
 ---
 
-# 10. ADR Directory
+# 10. 7-SYSTEM-DESIGN.md
+
+Location:
+
+```text
+/docs/7-SYSTEM-DESIGN.md
+```
+
+Primary responsibility:
+
+> Describe how the current BookQu system actually works.
+
+This document is the bridge between architectural principles and implementation.
+
+It should contain current system knowledge such as:
+
+* current system model;
+* current component responsibilities;
+* major system flows;
+* domain interactions;
+* state transitions;
+* system invariants;
+* security boundaries;
+* data flow;
+* current implementation mapping;
+* integration boundaries;
+* important dependencies;
+* current extension points.
+
+`7-SYSTEM-DESIGN.md` should answer:
+
+> How does the current system actually operate internally?
+
+The distinction between Architecture and System Design is:
+
+```text
+4-ARCHITECTURE.md
+→ How BookQu should be structured.
+
+7-SYSTEM-DESIGN.md
+→ How BookQu currently works.
+```
+
+The System Design document should be current-oriented.
+
+It should not become a history of RF-00 through RF-09.
+
+It should also avoid unnecessary coupling to implementation details that are likely to change.
+
+Prefer:
+
+```text
+Responsibility
++
+Current implementation
++
+Invariant
++
+Dependency
++
+Extension point
+```
+
+over a simple inventory of every class and file.
+
+---
+
+# 11. 8-OPERATIONS.md
+
+Location:
+
+```text
+/docs/8-OPERATIONS.md
+```
+
+Primary responsibility:
+
+> Describe how the BookQu system is run, monitored, verified, and operated.
+
+It should contain operational knowledge such as:
+
+* runtime prerequisites;
+* environment requirements;
+* database requirements;
+* cache requirements;
+* queue/background processing requirements;
+* scheduler requirements;
+* payment integration requirements;
+* storage requirements;
+* production verification;
+* health checks;
+* smoke checks;
+* operational troubleshooting;
+* backup and recovery expectations.
+
+`8-OPERATIONS.md` should answer:
+
+> How do we run and verify BookQu safely?
+
+Operational procedures should not be scattered across architecture or development documentation.
+
+Deployment-specific configuration remains governed by the actual deployment configuration in the repository.
+
+The Operations document explains the operational requirements and procedures; it does not replace deployment configuration.
+
+---
+
+# 12. adr/
 
 Location:
 
@@ -269,170 +493,354 @@ Location:
 /docs/adr/
 ```
 
-Question answered:
+Primary responsibility:
 
-> **Why was an important technical decision made?**
+> Record the rationale behind important architectural decisions.
 
-Architecture Decision Records should be created for significant long-term decisions.
-
-Examples:
+The ADR system should contain:
 
 ```text
-001-multi-tenancy-strategy.md
-002-public-tenant-url-strategy.md
-003-booking-domain-structure.md
-004-payment-provider-boundary.md
+docs/adr/
+├── README.md
+└── ADR-*.md
 ```
 
-An ADR should normally contain:
+An ADR should explain:
 
 ```text
 Context
 Decision
-Alternatives Considered
+Rationale
 Consequences
+Status
 ```
 
-Do not create an ADR for trivial implementation details.
+ADR should be used for significant, long-lived architectural decisions.
+
+Examples may include:
+
+* multi-tenancy strategy;
+* booking concurrency model;
+* payment state separation;
+* customer management token scope;
+* external integration boundaries;
+* important architectural boundaries.
+
+ADR should not become a collection of minor implementation notes.
+
+The Architecture document defines the architectural rule.
+
+The ADR explains why that rule was adopted.
 
 ---
 
-# 11. Archive Directory
+# 13. Current, Target, and Historical Information
 
-Location:
+BookQu separates three kinds of information.
 
-```text
-/docs/archive/
-```
+## 13.1 Current
 
-Contains historical documentation that is no longer authoritative.
+Current information describes how the product and system exist now.
 
 Examples:
 
 ```text
-SRS-v1.md
-MVP-scope-v1.md
-development-tracker-v1.md
-original-requirements.md
+Current product behavior
+Current requirements
+Current system behavior
+Current implementation model
+Current operational requirements
+Current project status
+Current system invariants
 ```
 
-Historical files are preserved because they explain how BookQu evolved.
-
-However:
-
-> Historical documentation must not be treated as the current product specification.
-
----
-
-# 12. Which Document Should I Read?
-
-## "What is BookQu?"
-
-Read:
+Primary authorities include:
 
 ```text
-PRODUCT.md
+2-PRODUCT.md
+3-REQUIREMENT.md
+6-TRACKER.md
+7-SYSTEM-DESIGN.md
+8-OPERATIONS.md
 ```
 
 ---
 
-## "Who uses BookQu?"
+## 13.2 Target
 
-Read:
+Target information describes how the system should be structured and evolved.
+
+Examples:
 
 ```text
-PRODUCT.md
+Architectural principles
+Layer boundaries
+Responsibility boundaries
+Future-ready design principles
+Extension rules
+```
+
+Primary authorities include:
+
+```text
+4-ARCHITECTURE.md
+ADR
+```
+
+Target architecture must not be presented as already implemented unless the current implementation actually supports it.
+
+---
+
+## 13.3 Historical
+
+Historical information describes how BookQu evolved.
+
+Examples include:
+
+```text
+Pre-refactor architecture
+Old implementation baselines
+RF-00 through RF-09 execution
+Previous architecture snapshots
+Previous implementation decisions
+```
+
+Historical evolution is preserved through:
+
+```text
+Git commits
+Pull requests
+Repository history
+Release history where applicable
+```
+
+Historical material must not override current documentation.
+
+The active documentation system is intentionally focused on the current system and future development rather than preserving the execution history of completed refactors.
+
+---
+
+# 14. Documentation vs Source Code vs Tests
+
+The documentation system, implementation, and tests have different roles.
+
+```text
+Documentation
+→ Defines meaning, requirements, structure, and procedures.
+
+Source Code
+→ Implements the system.
+
+Tests
+→ Provide evidence of behavior and correctness.
+```
+
+The intended relationship is:
+
+```text
+PRODUCT
+    ↓
+REQUIREMENT
+    ↓
+ARCHITECTURE
+    ↓
+SYSTEM DESIGN
+    ↓
+IMPLEMENTATION
+    ↓
+TESTS
+```
+
+Development workflow governs how changes move through this model:
+
+```text
+TASK
+    ↓
+REQUIREMENT
+    ↓
+DESIGN
+    ↓
+IMPLEMENTATION
+    ↓
+TEST
+    ↓
+DOCUMENTATION
+    ↓
+TRACKER
+```
+
+Operations provides the runtime dimension:
+
+```text
+SYSTEM DESIGN
+      ↓
+RUNTIME
+      ↓
+OPERATIONS
+      ↓
+VERIFICATION
+```
+
+ADRs provide the decision rationale dimension:
+
+```text
+ARCHITECTURE
+      ↓
+ARCHITECTURAL DECISION
+      ↓
+ADR
 ```
 
 ---
 
-## "What does this feature need to do?"
+# 15. Which Document Should I Read?
+
+## What is BookQu?
 
 Read:
 
 ```text
-REQUIREMENTS.md
+docs/2-PRODUCT.md
 ```
 
 ---
 
-## "What business rules apply?"
+## Is this capability part of the product?
 
 Read:
 
 ```text
-REQUIREMENTS.md
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
 ```
 
 ---
 
-## "Where should this code be placed?"
+## What must this feature do?
 
 Read:
 
 ```text
-ARCHITECTURE.md
+docs/3-REQUIREMENT.md
 ```
 
 ---
 
-## "How should this feature be implemented?"
+## What business rules apply?
 
 Read:
 
 ```text
-ARCHITECTURE.md
-DEVELOPMENT.md
+docs/3-REQUIREMENT.md
 ```
 
 ---
 
-## "What is currently being worked on?"
+## Where should this responsibility belong?
 
 Read:
 
 ```text
-TRACKER.md
+docs/4-ARCHITECTURE.md
+docs/7-SYSTEM-DESIGN.md
 ```
 
 ---
 
-## "Why does the architecture work this way?"
+## How does this subsystem currently work?
 
 Read:
 
 ```text
+docs/7-SYSTEM-DESIGN.md
+```
+
+and then inspect the relevant implementation and tests.
+
+---
+
+## How should this change be implemented?
+
+Read:
+
+```text
+AGENT.md
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
+docs/4-ARCHITECTURE.md
+docs/5-DEVELOPMENT.md
+docs/7-SYSTEM-DESIGN.md
+```
+
+Only read the portions relevant to the task.
+
+---
+
+## How is the system run or verified operationally?
+
+Read:
+
+```text
+docs/8-OPERATIONS.md
+```
+
+---
+
+## Why does this architectural decision exist?
+
+Read:
+
+```text
+docs/4-ARCHITECTURE.md
 docs/adr/
 ```
 
 ---
 
-## "How did BookQu work previously?"
+## What is currently implemented or incomplete?
 
 Read:
 
 ```text
-docs/archive/
+docs/6-TRACKER.md
 ```
 
 ---
 
-# 13. Recommended Reading by Task
+## How did BookQu evolve historically?
+
+Use:
+
+```text
+Git history
+```
+
+Do not use historical material as the current system authority.
+
+---
+
+# 16. Recommended Reading by Task
 
 ## New Feature
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-PRODUCT.md
+docs/2-PRODUCT.md
     ↓
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     ↓
-DEVELOPMENT.md
+docs/7-SYSTEM-DESIGN.md
     ↓
-TRACKER.md
+docs/5-DEVELOPMENT.md
+    ↓
+Implementation
+    ↓
+Tests
+    ↓
+docs/6-TRACKER.md
 ```
 
 ---
@@ -440,51 +848,65 @@ TRACKER.md
 ## Bug Fix
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
-Relevant Architecture
+docs/7-SYSTEM-DESIGN.md
     ↓
-Existing Implementation
+Current Implementation
     ↓
 Relevant Tests
     ↓
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
 ```
+
+Consult `docs/4-ARCHITECTURE.md` when the bug involves responsibility boundaries or architectural behavior.
 
 ---
 
 ## Refactoring
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
+    ↓
+docs/7-SYSTEM-DESIGN.md
     ↓
 Relevant Tests
     ↓
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
+    ↓
+docs/6-TRACKER.md
 ```
+
+A refactor should preserve accepted product behavior unless the task explicitly changes that behavior.
 
 ---
 
 ## Product Change
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-PRODUCT.md
+docs/2-PRODUCT.md
     ↓
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     ↓
-DEVELOPMENT.md
+docs/7-SYSTEM-DESIGN.md
     ↓
-TRACKER.md
+docs/5-DEVELOPMENT.md
+    ↓
+Implementation
+    ↓
+Tests
+    ↓
+docs/6-TRACKER.md
 ```
 
 ---
@@ -492,235 +914,440 @@ TRACKER.md
 ## Architectural Decision
 
 ```text
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     ↓
-Relevant ADR
+docs/7-SYSTEM-DESIGN.md
     ↓
-DEVELOPMENT.md
+ADR
+    ↓
+docs/5-DEVELOPMENT.md
+    ↓
+Implementation
 ```
 
 ---
 
-# 14. Source-of-Truth Rules
+## Operational Change
 
-Use the following rules when information conflicts.
+```text
+docs/8-OPERATIONS.md
+    ↓
+docs/7-SYSTEM-DESIGN.md
+    ↓
+Relevant Configuration
+    ↓
+Verification
+    ↓
+docs/6-TRACKER.md
+```
 
-### Product Meaning
+---
+
+# 17. Source-of-Truth Rules
+
+When information conflicts, first identify what kind of information is in conflict.
+
+## Product Meaning
 
 Use:
 
 ```text
-PRODUCT.md
+docs/2-PRODUCT.md
 ```
 
 ---
 
-### Required Behavior
+## Required Behavior
 
 Use:
 
 ```text
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
 ```
 
 ---
 
-### Technical Structure
+## Architectural Direction
 
 Use:
 
 ```text
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
 ```
 
 ---
 
-### Development Process
+## Current System Behavior
 
 Use:
 
 ```text
-DEVELOPMENT.md
+docs/7-SYSTEM-DESIGN.md
 ```
+
+and verify against implementation and tests where necessary.
 
 ---
 
-### Current Implementation Status
+## Development Process
 
 Use:
 
 ```text
-TRACKER.md
+docs/5-DEVELOPMENT.md
 ```
 
 ---
 
-### Historical Context
+## Operational Procedure
 
 Use:
 
 ```text
-archive/
+docs/8-OPERATIONS.md
 ```
 
 ---
 
-### Architectural Rationale
+## Current Project Status
 
 Use:
 
 ```text
-adr/
+docs/6-TRACKER.md
 ```
 
 ---
 
-# 15. Conflict Handling
+## Architectural Rationale
 
-When documents or code disagree:
+Use:
+
+```text
+docs/adr/
+```
+
+---
+
+## Historical Evolution
+
+Use:
+
+```text
+Git history
+```
+
+Historical sources must not override current authoritative documentation.
+
+---
+
+# 18. Conflict Handling
+
+When documentation, code, or tests disagree:
 
 ```text
 Do not silently choose an interpretation.
 ```
 
-First determine the type of conflict:
+First determine the conflict type:
 
 ```text
 Product conflict
 Requirement conflict
 Architecture conflict
+System-design conflict
 Implementation drift
 Test drift
 Documentation drift
+Operational drift
 Legacy behavior
 ```
 
-Then update the appropriate authoritative document before allowing the conflict to become permanent.
+Then identify the correct authority.
+
+A typical resolution flow is:
+
+```text
+Identify intended behavior
+        ↓
+Update the authoritative documentation
+        ↓
+Update implementation when required
+        ↓
+Update tests
+        ↓
+Update tracker
+```
+
+Documentation must not be rewritten merely to hide incorrect implementation.
+
+Likewise, implementation must not be changed merely because an obsolete document contains a different statement.
 
 ---
 
-# 16. Documentation Change Principle
-
-Documentation should be changed when the underlying product or architecture changes.
-
-Do not update documentation merely to make it match incorrect code.
-
-The intended flow is:
-
-```text
-Decision
-    ↓
-Documentation
-    ↓
-Implementation
-    ↓
-Tests
-    ↓
-Tracker
-```
-
-not:
-
-```text
-Code
-    ↓
-Assume code is correct
-    ↓
-Rewrite documentation to match it
-```
-
-unless the code represents an explicitly accepted product change.
-
----
-
-# 17. Documentation Minimalism
+# 19. Documentation Minimalism
 
 Do not create a new documentation file simply because a new topic appears.
 
-First determine whether the topic belongs in an existing document.
+First determine whether it belongs in an existing document.
 
-Use:
+The current system already provides dedicated authorities for:
 
 ```text
-PRODUCT.md
-REQUIREMENTS.md
-ARCHITECTURE.md
-DEVELOPMENT.md
-TRACKER.md
+Product
+Requirements
+Architecture
+Development
+Tracker
+System Design
+Operations
+Architectural Decisions
 ```
 
-before creating a new top-level document.
+A new documentation category should be introduced only when:
 
-Create an ADR when the topic represents a significant architectural decision.
+1. the topic has a distinct long-term responsibility;
+2. the information cannot be maintained clearly in an existing document;
+3. the new document improves source-of-truth clarity rather than creating another layer of duplication.
 
-Create a new documentation category only when the existing documents become genuinely difficult to maintain.
+Do not split documents merely because they are long.
+
+Do not duplicate the same system rule across multiple authorities.
 
 ---
 
-# 18. Agent Documentation Rule
+# 20. Documentation Maintenance Rules
 
-AI agents should prefer reading the smallest relevant portion of the documentation needed for the task.
+Documentation must evolve together with the system, but only the relevant authority should be changed.
 
-For a booking bug, for example:
+Examples:
+
+### Product change
+
+Potentially affects:
 
 ```text
-AGENTS.md
-+
-PRODUCT.md → Booking section
-+
-REQUIREMENTS.md → Booking requirements
-+
-ARCHITECTURE.md → Booking architecture
-+
-DEVELOPMENT.md → Bug-fix workflow
-+
-TRACKER.md → Booking status
+2-PRODUCT.md
+3-REQUIREMENT.md
+4-ARCHITECTURE.md
+7-SYSTEM-DESIGN.md
+6-TRACKER.md
 ```
 
-The agent does not need to reinterpret unrelated modules unless the task affects them.
+only when the change affects those responsibilities.
 
 ---
 
-# 19. Current Development Model
+### Architectural change
 
-BookQu follows:
-
-```text
-PRODUCT
-   ↓
-REQUIREMENTS
-   ↓
-ARCHITECTURE
-   ↓
-DEVELOPMENT PROCESS
-   ↓
-IMPLEMENTATION
-   ↓
-TESTS
-   ↓
-TRACKER
-```
-
-Architecture decisions are recorded through:
+Potentially affects:
 
 ```text
+4-ARCHITECTURE.md
+7-SYSTEM-DESIGN.md
+5-DEVELOPMENT.md
+6-TRACKER.md
 ADR
 ```
 
-Historical context is preserved through:
+only where applicable.
+
+---
+
+### Operational change
+
+Potentially affects:
 
 ```text
-ARCHIVE
+8-OPERATIONS.md
+7-SYSTEM-DESIGN.md
+5-DEVELOPMENT.md
+6-TRACKER.md
+```
+
+only where applicable.
+
+---
+
+### Requirement clarification
+
+Normally affects:
+
+```text
+3-REQUIREMENT.md
+```
+
+and related documentation or implementation when necessary.
+
+Do not modify unrelated documents merely because a change occurred somewhere else in the repository.
+
+---
+
+# 21. Future-Proofing Principle
+
+The documentation system is intended to support future BookQu development without repeatedly restructuring the documentation hierarchy.
+
+The preferred approach is:
+
+```text
+Stable authority
++
+Clear responsibility
++
+Current system documentation
++
+Explicit architectural direction
++
+Decision records
+```
+
+Avoid documentation that depends unnecessarily on:
+
+```text
+temporary class names
+temporary directory structures
+one-time refactor phases
+historical implementation details
+short-lived development tasks
+```
+
+The current system may change.
+
+The documentation structure should not need to change every time a class or implementation detail moves.
+
+---
+
+# 22. Historical Refactor Work
+
+RF-00 through RF-09 represent completed architectural refactor work.
+
+Those work orders are no longer part of the active documentation structure.
+
+The current documentation describes the system after those changes rather than describing how the changes were executed.
+
+Historical refactor information remains available through Git history.
+
+This distinction is intentional:
+
+```text
+Active Documentation
+→ Understand and evolve the current system.
+
+Git History
+→ Understand how the repository evolved.
+```
+
+AI agents should not need to read historical refactor documentation to understand current BookQu behavior or architecture.
+
+Historical investigation should be performed only when the task specifically requires understanding repository evolution.
+
+---
+
+# 23. Final Documentation Model
+
+The complete BookQu documentation model is:
+
+```text
+                         AGENT.md
+                            │
+                    Documentation Rules
+                            │
+                     1-README.md
+                            │
+              Documentation Map / Authority
+                            │
+        ┌───────────────────┼───────────────────┐
+        ↓                   ↓                   ↓
+     PRODUCT           REQUIREMENT         ARCHITECTURE
+        │                   │                   │
+     WHAT IT IS        WHAT IT MUST DO    HOW IT SHOULD
+                                             BE BUILT
+        │                   │                   │
+        └───────────────────┼───────────────────┘
+                            ↓
+                     SYSTEM DESIGN
+                            │
+                    HOW IT CURRENTLY
+                         WORKS
+                            │
+                            ↓
+                      IMPLEMENTATION
+                            │
+                            ↓
+                          TESTS
+                            │
+                            ↓
+                        TRACKER
+                            │
+                  CURRENT PROJECT STATE
+
+
+ARCHITECTURE
+      │
+      ↓
+     ADR
+      │
+WHY THE DECISION EXISTS
+
+
+SYSTEM DESIGN
+      │
+      ↓
+ OPERATIONS
+      │
+HOW THE SYSTEM IS RUN
+AND VERIFIED
+
+
+DEVELOPMENT
+      │
+      ↓
+HOW ALL CHANGES MOVE
+THROUGH THE SYSTEM
 ```
 
 ---
 
-# 20. Final Principle
+# 24. Final Principle
 
-The documentation system exists to ensure that:
+The BookQu documentation system exists to maintain one clear and durable understanding of the project.
 
-> **Every contributor understands what BookQu is, what it must do, how it should be built, how it should be developed, and what has already been implemented.**
+A contributor or AI agent should be able to determine:
 
-The goal is not to produce more documentation.
+```text
+What BookQu is
+        ↓
+What BookQu must do
+        ↓
+How BookQu should be structured
+        ↓
+How the current system actually works
+        ↓
+How changes should be performed
+        ↓
+How the system is operated
+        ↓
+What is currently implemented
+        ↓
+Why important architectural decisions exist
+```
 
-The goal is to prevent the project from drifting away from a shared definition again.
+Each question should have one clear primary source.
+
+The documentation system should remain:
+
+```text
+Clear
++
+Current
++
+Traceable
++
+Maintainable
++
+Future-ready
+```
+
+The objective is not to preserve every detail of the project's history inside active documentation.
+
+The objective is to provide a reliable source of truth for the current BookQu system and a stable foundation for its future development.

@@ -26,16 +26,16 @@
         x-transition:leave="transition ease-in duration-200"
         x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
         x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-        class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
     >
-        <div class="w-full max-w-lg rounded-2xl border border-bq-border bg-bq-surface shadow-2xl" @click.stop>
+        <div class="w-full max-w-lg rounded-2xl border border-bq-border bg-bq-surface shadow-2xl flex flex-col max-h-[calc(100vh-2rem)] my-auto overflow-hidden" @click.stop>
             {{-- Header --}}
-            <div class="flex items-center justify-between border-b border-bq-border px-6 py-4">
+            <div class="flex items-center justify-between border-b border-bq-border px-5 py-3.5 sm:px-6 sm:py-4 shrink-0 bg-bq-surface">
                 <div>
-                    <h2 class="text-lg font-semibold text-bq-text">Lengkapi Profil Bisnis</h2>
-                    <p class="text-sm text-bq-text-muted">Isi data bisnis Anda agar akun siap digunakan.</p>
+                    <h2 class="text-base sm:text-lg font-semibold text-bq-text">Lengkapi Profil Bisnis</h2>
+                    <p class="text-xs sm:text-sm text-bq-text-muted">Isi data bisnis Anda agar akun siap digunakan.</p>
                 </div>
-                <button @click="buka = false" class="rounded-lg p-1.5 text-bq-text-subtle transition-colors hover:bg-bq-background hover:text-bq-text" id="btn-close-complete-profile">
+                <button @click="buka = false" class="rounded-lg p-1.5 text-bq-text-subtle transition-colors hover:bg-bq-background hover:text-bq-text cursor-pointer" id="btn-close-complete-profile">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -43,9 +43,9 @@
             </div>
 
             {{-- Form --}}
-            <form method="POST" action="/owner/profile/complete" @submit="sedangkirim = true" id="form-complete-profile">
+            <form method="POST" action="/owner/profile/complete" @submit="sedangkirim = true" id="form-complete-profile" class="flex flex-col min-h-0 flex-1">
                 @csrf
-                <div class="space-y-4 px-6 py-5">
+                <div class="space-y-4 px-5 py-4 sm:px-6 sm:py-5 overflow-y-auto flex-1">
                     <div>
                         <label for="input-complete-namabisnis" class="mb-1.5 block text-sm font-medium text-bq-text">Nama Bisnis <span class="text-rose-500">*</span></label>
                         <input
@@ -101,15 +101,15 @@
                 </div>
 
                 {{-- Footer --}}
-                <div class="flex items-center justify-end gap-3 border-t border-bq-border px-6 py-4">
-                    <button type="button" @click="buka = false" class="rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm font-medium text-bq-text transition-all hover:bg-bq-background" id="btn-cancel-complete-profile">
+                <div class="flex items-center justify-end gap-2.5 sm:gap-3 border-t border-bq-border px-5 py-3 sm:px-6 sm:py-4 shrink-0 bg-bq-surface">
+                    <button type="button" @click="buka = false" class="rounded-lg border border-bq-border bg-bq-surface px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-medium text-bq-text transition-all hover:bg-bq-background cursor-pointer active:scale-95" id="btn-cancel-complete-profile">
                         Nanti Saja
                     </button>
                     <button
                         type="submit"
                         :disabled="sedangkirim"
-                        :class="sedangkirim ? 'opacity-60 cursor-not-allowed' : 'hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5'"
-                        class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all"
+                        :class="sedangkirim ? 'opacity-60 cursor-not-allowed' : 'hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 active:scale-95'"
+                        class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all cursor-pointer"
                         id="btn-submit-complete-profile"
                     >
                         <svg x-show="sedangkirim" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>

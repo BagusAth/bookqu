@@ -1,17 +1,20 @@
 # BookQu Development Tracker
 
-> **Document Status:** Current Development Tracking Baseline
-> **Version:** 1.0
-> **Authority:** Current implementation tracking document
-> **Product Definition:** `docs/PRODUCT.md`
-> **Requirements:** `docs/REQUIREMENTS.md`
-> **Architecture:** `docs/ARCHITECTURE.md`
-> **Development Workflow:** `docs/DEVELOPMENT.md`
-> **Last Updated:** 2026-09-26
+> **Document Status:** Active
+> **Version:** 1.1
+> **Authority:** Current implementation and verification status
+> **Product Definition:** `docs/2-PRODUCT.md`
+> **Requirements:** `docs/3-REQUIREMENT.md`
+> **Architecture:** `docs/4-ARCHITECTURE.md`
+> **Development Workflow:** `docs/5-DEVELOPMENT.md`
+> **System Design:** `docs/7-SYSTEM-DESIGN.md`
+> **Operations:** `docs/8-OPERATIONS.md`
+> **ADR:** `docs/adr/`
+> **Last Updated:** 2026-09-30
 >
-> This document tracks the implementation state of BookQu against the current requirements baseline.
+> This document records the current implementation, verification, architectural state, technical debt, and active work of BookQu.
 >
-> This tracker replaces the previous feature tracker as the primary implementation tracking reference.
+> Historical refactoring work is preserved in Git history and is not treated as an active tracker item.
 
 ---
 
@@ -19,46 +22,62 @@
 
 The purpose of this tracker is to answer:
 
-> **What has been implemented, what is currently being worked on, what remains, what has been tested, and what still requires architectural improvement?**
+> **What currently exists in BookQu, how well is it verified, what still needs work, and what should be addressed next?**
 
-The tracker exists to maintain traceability between:
+The tracker connects:
 
 ```text
 Requirement
     ↓
-Feature
-    ↓
 Implementation
     ↓
-Test
+Verification
     ↓
 Architecture State
     ↓
-Development Status
+Current Status
 ```
 
-The tracker is not a replacement for `REQUIREMENTS.md`.
+This document does not define product behavior.
 
-Requirements define what BookQu must do.
+It does not replace:
 
-This document defines implementation status.
+```text
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
+docs/4-ARCHITECTURE.md
+docs/7-SYSTEM-DESIGN.md
+```
+
+Its purpose is to record the current state of those definitions in the implementation.
 
 ---
 
-# 2. Important Status Distinction
+# 2. Tracker Authority
 
-BookQu separates **functional completion** from **architectural completion**.
-
-A feature can be:
+The tracker follows these rules:
 
 ```text
-Functional Status: Done
-Architecture Status: Needs Refactor
+Product meaning
+→ docs/2-PRODUCT.md
+
+Required behavior
+→ docs/3-REQUIREMENT.md
+
+Target architecture
+→ docs/4-ARCHITECTURE.md
+
+Current implementation behavior
+→ docs/7-SYSTEM-DESIGN.md
+
+Operational state
+→ docs/8-OPERATIONS.md
+
+Implementation status
+→ docs/6-TRACKER.md
 ```
 
-This means the current behavior is considered implemented, but the implementation does not yet fully follow the target architecture.
-
-This distinction is required because the current BookQu codebase contains functionality that was implemented before the architecture was formally reorganized.
+The tracker must not silently redefine requirements or architecture.
 
 ---
 
@@ -66,1232 +85,994 @@ This distinction is required because the current BookQu codebase contains functi
 
 ## 3.1 Planned
 
-The requirement has been accepted but implementation has not started.
+The requirement or task is accepted but implementation has not started.
 
 ```text
-Implementation: 0%
+Status: Planned
 ```
 
 ---
 
 ## 3.2 In Progress
 
-Implementation is actively being developed.
+Implementation is currently being developed.
 
 ```text
-Implementation: Active
+Status: In Progress
 ```
 
 ---
 
 ## 3.3 Testing
 
-Implementation is substantially complete and currently being verified.
+Implementation is substantially complete and currently undergoing verification.
+
+```text
+Status: Testing
+```
 
 ---
 
 ## 3.4 Done
 
-The intended functionality has been implemented and the relevant verification is considered sufficient for the current scope.
+The intended functionality has been implemented and the available verification is considered sufficient for the current scope.
 
-`Done` does not automatically mean architecturally perfect.
+`Done` does not mean:
 
----
-
-## 3.5 Needs Refactor
-
-The feature works or is substantially implemented, but the implementation has significant architectural or maintainability debt.
+* no future improvement is possible;
+* production behavior has been exhaustively verified;
+* architecture can never change.
 
 ---
 
-## 3.6 Blocked
+## 3.5 Needs Verification
 
-Implementation cannot continue because of a known dependency or external blocker.
+The functionality appears to exist, but available evidence is insufficient to consider it fully verified.
 
----
-
-## 3.7 Deprecated
-
-The requirement or implementation has been intentionally removed from the current product baseline.
-
----
-
-## 3.8 Needs Verification
-
-The feature appears to be implemented, but the available evidence is not sufficient to mark it verified.
-
----
-
-# 4. Architecture Status
-
-Each major feature should also have an architecture state.
-
-| Status           | Meaning                                       |
-| ---------------- | --------------------------------------------- |
-| `Target`         | Follows target architecture                   |
-| `Legacy`         | Works but follows older architecture          |
-| `Needs Refactor` | Working but should be structurally improved   |
-| `Blocked`        | Refactor cannot yet proceed                   |
-| `Not Evaluated`  | Architecture audit has not yet been completed |
-
----
-
-# 5. Test Status
-
-| Status    | Meaning                                     |
-| --------- | ------------------------------------------- |
-| `PASS`    | Relevant automated tests pass               |
-| `PARTIAL` | Some behavior is tested                     |
-| `MANUAL`  | Verified manually                           |
-| `MISSING` | Relevant automated test not yet established |
-| `FAIL`    | Current verification fails                  |
-| `N/A`     | Automated test not applicable               |
-| `UNKNOWN` | Verification has not yet been established   |
-
----
-
-# 6. Priority Definitions
-
-| Priority | Meaning                           |
-| -------- | --------------------------------- |
-| `P0`     | Core product capability           |
-| `P1`     | Supporting operational capability |
-| `P2`     | Future / expansion capability     |
-
-Priority represents product importance, not implementation difficulty.
-
----
-
-# 7. Current High-Level Status
-
-The current BookQu implementation already contains a substantial portion of the core product and several supporting modules.
-
-The current repository includes implemented areas such as:
+Typical reasons:
 
 ```text
-Authentication
-Multi-Tenancy
-Business Setup
-Service Management
-Schedule Management
-Booking
-Walk-In Booking
-Customer Management
-Calendar
-Dashboard
-Payment
-Reviews
-Categories
-Staff & Resources
-Additional Items
-Vouchers
-Analytics
-Reports
-Assets
-Appearance
-Subscription
-Notifications
-Admin Dashboard
-```
-
-However, implementation completeness and architecture completeness are not identical.
-
-The next development phase should therefore focus on:
-
-```text
-Behavior stabilization
-+
-Requirement traceability
-+
-Architecture refactoring
-+
-Test strengthening
-```
-
-rather than uncontrolled feature expansion.
-
----
-
-# 8. Current Core Product Tracker
-
-## 8.1 Authentication
-
-| ID          | Requirement             | Status      | Test           | Architecture | Notes                              |
-| ----------- | ----------------------- | ----------- | -------------- | ------------ | ---------------------------------- |
-| FR-AUTH-001 | Owner registration      | Implemented | PASS / PARTIAL | Legacy       | Existing auth flow                 |
-| FR-AUTH-002 | Owner login             | Implemented | PASS           | Legacy       | Existing auth flow                 |
-| FR-AUTH-003 | Owner logout            | Implemented | PASS           | Legacy       | Existing auth flow                 |
-| FR-AUTH-004 | Email verification      | Implemented | PASS / PARTIAL | Legacy       | Existing Laravel verification flow |
-| FR-AUTH-005 | Role-based access       | Implemented | PASS           | Legacy       | Owner/Admin separation exists      |
-| FR-AUTH-006 | Secure password hashing | Implemented | PASS           | Target       | Laravel hashing                    |
-
-### Authentication Follow-up
-
-```text
-Priority: Medium
-
-[ ] Audit authentication architecture
-[ ] Consolidate authorization strategy
-[ ] Verify all protected owner routes
-[ ] Add missing authorization regression tests
+Missing regression coverage
+Manual verification incomplete
+Production behavior not verified
+Edge cases not established
+External integration not fully exercised
 ```
 
 ---
 
-# 9. Tenant and Business Management
+## 3.6 Needs Refactor
 
-| ID            | Requirement          | Status      | Test           | Architecture       | Notes                            |
-| ------------- | -------------------- | ----------- | -------------- | ------------------ | -------------------------------- |
-| FR-TENANT-001 | Tenant creation      | Implemented | PARTIAL        | Needs Refactor     | Tenant linked to owner           |
-| FR-TENANT-002 | Tenant isolation     | Done        | PASS           | Target             | Tenant context/scope implemented |
-| FR-TENANT-003 | Tenant context       | Done        | PASS           | Target             | TenantContext exists             |
-| FR-TENANT-004 | Business profile     | Done        | PASS / PARTIAL | Needs Refactor     | Owner settings/profile           |
-| FR-TENANT-005 | Business slug        | Done        | PASS           | Needs Refactor     | Slug-based public access         |
-| FR-TENANT-006 | Public tenant access | Done        | PASS           | Needs Refactor     | `/{slug}` route                  |
-| FR-TENANT-007 | Custom domain        | Implemented | PARTIAL        | Needs Verification | Custom-domain routing exists     |
+The functionality is considered usable or implemented, but its internal structure does not fully satisfy the target architecture or maintainability expectations.
 
-### Tenant Follow-up
-
-```text
-Priority: High
-
-[ ] Complete tenant isolation audit
-[ ] Verify every tenant-owned model
-[ ] Verify every intentional `withoutGlobalScopes()` usage
-[ ] Verify custom domain behavior
-[ ] Document tenant resolution flow
-[ ] Strengthen cross-tenant security tests
-```
+This is a technical status, not a product failure.
 
 ---
 
-# 10. Public Business Page
+## 3.7 Blocked
 
-| ID            | Requirement          | Status      | Test    | Architecture   | Notes                                  |
-| ------------- | -------------------- | ----------- | ------- | -------------- | -------------------------------------- |
-| FR-PUBLIC-001 | Public business page | Done        | PASS    | Needs Refactor | Public booking page exists             |
-| FR-PUBLIC-002 | Public services      | Done        | PASS    | Needs Refactor | Active services shown                  |
-| FR-PUBLIC-003 | Public branding      | Implemented | PARTIAL | Needs Refactor | Appearance/assets                      |
-| FR-PUBLIC-004 | Booking entry point  | Done        | PASS    | Needs Refactor | Public booking starts from tenant page |
+Work cannot proceed because a dependency or external condition prevents progress.
 
----
-
-# 11. Service Management
-
-| ID             | Requirement                 | Status | Test | Architecture   | Notes                             |
-| -------------- | --------------------------- | ------ | ---- | -------------- | --------------------------------- |
-| FR-SERVICE-001 | Create service              | Done   | PASS | Needs Refactor | Existing `OwnerProgramController` |
-| FR-SERVICE-002 | Service information         | Done   | PASS | Needs Refactor | Name, price, duration, etc.       |
-| FR-SERVICE-003 | Update service              | Done   | PASS | Needs Refactor | Existing CRUD                     |
-| FR-SERVICE-004 | Activate/deactivate         | Done   | PASS | Needs Refactor | Existing toggle flow              |
-| FR-SERVICE-005 | Inactive service protection | Done   | PASS | Needs Refactor | Public booking protection         |
-| FR-SERVICE-006 | Deletion protection         | Done   | PASS | Needs Refactor | Existing constraint               |
-| FR-SERVICE-007 | Service tenant ownership    | Done   | PASS | Target         | Tenant isolation                  |
-
-### Service Refactor
-
-```text
-Current concern:
-OwnerProgramController
-
-Target:
-OwnerServiceController
-+
-Service Actions
-+
-Service Requests
-```
-
-Do not rename the entire implementation until compatibility impact is understood.
-
----
-
-# 12. Categories
-
-| ID              | Requirement         | Status      | Test    | Architecture   | Notes                         |
-| --------------- | ------------------- | ----------- | ------- | -------------- | ----------------------------- |
-| FR-CATEGORY-001 | Create category     | Implemented | PASS    | Needs Refactor | Existing CRUD                 |
-| FR-CATEGORY-002 | Update category     | Implemented | PASS    | Needs Refactor | Existing CRUD                 |
-| FR-CATEGORY-003 | Delete category     | Implemented | PASS    | Needs Refactor | Existing CRUD                 |
-| FR-CATEGORY-004 | Category status     | Implemented | PARTIAL | Needs Refactor | Existing toggle               |
-| FR-CATEGORY-005 | Service association | Implemented | PASS    | Needs Refactor | Category/service relationship |
-
-Source implementation is already covered by owner module tests.
-
----
-
-# 13. Schedule Management
-
-| ID              | Requirement                | Status      | Test | Architecture   | Notes                     |
-| --------------- | -------------------------- | ----------- | ---- | -------------- | ------------------------- |
-| FR-SCHEDULE-001 | Create schedule            | Done        | PASS | Needs Refactor | Existing schedule module  |
-| FR-SCHEDULE-002 | Bulk schedule creation     | Done        | PASS | Needs Refactor | Bulk slot generator       |
-| FR-SCHEDULE-003 | Schedule pricing           | Implemented | PASS | Needs Refactor | Pricing override exists   |
-| FR-SCHEDULE-004 | Availability configuration | Done        | PASS | Needs Refactor | Existing configuration    |
-| FR-SCHEDULE-005 | Blocked dates              | Done        | PASS | Needs Refactor | Owner blocked dates       |
-| FR-SCHEDULE-006 | Delete schedule            | Done        | PASS | Needs Refactor | Existing delete flow      |
-| FR-SCHEDULE-007 | Conflict prevention        | Done        | PASS | Needs Refactor | Tests exist               |
-| FR-SCHEDULE-008 | Tenant ownership           | Done        | PASS | Target         | Tenant isolation          |
-| FR-SCHEDULE-009 | Booking availability       | Done        | PASS | Needs Refactor | Availability logic exists |
-| FR-SCHEDULE-010 | Past schedule protection   | Done        | PASS | Needs Refactor | Customer flow hardened    |
-
-### Schedule Refactor Priority
-
-```text
-High
-
-[ ] Extract availability rules
-[ ] Consolidate conflict validation
-[ ] Separate schedule generation from HTTP controller
-[ ] Create reusable booking availability operation
-```
-
----
-
-# 14. Booking
-
-Booking is currently the most important implementation domain.
-
-| ID             | Requirement               | Status   | Test | Architecture   | Notes                        |
-| -------------- | ------------------------- | -------- | ---- | -------------- | ---------------------------- |
-| FR-BOOKING-001 | Service selection         | Done     | PASS | Needs Refactor | Customer flow                |
-| FR-BOOKING-002 | Date selection            | Done     | PASS | Needs Refactor | Customer flow                |
-| FR-BOOKING-003 | Time selection            | Done     | PASS | Needs Refactor | Customer flow                |
-| FR-BOOKING-004 | Customer information      | Done     | PASS | Needs Refactor | Checkout                     |
-| FR-BOOKING-005 | Booking creation          | Done     | PASS | Needs Refactor | Main customer flow           |
-| FR-BOOKING-006 | Booking code              | Done     | PASS | Target         | Booking model                |
-| FR-BOOKING-007 | Booking status            | Done     | PASS | Needs Refactor | State logic distributed      |
-| FR-BOOKING-008 | Booking detail            | Done     | PASS | Needs Refactor | Owner/customer               |
-| FR-BOOKING-009 | Owner status management   | Done     | PASS | Needs Refactor | OwnerBookingController       |
-| FR-BOOKING-010 | Walk-in booking           | Done     | PASS | Needs Refactor | Current owner implementation |
-| FR-BOOKING-011 | Owner reschedule          | Done     | PASS | Needs Refactor | Existing implementation      |
-| FR-BOOKING-012 | Customer reschedule       | Done     | PASS | Needs Refactor | Tokenized management         |
-| FR-BOOKING-013 | Customer cancellation     | Done     | PASS | Needs Refactor | Tokenized management         |
-| FR-BOOKING-014 | Owner cancellation        | Done     | PASS | Needs Refactor | Existing status handling     |
-| FR-BOOKING-015 | Booking security          | Done     | PASS | Needs Refactor | Management token             |
-| FR-BOOKING-016 | Management token          | Done     | PASS | Target         | Secure token flow            |
-| FR-BOOKING-017 | Availability protection   | Done     | PASS | Needs Refactor | Validation                   |
-| FR-BOOKING-018 | Double booking protection | Verified | PASS | Target         | Concurrency tests            |
-| FR-BOOKING-019 | Tenant validation         | Verified | PASS | Target         | Integration/security tests   |
-
-### Booking Architecture Assessment
-
-Current implementation is functional but requires major architectural cleanup.
-
-Primary concerns:
-
-```text
-BookingController.php
-≈ 1,500 lines
-
-processCheckout()
-≈ 400+ lines
-
-Multiple controllers independently implement booking logic.
-```
-
-Target:
-
-```text
-Booking
-├── Actions
-│   ├── CreateBooking
-│   ├── CreateWalkInBooking
-│   ├── CancelBooking
-│   ├── RescheduleBooking
-│   └── UpdateBookingStatus
-│
-├── Domain
-│   ├── Availability
-│   ├── StateTransition
-│   └── BookingRules
-│
-└── Requests
-    ├── CreateBookingRequest
-    ├── RescheduleBookingRequest
-    └── UpdateBookingRequest
-```
-
----
-
-# 15. Multi-Slot Booking
-
-| ID               | Requirement             | Status   | Test | Architecture   | Notes                      |
-| ---------------- | ----------------------- | -------- | ---- | -------------- | -------------------------- |
-| FR-MULTIBOOK-001 | Multi-slot selection    | Done     | PASS | Needs Refactor | Production logic tests     |
-| FR-MULTIBOOK-002 | Slot compatibility      | Verified | PASS | Needs Refactor | Contiguous-slot validation |
-| FR-MULTIBOOK-003 | Unified payment         | Verified | PASS | Needs Refactor | Payment group              |
-| FR-MULTIBOOK-004 | Unified invoice         | Verified | PASS | Needs Refactor | Group invoice              |
-| FR-MULTIBOOK-005 | Multi-slot cancellation | Verified | PASS | Needs Refactor | Explicit restrictions      |
-| FR-MULTIBOOK-006 | Multi-slot reschedule   | Verified | PASS | Needs Refactor | Explicit restrictions      |
-
-Existing tests include multi-slot checkout, payment grouping, invoice behavior, cancellation, and rescheduling constraints.
-
----
-
-# 16. Customer Management
-
-| ID              | Requirement        | Status      | Test           | Architecture       | Notes                        |
-| --------------- | ------------------ | ----------- | -------------- | ------------------ | ---------------------------- |
-| FR-CUSTOMER-001 | Customer record    | Done        | PASS           | Needs Refactor     | Booking-linked customer data |
-| FR-CUSTOMER-002 | Customer directory | Done        | PASS           | Needs Refactor     | Owner module                 |
-| FR-CUSTOMER-003 | Booking history    | Done        | PASS           | PARTIAL            | Owner/customer flows         |
-| FR-CUSTOMER-004 | Customer notes     | Implemented | PASS           | Needs Refactor     | CustomerNote model           |
-| FR-CUSTOMER-005 | Customer privacy   | Implemented | PASS / PARTIAL | Needs Verification | Requires ongoing audit       |
-
----
-
-# 17. Payment
-
-| ID             | Requirement                | Status   | Test | Architecture   | Notes                  |
-| -------------- | -------------------------- | -------- | ---- | -------------- | ---------------------- |
-| FR-PAYMENT-001 | Booking payment            | Done     | PASS | Needs Refactor | Midtrans               |
-| FR-PAYMENT-002 | Midtrans integration       | Done     | PASS | Needs Refactor | Existing service       |
-| FR-PAYMENT-003 | Payment status             | Done     | PASS | Needs Refactor | Payment lifecycle      |
-| FR-PAYMENT-004 | External payment reference | Done     | PASS | Needs Refactor | External ID/order ID   |
-| FR-PAYMENT-005 | Trusted verification       | Verified | PASS | Needs Refactor | Callback hardening     |
-| FR-PAYMENT-006 | Webhook                    | Done     | PASS | Needs Refactor | Webhook controller     |
-| FR-PAYMENT-007 | Webhook idempotency        | Verified | PASS | Needs Refactor | Integration tests      |
-| FR-PAYMENT-008 | Payment lifecycle          | Done     | PASS | Needs Refactor | Success/failure/expiry |
-| FR-PAYMENT-009 | Booking synchronization    | Done     | PASS | Needs Refactor | Midtrans service       |
-| FR-PAYMENT-010 | Failed payment protection  | Verified | PASS | Needs Refactor | Production logic tests |
-
-### Payment Refactor Priority
-
-```text
-High
-
-[ ] Isolate Midtrans adapter
-[ ] Separate booking payment use case from provider API
-[ ] Separate subscription payment use case
-[ ] Centralize payment state transitions
-[ ] Improve payment integration tests
-```
-
----
-
-# 18. Booking Management Without Account
-
-| ID            | Requirement           | Status | Test | Architecture   | Notes               |
-| ------------- | --------------------- | ------ | ---- | -------------- | ------------------- |
-| FR-MANAGE-001 | Secure booking access | Done   | PASS | Needs Refactor | `/manage`           |
-| FR-MANAGE-002 | Secure token          | Done   | PASS | Needs Refactor | Token-based access  |
-| FR-MANAGE-003 | Booking details       | Done   | PASS | Needs Refactor | Customer management |
-| FR-MANAGE-004 | Payment information   | Done   | PASS | Needs Refactor | Payment group       |
-| FR-MANAGE-005 | Cancellation          | Done   | PASS | Needs Refactor | Customer manage     |
-| FR-MANAGE-006 | Rescheduling          | Done   | PASS | Needs Refactor | Customer manage     |
-| FR-MANAGE-007 | Review submission     | Done   | PASS | Needs Refactor | Customer review     |
-
----
-
-# 19. Additional Items
-
-| ID           | Requirement            | Status      | Test | Architecture   | Notes                       |
-| ------------ | ---------------------- | ----------- | ---- | -------------- | --------------------------- |
-| FR-ADDON-001 | Create additional item | Implemented | PASS | Needs Refactor | Existing module             |
-| FR-ADDON-002 | Update additional item | Implemented | PASS | Needs Refactor | Existing module             |
-| FR-ADDON-003 | Activation             | Implemented | PASS | Needs Refactor | Toggle                      |
-| FR-ADDON-004 | Service association    | Implemented | PASS | Needs Refactor | Relationship                |
-| FR-ADDON-005 | Checkout integration   | Implemented | PASS | Needs Refactor | Public checkout integration |
-
----
-
-# 20. Vouchers
-
-| ID             | Requirement        | Status      | Test | Architecture   | Notes                     |
-| -------------- | ------------------ | ----------- | ---- | -------------- | ------------------------- |
-| FR-VOUCHER-001 | Create voucher     | Implemented | PASS | Needs Refactor | Existing CRUD             |
-| FR-VOUCHER-002 | Configure rules    | Implemented | PASS | Needs Refactor | Existing model            |
-| FR-VOUCHER-003 | Validate voucher   | Implemented | PASS | Needs Refactor | Customer validation       |
-| FR-VOUCHER-004 | Tenant isolation   | Verified    | PASS | Needs Refactor | Isolation tests           |
-| FR-VOUCHER-005 | Calculate discount | Implemented | PASS | Needs Refactor | Needs central domain rule |
-
-### Voucher Refactor
-
-```text
-Priority: Medium
-
-[ ] Extract voucher eligibility
-[ ] Extract pricing calculation
-[ ] Remove duplicated validation from booking controller
-```
-
----
-
-# 21. Staff and Resources
-
-| ID                   | Requirement                 | Status      | Test | Architecture   | Notes                               |
-| -------------------- | --------------------------- | ----------- | ---- | -------------- | ----------------------------------- |
-| FR-STAFF-001         | Staff CRUD                  | Implemented | PASS | Needs Refactor | Existing module                     |
-| FR-RESOURCE-001      | Resource CRUD               | Implemented | PASS | Needs Refactor | Existing module                     |
-| FR-STAFFRESOURCE-001 | Service association         | Implemented | PASS | Needs Refactor | Pivot relationships                 |
-| FR-STAFFRESOURCE-002 | Active resource constraint  | Verified    | PASS | Needs Refactor | Integration tests                   |
-| FR-STAFFRESOURCE-003 | Customer selection boundary | Verified    | PASS | Needs Refactor | Customer flow explicitly restricted |
-
-Important:
-
-```text
-Staff/resource availability exists,
-but customer selection is not automatically part of the booking flow.
-```
-
----
-
-# 22. Reviews
-
-| ID            | Requirement             | Status      | Test           | Architecture   | Notes                 |
-| ------------- | ----------------------- | ----------- | -------------- | -------------- | --------------------- |
-| FR-REVIEW-001 | Review eligibility      | Done        | PASS           | Needs Refactor | Booking-linked        |
-| FR-REVIEW-002 | Review submission       | Done        | PASS           | Needs Refactor | Customer flow         |
-| FR-REVIEW-003 | Rating                  | Done        | PASS           | Needs Refactor | Existing              |
-| FR-REVIEW-004 | Comment                 | Done        | PASS           | Needs Refactor | Existing              |
-| FR-REVIEW-005 | Review ownership        | Verified    | PASS           | Needs Refactor | Tenant isolation      |
-| FR-REVIEW-006 | Owner review management | Implemented | PASS           | Needs Refactor | Reply/visibility      |
-| FR-REVIEW-007 | One review per booking  | Implemented | PASS / PARTIAL | Needs Refactor | Verify all edge cases |
-
----
-
-# 23. Dashboard
-
-| ID          | Requirement              | Status             | Test           | Architecture   | Notes                       |
-| ----------- | ------------------------ | ------------------ | -------------- | -------------- | --------------------------- |
-| FR-DASH-001 | Business overview        | Done               | PASS           | Needs Refactor | Owner dashboard             |
-| FR-DASH-002 | Booking metrics          | Done               | PASS           | Needs Refactor | Dashboard                   |
-| FR-DASH-003 | Revenue metrics          | Done               | PASS           | Needs Refactor | Dashboard                   |
-| FR-DASH-004 | Customer metrics         | Done               | PASS           | Needs Refactor | Dashboard                   |
-| FR-DASH-005 | Service metrics          | Implemented        | PASS / PARTIAL | Needs Refactor | Dashboard                   |
-| FR-DASH-006 | Recent activity          | Done               | PASS           | Needs Refactor | Dashboard                   |
-| FR-DASH-007 | Dashboard data integrity | Needs Verification | PARTIAL        | Needs Refactor | Requires query/source audit |
-
-### Dashboard Refactor Priority
-
-```text
-High
-
-[ ] Extract dashboard queries from controller
-[ ] Centralize dashboard metrics
-[ ] Separate dashboard presentation data
-[ ] Verify metric definitions against requirements
-[ ] Reduce dashboard query complexity
-```
-
----
-
-# 24. Calendar
-
-| ID              | Requirement         | Status | Test | Architecture   | Notes                         |
-| --------------- | ------------------- | ------ | ---- | -------------- | ----------------------------- |
-| FR-CALENDAR-001 | Calendar view       | Done   | PASS | Needs Refactor | Existing portal controller    |
-| FR-CALENDAR-002 | Date navigation     | Done   | PASS | Needs Refactor | Tests exist                   |
-| FR-CALENDAR-003 | Booking visibility  | Done   | PASS | Needs Refactor | Tests exist                   |
-| FR-CALENDAR-004 | Schedule visibility | Done   | PASS | Needs Refactor | Tests exist                   |
-| FR-CALENDAR-005 | Filtering           | Done   | PASS | Needs Refactor | Existing filtering            |
-| FR-CALENDAR-006 | Walk-in operation   | Done   | PASS | Needs Refactor | Existing calendar integration |
-
-The current calendar view is one of the largest Blade files and should be a major frontend refactoring target.
-
----
-
-# 25. Analytics
-
-| ID               | Requirement              | Status             | Test           | Architecture   | Notes                       |
-| ---------------- | ------------------------ | ------------------ | -------------- | -------------- | --------------------------- |
-| FR-ANALYTICS-001 | Operational analytics    | Done               | PASS           | Needs Refactor | Existing analytics          |
-| FR-ANALYTICS-002 | Booking analysis         | Done               | PASS           | Needs Refactor | Existing analytics          |
-| FR-ANALYTICS-003 | Revenue analysis         | Implemented        | PASS / PARTIAL | Needs Refactor | Needs metric audit          |
-| FR-ANALYTICS-004 | Service analysis         | Implemented        | PARTIAL        | Needs Refactor | Needs coverage              |
-| FR-ANALYTICS-005 | Schedule utilization     | Implemented        | PASS           | Needs Refactor | Schedule report/tests       |
-| FR-ANALYTICS-006 | Analytics data integrity | Needs Verification | PARTIAL        | Needs Refactor | Needs source-of-truth audit |
-
----
-
-# 26. Reporting
-
-| ID            | Requirement      | Status      | Test | Architecture   | Notes            |
-| ------------- | ---------------- | ----------- | ---- | -------------- | ---------------- |
-| FR-REPORT-001 | Schedule report  | Implemented | PASS | Needs Refactor | Existing report  |
-| FR-REPORT-002 | Report filtering | Implemented | PASS | Needs Refactor | Existing         |
-| FR-REPORT-003 | Report export    | Implemented | PASS | Needs Refactor | CSV/export tests |
-
----
-
-# 27. Appearance
-
-| ID                | Requirement         | Status      | Test             | Architecture   | Notes               |
-| ----------------- | ------------------- | ----------- | ---------------- | -------------- | ------------------- |
-| FR-APPEARANCE-001 | Logo                | Implemented | MANUAL / PARTIAL | Needs Refactor | Public presentation |
-| FR-APPEARANCE-002 | Brand color         | Implemented | MANUAL           | Needs Refactor | Current appearance  |
-| FR-APPEARANCE-003 | Banner / cover      | Implemented | MANUAL           | Needs Refactor | Asset integration   |
-| FR-APPEARANCE-004 | Public presentation | Implemented | MANUAL / PARTIAL | Needs Refactor | Needs visual QA     |
-
----
-
-# 28. Assets
-
-| ID           | Requirement      | Status      | Test           | Architecture   | Notes               |
-| ------------ | ---------------- | ----------- | -------------- | -------------- | ------------------- |
-| FR-ASSET-001 | Asset storage    | Implemented | PASS / PARTIAL | Needs Refactor | Storage integration |
-| FR-ASSET-002 | Asset ownership  | Implemented | PASS           | Needs Refactor | Tenant-specific     |
-| FR-ASSET-003 | Asset management | Implemented | PASS           | Needs Refactor | CRUD                |
-| FR-ASSET-004 | Asset usage      | Implemented | MANUAL         | Needs Refactor | Public page         |
-
----
-
-# 29. Notifications
-
-| ID                  | Requirement                 | Status             | Test              | Architecture   | Notes                     |
-| ------------------- | --------------------------- | ------------------ | ----------------- | -------------- | ------------------------- |
-| FR-NOTIFICATION-001 | Booking notification        | Implemented        | PARTIAL           | Needs Refactor | Existing notifications    |
-| FR-NOTIFICATION-002 | Booking status notification | Implemented        | PARTIAL           | Needs Refactor | Existing                  |
-| FR-NOTIFICATION-003 | Payment notification        | Implemented        | PARTIAL           | Needs Refactor | Existing                  |
-| FR-NOTIFICATION-004 | Subscription notification   | Implemented        | PARTIAL           | Needs Refactor | Trial notification exists |
-| FR-NOTIFICATION-005 | Notification isolation      | Needs Verification | MISSING / PARTIAL | Needs Refactor | Requires security audit   |
-
----
-
-# 30. Subscription
-
-| ID         | Requirement            | Status      | Test           | Architecture   | Notes                   |
-| ---------- | ---------------------- | ----------- | -------------- | -------------- | ----------------------- |
-| FR-SUB-001 | Subscription plans     | Done        | PASS           | Needs Refactor | Plan model              |
-| FR-SUB-002 | Tenant subscription    | Done        | PASS           | Needs Refactor | Subscription model      |
-| FR-SUB-003 | Trial                  | Implemented | PASS           | Needs Refactor | Existing lifecycle      |
-| FR-SUB-004 | Subscription status    | Done        | PASS           | Needs Refactor | Lifecycle states        |
-| FR-SUB-005 | Feature access         | Implemented | PASS           | Needs Refactor | Middleware              |
-| FR-SUB-006 | Feature entitlement    | Implemented | PARTIAL        | Needs Refactor | Centralization required |
-| FR-SUB-007 | Subscription payment   | Implemented | PASS           | Needs Refactor | Owner checkout          |
-| FR-SUB-008 | Subscription callback  | Implemented | PASS           | Needs Refactor | Payment lifecycle       |
-| FR-SUB-009 | Subscription lifecycle | Implemented | PASS           | Needs Refactor | Scheduler/console       |
-| FR-SUB-010 | Usage limits           | Implemented | PASS / PARTIAL | Needs Refactor | Requires central rule   |
-| FR-SUB-011 | Usage tracking         | Implemented | PARTIAL        | Needs Refactor | UsageLog                |
-
----
-
-# 31. Platform Admin
-
-| ID           | Requirement          | Status             | Test    | Architecture       | Notes                 |
-| ------------ | -------------------- | ------------------ | ------- | ------------------ | --------------------- |
-| FR-ADMIN-001 | Admin authentication | Implemented        | PASS    | Legacy             | Role middleware       |
-| FR-ADMIN-002 | Admin dashboard      | Implemented        | PASS    | Needs Refactor     | Limited current scope |
-| FR-ADMIN-003 | Tenant oversight     | Needs Verification | PARTIAL | Needs Verification | Current scope limited |
-| FR-ADMIN-004 | Platform boundary    | Implemented        | PASS    | Target             | Role separation       |
-
----
-
-# 32. Data Integrity
-
-| ID          | Requirement                | Status      | Test           | Architecture   | Notes                      |
-| ----------- | -------------------------- | ----------- | -------------- | -------------- | -------------------------- |
-| FR-DATA-001 | Referential integrity      | Implemented | PASS / PARTIAL | Target         | DB relationships           |
-| FR-DATA-002 | Tenant integrity           | Verified    | PASS           | Target         | Tenant isolation           |
-| FR-DATA-003 | Booking integrity          | Verified    | PASS           | Needs Refactor | Production logic tests     |
-| FR-DATA-004 | Payment integrity          | Verified    | PASS           | Needs Refactor | Payment tests              |
-| FR-DATA-005 | Atomic critical operations | Implemented | PASS / PARTIAL | Needs Refactor | Transaction audit required |
-| FR-DATA-006 | Double booking prevention  | Verified    | PASS           | Target         | Concurrency protection     |
-
----
-
-# 33. Security
-
-| ID          | Requirement               | Status             | Test           | Architecture       | Notes                         |
-| ----------- | ------------------------- | ------------------ | -------------- | ------------------ | ----------------------------- |
-| NFR-SEC-001 | HTTPS                     | Needs Verification | N/A            | Deployment         | Environment concern           |
-| NFR-SEC-002 | Password hashing          | Verified           | PASS           | Target             | Laravel hashing               |
-| NFR-SEC-003 | SQL injection protection  | Implemented        | PASS / PARTIAL | Target             | ORM/query usage               |
-| NFR-SEC-004 | XSS protection            | Implemented        | PARTIAL        | Needs Verification | Requires broader audit        |
-| NFR-SEC-005 | CSRF protection           | Implemented        | PASS / PARTIAL | Target             | Web framework                 |
-| NFR-SEC-006 | Authorization             | Implemented        | PASS / PARTIAL | Needs Refactor     | Requires route/action audit   |
-| NFR-SEC-007 | Tenant isolation          | Verified           | PASS           | Target             | Critical                      |
-| NFR-SEC-008 | IDOR protection           | Verified           | PASS           | Needs Refactor     | Security tests exist          |
-| NFR-SEC-009 | Payment callback security | Verified           | PASS           | Needs Refactor     | Callback hardening            |
-| NFR-SEC-010 | Secret protection         | Needs Verification | PARTIAL        | Deployment         | Requires repository/env audit |
-
----
-
-# 34. Performance
-
-| ID           | Requirement                 | Status             | Test    | Architecture       | Notes                    |
-| ------------ | --------------------------- | ------------------ | ------- | ------------------ | ------------------------ |
-| NFR-PERF-001 | Normal requests target ≤2s  | Needs Verification | MISSING | Needs Refactor     | Requires measurement     |
-| NFR-PERF-002 | Heavy operations target ≤5s | Needs Verification | MISSING | Needs Verification | Requires measurement     |
-| NFR-PERF-003 | Fresh availability          | Implemented        | PARTIAL | Needs Refactor     | Cache invalidation audit |
-| NFR-PERF-004 | Query efficiency            | Needs Verification | MISSING | Needs Refactor     | Query audit required     |
-| NFR-PERF-005 | Appropriate caching         | Implemented        | PARTIAL | Needs Refactor     | Existing cache strategy  |
-
----
-
-# 35. Scalability
-
-| ID            | Requirement                  | Status             | Test    | Architecture   | Notes                     |
-| ------------- | ---------------------------- | ------------------ | ------- | -------------- | ------------------------- |
-| NFR-SCALE-001 | Tenant growth                | Needs Verification | MISSING | Target         | Architecture target       |
-| NFR-SCALE-002 | User growth                  | Needs Verification | MISSING | Target         | Requires load testing     |
-| NFR-SCALE-003 | Booking growth               | Needs Verification | MISSING | Needs Refactor | Booking domain priority   |
-| NFR-SCALE-004 | Horizontal scaling readiness | Needs Verification | MISSING | Target         | Infrastructure validation |
-
----
-
-# 36. Reliability
-
-| ID          | Requirement                  | Status             | Test           | Architecture   | Notes                       |
-| ----------- | ---------------------------- | ------------------ | -------------- | -------------- | --------------------------- |
-| NFR-REL-001 | Transaction consistency      | Implemented        | PASS / PARTIAL | Needs Refactor | Critical-flow audit         |
-| NFR-REL-002 | External callback resilience | Verified           | PASS           | Needs Refactor | Webhook idempotency         |
-| NFR-REL-003 | Error recovery               | Needs Verification | PARTIAL        | Needs Refactor | Requires failure-path audit |
-| NFR-REL-004 | Production backup            | Needs Verification | N/A            | Deployment     | Operational requirement     |
-| NFR-REL-005 | Recovery procedure           | Needs Verification | N/A            | Deployment     | Operational requirement     |
-
----
-
-# 37. Availability
-
-| ID            | Requirement                            | Status             | Test | Architecture | Notes                          |
-| ------------- | -------------------------------------- | ------------------ | ---- | ------------ | ------------------------------ |
-| NFR-AVAIL-001 | Target high availability / ~99% uptime | Needs Verification | N/A  | Deployment   | Requires production monitoring |
-
----
-
-# 38. Usability
-
-| ID         | Requirement             | Status      | Test             | Architecture   | Notes                    |
-| ---------- | ----------------------- | ----------- | ---------------- | -------------- | ------------------------ |
-| NFR-UX-001 | Responsive interface    | Implemented | MANUAL           | Needs Refactor | Visual QA required       |
-| NFR-UX-002 | Consistent navigation   | Implemented | PASS / MANUAL    | Needs Refactor | Sidebar/navigation tests |
-| NFR-UX-003 | Clear booking flow      | Implemented | PASS / MANUAL    | Needs Refactor | Customer frontend tests  |
-| NFR-UX-004 | Concise booking process | Implemented | PASS / MANUAL    | Needs Refactor | Customer flow            |
-| NFR-UX-005 | Clear state             | Implemented | MANUAL / PARTIAL | Needs Refactor | UX audit required        |
-
----
-
-# 39. Compatibility
-
-| ID           | Requirement            | Status             | Test    | Architecture   | Notes                   |
-| ------------ | ---------------------- | ------------------ | ------- | -------------- | ----------------------- |
-| NFR-COMP-001 | Modern browser support | Needs Verification | MISSING | Target         | Browser matrix needed   |
-| NFR-COMP-002 | Responsive layout      | Implemented        | MANUAL  | Needs Refactor | Responsive verification |
-
----
-
-# 40. Maintainability
-
-| ID            | Requirement                    | Status         | Test | Architecture   | Notes                             |
-| ------------- | ------------------------------ | -------------- | ---- | -------------- | --------------------------------- |
-| NFR-MAINT-001 | Separation of responsibilities | Needs Refactor | N/A  | Needs Refactor | Major current concern             |
-| NFR-MAINT-002 | Modular design                 | Needs Refactor | N/A  | Needs Refactor | Target architecture               |
-| NFR-MAINT-003 | Reusable components            | Needs Refactor | N/A  | Needs Refactor | Large Blade files                 |
-| NFR-MAINT-004 | Consistent naming              | Needs Refactor | N/A  | Needs Refactor | Legacy terminology                |
-| NFR-MAINT-005 | Technical documentation        | In Progress    | N/A  | Target         | Current documentation rebuild     |
-| NFR-MAINT-006 | Technical debt visibility      | In Progress    | N/A  | Target         | This tracker establishes baseline |
-
----
-
-# 41. Observability
-
-| ID          | Requirement            | Status             | Test           | Architecture       | Notes                  |
-| ----------- | ---------------------- | ------------------ | -------------- | ------------------ | ---------------------- |
-| NFR-OBS-001 | Authentication events  | Implemented        | PARTIAL        | Needs Verification | Logging audit required |
-| NFR-OBS-002 | Booking events         | Implemented        | PASS / PARTIAL | Needs Refactor     | Booking logs exist     |
-| NFR-OBS-003 | Payment events         | Implemented        | PASS / PARTIAL | Needs Refactor     | Payment logs/events    |
-| NFR-OBS-004 | Application errors     | Implemented        | MANUAL         | Needs Verification | Laravel logging        |
-| NFR-OBS-005 | Operational monitoring | Needs Verification | MISSING        | Deployment         | Requires environment   |
-
----
-
-# 42. Extensibility
-
-| ID          | Requirement                | Status         | Test           | Architecture   | Notes                       |
-| ----------- | -------------------------- | -------------- | -------------- | -------------- | --------------------------- |
-| NFR-EXT-001 | Payment provider boundary  | Needs Refactor | PASS / PARTIAL | Needs Refactor | Midtrans currently coupled  |
-| NFR-EXT-002 | Notification extensibility | Needs Refactor | PARTIAL        | Needs Refactor | Future channels             |
-| NFR-EXT-003 | Feature expansion          | Needs Refactor | N/A            | Target         | Main architecture objective |
-| NFR-EXT-004 | Tenant-safe expansion      | Implemented    | PASS           | Target         | Existing tenant mechanism   |
-
----
-
-# 43. Architectural Refactoring Tracker
-
-This section tracks architectural problems independently from feature completion.
-
-## A. Booking Architecture
-
-Priority: Critical
-
-```text
-Status: Needs Refactor
-```
-
-Tasks:
-
-```text
-[ ] Audit BookingController
-[ ] Extract booking creation action
-[ ] Extract availability logic
-[ ] Extract checkout orchestration
-[ ] Extract cancellation logic
-[ ] Extract reschedule logic
-[ ] Centralize booking state transitions
-[ ] Centralize booking pricing
-[ ] Reduce controller dependency count
-[ ] Add characterization tests
-```
-
----
-
-## B. Payment Architecture
-
-Priority: High
-
-```text
-Status: Needs Refactor
-```
-
-Tasks:
-
-```text
-[ ] Separate booking payment from subscription payment
-[ ] Isolate Midtrans-specific implementation
-[ ] Centralize payment state transitions
-[ ] Extract payment operations
-[ ] Audit webhook handling
-[ ] Audit transaction boundaries
-```
-
----
-
-## C. Schedule Architecture
-
-Priority: High
-
-```text
-Status: Needs Refactor
-```
-
-Tasks:
-
-```text
-[ ] Extract availability calculation
-[ ] Extract conflict checking
-[ ] Extract bulk slot generation
-[ ] Centralize blocked-date rules
-[ ] Consolidate cache invalidation
-```
-
----
-
-## D. Owner Controller Architecture
-
-Priority: High
-
-```text
-Status: Needs Refactor
-```
-
-Current candidates:
-
-```text
-OwnerDashboardController
-OwnerPortalController
-OwnerBookingController
-OwnerSettingController
-OwnerCustomerController
-OwnerProgramController
-```
-
-Tasks:
-
-```text
-[ ] Identify responsibility boundaries
-[ ] Extract Actions
-[ ] Extract Form Requests
-[ ] Remove duplicated tenant resolution
-[ ] Remove repeated query logic
-[ ] Reduce controller size
-```
-
----
-
-## E. Blade Architecture
-
-Priority: High
-
-Current large views include:
-
-```text
-owner/calendar.blade.php
-owner/staff-resources.blade.php
-owner/bookings.blade.php
-customer/manage/show.blade.php
-customer/booking/payment.blade.php
-```
-
-Tasks:
-
-```text
-[ ] Identify reusable components
-[ ] Extract repeated modal structures
-[ ] Extract repeated form fields
-[ ] Separate page sections
-[ ] Reduce embedded business logic
-[ ] Reduce oversized Alpine state
-```
-
----
-
-## F. Terminology Refactor
-
-Priority: Medium
-
-Legacy:
-
-```text
-Program
-Layanan
-idlayanan
-namalayanan
-```
-
-Canonical:
-
-```text
-Service
-```
-
-Tasks:
-
-```text
-[ ] Identify legacy terminology
-[ ] Identify database compatibility impact
-[ ] Identify route compatibility impact
-[ ] Identify test impact
-[ ] Perform incremental migration
-```
-
----
-
-## G. Route Architecture
-
-Priority: Medium
-
-Tasks:
-
-```text
-[ ] Audit route organization
-[ ] Remove unnecessary duplicate route aliases
-[ ] Standardize route naming
-[ ] Extract route groups where useful
-[ ] Keep business logic out of routes
-```
-
----
-
-## H. Shared Logic
-
-Priority: Medium
-
-Tasks:
-
-```text
-[ ] Audit Traits
-[ ] Audit Support classes
-[ ] Identify duplicated booking logic
-[ ] Identify duplicated tenant resolution
-[ ] Identify generic utility accumulation
-```
-
----
-
-# 44. Current High-Priority Refactor Queue
-
-The current recommended refactor order is:
-
-```text id="tqijv7"
-R-001
-Booking domain extraction
-
-R-002
-Payment boundary extraction
-
-R-003
-Schedule / availability extraction
-
-R-004
-Owner controller decomposition
-
-R-005
-Large Blade decomposition
-
-R-006
-Subscription entitlement centralization
-
-R-007
-Terminology normalization
-
-R-008
-Route cleanup
-
-R-009
-Shared utility / trait cleanup
-```
-
-This queue is a technical roadmap, not a product feature roadmap.
-
----
-
-# 45. Verification Queue
-
-The following areas require stronger verification before being considered fully verified.
-
-```text
-[ ] Production performance targets
-[ ] Concurrent-user scalability
-[ ] Production uptime
-[ ] Backup/recovery
-[ ] Browser compatibility matrix
-[ ] Full authorization audit
-[ ] Notification isolation
-[ ] Custom domain behavior
-[ ] Analytics metric correctness
-[ ] Dashboard metric correctness
-[ ] Asset security
-[ ] Production secret management
-```
-
----
-
-# 46. Documentation Work Queue
-
-Current documentation state:
-
-```text
-[✓] PRODUCT.md
-[✓] REQUIREMENTS.md
-[✓] ARCHITECTURE.md
-[✓] DEVELOPMENT.md
-[ ] TRACKER.md
-[ ] AGENTS.md
-[ ] docs/README.md
-```
-
-This file becomes complete once the current implementation audit has been synchronized with the final requirement mapping.
-
----
-
-# 47. Feature vs Architecture Matrix
-
-This matrix is important for the current BookQu state.
-
-| Area                | Product State | Functional State | Architecture State   |
-| ------------------- | ------------- | ---------------- | -------------------- |
-| Authentication      | Core          | Implemented      | Legacy               |
-| Tenant              | Core          | Implemented      | Target / Needs Audit |
-| Service             | Core          | Done             | Needs Refactor       |
-| Schedule            | Core          | Done             | Needs Refactor       |
-| Booking             | Core          | Done             | Needs Major Refactor |
-| Customer            | Core          | Done             | Needs Refactor       |
-| Payment             | Core          | Done             | Needs Refactor       |
-| Calendar            | Core          | Done             | Needs Refactor       |
-| Dashboard           | Core          | Done             | Needs Refactor       |
-| Categories          | Supporting    | Implemented      | Needs Refactor       |
-| Staff/Resources     | Supporting    | Implemented      | Needs Refactor       |
-| Additional Items    | Supporting    | Implemented      | Needs Refactor       |
-| Vouchers            | Supporting    | Implemented      | Needs Refactor       |
-| Reviews             | Supporting    | Implemented      | Needs Refactor       |
-| Analytics           | Supporting    | Implemented      | Needs Refactor       |
-| Reports             | Supporting    | Implemented      | Needs Refactor       |
-| Assets              | Supporting    | Implemented      | Needs Refactor       |
-| Appearance          | Supporting    | Implemented      | Needs Refactor       |
-| Notifications       | Supporting    | Implemented      | Needs Refactor       |
-| Subscription        | Platform      | Implemented      | Needs Refactor       |
-| Admin               | Platform      | Implemented      | Needs Verification   |
-| Future Integrations | Future        | Not Baseline     | Not Started          |
-| AI Insights         | Future        | Not Baseline     | Not Started          |
-| Advanced CRM        | Future        | Not Baseline     | Not Started          |
-| Multi-location      | Future        | Not Baseline     | Not Started          |
-
----
-
-# 48. Current Development Phase
-
-BookQu should currently be considered in:
-
-```text
-PHASE: Stabilization + Architecture Consolidation
-```
-
-The project is not currently in:
-
-```text
-Feature Expansion Phase
-```
-
-The immediate goal is to:
-
-```text
-1. Stabilize product definition
-2. Stabilize requirements
-3. Stabilize architecture direction
-4. Map current implementation
-5. Protect existing behavior
-6. Refactor critical architecture
-7. Strengthen testing
-```
-
-Only after these are sufficiently stable should large new product capabilities be added.
-
----
-
-# 49. Rule for New Work
-
-Before adding any new feature:
-
-```text
-[ ] Does the capability exist in PRODUCT.md?
-[ ] Does a requirement exist in REQUIREMENTS.md?
-[ ] Is the requirement ID known?
-[ ] Does the current architecture have an appropriate home?
-[ ] Does an existing implementation already solve it?
-[ ] Does the task require a new domain?
-[ ] Are tests defined?
-[ ] Is the tracker entry present?
-```
-
-If the answer to the requirement question is `No`, stop and classify the task as a product change.
-
----
-
-# 50. Rule for "Done"
-
-Do not mark a feature as `Done` only because:
-
-* a page exists;
-* a button works;
-* the happy path works;
-* a controller was written.
-
-A feature should be considered `Done` when its required behavior has been implemented and sufficiently verified.
-
----
-
-# 51. Rule for "Needs Refactor"
-
-Mark a feature `Needs Refactor` when:
-
-* behavior is considered correct;
-* tests indicate expected behavior;
-* but implementation violates significant target architecture principles.
-
-This status is not a failure.
-
-It is a deliberate representation of technical debt.
-
----
-
-# 52. Rule for Blockers
-
-A blocker must describe why work cannot proceed.
-
-Bad:
-
-```text
-Blocked: not finished.
-```
-
-Good:
-
-```text
-Blocked:
-Waiting for payment-provider credentials required to verify production callback behavior.
-```
-
-Every blocker should include:
+A blocker must describe:
 
 ```text
 Reason
 Impact
 Required resolution
-Last updated
 ```
 
 ---
 
-# 53. Tracker Update Rules
+## 3.8 Deprecated
+
+The implementation or requirement is intentionally no longer part of the current product baseline.
+
+---
+
+# 4. Architecture Status
+
+Architecture status is tracked separately from functional status.
+
+| Status               | Meaning                                                               |
+| -------------------- | --------------------------------------------------------------------- |
+| `Target`             | Current implementation follows the intended architectural direction   |
+| `Needs Refactor`     | Functional but structurally inconsistent with the target architecture |
+| `Needs Verification` | Architecture has not been sufficiently audited                        |
+| `Blocked`            | Architectural work is blocked                                         |
+| `Not Evaluated`      | No formal assessment yet                                              |
+
+Example:
+
+```text
+Functional Status:
+Done
+
+Architecture Status:
+Needs Refactor
+```
+
+This means the feature works but its implementation still requires structural improvement.
+
+---
+
+# 5. Test Status
+
+| Status    | Meaning                                                   |
+| --------- | --------------------------------------------------------- |
+| `PASS`    | Relevant automated verification passes                    |
+| `PARTIAL` | Some relevant behavior is covered                         |
+| `MANUAL`  | Important verification is currently manual                |
+| `MISSING` | Appropriate automated verification is not yet established |
+| `FAIL`    | Current verification fails                                |
+| `UNKNOWN` | Verification state has not yet been established           |
+| `N/A`     | Automated testing is not applicable                       |
+
+---
+
+# 6. Priority
+
+| Priority | Meaning                                         |
+| -------- | ----------------------------------------------- |
+| `P0`     | Core product or security/data-integrity concern |
+| `P1`     | Important supporting or operational concern     |
+| `P2`     | Future improvement or expansion                 |
+
+Priority describes importance, not implementation difficulty.
+
+---
+
+# 7. Verification Baseline
+
+The latest recorded full-suite baseline is:
+
+```text
+Tests:       315
+Assertions:  1,564
+Failures:    0
+```
+
+This baseline should be treated as the latest recorded verification result, not as a permanent guarantee that the current repository remains unchanged.
+
+Whenever meaningful implementation changes are introduced, the test baseline should be refreshed.
+
+Additional verification should include, where applicable:
+
+```text
+Unit tests
+Feature tests
+Integration tests
+Security tests
+Concurrency tests
+Browser/manual verification
+Operational verification
+```
+
+---
+
+# 8. Current Project State
+
+BookQu currently contains the major product areas required for its existing scope.
+
+The current implementation includes areas such as:
+
+```text
+Authentication
+Multi-Tenancy
+Business Profile
+Public Business Page
+Service Management
+Category Management
+Schedule Management
+Booking
+Walk-In Booking
+Multi-Slot Booking
+Customer Management
+Calendar
+Payment
+Refund
+Reviews
+Staff
+Resources
+Additional Items
+Vouchers
+Analytics
+Reports
+Appearance
+Assets
+Notifications
+Subscription
+Admin
+```
+
+The project should currently be treated as:
+
+```text
+Development State:
+Established Functional Baseline
+```
+
+The immediate development objective is not uncontrolled feature expansion.
+
+The focus is:
+
+```text
+Behavior verification
++
+Requirement traceability
++
+System understanding
++
+Architecture consistency
++
+Security and data integrity
++
+Operational reliability
+```
+
+---
+
+# 9. Core Product Tracker
+
+## 9.1 Authentication
+
+| Area                | Functional Status | Test Status | Architecture       | Priority |
+| ------------------- | ----------------- | ----------- | ------------------ | -------- |
+| Registration        | Implemented       | PARTIAL     | Needs Verification | P1       |
+| Login               | Implemented       | PASS        | Needs Verification | P0       |
+| Logout              | Implemented       | PASS        | Needs Verification | P1       |
+| Email verification  | Implemented       | PARTIAL     | Needs Verification | P1       |
+| Role/access control | Implemented       | PASS        | Needs Verification | P0       |
+| Password security   | Implemented       | PASS        | Target             | P0       |
+
+Current verification work:
+
+```text
+[ ] Review protected route coverage
+[ ] Review authorization boundaries
+[ ] Add missing authorization regression tests
+```
+
+---
+
+# 10. Tenant and Business Management
+
+| Area                 | Functional Status | Test Status | Architecture       | Priority |
+| -------------------- | ----------------- | ----------- | ------------------ | -------- |
+| Tenant creation      | Implemented       | PARTIAL     | Needs Verification | P0       |
+| Tenant context       | Done              | PASS        | Target             | P0       |
+| Tenant isolation     | Done              | PASS        | Target             | P0       |
+| Business profile     | Done              | PARTIAL     | Needs Verification | P1       |
+| Business slug        | Done              | PASS        | Needs Verification | P1       |
+| Public tenant access | Done              | PASS        | Needs Verification | P0       |
+| Custom domain        | Implemented       | PARTIAL     | Needs Verification | P1       |
+
+Current verification queue:
+
+```text
+[ ] Audit tenant-owned models
+[ ] Audit intentional unscoped queries
+[ ] Verify cross-tenant authorization
+[ ] Verify custom-domain behavior
+[ ] Document tenant resolution path
+```
+
+---
+
+# 11. Public Business Page
+
+| Area                  | Functional Status | Test Status | Architecture       | Priority |
+| --------------------- | ----------------- | ----------- | ------------------ | -------- |
+| Public business page  | Done              | PASS        | Needs Verification | P0       |
+| Service listing       | Done              | PASS        | Needs Verification | P0       |
+| Branding / appearance | Implemented       | PARTIAL     | Needs Verification | P1       |
+| Public booking entry  | Done              | PASS        | Needs Verification | P0       |
+
+---
+
+# 12. Service Management
+
+| Area                        | Functional Status | Test Status | Architecture | Priority |
+| --------------------------- | ----------------- | ----------- | ------------ | -------- |
+| Create service              | Done              | PASS        | Target       | P0       |
+| Update service              | Done              | PASS        | Target       | P0       |
+| Activate / deactivate       | Done              | PASS        | Target       | P0       |
+| Delete service              | Done              | PASS        | Target       | P1       |
+| Service ownership           | Done              | PASS        | Target       | P0       |
+| Inactive-service protection | Done              | PASS        | Target       | P0       |
+
+---
+
+# 13. Category Management
+
+| Area                | Functional Status | Test Status | Architecture       | Priority |
+| ------------------- | ----------------- | ----------- | ------------------ | -------- |
+| Create category     | Implemented       | PASS        | Needs Verification | P1       |
+| Update category     | Implemented       | PASS        | Needs Verification | P1       |
+| Delete category     | Implemented       | PASS        | Needs Verification | P1       |
+| Category status     | Implemented       | PARTIAL     | Needs Verification | P1       |
+| Service association | Implemented       | PASS        | Needs Verification | P1       |
+
+---
+
+# 14. Schedule and Availability
+
+| Area                       | Functional Status | Test Status | Architecture | Priority |
+| -------------------------- | ----------------- | ----------- | ------------ | -------- |
+| Schedule creation          | Done              | PASS        | Target       | P0       |
+| Bulk schedule creation     | Done              | PASS        | Target       | P0       |
+| Schedule pricing           | Done              | PASS        | Target       | P1       |
+| Availability configuration | Done              | PASS        | Target       | P0       |
+| Blocked dates              | Done              | PASS        | Target       | P1       |
+| Schedule deletion          | Done              | PASS        | Target       | P1       |
+| Conflict prevention        | Done              | PASS        | Target       | P0       |
+| Past schedule protection   | Done              | PASS        | Target       | P0       |
+| Booking availability query | Done              | PASS        | Target       | P0       |
+
+Important domain rules are centralized through the schedule/availability implementation and must remain aligned with `docs/3-REQUIREMENT.md` and `docs/7-SYSTEM-DESIGN.md`.
+
+---
+
+# 15. Booking
+
+Booking is a P0 domain.
+
+| Area                        | Functional Status | Test Status | Architecture | Priority |
+| --------------------------- | ----------------- | ----------- | ------------ | -------- |
+| Service selection           | Done              | PASS        | Target       | P0       |
+| Date selection              | Done              | PASS        | Target       | P0       |
+| Time selection              | Done              | PASS        | Target       | P0       |
+| Customer information        | Done              | PASS        | Target       | P0       |
+| Booking creation            | Done              | PASS        | Target       | P0       |
+| Booking code                | Done              | PASS        | Target       | P0       |
+| Booking state               | Done              | PASS        | Target       | P0       |
+| Booking detail              | Done              | PASS        | Target       | P0       |
+| Owner status management     | Done              | PASS        | Target       | P0       |
+| Walk-in booking             | Done              | PASS        | Target       | P0       |
+| Customer cancellation       | Done              | PASS        | Target       | P0       |
+| Owner cancellation          | Done              | PASS        | Target       | P0       |
+| Customer rescheduling       | Done              | PASS        | Target       | P0       |
+| Owner rescheduling          | Done              | PASS        | Target       | P0       |
+| Management token protection | Done              | PASS        | Target       | P0       |
+| Availability protection     | Done              | PASS        | Target       | P0       |
+| Double-booking protection   | Verified          | PASS        | Target       | P0       |
+| Tenant validation           | Verified          | PASS        | Target       | P0       |
+
+Critical current rules:
+
+```text
+paid       → occupies schedule
+completed  → occupies schedule
+pending    → occupies schedule only during the grace period
+cancelled  → does not occupy schedule
+```
+
+Current pending grace:
+
+```text
+15 minutes
+```
+
+Critical booking verification must continue to cover:
+
+```text
+[ ] Concurrent booking
+[ ] Stale pending booking
+[ ] Cross-tenant access
+[ ] Cross-booking token access
+[ ] Cancellation authorization
+[ ] Rescheduling authorization
+[ ] Multi-slot consistency
+```
+
+---
+
+# 16. Multi-Slot Booking
+
+| Area                    | Functional Status | Test Status | Architecture | Priority |
+| ----------------------- | ----------------- | ----------- | ------------ | -------- |
+| Multi-slot selection    | Done              | PASS        | Target       | P0       |
+| Slot compatibility      | Verified          | PASS        | Target       | P0       |
+| Unified booking/payment | Verified          | PASS        | Target       | P0       |
+| Unified invoice         | Verified          | PASS        | Target       | P1       |
+| Group cancellation      | Verified          | PASS        | Target       | P0       |
+| Group rescheduling      | Verified          | PASS        | Target       | P0       |
+
+The key invariant is atomic correctness across the complete booking group.
+
+---
+
+# 17. Customer Management
+
+| Area               | Functional Status | Test Status | Architecture | Priority |
+| ------------------ | ----------------- | ----------- | ------------ | -------- |
+| Customer record    | Done              | PASS        | Target       | P1       |
+| Customer directory | Done              | PASS        | Target       | P1       |
+| Booking history    | Done              | PASS        | Target       | P1       |
+| Customer notes     | Implemented       | PASS        | Target       | P1       |
+| Customer privacy   | Implemented       | PASS        | Target       | P0       |
+
+---
+
+# 18. Customer Management Without Normal Accounts
+
+Customer-facing management uses scoped booking-related access rather than requiring the normal owner authentication system.
+
+Tracked capabilities include:
+
+```text
+Booking detail
+Invoice / payment information
+Cancellation
+Rescheduling
+Review
+```
+
+Current token rules:
+
+```text
+[✓] Token required where specified
+[✓] Token scope separated by operation
+[✓] Cross-booking access rejected
+[✓] Authorization checked server-side
+```
+
+Further audit:
+
+```text
+[ ] Review every customer-management endpoint
+[ ] Verify token scope consistency
+[ ] Add regression coverage for token misuse
+```
+
+---
+
+# 19. Payment
+
+| Area                 | Functional Status | Test Status | Architecture | Priority |
+| -------------------- | ----------------- | ----------- | ------------ | -------- |
+| Booking payment      | Done              | PASS        | Target       | P0       |
+| Midtrans integration | Done              | PASS        | Target       | P0       |
+| Payment state        | Done              | PASS        | Target       | P0       |
+| External reference   | Done              | PASS        | Target       | P0       |
+| Trusted verification | Verified          | PASS        | Target       | P0       |
+| Webhook processing   | Done              | PASS        | Target       | P0       |
+| Expiration handling  | Done              | PASS        | Target       | P0       |
+| Refund processing    | Implemented       | PASS        | Target       | P0       |
+
+Current payment states:
+
+```text
+pending
+sukses
+gagal
+```
+
+Payment expiration is represented as a business condition and should not be recreated as a separate persistent payment status unless the requirements are intentionally changed.
+
+Current critical verification:
+
+```text
+[ ] Duplicate webhook
+[ ] Invalid callback
+[ ] Failed payment
+[ ] Expired payment
+[ ] Booking/payment state consistency
+[ ] Refund idempotency
+```
+
+---
+
+# 20. Subscription
+
+| Area                | Functional Status | Test Status | Architecture | Priority |
+| ------------------- | ----------------- | ----------- | ------------ | -------- |
+| Plan management     | Implemented       | PASS        | Target       | P1       |
+| Subscription state  | Implemented       | PASS        | Target       | P1       |
+| Entitlement rules   | Implemented       | PASS        | Target       | P1       |
+| Feature gating      | Implemented       | PASS        | Target       | P1       |
+| Expiration handling | Implemented       | PARTIAL     | Target       | P1       |
+| Usage limits        | Implemented       | PARTIAL     | Target       | P1       |
+
+Further verification:
+
+```text
+[ ] Review all feature entitlement entry points
+[ ] Verify expired-subscription behavior
+[ ] Verify feature limits
+[ ] Verify subscription transition edge cases
+```
+
+---
+
+# 21. Reviews
+
+| Area                 | Functional Status | Test Status | Architecture       | Priority |
+| -------------------- | ----------------- | ----------- | ------------------ | -------- |
+| Review submission    | Implemented       | PASS        | Target             | P1       |
+| Review authorization | Implemented       | PASS        | Target             | P1       |
+| Review display       | Implemented       | PASS        | Needs Verification | P1       |
+
+---
+
+# 22. Staff and Resources
+
+| Area                | Functional Status | Test Status | Architecture | Priority |
+| ------------------- | ----------------- | ----------- | ------------ | -------- |
+| Staff management    | Implemented       | PASS        | Target       | P1       |
+| Resource management | Implemented       | PASS        | Target       | P1       |
+| Service association | Implemented       | PASS        | Target       | P1       |
+
+Further verification should focus on authorization and tenant ownership.
+
+---
+
+# 23. Additional Items
+
+| Area                | Functional Status | Test Status | Architecture       | Priority |
+| ------------------- | ----------------- | ----------- | ------------------ | -------- |
+| Item creation       | Implemented       | PASS        | Target             | P1       |
+| Item update         | Implemented       | PASS        | Target             | P1       |
+| Item deletion       | Implemented       | PASS        | Target             | P1       |
+| Booking association | Implemented       | PARTIAL     | Needs Verification | P1       |
+
+---
+
+# 24. Voucher
+
+| Area                | Functional Status | Test Status | Architecture | Priority |
+| ------------------- | ----------------- | ----------- | ------------ | -------- |
+| Voucher management  | Implemented       | PASS        | Target       | P1       |
+| Voucher validation  | Implemented       | PASS        | Target       | P0       |
+| Voucher application | Implemented       | PARTIAL     | Target       | P0       |
+| Voucher ownership   | Implemented       | PASS        | Target       | P0       |
+
+The authoritative eligibility rule must remain centralized and must not be independently reimplemented in the frontend.
+
+---
+
+# 25. Dashboard and Calendar
+
+| Area                   | Functional Status | Test Status | Architecture       | Priority |
+| ---------------------- | ----------------- | ----------- | ------------------ | -------- |
+| Owner dashboard        | Done              | PARTIAL     | Needs Verification | P1       |
+| Booking overview       | Done              | PASS        | Needs Verification | P1       |
+| Calendar               | Done              | PASS        | Needs Verification | P0       |
+| Schedule visualization | Done              | PASS        | Needs Verification | P0       |
+
+Further work should focus on metric correctness and consistency with domain state.
+
+---
+
+# 26. Analytics and Reports
+
+| Area      | Functional Status | Test Status | Architecture       | Priority |
+| --------- | ----------------- | ----------- | ------------------ | -------- |
+| Analytics | Implemented       | PARTIAL     | Needs Verification | P1       |
+| Reports   | Implemented       | PARTIAL     | Needs Verification | P1       |
+
+Verification queue:
+
+```text
+[ ] Verify metric definitions
+[ ] Verify date-range behavior
+[ ] Verify tenant isolation
+[ ] Verify aggregation correctness
+[ ] Verify dashboard/report consistency
+```
+
+---
+
+# 27. Appearance and Assets
+
+| Area                | Functional Status | Test Status | Architecture       | Priority |
+| ------------------- | ----------------- | ----------- | ------------------ | -------- |
+| Appearance settings | Implemented       | PARTIAL     | Target             | P1       |
+| Business assets     | Implemented       | PARTIAL     | Needs Verification | P1       |
+| Public branding     | Implemented       | PARTIAL     | Needs Verification | P1       |
+
+Security verification must include:
+
+```text
+[ ] Tenant ownership
+[ ] Upload validation
+[ ] File visibility
+[ ] Unauthorized file access
+```
+
+---
+
+# 28. Notifications
+
+| Area                          | Functional Status | Test Status | Architecture | Priority |
+| ----------------------------- | ----------------- | ----------- | ------------ | -------- |
+| Booking notifications         | Implemented       | PARTIAL     | Target       | P1       |
+| Owner notifications           | Implemented       | PARTIAL     | Target       | P1       |
+| Customer notifications        | Implemented       | PARTIAL     | Target       | P1       |
+| Cancellation notifications    | Implemented       | PASS        | Target       | P1       |
+| Payment-related notifications | Implemented       | PARTIAL     | Target       | P1       |
+
+Important verification:
+
+```text
+[ ] No duplicate notification
+[ ] Correct tenant recipient
+[ ] Correct booking context
+[ ] Correct cancellation behavior
+```
+
+---
+
+# 29. Admin
+
+| Area                        | Functional Status | Test Status | Architecture       | Priority |
+| --------------------------- | ----------------- | ----------- | ------------------ | -------- |
+| Admin access                | Implemented       | PASS        | Target             | P0       |
+| Admin dashboard             | Implemented       | PARTIAL     | Needs Verification | P1       |
+| Tenant-level administration | Implemented       | PARTIAL     | Needs Verification | P1       |
+
+---
+
+# 30. Cross-Cutting Security Tracker
+
+Security is not a separate feature. It must remain an invariant across every domain.
+
+Current high-priority security verification:
+
+```text
+[ ] Complete tenant isolation audit
+[ ] Review all authorization policies
+[ ] Review customer token boundaries
+[ ] Review IDOR-sensitive endpoints
+[ ] Review file access
+[ ] Review webhook verification
+[ ] Review sensitive logging
+[ ] Review cross-tenant queries
+[ ] Review unscoped model access
+```
+
+Priority:
+
+```text
+P0
+```
+
+---
+
+# 31. Cross-Cutting Data Integrity Tracker
+
+The following invariants require continued protection:
+
+```text
+[ ] No double booking
+[ ] Correct pending expiration
+[ ] Correct payment synchronization
+[ ] Correct refund state
+[ ] Correct multi-slot atomicity
+[ ] Correct tenant ownership
+[ ] Correct booking state transitions
+[ ] Correct subscription entitlement
+```
+
+---
+
+# 32. Operational Verification Queue
+
+Operational procedures are defined in:
+
+```text
+docs/8-OPERATIONS.md
+```
+
+The tracker should only record whether operational verification has been completed.
+
+Current queue:
+
+```text
+[ ] Production scheduler verification
+[ ] Queue worker verification
+[ ] Production environment verification
+[ ] Backup / recovery verification
+[ ] Production monitoring verification
+[ ] External payment configuration verification
+[ ] Deployment verification
+[ ] Failure recovery verification
+```
+
+Operational details themselves belong in `8-OPERATIONS.md`.
+
+---
+
+# 33. System Design Synchronization Queue
+
+`docs/7-SYSTEM-DESIGN.md` represents the current system model.
+
+Update or audit it whenever the following change:
+
+```text
+[ ] Booking flow
+[ ] Payment flow
+[ ] Tenant resolution
+[ ] Authorization flow
+[ ] Availability flow
+[ ] Subscription flow
+[ ] Notification flow
+[ ] Important state transition
+[ ] Important database invariant
+[ ] Scheduler-triggered behavior
+```
+
+The tracker should identify the need for synchronization but should not duplicate the complete system design.
+
+---
+
+# 34. Architecture Debt Queue
+
+Current architecture work should focus on verified gaps rather than recreating a historical refactor checklist.
+
+Priority areas:
+
+```text
+P0
+[ ] Security / tenant isolation gaps
+
+P0
+[ ] Booking integrity or concurrency gaps
+
+P0
+[ ] Payment correctness gaps
+
+P1
+[ ] Authorization consolidation
+
+P1
+[ ] Large or unclear presentation boundaries
+
+P1
+[ ] Duplicate domain rules
+
+P1
+[ ] Inconsistent module boundaries
+
+P2
+[ ] Naming and general cleanup
+```
+
+A new refactor task should only be added when an actual architectural problem is identified.
+
+---
+
+# 35. Verification Queue
+
+The following areas should receive stronger verification where evidence is currently incomplete:
+
+```text
+[ ] Full authorization audit
+[ ] Full tenant isolation audit
+[ ] Custom domain behavior
+[ ] Dashboard metric correctness
+[ ] Analytics metric correctness
+[ ] Asset security
+[ ] Notification isolation
+[ ] Production performance
+[ ] Concurrent-user behavior
+[ ] Browser compatibility
+[ ] Backup and recovery
+[ ] Production operational readiness
+```
+
+---
+
+# 36. Active Work
+
+This section should contain only work that is genuinely active.
+
+Current active queue:
+
+```text
+[ ] Requirement-to-implementation traceability audit
+[ ] Current system design synchronization
+[ ] Operational documentation synchronization
+[ ] Security and tenant verification
+[ ] Booking/payment production-hardening verification
+```
+
+Do not retain completed historical work here merely to preserve its history.
+
+---
+
+# 37. Future Work
+
+Potential future work belongs here only when it is accepted as a project direction.
+
+Examples:
+
+```text
+Future product capabilities
+Advanced integrations
+Additional automation
+Scalability improvements
+Additional analytics
+New customer capabilities
+```
+
+Future ideas that have not been accepted should not be represented as active requirements.
+
+---
+
+# 38. Historical Refactor Status
+
+BookQu previously underwent a series of implementation refactors.
+
+Historical work included RF-00 through RF-09.
+
+That history is intentionally not duplicated here.
+
+The authoritative history is:
+
+```text
+Git commit history
+Pull requests
+Existing repository history
+```
+
+The tracker should describe the current resulting state rather than reproduce the historical execution sequence.
+
+This prevents the tracker from becoming a second project-history document.
+
+---
+
+# 39. Documentation Status
+
+The active documentation set is:
+
+```text
+[✓] AGENT.md
+[✓] docs/1-README.md
+[✓] docs/2-PRODUCT.md
+[✓] docs/3-REQUIREMENT.md
+[✓] docs/4-ARCHITECTURE.md
+[✓] docs/5-DEVELOPMENT.md
+[✓] docs/6-TRACKER.md
+[✓] docs/7-SYSTEM-DESIGN.md
+[✓] docs/8-OPERATIONS.md
+[✓] docs/adr/
+```
+
+The tracker is considered synchronized only when these documents describe the same current project direction.
+
+---
+
+# 40. New Work Gate
+
+Before accepting a new implementation task, verify:
+
+```text
+[ ] Does the capability exist in docs/2-PRODUCT.md?
+[ ] Does the behavior exist in docs/3-REQUIREMENT.md?
+[ ] Is the affected domain known?
+[ ] Does docs/4-ARCHITECTURE.md provide an appropriate boundary?
+[ ] Does docs/7-SYSTEM-DESIGN.md describe the current flow?
+[ ] Does an existing implementation already solve the problem?
+[ ] Are tests required?
+[ ] Does tracker status need to change?
+```
+
+If the requested behavior is absent from the product and requirements:
+
+```text
+Classify as Product Change.
+```
+
+Do not silently implement it as a normal feature.
+
+---
+
+# 41. Rules for Updating This Tracker
 
 Update the tracker when:
 
-* a task starts;
-* a task changes status;
-* testing begins;
-* testing fails;
-* implementation is completed;
-* an architecture issue is discovered;
-* a blocker appears;
-* a requirement changes.
+```text
+A task starts
+A task changes status
+Testing begins
+Testing fails
+Implementation is completed
+A blocker appears
+A meaningful architecture issue is discovered
+A requirement changes
+A verification milestone is completed
+```
 
-Do not wait until the end of an entire sprint or milestone.
+Do not update the tracker merely because a small code file changed.
 
----
-
-# 54. Change Log
-
-Track major tracker-level changes here.
-
-| Date       | Change                                                 | Reason                                                                  |
-| ---------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
-| 2026-09-26 | Replaced legacy tracker with requirement-based tracker | Establish single implementation source                                  |
-| 2026-09-26 | Added functional vs architecture state                 | Current code is functionally developed but architecturally inconsistent |
+The purpose is to maintain a useful current snapshot.
 
 ---
 
-# 55. Final Development Tracking Principle
+# 42. Tracker Quality Rules
+
+The tracker must remain:
+
+```text
+Current
+Evidence-based
+Concise enough to maintain
+Traceable
+Non-duplicative
+```
+
+Avoid turning it into:
+
+```text
+A second requirements document
+A copy of the architecture document
+A detailed Git history
+A list of every changed file
+A backlog of random ideas
+```
+
+---
+
+# 43. Current Development Direction
+
+Based on the current baseline, BookQu should prioritize:
+
+```text
+1. Security and tenant integrity
+2. Booking correctness
+3. Payment correctness
+4. Requirement traceability
+5. Current-system documentation
+6. Operational verification
+7. Test strengthening
+8. Architecture consistency
+9. Controlled product expansion
+```
+
+This ordering is a development priority, not a product ranking.
+
+---
+
+# 44. Definition of a Healthy Tracker
+
+A healthy tracker should allow a contributor to answer:
+
+```text
+What is implemented?
+What is verified?
+What is still uncertain?
+What needs architectural work?
+What is actively being worked on?
+What is blocked?
+What should happen next?
+```
+
+A contributor should not need to inspect historical RF documentation to answer these questions.
+
+---
+
+# 45. Final Tracker Principle
 
 The BookQu tracker follows:
 
-```text id="ypj8hi"
+```text
 Requirement
     ↓
 Implementation
     ↓
 Verification
     ↓
-Architecture
+Architecture State
     ↓
-Status
+Current Status
 ```
 
-The tracker must answer five questions:
+The tracker should always represent:
 
-```text
-What should exist?
-What exists?
-Does it work?
-Is it verified?
-Does it follow the target architecture?
-```
+> **the state of BookQu now.**
 
-A healthy BookQu development process must be able to answer all five.
+Historical development explains how that state was reached.
 
----
+Future plans explain where the project may go.
 
-# 56. Final Status Principle
-
-BookQu is currently treated as:
-
-> **Functionally mature in several core and supporting areas, but in need of architectural consolidation and systematic verification.**
-
-Therefore the immediate roadmap is:
-
-```text
-Current Implementation
-        ↓
-Requirement Traceability
-        ↓
-Architecture Refactor
-        ↓
-Verification
-        ↓
-Stable Development Baseline
-        ↓
-Future Feature Expansion
-```
-
-New functionality should not be allowed to recreate the architectural drift that this documentation effort is intended to eliminate.
+Neither should be mistaken for the current implementation baseline.

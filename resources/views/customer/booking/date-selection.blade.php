@@ -3,7 +3,7 @@
 @section('title', 'Pilih Tanggal')
 @section('current_step', 2)
 @section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug))
-@section('back_label', 'Pilih Layanan')
+@section('back_label', 'Kembali ke Pilih Layanan')
 
 @section('content')
 <div

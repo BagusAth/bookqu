@@ -187,15 +187,15 @@
                             <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                             Reservasi Dikonfirmasi
                         </span>
+                    @elseif($payment->isExpired())
+                        <span class="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-300 px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-xs">
+                            <span class="h-2 w-2 rounded-full bg-slate-500"></span>
+                            Waktu Pembayaran Habis
+                        </span>
                     @elseif($payment->status === 'pending')
                         <span class="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-1.5 text-xs font-bold text-amber-700 shadow-xs">
                             <span class="h-2 w-2 rounded-full bg-amber-500"></span>
                             Menunggu Pembayaran
-                        </span>
-                    @elseif($payment->status === 'kadaluarsa')
-                        <span class="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-300 px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-xs">
-                            <span class="h-2 w-2 rounded-full bg-slate-500"></span>
-                            Waktu Pembayaran Habis
                         </span>
                     @else
                         <span class="inline-flex items-center gap-1.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-1.5 text-xs font-bold text-red-700 shadow-xs">

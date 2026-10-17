@@ -51,7 +51,7 @@
             <!-- Topbar (Desktop & Mobile) -->
             @include('components.owner.topbar')
 
-            <div class="p-4 sm:p-6 lg:p-8 flex-1">
+            <div class="p-3.5 sm:p-5 md:p-6 lg:p-8 flex-1">
                 @if (session('pesan'))
                     <div class="mb-5 rounded-2xl border border-[#ffb84d]/60 bg-[#fff8eb] px-4 py-3 text-xs font-bold text-[#875000] shadow-2xs flex items-center gap-2">
                         <svg class="h-4 w-4 text-[#ffb84d] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

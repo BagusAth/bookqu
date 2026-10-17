@@ -24,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \Carbon\Carbon::setLocale(config('app.locale', 'id'));
+
         // Share Pro subscription status with the sidebar
         View::composer('components.owner.sidebar', function ($view) {
             $userId = auth()->id();

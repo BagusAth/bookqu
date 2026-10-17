@@ -1,35 +1,38 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Customer\BookingController;
 use App\Http\Controllers\Customer\BookingManageController;
 use App\Http\Controllers\Owner\OwnerAdditionalItemController;
 use App\Http\Controllers\Owner\OwnerAnalyticsController;
+use App\Http\Controllers\Owner\OwnerAppearanceController;
 use App\Http\Controllers\Owner\OwnerAssetController;
+use App\Http\Controllers\Owner\OwnerBalanceController;
 use App\Http\Controllers\Owner\OwnerBookingController;
+use App\Http\Controllers\Owner\OwnerCalendarController;
 use App\Http\Controllers\Owner\OwnerCategoryController;
 use App\Http\Controllers\Owner\OwnerCheckoutController;
 use App\Http\Controllers\Owner\OwnerCustomerController;
 use App\Http\Controllers\Owner\OwnerDashboardController;
+use App\Http\Controllers\Owner\OwnerIntegrationController;
 use App\Http\Controllers\Owner\OwnerLandingPageController;
 use App\Http\Controllers\Owner\OwnerNotificationController;
-use App\Http\Controllers\Owner\OwnerPortalController;
+use App\Http\Controllers\Owner\OwnerPaymentSettingsController;
 use App\Http\Controllers\Owner\OwnerProgramController;
 use App\Http\Controllers\Owner\OwnerReviewController;
 use App\Http\Controllers\Owner\OwnerScheduleController;
+use App\Http\Controllers\Owner\OwnerScheduleReportController;
 use App\Http\Controllers\Owner\OwnerSettingController;
 use App\Http\Controllers\Owner\OwnerStaffResourceController;
 use App\Http\Controllers\Owner\OwnerSubscriptionController;
 use App\Http\Controllers\Owner\OwnerVoucherController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
-use App\Models\User;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use App\Http\Controllers\Webhook\SingaPayWebhookController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Validation\Rules\Password;
 
 Route::get('/', function () {
     return view('welcome');
@@ -51,134 +54,26 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 
 // ── Authentication Routes ──
 Route::middleware('guest')->group(function () {
-    Route::get('/login', function () {
-        return view('auth.login');
-    })->name('login');
-    
-    Route::post('/login', function (Request $request) {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
-
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()
-                ->withErrors(['email' => 'Email atau password salah.'])
-                ->onlyInput('email');
-        }
-
-        $request->session()->regenerate();
-
-        $request->session()->forget('current_tenant_id');
-
-        $user = $request->user();
-
-        if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && !$user->hasVerifiedEmail()) {
-            return redirect()->route('verification.notice');
-        }
-
-        if ($user?->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-
-        if ($user?->isOwner()) {
-            return redirect()->route('owner.dashboard');
-        }
-
-        return redirect('/');
-    })->name('login.store');
-    
-    Route::get('/register', function () {
-        return view('auth.register');
-    })->name('register');
-    
-    Route::post('/register', function (Request $request) {
-        $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:100'],
-            'email'        => ['required', 'email', 'max:100', 'unique:users,email'],
-            'nomorhp'      => ['required', 'string', 'max:20'],
-            'nama_bisnis'  => ['required', 'string', 'max:150'],
-            'jenis_bisnis' => ['required', 'string', 'max:150'],
-            'alamat'       => ['required', 'string', 'max:255'],
-            'password'     => ['required', 'confirmed', Password::min(8)],
-            'terms'        => ['accepted'],
-        ]);
-
-        $user = User::create([
-            'namalengkap' => $validated['name'],
-            'email'       => $validated['email'],
-            'password'    => Hash::make($validated['password']),
-            'nomorhp'     => $validated['nomorhp'],
-            'role'        => 'owner',
-        ]);
-
-        // FS-002 & FS-003: Buat Tenant dengan auto-generate slug dari nama bisnis
-        $slug     = \Illuminate\Support\Str::slug($validated['nama_bisnis']);
-        $slugBase = $slug;
-        $counter  = 1;
-        while (\App\Models\Tenant::where('slug', $slug)->exists()) {
-            $slug = $slugBase . '-' . $counter++;
-        }
-
-        $tenant = \App\Models\Tenant::create([
-            'iduser'      => $user->id,
-            'namabisnis'  => $validated['nama_bisnis'],
-            'jenisbisnis' => $validated['jenis_bisnis'],
-            'alamat'      => $validated['alamat'],
-            'nomorhp'     => $validated['nomorhp'],
-            'slug'        => $slug,
-        ]);
-
-        // FS-018: Buat Subscription trial 7 hari setara paket Pro
-        $proPlan = \App\Models\Plan::firstOrCreate(
-            ['namapaket' => 'pro'],
-            [
-                'hargabulanan' => 499000,
-                'maxlayanan'   => 0,
-                'maxbooking'   => 0,
-                'isunlimited'  => true,
-            ]
-        );
-
-        \App\Models\Subscription::create([
-            'idtenant'      => $tenant->id,
-            'idplan'        => $proPlan->id,
-            'status'        => 'trial',
-            'trial_berakhir' => now()->addDays(7),
-        ]);
-
-        Auth::login($user);
-        $request->session()->regenerate();
-        $request->session()->put('current_tenant_id', $tenant->id);
-        $user->sendEmailVerificationNotification();
-
-        return redirect()->route('verification.notice');
-    })->name('register.store');
-
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+    Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 });
 
-Route::get('/email/verify', function () {
-    return view('auth.verify-email');
-})->middleware('auth')->name('verification.notice');
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
+    ->middleware('auth')
+    ->name('verification.notice');
 
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();
-    Auth::logout();
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['auth', 'signed', 'throttle:6,1'])
+    ->name('verification.verify');
 
-    return redirect()->route('login')->with('status', 'Akun berhasil diaktivasi. Silakan login.');
-})->middleware(['auth', 'signed', 'throttle:6,1'])->name('verification.verify');
-
-Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-
-    return back()->with('status', 'Link verifikasi baru sudah dikirim ke email Anda.');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.send');
 
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', function () {
-        Auth::logout();
-        return redirect('/');
-    })->name('logout');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
 
@@ -231,9 +126,9 @@ Route::prefix('owner')
         Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware('subscription:pro');
 
         // ── Extended Core Business Modules (Tahap 2) ──
-        Route::get('/calendar', [OwnerPortalController::class, 'calendar'])->name('owner.calendar');
-        Route::get('/schedule-report', [OwnerPortalController::class, 'scheduleReport'])->name('owner.schedule-report');
-        Route::get('/schedule-report/export', [OwnerPortalController::class, 'exportScheduleReport'])->name('owner.schedule-report.export');
+        Route::get('/calendar', [OwnerCalendarController::class, 'index'])->name('owner.calendar');
+        Route::get('/schedule-report', [OwnerScheduleReportController::class, 'index'])->name('owner.schedule-report');
+        Route::get('/schedule-report/export', [OwnerScheduleReportController::class, 'export'])->name('owner.schedule-report.export');
 
         // Services & Programs
         Route::get('/services', [OwnerProgramController::class, 'index'])->name('owner.services');
@@ -287,21 +182,25 @@ Route::prefix('owner')
 
         // Settings & Configurations
         Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
-        Route::get('/settings/appearance', [OwnerPortalController::class, 'appearance'])->name('owner.settings.appearance');
-        Route::post('/settings/appearance', [OwnerPortalController::class, 'updateAppearance'])->name('owner.settings.appearance.update');
-        Route::get('/settings/payment-setting', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payment-setting');
-        Route::get('/settings/payments', [OwnerPortalController::class, 'paymentSettings'])->name('owner.settings.payments');
+        Route::get('/settings/appearance', [OwnerAppearanceController::class, 'index'])->name('owner.settings.appearance');
+        Route::post('/settings/appearance', [OwnerAppearanceController::class, 'update'])->name('owner.settings.appearance.update');
+        Route::get('/settings/payment-setting', [OwnerPaymentSettingsController::class, 'index'])->name('owner.settings.payment-setting');
+        Route::get('/settings/payments', [OwnerPaymentSettingsController::class, 'index'])->name('owner.settings.payments');
         Route::get('/settings/assets', [OwnerAssetController::class, 'index'])->name('owner.settings.assets');
         Route::post('/settings/assets', [OwnerAssetController::class, 'store'])->name('owner.settings.assets.store');
         Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->name('owner.settings.assets.destroy');
-        Route::get('/settings/balance', [OwnerPortalController::class, 'balance'])->name('owner.settings.balance');
-        Route::get('/settings/integrations', [OwnerPortalController::class, 'integrations'])->name('owner.settings.integrations');
+        Route::get('/settings/balance', [OwnerBalanceController::class, 'index'])->name('owner.settings.balance');
+        Route::get('/settings/integrations', [OwnerIntegrationController::class, 'index'])->name('owner.settings.integrations');
     });
 });
 
 // ── Midtrans Webhook (tanpa auth & CSRF, dipanggil oleh Midtrans) ──
 Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle'])
     ->name('midtrans.webhook');
+
+// ── SingaPay Webhook (tanpa auth & CSRF, dipanggil oleh SingaPay) ──
+Route::post('/api/webhooks/singapay/transaction', [SingaPayWebhookController::class, 'handle'])
+    ->name('singapay.webhook.transaction');
 
 // ── Booking Management Without Account (tokenized URLs) ──
 Route::prefix('manage')->group(function () {

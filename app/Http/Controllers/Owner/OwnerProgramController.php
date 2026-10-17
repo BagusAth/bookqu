@@ -1,29 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Service\CreateService;
+use App\Actions\Service\DeleteService;
+use App\Actions\Service\ToggleServiceStatus;
+use App\Actions\Service\UpdateService;
 use App\Http\Controllers\Controller;
-
+use App\Http\Requests\Service\StoreServiceRequest;
+use App\Http\Requests\Service\UpdateServiceRequest;
+use App\Models\AdditionalItem;
 use App\Models\Booking;
+use App\Models\Category;
+use App\Models\Resource;
 use App\Models\Service;
-use App\Models\Tenant;
-use App\Models\UsageLog;
+use App\Models\Staff;
+use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
-use App\Traits\ClearsBookingCache;
+use Illuminate\View\View;
 
 class OwnerProgramController extends Controller
 {
-    use ClearsBookingCache;
-    use \App\Traits\ResolvesOwnerTenant;
+    use ResolvesOwnerTenant;
 
     /**
      * Halaman daftar program/layanan.
      */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
@@ -31,12 +38,12 @@ class OwnerProgramController extends Controller
         }
 
         $idtenant = $tenant->id;
-        $katakunci = $request->input('katakunci', '');
+        $katakunci = (string) $request->input('katakunci', '');
         $selectedCategory = $request->input('category', '');
 
         $daftarlayanan = Service::where('idtenant', $idtenant)
             ->with(['category', 'staff', 'resources', 'additionalItems'])
-            ->when($katakunci, function ($query) use ($katakunci) {
+            ->when($katakunci !== '', function ($query) use ($katakunci) {
                 $query->where('namalayanan', 'like', '%' . $katakunci . '%');
             })
             ->when($selectedCategory, function ($query) use ($selectedCategory) {
@@ -46,10 +53,10 @@ class OwnerProgramController extends Controller
             ->orderByDesc('created_at')
             ->paginate(12);
 
-        $kategoriList = \App\Models\Category::where('idtenant', $idtenant)->orderBy('name')->get();
-        $staffList = \App\Models\Staff::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
-        $resourceList = \App\Models\Resource::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
-        $additionalItemList = \App\Models\AdditionalItem::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
+        $kategoriList = Category::where('idtenant', $idtenant)->orderBy('name')->get();
+        $staffList = Staff::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
+        $resourceList = Resource::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
+        $additionalItemList = AdditionalItem::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
 
         // Statistik program dengan pembatasan tahun dan bulan berjalan
         $totallayanan = Service::where('idtenant', $idtenant)->count();
@@ -85,211 +92,87 @@ class OwnerProgramController extends Controller
     /**
      * Simpan program baru.
      */
-    public function store(Request $request)
+    public function store(StoreServiceRequest $request, CreateService $createService): RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $datavalid = $request->validate([
-            'namalayanan'         => 'required|string|max:255',
-            'harga'               => 'required|numeric|min:0',
-            'durasi'              => 'required|integer|min:5|max:480',
-            'idcategory'          => ['nullable', Rule::exists('categories', 'id')->where('idtenant', $tenant->id)],
-            'deskripsi'           => 'nullable|string|max:1000',
-            'cover_image'         => 'nullable|image|mimes:jpg,jpeg,png,webp,svg,gif|max:10240',
-            'staff_ids'           => 'nullable|array',
-            'staff_ids.*'         => ['integer', Rule::exists('staff', 'id')->where('idtenant', $tenant->id)],
-            'resource_ids'        => 'nullable|array',
-            'resource_ids.*'      => ['integer', Rule::exists('resources', 'id')->where('idtenant', $tenant->id)],
-            'additional_item_ids' => 'nullable|array',
-            'additional_item_ids.*' => ['integer', Rule::exists('additional_items', 'id')->where('idtenant', $tenant->id)],
-        ]);
-
-        $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
-        if ($subscription && $subscription->plan && !$subscription->plan->isunlimited && $subscription->plan->maxlayanan > 0) {
-            $currentServices = Service::where('idtenant', $tenant->id)->count();
-            if ($currentServices >= $subscription->plan->maxlayanan) {
-                return back()->withErrors(['namalayanan' => 'Batas maksimum layanan (' . $subscription->plan->maxlayanan . ') telah tercapai. Silakan upgrade paket Anda.'])->withInput();
-            }
-        }
-
-        // Handle cover image upload
-        $imageUrl = null;
-        if ($request->hasFile('cover_image')) {
-            $imageUrl = $request->file('cover_image')->store('programs', 'public');
-        }
-
-        $service = Service::create([
-            'idtenant'    => $tenant->id,
-            'namalayanan' => $datavalid['namalayanan'],
-            'harga'       => $datavalid['harga'],
-            'durasi'      => $datavalid['durasi'],
-            'idcategory'  => $datavalid['idcategory'] ?? null,
-            'deskripsi'   => $datavalid['deskripsi'] ?? null,
-            'image_url'   => $imageUrl,
-        ]);
-
-        if (!empty($datavalid['staff_ids'])) {
-            $service->staff()->sync($datavalid['staff_ids']);
-        }
-        if (!empty($datavalid['resource_ids'])) {
-            $service->resources()->sync($datavalid['resource_ids']);
-        }
-        if (!empty($datavalid['additional_item_ids'])) {
-            $service->additionalItems()->sync($datavalid['additional_item_ids']);
-        }
-
-        // FS-030: Catat penambahan layanan ke usage_logs
-        try {
-            UsageLog::record($tenant->id, 'layanan');
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Gagal catat usage log layanan: ' . $e->getMessage());
-        }
-
-        // Invalidate customer-facing cache
-        $this->clearServiceCache($tenant->id, $service->id);
+        $service = $createService->execute(
+            $tenant,
+            $request->validated(),
+            $request->file('cover_image')
+        );
 
         $redirectRoute = ($request->is('*programs*') && !str_contains($request->headers->get('referer', ''), '/services'))
             ? 'owner.programs'
             : 'owner.services';
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil ditambahkan!');
+
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $service->namalayanan . '" berhasil ditambahkan!');
     }
 
     /**
      * Update program.
      */
-    public function update(Request $request, $id)
+    public function update(UpdateServiceRequest $request, $program, UpdateService $updateService): RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $targetId = $id instanceof Service ? $id->id : (int) $id;
-        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($targetId);
-
-        $datavalid = $request->validate([
-            'namalayanan'         => 'required|string|max:255',
-            'harga'               => 'required|numeric|min:0',
-            'durasi'              => 'required|integer|min:5|max:480',
-            'idcategory'          => ['nullable', Rule::exists('categories', 'id')->where('idtenant', $tenant->id)],
-            'deskripsi'           => 'nullable|string|max:1000',
-            'is_active'           => 'required|boolean',
-            'cover_image'         => 'nullable|image|mimes:jpg,jpeg,png,webp,svg,gif|max:10240',
-            'remove_image'        => 'nullable|in:0,1',
-            'staff_ids'           => 'nullable|array',
-            'staff_ids.*'         => ['integer', Rule::exists('staff', 'id')->where('idtenant', $tenant->id)],
-            'resource_ids'        => 'nullable|array',
-            'resource_ids.*'      => ['integer', Rule::exists('resources', 'id')->where('idtenant', $tenant->id)],
-            'additional_item_ids' => 'nullable|array',
-            'additional_item_ids.*' => ['integer', Rule::exists('additional_items', 'id')->where('idtenant', $tenant->id)],
-        ]);
-
-        // Handle cover image
-        $imageUrl = $layanan->image_url;
-
-        if ($request->hasFile('cover_image')) {
-            // Delete old image if exists on disk
-            if ($layanan->image_url && !str_starts_with($layanan->image_url, 'http') && Storage::disk('public')->exists($layanan->image_url)) {
-                Storage::disk('public')->delete($layanan->image_url);
-            }
-            $imageUrl = $request->file('cover_image')->store('programs', 'public');
-        } elseif ($request->input('remove_image') === '1') {
-            // Owner explicitly removed the image
-            if ($layanan->image_url && !str_starts_with($layanan->image_url, 'http') && Storage::disk('public')->exists($layanan->image_url)) {
-                Storage::disk('public')->delete($layanan->image_url);
-            }
-            $imageUrl = null;
-        }
-
-        $layanan->update([
-            'namalayanan' => $datavalid['namalayanan'],
-            'harga'       => $datavalid['harga'],
-            'durasi'      => $datavalid['durasi'],
-            'idcategory'  => $datavalid['idcategory'] ?? null,
-            'deskripsi'   => $datavalid['deskripsi'] ?? null,
-            'is_active'   => (bool) $datavalid['is_active'],
-            'image_url'   => $imageUrl,
-        ]);
-
-        if ($request->has('staff_ids')) {
-            $layanan->staff()->sync($datavalid['staff_ids'] ?? []);
-        }
-        if ($request->has('resource_ids')) {
-            $layanan->resources()->sync($datavalid['resource_ids'] ?? []);
-        }
-        if ($request->has('additional_item_ids')) {
-            $layanan->additionalItems()->sync($datavalid['additional_item_ids'] ?? []);
-        }
-
-        // Invalidate customer-facing cache
-        $this->clearServiceCache($tenant->id, $layanan->id);
+        $service = $updateService->execute(
+            $tenant,
+            $program,
+            $request->validated(),
+            $request->file('cover_image'),
+            $request->input('remove_image') === '1'
+        );
 
         $redirectRoute = ($request->is('*programs*') && !str_contains($request->headers->get('referer', ''), '/services'))
             ? 'owner.programs'
             : 'owner.services';
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $datavalid['namalayanan'] . '" berhasil diperbarui!');
+
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $service->namalayanan . '" berhasil diperbarui!');
     }
 
     /**
      * Hapus program.
      */
-    public function destroy($id)
+    public function destroy($program, DeleteService $deleteService): RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $targetId = $id instanceof Service ? $id->id : (int) $id;
-        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($targetId);
-        $namalayanan = $layanan->namalayanan;
-
-        // Safety check: Prevent delete if active bookings exist
-        $hasActiveBookings = $layanan->bookings()->whereIn('status', ['pending', 'paid'])->exists();
-        if ($hasActiveBookings) {
-            return back()->withErrors(['error' => 'Layanan "' . $namalayanan . '" memiliki jadwal booking aktif (pending/confirmed). Anda tidak dapat menghapusnya. Silakan nonaktifkan status layanan ini agar tidak dapat dipesan lagi.']);
-        }
-
-        $layanan->staff()->detach();
-        $layanan->resources()->detach();
-        $layanan->additionalItems()->detach();
-        $layanan->delete();
-
-        // Invalidate customer-facing cache
-        $this->clearServiceCache($tenant->id, $targetId);
+        $namalayanan = $deleteService->execute($tenant, $program);
 
         $redirectRoute = (request()->is('*programs*') && !str_contains(request()->headers->get('referer', ''), '/services'))
             ? 'owner.programs'
             : 'owner.services';
+
         return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $namalayanan . '" berhasil dihapus!');
     }
 
     /**
      * Toggle status aktif program.
      */
-    public function toggleStatus($id)
+    public function toggleStatus($id, ToggleServiceStatus $toggleServiceStatus): RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $targetId = $id instanceof Service ? $id->id : (int) $id;
-        $layanan = Service::where('idtenant', $tenant->id)->findOrFail($targetId);
-        $layanan->update([
-            'is_active' => !$layanan->is_active,
-        ]);
-
-        $this->clearServiceCache($tenant->id, $layanan->id);
-        $statusText = $layanan->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        $service = $toggleServiceStatus->execute($tenant, $id);
+        $statusText = $service->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
         $redirectRoute = (request()->is('*programs*') && !str_contains(request()->headers->get('referer', ''), '/services'))
             ? 'owner.programs'
             : 'owner.services';
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $layanan->namalayanan . '" berhasil ' . $statusText . '!');
+
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $service->namalayanan . '" berhasil ' . $statusText . '!');
     }
 }
-

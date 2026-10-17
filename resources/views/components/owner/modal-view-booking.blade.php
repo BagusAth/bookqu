@@ -107,7 +107,7 @@
                         :class="{
                             'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20': booking?.status === 'completed' || booking?.status === 'paid',
                             'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20': booking?.status === 'pending',
-                            'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/20': booking?.status === 'cancelled' || booking?.status === 'refunded'
+                            'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/20': booking?.status === 'cancelled'
                         }"
                         x-text="(booking?.status || '').toUpperCase()">
                     </span>
@@ -116,7 +116,7 @@
 
             {{-- Footer --}}
             <div class="flex items-center justify-between border-t border-bq-border px-4 sm:px-6 py-3.5 sm:py-4 gap-2">
-                <template x-if="booking && booking.status !== 'cancelled' && booking.status !== 'refunded'">
+                <template x-if="booking && booking.status !== 'cancelled'">
                     <button
                         type="button"
                         @click="buka = false; $dispatch('open-owner-reschedule', { booking: booking })"

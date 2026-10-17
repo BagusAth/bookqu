@@ -3,7 +3,7 @@
 > **Document Status:** Active
 > **Authority:** Primary AI Agent Instruction
 > **Repository:** BookQu
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-30
 >
 > This file defines how AI agents must operate when analyzing, modifying, testing, or documenting the BookQu repository.
 >
@@ -53,27 +53,27 @@ Do not optimize only for speed of implementation.
 Before making a non-trivial change, read the relevant documentation in this order:
 
 ```text
-1. AGENTS.md
-2. docs/PRODUCT.md
-3. docs/REQUIREMENTS.md
-4. docs/ARCHITECTURE.md
-5. docs/DEVELOPMENT.md
-6. docs/TRACKER.md
+1. AGENT.md
+2. docs/1-README.md
+3. docs/2-PRODUCT.md
+4. docs/3-REQUIREMENT.md
+5. docs/4-ARCHITECTURE.md
+6. docs/5-DEVELOPMENT.md
+7. docs/6-TRACKER.md
 ```
 
-For architectural decisions, also inspect:
+> [!TIP]
+> If `graphify-out/graph.json` exists, agents should query it to trace architecture call chains and dependencies (`query`, `path`, or `explain`) before performing broad multi-file searches.
+
+Planned future technical documentation (Phase C):
 
 ```text
-docs/adr/
+docs/7-SYSTEM-DESIGN.md      [planned Phase C]
+docs/8-OPERATIONS.md         [planned Phase C]
+docs/adr/                    [planned Phase C]
 ```
 
-Historical documentation under:
-
-```text
-docs/archive/
-```
-
-is reference-only and must not be treated as current authority.
+Historical refactor work (RF-00 through RF-09) has already been completed and integrated into the active implementation. Historical evolution is preserved in Git history.
 
 ---
 
@@ -82,23 +82,23 @@ is reference-only and must not be treated as current authority.
 Use this hierarchy:
 
 ```text
-PRODUCT.md
+docs/2-PRODUCT.md
     ↓
 Defines what BookQu is
 
-REQUIREMENTS.md
+docs/3-REQUIREMENT.md
     ↓
 Defines what BookQu must do
 
-ARCHITECTURE.md
+docs/4-ARCHITECTURE.md
     ↓
 Defines how BookQu should be built
 
-DEVELOPMENT.md
+docs/5-DEVELOPMENT.md
     ↓
 Defines how work should be performed
 
-TRACKER.md
+docs/6-TRACKER.md
     ↓
 Defines current implementation status
 
@@ -110,9 +110,9 @@ Tests
     ↓
 Provide evidence of verified behavior
 
-docs/archive/
+Git History
     ↓
-Historical reference only
+Historical implementation and refactor record
 ```
 
 When two sources disagree, do not silently choose one.
@@ -303,7 +303,7 @@ The goal is to avoid creating duplicate solutions.
 
 # 10. Domain Terminology
 
-Use the canonical terminology from `docs/PRODUCT.md`.
+Use the canonical terminology from `docs/2-PRODUCT.md`.
 
 Core terms:
 
@@ -1524,7 +1524,7 @@ Notes:
 
 # 68. Tracker Rule
 
-After a meaningful implementation task, update `docs/TRACKER.md`.
+After a meaningful implementation task, update `docs/6-TRACKER.md`.
 
 At minimum record:
 
@@ -1571,29 +1571,23 @@ Create an ADR when a decision:
 
 ---
 
-# 71. Never Use Historical Documentation as Current Authority
+# 71. Never Use Historical Material as Current Authority
 
-Files under:
-
-```text
-docs/archive/
-```
-
-may explain why BookQu previously behaved differently.
+Historical refactor plans, past pull requests, or previous system iterations preserved in Git history may explain why BookQu previously behaved differently.
 
 They must not be used as the current implementation target when they conflict with:
 
 ```text
-PRODUCT.md
-REQUIREMENTS.md
-ARCHITECTURE.md
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
+docs/4-ARCHITECTURE.md
 ```
 
 ---
 
 # 72. Never Use the Tracker as a Product Definition
 
-`TRACKER.md` tells the agent:
+`docs/6-TRACKER.md` tells the agent:
 
 ```text
 what has been implemented
@@ -1608,8 +1602,8 @@ what the product should become
 Product decisions belong in:
 
 ```text
-PRODUCT.md
-REQUIREMENTS.md
+docs/2-PRODUCT.md
+docs/3-REQUIREMENT.md
 ```
 
 ---
@@ -1758,10 +1752,10 @@ For product changes:
 ```text
 1. Identify affected product concept
 2. Decide whether the change is accepted
-3. Update PRODUCT.md
-4. Update REQUIREMENTS.md
-5. Update ARCHITECTURE.md if necessary
-6. Update TRACKER.md
+3. Update docs/2-PRODUCT.md
+4. Update docs/3-REQUIREMENT.md
+5. Update docs/4-ARCHITECTURE.md if necessary
+6. Update docs/6-TRACKER.md
 7. Implement
 8. Test
 9. Verify UI and business behavior
@@ -1854,29 +1848,29 @@ When a link is missing, identify the missing link before continuing.
 The active documentation set is:
 
 ```text
-AGENTS.md
+AGENT.md
     ↓
-docs/PRODUCT.md
+docs/1-README.md
     ↓
-docs/REQUIREMENTS.md
+docs/2-PRODUCT.md
     ↓
-docs/ARCHITECTURE.md
+docs/3-REQUIREMENT.md
     ↓
-docs/DEVELOPMENT.md
+docs/4-ARCHITECTURE.md
     ↓
-docs/TRACKER.md
+docs/5-DEVELOPMENT.md
+    ↓
+docs/6-TRACKER.md
 ```
 
-Architecture decisions:
+Planned future technical documentation (Phase C):
 
 ```text
+docs/7-SYSTEM-DESIGN.md
+docs/8-OPERATIONS.md
 docs/adr/
 ```
 
-Historical documents:
-
-```text
-docs/archive/
-```
+Historical refactor and implementation evolution is preserved in Git history.
 
 All AI agents working on BookQu must respect this documentation structure.

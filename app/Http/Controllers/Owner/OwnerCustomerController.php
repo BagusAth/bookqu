@@ -1,16 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Customer\GetCustomerDetail;
+use App\Actions\Customer\SaveCustomerNote;
 use App\Http\Controllers\Controller;
-
+use App\Http\Requests\Customer\SaveCustomerNoteRequest;
 use App\Models\Booking;
-use App\Models\CustomerNote;
 use App\Models\Payment;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class OwnerCustomerController extends Controller
 {
@@ -23,14 +28,14 @@ class OwnerCustomerController extends Controller
      * A "customer" is uniquely identified per tenant by their normalized email
      * (or phone number when email is absent).
      */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $search   = trim($request->input('search', ''));
+        $search   = trim((string) $request->input('search', ''));
         $perPage  = 20;
         $idtenant = $tenant->id;
 
@@ -173,196 +178,37 @@ class OwnerCustomerController extends Controller
      * Customer detail — JSON endpoint for the drawer panel.
      * IDOR-protected: identifier must belong to this tenant's bookings.
      */
-    public function show(Request $request)
+    public function show(Request $request, GetCustomerDetail $getCustomerDetail): JsonResponse
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $identifier = strtolower(trim($request->input('identifier', '')));
-        if ($identifier === '') {
-            abort(400, 'Customer identifier diperlukan.');
-        }
+        $identifier = (string) $request->input('identifier', '');
+        $data = $getCustomerDetail->execute($tenant, $identifier);
 
-        $idtenant = $tenant->id;
-
-        // ── IDOR guard ──
-        $exists = DB::table('bookings')
-            ->where('idtenant', $idtenant)
-            ->where(function ($q) use ($identifier) {
-                $q->whereRaw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id)))) = ?", [$identifier]);
-            })
-            ->exists();
-
-        if (!$exists) {
-            abort(404, 'Customer tidak ditemukan.');
-        }
-
-        // ── Load full booking history for this identifier ──
-        $bookings = Booking::where('idtenant', $idtenant)
-            ->where(function ($q) use ($identifier) {
-                $q->whereRaw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id)))) = ?", [$identifier]);
-            })
-            ->with(['layanan', 'payment'])
-            ->orderByDesc('tanggalbooking')
-            ->orderByDesc('jam')
-            ->get();
-
-        if ($bookings->isEmpty()) {
-            abort(404, 'Customer tidak ditemukan.');
-        }
-
-        $first = $bookings->first();
-
-        // ── Spending from payment state machine ──
-        $paidBookingIds = $bookings
-            ->filter(fn($b) => in_array($b->status, ['paid', 'completed']))
-            ->pluck('id');
-
-        $paidPaymentIds = $bookings
-            ->filter(fn($b) => in_array($b->status, ['paid', 'completed']))
-            ->pluck('idpayment')
-            ->filter()
-            ->unique();
-
-        // Also include payments referenced by idbooking for legacy
-        $legacyPaidPaymentIds = Payment::where('idtenant', $idtenant)
-            ->whereIn('idbooking', $paidBookingIds)
-            ->pluck('id');
-
-        $allPaidPaymentIds = $paidPaymentIds->concat($legacyPaidPaymentIds)->unique()->values();
-
-        $totalSpent = (float) Payment::where('idtenant', $idtenant)
-            ->where('tipe', 'booking')
-            ->where('status', 'sukses')
-            ->whereIn('id', $allPaidPaymentIds)
-            ->sum('jumlah');
-
-        $today           = Carbon::today()->toDateString();
-        $lastBooking     = $bookings->first();
-        $upcomingBooking = $bookings
-            ->filter(fn($b) => $b->tanggalbooking && $b->tanggalbooking->toDateString() >= $today && in_array($b->status, ['paid', 'pending']))
-            ->sortBy('tanggalbooking')
-            ->first();
-
-        $servicesUsed = $bookings
-            ->map(fn($b) => $b->layanan?->namalayanan)
-            ->filter()
-            ->unique()
-            ->values()
-            ->toArray();
-
-        $note = CustomerNote::where('idtenant', $idtenant)
-            ->where('customer_identifier', $identifier)
-            ->first();
-
-        // ── Payment history (tenant-scoped) ──
-        $allPaymentIds = $bookings->pluck('idpayment')
-            ->concat(Payment::where('idtenant', $idtenant)->whereIn('idbooking', $bookings->pluck('id'))->pluck('id'))
-            ->filter()
-            ->unique()
-            ->values();
-
-        $payments = Payment::where('idtenant', $idtenant)
-            ->where('tipe', 'booking')
-            ->whereIn('id', $allPaymentIds)
-            ->with(['bookings.layanan', 'booking.layanan'])
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(function ($p) {
-                $groupBookings = $p->bookings->isNotEmpty() ? $p->bookings : ($p->booking ? collect([$p->booking]) : collect());
-                $serviceNames = $groupBookings->map(fn($b) => $b->layanan?->namalayanan)->filter()->unique()->implode(', ');
-                $slots = $groupBookings->sortBy('jam')->map(fn($b) => substr($b->jam, 0, 5))->implode(', ');
-
-                return [
-                    'order_id'     => $p->order_id ?? $p->external_id ?? ('PAY-' . $p->id),
-                    'booking_code' => $groupBookings->pluck('booking_code')->filter()->implode(', ') ?: '-',
-                    'service'      => $serviceNames ?: '-',
-                    'slots'        => $slots,
-                    'jumlah'       => 'Rp ' . number_format((float) $p->jumlah, 0, ',', '.'),
-                    'status'       => $p->status,
-                    'date'         => $p->created_at?->format('d M Y'),
-                ];
-            });
-
-        $bookingHistory = $bookings->map(fn($b) => [
-            'id'      => $b->id,
-            'code'    => $b->booking_code ?? ('BKQ-' . $b->id),
-            'service' => $b->layanan?->namalayanan ?? '-',
-            'price'   => 'Rp ' . number_format((float) ($b->schedule?->harga_override ?? $b->layanan?->harga ?? 0), 0, ',', '.'),
-            'date'    => $b->tanggalbooking ? $b->tanggalbooking->format('d M Y') : '-',
-            'time'    => $b->jam ? substr($b->jam, 0, 5) : '-',
-            'status'  => $b->status,
-            'notes'   => $b->catatan ?: null,
-        ])->values();
-
-        $paidCount = $paidBookingIds->count();
-
-        return response()->json([
-            'identifier'       => $identifier,
-            'name'             => $first->namapelanggan ?: 'Customer',
-            'email'            => $first->email ?: '-',
-            'phone'            => $first->nomorhp ?: '-',
-            'first_seen'       => $bookings->sortBy('created_at')->first()?->created_at?->format('d M Y') ?? '-',
-            'total_bookings'   => $bookings->count(),
-            'total_spent'      => $totalSpent,
-            'formatted_spent'  => 'Rp ' . number_format($totalSpent, 0, ',', '.'),
-            'avg_transaction'  => $paidCount > 0
-                ? 'Rp ' . number_format($totalSpent / $paidCount, 0, ',', '.')
-                : 'Rp 0',
-            'last_booking'     => $lastBooking?->tanggalbooking ? $lastBooking->tanggalbooking->format('d M Y') : '-',
-            'upcoming_booking' => $upcomingBooking
-                ? $upcomingBooking->tanggalbooking->format('d M Y') . ' ' . substr($upcomingBooking->jam, 0, 5)
-                : null,
-            'services_used'    => $servicesUsed,
-            'notes'            => $note?->notes ?? '',
-            'bookings'         => $bookingHistory,
-            'payments'         => $payments,
-        ]);
+        return response()->json($data);
     }
 
     /**
      * Save or update an internal owner note for a customer.
      * Tenant-scoped — IDOR protected before write.
      */
-    public function saveNote(Request $request)
+    public function saveNote(SaveCustomerNoteRequest $request, SaveCustomerNote $saveCustomerNote): JsonResponse
     {
         $tenant = $this->resolveTenant();
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $validated = $request->validate([
-            'customer_identifier' => 'required|string|max:190',
-            'notes'               => 'nullable|string|max:2000',
-        ]);
-
-        $identifier = strtolower(trim($validated['customer_identifier']));
-
-        // ── IDOR guard before write ──
-        $exists = DB::table('bookings')
-            ->where('idtenant', $tenant->id)
-            ->where(function ($q) use ($identifier) {
-                $q->whereRaw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id)))) = ?", [$identifier]);
-            })
-            ->exists();
-
-        if (!$exists) {
-            abort(403, 'Akses tidak diizinkan.');
-        }
-
-        CustomerNote::updateOrCreate(
-            [
-                'idtenant'            => $tenant->id,
-                'customer_identifier' => $identifier,
-            ],
-            [
-                'notes' => $validated['notes'] ?? '',
-            ]
+        $validated = $request->validated();
+        $saveCustomerNote->execute(
+            $tenant,
+            $validated['customer_identifier'],
+            $validated['notes'] ?? null
         );
 
         return response()->json(['success' => true, 'message' => 'Catatan berhasil disimpan.']);
     }
 }
-
