@@ -3,11 +3,13 @@ name: Tests
 on:
   push:
     branches:
+      - agathan
       - Refactor
       - main
       - payment
   pull_request:
     branches:
+      - agathan
       - Refactor
       - main
       - payment

@@ -163,7 +163,11 @@ class CreateBookingPayment
         ];
 
         $snapToken = $this->midtransGateway->createSnapToken($payment, $params);
-        $payment->update(['snap_token' => $snapToken]);
+        $payment->update([
+            'snap_token' => $snapToken,
+            'provider'   => 'midtrans',
+            'metode'     => PaymentState::METODE_MIDTRANS,
+        ]);
 
         return $snapToken;
     }

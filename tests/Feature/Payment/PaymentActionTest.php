@@ -211,6 +211,70 @@ class PaymentActionTest extends TestCase
         $this->assertEquals('settlement', $result['transaction_status']);
     }
 
+    public function test_midtrans_webhook_cannot_resolve_singapay_payment(): void
+    {
+        $payment = Payment::create([
+            'idtenant'       => $this->tenant->id,
+            'tipe'           => PaymentState::TIPE_BOOKING,
+            'jumlah'         => 50000,
+            'status'         => PaymentState::STATUS_PENDING,
+            'metode'         => PaymentState::METODE_SINGAPAY,
+            'provider'       => 'singapay',
+            'order_id'       => 'BKG-WRONG-PROVIDER-MIDTRANS',
+            'nama_pembayar'  => 'Provider Isolation Test',
+            'email_pembayar' => 'provider-isolation@test.com',
+            'hp_pembayar'    => '08123456789',
+        ]);
+
+        $reportedAmount = '50000.00';
+        $serverKey = config('midtrans.server_key');
+        $signature = hash('sha512', $payment->order_id . '200' . $reportedAmount . $serverKey);
+        $result = app(ProcessPaymentWebhook::class)->execute([
+            'order_id'           => $payment->order_id,
+            'status_code'        => '200',
+            'gross_amount'       => $reportedAmount,
+            'signature_key'      => $signature,
+            'transaction_status' => 'settlement',
+        ]);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(404, $result['code']);
+        $this->assertSame('Payment not found', $result['message']);
+        $this->assertSame(PaymentState::STATUS_PENDING, $payment->fresh()->status);
+    }
+
+    public function test_process_webhook_rejects_gross_amount_mismatch(): void
+    {
+        $payment = Payment::create([
+            'idtenant'       => $this->tenant->id,
+            'tipe'           => PaymentState::TIPE_BOOKING,
+            'jumlah'         => 50000,
+            'status'         => PaymentState::STATUS_PENDING,
+            'metode'         => PaymentState::METODE_MIDTRANS,
+            'order_id'       => 'BKG-MIDTRANS-AMOUNT-MISMATCH',
+            'nama_pembayar'  => 'Amount Mismatch Test',
+            'email_pembayar' => 'amount-mismatch@test.com',
+            'hp_pembayar'    => '08123456789',
+        ]);
+
+        $reportedAmount = '10000.00';
+        $serverKey = config('midtrans.server_key');
+        $signature = hash('sha512', $payment->order_id . '200' . $reportedAmount . $serverKey);
+
+        $result = app(ProcessPaymentWebhook::class)->execute([
+            'order_id'           => $payment->order_id,
+            'status_code'        => '200',
+            'gross_amount'       => $reportedAmount,
+            'signature_key'      => $signature,
+            'transaction_status' => 'settlement',
+        ]);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(422, $result['code']);
+        $this->assertSame('Transaction amount mismatch', $result['message']);
+        $this->assertSame(PaymentState::STATUS_PENDING, $payment->fresh()->status);
+    }
+
     public function test_process_webhook_validates_signature(): void
     {
         $payment = Payment::create([

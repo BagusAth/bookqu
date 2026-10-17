@@ -50,6 +50,7 @@ class CreateSubscriptionPayment
             'jumlah'         => $totalBayar,
             'status'         => PaymentState::STATUS_PENDING,
             'metode'         => PaymentState::METODE_MIDTRANS,
+            'provider'       => 'midtrans',
             'order_id'       => $orderId,
             'expired_at'     => now()->addHour(),
             'nama_pembayar'  => $payerData['nama_pembayar'],

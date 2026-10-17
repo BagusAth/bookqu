@@ -106,9 +106,52 @@ class ProcessSingaPayWebhook
             ];
         }
 
-        // 6. Validate Transaction Amount & Currency
+        // 6. Validate transaction-specific status before any state mutation.
+        // The root-level "status" can be an envelope status (e.g. HTTP 200); never
+        // infer that a missing transaction status means payment success.
+        $statusValue = $payload['data']['transaction']['status']
+            ?? $payload['data']['status']
+            ?? null;
+        $rawStatus = is_string($statusValue) || is_numeric($statusValue)
+            ? trim((string) $statusValue)
+            : '';
+        $domainStatus = PaymentState::mapSingaPayStatus($rawStatus);
+
+        if ($domainStatus === 'unknown') {
+            Log::warning('ProcessSingaPayWebhook: Missing or unknown transaction status', [
+                'payment_id' => $payment->id,
+                'order_id'   => $payment->order_id,
+                'event'      => $payload['event'] ?? 'unknown',
+                'raw_status' => $rawStatus !== '' ? $rawStatus : null,
+            ]);
+
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Missing or unknown SingaPay transaction status',
+            ];
+        }
+
+        // 7. Validate transaction amount and currency. Both are mandatory before
+        // a callback may mark a payment successful.
         $incomingAmount   = $this->extractAmount($payload);
         $incomingCurrency = $this->extractCurrency($payload);
+
+        if (
+            $domainStatus === PaymentState::STATUS_SUKSES
+            && ($incomingAmount === null || $incomingCurrency === null)
+        ) {
+            Log::warning('ProcessSingaPayWebhook: Successful transaction missing amount or currency', [
+                'payment_id' => $payment->id,
+                'order_id'   => $payment->order_id,
+            ]);
+
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Successful transaction is missing amount or currency',
+            ];
+        }
 
         if ($incomingCurrency !== null && strtoupper((string) $incomingCurrency) !== 'IDR') {
             Log::warning('ProcessSingaPayWebhook: Currency mismatch', [
@@ -141,7 +184,7 @@ class ProcessSingaPayWebhook
             }
         }
 
-        // 7. Idempotency Check
+        // 8. Idempotency Check
         if ($payment->status === PaymentState::STATUS_SUKSES) {
             Log::info('ProcessSingaPayWebhook: Duplicate webhook received for already successful payment', [
                 'payment_id' => $payment->id,
@@ -168,19 +211,10 @@ class ProcessSingaPayWebhook
             ];
         }
 
-        // 8. Synchronize Payment Status
+        // 9. Synchronize Payment Status
         app(TenantContext::class)->setTenantId($payment->idtenant);
 
         try {
-            $rawStatus = (string) (
-                $payload['data']['transaction']['status']
-                ?? $payload['data']['status']
-                ?? $payload['status']
-                ?? 'paid'
-            );
-
-            $domainStatus = PaymentState::mapSingaPayStatus($rawStatus);
-
             if ($domainStatus === PaymentState::STATUS_SUKSES) {
                 $this->syncAction->processSuccess($payment, PaymentState::METODE_SINGAPAY, $rawStatus);
             } elseif ($domainStatus === PaymentState::STATUS_GAGAL) {
@@ -188,10 +222,19 @@ class ProcessSingaPayWebhook
             } elseif ($domainStatus === PaymentState::STATUS_PENDING) {
                 $this->syncAction->processPending($payment, PaymentState::METODE_SINGAPAY, $rawStatus);
             } else {
-                Log::warning('ProcessSingaPayWebhook: Unknown SingaPay status encountered', [
-                    'raw_status' => $rawStatus,
+                // Defensive fallback: status was validated above, so this should be
+                // unreachable unless PaymentState mappings change in the future.
+                Log::error('ProcessSingaPayWebhook: Unhandled mapped transaction status', [
+                    'payment_id' => $payment->id,
                     'order_id'   => $payment->order_id,
+                    'raw_status' => $rawStatus,
                 ]);
+
+                return [
+                    'success' => false,
+                    'code'    => 422,
+                    'message' => 'Unsupported SingaPay transaction status',
+                ];
             }
         } finally {
             app(TenantContext::class)->clear();
@@ -202,6 +245,24 @@ class ProcessSingaPayWebhook
             'code'    => 200,
             'message' => 'OK',
         ];
+    }
+
+    /**
+     * Resolve only payments owned by SingaPay, with a narrow backward-compatible
+     * fallback for legacy rows that have a null provider but explicitly use SingaPay.
+     */
+    protected function findSingaPayPayment(string $column, string $reference): ?Payment
+    {
+        return Payment::withoutGlobalScope(TenantScope::class)
+            ->where($column, $reference)
+            ->where(function ($query) {
+                $query->where('provider', 'singapay')
+                    ->orWhere(function ($legacyQuery) {
+                        $legacyQuery->whereNull('provider')
+                            ->where('metode', PaymentState::METODE_SINGAPAY);
+                    });
+            })
+            ->first();
     }
 
     /**
@@ -216,17 +277,13 @@ class ProcessSingaPayWebhook
         // 1. Primary identifier per specification: data.transaction.reff_no
         $primaryReff = $payload['data']['transaction']['reff_no'] ?? null;
         if (!empty($primaryReff)) {
-            $payment = Payment::withoutGlobalScope(TenantScope::class)
-                ->where('order_id', (string) $primaryReff)
-                ->first();
+            $payment = $this->findSingaPayPayment('order_id', (string) $primaryReff);
 
             if ($payment) {
                 return $payment;
             }
 
-            $payment = Payment::withoutGlobalScope(TenantScope::class)
-                ->where('external_id', (string) $primaryReff)
-                ->first();
+            $payment = $this->findSingaPayPayment('external_id', (string) $primaryReff);
 
             if ($payment) {
                 return $payment;
@@ -244,17 +301,13 @@ class ProcessSingaPayWebhook
         ]));
 
         foreach ($secondaryCandidates as $ref) {
-            $payment = Payment::withoutGlobalScope(TenantScope::class)
-                ->where('order_id', (string) $ref)
-                ->first();
+            $payment = $this->findSingaPayPayment('order_id', (string) $ref);
 
             if ($payment) {
                 return $payment;
             }
 
-            $payment = Payment::withoutGlobalScope(TenantScope::class)
-                ->where('external_id', (string) $ref)
-                ->first();
+            $payment = $this->findSingaPayPayment('external_id', (string) $ref);
 
             if ($payment) {
                 return $payment;
@@ -295,7 +348,7 @@ class ProcessSingaPayWebhook
             ?? $payload['data']['total_amount']
             ?? null;
 
-        return $val !== null ? (float) $val : null;
+        return is_numeric($val) ? (float) $val : null;
     }
 
     /**
@@ -310,6 +363,6 @@ class ProcessSingaPayWebhook
             ?? $payload['data']['amount']['currency']
             ?? null;
 
-        return $curr ? (string) $curr : null;
+        return is_string($curr) && trim($curr) !== '' ? trim($curr) : null;
     }
 }

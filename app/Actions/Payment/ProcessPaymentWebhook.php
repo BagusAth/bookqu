@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Payment;
 
+use App\Domain\Payment\PaymentState;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Models\Payment;
 use App\Models\Scopes\TenantScope;
@@ -26,15 +27,29 @@ class ProcessPaymentWebhook
      */
     public function execute(array $payload): array
     {
-        Log::info('ProcessPaymentWebhook Received:', $payload);
-
         $orderId      = $payload['order_id'] ?? null;
         $statusCode   = $payload['status_code'] ?? null;
         $grossAmount  = $payload['gross_amount'] ?? null;
         $signatureKey = $payload['signature_key'] ?? null;
 
+        // Keep operational context but avoid persisting the raw webhook payload,
+        // which may contain customer data and the provider signature value.
+        $safeLogContext = array_filter([
+            'order_id'           => is_scalar($orderId) ? (string) $orderId : null,
+            'status_code'        => is_scalar($statusCode) ? (string) $statusCode : null,
+            'gross_amount'       => is_scalar($grossAmount) ? (string) $grossAmount : null,
+            'transaction_status' => is_scalar($payload['transaction_status'] ?? null)
+                ? (string) ($payload['transaction_status'] ?? null)
+                : null,
+            'payment_type'       => is_scalar($payload['payment_type'] ?? null)
+                ? (string) ($payload['payment_type'] ?? null)
+                : null,
+        ], static fn ($value) => $value !== null && $value !== '');
+
+        Log::info('ProcessPaymentWebhook Received', $safeLogContext);
+
         if (!$orderId || !$statusCode || !$grossAmount || !$signatureKey) {
-            Log::warning('ProcessPaymentWebhook: Missing required fields', $payload);
+            Log::warning('ProcessPaymentWebhook: Missing required fields', $safeLogContext);
 
             return [
                 'success' => false,
@@ -58,6 +73,23 @@ class ProcessPaymentWebhook
             ];
         }
 
+        // Do not let a Midtrans callback operate on a record explicitly owned by
+        // SingaPay. Keep legacy Midtrans rows resolvable even if their `metode`
+        // was replaced by Midtrans's payment-type value after settlement.
+        if ($payment->provider === 'singapay' || $payment->metode === PaymentState::METODE_SINGAPAY) {
+            Log::warning('ProcessPaymentWebhook: Provider mismatch', [
+                'payment_id' => $payment->id,
+                'order_id'   => $orderId,
+                'provider'   => $payment->provider,
+            ]);
+
+            return [
+                'success' => false,
+                'code'    => 404,
+                'message' => 'Payment not found',
+            ];
+        }
+
         // Validate webhook signature
         if (!$this->gateway->verifyWebhookSignature($payload, $payment)) {
             Log::warning('ProcessPaymentWebhook: Signature mismatch', [
@@ -68,6 +100,23 @@ class ProcessPaymentWebhook
                 'success' => false,
                 'code'    => 403,
                 'message' => 'Invalid signature',
+            ];
+        }
+
+        // A valid signature proves the notification origin, not that BookQu's
+        // expected payment amount matches the reported transaction amount.
+        if (!is_numeric($grossAmount) || abs((float) $grossAmount - (float) $payment->jumlah) > 0.001) {
+            Log::warning('ProcessPaymentWebhook: Gross amount mismatch', [
+                'payment_id' => $payment->id,
+                'order_id'   => $orderId,
+                'expected'   => (string) $payment->jumlah,
+                'received'   => is_scalar($grossAmount) ? (string) $grossAmount : null,
+            ]);
+
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Transaction amount mismatch',
             ];
         }
 

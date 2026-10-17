@@ -103,6 +103,34 @@ class SettingsTest extends TestCase
         ]);
     }
 
+    public function test_owner_cannot_request_payout_above_available_balance(): void
+    {
+        $response = $this->actingAs($this->user)->post('/owner/payouts', [
+            'jumlah' => 600000,
+        ]);
+
+        $response->assertSessionHasErrors('jumlah');
+        $this->assertDatabaseMissing('owner_payouts', ['idtenant' => $this->tenant->id]);
+        $this->assertDatabaseHas('tenants', [
+            'id' => $this->tenant->id,
+            'saldo_platform' => 500000,
+        ]);
+    }
+
+    public function test_owner_cannot_request_payout_with_more_than_two_decimal_places(): void
+    {
+        $response = $this->actingAs($this->user)->post('/owner/payouts', [
+            'jumlah' => 10000.001,
+        ]);
+
+        $response->assertSessionHasErrors('jumlah');
+        $this->assertDatabaseMissing('owner_payouts', ['idtenant' => $this->tenant->id]);
+        $this->assertDatabaseHas('tenants', [
+            'id' => $this->tenant->id,
+            'saldo_platform' => 500000,
+        ]);
+    }
+
     public function test_owner_cannot_delete_account_without_matching_confirmation(): void
     {
         $response = $this->actingAs($this->user)->delete('/owner/settings/account', [

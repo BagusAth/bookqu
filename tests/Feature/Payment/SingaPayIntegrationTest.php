@@ -163,13 +163,22 @@ class SingaPayIntegrationTest extends TestCase
         $this->assertEquals('valid-singapay-b2b-jwt-token', $token);
 
         Http::assertSent(function (Request $request) {
-            $expectedBasicAuth = 'Basic ' . base64_encode('test_client_id:' . $this->clientSecret);
+            // SingaPay Payment Gateway v1.1 uses client/partner headers and an
+            // HMAC-SHA512 X-Signature; this endpoint does not use Basic Authorization.
+            $date = now('Asia/Jakarta')->format('Ymd');
+            $expectedSignature = hash_hmac(
+                'sha512',
+                'test_client_id_' . $this->clientSecret . '_' . $date,
+                $this->clientSecret
+            );
 
             return $request->url() === 'https://payment-b2b.singapay.id/api/v1.1/access-token/b2b'
                 && $request->method() === 'POST'
-                && $request->header('Authorization')[0] === $expectedBasicAuth
-                && $request->header('X-PARTNER-ID')[0] === $this->apiKey
-                && $request->header('Content-Type')[0] === 'application/json'
+                && ($request->header('X-CLIENT-ID')[0] ?? null) === 'test_client_id'
+                && ($request->header('X-PARTNER-ID')[0] ?? null) === $this->apiKey
+                && ($request->header('X-Signature')[0] ?? null) === $expectedSignature
+                && ($request->header('Content-Type')[0] ?? null) === 'application/json'
+                && ($request->header('Authorization')[0] ?? null) === null
                 && $request['grant_type'] === 'client_credentials';
         });
     }
@@ -1276,6 +1285,86 @@ class SingaPayIntegrationTest extends TestCase
         // Unrelated Booking B and Payment B MUST remain pending!
         $this->assertEquals('pending', $bookingB->status);
         $this->assertEquals(PaymentState::STATUS_PENDING, $paymentB->status);
+    }
+
+    public function test_missing_transaction_status_is_rejected_without_confirming_payment(): void
+    {
+        $payment = Payment::create([
+            'idtenant'       => $this->tenant->id,
+            'tipe'           => PaymentState::TIPE_BOOKING,
+            'jumlah'         => 100000,
+            'status'         => PaymentState::STATUS_PENDING,
+            'metode'         => PaymentState::METODE_SINGAPAY,
+            'provider'       => 'singapay',
+            'order_id'       => 'BKG-MISSING-STATUS',
+            'expired_at'     => now()->addMinutes(15),
+            'nama_pembayar'  => 'Missing Status Test',
+            'email_pembayar' => 'missing-status@test.com',
+            'hp_pembayar'    => '08123456789',
+        ]);
+
+        $payload = $this->makeWebhookPayload($payment->order_id, 100000, 'paid');
+        unset($payload['data']['transaction']['status'], $payload['data']['status'], $payload['status']);
+
+        $response = $this->postSingaPayWebhook('/api/webhooks/singapay/transaction', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJson(['status' => 'error', 'message' => 'Missing or unknown SingaPay transaction status']);
+        $this->assertSame(PaymentState::STATUS_PENDING, $payment->fresh()->status);
+    }
+
+    public function test_successful_webhook_without_amount_or_currency_is_rejected(): void
+    {
+        $payment = Payment::create([
+            'idtenant'       => $this->tenant->id,
+            'tipe'           => PaymentState::TIPE_BOOKING,
+            'jumlah'         => 100000,
+            'status'         => PaymentState::STATUS_PENDING,
+            'metode'         => PaymentState::METODE_SINGAPAY,
+            'provider'       => 'singapay',
+            'order_id'       => 'BKG-MISSING-AMOUNT',
+            'expired_at'     => now()->addMinutes(15),
+            'nama_pembayar'  => 'Missing Amount Test',
+            'email_pembayar' => 'missing-amount@test.com',
+            'hp_pembayar'    => '08123456789',
+        ]);
+
+        $payload = $this->makeWebhookPayload($payment->order_id, 100000, 'paid');
+        unset(
+            $payload['data']['transaction']['amount'],
+            $payload['data']['payment']['additional_info']['payment_link']['total_amount']
+        );
+
+        $response = $this->postSingaPayWebhook('/api/webhooks/singapay/transaction', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJson(['status' => 'error', 'message' => 'Successful transaction is missing amount or currency']);
+        $this->assertSame(PaymentState::STATUS_PENDING, $payment->fresh()->status);
+    }
+
+    public function test_singapay_webhook_cannot_resolve_a_payment_owned_by_another_provider(): void
+    {
+        $payment = Payment::create([
+            'idtenant'       => $this->tenant->id,
+            'tipe'           => PaymentState::TIPE_BOOKING,
+            'jumlah'         => 100000,
+            'status'         => PaymentState::STATUS_PENDING,
+            'metode'         => PaymentState::METODE_MIDTRANS,
+            'provider'       => 'midtrans',
+            'order_id'       => 'BKG-WRONG-PROVIDER',
+            'external_id'    => 'MIDTRANS-EXTERNAL-001',
+            'expired_at'     => now()->addMinutes(15),
+            'nama_pembayar'  => 'Wrong Provider Test',
+            'email_pembayar' => 'wrong-provider@test.com',
+            'hp_pembayar'    => '08123456789',
+        ]);
+
+        $payload = $this->makeWebhookPayload($payment->order_id, 100000, 'paid');
+        $response = $this->postSingaPayWebhook('/api/webhooks/singapay/transaction', $payload);
+
+        $response->assertStatus(404);
+        $response->assertJson(['status' => 'error', 'message' => 'Payment not found']);
+        $this->assertSame(PaymentState::STATUS_PENDING, $payment->fresh()->status);
     }
 
     public function test_webhook_currency_mismatch_rejected(): void
