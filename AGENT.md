@@ -62,6 +62,9 @@ Before making a non-trivial change, read the relevant documentation in this orde
 7. docs/6-TRACKER.md
 ```
 
+> [!TIP]
+> If `graphify-out/graph.json` exists, agents should query it to trace architecture call chains and dependencies (`query`, `path`, or `explain`) before performing broad multi-file searches.
+
 Planned future technical documentation (Phase C):
 
 ```text
