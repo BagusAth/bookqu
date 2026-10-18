@@ -1459,7 +1459,57 @@ Supporting capabilities should extend the booking experience without creating co
 
 ---
 
-# 29. Related Documents
+# 29. Product Rollout Staging and Feature Visibility Policy
+
+BookQu adopts an intentional, staged release model to preserve core booking and payment stability.
+
+Product capabilities are partitioned into three distinct visibility and operational tiers:
+
+## 29.1 Tier 1: Active Core Production Capabilities (Live in UI & Storefront)
+
+The following capabilities are fully released, active in owner navigation, and part of the live customer booking journey:
+
+* **Dashboard & Live Notifications** (`/owner/dashboard`, `/owner/notifications`) — Business metrics and polling alerts.
+* **Calendar & Schedules** (`/owner/calendar`, `/owner/schedule`) — Schedule slots, bulk generation, availability, blocked dates.
+* **Services & Categories** (`/owner/services`, `/owner/categories`) — Bookable services and category grouping.
+* **Booking Operations** (`/owner/bookings`) — Status transitions, walk-in creation, rescheduling, cancellation.
+* **Customer CRM** (`/owner/customers`) — Customer registry, booking history, internal staff notes.
+* **Customer Reviews** (`/owner/reviews`) — Feedback moderation and public display toggling.
+* **Business Profile & Account** (`/owner/settings/business`) — Essential tenant metadata and credentials.
+* **Unified Payment Gateway** (`SingaPay` & `Midtrans`) — Platform-managed escrow with automated expiration.
+* **Customer Self-Service Portal** (`/manage/payment/{order_id}`, `/manage/{code}`) — Token-authorized customer rescheduling, cancellation, and invoice access.
+
+---
+
+## 29.2 Tier 2: In-Development / Staged Capabilities (Locked in UI with Explanatory Notice)
+
+These capabilities have functional backend logic and are intentionally visible in navigation, but display locked states or clear development notices to set user expectations:
+
+* **Analytics Overview** (`/owner/analytics`) — Linked from the dashboard ("View Full Report [🔒 Terkunci]") and sidebar. Protected by `subscription:medium`. The interface displays an amber notice banner: *"Fitur Sedang Dikembangkan - Modul Analitik & Laporan Bisnis"* and blurred metric mockups.
+* **Schedule Report & Utilization** (`/owner/schedule-report`) — Labeled with sidebar badge `🔒 Terkunci` and header badge *"Fitur Sedang Dikembangkan - Laporan Okupansi & Utilisasi Jadwal"*.
+* **Third-Party Integrations** (`/owner/settings/integrations`) — WhatsApp Notifications and Google Calendar Sync are explicitly tagged *"Coming Soon - Fitur Tahap Lanjutan"*.
+* **Platform Saldo & Payouts** (`/owner/settings/balance`) — Saldo ledger is active; self-service withdrawal is held pending direct gateway rollout.
+
+---
+
+## 29.3 Tier 3: Kept / Hidden Capabilities (Intentionally Hidden from Navigation for Future Phases)
+
+These capabilities have underlying database tables, Eloquent models, and owner CRUD controllers, but their navigation entry points are **intentionally hidden from the owner sidebar, topbar dropdowns, and settings menus** because their end-to-end customer journey or governance is currently under development:
+
+* **Vouchers & Promo** (`/owner/vouchers`) — Owner CRUD is implemented. The customer checkout validation endpoint (`BookingController::validateVoucher`) intentionally returns HTTP 422 (`"Fitur voucher saat ini belum aktif."`) to prevent untested promotional discounts during live checkout.
+* **Additional Items / Add-ons** (`/owner/additional-items`) — Owner CRUD is implemented. Deferred from the customer 6-step booking flow to maintain frictionless checkout.
+* **Staff & Resources** (`/owner/staff-resources`) — Operational models exist; customer-facing staff selection is intentionally omitted to preserve slot-capacity bookings without complex multi-staff conflict management.
+* **Appearance & Branding** (`/owner/settings/appearance`) — Custom palette/font configuration forms exist; dynamic theme override engine on public storefronts is reserved for future premium tiers.
+* **Direct Payment Gateway Settings** (`/owner/settings/payments`) — Tenant-level direct gateway credentials (custom Midtrans keys) are hidden because BookQu operates on a unified platform escrow model.
+* **Media Assets Gallery** (`/owner/settings/assets`) — Media upload exists; dynamic storefront gallery display is staged for portfolio-centric verticals.
+* **Custom Landing Page Builder** (`/owner/landing-page`) — Builder form exists for Pro subscribers; dynamic custom modular storefront renderer is staged for future rollout.
+
+> **CRITICAL RULE FOR DEVELOPERS AND AI AGENTS:**  
+> The absence of Tier 3 items in the owner sidebar is **BY DESIGN** and enforced by automated tests (`OwnerSidebarNavigationTest`). Do not unhide these links or remove locked state banners without explicit product authorization and an accompanying end-to-end implementation plan. (See [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md)).
+
+---
+
+# 30. Related Documents
 
 The BookQu documentation system is organized as follows:
 
@@ -1507,7 +1557,7 @@ Why important architectural decisions were made
 
 ---
 
-# 30. Document Status
+# 31. Document Status
 
 This document is the current product definition for BookQu.
 

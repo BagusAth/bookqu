@@ -600,37 +600,39 @@ Further verification:
 
 # 22. Staff and Resources
 
-| Area                | Functional Status | Test Status | Architecture | Priority |
-| ------------------- | ----------------- | ----------- | ------------ | -------- |
-| Staff management    | Implemented       | PASS        | Target       | P1       |
-| Resource management | Implemented       | PASS        | Target       | P1       |
-| Service association | Implemented       | PASS        | Target       | P1       |
+| Area                | Functional Status | Test Status | UI Visibility Status | Architecture | Priority |
+| ------------------- | ----------------- | ----------- | -------------------- | ------------ | -------- |
+| Staff management    | Implemented       | PASS        | Hidden (Future Phase)| Target       | P1       |
+| Resource management | Implemented       | PASS        | Hidden (Future Phase)| Target       | P1       |
+| Service association | Implemented       | PASS        | Hidden (Future Phase)| Target       | P1       |
 
-Further verification should focus on authorization and tenant ownership.
+> **Release Staging Note:** In accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md), staff and resource navigation items are intentionally withheld from the owner sidebar. Customer-facing booking focuses on slot capacity without individual staff selection.
 
 ---
 
 # 23. Additional Items
 
-| Area                | Functional Status | Test Status | Architecture       | Priority |
-| ------------------- | ----------------- | ----------- | ------------------ | -------- |
-| Item creation       | Implemented       | PASS        | Target             | P1       |
-| Item update         | Implemented       | PASS        | Target             | P1       |
-| Item deletion       | Implemented       | PASS        | Target             | P1       |
-| Booking association | Implemented       | PARTIAL     | Needs Verification | P1       |
+| Area                | Functional Status | Test Status | UI Visibility Status | Architecture       | Priority |
+| ------------------- | ----------------- | ----------- | -------------------- | ------------------ | -------- |
+| Item creation       | Implemented       | PASS        | Hidden (Future Phase)| Target             | P1       |
+| Item update         | Implemented       | PASS        | Hidden (Future Phase)| Target             | P1       |
+| Item deletion       | Implemented       | PASS        | Hidden (Future Phase)| Target             | P1       |
+| Booking association | Implemented       | PARTIAL     | Hidden (Future Phase)| Needs Verification | P1       |
+
+> **Release Staging Note:** Backend CRUD is complete. Customer-facing add-on selection during booking is deferred to a future phase; the owner sidebar navigation item is intentionally hidden ([ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md)).
 
 ---
 
 # 24. Voucher
 
-| Area                | Functional Status | Test Status | Architecture | Priority |
-| ------------------- | ----------------- | ----------- | ------------ | -------- |
-| Voucher management  | Implemented       | PASS        | Target       | P1       |
-| Voucher validation  | Implemented       | PASS        | Target       | P0       |
-| Voucher application | Implemented       | PARTIAL     | Target       | P0       |
-| Voucher ownership   | Implemented       | PASS        | Target       | P0       |
+| Area                | Functional Status | Test Status | UI Visibility Status       | Architecture | Priority |
+| ------------------- | ----------------- | ----------- | -------------------------- | ------------ | -------- |
+| Voucher management  | Implemented       | PASS        | Hidden (Future Phase)      | Target       | P1       |
+| Voucher validation  | Implemented       | PASS        | Gated Stub (HTTP 422)      | Target       | P0       |
+| Voucher application | Implemented       | PARTIAL     | Staged for Next Phase      | Target       | P0       |
+| Voucher ownership   | Implemented       | PASS        | Hidden (Future Phase)      | Target       | P0       |
 
-The authoritative eligibility rule must remain centralized and must not be independently reimplemented in the frontend.
+> **Release Staging Note:** Backend CRUD is complete. Customer checkout validation endpoint (`validateVoucher`) is intentionally gated with HTTP 422 (`"Fitur voucher saat ini belum aktif."`) and the sidebar navigation item is hidden to maintain live payment stability ([ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md)).
 
 ---
 
@@ -649,10 +651,12 @@ Further work should focus on metric correctness and consistency with domain stat
 
 # 26. Analytics and Reports
 
-| Area      | Functional Status | Test Status | Architecture       | Priority |
-| --------- | ----------------- | ----------- | ------------------ | -------- |
-| Analytics | Implemented       | PARTIAL     | Needs Verification | P1       |
-| Reports   | Implemented       | PARTIAL     | Needs Verification | P1       |
+| Area            | Functional Status | Test Status | UI Visibility Status              | Architecture       | Priority |
+| --------------- | ----------------- | ----------- | --------------------------------- | ------------------ | -------- |
+| Analytics       | Implemented       | PARTIAL     | UI Locked ("Sedang Dikembangkan") | Needs Verification | P1       |
+| Schedule Report | Implemented       | PARTIAL     | UI Locked ("Sedang Dikembangkan") | Needs Verification | P1       |
+
+> **Release Staging Note:** Analytics Overview (`/owner/analytics`) displays a locked hero banner with blurred mockups. Schedule Report (`/owner/schedule-report`) displays a header notice and sidebar lock badge (`🔒 Terkunci`) in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
 
 Verification queue:
 
@@ -668,11 +672,13 @@ Verification queue:
 
 # 27. Appearance and Assets
 
-| Area                | Functional Status | Test Status | Architecture       | Priority |
-| ------------------- | ----------------- | ----------- | ------------------ | -------- |
-| Appearance settings | Implemented       | PARTIAL     | Target             | P1       |
-| Business assets     | Implemented       | PARTIAL     | Needs Verification | P1       |
-| Public branding     | Implemented       | PARTIAL     | Needs Verification | P1       |
+| Area                | Functional Status | Test Status | UI Visibility Status | Architecture       | Priority |
+| ------------------- | ----------------- | ----------- | -------------------- | ------------------ | -------- |
+| Appearance settings | Implemented       | PARTIAL     | Hidden (Future Phase)| Target             | P1       |
+| Business assets     | Implemented       | PARTIAL     | Hidden (Future Phase)| Needs Verification | P1       |
+| Public branding     | Implemented       | PARTIAL     | Standardized Clean UI| Needs Verification | P1       |
+
+> **Release Staging Note:** Appearance and Assets configuration forms exist in the backend but their navigation items are hidden from the owner sidebar. Public storefronts apply standard clean styling ([ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md)).
 
 Security verification must include:
 

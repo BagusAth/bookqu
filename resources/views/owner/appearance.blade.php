@@ -11,7 +11,8 @@
     layoutStyle: 'grid',
     businessName: '{{ addslashes($tenant->namabisnis ?? 'My Business') }}',
     businessDesc: '{{ addslashes($tenant->deskripsi ?? 'Reservasi online cepat dan mudah.') }}',
-    presetColors: ['#4F46E5', '#2563EB', '#0D9488', '#059669', '#E11D48', '#7C3AED', '#111827']
+    presetColors: ['#4F46E5', '#2563EB', '#0D9488', '#059669', '#E11D48', '#7C3AED', '#111827'],
+    notification: ''
 }">
 
     {{-- Toast Notification --}}

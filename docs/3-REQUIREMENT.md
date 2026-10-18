@@ -819,6 +819,9 @@ The system supports a Unified Payment Gateway architecture with pluggable driver
 
 Switching between providers is governed centrally by configuration (`config/payment.php` and `PAYMENT_GATEWAY_DRIVER`) across both customer booking checkout and owner subscription checkout. Existing transactions maintain historical provider isolation.
 
+> **Operational Staging Note (Platform Escrow vs Direct Gateway):**  
+> BookQu currently operates on a centralized Platform Escrow model where payments are processed through platform-level SingaPay/Midtrans credentials. The direct payment gateway settings form (`/owner/settings/payments`), which allows individual tenants to configure their own custom gateway keys, is intentionally hidden from owner navigation pending multi-merchant onboarding and compliance verification in a future phase. (See [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md)).
+
 ---
 
 ## FR-PAYMENT-003 — Payment Status
@@ -973,6 +976,9 @@ An additional item may be associated with eligible services.
 
 Where enabled, a customer shall be able to select eligible additional items during checkout.
 
+> **Operational Staging & UI Gating Note:**  
+> Backend CRUD and service associations (`App\Models\AdditionalItem`, `service_additional_item`) are implemented. However, customer-facing selection during the 6-step booking journey is deferred to a future phase to maintain checkout speed and simplicity. The owner navigation entry point (`/owner/additional-items`) is intentionally hidden from the sidebar in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
+
 ---
 
 # 19. Voucher Requirements
@@ -1012,6 +1018,9 @@ A voucher belonging to one tenant shall not be usable by another tenant.
 
 The system shall calculate the resulting booking price according to the accepted voucher rules.
 
+> **Operational Staging & UI Gating Note:**  
+> Backend voucher CRUD, rules, and tenant scoping (`App\Models\Voucher`) are implemented. However, the customer checkout validator endpoint (`validateVoucher`) is intentionally gated with HTTP 422 (`"Fitur voucher saat ini belum aktif."`) to prevent untested discount deductions on live transactions. The owner navigation entry point (`/owner/vouchers`) is intentionally hidden from the sidebar in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
+
 ---
 
 # 20. Staff and Resource Requirements
@@ -1045,6 +1054,9 @@ Inactive staff or resources must not be used by booking flows that require activ
 Staff/resource management does not automatically imply customer selection during booking.
 
 Customer-facing staff/resource selection requires an explicit product requirement.
+
+> **Operational Staging & UI Gating Note:**  
+> Operational models (`Staff`, `Resource`) and service linkage are implemented in the backend. Customer-facing staff selection is intentionally omitted to focus on frictionless slot-capacity bookings. The owner navigation entry point (`/owner/staff-resources`) is intentionally hidden from the sidebar in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
 
 ---
 
@@ -1212,6 +1224,9 @@ The system shall support schedule utilization analysis where sufficient data is 
 
 Analytics must derive from the same authoritative operational records used by the booking system.
 
+> **Operational Staging & UI Gating Note:**  
+> The Analytics Overview (`/owner/analytics`) is protected by `subscription:medium`. The interface currently renders a locked development hero card (*"Fitur Sedang Dikembangkan - Modul Analitik & Laporan Bisnis"*) with blurred metric mockups pending stabilization of advanced conversion funnel and revenue forecasting engines. (See [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md)).
+
 ---
 
 # 25. Reporting Requirements
@@ -1231,6 +1246,9 @@ Where supported, the owner shall be able to filter reports by relevant time peri
 ## FR-REPORT-003 — Report Export
 
 The system shall support export of supported report data.
+
+> **Operational Staging & UI Gating Note:**  
+> Schedule Report & Utilization (`/owner/schedule-report`) has operational slot calculations and CSV export, but renders in the UI with a header notice (*"Fitur Sedang Dikembangkan - Laporan Okupansi & Utilisasi Jadwal"*) and a sidebar lock indicator (`🔒 Terkunci`) in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
 
 ---
 
@@ -1258,6 +1276,9 @@ The owner shall be able to configure supported cover or banner imagery.
 
 Appearance configuration shall affect public presentation without modifying core booking behavior.
 
+> **Operational Staging & UI Gating Note:**  
+> Appearance configuration (`/owner/settings/appearance`) is implemented at the controller and action layer, but its navigation entry points are intentionally hidden from the owner sidebar and topbar. Public customer storefronts continue to use the standardized clean BookQu theme in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
+
 ---
 
 # 27. Asset Requirements
@@ -1271,6 +1292,9 @@ The system shall provide a mechanism for storing supported business media assets
 ## FR-ASSET-002 — Asset Ownership
 
 Assets shall belong to the correct tenant.
+
+> **Operational Staging & UI Gating Note:**  
+> Asset storage and upload (`/owner/settings/assets`) are implemented. Its navigation link is kept hidden from the sidebar until interactive storefront gallery integration is scheduled in a future release. (See [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md)).
 
 ---
 

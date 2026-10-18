@@ -173,7 +173,7 @@
                         <input type="checkbox" name="terms" class="rounded border-slate-300 text-[#4F46E5] focus:ring-[#4F46E5]" @checked(old('terms')) required />
                         <span class="ml-2 text-sm text-slate-600">
                             Saya setuju dengan 
-                            <a href="#" class="text-[#4F46E5] hover:text-[#4338CA]">Syarat & Ketentuan</a>
+                            <a href="{{ route('terms-conditions') }}" target="_blank" class="text-[#4F46E5] hover:text-[#4338CA]">Syarat & Ketentuan</a>
                         </span>
                     </label>
                     @error('terms')

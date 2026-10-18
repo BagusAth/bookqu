@@ -93,4 +93,50 @@ class AuthTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect('/');
     }
+
+    public function test_user_can_verify_email_via_signed_url_even_when_unauthenticated(): void
+    {
+        $user = User::factory()->create([
+            'email_verified_at' => null,
+            'role' => 'owner',
+        ]);
+
+        $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->getEmailForVerification())]
+        );
+
+        $response = $this->get($verificationUrl);
+
+        $response->assertRedirect('/login');
+        $response->assertSessionHas('status', 'Akun berhasil diaktivasi. Silakan login.');
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_user_cannot_verify_email_with_invalid_hash(): void
+    {
+        $user = User::factory()->create([
+            'email_verified_at' => null,
+            'role' => 'owner',
+        ]);
+
+        $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => 'invalid-hash-string']
+        );
+
+        $response = $this->get($verificationUrl);
+
+        $response->assertStatus(403);
+        $this->assertFalse($user->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_register_view_contains_link_to_terms_and_conditions(): void
+    {
+        $response = $this->get('/register');
+        $response->assertStatus(200);
+        $response->assertSee(route('terms-conditions'));
+    }
 }
