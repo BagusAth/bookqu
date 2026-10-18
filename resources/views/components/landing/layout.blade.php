@@ -1,9 +1,10 @@
 @props(['title' => 'BookQu - Kelola Booking Bisnis Anda'])
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="scroll-smooth scroll-pt-20">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#4F46E5">
     <title>{{ $title }}</title>
 
     <!-- Favicon -->

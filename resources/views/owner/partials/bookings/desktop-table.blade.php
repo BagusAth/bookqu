@@ -63,7 +63,7 @@
                                     <p class="text-xs sm:text-sm font-bold text-bq-text truncate" title="{{ $booking->namapelanggan }}">{{ $booking->namapelanggan }}</p>
                                     <div class="flex items-center gap-1.5 text-[11px] text-bq-text-muted mt-0.5 truncate">
                                         @if($booking->nomorhp)
-                                            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $booking->nomorhp) }}" target="_blank" class="hover:text-emerald-600 font-mono text-[11px]">
+                                            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $booking->nomorhp) }}" target="_blank" rel="noopener noreferrer" class="hover:text-emerald-600 font-mono text-[11px]">
                                                 {{ $booking->nomorhp }}
                                             </a>
                                         @elseif($booking->email)

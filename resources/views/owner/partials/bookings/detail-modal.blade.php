@@ -80,7 +80,7 @@
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="text-[#6e6584]">Nomor WhatsApp:</span>
-                                    <a :href="'https://wa.me/' + (activeBooking.phone ? activeBooking.phone.replace(/[^0-9]/g, '') : '')" target="_blank" class="font-mono font-bold text-emerald-700 hover:underline flex items-center gap-1">
+                                    <a :href="'https://wa.me/' + (activeBooking.phone ? activeBooking.phone.replace(/[^0-9]/g, '') : '')" target="_blank" rel="noopener noreferrer" class="font-mono font-bold text-emerald-700 hover:underline flex items-center gap-1">
                                         <span x-text="activeBooking.phone || '-'"></span>
                                         <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-bold">Chat WA</span>
                                     </a>
@@ -149,7 +149,7 @@
                                 <template x-if="activeBooking.manage_url">
                                     <div class="pt-2 border-t border-[#e7e2f7] flex items-center justify-between">
                                         <span class="text-xs text-[#6e6584]">Link Mandiri Pelanggan:</span>
-                                        <a :href="activeBooking.manage_url" target="_blank" class="text-xs font-bold text-[#382186] hover:underline flex items-center gap-1">
+                                        <a :href="activeBooking.manage_url" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-[#382186] hover:underline flex items-center gap-1">
                                             <span>Buka Halaman Manage</span>
                                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                         </a>

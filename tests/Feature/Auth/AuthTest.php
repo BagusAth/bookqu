@@ -139,4 +139,64 @@ class AuthTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee(route('terms-conditions'));
     }
+
+    public function test_login_screen_contains_link_to_forgot_password(): void
+    {
+        $response = $this->get('/login');
+        $response->assertStatus(200);
+        $response->assertSee(route('password.request'));
+    }
+
+    public function test_welcome_page_cta_for_unverified_owner_points_to_verification(): void
+    {
+        $user = User::factory()->create([
+            'email_verified_at' => null,
+            'role'              => 'owner',
+        ]);
+
+        $response = $this->actingAs($user)->get('/');
+        $response->assertStatus(200);
+        $response->assertSee(route('verification.notice'));
+    }
+
+    public function test_welcome_page_cta_for_verified_owner_points_to_dashboard(): void
+    {
+        $user = User::factory()->create([
+            'email_verified_at' => now(),
+            'role'              => 'owner',
+        ]);
+
+        $response = $this->actingAs($user)->get('/');
+        $response->assertStatus(200);
+        $response->assertSee(url('/owner/dashboard'));
+    }
+
+    public function test_login_failure_preserves_remember_me_checkbox_value(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'remember-test@example.com',
+        ]);
+
+        $response = $this->from('/login')->post('/login', [
+            'email'    => $user->email,
+            'password' => 'wrong-password',
+            'remember' => 'on',
+        ]);
+
+        $response->assertRedirect('/login');
+        $response->assertSessionHasErrors('email');
+        $response->assertSessionHasInput('remember', 'on');
+        $this->assertEquals('on', session()->getOldInput('remember'));
+    }
+
+    public function test_verified_owner_visiting_verification_notice_is_redirected_to_dashboard(): void
+    {
+        $user = User::factory()->create([
+            'email_verified_at' => now(),
+            'role'              => 'owner',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('verification.notice'));
+        $response->assertRedirect(route('owner.dashboard'));
+    }
 }

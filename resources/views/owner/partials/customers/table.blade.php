@@ -36,7 +36,7 @@
                         {{-- Phone --}}
                         <td class="px-5 py-4 whitespace-nowrap">
                             @if($c->phone && $c->phone !== '-')
-                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $c->phone) }}" target="_blank"
+                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $c->phone) }}" target="_blank" rel="noopener noreferrer"
                                    class="inline-flex items-center gap-1 font-mono text-emerald-700 hover:underline">
                                     {{ $c->phone }}
                                     <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1 rounded">WA</span>

@@ -117,6 +117,7 @@
                                             <span class="text-bq-text-muted">Phone / WhatsApp:</span>
                                             <a :href="'https://wa.me/' + (activeCustomer.phone ? activeCustomer.phone.replace(/[^0-9]/g, '') : '')"
                                                target="_blank"
+                                               rel="noopener noreferrer"
                                                class="font-mono text-emerald-700 font-bold hover:underline"
                                                x-text="activeCustomer.phone"></a>
                                         </div>
@@ -258,6 +259,7 @@
                     <template x-if="activeCustomer && activeCustomer.phone && activeCustomer.phone !== '-'">
                         <a :href="'https://wa.me/' + activeCustomer.phone.replace(/[^0-9]/g, '')"
                            target="_blank"
+                           rel="noopener noreferrer"
                            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition shadow-sm">
                             Hubungi via WhatsApp &rarr;
                         </a>

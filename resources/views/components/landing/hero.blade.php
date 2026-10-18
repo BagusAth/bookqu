@@ -10,9 +10,31 @@
                 Tingkatkan efisiensi dan kurangi no-show pelanggan.
             </p>
             <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <a href="{{ route('register') }}" class="rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
-                    Mulai Gratis 7 Hari
-                </a>
+                @auth
+                    @if (auth()->user()->isOwner())
+                        @if (auth()->user()->hasVerifiedEmail())
+                            <a href="{{ route('owner.dashboard') }}" class="rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
+                                Buka Dashboard
+                            </a>
+                        @else
+                            <a href="{{ route('verification.notice') }}" class="rounded-xl bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-amber-500/20 transition hover:bg-amber-600">
+                                Verifikasi Email Anda
+                            </a>
+                        @endif
+                    @elseif (auth()->user()->isAdmin())
+                        <a href="{{ route('admin.dashboard') }}" class="rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
+                            Buka Dashboard
+                        </a>
+                    @else
+                        <a href="{{ route('register') }}" class="rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
+                            Mulai Gratis 7 Hari
+                        </a>
+                    @endif
+                @else
+                    <a href="{{ route('register') }}" class="rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
+                        Mulai Gratis 7 Hari
+                    </a>
+                @endauth
                 <a href="#features" class="rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300">
                     Lihat Demo
                 </a>

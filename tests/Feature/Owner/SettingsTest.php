@@ -158,4 +158,75 @@ class SettingsTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $userId]);
         $this->assertDatabaseMissing('tenants', ['id' => $tenantId]);
     }
+
+    public function test_owner_can_complete_profile_with_normalized_phone(): void
+    {
+        $newOwner = User::factory()->create([
+            'role'              => 'owner',
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this->actingAs($newOwner)->post('/owner/profile/complete', [
+            'namabisnis'  => 'Studio Cantik Alami',
+            'jenisbisnis' => 'Kecantikan',
+            'nomorhp'     => '+62 812 3456 7890',
+            'alamat'      => 'Jl. Flamboyan No. 10',
+        ]);
+
+        $response->assertRedirect(route('owner.dashboard'));
+        $response->assertSessionHas('sukses');
+
+        $this->assertDatabaseHas('tenants', [
+            'iduser'     => $newOwner->id,
+            'namabisnis' => 'Studio Cantik Alami',
+            'nomorhp'    => '081234567890',
+        ]);
+    }
+
+    public function test_phone_normalization_handles_various_formats(): void
+    {
+        $formats = [
+            '+62081234567891' => '081234567891',
+            '6281234567892'   => '081234567892',
+            '81234567893'     => '081234567893',
+            '0812-3456-7894'  => '081234567894',
+        ];
+
+        foreach ($formats as $inputPhone => $expectedPhone) {
+            $user = User::factory()->create([
+                'role'              => 'owner',
+                'email_verified_at' => now(),
+            ]);
+
+            $this->actingAs($user)->post('/owner/profile/complete', [
+                'namabisnis'  => 'Bisnis ' . uniqid(),
+                'jenisbisnis' => 'Jasa',
+                'nomorhp'     => $inputPhone,
+                'alamat'      => 'Jl. Contoh No. 1',
+            ])->assertRedirect(route('owner.dashboard'));
+
+            $this->assertDatabaseHas('tenants', [
+                'iduser'  => $user->id,
+                'nomorhp' => $expectedPhone,
+            ]);
+        }
+    }
+
+    public function test_owner_profile_completion_validation_failure_preserves_old_input(): void
+    {
+        $newOwner = User::factory()->create([
+            'role'              => 'owner',
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this->actingAs($newOwner)->from('/owner/dashboard')->post('/owner/profile/complete', [
+            'namabisnis'  => '',
+            'jenisbisnis' => 'Kecantikan',
+            'nomorhp'     => '081234567890',
+            'alamat'      => 'Jl. Flamboyan No. 10',
+        ]);
+
+        $response->assertRedirect('/owner/dashboard');
+        $response->assertSessionHasErrors('namabisnis');
+    }
 }

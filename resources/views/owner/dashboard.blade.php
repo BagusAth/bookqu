@@ -338,7 +338,7 @@
 </div>
 
 {{-- Complete Profile Modal --}}
-@if ($showProfilePrompt)
+@if ($showProfilePrompt || $errors->any())
     @include('components.owner.modal-complete-profile')
 @endif
 

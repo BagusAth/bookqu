@@ -56,7 +56,7 @@
                 <p class="text-xs text-bq-text-muted">Update your business information visible to customers.</p>
             </div>
             @if(!empty($tenant->slug))
-                <a href="/{{ $tenant->slug }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-[#4F46E5] hover:underline">
+                <a href="/{{ $tenant->slug }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-bold text-[#4F46E5] hover:underline">
                     <span>Lihat Halaman Booking</span>
                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

@@ -17,8 +17,14 @@ class EmailVerificationController extends Controller
     /**
      * Display the email verification prompt.
      */
-    public function notice(): View
+    public function notice(Request $request): RedirectResponse|View
     {
+        if ($request->user()?->hasVerifiedEmail()) {
+            return $request->user()->isOwner()
+                ? redirect()->route('owner.dashboard')
+                : redirect('/');
+        }
+
         return view('auth.verify-email');
     }
 
@@ -50,6 +56,12 @@ class EmailVerificationController extends Controller
      */
     public function send(Request $request): RedirectResponse
     {
+        if ($request->user()?->hasVerifiedEmail()) {
+            return $request->user()->isOwner()
+                ? redirect()->route('owner.dashboard')
+                : redirect('/');
+        }
+
         $request->user()->sendEmailVerificationNotification();
 
         return back()->with('status', 'Link verifikasi baru sudah dikirim ke email Anda.');

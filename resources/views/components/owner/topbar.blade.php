@@ -113,7 +113,7 @@
                 <a
                     href="/{{ $tenant->slug }}"
                     target="_blank"
-                    rel="noopener"
+                    rel="noopener noreferrer"
                     class="craft-btn inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 sm:py-1 text-xs font-bold text-[#382186] hover:bg-white transition-all active:scale-[0.98]"
                     title="Lihat reservasi publik di tab baru"
                     id="btn-topbar-view-booking-page"

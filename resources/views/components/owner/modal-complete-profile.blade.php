@@ -1,6 +1,10 @@
 {{-- Complete Profile Modal Component --}}
 <div
-    x-data="{ buka: true, sedangkirim: false, namabisnis: '' }"
+    x-data="{ 
+        buka: {{ $errors->any() ? 'true' : ($showProfilePrompt ?? true ? 'true' : 'false') }}, 
+        sedangkirim: false, 
+        namabisnis: @js(old('namabisnis', auth()->user()?->tenant?->namabisnis ?? ''))
+    }"
     @open-complete-profile.window="buka = true"
     x-cloak
 >
@@ -46,6 +50,17 @@
             <form method="POST" action="/owner/profile/complete" @submit="sedangkirim = true" id="form-complete-profile" class="flex flex-col min-h-0 flex-1">
                 @csrf
                 <div class="space-y-4 px-5 py-4 sm:px-6 sm:py-5 overflow-y-auto flex-1">
+                    @if ($errors->any())
+                        <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
+                            <p class="font-semibold text-rose-800">Mohon perbaiki isian form:</p>
+                            <ul class="mt-1 list-disc space-y-0.5 pl-4">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <div>
                         <label for="input-complete-namabisnis" class="mb-1.5 block text-sm font-medium text-bq-text">Nama Bisnis <span class="text-rose-500">*</span></label>
                         <input
@@ -53,10 +68,14 @@
                             name="namabisnis"
                             id="input-complete-namabisnis"
                             x-model="namabisnis"
+                            value="{{ old('namabisnis', auth()->user()?->tenant?->namabisnis ?? '') }}"
                             required
                             placeholder="Contoh: Yoga Studio" 
-                            class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                            class="w-full rounded-lg border {{ $errors->has('namabisnis') ? 'border-rose-400 focus:ring-rose-500' : 'border-bq-border focus:ring-bq-primary/20' }} bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2"
                         >
+                        @error('namabisnis')
+                            <p class="mt-1 text-xs text-rose-600 font-medium">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
@@ -65,10 +84,14 @@
                             type="text"
                             name="jenisbisnis"
                             id="input-complete-jenisbisnis"
+                            value="{{ old('jenisbisnis', auth()->user()?->tenant?->jenisbisnis ?? '') }}"
                             required
                             placeholder="Contoh: Studio Yoga" 
-                            class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                            class="w-full rounded-lg border {{ $errors->has('jenisbisnis') ? 'border-rose-400 focus:ring-rose-500' : 'border-bq-border focus:ring-bq-primary/20' }} bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2"
                         >
+                        @error('jenisbisnis')
+                            <p class="mt-1 text-xs text-rose-600 font-medium">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
@@ -77,22 +100,29 @@
                             type="text"
                             name="nomorhp"
                             id="input-complete-nomorhp"
+                            value="{{ old('nomorhp', auth()->user()?->tenant?->nomorhp ?? auth()->user()?->nomorhp ?? '') }}"
                             required
                             placeholder="08xxxxxxxxxx" 
-                            class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                            class="w-full rounded-lg border {{ $errors->has('nomorhp') ? 'border-rose-400 focus:ring-rose-500' : 'border-bq-border focus:ring-bq-primary/20' }} bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2"
                         >
+                        @error('nomorhp')
+                            <p class="mt-1 text-xs text-rose-600 font-medium">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
-                        <label for="input-complete-alamat" class="mb-1.5 block text-sm font-medium text-bq-text">Alamat</label>
+                        <label for="input-complete-alamat" class="mb-1.5 block text-sm font-medium text-bq-text">Alamat <span class="text-rose-500">*</span></label>
                         <textarea
                             name="alamat"
                             id="input-complete-alamat"
                             rows="2"
                             placeholder="Alamat bisnis" 
                             required
-                            class="w-full rounded-lg border border-bq-border bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20 resize-none"
-                        ></textarea>
+                            class="w-full rounded-lg border {{ $errors->has('alamat') ? 'border-rose-400 focus:ring-rose-500' : 'border-bq-border focus:ring-bq-primary/20' }} bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 resize-none"
+                        >{{ old('alamat', auth()->user()?->tenant?->alamat ?? '') }}</textarea>
+                        @error('alamat')
+                            <p class="mt-1 text-xs text-rose-600 font-medium">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="rounded-lg border border-bq-border bg-bq-background px-4 py-3">
@@ -113,7 +143,7 @@
                         id="btn-submit-complete-profile"
                     >
                         <svg x-show="sedangkirim" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                        <span x-text="sedangkirim ? 'Menyimpan...' : 'Simpan Profil'"></span>
+                        <span x-text="sedangkirim ? 'Menyimpan...' : 'Simpan Profil'">Simpan Profil</span>
                     </button>
                 </div>
             </form>

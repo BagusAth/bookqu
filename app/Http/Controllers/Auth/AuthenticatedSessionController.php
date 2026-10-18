@@ -32,7 +32,7 @@ class AuthenticatedSessionController extends Controller
         if (!Auth::attempt($credentials, $request->boolean('remember'))) {
             return back()
                 ->withErrors(['email' => 'Email atau password salah.'])
-                ->onlyInput('email');
+                ->onlyInput('email', 'remember');
         }
 
         $request->session()->regenerate();

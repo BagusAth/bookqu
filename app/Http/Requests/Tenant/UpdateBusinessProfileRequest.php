@@ -16,6 +16,23 @@ class UpdateBusinessProfileRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('nomorhp') && $this->nomorhp !== null) {
+            $phone = preg_replace('/[^\d+]/', '', (string) $this->nomorhp);
+            if (str_starts_with($phone, '+62')) {
+                $phone = substr($phone, 3);
+            } elseif (str_starts_with($phone, '62')) {
+                $phone = substr($phone, 2);
+            }
+            $phone = ltrim($phone, '0');
+            if ($phone !== '') {
+                $phone = '0' . $phone;
+            }
+            $this->merge(['nomorhp' => $phone]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */

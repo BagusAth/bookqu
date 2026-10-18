@@ -143,7 +143,7 @@
                         <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         Live Preview Tampilan Publik
                     </span>
-                    <a href="/{{ $tenant->slug ?? 'demo' }}" target="_blank" class="text-xs text-indigo-600 hover:underline">
+                    <a href="/{{ $tenant->slug ?? 'demo' }}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 hover:underline">
                         Buka Halaman Penuh &rarr;
                     </a>
                 </div>
