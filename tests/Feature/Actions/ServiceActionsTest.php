@@ -192,4 +192,40 @@ class ServiceActionsTest extends TestCase
         $this->assertEquals('Layanan Lama', $name);
         $this->assertDatabaseMissing('services', ['id' => $service->id]);
     }
+
+    public function test_delete_service_action_blocked_if_completed_bookings_exist(): void
+    {
+        $service = Service::create([
+            'idtenant'    => $this->tenant->id,
+            'namalayanan' => 'Facial Selesai',
+            'harga'       => 200000,
+            'durasi'      => 60,
+        ]);
+
+        $schedule = Schedule::create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $service->id,
+            'tanggal'     => now()->subDays(2)->toDateString(),
+            'jam_mulai'   => '10:00:00',
+            'jam_selesai' => '11:00:00',
+            'status'      => 'tersedia',
+        ]);
+
+        Booking::create([
+            'idtenant'       => $this->tenant->id,
+            'idlayanan'      => $service->id,
+            'idschedule'     => $schedule->id,
+            'tanggalbooking' => now()->subDays(2),
+            'jam'            => '10:00:00',
+            'namapelanggan'  => 'Pelanggan Lama Selesai',
+            'nomorhp'        => '08123456789',
+            'email'          => 'selesai@example.com',
+            'status'         => 'completed',
+        ]);
+
+        $action = app(DeleteService::class);
+
+        $this->expectException(ValidationException::class);
+        $action->execute($this->tenant, $service);
+    }
 }

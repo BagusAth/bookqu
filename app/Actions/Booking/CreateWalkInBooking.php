@@ -33,6 +33,13 @@ class CreateWalkInBooking
      */
     public function execute(Tenant $tenant, array $data): ?Booking
     {
+        $subscription = \App\Models\Subscription::where('idtenant', $tenant->id)->latest()->first();
+        if ($subscription !== null && \App\Domain\Subscription\SubscriptionState::isExpired($subscription)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'error' => 'Langganan Anda telah habis, mohon perpanjang untuk menambah booking walk-in.',
+            ]);
+        }
+
         $booking = DB::transaction(function () use ($tenant, $data) {
             $schedule = Schedule::where('id', $data['idschedule'])
                 ->where('idtenant', $tenant->id)

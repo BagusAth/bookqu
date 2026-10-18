@@ -64,6 +64,53 @@ class CommandsTest extends TestCase
         ]);
     }
 
+    public function test_bookings_expire_payments_command_handles_singapay_payments_without_midtrans(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $tenant = Tenant::factory()->create(['iduser' => $owner->id]);
+        $service = Service::factory()->create(['idtenant' => $tenant->id]);
+        $schedule = Schedule::factory()->create(['idtenant' => $tenant->id, 'idlayanan' => $service->id]);
+
+        $expiredSingaPay = Payment::create([
+            'idtenant' => $tenant->id,
+            'tipe' => 'booking',
+            'jumlah' => 75000,
+            'status' => 'pending',
+            'metode' => 'singapay',
+            'provider' => 'singapay',
+            'order_id' => 'SNG-EXP-TEST',
+            'expired_at' => Carbon::now()->subMinutes(20),
+        ]);
+
+        $booking = Booking::create([
+            'idtenant' => $tenant->id,
+            'idlayanan' => $service->id,
+            'idschedule' => $schedule->id,
+            'idpayment' => $expiredSingaPay->id,
+            'namapelanggan' => 'SingaPay Late Customer',
+            'nomorhp' => '08123456788',
+            'email' => 'singapalate@example.com',
+            'tanggalbooking' => Carbon::tomorrow()->format('Y-m-d'),
+            'jam' => '14:00:00',
+            'status' => 'pending',
+            'booking_code' => 'BKQ-SNG-1',
+        ]);
+
+        $this->artisan('bookings:expire-payments')
+            ->expectsOutputToContain('Done. Cancelled 1 expired booking payment(s).')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $expiredSingaPay->id,
+            'status' => 'gagal',
+        ]);
+
+        $this->assertDatabaseHas('bookings', [
+            'id' => $booking->id,
+            'status' => 'cancelled',
+        ]);
+    }
+
     public function test_check_expired_subscriptions_command(): void
     {
         $owner = User::factory()->create(['role' => 'owner']);

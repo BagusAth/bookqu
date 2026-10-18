@@ -31,10 +31,10 @@ class DeleteService
             ->findOrFail($targetId);
         $namalayanan = $layanan->namalayanan;
 
-        $hasActiveBookings = $layanan->bookings()->whereIn('status', ['pending', 'paid'])->exists();
+        $hasActiveBookings = $layanan->bookings()->whereIn('status', ['pending', 'paid', 'completed'])->exists();
         if ($hasActiveBookings) {
             throw ValidationException::withMessages([
-                'error' => 'Layanan "' . $namalayanan . '" memiliki jadwal booking aktif (pending/confirmed). Anda tidak dapat menghapusnya. Silakan nonaktifkan status layanan ini agar tidak dapat dipesan lagi.',
+                'error' => 'Layanan "' . $namalayanan . '" memiliki riwayat transaksi atau jadwal booking aktif. Untuk menjaga integritas data riwayat keuangan, layanan tidak dapat dihapus. Silakan nonaktifkan status layanan ini.',
             ]);
         }
 

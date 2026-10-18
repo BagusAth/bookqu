@@ -65,7 +65,7 @@ class OwnerLandingPageController extends Controller
         $validated = $request->validate([
             'custom_domain' => 'nullable|string|max:255|unique:tenants,custom_domain,' . $tenant->id,
             'theme_color'   => 'nullable|string|max:50',
-            'banner'        => 'nullable|image|mimes:jpeg,png,jpg,webp,gif,svg|max:10240',
+            'banner'        => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:10240',
         ]);
 
         if ($request->hasFile('banner')) {

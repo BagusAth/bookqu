@@ -32,7 +32,7 @@ class UpdateServiceRequest extends FormRequest
             'idcategory'          => ['nullable', Rule::exists('categories', 'id')->where('idtenant', $tenantId)],
             'deskripsi'           => ['nullable', 'string', 'max:1000'],
             'is_active'           => ['required', 'boolean'],
-            'cover_image'         => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:10240'],
+            'cover_image'         => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
             'remove_image'        => ['nullable', 'in:0,1'],
             'staff_ids'           => ['nullable', 'array'],
             'staff_ids.*'         => ['integer', Rule::exists('staff', 'id')->where('idtenant', $tenantId)],

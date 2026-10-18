@@ -110,4 +110,21 @@ class ProgramManagementTest extends TestCase
             'id' => $service->id,
         ]);
     }
+
+    public function test_owner_cannot_upload_svg_as_cover_image(): void
+    {
+        $fakeSvg = \Illuminate\Http\UploadedFile::fake()->create('malicious.svg', 10, 'image/svg+xml');
+
+        $response = $this->actingAs($this->user)->post('/owner/programs', [
+            'namalayanan' => 'Layanan XSS SVG',
+            'harga'       => 150000,
+            'durasi'      => 60,
+            'cover_image' => $fakeSvg,
+        ]);
+
+        $response->assertSessionHasErrors(['cover_image']);
+        $this->assertDatabaseMissing('services', [
+            'namalayanan' => 'Layanan XSS SVG',
+        ]);
+    }
 }

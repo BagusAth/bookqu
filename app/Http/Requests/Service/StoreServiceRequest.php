@@ -31,7 +31,7 @@ class StoreServiceRequest extends FormRequest
             'durasi'              => ['required', 'integer', 'min:5', 'max:480'],
             'idcategory'          => ['nullable', Rule::exists('categories', 'id')->where('idtenant', $tenantId)],
             'deskripsi'           => ['nullable', 'string', 'max:1000'],
-            'cover_image'         => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:10240'],
+            'cover_image'         => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
             'staff_ids'           => ['nullable', 'array'],
             'staff_ids.*'         => ['integer', Rule::exists('staff', 'id')->where('idtenant', $tenantId)],
             'resource_ids'        => ['nullable', 'array'],

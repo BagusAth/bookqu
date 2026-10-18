@@ -27,7 +27,7 @@ class UpdateBusinessProfileRequest extends FormRequest
             'nomorhp'     => ['required', 'string', 'max:20'],
             'alamat'      => ['required', 'string', 'max:255'],
             'deskripsi'   => ['nullable', 'string', 'max:1000'],
-            'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:10240'],
+            'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
         ];
     }
 }

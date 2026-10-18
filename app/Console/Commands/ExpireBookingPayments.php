@@ -61,17 +61,16 @@ class ExpireBookingPayments extends Command
             }
 
             try {
-                // Verify with Midtrans first to ensure we don't cancel a successful payment
-                // whose webhook failed to reach us
-                $syncResult = $paymentService->verifyAndSync($payment);
-                
-                // Refresh payment after sync
-                $payment->refresh();
-                
-                // If it became successful after sync, skip cancelling
-                if ($payment->status === 'sukses') {
-                    $this->line("  Payment #{$payment->id} verified as successful from Midtrans. Skipped cancellation.");
-                    continue;
+                // Verify with Midtrans only for Midtrans payments to prevent API 404 on SingaPay/Manual
+                if ($payment->provider === 'midtrans' || empty($payment->provider)) {
+                    $paymentService->verifyAndSync($payment);
+                    $payment->refresh();
+
+                    // If it became successful after sync, skip cancelling
+                    if ($payment->status === 'sukses') {
+                        $this->line("  Payment #{$payment->id} verified as successful from Midtrans. Skipped cancellation.");
+                        continue;
+                    }
                 }
 
                 // Delegate to centralized expirePayment for atomic transaction, row locking, and cache invalidation

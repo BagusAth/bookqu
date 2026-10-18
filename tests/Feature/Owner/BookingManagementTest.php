@@ -229,4 +229,41 @@ class BookingManagementTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('token=my-secret-cancel-token');
     }
+
+    public function test_owner_walk_in_booking_blocked_when_subscription_expired(): void
+    {
+        $plan = \App\Models\Plan::firstOrCreate(
+            ['namapaket' => 'small'],
+            ['hargabulanan' => 50000, 'maxlayanan' => 5, 'maxbooking' => 50, 'isunlimited' => false]
+        );
+
+        \App\Models\Subscription::create([
+            'idtenant'            => $this->tenant->id,
+            'idplan'              => $plan->id,
+            'status'              => 'expired',
+            'langganan_berakhir'  => now()->subDay(),
+        ]);
+
+        $walkinSchedule = Schedule::factory()->create([
+            'idtenant'    => $this->tenant->id,
+            'idlayanan'   => $this->service->id,
+            'tanggal'     => now()->addDays(3)->toDateString(),
+            'jam_mulai'   => '16:00',
+            'jam_selesai' => '17:00',
+            'status'      => 'tersedia',
+        ]);
+
+        $response = $this->actingAs($this->user)->post('/owner/bookings/walkin', [
+            'idschedule'    => $walkinSchedule->id,
+            'namapelanggan' => 'Walkin Blocked Guest',
+            'nomorhp'       => '089988776611',
+            'email'         => 'blocked@example.com',
+            'metode'        => 'cash',
+        ]);
+
+        $response->assertSessionHasErrors(['error']);
+        $this->assertDatabaseMissing('bookings', [
+            'namapelanggan' => 'Walkin Blocked Guest',
+        ]);
+    }
 }
