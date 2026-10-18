@@ -29,6 +29,7 @@ class TenantMiddleware
             $resolvedTenant = Tenant::where('custom_domain', $host)->first();
             if ($resolvedTenant) {
                 $request->route()->setParameter('slug_usaha', $resolvedTenant->slug);
+                $request->route()->forgetParameter('custom_domain');
             }
         }
 

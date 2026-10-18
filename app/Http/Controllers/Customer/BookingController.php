@@ -45,9 +45,9 @@ class BookingController extends Controller
         }
         MidtransConfig::$curlOptions = $curlOptions;
     }
-    public function showProgramSelection(string $slug_usaha)
+    public function showProgramSelection(?string $slug_usaha = null)
     {
-        $tenant = $this->resolveTenant($slug_usaha);
+        $tenant = $this->resolveTenant((string) ($slug_usaha ?? request()->route('slug_usaha')));
 
         if (!$tenant) {
             abort(404);
@@ -989,8 +989,18 @@ class BookingController extends Controller
 
     private function resolveTenant(string $slug_usaha): ?Tenant
     {
+        if (app(\App\Support\TenantContext::class)->hasTenant()) {
+            $contextTenantId = app(\App\Support\TenantContext::class)->getTenantId();
+            if ($contextTenantId) {
+                $tenant = Tenant::find($contextTenantId);
+                if ($tenant) {
+                    return $tenant;
+                }
+            }
+        }
+
         $tenantData = Cache::remember("tenant:slug:{$slug_usaha}", now()->addSeconds(3600), function () use ($slug_usaha) {
-            return Tenant::query()->where('slug', $slug_usaha)->first()?->getAttributes();
+            return Tenant::query()->where('slug', $slug_usaha)->orWhere('custom_domain', $slug_usaha)->first()?->getAttributes();
         });
 
         if (!$tenantData) {
