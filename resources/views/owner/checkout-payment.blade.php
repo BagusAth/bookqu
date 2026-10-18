@@ -60,21 +60,37 @@
 
                 {{-- Payment Actions --}}
                 <div class="space-y-3">
-                    {{-- Open Midtrans Snap --}}
-                    <button type="button" id="btn-pay-now"
-                        @click="openSnap()"
-                        class="w-full rounded-xl bg-bq-primary py-4 text-sm font-bold text-white shadow-lg shadow-bq-primary/30 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                        Bayar Sekarang
-                    </button>
+                    @if(($provider ?? '') === 'singapay' || !empty($paymentUrl))
+                        {{-- Open SingaPay Payment URL --}}
+                        <a href="{{ $paymentUrl ?? $payment->payment_url }}" id="btn-pay-now" target="_blank" rel="noopener noreferrer"
+                            class="w-full rounded-xl bg-bq-primary py-4 text-sm font-bold text-white shadow-lg shadow-bq-primary/30 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            Bayar Sekarang via SingaPay
+                        </a>
 
-                    {{-- Reopen Payment --}}
-                    <button type="button" id="btn-reopen-payment"
-                        @click="openSnap()"
-                        class="w-full rounded-xl border border-bq-border bg-bq-background py-3.5 text-sm font-semibold text-bq-text transition-all hover:bg-bq-surface hover:border-bq-primary hover:text-bq-primary flex items-center justify-center gap-2">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        Buka Ulang Pembayaran
-                    </button>
+                        {{-- Reopen Payment --}}
+                        <a href="{{ $paymentUrl ?? $payment->payment_url }}" id="btn-reopen-payment" target="_blank" rel="noopener noreferrer"
+                            class="w-full rounded-xl border border-bq-border bg-bq-background py-3.5 text-sm font-semibold text-bq-text transition-all hover:bg-bq-surface hover:border-bq-primary hover:text-bq-primary flex items-center justify-center gap-2">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            Buka Ulang Halaman Pembayaran SingaPay
+                        </a>
+                    @else
+                        {{-- Open Midtrans Snap --}}
+                        <button type="button" id="btn-pay-now"
+                            @click="openPayment()"
+                            class="w-full rounded-xl bg-bq-primary py-4 text-sm font-bold text-white shadow-lg shadow-bq-primary/30 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            Bayar Sekarang
+                        </button>
+
+                        {{-- Reopen Payment --}}
+                        <button type="button" id="btn-reopen-payment"
+                            @click="openPayment()"
+                            class="w-full rounded-xl border border-bq-border bg-bq-background py-3.5 text-sm font-semibold text-bq-text transition-all hover:bg-bq-surface hover:border-bq-primary hover:text-bq-primary flex items-center justify-center gap-2">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            Buka Ulang Pembayaran
+                        </button>
+                    @endif
 
                     {{-- Check Status Manual --}}
                     <button type="button" id="btn-check-status"
@@ -116,22 +132,22 @@
                     <ul class="space-y-1.5 text-xs text-bq-text-muted">
                         <li class="flex items-start gap-2">
                             <span class="text-bq-primary font-bold mt-0.5">1.</span>
-                            Klik <strong>"Bayar Sekarang"</strong> untuk membuka jendela pembayaran Midtrans.
+                            <span>Klik <strong>"Bayar Sekarang"</strong> untuk {{ ($provider ?? '') === 'singapay' ? 'menuju halaman pembayaran SingaPay' : 'membuka jendela pembayaran Midtrans' }}.</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-bq-primary font-bold mt-0.5">2.</span>
-                            Pilih metode pembayaran (QRIS, GoPay, Transfer Bank, dll) dan selesaikan transaksi.
+                            <span>Pilih metode pembayaran (QRIS, VA Transfer, E-Wallet) dan selesaikan transaksi.</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-bq-primary font-bold mt-0.5">3.</span>
-                            Website akan <strong>otomatis mendeteksi</strong> pembayaran selesai dan mengarahkan ke halaman invoice.
+                            <span>Website akan <strong>otomatis mendeteksi</strong> pembayaran selesai dan mengarahkan ke halaman invoice.</span>
                         </li>
                     </ul>
                 </div>
 
                 {{-- Supported Payments --}}
                 <div class="pt-2 border-t border-bq-border">
-                    <p class="text-xs text-bq-text-subtle text-center">Didukung oleh Midtrans — QRIS, GoPay, ShopeePay, BCA VA, BNI VA, Mandiri, BRI, dan lainnya.</p>
+                    <p class="text-xs text-bq-text-subtle text-center">Didukung oleh {{ ($provider ?? '') === 'singapay' ? 'SingaPay' : 'Midtrans' }} — QRIS, Virtual Account BCA/BNI/Mandiri/BRI, E-Wallet, dan lainnya.</p>
                 </div>
             </div>
         </div>
@@ -189,7 +205,9 @@
 </div>
 
 {{-- Midtrans Snap JS --}}
+@if(!empty($snapUrl) && !empty($clientKey))
 <script src="{{ $snapUrl }}" data-client-key="{{ $clientKey }}"></script>
+@endif
 
 <script>
 function paymentPage() {
@@ -217,10 +235,12 @@ function paymentPage() {
                 }
             });
 
-            // Auto-open Snap setelah halaman dimuat jika belum expired
+            // Auto-open Snap setelah halaman dimuat jika belum expired dan provider midtrans
+            @if(($provider ?? '') === 'midtrans' && !empty($snapToken))
             this.$nextTick(() => {
-                setTimeout(() => this.openSnap(), 800);
+                setTimeout(() => this.openPayment(), 800);
             });
+            @endif
         },
 
         startCountdown() {
@@ -264,8 +284,14 @@ function paymentPage() {
             }
         },
 
-        openSnap() {
+        openPayment() {
             if (this.countdown <= 0 || this.isSuccessRedirecting) return;
+
+            const paymentUrl = @json($paymentUrl ?? $payment->payment_url ?? null);
+            if (paymentUrl) {
+                window.location.href = paymentUrl;
+                return;
+            }
 
             if (typeof window.snap === 'undefined') {
                 console.warn('Midtrans Snap SDK not ready');
@@ -294,6 +320,10 @@ function paymentPage() {
                     self.checkStatus(true);
                 }
             });
+        },
+
+        openSnap() {
+            this.openPayment();
         },
 
         async sendCallback(result) {

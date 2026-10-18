@@ -750,15 +750,23 @@ class BookingController extends Controller
             return CustomerBookingRoutes::route('customer.booking.invoice', [$slug_usaha, $payment]);
         }
 
+        $payment->load(['bookings.layanan']);
+
+        $provider = $payment->provider ?: ($payment->metode === 'singapay' ? 'singapay' : config('payment.default', 'singapay'));
+        $isMidtrans = $provider === 'midtrans';
+        $clientKey = $isMidtrans ? (config('payment.drivers.midtrans.client_key') ?? config('midtrans.client_key')) : null;
+        $snapUrl = $isMidtrans ? (config('payment.drivers.midtrans.snap_url') ?? config('midtrans.snap_url')) : null;
+
         if ($payment->status === 'gagal') {
-            $payment->load(['bookings.layanan']);
             return view('customer.booking.payment', [
                 'tenant' => $tenant,
                 'payment' => $payment,
+                'provider' => $provider,
                 'paymentState' => 'failed',
+                'paymentUrl' => null,
                 'snapToken' => null,
-                'clientKey' => config('midtrans.client_key'),
-                'snapUrl' => config('midtrans.snap_url'),
+                'clientKey' => $clientKey,
+                'snapUrl' => $snapUrl,
             ]);
         }
 
@@ -768,27 +776,27 @@ class BookingController extends Controller
                 $payment->refresh();
             }
 
-            $payment->load(['bookings.layanan']);
             return view('customer.booking.payment', [
                 'tenant' => $tenant,
                 'payment' => $payment,
+                'provider' => $provider,
                 'paymentState' => $payment->isExpired() ? 'expired' : ($payment->status === 'gagal' ? 'failed' : 'pending'),
+                'paymentUrl' => null,
                 'snapToken' => null,
-                'clientKey' => config('midtrans.client_key'),
-                'snapUrl' => config('midtrans.snap_url'),
+                'clientKey' => $clientKey,
+                'snapUrl' => $snapUrl,
             ]);
         }
-
-        $payment->load(['bookings.layanan']);
 
         return view('customer.booking.payment', [
             'tenant' => $tenant,
             'payment' => $payment,
+            'provider' => $provider,
             'paymentState' => 'pending',
             'paymentUrl' => $payment->payment_url,
             'snapToken' => $payment->snap_token,
-            'clientKey' => config('midtrans.client_key'),
-            'snapUrl' => config('midtrans.snap_url'),
+            'clientKey' => $clientKey,
+            'snapUrl' => $snapUrl,
         ]);
     }
 
@@ -859,31 +867,6 @@ class BookingController extends Controller
             ]);
         }
 
-        // Provider SingaPay: konfirmasi melalui verified webhook
-        if ($payment->provider === 'singapay' || $payment->metode === 'singapay') {
-            $payment->refresh();
-
-            if ($payment->status === 'sukses') {
-                return response()->json([
-                    'status' => 'sukses',
-                    'message' => 'Pembayaran berhasil dikonfirmasi!',
-                    'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
-                ]);
-            }
-
-            if ($payment->status === 'gagal') {
-                return response()->json([
-                    'status' => 'gagal',
-                    'message' => 'Pembayaran gagal atau dibatalkan.',
-                ]);
-            }
-
-            return response()->json([
-                'status' => 'pending',
-                'message' => 'Menunggu konfirmasi pembayaran dari SingaPay.',
-            ]);
-        }
-
         $syncResult = $paymentService->verifyAndSync($payment);
 
         if ($syncResult['status'] === 'sukses') {
@@ -941,8 +924,6 @@ class BookingController extends Controller
             ]);
         }
 
-        // Lakukan server-side verification ke Midtrans (Midtrans server adalah authority tunggal)
-        // P0 Security Fix: HAPUS fallback client payload! Browser payload tidak boleh dipercaya
         $syncResult = $paymentService->verifyAndSync($payment);
 
         if ($syncResult['status'] === 'sukses') {

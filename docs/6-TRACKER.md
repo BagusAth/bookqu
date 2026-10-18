@@ -10,7 +10,7 @@
 > **System Design:** `docs/7-SYSTEM-DESIGN.md`
 > **Operations:** `docs/8-OPERATIONS.md`
 > **ADR:** `docs/adr/`
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-18
 >
 > This document records the current implementation, verification, architectural state, technical debt, and active work of BookQu.
 >
@@ -226,8 +226,8 @@ Priority describes importance, not implementation difficulty.
 The latest recorded full-suite baseline is:
 
 ```text
-Tests:       315
-Assertions:  1,564
+Tests:       368
+Assertions:  1,737
 Failures:    0
 ```
 
@@ -528,16 +528,18 @@ Further audit:
 
 # 19. Payment
 
-| Area                 | Functional Status | Test Status | Architecture | Priority |
-| -------------------- | ----------------- | ----------- | ------------ | -------- |
-| Booking payment      | Done              | PASS        | Target       | P0       |
-| Midtrans integration | Done              | PASS        | Target       | P0       |
-| Payment state        | Done              | PASS        | Target       | P0       |
-| External reference   | Done              | PASS        | Target       | P0       |
-| Trusted verification | Verified          | PASS        | Target       | P0       |
-| Webhook processing   | Done              | PASS        | Target       | P0       |
-| Expiration handling  | Done              | PASS        | Target       | P0       |
-| Refund processing    | Implemented       | PASS        | Target       | P0       |
+| Area                    | Functional Status | Test Status | Architecture | Priority |
+| ----------------------- | ----------------- | ----------- | ------------ | -------- |
+| Booking payment         | Done              | PASS        | Target       | P0       |
+| SingaPay integration    | Done              | PASS        | Target       | P0       |
+| Midtrans integration    | Done              | PASS        | Target       | P0       |
+| Unified Gateway Manager | Done              | PASS        | Target       | P0       |
+| Payment state           | Done              | PASS        | Target       | P0       |
+| External reference      | Done              | PASS        | Target       | P0       |
+| Trusted verification    | Verified          | PASS        | Target       | P0       |
+| Webhook processing      | Done              | PASS        | Target       | P0       |
+| Expiration handling     | Done              | PASS        | Target       | P0       |
+| Refund processing       | Implemented       | PASS        | Target       | P0       |
 
 Current payment states:
 
@@ -552,12 +554,14 @@ Payment expiration is represented as a business condition and should not be recr
 Current critical verification:
 
 ```text
-[ ] Duplicate webhook
-[ ] Invalid callback
-[ ] Failed payment
-[ ] Expired payment
-[ ] Booking/payment state consistency
-[ ] Refund idempotency
+[✓] Duplicate webhook
+[✓] Invalid callback
+[✓] Failed payment
+[✓] Expired payment
+[✓] Booking/payment state consistency
+[✓] Refund idempotency
+[✓] Gateway driver switching (SingaPay & Midtrans)
+[✓] Historical provider isolation
 ```
 
 ---

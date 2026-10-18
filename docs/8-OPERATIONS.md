@@ -10,7 +10,7 @@
 > **Tracker:** `docs/6-TRACKER.md`
 > **System Design:** `docs/7-SYSTEM-DESIGN.md`
 > **ADR:** `docs/adr/`
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-18
 >
 > This document defines how BookQu is configured, deployed, scheduled, verified, monitored, and operated.
 >
@@ -578,23 +578,60 @@ After changing mail configuration:
 
 # 23. Payment Provider Operations
 
-BookQu integrates with Midtrans.
+BookQu supports dual payment providers (**SingaPay** and **Midtrans**) managed uniformly via `PAYMENT_GATEWAY_DRIVER`.
 
-Payment-provider configuration must be present in the production environment where payment functionality is enabled.
+### Active Provider Configuration
+Configure the active default gateway in `.env`:
+```env
+# Values: singapay | midtrans
+PAYMENT_GATEWAY_DRIVER=singapay
+```
 
-Operational verification should include:
+### Provider Credentials
 
+#### 1. SingaPay (Current Active Default)
+```env
+SINGAPAY_BASE_URL=https://payment-b2b.singapay.id
+SINGAPAY_CLIENT_ID=your-client-id
+SINGAPAY_CLIENT_SECRET=your-client-secret
+SINGAPAY_API_KEY=your-api-key
+SINGAPAY_HMAC_VALIDATION_KEY=your-hmac-key
+SINGAPAY_ACCOUNT_ID=
+SINGAPAY_PAYMENT_EXPIRY_MINUTES=15
+SINGAPAY_WEBHOOK_TOLERANCE_SECONDS=300
+SINGAPAY_CUSTOMER_PAYS_FEE=false
+```
+
+#### 2. Midtrans (Backup / Alternative)
+```env
+MIDTRANS_MERCHANT_ID=your-merchant-id
+MIDTRANS_CLIENT_KEY=your-client-key
+MIDTRANS_SERVER_KEY=your-server-key
+MIDTRANS_IS_PRODUCTION=false
+MIDTRANS_IS_SANITIZED=true
+MIDTRANS_IS_3DS=true
+```
+
+### Gateway Switching Checklist
+When switching active gateway in staging or production:
+```text
+1. Set PAYMENT_GATEWAY_DRIVER in .env (singapay or midtrans)
+2. Run php artisan config:cache
+3. Verify new booking checkout displays correct payment interface (SingaPay redirect link or Midtrans Snap modal)
+4. Verify owner subscription checkout completes with active provider
+5. Existing transactions remain bound to their original provider for webhook callbacks
+```
+
+Operational verification must include:
 ```text id="zgn9s3"
 Provider credentials
 Payment creation
 Provider response
-Webhook endpoint
-Webhook verification
+Webhook endpoint & signature verification
 Payment status synchronization
-Refund flow where applicable
 ```
 
-Never expose provider secrets to the frontend.
+Never expose provider secrets (SingaPay secret/API keys or Midtrans server key) to the frontend.
 
 ---
 

@@ -8,7 +8,7 @@
 > **Related System Design:** `docs/7-SYSTEM-DESIGN.md`
 > **Related Development Workflow:** `docs/5-DEVELOPMENT.md`
 > **Current Status:** `docs/6-TRACKER.md`
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-18
 >
 > This document defines what BookQu is required to do.
 >
@@ -813,7 +813,11 @@ The system shall support payment for eligible customer bookings.
 
 ## FR-PAYMENT-002 — Payment Provider
 
-The current supported online payment provider is Midtrans.
+The system supports a Unified Payment Gateway architecture with pluggable drivers:
+- **SingaPay**: Supported online payment gateway driver (active default via `PAYMENT_GATEWAY_DRIVER=singapay`) supporting payment links, QRIS, Virtual Accounts, and E-Wallets.
+- **Midtrans**: Supported online payment gateway driver (switchable via `PAYMENT_GATEWAY_DRIVER=midtrans`) supporting Snap tokens/popups, QRIS, Virtual Accounts, and E-Wallets.
+
+Switching between providers is governed centrally by configuration (`config/payment.php` and `PAYMENT_GATEWAY_DRIVER`) across both customer booking checkout and owner subscription checkout. Existing transactions maintain historical provider isolation.
 
 ---
 
@@ -2229,7 +2233,7 @@ Representative entries include:
 | FR-BOOKING-005   | Booking           | Customer booking flow/tests  | Implemented                         |
 | FR-BOOKING-010   | Walk-In           | Owner booking flow/tests     | Implemented                         |
 | FR-BOOKING-018   | Booking Integrity | Concurrency protection/tests | Verified                            |
-| FR-PAYMENT-001   | Payment           | Midtrans payment flow/tests  | Implemented                         |
+| FR-PAYMENT-001   | Payment           | Unified payment flow (SingaPay & Midtrans) | Implemented                         |
 | FR-PAYMENT-007   | Payment           | Webhook tests                | Verified                            |
 | FR-MULTIBOOK-001 | Multi-Slot        | Multi-slot flow/tests        | Implemented                         |
 | FR-REVIEW-001    | Reviews           | Review tests                 | Implemented                         |

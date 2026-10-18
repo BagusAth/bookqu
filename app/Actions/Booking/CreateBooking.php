@@ -277,24 +277,24 @@ class CreateBooking
             return $result;
         }
 
-        // Paid booking post-processing: SingaPay Payment link (primary) & cache
+        // Paid booking post-processing: Initialize payment via active gateway driver
         $payment    = $result['payment'];
         $bookings   = $result['bookings'];
         $hargaAkhir = $result['hargaAkhir'];
         $orderId    = $result['orderId'];
 
         try {
-            $paymentUrl = $this->bookingPaymentAction->generatePaymentLink(
+            $paymentResult = $this->bookingPaymentAction->initializePayment(
                 $payment,
                 $service,
                 $customerData,
                 count($bookings)
             );
-            $result['payment_url'] = $paymentUrl;
-            $result['snapToken']   = $payment->snap_token;
+            $result['payment_url'] = $paymentResult['payment_url'] ?? $payment->payment_url;
+            $result['snapToken']   = $paymentResult['snap_token'] ?? $payment->snap_token;
         } catch (Exception $e) {
-            Log::error('SingaPay Payment Link Error (Booking): ' . $e->getMessage());
-            // Payment link failed — cancel payment and all bookings, release slots
+            Log::error('Payment Initialization Error (Booking): ' . $e->getMessage());
+            // Payment initialization failed — cancel payment and all bookings, release slots
             DB::transaction(function () use ($payment, $bookings) {
                 $payment->update(['status' => 'gagal']);
                 foreach ($bookings as $bk) {

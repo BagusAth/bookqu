@@ -46,6 +46,8 @@ class CheckoutMidtransTest extends TestCase
             'isunlimited' => false,
         ]);
         
+        config(['payment.default' => 'midtrans']);
+
         $this->withSession(['current_tenant_id' => $this->tenant->id]);
     }
     

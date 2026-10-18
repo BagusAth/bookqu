@@ -6,15 +6,19 @@ namespace App\Actions\Payment;
 
 use App\Domain\Payment\PaymentState;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
+use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Log;
 
 class CheckPaymentStatus
 {
     public function __construct(
-        protected MidtransPaymentGateway $gateway,
-        protected SynchronizePaymentStatus $syncAction
+        protected PaymentGatewayManager $gatewayManager,
+        protected ?MidtransPaymentGateway $gateway = null,
+        protected ?SynchronizePaymentStatus $syncAction = null
     ) {
+        $this->gateway    = $gateway ?? app(MidtransPaymentGateway::class);
+        $this->syncAction = $syncAction ?? app(SynchronizePaymentStatus::class);
     }
 
     /**
@@ -45,21 +49,9 @@ class CheckPaymentStatus
             ];
         }
 
-        try {
-            $midtransStatus = $this->gateway->getTransactionStatus($payment->order_id, $payment);
+        // Delegate status check to the appropriate gateway driver
+        $driver = $this->gatewayManager->forPayment($payment);
 
-            return $this->syncAction->syncStatus($payment, $midtransStatus);
-        } catch (\Throwable $e) {
-            Log::error('CheckPaymentStatus Error: ' . $e->getMessage(), [
-                'payment_id' => $payment->id,
-                'order_id'   => $payment->order_id,
-            ]);
-
-            return [
-                'status'  => 'error',
-                'message' => 'Gagal memverifikasi status transaksi ke Midtrans: ' . $e->getMessage(),
-                'payment' => $payment,
-            ];
-        }
+        return $driver->checkTransactionStatus($payment);
     }
 }

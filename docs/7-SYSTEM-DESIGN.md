@@ -10,7 +10,7 @@
 > **Tracker:** `docs/6-TRACKER.md`
 > **Operations:** `docs/8-OPERATIONS.md`
 > **ADR:** `docs/adr/`
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-18
 >
 > This document describes how the current BookQu system is actually structured and how its important flows currently operate.
 >
@@ -1775,7 +1775,8 @@ The current BookQu system can be summarized as:
                 │                 │
              Payment          Customer
                 │                 │
-             Midtrans        Token Access
+             Gateway Driver   Token Access
+        (SingaPay / Midtrans)
                 │                 │
                 └────────┬────────┘
                          │

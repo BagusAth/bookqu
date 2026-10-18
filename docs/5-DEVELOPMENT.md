@@ -11,7 +11,7 @@
 > **Tracker:** `docs/6-TRACKER.md`
 > **ADR:** `docs/adr/`
 > **Agent Rules:** `AGENT.md`
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-18
 >
 > This document defines how BookQu changes are analyzed, implemented, tested, reviewed, and documented.
 >
@@ -1385,7 +1385,7 @@ Treat external systems as unreliable.
 Examples:
 
 ```text
-Midtrans
+Payment Gateways (SingaPay, Midtrans)
 Email
 Storage
 Future messaging integrations
@@ -1720,7 +1720,7 @@ The exact test matrix depends on the feature.
 
 # 59. Critical Payment Test Coverage
 
-Payment changes should consider:
+Payment changes must consider:
 
 ```text
 Pending payment
@@ -1728,12 +1728,26 @@ Successful payment
 Failed payment
 Expired payment
 Duplicate webhook
-Invalid webhook
+Invalid webhook signature & timestamp
 Booking synchronization
 Refund interaction
+Gateway driver switching (SingaPay & Midtrans)
+Historical provider isolation
 ```
 
-The goal is to prevent inconsistent financial and booking state.
+When working on payment functionality, developers should test both drivers using:
+
+```bash
+# Run payment-specific test suites
+php artisan test tests/Feature/Payment/
+php artisan test tests/Feature/Owner/CheckoutMidtransTest.php
+php artisan test tests/Feature/Customer/BookingFlowTest.php
+
+# Test driver switching and isolation
+php artisan test tests/Feature/Payment/PaymentGatewayDriverTest.php
+```
+
+The goal is to prevent inconsistent financial and booking state regardless of which provider is active.
 
 ---
 

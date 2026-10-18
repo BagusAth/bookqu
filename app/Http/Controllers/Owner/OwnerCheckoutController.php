@@ -111,18 +111,22 @@ class OwnerCheckoutController extends Controller
 
         $plan = $payment->plan;
 
+        $provider = $payment->provider ?: $payment->metode ?: 'midtrans';
+
         return view('owner.checkout-payment', [
             'tenant' => $tenant,
             'payment' => $payment,
             'plan' => $plan,
+            'provider' => $provider,
+            'paymentUrl' => $payment->payment_url,
             'snapToken' => $payment->snap_token,
-            'clientKey' => config('midtrans.client_key'),
-            'snapUrl' => config('midtrans.snap_url'),
+            'clientKey' => ($provider === 'midtrans') ? config('midtrans.client_key') : null,
+            'snapUrl' => ($provider === 'midtrans') ? config('midtrans.snap_url') : null,
         ]);
     }
 
     /**
-     * Cek status pembayaran secara manual ke Midtrans.
+     * Cek status pembayaran ke gateway provider aktif.
      */
     public function checkPaymentStatus(Payment $payment, MidtransPaymentService $paymentService)
     {
@@ -141,7 +145,9 @@ class OwnerCheckoutController extends Controller
             ]);
         }
 
-        $syncResult = $paymentService->verifyAndSync($payment);
+        $syncResult = $paymentService
+            ? $paymentService->verifyAndSync($payment)
+            : app(\App\Actions\Payment\CheckPaymentStatus::class)->execute($payment);
 
         if ($syncResult['status'] === 'sukses') {
             return response()->json([
@@ -209,13 +215,10 @@ class OwnerCheckoutController extends Controller
         ]);
     }
 
-
-
     /**
-     * Handle callback dari Midtrans Snap (client-side).
-     * Dipanggil setelah user selesai di pop-up Midtrans.
+     * Handle callback dari gateway (client-side).
      */
-    public function handleCallback(Payment $payment, Request $request, MidtransPaymentService $paymentService)
+    public function handleCallback(Payment $payment, Request $request, ?MidtransPaymentService $paymentService = null)
     {
         $tenant = $this->resolveTenant();
 
@@ -232,12 +235,13 @@ class OwnerCheckoutController extends Controller
             ]);
         }
 
-        // Lakukan server-side verification ke Midtrans
-        $syncResult = $paymentService->verifyAndSync($payment);
+        /** @var \App\Actions\Payment\CheckPaymentStatus $checkAction */
+        $checkAction = app(\App\Actions\Payment\CheckPaymentStatus::class);
+        $syncResult = $checkAction->execute($payment);
 
         if ($syncResult['status'] === 'error') {
             $result = $request->input('result');
-            if ($result) {
+            if ($result && $paymentService) {
                 $syncResult = $paymentService->syncStatus($payment, $result);
             }
         }

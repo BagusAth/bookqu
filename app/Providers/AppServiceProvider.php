@@ -17,6 +17,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(\App\Support\TenantContext::class, function () {
             return new \App\Support\TenantContext();
         });
+
+        $this->app->singleton(\App\Infrastructure\Payments\PaymentGatewayManager::class, function () {
+            return new \App\Infrastructure\Payments\PaymentGatewayManager();
+        });
+
+        $this->app->bind(\App\Contracts\Payments\PaymentGatewayInterface::class, function ($app) {
+            return $app->make(\App\Infrastructure\Payments\PaymentGatewayManager::class)->driver();
+        });
     }
 
     /**

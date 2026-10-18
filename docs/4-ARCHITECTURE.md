@@ -8,7 +8,7 @@
 > **Related System Design:** `docs/7-SYSTEM-DESIGN.md`
 > **Development Workflow:** `docs/5-DEVELOPMENT.md`
 > **Architectural Decisions:** `docs/adr/`
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-18
 >
 > This document defines how BookQu should be structured, how responsibilities should be separated, and which architectural rules must be preserved as the system evolves.
 >
@@ -234,7 +234,7 @@ External systems should not become deeply embedded in core business logic.
 Examples include:
 
 ```text
-Midtrans
+Payment Gateways (SingaPay, Midtrans)
 Email delivery
 External messaging
 Storage providers
@@ -524,7 +524,10 @@ app/
 │       └── Schedule/
 │
 ├── Infrastructure/
-│   └── Midtrans/
+│   └── Payments/
+│       ├── Midtrans/
+│       ├── SingaPay/
+│       └── PaymentGatewayManager.php
 │
 ├── Models/
 ├── Policies/
@@ -1065,22 +1068,30 @@ Payment expiration is a business condition handled within the existing payment l
 
 # 26. Payment Provider Boundary
 
-The current supported payment provider is Midtrans.
+The system implements a **Unified Payment Gateway Architecture** supporting multiple external payment providers (SingaPay & Midtrans).
 
-Provider-specific communication belongs behind an infrastructure boundary.
-
-The core booking domain should not depend directly on raw Midtrans-specific details.
-
-The architecture should make it possible to:
+Provider-specific communication belongs behind an infrastructure boundary via `PaymentGatewayInterface` and `PaymentGatewayManager`:
 
 ```text
-Replace Provider
-Add Provider
+PaymentGatewayInterface
+├── SingaPayPaymentGateway (SingaPay Payment Link, QRIS, VA)
+└── MidtransPaymentGateway (Midtrans Snap Token, QRIS, VA)
+```
+
+The core booking and subscription checkout domains do not depend directly on raw provider-specific details. Driver resolution is dynamic:
+1. **New Transactions**: Routed to the driver configured in `config/payment.php` (`PAYMENT_GATEWAY_DRIVER`, default: `singapay`).
+2. **Existing / Historical Transactions**: Resolved dynamically via `PaymentGatewayManager::forPayment($payment)` based on the record's immutable `provider` column, ensuring webhooks, callbacks, and status queries always route to the native driver.
+
+The architecture makes it possible to:
+
+```text
+Replace Active Gateway via Configuration
+Add New Payment Gateway Provider
 Mock Provider
 Test Provider Failures
 ```
 
-without rewriting core booking rules.
+without rewriting core booking or subscription billing rules.
 
 ---
 

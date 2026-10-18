@@ -4,18 +4,193 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Payments\Midtrans;
 
+use App\Contracts\Payments\PaymentGatewayInterface;
 use App\Domain\Payment\PaymentRules;
+use App\Domain\Payment\PaymentState;
 use App\Models\Payment;
+use App\Models\Plan;
+use App\Models\Service;
 use Illuminate\Support\Facades\Log;
 use Midtrans\Config as MidtransConfig;
 use Midtrans\Snap as MidtransSnap;
 use Midtrans\Transaction as MidtransTransaction;
 
-class MidtransPaymentGateway
+class MidtransPaymentGateway implements PaymentGatewayInterface
 {
     public function __construct()
     {
         $this->setDefaultConfig();
+    }
+
+    /**
+     * Get the identifier name of the payment gateway driver.
+     */
+    public function getDriverName(): string
+    {
+        return 'midtrans';
+    }
+
+    /**
+     * Create Snap Token for customer booking.
+     *
+     * @param Payment $payment
+     * @param Service $service
+     * @param array<string, mixed> $customerData
+     * @param int $slotCount
+     * @return array{snap_token: string}
+     */
+    public function createBookingPayment(
+        Payment $payment,
+        Service $service,
+        array $customerData,
+        int $slotCount = 1
+    ): array {
+        $itemName = 'Booking: ' . $service->namalayanan;
+        if ($slotCount > 1) {
+            $itemName .= ' (' . $slotCount . ' slot)';
+        }
+
+        $expiryMinutes = (int) (config('payment.drivers.singapay.expiry_minutes') ?? config('services.singapay.expiry_minutes', 15));
+
+        $params = [
+            'transaction_details' => [
+                'order_id'     => $payment->order_id,
+                'gross_amount' => (int) $payment->jumlah,
+            ],
+            'customer_details' => [
+                'first_name' => $customerData['namapelanggan'],
+                'email'      => $customerData['email'],
+                'phone'      => $customerData['nomorhp'],
+            ],
+            'item_details' => [
+                [
+                    'id'       => 'SRV-' . $service->id,
+                    'price'    => (int) $payment->jumlah,
+                    'quantity' => 1,
+                    'name'     => $itemName,
+                ],
+            ],
+            'expiry' => [
+                'start_time' => now()->format('Y-m-d H:i:s O'),
+                'unit'       => 'minute',
+                'duration'   => $expiryMinutes,
+            ],
+        ];
+
+        $snapToken = $this->createSnapToken($payment, $params);
+        $payment->update([
+            'snap_token' => $snapToken,
+            'provider'   => 'midtrans',
+            'metode'     => PaymentState::METODE_MIDTRANS,
+        ]);
+
+        return [
+            'snap_token' => $snapToken,
+        ];
+    }
+
+    /**
+     * Create Snap Token for owner subscription checkout.
+     *
+     * @param Payment $payment
+     * @param Plan $plan
+     * @param array<string, mixed> $payerData
+     * @param float $biayaPlatform
+     * @return array{snap_token: string}
+     */
+    public function createSubscriptionPayment(
+        Payment $payment,
+        Plan $plan,
+        array $payerData,
+        float $biayaPlatform = 0.0
+    ): array {
+        $totalBayar = (float) $plan->hargabulanan + $biayaPlatform;
+
+        $params = [
+            'transaction_details' => [
+                'order_id'     => $payment->order_id,
+                'gross_amount' => (int) $totalBayar,
+            ],
+            'customer_details' => [
+                'first_name' => $payerData['nama_pembayar'],
+                'email'      => $payerData['email_pembayar'],
+                'phone'      => $payerData['hp_pembayar'],
+            ],
+            'item_details' => [
+                [
+                    'id'       => 'PLAN-' . $plan->id,
+                    'price'    => (int) $plan->hargabulanan,
+                    'quantity' => 1,
+                    'name'     => 'Subscription Plan ' . ucfirst((string) $plan->namapaket) . ' (1 Bulan)',
+                ],
+            ],
+            'expiry' => [
+                'start_time' => now()->format('Y-m-d H:i:s O'),
+                'unit'       => 'hour',
+                'duration'   => 1,
+            ],
+        ];
+
+        if ($biayaPlatform > 0) {
+            $params['item_details'][] = [
+                'id'       => 'PLATFORM-FEE',
+                'price'    => (int) $biayaPlatform,
+                'quantity' => 1,
+                'name'     => 'Biaya Layanan Platform',
+            ];
+        }
+
+        try {
+            $snapToken = $this->createSnapToken($payment, $params);
+            $payment->update([
+                'snap_token' => $snapToken,
+                'provider'   => 'midtrans',
+                'metode'     => PaymentState::METODE_MIDTRANS,
+            ]);
+
+            return [
+                'snap_token' => $snapToken,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Midtrans Snap Error (Subscription): ' . $e->getMessage());
+            $payment->update(['status' => PaymentState::STATUS_GAGAL]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Check transaction status with Midtrans API.
+     *
+     * @param Payment $payment
+     * @return array<string, mixed>
+     */
+    public function checkTransactionStatus(Payment $payment): array
+    {
+        if ($payment->status === PaymentState::STATUS_SUKSES) {
+            return [
+                'status'             => PaymentState::STATUS_SUKSES,
+                'transaction_status' => 'settlement',
+                'message'            => 'Pembayaran berhasil dikonfirmasi.',
+                'payment'            => $payment,
+            ];
+        }
+
+        try {
+            $midtransStatus = $this->getTransactionStatus($payment->order_id, $payment);
+
+            return app(\App\Actions\Payment\SynchronizePaymentStatus::class)->syncStatus($payment, $midtransStatus);
+        } catch (\Throwable $e) {
+            Log::error('Midtrans CheckTransactionStatus Error: ' . $e->getMessage(), [
+                'payment_id' => $payment->id,
+                'order_id'   => $payment->order_id,
+            ]);
+
+            return [
+                'status'  => 'error',
+                'message' => 'Gagal memverifikasi status transaksi ke Midtrans: ' . $e->getMessage(),
+                'payment' => $payment,
+            ];
+        }
     }
 
     /**

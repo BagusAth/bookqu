@@ -22,6 +22,8 @@ class BookingFlowTest extends TestCase
             \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
         ]);
 
+        config(['payment.default' => 'midtrans']);
+
         // Create tenant
         $this->user = User::factory()->create(['role' => 'owner']);
         $this->tenant = Tenant::create([
