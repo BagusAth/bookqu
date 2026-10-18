@@ -62,6 +62,8 @@ class CreateWalkInBooking
             $payment = Payment::create([
                 'idtenant'       => $tenant->id,
                 'tipe'           => 'booking',
+                'provider'       => 'manual',
+                'manage_token'   => Booking::generateSecureToken(),
                 'jumlah'         => $amount,
                 'status'         => 'sukses',
                 'metode'         => $data['metode'] ?? 'cash',

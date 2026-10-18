@@ -29,12 +29,12 @@ class CancelBooking
      */
     public function execute(Booking $booking, string $actor = 'customer', ?string $reason = null): array
     {
-        // Guard 1: multi-slot booking cannot be cancelled individually
-        if ($booking->isMultiSlot()) {
-            $msg = $actor === 'owner'
-                ? 'Booking ini merupakan bagian dari multi-slot booking dan tidak dapat dibatalkan per slot secara individual.'
-                : 'Booking multi-slot tidak dapat dibatalkan per slot secara individual. Silakan hubungi pengelola bisnis.';
-            return ['success' => false, 'error' => $msg];
+        // Guard 1: customer cannot cancel individual slot of a multi-slot booking
+        if ($actor === 'customer' && $booking->isMultiSlot()) {
+            return [
+                'success' => false,
+                'error'   => 'Booking multi-slot tidak dapat dibatalkan per slot secara individual. Silakan hubungi pengelola bisnis.',
+            ];
         }
 
         // Guard 2: check valid status transition
@@ -56,41 +56,55 @@ class CancelBooking
 
         try {
             DB::transaction(function () use ($booking, $actor, $reason) {
-                // 1. Update status
-                $booking->update(['status' => BookingState::STATUS_CANCELLED]);
+                // If owner cancels a multi-slot booking, cancel all linked bookings for this payment group
+                $targetBookings = ($actor === 'owner' && $booking->isMultiSlot() && $booking->idpayment)
+                    ? Booking::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+                        ->where('idpayment', $booking->idpayment)
+                        ->where('idtenant', $booking->idtenant)
+                        ->get()
+                    : collect([$booking]);
 
-                // 2. Create refund record if customer cancelled and payment was successful
-                if ($actor === 'customer' && $booking->payment && $booking->payment->status === 'sukses') {
-                    Refund::create([
-                        'booking_id' => $booking->id,
-                        'payment_id' => $booking->payment->id,
-                        'jumlah'     => $booking->payment->jumlah,
-                        'status'     => 'pending',
-                        'catatan'    => $reason ?? 'Refund otomatis dari pembatalan booking oleh customer.',
-                    ]);
+                foreach ($targetBookings as $target) {
+                    if (BookingState::canTransition($target->status, BookingState::STATUS_CANCELLED)) {
+                        $target->update(['status' => BookingState::STATUS_CANCELLED]);
+
+                        // Audit log per slot
+                        BookingLog::record(
+                            $target->id,
+                            'cancelled',
+                            $reason ?? ($actor === 'owner' ? 'Booking dibatalkan oleh owner.' : 'Booking dibatalkan oleh customer.'),
+                            [
+                                'actor'        => $actor,
+                                'cancelled_at' => now()->toIso8601String(),
+                            ]
+                        );
+
+                        // Clear availability cache
+                        $dateStr = $target->tanggalbooking instanceof Carbon
+                            ? $target->tanggalbooking->toDateString()
+                            : Carbon::parse($target->tanggalbooking)->toDateString();
+
+                        $this->clearBookingAvailabilityCache(
+                            (int) $target->idtenant,
+                            (int) $target->idlayanan,
+                            $dateStr
+                        );
+                    }
                 }
 
-                // 3. Audit log
-                BookingLog::record(
-                    $booking->id,
-                    'cancelled',
-                    $reason ?? ($actor === 'owner' ? 'Booking dibatalkan oleh owner.' : 'Booking dibatalkan oleh customer.'),
-                    [
-                        'actor'        => $actor,
-                        'cancelled_at' => now()->toIso8601String(),
-                    ]
-                );
-
-                // 4. Clear availability cache
-                $dateStr = $booking->tanggalbooking instanceof Carbon
-                    ? $booking->tanggalbooking->toDateString()
-                    : Carbon::parse($booking->tanggalbooking)->toDateString();
-
-                $this->clearBookingAvailabilityCache(
-                    (int) $booking->idtenant,
-                    (int) $booking->idlayanan,
-                    $dateStr
-                );
+                // Create refund record if customer cancelled, payment was successful, and no refund exists yet
+                if ($actor === 'customer' && $booking->payment && $booking->payment->status === 'sukses') {
+                    $hasRefund = Refund::where('payment_id', $booking->payment->id)->exists();
+                    if (!$hasRefund) {
+                        Refund::create([
+                            'booking_id' => $booking->id,
+                            'payment_id' => $booking->payment->id,
+                            'jumlah'     => $booking->payment->jumlah,
+                            'status'     => 'pending',
+                            'catatan'    => $reason ?? 'Refund otomatis dari pembatalan booking oleh customer.',
+                        ]);
+                    }
+                }
             });
 
             // 5. Send cancellation email to customer

@@ -86,13 +86,11 @@ class RescheduleBooking
                 $scheduleQuery = Schedule::where('id', $newScheduleId)
                     ->where('idtenant', $tenant->id)
                     ->where('status', 'tersedia')
+                    ->where('idlayanan', $service->id)
                     ->lockForUpdate();
 
-                if ($actor === 'customer') {
-                    $scheduleQuery->where('idlayanan', $service->id);
-                    if ($targetDate) {
-                        $scheduleQuery->whereDate('tanggal', $targetDate);
-                    }
+                if ($actor === 'customer' && $targetDate) {
+                    $scheduleQuery->whereDate('tanggal', $targetDate);
                 }
 
                 $schedule = $scheduleQuery->first();
