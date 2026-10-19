@@ -1,7 +1,125 @@
-<section id="pricing" class="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50">
+@php
+    $user = auth()->user();
+    $plans = \App\Models\Plan::all()->keyBy(fn ($plan) => strtolower(trim((string) $plan->namapaket)));
+
+    $currentTenant = null;
+    if ($user && $user->isOwner()) {
+        $sessionTenantId = session('current_tenant_id');
+        if ($sessionTenantId) {
+            $currentTenant = \App\Models\Tenant::where('id', $sessionTenantId)->where('iduser', $user->id)->first();
+        }
+        if (!$currentTenant) {
+            $currentTenant = $user->tenant ?? \App\Models\Tenant::where('iduser', $user->id)->first();
+        }
+    }
+
+    $currentSubscription = $currentTenant 
+        ? \App\Models\Subscription::withoutGlobalScopes()
+            ->where('idtenant', $currentTenant->id)
+            ->with('plan')
+            ->latest()
+            ->first() 
+        : null;
+
+    $isActivePaid = $currentSubscription !== null 
+        && $currentSubscription->status === \App\Domain\Subscription\SubscriptionState::STATUS_ACTIVE 
+        && !\App\Domain\Subscription\SubscriptionState::isExpired($currentSubscription);
+
+    $activePlanName = $isActivePaid 
+        ? strtolower(trim((string) ($currentSubscription->plan?->namapaket ?? ''))) 
+        : null;
+
+    $activePlan = $activePlanName ? $plans->get($activePlanName) : null;
+
+    $resolvePlanAction = function (string $planKey, string $defaultLabel, string $focusRingColor = 'focus:ring-[#4F46E5]') use ($user, $plans, $activePlanName, $activePlan) {
+        $targetPlan = $plans->get(strtolower($planKey));
+
+        // 1. Guest (unauthenticated)
+        if (!$user) {
+            return [
+                'url' => route('register', ['plan' => $planKey]),
+                'label' => $defaultLabel,
+                'is_active_plan' => false,
+                'show_login' => true,
+                'class' => "btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 {$focusRingColor} text-center block",
+            ];
+        }
+
+        // 2. Admin
+        if ($user->isAdmin()) {
+            return [
+                'url' => route('admin.dashboard'),
+                'label' => 'Buka Dashboard Admin',
+                'is_active_plan' => false,
+                'show_login' => false,
+                'class' => "btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 {$focusRingColor} text-center block",
+            ];
+        }
+
+        // 3. Owner belum verifikasi email
+        if ($user->isOwner() && !$user->hasVerifiedEmail()) {
+            return [
+                'url' => route('verification.notice'),
+                'label' => 'Verifikasi Email Anda',
+                'is_active_plan' => false,
+                'show_login' => false,
+                'class' => 'btn-paket w-full py-3.5 px-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-amber-500 text-center block',
+            ];
+        }
+
+        // 4. Owner dengan paket ini sedang aktif
+        if ($activePlanName !== null && $activePlanName === strtolower($planKey)) {
+            return [
+                'url' => route('owner.subscription'),
+                'label' => '✓ Paket Aktif Anda',
+                'is_active_plan' => true,
+                'show_login' => false,
+                'class' => 'btn-paket-current w-full py-3.5 px-4 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 font-bold text-sm mt-auto text-center block cursor-default shadow-xs',
+            ];
+        }
+
+        // 5. Owner on trial / upgrade / memilih paket lain
+        if ($user->isOwner()) {
+            $checkoutUrl = $targetPlan ? route('owner.checkout', $targetPlan->id) : route('owner.subscription');
+            $label = $defaultLabel;
+            if ($activePlan && $targetPlan) {
+                if ($targetPlan->hargabulanan > $activePlan->hargabulanan) {
+                    $label = 'Upgrade ke ' . ucfirst($planKey);
+                } else {
+                    $label = 'Pilih ' . ucfirst($planKey);
+                }
+            } elseif ($activePlanName !== null) {
+                $label = 'Upgrade ke ' . ucfirst($planKey);
+            }
+
+            return [
+                'url' => $checkoutUrl,
+                'label' => $label,
+                'is_active_plan' => false,
+                'show_login' => false,
+                'class' => "btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 {$focusRingColor} text-center block",
+            ];
+        }
+
+        // 6. Logged in customer / other role
+        return [
+            'url' => route('register', ['plan' => $planKey]),
+            'label' => $defaultLabel,
+            'is_active_plan' => false,
+            'show_login' => false,
+            'class' => "btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 {$focusRingColor} text-center block",
+        ];
+    };
+
+    $smallAction = $resolvePlanAction('small', 'Mulai Sekarang', 'focus:ring-[#4F46E5]');
+    $mediumAction = $resolvePlanAction('medium', 'Pilih Medium', 'focus:ring-[#4F46E5]');
+    $proAction = $resolvePlanAction('pro', 'Pilih Pro', 'focus:ring-purple-600');
+@endphp
+
+<section id="pricing" class="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50" x-data="{ activeMobileTab: 1 }">
     <div class="max-w-7xl mx-auto">
         <!-- Header Section -->
-        <div class="text-center mb-16 animate-fade-in">
+        <div class="text-center mb-12 sm:mb-16 animate-fade-in">
             <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
                 Pilih Paket Sesuai Kebutuhan
             </h2>
@@ -10,10 +128,41 @@
             </p>
         </div>
 
+        <!-- Mobile Segmented Tab Switcher (< 1024px) -->
+        <div class="block lg:hidden max-w-sm mx-auto mb-8 px-2">
+            <div class="bg-slate-200/90 p-1.5 rounded-2xl flex items-center justify-between gap-1 shadow-inner border border-slate-300/50">
+                <button 
+                    type="button" 
+                    @click="activeMobileTab = 0; $dispatch('set-active-pricing', 0)"
+                    :class="activeMobileTab === 0 ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 font-medium hover:text-slate-900'"
+                    class="flex-1 py-2.5 px-3 text-xs sm:text-sm rounded-xl transition-all duration-200 text-center cursor-pointer">
+                    Small
+                </button>
+                <button 
+                    type="button" 
+                    @click="activeMobileTab = 1; $dispatch('set-active-pricing', 1)"
+                    :class="activeMobileTab === 1 ? 'bg-white text-[#4F46E5] shadow-sm font-bold' : 'text-slate-600 font-medium hover:text-slate-900'"
+                    class="flex-1 py-2.5 px-3 text-xs sm:text-sm rounded-xl transition-all duration-200 text-center cursor-pointer flex items-center justify-center gap-1">
+                    <span>Medium</span>
+                    <span class="text-amber-500 text-xs">★</span>
+                </button>
+                <button 
+                    type="button" 
+                    @click="activeMobileTab = 2; $dispatch('set-active-pricing', 2)"
+                    :class="activeMobileTab === 2 ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-slate-600 font-medium hover:text-slate-900'"
+                    class="flex-1 py-2.5 px-3 text-xs sm:text-sm rounded-xl transition-all duration-200 text-center cursor-pointer">
+                    Pro
+                </button>
+            </div>
+        </div>
+
         <!-- Pricing Cards Container -->
-        <div class="pricing-container grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto mt-12 items-stretch" id="pricing-grid">
+        <div class="pricing-container grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto mt-6 lg:mt-12 items-stretch" id="pricing-grid">
             <!-- CARD 1: Small -->
-            <div class="pricing-card rounded-[2rem] p-7 sm:p-9 flex flex-col justify-between" data-index="0">
+            <div 
+                class="pricing-card rounded-[2rem] p-7 sm:p-9 flex-col justify-between" 
+                :class="activeMobileTab === 0 ? 'flex' : 'hidden lg:flex'" 
+                data-index="0">
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-bold text-gray-900 tracking-tight">Small</h3>
@@ -89,13 +238,25 @@
                     </div>
                 </div>
 
-                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-center">
-                    Mulai Sekarang
-                </a>
+                <div class="mt-auto pt-6">
+                    <a href="{{ $smallAction['url'] }}" class="{{ $smallAction['class'] }}">
+                        {{ $smallAction['label'] }}
+                    </a>
+                    @if ($smallAction['show_login'])
+                        <div class="mt-2.5 text-center">
+                            <a href="{{ route('login') }}" class="text-xs text-slate-500 hover:text-indigo-600 font-medium transition-colors">
+                                Sudah punya akun? Masuk
+                            </a>
+                        </div>
+                    @endif
+                </div>
             </div>
 
             <!-- CARD 2: Medium (Popular) - Default Active -->
-            <div class="pricing-card is-active rounded-[2rem] p-7 sm:p-9 flex flex-col justify-between relative" data-index="1">
+            <div 
+                class="pricing-card is-active rounded-[2rem] p-7 sm:p-9 flex-col justify-between relative" 
+                :class="activeMobileTab === 1 ? 'flex' : 'hidden lg:flex'" 
+                data-index="1">
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-bold text-gray-900 tracking-tight">Medium</h3>
@@ -176,13 +337,25 @@
                     </div>
                 </div>
 
-                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-center">
-                    Pilih Medium
-                </a>
+                <div class="mt-auto pt-6">
+                    <a href="{{ $mediumAction['url'] }}" class="{{ $mediumAction['class'] }}">
+                        {{ $mediumAction['label'] }}
+                    </a>
+                    @if ($mediumAction['show_login'])
+                        <div class="mt-2.5 text-center">
+                            <a href="{{ route('login') }}" class="text-xs text-slate-500 hover:text-indigo-600 font-medium transition-colors">
+                                Sudah punya akun? Masuk
+                            </a>
+                        </div>
+                    @endif
+                </div>
             </div>
 
             <!-- CARD 3: Pro -->
-            <div class="pricing-card rounded-[2rem] p-7 sm:p-9 flex flex-col justify-between" data-index="2">
+            <div 
+                class="pricing-card rounded-[2rem] p-7 sm:p-9 flex-col justify-between" 
+                :class="activeMobileTab === 2 ? 'flex' : 'hidden lg:flex'" 
+                data-index="2">
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-bold text-gray-900 tracking-tight">Pro</h3>
@@ -262,9 +435,18 @@
                     </div>
                 </div>
 
-                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-center">
-                    Pilih Pro
-                </a>
+                <div class="mt-auto pt-6">
+                    <a href="{{ $proAction['url'] }}" class="{{ $proAction['class'] }}">
+                        {{ $proAction['label'] }}
+                    </a>
+                    @if ($proAction['show_login'])
+                        <div class="mt-2.5 text-center">
+                            <a href="{{ route('login') }}" class="text-xs text-slate-500 hover:text-indigo-600 font-medium transition-colors">
+                                Sudah punya akun? Masuk
+                            </a>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

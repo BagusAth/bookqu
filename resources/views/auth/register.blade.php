@@ -20,6 +20,32 @@
                     <p class="mt-2 text-sm text-slate-600">Mulai gratis dan kelola booking bisnis Anda sekarang.</p>
                 </div>
 
+                @php
+                    $planParam = old('plan', request('plan'));
+                @endphp
+                @if (filled($planParam))
+                    @php
+                        $selectedPlan = strtolower(trim((string) $planParam));
+                        $planDisplayNames = [
+                            'small' => 'Small',
+                            'medium' => 'Medium',
+                            'pro' => 'Pro',
+                        ];
+                        $planLabel = $planDisplayNames[$selectedPlan] ?? ucfirst($selectedPlan);
+                    @endphp
+                    <div class="mb-6 rounded-xl border border-indigo-200 bg-indigo-50/90 p-3.5 text-xs sm:text-sm text-indigo-900 flex items-center gap-3 shadow-xs animate-fade-in">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#4F46E5] text-white">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-bold text-indigo-950">Paket Terpilih: <span class="text-[#4F46E5]">{{ $planLabel }}</span></p>
+                            <p class="text-indigo-700 text-[11px] sm:text-xs">Nikmati uji coba gratis 7 hari semua fitur lengkap tanpa kartu kredit.</p>
+                        </div>
+                    </div>
+                @endif
+
                 @if ($errors->any())
                     <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                         <p class="font-semibold">Pendaftaran gagal</p>
@@ -42,6 +68,9 @@
 
                 <form method="POST" action="{{ route('register.store') }}" class="space-y-4" x-data="{ loading: false, showPass: false, showConfirm: false }" @submit="loading = true">
                     @csrf
+                    @if (filled($planParam))
+                        <input type="hidden" name="plan" value="{{ $planParam }}">
+                    @endif
 
                     <div>
                         <label for="name" class="block text-sm font-medium text-slate-700 mb-2">Nama Lengkap</label>

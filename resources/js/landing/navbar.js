@@ -5,16 +5,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const navLinks = Array.from(navbar.querySelectorAll('[data-scroll-target]'));
-    const sections = navLinks
-        .map((link) => {
-            const targetId = link.getAttribute('data-scroll-target');
-            return {
-                link,
-                targetId,
-                element: targetId ? document.getElementById(targetId) : null,
-            };
-        })
-        .filter((item) => item.element);
+    const targetMap = new Map();
+    navLinks.forEach((link) => {
+        const targetId = link.getAttribute('data-scroll-target');
+        if (targetId && !targetMap.has(targetId)) {
+            const element = document.getElementById(targetId);
+            if (element) {
+                targetMap.set(targetId, { targetId, element });
+            }
+        }
+    });
+    const sections = Array.from(targetMap.values());
+
+    const getNavbarHeight = () => {
+        const headerBar = navbar.querySelector('.h-16');
+        return headerBar ? headerBar.offsetHeight : 64;
+    };
 
     const scrollToTarget = (targetId) => {
         const target = document.getElementById(targetId);
@@ -22,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const offset = navbar.offsetHeight + 8;
+        const offset = getNavbarHeight() + 8;
         const targetTop = target.getBoundingClientRect().top + window.pageYOffset - offset;
         window.scrollTo({
             top: targetTop,
@@ -63,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
 
-        const offset = navbar.offsetHeight + 24;
+        const offset = getNavbarHeight() + 24;
         let activeId = sections[0].targetId;
 
         sections.forEach((section) => {

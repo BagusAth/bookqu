@@ -346,4 +346,171 @@ class CheckoutMidtransTest extends TestCase
             'metode' => 'gopay',
         ]);
     }
+
+    public function test_owner_checkout_review_page_renders_with_tenant_context_and_without_dummy_timer_or_notes(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->get("/owner/checkout/{$this->plan->id}");
+
+        $response->assertStatus(200);
+
+        // Tenant Context
+        $response->assertSee($this->tenant->namabisnis);
+        $response->assertSee($this->tenant->jenisbisnis);
+        $response->assertSee($this->tenant->slug);
+        $response->assertSee(url('/' . $this->tenant->slug));
+        $response->assertSee('Unit Bisnis Penerima Upgrade');
+        $response->assertSee('Mitra Terdaftar');
+
+        // Contact inputs and labels
+        $response->assertSee('name="nama_pembayar"', false);
+        $response->assertSee('name="email_pembayar"', false);
+        $response->assertSee('name="hp_pembayar"', false);
+        $response->assertSee('Nama Lengkap');
+        $response->assertSee('Email Invoice');
+        $response->assertSee('Nomor WhatsApp');
+
+        // Stepper
+        $response->assertSee('Review Pesanan');
+        $response->assertSee('Pembayaran');
+        $response->assertSee('Invoice');
+
+        // Plan details
+        $response->assertSee('Paket Pro');
+        $response->assertSee('PRO TIER');
+        $response->assertSee('Rp 100.000');
+        $response->assertSee('Masa Aktif Langganan');
+        $response->assertSee('1 Bulan');
+        $response->assertSee('Total Pembayaran');
+
+        // Trust badges & buttons
+        $response->assertSee('Aktivasi Instan Otomatis');
+        $response->assertSee('Transaksi Aman & Terenkripsi 256-bit SSL');
+        $response->assertSee('Lanjut ke Pembayaran →');
+        $response->assertSee('id="btn-checkout-submit"', false);
+        $response->assertSee('id="btn-checkout-submit-mobile"', false);
+        $response->assertSee('id="btn-back-subscription"', false);
+        $response->assertSee('Kembali ke Subscription');
+
+        // Double-submit protection
+        $response->assertSee('isSubmitting', false);
+
+        // Must NOT have dummy countdown timer or notes textarea
+        $response->assertDontSee('60:00');
+        $response->assertDontSee('countdownDisplay');
+        $response->assertDontSee('Selesaikan dalam');
+        $response->assertDontSee('name="catatan"', false);
+        $response->assertDontSee('Catatan Tambahan');
+    }
+
+    public function test_owner_checkout_review_page_renders_small_and_medium_tier_styling_correctly(): void
+    {
+        $smallPlan = Plan::create([
+            'namapaket' => 'small',
+            'hargabulanan' => 149000,
+            'maxlayanan' => 5,
+            'maxbooking' => 300,
+            'isunlimited' => false,
+        ]);
+
+        $responseSmall = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->get("/owner/checkout/{$smallPlan->id}");
+
+        $responseSmall->assertStatus(200);
+        $responseSmall->assertSee('STARTER');
+        $responseSmall->assertSee('Paket Small');
+        $responseSmall->assertSee('5 layanan aktif');
+        $responseSmall->assertSee('Hingga 300 booking / bulan');
+        $responseSmall->assertSee('Rp 149.000');
+
+        $mediumPlan = Plan::create([
+            'namapaket' => 'medium',
+            'hargabulanan' => 299000,
+            'maxlayanan' => 0,
+            'maxbooking' => 500,
+            'isunlimited' => false,
+        ]);
+
+        $responseMedium = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->get("/owner/checkout/{$mediumPlan->id}");
+
+        $responseMedium->assertStatus(200);
+        $responseMedium->assertSee('POPULER');
+        $responseMedium->assertSee('Paket Medium');
+        $responseMedium->assertSee('Unlimited layanan katalog');
+        $responseMedium->assertSee('Hingga 500 booking / bulan');
+        $responseMedium->assertSee('Rp 299.000');
+    }
+
+    public function test_owner_checkout_displays_existing_pending_payment_alert_banner(): void
+    {
+        $existingPayment = Payment::create([
+            'idtenant' => $this->tenant->id,
+            'idplan' => $this->plan->id,
+            'tipe' => 'subscription',
+            'jumlah' => 100000,
+            'status' => 'pending',
+            'metode' => 'midtrans',
+            'order_id' => 'BQ-PENDING-BANNER-001',
+            'expired_at' => now()->addHour(),
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->get("/owner/checkout/{$this->plan->id}");
+
+        $response->assertStatus(200);
+        $response->assertSee('Tagihan Sebelumnya Masih Aktif');
+        $response->assertSee('BQ-PENDING-BANNER-001');
+        $response->assertSee(route('owner.checkout.payment', $existingPayment));
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function test_owner_can_initiate_checkout_without_catatan(): void
+    {
+        $snapMock = Mockery::mock('alias:Midtrans\Snap');
+        $snapMock->shouldReceive('getSnapToken')->once()->andReturn('snap_token_no_notes_999');
+
+        $response = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->post('/owner/checkout', [
+                'plan_id' => $this->plan->id,
+                'nama_pembayar' => 'Jane Owner',
+                'email_pembayar' => 'jane@example.com',
+                'hp_pembayar' => '089876543210',
+            ]);
+
+        $payment = Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->latest('id')->first();
+        $this->assertNotNull($payment);
+        $this->assertEquals('pending', $payment->status);
+        $this->assertEquals('snap_token_no_notes_999', $payment->snap_token);
+        $this->assertNull($payment->catatan);
+
+        $response->assertRedirect(route('owner.checkout.payment', $payment));
+    }
+
+    public function test_owner_checkout_validates_required_contact_fields(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->post('/owner/checkout', [
+                'plan_id' => $this->plan->id,
+                'nama_pembayar' => '',
+                'email_pembayar' => 'not-an-email',
+                'hp_pembayar' => '',
+            ]);
+
+        $response->assertSessionHasErrors([
+            'nama_pembayar',
+            'email_pembayar',
+            'hp_pembayar',
+        ]);
+    }
 }
+

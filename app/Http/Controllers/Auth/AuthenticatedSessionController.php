@@ -49,10 +49,10 @@ class AuthenticatedSessionController extends Controller
         }
 
         if ($user?->isOwner()) {
-            return redirect()->route('owner.dashboard');
+            return redirect()->intended(route('owner.dashboard'));
         }
 
-        return redirect('/');
+        return redirect()->intended('/');
     }
 
     /**

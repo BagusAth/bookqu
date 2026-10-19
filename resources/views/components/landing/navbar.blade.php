@@ -15,7 +15,7 @@
         <!-- Desktop Actions -->
         @php($user = auth()->user())
         <div class="hidden items-center gap-4 md:flex">
-            @if (!$user || !$user->role || $user->isCustomer())
+            @if (!$user)
                 <a href="{{ route('login') }}" class="text-sm font-medium text-slate-600 transition hover:text-[#4F46E5] hover:font-semibold rounded-lg px-2.5 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]">Login</a>
                 <a href="{{ route('register') }}" class="rounded-xl bg-[#4F46E5] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4F46E5]">
                     Get Started
@@ -55,6 +55,13 @@
                         Logout
                     </button>
                 </form>
+            @else
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-rose-500 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-600 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500">
+                        Logout
+                    </button>
+                </form>
             @endif
         </div>
 
@@ -63,7 +70,7 @@
             <button 
                 type="button" 
                 @click.stop="mobileNavOpen = !mobileNavOpen" 
-                class="inline-flex items-center justify-center p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#4F46E5]" 
+                class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-2.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#4F46E5]" 
                 aria-expanded="false"
                 :aria-expanded="mobileNavOpen.toString()"
                 aria-label="Menu Utama">
@@ -90,16 +97,16 @@
         x-transition:leave-start="opacity-100 translate-y-0"
         x-transition:leave-end="opacity-0 -translate-y-2"
         @click.away="mobileNavOpen = false"
-        class="md:hidden border-b border-slate-200 bg-white px-6 pt-2 pb-6 shadow-lg"
+        class="md:hidden border-b border-slate-200 bg-white px-6 pt-2 pb-6 shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto"
         style="display: none;">
         <nav class="flex flex-col space-y-2 py-3 text-base font-medium text-slate-700">
-            <a href="{{ url('/#hero') }}" @click="mobileNavOpen = false" class="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-[#4F46E5] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]">Solutions</a>
-            <a href="{{ url('/#features') }}" @click="mobileNavOpen = false" class="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-[#4F46E5] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]">Features</a>
-            <a href="{{ url('/#pricing') }}" @click="mobileNavOpen = false" class="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-[#4F46E5] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]">Pricing</a>
-            <a href="{{ url('/#about') }}" @click="mobileNavOpen = false" class="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-[#4F46E5] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]">About</a>
+            <a href="{{ url('/#hero') }}" data-scroll-target="hero" @click="mobileNavOpen = false" class="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-[#4F46E5] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]">Solutions</a>
+            <a href="{{ url('/#features') }}" data-scroll-target="features" @click="mobileNavOpen = false" class="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-[#4F46E5] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]">Features</a>
+            <a href="{{ url('/#pricing') }}" data-scroll-target="pricing" @click="mobileNavOpen = false" class="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-[#4F46E5] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]">Pricing</a>
+            <a href="{{ url('/#about') }}" data-scroll-target="about" @click="mobileNavOpen = false" class="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-[#4F46E5] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]">About</a>
         </nav>
         <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2.5">
-            @if (!$user || !$user->role || $user->isCustomer())
+            @if (!$user)
                 <a href="{{ route('login') }}" class="w-full text-center py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]">
                     Login
                 </a>
@@ -132,6 +139,13 @@
                 <a href="{{ url('/admin/dashboard') }}" class="w-full flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4F46E5]">
                     <span>Dashboard Admin</span>
                 </a>
+                <form method="POST" action="{{ route('logout') }}" class="w-full">
+                    @csrf
+                    <button type="submit" class="w-full text-center py-2.5 rounded-xl border border-rose-500 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500">
+                        Logout
+                    </button>
+                </form>
+            @else
                 <form method="POST" action="{{ route('logout') }}" class="w-full">
                     @csrf
                     <button type="submit" class="w-full text-center py-2.5 rounded-xl border border-rose-500 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500">

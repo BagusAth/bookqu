@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    const isTouchDevice = !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     const DEFAULT_ACTIVE_INDEX = Math.min(1, cards.length - 1);
 
     const setActiveCard = (activeIndex) => {
@@ -23,15 +24,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setActiveCard(DEFAULT_ACTIVE_INDEX);
 
-    cards.forEach((card, index) => {
-        card.addEventListener('mouseenter', () => {
-            pricingContainer.classList.add('has-hover');
-            setActiveCard(index);
+    // Register mouse hover events only on devices with fine pointer (mouse/trackpad)
+    if (!isTouchDevice) {
+        cards.forEach((card, index) => {
+            card.addEventListener('mouseenter', () => {
+                pricingContainer.classList.add('has-hover');
+                setActiveCard(index);
+            });
         });
-    });
 
-    pricingContainer.addEventListener('mouseleave', () => {
-        pricingContainer.classList.remove('has-hover');
-        setActiveCard(DEFAULT_ACTIVE_INDEX);
+        pricingContainer.addEventListener('mouseleave', () => {
+            pricingContainer.classList.remove('has-hover');
+            setActiveCard(DEFAULT_ACTIVE_INDEX);
+        });
+    }
+
+    // Sync active card state when mobile segmented tab changes
+    window.addEventListener('set-active-pricing', (event) => {
+        const targetIndex = typeof event.detail === 'number'
+            ? event.detail
+            : parseInt(event.detail, 10);
+
+        if (!isNaN(targetIndex) && targetIndex >= 0 && targetIndex < cards.length) {
+            setActiveCard(targetIndex);
+        }
     });
 });
