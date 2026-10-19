@@ -120,10 +120,13 @@ class BookingController extends Controller
         return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha);
     }
 
-    public function showDateSelection(string $slug_usaha)
+    /**
+     * Unified Schedule Selection (Step 2 of 3).
+     * Combines Date selection and Time slot selection into an interactive single page.
+     */
+    public function showScheduleSelection(Request $request, string $slug_usaha)
     {
         $tenant = $this->resolveTenant($slug_usaha);
-
         $simulate = request()->boolean('simulate') && app()->environment('local');
 
         if (!$tenant) {
@@ -135,7 +138,7 @@ class BookingController extends Controller
 
         if ($sessionTenantId && (int) $sessionTenantId !== $tenant->id) {
             session()->forget('booking');
-                return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $serviceId = $booking['service_id'] ?? null;
@@ -148,42 +151,310 @@ class BookingController extends Controller
 
         if (!$service || !$service->hasActiveFulfillment()) {
             session()->forget('booking');
-                return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         session()->put('booking.tenant_id', $tenant->id);
 
         $wib = 'Asia/Jakarta';
-        $nowWib = Carbon::now($wib);
         $minDate = Carbon::today($wib);
         $maxDate = Carbon::today($wib)->addDays(30);
 
         $availabilityPayload = app(\App\Actions\Schedule\GetAvailableSchedules::class)
             ->getDateAvailability($tenant, $service, $minDate, $maxDate);
 
+        $availabilityByDate = collect($availabilityPayload)->keyBy('date');
+        $dates = [];
+        $currentDate = $minDate->copy();
+
+        while ($currentDate->lte($maxDate)) {
+            $dStr = $currentDate->toDateString();
+            $avail = $availabilityByDate->get($dStr);
+            $totalSlots = $avail ? (int) $avail['total_slots'] : 0;
+            $availSlots = $avail ? (int) $avail['available_slots'] : 0;
+            $isBlocked = $avail ? (bool) $avail['is_blocked'] : false;
+
+            $dates[] = [
+                'date' => $dStr,
+                'day_name' => $currentDate->format('D'), // Mon, Tue, Wed, Thu, Fri, Sat, Sun
+                'day_name_id' => $currentDate->translatedFormat('D'),
+                'day_number' => $currentDate->format('j'), // 13, 14, 15...
+                'month_name' => $currentDate->format('M'),
+                'is_today' => $currentDate->isToday(),
+                'total_slots' => $totalSlots,
+                'available_slots' => $availSlots,
+                'is_blocked' => $isBlocked,
+                'is_available' => !$isBlocked && $availSlots > 0,
+            ];
+            $currentDate->addDay();
+        }
+
+        // Determine default selected date
+        $requestedDate = $request->query('tanggal', $booking['tanggal'] ?? null);
+        $selectedDate = null;
+
+        if ($requestedDate) {
+            $parsed = Carbon::parse($requestedDate, $wib)->toDateString();
+            if ($parsed >= $minDate->toDateString() && $parsed <= $maxDate->toDateString()) {
+                $selectedDate = $parsed;
+            }
+        }
+
+        if (!$selectedDate) {
+            foreach ($dates as $d) {
+                if ($d['is_available']) {
+                    $selectedDate = $d['date'];
+                    break;
+                }
+            }
+        }
+
+        if (!$selectedDate) {
+            $selectedDate = $minDate->toDateString();
+        }
+
+        // Load slots for selected date
+        $initialSlots = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+            ->getTimeSlots($tenant, $service, $selectedDate);
+
+        $morningSlots = [];
+        $afternoonSlots = [];
+        $eveningSlots = [];
+
+        foreach ($initialSlots as $slot) {
+            $startTime = Carbon::createFromFormat('H:i', substr($slot['time'], 0, 5));
+            $period = (int) $startTime->format('H') < 12 ? 'AM' : 'PM';
+            $enhancedSlot = array_merge($slot, [
+                'period' => $period,
+                'time_12' => $startTime->format('h:i'),
+            ]);
+
+            if ($slot['session'] === 'morning') {
+                $morningSlots[] = $enhancedSlot;
+            } elseif ($slot['session'] === 'afternoon') {
+                $afternoonSlots[] = $enhancedSlot;
+            } else {
+                $eveningSlots[] = $enhancedSlot;
+            }
+        }
+
         $priceLabel = 'Rp ' . number_format($service->harga, 0, ',', '.');
+        $durasiMenit = (int) ($service->durasi ?? 60);
+        $durationLabel = $durasiMenit >= 60 && ($durasiMenit % 60 === 0)
+            ? ($durasiMenit / 60) . ' Hour'
+            : $durasiMenit . ' Mins';
+
         $servicePayload = [
             'id' => $service->id,
             'name' => $service->namalayanan,
             'price' => (float) $service->harga,
             'price_label' => $priceLabel,
             'price_unit' => $service->satuan_harga ?: 'sesi',
-            'duration' => (int) $service->durasi,
+            'duration' => $durasiMenit,
             'duration_unit' => $service->satuan_durasi ?: 'menit',
+            'duration_label' => $durationLabel,
+            'category_name' => $service->category?->name ?? null,
+            'image_url' => $service->thumbnail_path ? \Illuminate\Support\Facades\Storage::url($service->thumbnail_path) : null,
         ];
 
-        $selectedDate = $booking['tanggal'] ?? null;
+        $rawJam = $booking['jam'] ?? null;
+        $selectedTimes = is_array($rawJam) ? $rawJam : ($rawJam ? [$rawJam] : []);
+        $rawScheduleIds = $booking['schedule_ids'] ?? (!empty($booking['schedule_id']) ? [$booking['schedule_id']] : []);
+        $selectedScheduleIds = is_array($rawScheduleIds) ? $rawScheduleIds : ($rawScheduleIds ? [$rawScheduleIds] : []);
 
-        return view('customer.booking.date-selection', [
+        $selectedDateCarbon = Carbon::parse($selectedDate, $wib);
+
+        return view('customer.booking.schedule-selection', [
             'tenant' => $tenant,
             'service' => $service,
             'servicePayload' => $servicePayload,
             'availabilityPayload' => $availabilityPayload,
+            'dates' => $dates,
             'selectedDate' => $selectedDate,
+            'selectedDateFormatted' => $selectedDateCarbon->format('M d, Y'),
+            'selectedDateLabel' => $selectedDateCarbon->translatedFormat('l, d F Y'),
+            'initialSlots' => $initialSlots,
+            'morningSlots' => $morningSlots,
+            'afternoonSlots' => $afternoonSlots,
+            'eveningSlots' => $eveningSlots,
+            'selectedTimes' => $selectedTimes,
+            'selectedScheduleIds' => $selectedScheduleIds,
             'minDate' => $minDate->toDateString(),
             'maxDate' => $maxDate->toDateString(),
             'simulate' => $simulate,
         ]);
+    }
+
+    /**
+     * AJAX endpoint: Fetch available time slots for a specific date.
+     */
+    public function getScheduleSlots(Request $request, string $slug_usaha)
+    {
+        $tenant = $this->resolveTenant($slug_usaha);
+        if (!$tenant) {
+            return response()->json(['error' => 'Tenant not found'], 404);
+        }
+
+        $booking = session('booking', []);
+        $serviceId = $booking['service_id'] ?? $request->input('service_id');
+        if (!$serviceId) {
+            return response()->json(['error' => 'Service not selected'], 400);
+        }
+
+        $service = $this->resolveService($tenant->id, (int) $serviceId);
+        if (!$service || !$service->hasActiveFulfillment()) {
+            return response()->json(['error' => 'Service not available'], 400);
+        }
+
+        $dateStr = $request->input('tanggal');
+        if (!$dateStr) {
+            return response()->json(['error' => 'Tanggal is required'], 422);
+        }
+
+        $wib = 'Asia/Jakarta';
+        $parsedDate = Carbon::parse($dateStr, $wib);
+        $dateFormatted = $parsedDate->toDateString();
+
+        $isBlocked = DB::table('owner_blocked_dates')
+            ->where('idtenant', $tenant->id)
+            ->whereDate('tanggal', $dateFormatted)
+            ->exists();
+
+        if ($isBlocked) {
+            return response()->json([
+                'success' => true,
+                'is_blocked' => true,
+                'date' => $dateFormatted,
+                'date_label' => $parsedDate->translatedFormat('l, d F Y'),
+                'date_header' => $parsedDate->format('M d, Y'),
+                'slots' => [],
+                'morning' => [],
+                'afternoon' => [],
+                'evening' => [],
+            ]);
+        }
+
+        $slots = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+            ->getTimeSlots($tenant, $service, $dateFormatted);
+
+        $morning = [];
+        $afternoon = [];
+        $evening = [];
+
+        foreach ($slots as $slot) {
+            $startTime = Carbon::createFromFormat('H:i', substr($slot['time'], 0, 5));
+            $period = (int) $startTime->format('H') < 12 ? 'AM' : 'PM';
+            $enhancedSlot = array_merge($slot, [
+                'period' => $period,
+                'time_12' => $startTime->format('h:i'),
+            ]);
+
+            if ($slot['session'] === 'morning') {
+                $morning[] = $enhancedSlot;
+            } elseif ($slot['session'] === 'afternoon') {
+                $afternoon[] = $enhancedSlot;
+            } else {
+                $evening[] = $enhancedSlot;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'is_blocked' => false,
+            'date' => $dateFormatted,
+            'date_label' => $parsedDate->translatedFormat('l, d F Y'),
+            'date_header' => $parsedDate->format('M d, Y'),
+            'slots' => $slots,
+            'morning' => $morning,
+            'afternoon' => $afternoon,
+            'evening' => $evening,
+        ]);
+    }
+
+    /**
+     * Unified Schedule Submission (POST select-schedule).
+     * Validates date and time slots together, then advances to Confirm/Checkout (Step 3).
+     */
+    public function selectSchedule(Request $request, string $slug_usaha)
+    {
+        $tenant = $this->resolveTenant($slug_usaha);
+        $simulate = $request->boolean('simulate') && app()->environment('local');
+
+        if (!$tenant) {
+            abort(404);
+        }
+
+        $booking = session('booking', []);
+        $sessionTenantId = $booking['tenant_id'] ?? null;
+
+        if ($sessionTenantId && (int) $sessionTenantId !== $tenant->id) {
+            session()->forget('booking');
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
+        }
+
+        $serviceId = $booking['service_id'] ?? null;
+        if (!$serviceId) {
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
+        }
+
+        $service = $this->resolveService($tenant->id, (int) $serviceId);
+        if (!$service || !$service->hasActiveFulfillment()) {
+            session()->forget('booking');
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
+        }
+
+        session()->put('booking.tenant_id', $tenant->id);
+
+        $validated = $request->validate([
+            'tanggal' => ['required', 'date'],
+        ]);
+
+        $selectedDate = Carbon::parse($validated['tanggal'], 'Asia/Jakarta')->toDateString();
+        $minDate = Carbon::today('Asia/Jakarta');
+        $maxDate = Carbon::today('Asia/Jakarta')->addDays(30);
+
+        if ($selectedDate < $minDate->toDateString() || $selectedDate > $maxDate->toDateString()) {
+            return CustomerBookingRoutes::route('customer.booking.schedule', $slug_usaha)
+                ->withErrors(['tanggal' => 'Tanggal yang dipilih berada di luar batas pemesanan.']);
+        }
+
+        // Quota check
+        $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+        if (!\App\Domain\Subscription\EntitlementRules::isUnlimitedBooking($subscription)) {
+            $dateCarbon = Carbon::parse($selectedDate);
+            $totalMonthlyBookings = DB::table('bookings')
+                ->where('idtenant', $tenant->id)
+                ->whereYear('tanggalbooking', $dateCarbon->year)
+                ->whereMonth('tanggalbooking', $dateCarbon->month)
+                ->whereIn('status', ['pending', 'paid', 'completed'])
+                ->count();
+
+            $bookingQuota = \App\Domain\Subscription\EntitlementRules::canCreateBooking($subscription, $totalMonthlyBookings, 1);
+            if (!$bookingQuota['allowed']) {
+                return CustomerBookingRoutes::route('customer.booking.schedule', $slug_usaha)
+                    ->withErrors(['tanggal' => 'Kapasitas kuota booking bulanan bisnis ini telah penuh. Silakan hubungi pemilik bisnis.']);
+            }
+        }
+
+        $isBlocked = DB::table('owner_blocked_dates')
+            ->where('idtenant', $tenant->id)
+            ->whereDate('tanggal', $selectedDate)
+            ->exists();
+
+        if ($isBlocked) {
+            return CustomerBookingRoutes::route('customer.booking.schedule', $slug_usaha)
+                ->withErrors(['tanggal' => 'Tanggal ini sedang ditutup oleh pemilik bisnis.']);
+        }
+
+        session()->put('booking.tanggal', $selectedDate);
+
+        // Continue with time slots validation
+        return $this->selectTime($request, $slug_usaha);
+    }
+
+    public function showDateSelection(string $slug_usaha)
+    {
+        return $this->showScheduleSelection(request(), $slug_usaha);
     }
 
     public function selectDate(Request $request, string $slug_usaha)

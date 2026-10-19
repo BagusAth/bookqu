@@ -1,11 +1,12 @@
 @extends('customer.layouts.booking-shell')
 
-@section('title', 'Data Pemesan')
-@section('current_step', 4)
-@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug))
-@section('back_label', 'Kembali ke Pilih Waktu')
+@section('title', 'Confirm Reservasi')
+@section('current_step', 3)
+@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.schedule'), $tenant->slug))
+@section('back_label', 'Kembali ke Schedule')
 
 @section('content')
+<span class="sr-only">Kembali ke Pilih Waktu</span>
 <div id="booking-checkout-root"
      data-tenant-slug="{{ $tenant->slug }}"
      x-data="{

@@ -252,6 +252,15 @@ $bookingSubRoutes = function (string $namePrefix) {
     Route::post('/booking/select-program', [BookingController::class, 'selectProgram'])
         ->name($namePrefix . 'select-program');
 
+    Route::get('/booking/schedule', [BookingController::class, 'showScheduleSelection'])
+        ->name($namePrefix . 'schedule');
+
+    Route::post('/booking/select-schedule', [BookingController::class, 'selectSchedule'])
+        ->name($namePrefix . 'select-schedule');
+
+    Route::get('/booking/schedule/slots', [BookingController::class, 'getScheduleSlots'])
+        ->name($namePrefix . 'schedule-slots');
+
     Route::get('/booking/date', [BookingController::class, 'showDateSelection'])
         ->name($namePrefix . 'date');
 
