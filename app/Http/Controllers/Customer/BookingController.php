@@ -262,6 +262,12 @@ class BookingController extends Controller
         $rawScheduleIds = $booking['schedule_ids'] ?? (!empty($booking['schedule_id']) ? [$booking['schedule_id']] : []);
         $selectedScheduleIds = is_array($rawScheduleIds) ? $rawScheduleIds : ($rawScheduleIds ? [$rawScheduleIds] : []);
 
+        // Guard against stale session: If stored date in session differs from selected date, do not use stale slots
+        if (!empty($booking['tanggal']) && $booking['tanggal'] !== $selectedDate) {
+            $selectedTimes = [];
+            $selectedScheduleIds = [];
+        }
+
         $selectedDateCarbon = Carbon::parse($selectedDate, $wib);
 
         return view('customer.booking.schedule-selection', [
@@ -663,14 +669,14 @@ class BookingController extends Controller
         }
 
         $serviceId = $booking['service_id'] ?? null;
-        $selectedDate = $booking['tanggal'] ?? null;
+        $selectedDate = $request->input('tanggal') ?? ($booking['tanggal'] ?? null);
 
         if (!$serviceId) {
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         if (!$selectedDate) {
-            return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha);
+            return CustomerBookingRoutes::route('customer.booking.schedule', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
@@ -681,6 +687,9 @@ class BookingController extends Controller
         }
 
         session()->put('booking.tenant_id', $tenant->id);
+
+        $isScheduleRoute = $request->routeIs('*select-schedule*') || $request->is('*/booking/select-schedule') || $request->is('*/booking/schedule');
+        $errorRedirectRoute = $isScheduleRoute ? 'customer.booking.schedule' : 'customer.booking.time';
 
         $wasOriginalJamArray = is_array($request->input('jam')) || ($request->has('schedule_ids') && is_array($request->input('schedule_ids')));
         $rawJam = $request->input('jam');
@@ -731,12 +740,12 @@ class BookingController extends Controller
         }
 
         if (count($jamArray) !== count($scheduleIdArray)) {
-            return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+            return CustomerBookingRoutes::route($errorRedirectRoute, $slug_usaha)
                 ->withErrors(['jam' => 'Jumlah jam dan jadwal tidak sesuai.']);
         }
 
         if (count($scheduleIdArray) !== count(array_unique($scheduleIdArray))) {
-            return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+            return CustomerBookingRoutes::route($errorRedirectRoute, $slug_usaha)
                 ->withErrors(['jam' => 'Jadwal yang dipilih tidak boleh duplikat.']);
         }
 
@@ -778,7 +787,7 @@ class BookingController extends Controller
             });
 
             if (!$schedule) {
-                return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+                return CustomerBookingRoutes::route($errorRedirectRoute, $slug_usaha)
                     ->withErrors(['jam' => "Jam {$jamValue} sudah tidak tersedia. Silakan pilih jam lain."]);
             }
 
@@ -786,12 +795,12 @@ class BookingController extends Controller
             $resolvedTime = $slotDateTime->format('H:i');
 
             if ($jamValue !== $resolvedTime) {
-                return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+                return CustomerBookingRoutes::route($errorRedirectRoute, $slug_usaha)
                     ->withErrors(['jam' => "Jam {$jamValue} tidak sesuai dengan jadwal."]);
             }
 
             if ($slotDateTime->lessThanOrEqualTo($nowWib)) {
-                return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+                return CustomerBookingRoutes::route($errorRedirectRoute, $slug_usaha)
                     ->withErrors(['jam' => "Waktu {$jamValue} sudah terlewat (WIB). Silakan pilih jam lain."]);
             }
 
@@ -806,7 +815,7 @@ class BookingController extends Controller
             $prevStart = Carbon::parse($selectedDate . ' ' . $validatedSchedules[$i - 1]->jam_mulai, $wib);
             $currStart = Carbon::parse($selectedDate . ' ' . $validatedSchedules[$i]->jam_mulai, $wib);
             if ((int) abs($currStart->diffInMinutes($prevStart)) !== $durationMinutes) {
-                return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
+                return CustomerBookingRoutes::route($errorRedirectRoute, $slug_usaha)
                     ->withErrors(['jam' => 'Slot harus berurutan tanpa jeda.']);
             }
         }

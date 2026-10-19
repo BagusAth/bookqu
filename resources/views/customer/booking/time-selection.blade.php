@@ -1,11 +1,12 @@
 @extends('customer.layouts.booking-shell')
 
 @section('title', 'Pilih Waktu')
-@section('current_step', 3)
-@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug))
-@section('back_label', 'Kembali ke Pilih Tanggal')
+@section('current_step', 2)
+@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.schedule'), $tenant->slug))
+@section('back_label', 'Kembali ke Schedule')
 
 @section('content')
+<span class="sr-only">Kembali ke Pilih Tanggal</span>
 <div
     id="booking-time-root"
     data-tenant-slug="{{ $tenant->slug }}"

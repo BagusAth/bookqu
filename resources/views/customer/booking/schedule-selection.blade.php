@@ -54,19 +54,20 @@
           @submit="isSubmitting = true">
         @csrf
         <input type="hidden" name="tanggal" :value="selectedDate" value="{{ $selectedDate }}" />
-        <template x-for="slot in sortedSelectedSlots" :key="'j_' + slot.id">
-            <input type="hidden" name="jam[]" :value="slot.time" />
-        </template>
-        <template x-for="slot in sortedSelectedSlots" :key="'s_' + slot.id">
-            <input type="hidden" name="schedule_ids[]" :value="slot.id" />
-        </template>
-        @if(count($selectedScheduleIds) > 0)
-            @foreach($selectedScheduleIds as $idx => $sid)
-                <input type="hidden" name="schedule_ids[]" value="{{ $sid }}" />
-                <input type="hidden" name="jam[]" value="{{ $selectedTimes[$idx] ?? '' }}" />
-            @endforeach
-        @endif
-        <input type="hidden" name="schedule_id" :value="sortedSelectedSlots.length > 0 ? sortedSelectedSlots[0].id : '{{ $selectedScheduleIds[0] ?? '' }}'" value="{{ $selectedScheduleIds[0] ?? '' }}" />
+        <div class="hidden">
+            <template x-for="slot in sortedSelectedSlots" :key="slot.id">
+                <div>
+                    <input type="hidden" name="jam[]" :value="slot.time" />
+                    <input type="hidden" name="schedule_ids[]" :value="slot.id" />
+                </div>
+            </template>
+            <template x-if="sortedSelectedSlots.length > 0">
+                <input type="hidden" name="schedule_id" :value="sortedSelectedSlots[0].id" />
+            </template>
+            @if(isset($simulate) && $simulate)
+                <input type="hidden" name="simulate" value="1" />
+            @endif
+        </div>
 
         <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px] items-start">
 
@@ -548,7 +549,8 @@
                 // Auto-select initial slots if passed from session
                 const allInitial = this.allCurrentSlots;
                 if (config.selectedScheduleIds && config.selectedScheduleIds.length > 0) {
-                    this.selectedSlots = allInitial.filter(s => config.selectedScheduleIds.includes(s.id) && s.is_available);
+                    const ids = config.selectedScheduleIds.map(Number);
+                    this.selectedSlots = allInitial.filter(s => ids.includes(Number(s.id)) && s.is_available);
                 } else if (config.selectedTimes && config.selectedTimes.length > 0) {
                     this.selectedSlots = allInitial.filter(s => config.selectedTimes.includes(s.time) && s.is_available);
                 }

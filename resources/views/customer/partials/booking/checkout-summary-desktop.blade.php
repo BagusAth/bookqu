@@ -55,9 +55,14 @@
         </div>
 
         {{-- Price difference alert if price is overridden --}}
-        @if($hargaAkhir != $service->harga)
+        @php
+            $hasPriceOverride = !empty($schedules)
+                ? collect($schedules)->contains(fn($s) => $s->harga_override !== null && (float) $s->harga_override !== (float) $service->harga)
+                : ((float) $hargaAkhir !== (float) (max(1, count($selectedTimes)) * $service->harga));
+        @endphp
+        @if($hasPriceOverride)
         <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
-            *Harga pada jadwal ini berbeda dengan harga standar layanan (Rp {{ number_format($service->harga, 0, ',', '.') }}).
+            *Harga pada jadwal ini berbeda dengan harga standar layanan (Rp {{ number_format($service->harga, 0, ',', '.') }} / sesi).
         </div>
         @endif
 
