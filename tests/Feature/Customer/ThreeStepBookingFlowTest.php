@@ -254,6 +254,7 @@ class ThreeStepBookingFlowTest extends TestCase
         $responseCheckout->assertStatus(200);
         $responseCheckout->assertSee('2 sesi (120 menit)');
         $responseCheckout->assertSee('70.000');
+        $responseCheckout->assertDontSee('berbeda dengan harga standar');
 
         // 3. Process Checkout with Customer Details
         $responseSubmit = $this->withSession(session()->all())
@@ -288,5 +289,60 @@ class ThreeStepBookingFlowTest extends TestCase
             'jumlah' => 70000,
             'status' => 'pending',
         ]);
+    }
+
+    /**
+     * Regression Test: Stale session slots from a different date (e.g. 13:00 on yesterday)
+     * must NEVER contaminate new date selection or cause "Jam 13:00 sudah tidak tersedia" error.
+     */
+    public function test_stale_session_slots_from_different_date_do_not_contaminate_new_schedule_selection(): void
+    {
+        $today = Carbon::today('Asia/Jakarta')->format('Y-m-d');
+
+        // Create a stale slot on today
+        $staleSchedule = Schedule::create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => $today,
+            'jam_mulai' => '13:00:00',
+            'jam_selesai' => '14:00:00',
+            'status' => 'tersedia',
+        ]);
+
+        // User previously selected 13:00 on today
+        $sessionData = [
+            'booking' => [
+                'tenant_id' => $this->tenant->id,
+                'service_id' => $this->service->id,
+                'tanggal' => $today,
+                'jam' => ['13:00'],
+                'schedule_id' => $staleSchedule->id,
+                'schedule_ids' => [$staleSchedule->id],
+            ],
+        ];
+
+        // Customer views schedule for tomorrow
+        $responseView = $this->withSession($sessionData)
+            ->get('/creative-hub-studio/booking/schedule?tanggal=' . $this->tomorrow);
+
+        $responseView->assertStatus(200);
+        // HTML must NOT render hardcoded stale hidden input for schedule 13:00
+        $responseView->assertDontSee('value="' . $staleSchedule->id . '"', false);
+
+        // Customer submits new tomorrow schedule (10:00 & 11:00)
+        $responseSubmit = $this->withSession($sessionData)
+            ->post('/creative-hub-studio/booking/select-schedule', [
+                'tanggal' => $this->tomorrow,
+                'jam' => ['10:00', '11:00'],
+                'schedule_ids' => [$this->morningSchedule->id, $this->morningSchedule2->id],
+            ]);
+
+        // Must redirect to checkout cleanly without session errors for 13:00
+        $responseSubmit->assertRedirect('/creative-hub-studio/booking/checkout');
+        $responseSubmit->assertSessionHasNoErrors();
+
+        $this->assertEquals($this->tomorrow, session('booking.tanggal'));
+        $this->assertEquals(['10:00', '11:00'], session('booking.jam'));
+        $this->assertEquals([$this->morningSchedule->id, $this->morningSchedule2->id], session('booking.schedule_ids'));
     }
 }

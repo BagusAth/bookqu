@@ -247,6 +247,12 @@ class BookingController extends Controller
         $rawScheduleIds = $booking['schedule_ids'] ?? (!empty($booking['schedule_id']) ? [$booking['schedule_id']] : []);
         $selectedScheduleIds = is_array($rawScheduleIds) ? $rawScheduleIds : ($rawScheduleIds ? [$rawScheduleIds] : []);
 
+        // Guard against stale session: If stored date in session differs from selected date, do not use stale slots
+        if (!empty($booking['tanggal']) && $booking['tanggal'] !== $selectedDate) {
+            $selectedTimes = [];
+            $selectedScheduleIds = [];
+        }
+
         $selectedDateCarbon = Carbon::parse($selectedDate, $wib);
 
         return view('customer.booking.schedule-selection', [
