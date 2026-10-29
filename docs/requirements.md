@@ -599,6 +599,22 @@ Customer rescheduling shall require the valid rescheduling authorization associa
 
 Review submission shall require valid authorization for the eligible booking.
 
+### FR-MANAGE-008 — Public Identifiers Are Not Credentials
+
+`order_id`, `booking_code` and similar public identifiers shall not authorize viewing or changing a booking or payment. Every private customer endpoint requires a valid access credential or a server-side session established from one. A checkout-session booking selection alone is not authorization. Accepted in ADR-0006; implementation tracked in BQ-001/BQ-002.
+
+### FR-MANAGE-009 — Explicit Access Grants
+
+Customer access shall be bound to an exact tenant, booking or payment group and an explicitly granted set of operations. Management access deliberately includes its named customer operations; Checkout, Invoice and operation-specific access shall not acquire wider rights through navigation, rendered content or callbacks. Authorization never bypasses current booking/payment eligibility or multi-slot restrictions. The profile matrix is defined in ADR-0006, not inferred from legacy token fields.
+
+### FR-MANAGE-010 — Access Expiry, Revocation and Renewal
+
+Customer credentials shall have finite, recorded expiry and revocation enforced on requests, sessions and business mutations. A recognized expired credential may request eligible same-profile renewal only to its recorded recipient, without granting data access or returning a new secret. Lost/revoked-link assistance requires the tenant-authenticated operation. Security replacement invalidates the reservation family's existing access and stale queued issuance. Durations and recovery limits are defined in ADR-0006.
+
+### FR-MANAGE-011 — Safe Customer Links and Delivery
+
+Private customer links shall use trusted destinations and expose only the authority intended for their audience. Invoice, public sharing, calendars, provider redirects, logs and routine serialized data shall not disclose management credentials. Delivery shall use the recorded recipient and trusted issuance context; requests cannot choose a replacement recipient. Canonical/private and custom-domain/storefront behavior is defined in ADR-0006.
+
 ## Additional Item Requirements
 
 ### FR-ADDON-001 — Create Additional Item
@@ -1618,10 +1634,6 @@ An owner can request a payout up to the available balance; the request and the b
 ### FR-PAYOUT-003 — Payout Processing (Proposed)
 
 A platform admin approves or rejects payout requests and records the transfer reference. No admin workflow exists yet (BQ-015, BQ-038).
-
-### FR-MANAGE-008 — Public Identifiers Are Not Credentials (Proposed)
-
-`order_id`, `booking_code` and similar public identifiers never authorize viewing or changing a booking or payment on their own; every such endpoint requires the scoped management token or the customer's own checkout session. Tracked in BQ-001, BQ-002.
 
 ### BR-PAY-001 — Late Payment Success Reconciliation (Proposed)
 

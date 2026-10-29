@@ -34,7 +34,10 @@ Canonical BookQu terms and the legacy names that still appear in the code.
 | **Review** | Customer feedback on an eligible booking. | `reviews`; `rating`, `komentar` (text), `balasan` (owner reply), `dibalas_pada`, `is_hidden` | Rating domain |
 | **Platform balance** | Money the platform holds for a tenant; source of payouts. | `tenants.saldo_platform`; `owner_payouts` | — |
 | **Public business page** | Tenant storefront at `/{slug}` or a custom domain. | `slug_usaha`, `custom_domain`, `customer.booking.*` routes | "subdomain" for `/{slug}` |
-| **Management link** | Tokenized URL a customer uses to view/cancel/reschedule/review without an account. | `payments.manage_token`, `bookings.cancellation_token`, `bookings.reschedule_token`, `/manage/...` | — |
+| **Access grant** | Revocable authorization for one booking or payment group and an explicit set of customer operations. | Target contract: ADR-0006; current authorization is spread across token fields | a customer account or wildcard permission |
+| **Access credential** | Secret proving possession of an access grant; distinct from a public booking or payment reference. | Current raw token fields; target contract: ADR-0006 | treating an order ID as a secret |
+| **Management link** | Customer link carrying access to the named management operations for one reservation, without an account. | Current `payments.manage_token`, `bookings.cancellation_token`, `bookings.reschedule_token`, `/manage/...`; target ADR-0006 | a read-only link that implicitly gains other rights |
+| **Checkout link** | Customer access to one booking payment and its invoice, without booking cancellation or reschedule authority. | Target contract: ADR-0006 | an owner or subscription checkout credential |
 
 ## State values
 

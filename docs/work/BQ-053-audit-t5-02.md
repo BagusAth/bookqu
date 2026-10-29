@@ -2,21 +2,21 @@
 id: BQ-053
 title: [BUG-T5-02] Fatal Token Scope Mismatch pada Aksi Reschedule & Batal di Portal Payment Group
 type: bug-fix
-status: proposed
+status: approved
 priority: P0
 phase: 4
 domain: customer-access
-requirements: []
-invariants: []
+requirements: [FR-MANAGE-005, FR-MANAGE-006, FR-MANAGE-007, FR-MANAGE-009, FR-MANAGE-011]
+invariants: [INV-TOK-01]
 launch-blocker: true
 needs-lead-approval: false
-depends-on: [BQ-039]
+depends-on: [BQ-001]
 source: docs/audit-bug/TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OPS.md at a68ffe8
 ---
 
 # BQ-053: [BUG-T5-02] Fatal Token Scope Mismatch pada Aksi Reschedule & Batal di Portal Payment Group
 
-Migrated verbatim from the 2026-10 audit (TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OPS.md, stage 5: Customer Self-Service (Tanpa Akun) & Owner Booking Operations). Status in the current code is unverified — check it first (BQ-039).
+Audit source retained below. Scope escalation is confirmed by source inspection; the accepted resolution is [ADR-0006](../adr/ADR-0006-management-link-module.md), implemented in BQ-001. This item records distinct scope acceptance and remains unimplemented. The original recommendation below is historical, not permission to widen legacy tokens.
 
 > Related to BQ-001 (manage_token acting as master token).
 
@@ -35,3 +35,10 @@ Migrated verbatim from the 2026-10 audit (TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OP
 ## Evidence
 
 _Fill in when done._
+
+## Accepted plan
+
+1. Use ADR-0006's explicit profile matrix. A new Management grant authorizes its named operations directly; Checkout/Invoice/narrow grants cannot acquire them from another page or callback. Do not add cancel/reschedule authority to the old `manage_token`.
+2. Replace token-bearing models/forms/action links in individual and group pages with module-prepared permitted data and session-backed links. GETs must not issue credentials.
+3. Test HTML and navigation chains as well as direct endpoints: opening detail/invoice must not expose another grant, and narrow profiles must still fail unrelated mutations/review. Verify correct same-group member access, foreign group/tenant rejection and current multi-slot refusals.
+4. Retain the full Management journey regression and update legacy-link tests only for the explicitly accepted prelaunch cutover. Reuse the BQ-001 rule matrix; record the distinct HTTP regression evidence here before closure.

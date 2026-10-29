@@ -81,7 +81,9 @@ Validation is layered and every layer stays: client hints → Form Request → d
 
 ## 7. Customer access
 
-Management without an account uses scoped tokens: one token per capability (view, invoice, review, cancel, reschedule) bound to one booking or payment group, compared with `hash_equals`. Public identifiers (`order_id`, `booking_code`) are never credentials (FR-MANAGE-008, Proposed). Token scope and expiry policy are decided in BQ-028.
+Management without an account follows [ADR-0006](adr/ADR-0006-management-link-module.md): one module issues and resolves explicit access grants and builds permitted links. Management deliberately bundles the named customer operations for one reservation; Checkout, Invoice and operation-specific profiles remain narrower. Opaque random secrets are stored as hashes, exchanged into grant-backed sessions through a canonical first-party bootstrap, and never reconstructed by models or views. TenantMiddleware consumes the verified customer-access context on canonical private routes.
+
+Public identifiers never authorize access (FR-MANAGE-008). Finite expiry, revocation generations, recorded-recipient renewal, delivery intent, subject/membership checks and the prelaunch legacy cutover are defined once in ADR-0006. Authorization is revalidated inside tenant-first write transactions; booking/payment eligibility remains with its existing owners. BQ-001 implements this accepted target, with scope/share acceptance in BQ-053/BQ-052.
 
 ## 8. Subscription and release gating
 

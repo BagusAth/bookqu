@@ -21,7 +21,7 @@ Links are e-mailed (`BookingGroupInvoiceMail`, `BookingInvoiceMail`) and shown o
 
 ## Invariants
 
-- **INV-TOK-01** — a token authorizes only its own booking or payment group, and only its own capability.
+- **INV-TOK-01** — an access credential authorizes only its bound booking/payment group and explicitly granted operations; rendering or link construction never widens that authority. The accepted target profiles are in ADR-0006; current token checks still have the gaps below.
 
 ## Evidence
 
@@ -37,7 +37,9 @@ Functional: Implemented · Verification: Needs Verification · Architecture: Nee
 |---|---|
 | `order_id` is guessable (`BKG-{tenantId}-{unixTime}-{100..999}`, `PaymentRules::generateOrderId`) and the storefront invoice page shows the management link with `manage_token` to anyone who has it | BQ-001 |
 | Storefront `cancel` cancels any pending payment by `order_id` alone | BQ-002 |
-| The payment-group page embeds each booking's `cancellation_token`, so `manage_token` acts as a master token (`payment-show.blade.php:434`) | BQ-001, BQ-028 (ADR) |
+| Eligible single-slot payment-group pages embed the booking's cancellation/reschedule credentials, so a management read can obtain mutation credentials (`payment-show.blade.php:295/434`) | BQ-001, BQ-053 |
 | Customer reschedule uses its own availability query | BQ-012 |
-| Audit P0: token scope mismatch in the payment-group portal; token leak in calendar/WhatsApp share (looks fixed) | BQ-053, BQ-052 |
+| Audit P0: token scope escalation through rendered links/forms; individual booking `show.blade.php:25-42` still exports its token in Calendar/WhatsApp text, although the group page removes it (confirmed by source inspection 2026-10-30) | BQ-053, BQ-052 |
 | `GenerateTestBookingToken` command can regenerate real customer tokens in any environment | BQ-010 |
+
+Target decision: [ADR-0006](../adr/ADR-0006-management-link-module.md), implemented by BQ-001 with BQ-053/BQ-052 acceptance and BQ-002 integration. Its grant storage, profiles, expiry/recovery, session bootstrap and legacy cutover are not implemented yet; current entry points and verification status above remain unchanged.
