@@ -10,7 +10,7 @@ requirements: [NFR-PERF-002, NFR-REL-003]
 invariants: []
 launch-blocker: false
 needs-lead-approval: true
-depends-on: [BQ-020]
+depends-on: [BQ-020, BQ-067]
 ---
 
 # BQ-013: Send mail and notifications through the queue after commit

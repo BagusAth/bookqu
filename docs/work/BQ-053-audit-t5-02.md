@@ -20,6 +20,8 @@ Migrated verbatim from the 2026-10 audit (TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OP
 
 > Related to BQ-001 (manage_token acting as master token).
 
+> Confirmed 2026-10-30 (architecture review): `show.blade.php:106` always includes the cancel modal, which embeds `cancellation_token` (`cancel-modal:87`); `action-panel:52` and `payment-show:295/434` embed tokens too, so any one management token yields every capability. Route-level scope checks (RF09 `test_p1_01_token_scope_separation`) pass regardless. Addressed together with BQ-001 (review candidate #3 "Management link module").
+
 ## Audit finding
 
 - **Lokasi Berkas**: 

@@ -21,7 +21,10 @@ Canonical BookQu terms and the legacy names that still appear in the code.
 | **Walk-in booking** | Booking created by the owner for an on-site customer. | `CreateWalkInBooking`, route `owner.bookings.walkin` | a separate walk-in domain |
 | **Payment group** | All bookings paid by one payment (multi-slot). | `payments.id` ↔ `bookings.idpayment`; `payments.idbooking` = first booking (legacy, deprecated) | — |
 | **Payment** | A money transaction: booking payment or subscription payment. | `payments` table; `tipe` (`booking`, `subscription`), `jumlah`, `metode`, `provider`, `order_id`, `external_id` | generic Transaction |
-| **Refund** | Money owed back after an eligible cancellation. | `refunds` table; `jumlah` | — |
+| **Refund** | Money owed back after an eligible cancellation or a late payment success. Recorded `pending`, returned manually. | `refunds` table; `jumlah` | — |
+| **Payment lifecycle module** | The one module that changes a payment's status (provider outcome, expiry, payer cancel, owner settlement, free/walk-in); fans out booking-group and subscription consequences (ADR-0004). | to be built in `app/Actions/Payment/` (BQ-067); today spread over 12 sites | writing `payments.status` anywhere else |
+| **Owner settlement** | Owner records that a booking was paid outside the gateway (on site); settles the whole payment group as `sukses` with `metode = cash`. | `UpdateBookingStatus` today (per slot — bug BQ-068) | per-slot payment marking |
+| **Late success** | Provider reports success for a payment already `gagal`; creates a refund owed and an alert. | — (BQ-003) | — |
 | **Plan** | A subscription package definition. | `plans` table; `namapaket` (`small`, `medium`, `pro`), `hargabulanan`, `maxlayanan`, `maxbooking`, `isunlimited` | Package (when ambiguous) |
 | **Subscription** | A tenant's relationship to a plan and its state. | `subscriptions` table; `trial_berakhir`, `langganan_mulai`, `langganan_berakhir`; view variable `$langganan` | Membership |
 | **Entitlement** | What a subscription allows (features, limits). | `EntitlementRules`, `PlanCapability`; middleware `subscription:<feature>` | ad-hoc plan-name checks |

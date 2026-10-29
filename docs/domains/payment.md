@@ -51,6 +51,9 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Nee
 
 | Gap | Item |
 |---|---|
+| Terminal status written at 12 sites in 10 modules; only `SynchronizePaymentStatus` locks and guards; `PaymentState` transitions unused in production. Target: one Payment lifecycle module (ADR-0004) | BQ-067 |
+| Owner marking one slot of a group paid splits the payment group | BQ-068 |
+| Owner checkout callback would trust the browser's result (dead only by a `= null` default) | BQ-070 |
 | A success event that arrives after the payment became `gagal` is only logged: no refund, no alert (`ProcessSingaPayWebhook.php:201`) | BQ-003 |
 | SingaPay `checkTransactionStatus` reads the local DB only; the expiry command verifies Midtrans only | BQ-003 |
 | Cancelling or expiring a payment does not cancel it at the gateway | BQ-002, BQ-049 |

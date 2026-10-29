@@ -2,7 +2,7 @@
 id: BQ-014
 title: Record on-site payment when the owner completes a pending booking
 type: product-change
-status: proposed
+status: approved
 priority: P2
 phase: 4
 domain: booking
@@ -10,7 +10,7 @@ requirements: [FR-BOOKING-009, BR-CORE-008]
 invariants: [INV-BOOK-02, INV-PAY-01]
 launch-blocker: false
 needs-lead-approval: true
-depends-on: []
+depends-on: [BQ-067]
 ---
 
 # BQ-014: Record on-site payment when the owner completes a pending booking
@@ -18,6 +18,8 @@ depends-on: []
 ## Problem
 
 `BookingState` allows pending→completed (used when a customer pays on site). The booking becomes `completed` while its online payment stays `pending` and later expires to `gagal`, so financial records show a completed booking with a failed payment.
+
+> Decided in ADR-0004 (decision 6): owner settlement applies to the whole payment group, records `sukses` with `metode = cash`, and requests gateway cancellation. Implemented inside BQ-067.
 
 ## Plan
 

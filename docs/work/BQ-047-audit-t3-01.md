@@ -18,6 +18,8 @@ source: docs/audit-bug/TAHAP-3-CUSTOMER-BOOKING-JOURNEY.md at a68ffe8
 
 Migrated verbatim from the 2026-10 audit (TAHAP-3-CUSTOMER-BOOKING-JOURNEY.md, stage 3: Customer Booking Journey: Storefront & 6-Langkah Reservasi hingga Checkout). Status in the current code is unverified — check it first (BQ-039).
 
+> Confirmed 2026-10-30 (architecture review): 23 Blade call sites build `route(CustomerBookingRoutes::name(..), $tenant->slug)`; on a custom domain this yields `http://{slug}/booking/...` (slug used as host). Still open.
+
 ## Audit finding
 
 - **Lokasi Berkas Terdampak**:
