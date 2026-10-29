@@ -36,6 +36,8 @@ Decisions the agent took on the lead's behalf under the autonomy granted on 2026
 | 7 | Work items may be English or Indonesian; migrated audit text stays in its original Indonesian | Translating 140 findings adds risk and no value |
 | 8 | `.ai/rules` index generated with Boost's own `RuleRepository::writeIndex()` | Keeps the format `boost:update` expects |
 | 9 | Approval table and non-negotiable rules live only in `AGENTS.md`; `docs/workflow.md` links to them | One rule, one place |
+| 11 | The BookQu section of `AGENTS.md` must never contain Boost's literal tag; verified that `php artisan boost:update` leaves it byte-identical | The first version mentioned the tag and `boost:update` overwrote the section — caught in step 1.7 |
+| 12 | The root `README.md` stays in Indonesian (human onboarding); it now points to the new docs and warns that `main` auto-deploys | Audience is the team; reference docs are English |
 | 10 | New backlog findings while writing docs: platform balance never credited (BQ-015), reserved tenant slugs (BQ-011), SingaPay status check reads only the local DB (in BQ-003), schedule status `diblokir` not in enum (BQ-016), deploy has no CI gate or DB backup (BQ-018) | Found by reading code and workflows |
 
 ## Progress
@@ -47,7 +49,10 @@ Decisions the agent took on the lead's behalf under the autonomy granted on 2026
 | 1.3 `AGENTS.md`, workflow, templates | `827451f` |
 | 1.4 `.ai/rules` | `3a229f1` |
 | 1.5 Product, requirements, architecture, operations | `78e15ad` |
-| 1.6 Backlog and roadmap | (this commit) |
+| 1.6 Backlog and roadmap | `d30188f` |
+| 1.7 Cutover, ADR-0003, README | (next commit) |
+
+The temporary rule inventory (`docs/_phase1/rule-inventory.md`, 142 rules with sources and new homes) is preserved in Git at commit `d30188f`.
 
 ## Evidence
 

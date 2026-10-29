@@ -101,4 +101,4 @@ $resSchedule->assertSee('Laporan Okupansi &amp; Utilisasi Jadwal', false);
 4. When new features are ready for release:
    - Complete end-to-end customer checkout and billing verification.
    - Update `OwnerSidebarNavigationTest` to assert presence rather than absence.
-   - Update `docs/2-PRODUCT.md`, `docs/3-REQUIREMENT.md`, and `docs/6-TRACKER.md` to transition the module from Staged/Hidden to Active Core.
+   - Update `docs/product.md` (release tiers), `docs/requirements.md`, and the domain file in `docs/domains/` to transition the module from Staged/Hidden to Active Core.

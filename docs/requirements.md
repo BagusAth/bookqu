@@ -1173,7 +1173,7 @@ Repeated UI and application behavior should be extracted into reusable component
 
 ### NFR-MAINT-004 — Consistent Naming
 
-New code must follow naming conventions defined by `docs/4-ARCHITECTURE.md`.
+New code must follow naming conventions defined by `docs/architecture.md` and `docs/glossary.md`.
 
 Historical naming inconsistencies may remain temporarily but should not be propagated into new work.
 
@@ -1474,7 +1474,7 @@ The operational scheduler must execute the registered expiration command accordi
 Exact production scheduler configuration belongs in:
 
 ```text
-docs/8-OPERATIONS.md
+docs/operations.md
 ```
 
 The requirement is behavioral:
