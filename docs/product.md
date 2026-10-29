@@ -88,7 +88,7 @@ BookQu releases capabilities in stages to keep booking and payment stable (ADR-0
 | **2 — Locked** | Visible with a "Fitur Sedang Dikembangkan" / "Coming Soon" notice | Analytics (`/owner/analytics`), schedule report (`/owner/schedule-report`), integrations (WhatsApp, Google Calendar), platform balance (withdrawal on hold) |
 | **3 — Hidden** | Backend exists, no navigation entry | Vouchers (checkout endpoint returns 422), additional items, staff & resources, appearance, direct payment-gateway settings, media assets, landing-page builder |
 
-**Rules:** do not unhide Tier 3 or remove Tier 2 locks without lead approval and a release plan. Hiding a link is not access control — server-side gating of Tier 3 is tracked in BQ-008. Promoting a module: finish its end-to-end flow, update `OwnerSidebarNavigationTest`, then this table, `requirements.md` and the domain file.
+**Rules:** do not unhide Tier 3 or remove Tier 2 locks without lead approval and a release plan. Promoting a module whose requirements already exist (e.g. vouchers, FR-VOUCHER-*) is a **release decision** by the lead; changing its behaviour beyond those requirements is a **product change**. Both start as a `proposed` work item. Hiding a link is not access control — server-side gating of Tier 3 is tracked in BQ-008. Promoting a module: finish its end-to-end flow, update `OwnerSidebarNavigationTest`, then this table, `requirements.md` and the domain file.
 
 ## 9. Scope
 

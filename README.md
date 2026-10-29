@@ -289,4 +289,4 @@ Ikuti [`docs/workflow.md`](docs/workflow.md): buat item kerja di `docs/work/`, k
 
 ## 📄 Lisensi
 
-Project ini dilisensikan di bawah [MIT License](LICENSE).
+Project ini dilisensikan di bawah MIT License.

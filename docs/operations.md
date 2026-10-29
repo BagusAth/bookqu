@@ -1,6 +1,6 @@
 # Operations
 
-How BookQu is run, deployed, verified and recovered. Statements here are facts from the repository unless marked **Target** (planned in `docs/work/`) or **Unknown** (not established in the repository — do not invent it).
+How BookQu is run, deployed, verified and recovered. Statements here are facts from the repository unless marked **Target** (planned in `docs/work/`) or **Unknown** (not established in the repository — do not invent it). An operational capability counts as working only with evidence: command output, logs, a CI run, a successful smoke or restore test — never because a configuration file exists.
 
 ## 1. Environments
 

@@ -36,9 +36,10 @@ Decisions the agent took on the lead's behalf under the autonomy granted on 2026
 | 7 | Work items may be English or Indonesian; migrated audit text stays in its original Indonesian | Translating 140 findings adds risk and no value |
 | 8 | `.ai/rules` index generated with Boost's own `RuleRepository::writeIndex()` | Keeps the format `boost:update` expects |
 | 9 | Approval table and non-negotiable rules live only in `AGENTS.md`; `docs/workflow.md` links to them | One rule, one place |
+| 10 | New backlog findings while writing docs: platform balance never credited (BQ-015), reserved tenant slugs (BQ-011), SingaPay status check reads only the local DB (in BQ-003), schedule status `diblokir` not in enum (BQ-016), deploy has no CI gate or DB backup (BQ-018) | Found by reading code and workflows |
 | 11 | The BookQu section of `AGENTS.md` must never contain Boost's literal tag; verified that `php artisan boost:update` leaves it byte-identical | The first version mentioned the tag and `boost:update` overwrote the section — caught in step 1.7 |
 | 12 | The root `README.md` stays in Indonesian (human onboarding); it now points to the new docs and warns that `main` auto-deploys | Audience is the team; reference docs are English |
-| 10 | New backlog findings while writing docs: platform balance never credited (BQ-015), reserved tenant slugs (BQ-011), SingaPay status check reads only the local DB (in BQ-003), schedule status `diblokir` not in enum (BQ-016), deploy has no CI gate or DB backup (BQ-018) | Found by reading code and workflows |
+| 13 | Items BQ-010 and BQ-037 start as `approved` | The lead approved them earlier in the session (test-token command local-only; dead-code removal) |
 
 ## Progress
 
@@ -50,10 +51,21 @@ Decisions the agent took on the lead's behalf under the autonomy granted on 2026
 | 1.4 `.ai/rules` | `3a229f1` |
 | 1.5 Product, requirements, architecture, operations | `78e15ad` |
 | 1.6 Backlog and roadmap | `d30188f` |
-| 1.7 Cutover, ADR-0003, README | (next commit) |
+| 1.7 Cutover, ADR-0003, README | `36002a5` |
+| 1.8 Verification | this commit |
 
 The temporary rule inventory (`docs/_phase1/rule-inventory.md`, 142 rules with sources and new homes) is preserved in Git at commit `d30188f`.
 
-## Evidence
+## Evidence (step 1.8, 2026-10-30)
 
-_Filled in at step 1.8._
+| Check | Result |
+|---|---|
+| Rule inventory coverage | 142 rules: 131 matched automatically in their new home; 11 reviewed by hand — 8 already covered in other words, 3 added (related refactors in `workflow.md`, unreliable providers in `.ai/rules/payment.md`, evidence for operational claims in `operations.md`) |
+| Requirement IDs | 228 original IDs preserved + 8 Proposed = 236; every `FR-/BR-/NFR-` reference in the docs resolves |
+| Links, paths, IDs | Script check over 111 files: no broken links, no unknown `BQ-`, `INV-` or ADR references; remaining hits are placeholders (`BQ-NNN-slug`), Boost's own text, Git-only history and the planned `app/Policies` |
+| `AGENTS.md` | BookQu section 85 lines (target ≤150); `php artisan boost:update` leaves the file byte-identical |
+| Fresh-agent quiz | An agent with no prior context answered 10/10 questions correctly from the docs alone without opening application code; its four confusion points were resolved (PHP version wording, `done/` folder note, voucher promotion vs product change) or are tracked (`diblokir`, BQ-016) |
+| Test suite | `php artisan test --compact`: 413 passed (1,955 assertions) — unchanged from the baseline |
+| Size | Guidance read on demand: ~3,400 lines (`AGENTS.md`, `docs/*.md`, `docs/domains/`, `.ai/rules/`) instead of ~18,000 |
+
+Remaining for the gate: the lead reviews and merges `phase-1-docs` into `agathan` (G1); Bagus reads `AGENTS.md` and `docs/workflow.md` for clarity. Then set this item to `done` and move it to `done/`.

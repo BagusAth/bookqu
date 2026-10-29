@@ -31,5 +31,8 @@ Process provider events inside a transaction with the payment row locked; repeat
 ## Refunds
 Create at most one `Refund` per payment and keep its status separate from payment and booking status (INV-PAY-06).
 
+## Providers are unreliable
+Handle timeouts, retries, duplicate and partial responses explicitly. A provider failure must never leave payment or booking state ambiguous; log it with payment context and keep the state recoverable.
+
 ## Webhook routes
 Webhook paths are exempt from CSRF in `bootstrap/app.php`; keep that list exact and add a regression test for any new webhook.

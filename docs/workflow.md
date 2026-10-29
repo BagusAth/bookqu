@@ -33,7 +33,7 @@ instruction ─► work item (proposed) ─► approval? ─► branch ─► im
 1. **Capture.** For non-trivial work, create `docs/work/BQ-NNN-slug.md` from `docs/work/_TEMPLATE.md`. Non-trivial means any of: touches business logic, more than one file of behaviour, database schema, security, payment, or needs a decision. Typos, copy and single-line obvious fixes may skip the item.
 2. **Plan.** Fill in the item: requirement IDs, domain, current code, target change, invariants at risk, tests, docs to update.
 3. **Approve.** Check `AGENTS.md` → "Who decides". If the lead must approve, set `status: proposed` and stop. The lead sets `approved` (or `rejected` with a reason).
-4. **Implement.** Branch `bq-NNN-slug`. Small, coherent commits. Characterize poorly tested behaviour before changing it.
+4. **Implement.** Branch `bq-NNN-slug`. Small, coherent commits. Characterize poorly tested behaviour before changing it. A small related refactor is fine when it directly reduces risk or duplication for this task; anything else becomes a new item.
 5. **Verify.** Narrow tests → related tests → full suite. Record manual checks (UI, payment sandbox, custom domain) in the item.
 6. **Document.** Update only the sources whose content changed (section 8).
 7. **Review.** PR with `.github/pull_request_template.md`. The peer reviews; the lead also reviews items that required lead approval.

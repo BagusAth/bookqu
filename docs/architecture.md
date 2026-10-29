@@ -6,7 +6,7 @@ How BookQu must be structured. This document is **normative**: it describes the 
 
 | Layer | Choice |
 |---|---|
-| Runtime | PHP 8.3+ (CI 8.3), Laravel 13 |
+| Runtime | PHP 8.3+ (`composer.json`); CI runs 8.3, local Laragon runs 8.5 — code must work on 8.3. Laravel 13 |
 | Frontend | Blade, Alpine.js, Tailwind CSS v4, Vite |
 | Database | MySQL in production; in-memory SQLite in the test suite |
 | Session, cache, queue | Database drivers |

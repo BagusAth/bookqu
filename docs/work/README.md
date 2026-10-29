@@ -9,7 +9,7 @@ The backlog: every planned, active and finished piece of work, one file per item
 | `ROADMAP.md` | Phases, gates and which items belong to each phase |
 | `_TEMPLATE.md` | Template for a new item |
 | `BQ-NNN-slug.md` | One work item (front matter + problem, plan, evidence) |
-| `done/` | Finished items, moved here after merge |
+| `done/` | Finished items, moved here after merge (empty until the first item is done; holds a `.gitkeep`) |
 
 ## Finding work
 
