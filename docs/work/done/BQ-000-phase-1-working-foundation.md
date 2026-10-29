@@ -2,7 +2,7 @@
 id: BQ-000
 title: Phase 1 — working foundation (documentation and workflow) and its decision log
 type: docs
-status: in-progress
+status: done
 priority: P0
 phase: 1
 domain: —
@@ -68,4 +68,4 @@ The temporary rule inventory (`docs/_phase1/rule-inventory.md`, 142 rules with s
 | Test suite | `php artisan test --compact`: 413 passed (1,955 assertions) — unchanged from the baseline |
 | Size | Guidance read on demand: ~3,400 lines (`AGENTS.md`, `docs/*.md`, `docs/domains/`, `.ai/rules/`) instead of ~18,000 |
 
-Remaining for the gate: the lead reviews and merges `phase-1-docs` into `agathan` (G1); Bagus reads `AGENTS.md` and `docs/workflow.md` for clarity. Then set this item to `done` and move it to `done/`.
+Gate G1 passed 2026-10-30: the lead reviewed the branch and approved the merge into `agathan` (fast-forward to `8365de9`). Peer readability check by Bagus is still open.

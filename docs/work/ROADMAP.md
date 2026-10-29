@@ -14,7 +14,7 @@ From the current state to a production-ready, maintainable BookQu. Approved by t
 | Phase | Goal | Done by | Gate (lead) | Items |
 |---|---|---|---|---|
 | **0 — Baseline** | Clean, reversible starting point | Agent | — | done (tag `baseline-2026-10-30`, commit `0c3837a`) |
-| **1 — Working foundation** | Docs and workflow for team and agents | Agent | **G1:** review and merge the Phase 1 PR | BQ-000 |
+| **1 — Working foundation** | Docs and workflow for team and agents | Agent | **G1:** passed 2026-10-30 | done (BQ-000) |
 | **2 — Architecture direction** | Decide target architecture (ADRs), re-sequence backlog | Lead + agent | **G2:** one decision session on the ADR package | BQ-028 |
 | **3 — Guardrails** | CI on MySQL, gated deploy, quality and architecture checks | Agent | **G3:** approve dev dependencies; set branch protection | BQ-018, BQ-023, BQ-024, BQ-025, BQ-026 |
 | **4 — Production readiness** | Close every launch blocker | Agent + Bagus | **G4:** approve security/payment plans as one package; provide production accounts | BQ-001 … BQ-015, BQ-017, BQ-019 … BQ-022, BQ-039 … BQ-066 |
