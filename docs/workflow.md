@@ -102,7 +102,7 @@ Update only what changed:
 | How a domain works, its entry points, invariants, tests or status | `docs/domains/<domain>.md` |
 | A term or legacy name | `docs/glossary.md` |
 | Deployment, scheduler, queue, environment, backups | `docs/operations.md` |
-| A rule for editing certain paths | `.ai/rules/<area>.md` (then regenerate the index, see `.ai/rules/README.md`) |
+| A rule for editing certain paths | `.ai/rules/<area>.md`, then regenerate `.ai/rules/index.md` (command in `.ai/rules/documentation.md`) |
 | Work status | the `BQ-*` item only |
 
 Write an ADR (`docs/adr/_TEMPLATE.md`) when a decision affects several domains, changes an integration or tenancy/concurrency/payment strategy, introduces a new pattern, or would otherwise leave future contributors guessing.
