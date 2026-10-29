@@ -10,5 +10,6 @@ Why significant architectural decisions were made. Write one with `_TEMPLATE.md`
 | [ADR-0002](ADR-0002-modular-release-staging-and-ui-gating.md) | Modular Release Staging and UI Gating Policy | Accepted | 2026-10-18 |
 | [ADR-0003](ADR-0003-documentation-and-work-system.md) | Layered documentation and in-repo work system | Accepted | 2026-10-30 |
 | [ADR-0004](ADR-0004-payment-lifecycle-module.md) | Payment lifecycle module | Accepted | 2026-10-30 |
+| [ADR-0005](ADR-0005-slot-bookability-module.md) | Slot bookability module | Accepted | 2026-10-30 |
 
-Planned: further Phase 2 decisions (BQ-028), numbered from ADR-0005.
+Planned: further Phase 2 decisions (BQ-028), numbered from ADR-0006.

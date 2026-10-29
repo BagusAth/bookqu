@@ -65,8 +65,9 @@ Validation is layered and every layer stays: client hints → Form Request → d
 
 ## 5. Booking and availability
 
+- The Slot bookability contract, transaction participation, tenant-first synchronization across relevant writers, closure policy and cache ownership are decided in [ADR-0005](adr/ADR-0005-slot-bookability-module.md). This is the accepted target; implementation follows BQ-023 → BQ-067 → BQ-012 → BQ-069 and the roadmap gates.
 - **Occupancy** (`paid`, `completed`, or `pending` within 15 minutes) is defined only in `BookingRules`. **Availability** (status, past time, blocked date, inactive service, occupancy) is defined only in `AvailabilityRules` / `GetAvailableSchedules`. Every entry point — storefront, owner booking, both reschedule flows, calendar, reports, scheduler — uses them.
-- A booking write is one transaction: lock schedule rows → evict stale pending → re-check availability → write → commit → side effects. The `unique_active_booking_slot` index is the final guard.
+- A booking write is one transaction: lock tenant first → lock and validate owned schedules → request stale-pending group expiry through Payment lifecycle → re-check availability → write → commit → side effects. A rejected operation rolls back its mutations. The `unique_active_booking_slot` index is the final guard.
 - Cancellation and rescheduling are operations (`CancelBooking`, `RescheduleBooking`), never raw status updates; state changes go through `BookingState`.
 - Multi-slot reservations are validated and persisted as one unit with one payment.
 

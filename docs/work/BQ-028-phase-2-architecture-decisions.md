@@ -27,7 +27,9 @@ Lead runs `/improve-codebase-architecture`; the agent drafts ADR-0004 … ADR-00
 
 - 2026-10-30: `/improve-codebase-architecture` run on the booking-journey and payment hot spots; report with 6 candidates (Payment lifecycle, Slot bookability, Management link, Provider outcome intake, Booking checkout, Pending-payment lifetime) and 5 bugs (BQ-068, BQ-069, BQ-070, BQ-047, BQ-053).
 - 2026-10-30: candidate #1 decided → ADR-0004 (Payment lifecycle module), implementation BQ-067.
-- Next candidates: Slot bookability (→ BQ-012, BQ-069), Management link (→ BQ-001, BQ-053), Provider outcome intake (→ BQ-003, BQ-032).
+- 2026-10-30: candidate #2 decided → [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (Slot bookability module), implementation BQ-012 and blocked-date acceptance BQ-069. Lead confirmed the complete contract after three grilling rounds: shared evaluation/claim, caller-owned outer transaction, tenant-first synchronization, lifecycle-owned group expiry, batch inputs/cache ownership, and preservation of existing reservations on date closure. Dependency order: BQ-023 → BQ-067 → BQ-012 → BQ-069.
+- Next candidates: Management link (→ BQ-001, BQ-053), Provider outcome intake (→ BQ-003, BQ-032). Booking checkout (#5) and Pending-payment lifetime (#6) follow the accepted payment and slot contracts.
+- G2 remains pending until the Phase 2 package is decided; no Phase 4 implementation starts from these ADR records alone.
 
 ## Evidence
 

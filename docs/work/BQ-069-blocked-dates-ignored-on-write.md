@@ -2,18 +2,20 @@
 id: BQ-069
 title: Blocked dates are not enforced when creating or rescheduling a booking
 type: bug-fix
-status: proposed
+status: approved
 priority: P0
 phase: 4
 domain: schedule
 requirements: [FR-SCHEDULE-005, FR-BOOKING-017]
 invariants: [INV-SCH-01]
 launch-blocker: true
-needs-lead-approval: true
+needs-lead-approval: false
 depends-on: [BQ-012]
 ---
 
 # BQ-069: Blocked dates are not enforced when creating or rescheduling a booking
+
+Closure policy and plan approved by agathan in [ADR-0005](../adr/ADR-0005-slot-bookability-module.md), 2026-10-30. Implementation/acceptance remains Phase 4 after BQ-012 and the roadmap gates; the current defect is still open.
 
 ## Problem
 
@@ -21,7 +23,11 @@ Blocking a date only inserts an `owner_blocked_dates` row (`UpdateScheduleAvaila
 
 ## Plan
 
-Resolve through the single availability authority (BQ-012, review candidate #2 "Slot bookability module"): the locked claim refuses blocked dates for every purpose (new booking, reschedule, walk-in). Until then, a minimal guard in both actions with regression tests is acceptable if launch comes first.
+1. Use BQ-012's ADR-0005 module for blocked-date evaluation at the locked write boundary for new bookings, owner/customer reschedule and walk-ins; remove reliance on selection-page checks for protection.
+2. Verify block and unblock participate in the shared tenant-first transaction protocol and invalidate all affected availability cache variants after commit.
+3. Preserve existing committed pending/paid reservations on date closure according to ADR-0005; do not introduce automatic cancellation or refund.
+4. Add regression coverage for direct requests and stale pages, blocked-date refusals without business mutations, existing-reservation preservation, and listing/cache agreement. Reuse BQ-012's module tests and add the distinct HTTP cases rather than duplicate the rule matrix.
+5. Prove claim-versus-closure ordering on MySQL, run affected and full tests, then record evidence and update the schedule domain's current-state description. This item closes only after the defect and acceptance cases are verified.
 
 ## Evidence
 
