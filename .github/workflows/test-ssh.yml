@@ -20,3 +20,7 @@ jobs:
             whoami
             hostname
             pwd
+            echo "--- Deploy prerequisites (BQ-018) ---"
+            php --version | head -n 1
+            command -v mysqldump && mysqldump --version || echo "MISSING: mysqldump (the gated deploy will refuse to migrate)"
+            command -v gzip zcat
