@@ -18,11 +18,45 @@ class PaymentRules
     }
 
     /**
+     * The provider that owns a payment: the only ownership rule (ADR-0007 decision 2).
+     * Legacy rows without `provider` are inferred from `metode`; the migration
+     * 2026_10_31_000001 backfills them.
+     *
+     * @return string `singapay`, `midtrans` or `manual` (free, cash, walk-in)
+     */
+    public static function providerOf(Payment $payment): string
+    {
+        $provider = strtolower(trim((string) $payment->provider));
+
+        if ($provider !== '') {
+            return $provider;
+        }
+
+        return match (strtolower(trim((string) $payment->metode))) {
+            PaymentState::METODE_SINGAPAY => PaymentState::METODE_SINGAPAY,
+            PaymentState::METODE_GRATIS, PaymentState::METODE_CASH => 'manual',
+            default => PaymentState::METODE_MIDTRANS,
+        };
+    }
+
+    /**
+     * Whether a reported amount equals the stored amount to the rupiah.
+     */
+    public static function amountMatches(Payment $payment, string $reportedAmount): bool
+    {
+        if (! is_numeric($reportedAmount)) {
+            return false;
+        }
+
+        return (int) round((float) $reportedAmount * 100) === (int) round((float) $payment->jumlah * 100);
+    }
+
+    /**
      * Check if a payment is still in a state where it can be processed.
      */
     public static function canProcess(Payment $payment): bool
     {
-        return $payment->status === PaymentState::STATUS_PENDING && !self::isExpired($payment);
+        return $payment->status === PaymentState::STATUS_PENDING && ! self::isExpired($payment);
     }
 
     /**
@@ -35,7 +69,7 @@ class PaymentRules
         string $serverKey,
         string $signatureKey
     ): bool {
-        $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+        $expectedSignature = hash('sha512', $orderId.$statusCode.$grossAmount.$serverKey);
 
         return hash_equals($expectedSignature, $signatureKey);
     }
@@ -59,9 +93,9 @@ class PaymentRules
         $total = max(0, $planPrice + $platformFee);
 
         return [
-            'plan_price'   => $planPrice,
+            'plan_price' => $planPrice,
             'platform_fee' => $platformFee,
-            'total'        => $total,
+            'total' => $total,
         ];
     }
 }

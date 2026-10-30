@@ -33,4 +33,8 @@ Plan approved via ADR-0004/ADR-0006 and [ADR-0007](../adr/ADR-0007-provider-outc
 
 ## Evidence
 
-_Fill in when done._
+Partial, BQ-032 (2026-10-30): the gateway cancel part is built.
+- After the Payment lifecycle commits a payer cancel, expiry or owner settlement it calls `PaymentGatewayInterface::cancel()`: Midtrans expires the Snap transaction; SingaPay has no cancel call and does nothing.
+- A failure is logged and does not reverse the local decision (`PaymentOutcomeIntakeTest::test_payer_cancel_cancels_the_gateway_checkout_after_commit`, `test_failing_gateway_cancel_does_not_reverse_the_local_decision`).
+
+Still open: the cancellation endpoint must require the BQ-001 pending-payment cancellation grant.

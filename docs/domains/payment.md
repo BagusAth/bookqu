@@ -6,11 +6,11 @@ Owns money movement for booking and subscription payments through the unified ga
 
 | Kind | Where |
 |---|---|
-| SingaPay webhook | `POST /api/webhooks/singapay/transaction` (`singapay.webhook.transaction`) → `Webhook/SingaPayWebhookController` → `Actions/Payment/ProcessSingaPayWebhook` |
-| Midtrans webhook | `POST /midtrans/webhook` (`midtrans.webhook`) → `Webhook/MidtransWebhookController` → `Actions/Payment/ProcessPaymentWebhook` |
-| Customer status poll / callback | `Customer/BookingController::checkPaymentStatus`, `handleCallback` → `MidtransPaymentService::verifyAndSync` → `CheckPaymentStatus` |
-| Owner subscription status | `Owner/OwnerCheckoutController::checkPaymentStatus`, `handleCallback` |
-| Expiry | `bookings:expire-payments` every 15 min (`Console/Commands/ExpireBookingPayments`) → `PaymentLifecycle` (`Expired`); also on page view when `expired_at` has passed |
+| SingaPay webhook | `POST /api/webhooks/singapay/transaction` (`singapay.webhook.transaction`) → `Webhook/SingaPayWebhookController` → `Actions/Payment/ProcessSingaPayWebhook` (timestamp + HMAC) → `PaymentOutcomeIntake::receive` |
+| Midtrans webhook | `POST /midtrans/webhook` (`midtrans.webhook`) → `Webhook/MidtransWebhookController` → `Actions/Payment/ProcessPaymentWebhook` (SHA-512 signature with the payment's key) → `PaymentOutcomeIntake::receive` |
+| Customer status poll / callback | `Customer/BookingController::checkPaymentStatus`, `handleCallback` → `PaymentOutcomeIntake::check` |
+| Owner subscription status | `Owner/OwnerCheckoutController::checkPaymentStatus`, `handleCallback` → `PaymentOutcomeIntake::check`; the browser's payload is ignored (BQ-070) |
+| Expiry | `bookings:expire-payments` every 15 min (`Console/Commands/ExpireBookingPayments`) → `PaymentOutcomeIntake::check` (provider first, then `Expired`); also on page view when `expired_at` has passed |
 
 CSRF is disabled only for the webhook paths (`bootstrap/app.php`).
 
@@ -23,17 +23,38 @@ CSRF is disabled only for the webhook paths (`bootstrap/app.php`).
 - `refundCancelledBooking(booking)` — at most one refund per payment, only when the payment succeeded.
 - Consequences go through an internal seam: `Lifecycle/BookingGroupConsequences` (whole group paid or cancelled, tokens, usage log, owner notification + invoice for provider success, cache) and `Lifecycle/SubscriptionConsequences` (activate the plan).
 - A provider success for a payment already `gagal`, or for a group with a cancelled booking, records one refund owed, keeps the bookings cancelled, notifies the owner (`PaymentRefundOwedOwnerNotification`) and logs `critical`.
-- Payer cancel, expiry and owner settlement request gateway cancellation after commit; providers do not implement it yet, so it is a logged no-op (BQ-002).
+- Payer cancel, expiry and owner settlement request gateway cancellation after commit (`PaymentGatewayInterface::cancel`). Midtrans expires the Snap transaction; SingaPay has no cancel call and does nothing. A failure is logged and never reverses the local decision.
 
-Callers: `CreateBookingPayment` (free / pending payment + gateway initialization), `CreateSubscriptionPayment`, `CheckPaymentStatus`, `SynchronizePaymentStatus` (maps a provider status to a lifecycle request), `ProcessSingaPayWebhook`, `ProcessPaymentWebhook`, `UpdateBookingStatus` (owner settlement), `CancelBooking` (refund), `EvictStalePendingBookings` (expiry).
+Callers: `PaymentOutcomeIntake` (provider outcomes), `CreateBookingPayment` (free / pending payment + gateway initialization), `CreateSubscriptionPayment`, `UpdateBookingStatus` (owner settlement), `CancelBooking` (refund), `EvictStalePendingBookings` and the payment pages (expiry, payer cancel).
+
+**Outcome intake** (`Actions/Payment/PaymentOutcomeIntake`, ADR-0007) validates every provider outcome once and hands `sukses`/`gagal` to the lifecycle. It never writes state.
+
+- `receive(ProviderOutcome)` checks, in order:
+  - the payment is found by its references (order id, then provider id);
+  - the reporting provider equals `PaymentRules::providerOf()`, the only ownership rule;
+  - the tenant exists;
+  - a success carries an amount and a currency;
+  - the currency is IDR;
+  - the amount equals the stored amount to the rupiah (`PaymentRules::amountMatches`).
+
+  A rejection logs `critical` and changes nothing. `pending` and `unknown` change nothing.
+- `refresh(payment)` asks the payment's own provider (`queryOutcome`) and applies the answer. Successful and manual payments are not sent to a provider.
+- `check(payment)` runs `refresh`, then expiry if the payment is still pending past `expired_at`.
+- Webhook responses come from `WebhookResponse`; a payment of another provider answers like a missing one.
 
 ## Infrastructure boundary
 
-`App\Contracts\Payments\PaymentGatewayInterface` (`createBookingPayment`, `createSubscriptionPayment`, `checkTransactionStatus`) implemented by `Infrastructure/Payments/SingaPay/SingaPayPaymentGateway` (+ `SingaPayClient`, `SingaPayWebhookVerifier`: HMAC signature over the sorted payload + `X-TIMESTAMP` tolerance `SINGAPAY_WEBHOOK_TOLERANCE_SECONDS`) and `Infrastructure/Payments/Midtrans/MidtransPaymentGateway` (Snap, SHA-512 signature, gross-amount check). `PaymentGatewayManager::driver()` picks `config('payment.default')` (`PAYMENT_GATEWAY_DRIVER`); `forPayment()` picks the payment's own `provider`.
+`App\Contracts\Payments\PaymentGatewayInterface` (`createBookingPayment`, `createSubscriptionPayment`, `queryOutcome` → `ProviderOutcome`, `cancel`) implemented by `Infrastructure/Payments/SingaPay/SingaPayPaymentGateway` (+ `SingaPayClient`, `SingaPayWebhookVerifier`: HMAC signature over the sorted payload + `X-TIMESTAMP` tolerance `SINGAPAY_WEBHOOK_TOLERANCE_SECONDS`) and `Infrastructure/Payments/Midtrans/MidtransPaymentGateway` (Snap, SHA-512 signature, status API, `expire` for cancel).
+
+- Each adapter translates its notifications with `outcomeFromNotification()`, so provider status words stay in the adapters.
+- SingaPay's client has no status endpoint. Its `queryOutcome` answers `unknown`, so SingaPay payments rely on webhooks plus the late-success path.
+- All provider settings live in `config/payment.php`; `config/midtrans.php` was removed.
+
+`PaymentGatewayManager::driver()` picks `config('payment.default')` (`PAYMENT_GATEWAY_DRIVER`); `forPayment()` picks the payment's own `provider`.
 
 ## Rules
 
-`App\Domain\Payment\PaymentState` (states, transitions, provider status mapping) · `App\Domain\Payment\PaymentRules` (expiry, Midtrans signature, order id, subscription price).
+`App\Domain\Payment\PaymentState` (states, transitions, provider status mapping) · `App\Domain\Payment\PaymentRules` (provider ownership, exact amount, expiry, Midtrans signature, order id, subscription price) · `App\Domain\Payment\ProviderOutcome`.
 
 ## Data
 
@@ -54,18 +75,17 @@ Callers: `CreateBookingPayment` (free / pending payment + gateway initialization
 
 ## Status
 
-Functional: Implemented · Verification: Verified (partial) · Architecture: Partially aligned (lifecycle module done; outcome intake BQ-032 pending)
+Functional: Implemented · Verification: Verified (partial) · Architecture: Partially aligned (lifecycle module and outcome intake done; one payment deadline BQ-071 pending)
 
 ## Known gaps
 
 | Gap | Item |
 |---|---|
-| Owner checkout callback would trust the browser's result (dead only by a `= null` default) | BQ-070 |
-| SingaPay `checkTransactionStatus` reads the local DB only; the expiry command verifies Midtrans only | BQ-003 |
-| Cancelling or expiring a payment does not cancel it at the gateway (the lifecycle requests it; providers log a no-op) | BQ-002, BQ-049 |
+| SingaPay cannot be asked for a payment's status: the client has no status endpoint and the vendor API is not confirmed. A missed SingaPay webhook is only recovered when SingaPay retries it | BQ-074 |
+| `payments.provider` is backfilled but still nullable | BQ-074 |
+| SingaPay payment links are not cancelled at the gateway (no cancel call in the client) | BQ-002, BQ-049 |
 | An owner cancelling a pending booking leaves its payment `pending` with an open link; a later payment becomes a refund owed | BQ-002 |
-| `MidtransPaymentService` is used for every provider (now a thin facade over `CheckPaymentStatus`, `SynchronizePaymentStatus` and the lifecycle); `BookingController` configures the Midtrans SDK; `config/midtrans.php` duplicates `config/payment.php` | BQ-032 |
 | Webhook mail sent synchronously | BQ-013, BQ-050 |
 | Production credentials and webhook URLs not yet verified | BQ-022 |
 
-Target decisions: [ADR-0004](../adr/ADR-0004-payment-lifecycle-module.md) (one lifecycle module, implemented by BQ-067), [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (provider outcomes through one intake, BQ-032; late success BQ-003; owner callback BQ-070; gateway cancel BQ-002/BQ-049) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (one payment deadline, provider-first sweep for booking and subscription payments, BQ-071). ADR-0004 is implemented; ADR-0007 and ADR-0009 are not yet, and the gaps above describe the current code.
+Target decisions: [ADR-0004](../adr/ADR-0004-payment-lifecycle-module.md) (one lifecycle module, implemented by BQ-067), [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (provider outcomes through one intake, BQ-032; late success BQ-003; owner callback BQ-070; gateway cancel BQ-002/BQ-049) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (one payment deadline, provider-first sweep for booking and subscription payments, BQ-071). ADR-0004 and ADR-0007 are implemented (BQ-067, BQ-032). ADR-0009 is not implemented yet; the gaps above describe the current code.

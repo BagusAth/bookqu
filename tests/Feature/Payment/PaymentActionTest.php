@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payment;
 
-use App\Actions\Payment\CheckPaymentStatus;
+use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Actions\Payment\ProcessPaymentWebhook;
-use App\Actions\Payment\SynchronizePaymentStatus;
 use App\Domain\Payment\PaymentState;
+use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -87,14 +87,14 @@ class PaymentActionTest extends TestCase
             'status' => 'pending',
         ]);
 
-        /** @var SynchronizePaymentStatus $syncAction */
-        $syncAction = app(SynchronizePaymentStatus::class);
-        $result = $syncAction->syncStatus($payment, [
+        $result = app(PaymentOutcomeIntake::class)->receive(app(MidtransPaymentGateway::class)->outcomeFromNotification([
+            'order_id' => $payment->order_id,
             'transaction_status' => 'settlement',
             'payment_type' => 'bank_transfer',
-        ]);
+            'gross_amount' => (string) $payment->jumlah,
+        ]));
 
-        $this->assertEquals(PaymentState::STATUS_SUKSES, $result['status']);
+        $this->assertEquals(PaymentState::STATUS_SUKSES, $result->status());
         $this->assertEquals(PaymentState::STATUS_SUKSES, $payment->fresh()->status);
         $this->assertEquals('paid', $booking->fresh()->status);
         $this->assertEquals('bank_transfer', $payment->fresh()->metode);
@@ -123,14 +123,14 @@ class PaymentActionTest extends TestCase
             'hp_pembayar' => '08123456789',
         ]);
 
-        /** @var SynchronizePaymentStatus $syncAction */
-        $syncAction = app(SynchronizePaymentStatus::class);
-        $result = $syncAction->syncStatus($payment, [
+        $result = app(PaymentOutcomeIntake::class)->receive(app(MidtransPaymentGateway::class)->outcomeFromNotification([
+            'order_id' => $payment->order_id,
             'transaction_status' => 'settlement',
             'payment_type' => 'gopay',
-        ]);
+            'gross_amount' => (string) $payment->jumlah,
+        ]));
 
-        $this->assertEquals(PaymentState::STATUS_SUKSES, $result['status']);
+        $this->assertEquals(PaymentState::STATUS_SUKSES, $result->status());
         $this->assertEquals(PaymentState::STATUS_SUKSES, $payment->fresh()->status);
 
         $subscription = Subscription::where('idtenant', $this->tenant->id)
@@ -141,7 +141,7 @@ class PaymentActionTest extends TestCase
         $this->assertNotNull($subscription);
     }
 
-    public function test_check_payment_status_fast_path(): void
+    public function test_status_refresh_does_not_ask_the_provider_about_a_successful_payment(): void
     {
         $payment = Payment::create([
             'idtenant' => $this->tenant->id,
@@ -155,12 +155,12 @@ class PaymentActionTest extends TestCase
             'hp_pembayar' => '08123456789',
         ]);
 
-        /** @var CheckPaymentStatus $checkAction */
-        $checkAction = app(CheckPaymentStatus::class);
-        $result = $checkAction->execute($payment);
+        // A successful payment cannot change any more, so the provider is not asked
+        $this->mock(MidtransPaymentGateway::class, fn ($mock) => $mock->shouldNotReceive('queryOutcome'));
 
-        $this->assertEquals(PaymentState::STATUS_SUKSES, $result['status']);
-        $this->assertEquals('settlement', $result['transaction_status']);
+        $result = app(PaymentOutcomeIntake::class)->refresh($payment);
+
+        $this->assertEquals(PaymentState::STATUS_SUKSES, $result->status());
     }
 
     public function test_midtrans_webhook_cannot_resolve_singapay_payment(): void

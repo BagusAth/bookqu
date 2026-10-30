@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Actions\Payment\PaymentLifecycle;
+use App\Domain\Payment\PaymentTransition;
+use App\Domain\Payment\ProviderOutcome;
+use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
@@ -9,7 +13,6 @@ use App\Models\Service;
 use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Services\MidtransPaymentService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -447,10 +450,7 @@ class ProductionLogicSpecificationTest extends TestCase
             'jam' => '11:00',
             'status' => 'pending',
         ]);
-
-        /** @var MidtransPaymentService $midtransService */
-        $midtransService = app(MidtransPaymentService::class);
-        $midtransService->processSuccess($payment);
+        app(PaymentLifecycle::class)->transition($payment, PaymentTransition::ProviderSucceeded);
 
         $payment->refresh();
         $this->assertEquals('sukses', $payment->status);
@@ -505,10 +505,7 @@ class ProductionLogicSpecificationTest extends TestCase
             'jam' => '11:00',
             'status' => 'pending',
         ]);
-
-        /** @var MidtransPaymentService $midtransService */
-        $midtransService = app(MidtransPaymentService::class);
-        $midtransService->processFailed($payment);
+        app(PaymentLifecycle::class)->transition($payment, PaymentTransition::ProviderFailed);
 
         $payment->refresh();
         $this->assertEquals('gagal', $payment->status);
@@ -807,10 +804,7 @@ class ProductionLogicSpecificationTest extends TestCase
             'jam' => '10:00',
             'status' => 'cancelled',
         ]);
-
-        /** @var MidtransPaymentService $midtransService */
-        $midtransService = app(MidtransPaymentService::class);
-        $midtransService->processSuccess($payment);
+        app(PaymentLifecycle::class)->transition($payment, PaymentTransition::ProviderSucceeded);
 
         $payment->refresh();
         $booking->refresh();
@@ -849,10 +843,10 @@ class ProductionLogicSpecificationTest extends TestCase
             'status' => 'pending',
         ]);
 
-        // Mock MidtransPaymentService where verifyAndSync throws an error or returns pending
-        $mockService = \Mockery::mock(MidtransPaymentService::class);
-        $mockService->shouldReceive('verifyAndSync')->andThrow(new \Exception('Midtrans verification failed'));
-        $this->app->instance(MidtransPaymentService::class, $mockService);
+        // The provider cannot be reached: the status query answers "unknown"
+        $this->mock(MidtransPaymentGateway::class, function ($mock) use ($payment) {
+            $mock->shouldReceive('queryOutcome')->andReturn(ProviderOutcome::unknown('midtrans', (string) $payment->order_id));
+        });
 
         // Client attempts to spoof settlement status in POST body
         $response = $this->postJson('/studio-foto-logic/booking/payment/'.$payment->order_id.'/callback', [

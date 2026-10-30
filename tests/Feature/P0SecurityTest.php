@@ -2,15 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\Tenant;
-use App\Models\User;
-use App\Models\Service;
-use App\Models\Schedule;
+use App\Actions\Payment\PaymentOutcomeIntake;
+use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Models\Service;
+use App\Models\Tenant;
+use App\Models\User;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class P0SecurityTest extends TestCase
@@ -38,7 +38,7 @@ class P0SecurityTest extends TestCase
 
         app(TenantContext::class)->clear();
         $this->assertEquals(0, Service::count(), 'TenantScope should return 0 records when TenantContext is empty');
-        
+
         app(TenantContext::class)->setTenantId($tenant->id);
         $this->assertEquals(3, Service::count());
     }
@@ -85,7 +85,7 @@ class P0SecurityTest extends TestCase
             'idtenant' => $tenant->id,
             'booking_code' => 'BKQ-123456',
             'cancellation_token' => 'secure-token-123',
-            'status' => 'paid'
+            'status' => 'paid',
         ]);
 
         // Accessing without token
@@ -107,13 +107,14 @@ class P0SecurityTest extends TestCase
         $payment = Payment::factory()->create(['idtenant' => $tenant->id, 'status' => 'pending']);
         $booking = Booking::factory()->create(['idtenant' => $tenant->id, 'idpayment' => $payment->id, 'status' => 'cancelled']);
 
-        $service = new \App\Services\MidtransPaymentService();
         $payload = [
             'transaction_status' => 'settlement',
             'fraud_status' => 'accept',
             'payment_type' => 'bank_transfer',
+            'order_id' => $payment->order_id,
+            'gross_amount' => (string) $payment->jumlah,
         ];
-        $service->syncStatus($payment, $payload);
+        $this->receiveMidtransNotification($payload);
 
         $booking->refresh();
         $payment->refresh();
@@ -127,19 +128,29 @@ class P0SecurityTest extends TestCase
         $payment = Payment::factory()->create(['idtenant' => $tenant->id, 'status' => 'pending']);
         $booking = Booking::factory()->create(['idtenant' => $tenant->id, 'idpayment' => $payment->id, 'status' => 'pending']);
 
-        $service = new \App\Services\MidtransPaymentService();
         $payload = [
             'transaction_status' => 'settlement',
             'fraud_status' => 'accept',
             'payment_type' => 'bank_transfer',
+            'order_id' => $payment->order_id,
+            'gross_amount' => (string) $payment->jumlah,
         ];
-        
+
         // First webhook
-        $service->syncStatus($payment, $payload);
+        $this->receiveMidtransNotification($payload);
         $this->assertEquals('paid', $booking->fresh()->status);
 
         // Second webhook (Duplicate)
-        $service->syncStatus($payment, $payload);
+        $this->receiveMidtransNotification($payload);
         $this->assertEquals('paid', $booking->fresh()->status);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function receiveMidtransNotification(array $payload): void
+    {
+        app(PaymentOutcomeIntake::class)
+            ->receive(app(MidtransPaymentGateway::class)->outcomeFromNotification($payload));
     }
 }

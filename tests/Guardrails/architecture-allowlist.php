@@ -8,9 +8,7 @@
 
 return [
     // Removed by BQ-032 (Provider outcome intake).
-    'provider-sdk' => [
-        'app/Http/Controllers/Customer/BookingController.php' => 1,
-    ],
+    'provider-sdk' => [],
     // Removed by BQ-035.
     'blade-queries' => [
         'resources/views/components/landing/pricing.blade.php' => 3,
@@ -40,7 +38,6 @@ return [
         'app/Actions/Booking/CancelBooking.php' => 1,
         'app/Actions/Booking/EvictStalePendingBookings.php' => 2,
         'app/Actions/Payment/ProcessPaymentWebhook.php' => 1,
-        'app/Actions/Payment/ProcessSingaPayWebhook.php' => 1,
         'app/Actions/Schedule/BulkCreateSchedules.php' => 2,
         'app/Actions/Schedule/DeleteBlockedDate.php' => 1,
         'app/Actions/Schedule/DeleteSchedule.php' => 1,
@@ -67,10 +64,7 @@ return [
     ],
     // Real writes moved to the Payment lifecycle in BQ-067; the rest are status values in responses, removed by BQ-032 (Outcome intake).
     'payment-status-writers' => [
-        'app/Actions/Payment/CheckPaymentStatus.php' => 1,
-        'app/Http/Controllers/Customer/BookingController.php' => 8,
-        'app/Http/Controllers/Owner/OwnerCheckoutController.php' => 7,
-        'app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php' => 1,
-        'app/Infrastructure/Payments/SingaPay/SingaPayPaymentGateway.php' => 2,
+        'app/Http/Controllers/Customer/BookingController.php' => 2,
+        'app/Http/Controllers/Owner/OwnerCheckoutController.php' => 2,
     ],
 ];

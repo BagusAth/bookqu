@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Payment;
 
-use App\Domain\Payment\PaymentState;
+use App\Domain\Payment\ProviderOutcome;
 use App\Infrastructure\Payments\SingaPay\SingaPayPaymentGateway;
-use App\Models\Payment;
-use App\Models\Scopes\TenantScope;
-use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -16,7 +13,7 @@ class ProcessSingaPayWebhook
 {
     public function __construct(
         protected SingaPayPaymentGateway $gateway,
-        protected SynchronizePaymentStatus $syncAction
+        protected PaymentOutcomeIntake $intake
     ) {}
 
     /**
@@ -68,59 +65,19 @@ class ProcessSingaPayWebhook
             ];
         }
 
-        // 4. Resolve Payment using data.transaction.reff_no as primary identifier
-        $payment = $this->resolvePayment($payload);
+        // 4. Translate and hand over: the intake validates payment, provider, tenant,
+        // amount and currency once and the Payment lifecycle applies the result.
+        $outcome = $this->gateway->outcomeFromNotification($payload);
+        $intake = $this->intake->receive($outcome);
 
-        if (! $payment) {
-            Log::warning('ProcessSingaPayWebhook: Payment not found for webhook notification', [
-                'reff_no' => $this->extractReffNo($payload),
-                'event' => $payload['event'] ?? 'unknown',
-            ]);
-
-            return [
-                'success' => false,
-                'code' => 404,
-                'message' => 'Payment not found',
-            ];
+        if (! $intake->accepted) {
+            return WebhookResponse::forRejection($intake->rejection);
         }
 
-        Log::info('ProcessSingaPayWebhook: Processing verified webhook', [
-            'payment_id' => $payment->id,
-            'order_id' => $payment->order_id,
-            'event' => $payload['event'] ?? 'unknown',
-        ]);
-
-        // 5. Validate Tenant Isolation
-        if (! $payment->idtenant || ! $payment->tenant) {
-            Log::warning('ProcessSingaPayWebhook: Payment tenant missing or invalid', [
-                'payment_id' => $payment->id,
-                'idtenant' => $payment->idtenant,
-            ]);
-
-            return [
-                'success' => false,
-                'code' => 422,
-                'message' => 'Tenant isolation violation',
-            ];
-        }
-
-        // 6. Validate transaction-specific status before any state mutation.
-        // The root-level "status" can be an envelope status (e.g. HTTP 200); never
-        // infer that a missing transaction status means payment success.
-        $statusValue = $payload['data']['transaction']['status']
-            ?? $payload['data']['status']
-            ?? null;
-        $rawStatus = is_string($statusValue) || is_numeric($statusValue)
-            ? trim((string) $statusValue)
-            : '';
-        $domainStatus = PaymentState::mapSingaPayStatus($rawStatus);
-
-        if ($domainStatus === 'unknown') {
+        if ($outcome->result === ProviderOutcome::RESULT_UNKNOWN) {
             Log::warning('ProcessSingaPayWebhook: Missing or unknown transaction status', [
-                'payment_id' => $payment->id,
-                'order_id' => $payment->order_id,
+                'payment_id' => $intake->payment?->id,
                 'event' => $payload['event'] ?? 'unknown',
-                'raw_status' => $rawStatus !== '' ? $rawStatus : null,
             ]);
 
             return [
@@ -130,235 +87,6 @@ class ProcessSingaPayWebhook
             ];
         }
 
-        // 7. Validate transaction amount and currency. Both are mandatory before
-        // a callback may mark a payment successful.
-        $incomingAmount = $this->extractAmount($payload);
-        $incomingCurrency = $this->extractCurrency($payload);
-
-        if (
-            $domainStatus === PaymentState::STATUS_SUKSES
-            && ($incomingAmount === null || $incomingCurrency === null)
-        ) {
-            Log::warning('ProcessSingaPayWebhook: Successful transaction missing amount or currency', [
-                'payment_id' => $payment->id,
-                'order_id' => $payment->order_id,
-            ]);
-
-            return [
-                'success' => false,
-                'code' => 422,
-                'message' => 'Successful transaction is missing amount or currency',
-            ];
-        }
-
-        if ($incomingCurrency !== null && strtoupper((string) $incomingCurrency) !== 'IDR') {
-            Log::warning('ProcessSingaPayWebhook: Currency mismatch', [
-                'order_id' => $payment->order_id,
-                'currency' => $incomingCurrency,
-            ]);
-
-            return [
-                'success' => false,
-                'code' => 422,
-                'message' => 'Transaction currency mismatch',
-            ];
-        }
-
-        if ($incomingAmount !== null) {
-            $expectedAmount = (float) $payment->jumlah;
-
-            if (abs($incomingAmount - $expectedAmount) > 0.01) {
-                Log::warning('ProcessSingaPayWebhook: Amount mismatch', [
-                    'order_id' => $payment->order_id,
-                    'expected' => $expectedAmount,
-                    'received' => $incomingAmount,
-                ]);
-
-                return [
-                    'success' => false,
-                    'code' => 422,
-                    'message' => 'Transaction amount mismatch',
-                ];
-            }
-        }
-
-        // 8. Idempotency Check
-        if ($payment->status === PaymentState::STATUS_SUKSES) {
-            Log::info('ProcessSingaPayWebhook: Duplicate webhook received for already successful payment', [
-                'payment_id' => $payment->id,
-                'order_id' => $payment->order_id,
-            ]);
-
-            return [
-                'success' => true,
-                'code' => 200,
-                'message' => 'Payment already processed successfully',
-            ];
-        }
-
-        // A success for a payment that already failed is a late success: the lifecycle
-        // module records the refund owed and alerts the owner (ADR-0004 decision 5).
-        if ($payment->status === PaymentState::STATUS_GAGAL && $domainStatus !== PaymentState::STATUS_SUKSES) {
-            Log::info('ProcessSingaPayWebhook: Webhook received for already failed/cancelled payment', [
-                'payment_id' => $payment->id,
-                'order_id' => $payment->order_id,
-            ]);
-
-            return [
-                'success' => true,
-                'code' => 200,
-                'message' => 'Payment already failed or cancelled',
-            ];
-        }
-
-        // 9. Synchronize Payment Status
-        app(TenantContext::class)->setTenantId($payment->idtenant);
-
-        try {
-            if ($domainStatus === PaymentState::STATUS_SUKSES) {
-                $this->syncAction->processSuccess($payment, PaymentState::METODE_SINGAPAY, $rawStatus);
-            } elseif ($domainStatus === PaymentState::STATUS_GAGAL) {
-                $this->syncAction->processFailed($payment, PaymentState::METODE_SINGAPAY, $rawStatus);
-            } elseif ($domainStatus === PaymentState::STATUS_PENDING) {
-                $this->syncAction->processPending($payment, PaymentState::METODE_SINGAPAY, $rawStatus);
-            } else {
-                // Defensive fallback: status was validated above, so this should be
-                // unreachable unless PaymentState mappings change in the future.
-                Log::error('ProcessSingaPayWebhook: Unhandled mapped transaction status', [
-                    'payment_id' => $payment->id,
-                    'order_id' => $payment->order_id,
-                    'raw_status' => $rawStatus,
-                ]);
-
-                return [
-                    'success' => false,
-                    'code' => 422,
-                    'message' => 'Unsupported SingaPay transaction status',
-                ];
-            }
-        } finally {
-            app(TenantContext::class)->clear();
-        }
-
-        return [
-            'success' => true,
-            'code' => 200,
-            'message' => 'OK',
-        ];
-    }
-
-    /**
-     * Resolve only payments owned by SingaPay, with a narrow backward-compatible
-     * fallback for legacy rows that have a null provider but explicitly use SingaPay.
-     */
-    protected function findSingaPayPayment(string $column, string $reference): ?Payment
-    {
-        return Payment::withoutGlobalScope(TenantScope::class)
-            ->where($column, $reference)
-            ->where(function ($query) {
-                $query->where('provider', 'singapay')
-                    ->orWhere(function ($legacyQuery) {
-                        $legacyQuery->whereNull('provider')
-                            ->where('metode', PaymentState::METODE_SINGAPAY);
-                    });
-            })
-            ->first();
-    }
-
-    /**
-     * Resolve Payment using data.transaction.reff_no as primary identifier,
-     * with fallback to payment-link webhook structures.
-     *
-     * @param  array<string, mixed>  $payload
-     */
-    protected function resolvePayment(array $payload): ?Payment
-    {
-        // 1. Primary identifier per specification: data.transaction.reff_no
-        $primaryReff = $payload['data']['transaction']['reff_no'] ?? null;
-        if (! empty($primaryReff)) {
-            $payment = $this->findSingaPayPayment('order_id', (string) $primaryReff);
-
-            if ($payment) {
-                return $payment;
-            }
-
-            $payment = $this->findSingaPayPayment('external_id', (string) $primaryReff);
-
-            if ($payment) {
-                return $payment;
-            }
-        }
-
-        // 2. Secondary candidate references from payment-link structures
-        $secondaryCandidates = array_filter(array_unique([
-            $payload['data']['payment']['additional_info']['payment_link']['reff_no'] ?? null,
-            $payload['data']['reff_no'] ?? null,
-            $payload['data']['payment_link']['reff_no'] ?? null,
-            $payload['order_id'] ?? null,
-            (string) ($payload['data']['payment']['additional_info']['payment_link']['id'] ?? ''),
-            (string) ($payload['data']['id'] ?? ''),
-        ]));
-
-        foreach ($secondaryCandidates as $ref) {
-            $payment = $this->findSingaPayPayment('order_id', (string) $ref);
-
-            if ($payment) {
-                return $payment;
-            }
-
-            $payment = $this->findSingaPayPayment('external_id', (string) $ref);
-
-            if ($payment) {
-                return $payment;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Extract reference number from SingaPay payload structures for logging.
-     *
-     * @param  array<string, mixed>  $payload
-     */
-    protected function extractReffNo(array $payload): ?string
-    {
-        $reff = $payload['data']['transaction']['reff_no']
-            ?? $payload['data']['payment']['additional_info']['payment_link']['reff_no']
-            ?? $payload['data']['reff_no']
-            ?? $payload['order_id']
-            ?? null;
-
-        return $reff ? (string) $reff : null;
-    }
-
-    /**
-     * Extract numeric amount from SingaPay payload structures.
-     *
-     * @param  array<string, mixed>  $payload
-     */
-    protected function extractAmount(array $payload): ?float
-    {
-        $val = $payload['data']['transaction']['amount']['value']
-            ?? $payload['data']['amount']['value']
-            ?? $payload['data']['payment']['additional_info']['payment_link']['total_amount']
-            ?? $payload['data']['total_amount']
-            ?? null;
-
-        return is_numeric($val) ? (float) $val : null;
-    }
-
-    /**
-     * Extract currency string from SingaPay payload structures.
-     *
-     * @param  array<string, mixed>  $payload
-     */
-    protected function extractCurrency(array $payload): ?string
-    {
-        $curr = $payload['data']['transaction']['amount']['currency']
-            ?? $payload['data']['amount']['currency']
-            ?? null;
-
-        return is_string($curr) && trim($curr) !== '' ? trim($curr) : null;
+        return WebhookResponse::forAccepted($intake);
     }
 }

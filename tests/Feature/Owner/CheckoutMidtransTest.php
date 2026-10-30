@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Domain\Payment\ProviderOutcome;
+use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
+use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Schedule;
+use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\Subscription;
-use App\Services\MidtransPaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -17,7 +20,9 @@ class CheckoutMidtransTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $tenant;
+
     protected $plan;
 
     protected function setUp(): void
@@ -28,7 +33,7 @@ class CheckoutMidtransTest extends TestCase
             'role' => 'owner',
             'email_verified_at' => now(),
         ]);
-        
+
         $this->tenant = Tenant::create([
             'iduser' => $this->user->id,
             'namabisnis' => 'My Midtrans Business',
@@ -45,14 +50,15 @@ class CheckoutMidtransTest extends TestCase
             'maxbooking' => 100,
             'isunlimited' => false,
         ]);
-        
+
         config(['payment.default' => 'midtrans']);
 
         $this->withSession(['current_tenant_id' => $this->tenant->id]);
     }
-    
+
     /**
      * @runInSeparateProcess
+     *
      * @preserveGlobalState disabled
      */
     public function test_owner_can_initiate_checkout_and_generate_snap_token(): void
@@ -67,8 +73,7 @@ class CheckoutMidtransTest extends TestCase
             'hp_pembayar' => '081234567890',
             'catatan' => 'Test payment',
         ]);
-        
-        
+
         $payment = Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->first();
         $this->assertNotNull($payment);
         $this->assertEquals('pending', $payment->status);
@@ -76,7 +81,7 @@ class CheckoutMidtransTest extends TestCase
 
         $response->assertRedirect(route('owner.checkout.payment', $payment));
     }
-    
+
     public function test_owner_can_check_payment_status_success(): void
     {
         $payment = Payment::create([
@@ -89,41 +94,41 @@ class CheckoutMidtransTest extends TestCase
             'order_id' => 'BQ-20260806-0001',
             'expired_at' => now()->addHour(),
         ]);
-        
-        $mockService = $this->mock(MidtransPaymentService::class);
-        $mockService->shouldReceive('verifyAndSync')
-            ->once()
-            ->andReturnUsing(function ($p) use ($payment) {
-                $service = new MidtransPaymentService();
-                return $service->syncStatus($payment, [
-                    'transaction_status' => 'settlement',
-                    'fraud_status' => 'accept',
-                    'payment_type' => 'bank_transfer',
-                ]);
-            });
+
+        $this->mock(MidtransPaymentGateway::class, function ($mock) use ($payment) {
+            $mock->shouldReceive('queryOutcome')->once()->andReturn(new ProviderOutcome(
+                provider: 'midtrans',
+                references: [$payment->order_id],
+                result: 'sukses',
+                amount: '100000.00',
+                currency: 'IDR',
+                method: 'bank_transfer',
+            ));
+        });
 
         $response = $this->actingAs($this->user)->withSession(['current_tenant_id' => $this->tenant->id])->postJson("/owner/checkout/{$payment->order_id}/check-status");
-        
+
         $response->assertStatus(200);
         $response->assertJson([
             'status' => 'sukses',
         ]);
-        
+
         $this->assertDatabaseHas('payments', [
             'id' => $payment->id,
             'status' => 'sukses',
             'metode' => 'bank_transfer',
         ]);
-        
+
         $this->assertDatabaseHas('subscriptions', [
             'idtenant' => $this->tenant->id,
             'idplan' => $this->plan->id,
             'status' => 'active',
         ]);
     }
-    
+
     /**
      * @runInSeparateProcess
+     *
      * @preserveGlobalState disabled
      */
     public function test_midtrans_webhook_updates_payment_status(): void
@@ -138,13 +143,13 @@ class CheckoutMidtransTest extends TestCase
             'order_id' => 'BQ-20260806-0002',
             'expired_at' => now()->addHour(),
         ]);
-        
+
         $serverKey = config('midtrans.server_key');
         $statusCode = '200';
         $grossAmount = '100000.00';
-        
-        $signatureKey = hash('sha512', $payment->order_id . $statusCode . $grossAmount . $serverKey);
-        
+
+        $signatureKey = hash('sha512', $payment->order_id.$statusCode.$grossAmount.$serverKey);
+
         $payload = [
             'order_id' => $payment->order_id,
             'status_code' => $statusCode,
@@ -154,17 +159,17 @@ class CheckoutMidtransTest extends TestCase
             'fraud_status' => 'accept',
             'payment_type' => 'gopay',
         ];
-        
+
         $response = $this->postJson('/midtrans/webhook', $payload);
-        
+
         $response->assertStatus(200);
-        
+
         $this->assertDatabaseHas('payments', [
             'id' => $payment->id,
             'status' => 'sukses',
             'metode' => 'gopay',
         ]);
-        
+
         $this->assertDatabaseHas('subscriptions', [
             'idtenant' => $this->tenant->id,
             'idplan' => $this->plan->id,
@@ -174,18 +179,19 @@ class CheckoutMidtransTest extends TestCase
 
     /**
      * @runInSeparateProcess
+     *
      * @preserveGlobalState disabled
      */
     public function test_midtrans_webhook_updates_booking_status(): void
     {
-        $service = \App\Models\Service::create([
+        $service = Service::create([
             'idtenant' => $this->tenant->id,
             'namalayanan' => 'Test Service',
             'harga' => 50000,
             'durasi' => 60,
         ]);
 
-        $schedule = \App\Models\Schedule::create([
+        $schedule = Schedule::create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $service->id,
             'tanggal' => now()->addDay()->format('Y-m-d'),
@@ -204,7 +210,7 @@ class CheckoutMidtransTest extends TestCase
             'expired_at' => now()->addHour(),
         ]);
 
-        $booking = \App\Models\Booking::create([
+        $booking = Booking::create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $service->id,
             'idschedule' => $schedule->id,
@@ -216,13 +222,13 @@ class CheckoutMidtransTest extends TestCase
             'status' => 'pending',
             'idpayment' => $payment->id,
         ]);
-        
+
         $serverKey = config('midtrans.server_key');
         $statusCode = '200';
         $grossAmount = '50000.00';
-        
-        $signatureKey = hash('sha512', $payment->order_id . $statusCode . $grossAmount . $serverKey);
-        
+
+        $signatureKey = hash('sha512', $payment->order_id.$statusCode.$grossAmount.$serverKey);
+
         $payload = [
             'order_id' => $payment->order_id,
             'status_code' => $statusCode,
@@ -232,17 +238,17 @@ class CheckoutMidtransTest extends TestCase
             'fraud_status' => 'accept',
             'payment_type' => 'qris',
         ];
-        
+
         $response = $this->postJson('/midtrans/webhook', $payload);
-        
+
         $response->assertStatus(200);
-        
+
         $this->assertDatabaseHas('payments', [
             'id' => $payment->id,
             'status' => 'sukses',
             'metode' => 'qris',
         ]);
-        
+
         $this->assertDatabaseHas('bookings', [
             'id' => $booking->id,
             'status' => 'paid',
@@ -272,6 +278,33 @@ class CheckoutMidtransTest extends TestCase
         $response->assertSee('BQ-OWNER-TEST-001');
         $response->assertSee("/owner/checkout/{$payment->order_id}/callback");
         $response->assertSee("/owner/checkout/{$payment->order_id}/check-status");
+    }
+
+    public function test_owner_callback_ignores_the_browser_payload(): void
+    {
+        $payment = Payment::create([
+            'idtenant' => $this->tenant->id,
+            'idplan' => $this->plan->id,
+            'tipe' => 'subscription',
+            'jumlah' => 100000,
+            'status' => 'pending',
+            'metode' => 'midtrans',
+            'provider' => 'midtrans',
+            'order_id' => 'BQ-OWNER-CALLBACK-001',
+            'expired_at' => now()->addHour(),
+        ]);
+        $this->mock(MidtransPaymentGateway::class, function ($mock) use ($payment) {
+            $mock->shouldReceive('queryOutcome')->once()->andReturn(ProviderOutcome::unknown('midtrans', $payment->order_id));
+        });
+
+        $response = $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->postJson("/owner/checkout/{$payment->order_id}/callback", [
+                'result' => ['transaction_status' => 'settlement', 'fraud_status' => 'accept', 'payment_type' => 'gopay'],
+            ]);
+
+        $response->assertOk()->assertJson(['status' => 'pending']);
+        $this->assertSame('pending', $payment->fresh()->status);
     }
 
     public function test_owner_check_payment_status_fast_path_when_already_paid(): void
@@ -325,7 +358,7 @@ class CheckoutMidtransTest extends TestCase
         $grossAmount = '75000.00';
 
         // Sign with CUSTOM server key (not platform key)
-        $signatureKey = hash('sha512', $payment->order_id . $statusCode . $grossAmount . $customServerKey);
+        $signatureKey = hash('sha512', $payment->order_id.$statusCode.$grossAmount.$customServerKey);
 
         $payload = [
             'order_id' => $payment->order_id,
@@ -359,7 +392,7 @@ class CheckoutMidtransTest extends TestCase
         $response->assertSee($this->tenant->namabisnis);
         $response->assertSee($this->tenant->jenisbisnis);
         $response->assertSee($this->tenant->slug);
-        $response->assertSee(url('/' . $this->tenant->slug));
+        $response->assertSee(url('/'.$this->tenant->slug));
         $response->assertSee('Unit Bisnis Penerima Upgrade');
         $response->assertSee('Mitra Terdaftar');
 
@@ -470,6 +503,7 @@ class CheckoutMidtransTest extends TestCase
 
     /**
      * @runInSeparateProcess
+     *
      * @preserveGlobalState disabled
      */
     public function test_owner_can_initiate_checkout_without_catatan(): void
@@ -513,4 +547,3 @@ class CheckoutMidtransTest extends TestCase
         ]);
     }
 }
-

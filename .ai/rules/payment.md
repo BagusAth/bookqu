@@ -6,10 +6,8 @@ paths:
   - app/Contracts/Payments/**
   - app/Http/Controllers/Webhook/**
   - app/Http/Controllers/Owner/OwnerCheckoutController.php
-  - app/Services/MidtransPaymentService.php
   - app/Console/Commands/ExpireBookingPayments.php
   - config/payment.php
-  - config/midtrans.php
 ---
 
 # Payment

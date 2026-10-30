@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\CreateBooking;
+use App\Actions\Payment\OutcomeIntakeResult;
 use App\Actions\Payment\PaymentLifecycle;
+use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Subscription\EntitlementRules;
@@ -15,7 +17,6 @@ use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
-use App\Services\MidtransPaymentService;
 use App\Support\CustomerBookingRoutes;
 use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
@@ -23,29 +24,10 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Midtrans\Config as MidtransConfig;
 
 class BookingController extends Controller
 {
     use ClearsBookingCache;
-
-    public function __construct()
-    {
-        MidtransConfig::$serverKey = config('midtrans.server_key');
-        MidtransConfig::$isProduction = config('midtrans.is_production');
-        MidtransConfig::$isSanitized = config('midtrans.is_sanitized');
-        MidtransConfig::$is3ds = config('midtrans.is_3ds');
-        // P0-17: SSL Hardening
-        $curlOptions = [CURLOPT_HTTPHEADER => []];
-        if (app()->environment('local')) {
-            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 0;
-            $curlOptions[CURLOPT_SSL_VERIFYPEER] = 0;
-        } else {
-            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
-            $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
-        }
-        MidtransConfig::$curlOptions = $curlOptions;
-    }
 
     public function showProgramSelection(?string $slug_usaha = null)
     {
@@ -765,8 +747,8 @@ class BookingController extends Controller
 
         $provider = $payment->provider ?: ($payment->metode === 'singapay' ? 'singapay' : config('payment.default', 'singapay'));
         $isMidtrans = $provider === 'midtrans';
-        $clientKey = $isMidtrans ? (config('payment.drivers.midtrans.client_key') ?? config('midtrans.client_key')) : null;
-        $snapUrl = $isMidtrans ? (config('payment.drivers.midtrans.snap_url') ?? config('midtrans.snap_url')) : null;
+        $clientKey = $isMidtrans ? config('payment.drivers.midtrans.client_key') : null;
+        $snapUrl = $isMidtrans ? config('payment.drivers.midtrans.snap_url') : null;
 
         if ($payment->status === 'gagal') {
             return view('customer.booking.payment', [
@@ -828,114 +810,48 @@ class BookingController extends Controller
             ->with('info', 'Transaksi berhasil dibatalkan. Anda dapat memilih layanan atau jadwal baru.');
     }
 
-    public function checkPaymentStatus(string $slug_usaha, Payment $payment, MidtransPaymentService $paymentService)
+    public function checkPaymentStatus(string $slug_usaha, Payment $payment, PaymentOutcomeIntake $intake)
     {
         $tenant = $this->resolveTenant($slug_usaha);
         if (! $tenant || $payment->idtenant !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Fast-path: jika database sudah sukses
-        if ($payment->status === 'sukses') {
-            return response()->json([
-                'status' => 'sukses',
-                'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
-            ]);
-        }
-
-        // Fast-path: jika payment sudah kedaluwarsa
-        if ($payment->isExpired()) {
-            if ($payment->status === 'pending') {
-                app(PaymentLifecycle::class)->transition($payment, PaymentTransition::Expired);
-                $payment->refresh();
-            }
-
-            return response()->json([
-                'status' => 'gagal',
-                'is_expired' => true,
-                'message' => 'Waktu pembayaran telah habis. Silakan buat reservasi baru.',
-            ]);
-        }
-
-        $syncResult = $paymentService->verifyAndSync($payment);
-
-        if ($syncResult['status'] === 'sukses') {
-            return response()->json([
-                'status' => 'sukses',
-                'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
-            ]);
-        }
-
-        if ($syncResult['status'] === 'gagal') {
-            return response()->json([
-                'status' => 'gagal',
-                'message' => $syncResult['message'] ?? 'Pembayaran gagal atau dibatalkan.',
-            ]);
-        }
-
-        if ($syncResult['status'] === 'error') {
-            // Periksa ulang database untuk mengantisipasi webhook masuk bersamaan
-            $payment->refresh();
-            if ($payment->status === 'sukses') {
-                return response()->json([
-                    'status' => 'sukses',
-                    'message' => 'Pembayaran berhasil dikonfirmasi!',
-                    'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
-                ]);
-            }
-
-            // Kembalikan pending agar auto-poller terus mencoba tanpa menampilkan error palsu ke user
-            return response()->json([
-                'status' => 'pending',
-                'message' => 'Sedang memverifikasi dengan payment gateway...',
-            ]);
-        }
-
-        return response()->json([
-            'status' => 'pending',
-            'message' => $syncResult['message'] ?? 'Menunggu pembayaran diselesaikan...',
-        ]);
+        return $this->paymentStatusResponse($intake->check($payment), $slug_usaha, $payment);
     }
 
-    public function handleCallback(string $slug_usaha, Payment $payment, Request $request, MidtransPaymentService $paymentService)
+    public function handleCallback(string $slug_usaha, Payment $payment, PaymentOutcomeIntake $intake)
     {
         $tenant = $this->resolveTenant($slug_usaha);
         if (! $tenant || $payment->idtenant !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Fast-path jika database sudah sukses
-        if ($payment->status === 'sukses') {
-            return response()->json([
+        return $this->paymentStatusResponse($intake->check($payment), $slug_usaha, $payment);
+    }
+
+    private function paymentStatusResponse(OutcomeIntakeResult $result, string $slug_usaha, Payment $payment)
+    {
+        $current = $result->payment ?? $payment;
+
+        return match ($result->status()) {
+            'sukses' => response()->json([
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil dikonfirmasi!',
                 'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
-            ]);
-        }
-
-        $syncResult = $paymentService->verifyAndSync($payment);
-
-        if ($syncResult['status'] === 'sukses') {
-            return response()->json([
-                'status' => 'sukses',
-                'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => CustomerBookingRoutes::url('customer.booking.invoice', [$slug_usaha, $payment]),
-            ]);
-        }
-
-        if ($syncResult['status'] === 'gagal') {
-            return response()->json([
+            ]),
+            'gagal' => response()->json(array_filter([
                 'status' => 'gagal',
-                'message' => $syncResult['message'] ?? 'Pembayaran gagal atau dibatalkan.',
-            ]);
-        }
-
-        return response()->json([
-            'status' => 'pending',
-            'message' => $syncResult['message'] ?? 'Pembayaran sedang diproses / diverifikasi.',
-        ]);
+                'is_expired' => $current->isExpired() ?: null,
+                'message' => $current->isExpired()
+                    ? 'Waktu pembayaran telah habis. Silakan buat reservasi baru.'
+                    : 'Pembayaran gagal atau dibatalkan.',
+            ], fn ($value) => $value !== null)),
+            default => response()->json([
+                'status' => 'pending',
+                'message' => 'Menunggu pembayaran diselesaikan...',
+            ]),
+        };
     }
 
     public function showInvoice(string $slug_usaha, Payment $payment)

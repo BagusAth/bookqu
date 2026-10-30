@@ -6,6 +6,7 @@ namespace App\Infrastructure\Payments\SingaPay;
 
 use App\Contracts\Payments\PaymentGatewayInterface;
 use App\Domain\Payment\PaymentState;
+use App\Domain\Payment\ProviderOutcome;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Service;
@@ -19,8 +20,7 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
     public function __construct(
         protected SingaPayClient $client,
         protected SingaPayWebhookVerifier $verifier
-    ) {
-    }
+    ) {}
 
     /**
      * Get the identifier name of the payment gateway driver.
@@ -39,9 +39,9 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
         array $customerData,
         int $slotCount = 1
     ): array {
-        $itemName = 'Booking: ' . $service->namalayanan;
+        $itemName = 'Booking: '.$service->namalayanan;
         if ($slotCount > 1) {
-            $itemName .= ' (' . $slotCount . ' slot)';
+            $itemName .= ' ('.$slotCount.' slot)';
         }
 
         return $this->createPaymentLink($payment, $customerData, $itemName);
@@ -50,11 +50,10 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
     /**
      * Create a SingaPay payment link for a booking payment according to official API specifications.
      *
-     * @param Payment $payment
-     * @param array<string, mixed> $customerData
-     * @param string|null $description
-     * @param array<array{name: string, quantity: int, unit_price: int}> $customItems
+     * @param  array<string, mixed>  $customerData
+     * @param  array<array{name: string, quantity: int, unit_price: int}>  $customItems
      * @return array{payment_url: string, external_id: string}
+     *
      * @throws Exception
      */
     public function createPaymentLink(
@@ -87,19 +86,19 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
 
         $title = mb_substr((string) ($description ?: ("Booking #{$payment->order_id}")), 0, 100);
 
-        if (!empty($customItems)) {
+        if (! empty($customItems)) {
             $items = array_map(function ($item) {
                 return [
-                    'name'       => mb_substr((string) ($item['name'] ?? 'Item'), 0, 100),
-                    'quantity'   => max(1, (int) ($item['quantity'] ?? 1)),
+                    'name' => mb_substr((string) ($item['name'] ?? 'Item'), 0, 100),
+                    'quantity' => max(1, (int) ($item['quantity'] ?? 1)),
                     'unit_price' => (int) ($item['unit_price'] ?? 0),
                 ];
             }, $customItems);
         } else {
             $items = [
                 [
-                    'name'       => $title,
-                    'quantity'   => 1,
+                    'name' => $title,
+                    'quantity' => 1,
                     'unit_price' => $totalAmount,
                 ],
             ];
@@ -108,22 +107,22 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
         $customerPaysFee = (bool) (config('payment.drivers.singapay.customer_pays_fee') ?? config('services.singapay.customer_pays_fee', false));
 
         $payload = [
-            'reff_no'                    => (string) $payment->order_id,
-            'title'                      => $title,
-            'max_usage'                  => 1,
-            'total_amount'               => $totalAmount,
-            'items'                      => $items,
-            'required_customer_detail'   => true,
-            'customer_pays_fee'          => $customerPaysFee,
-            'expired_at'                 => (string) $expiredAt,
+            'reff_no' => (string) $payment->order_id,
+            'title' => $title,
+            'max_usage' => 1,
+            'total_amount' => $totalAmount,
+            'items' => $items,
+            'required_customer_detail' => true,
+            'customer_pays_fee' => $customerPaysFee,
+            'expired_at' => (string) $expiredAt,
             'whitelisted_payment_method' => [],
-            'redirect_url'               => $successRedirectUrl,
-            'success_redirect_url'       => $successRedirectUrl,
-            'expired_redirect_url'       => $expiredRedirectUrl,
-            'optional_metadata'          => [
+            'redirect_url' => $successRedirectUrl,
+            'success_redirect_url' => $successRedirectUrl,
+            'expired_redirect_url' => $expiredRedirectUrl,
+            'optional_metadata' => [
                 'payment_id' => (string) $payment->id,
-                'order_id'   => (string) $payment->order_id,
-                'tenant_id'  => (string) $payment->idtenant,
+                'order_id' => (string) $payment->order_id,
+                'tenant_id' => (string) $payment->idtenant,
             ],
         ];
 
@@ -151,8 +150,8 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
         $payment->update([
             'payment_url' => $paymentUrl,
             'external_id' => $externalId,
-            'provider'    => 'singapay',
-            'metode'      => PaymentState::METODE_SINGAPAY,
+            'provider' => 'singapay',
+            'metode' => PaymentState::METODE_SINGAPAY,
         ]);
 
         return [
@@ -164,11 +163,9 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
     /**
      * Create payment link for owner subscription checkout.
      *
-     * @param Payment $payment
-     * @param Plan $plan
-     * @param array<string, mixed> $payerData
-     * @param float $biayaPlatform
+     * @param  array<string, mixed>  $payerData
      * @return array{payment_url: string, external_id: string}
+     *
      * @throws Exception
      */
     public function createSubscriptionPayment(
@@ -188,20 +185,20 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
         $successRedirectUrl = route('owner.checkout.invoice', $payment);
         $expiredRedirectUrl = route('owner.checkout.payment', $payment);
 
-        $title = mb_substr('Subscription Plan ' . ucfirst((string) $plan->namapaket) . ' (1 Bulan)', 0, 100);
+        $title = mb_substr('Subscription Plan '.ucfirst((string) $plan->namapaket).' (1 Bulan)', 0, 100);
 
         $items = [
             [
-                'name'       => $title,
-                'quantity'   => 1,
+                'name' => $title,
+                'quantity' => 1,
                 'unit_price' => (int) $plan->hargabulanan,
             ],
         ];
 
         if ($biayaPlatform > 0) {
             $items[] = [
-                'name'       => 'Biaya Layanan Platform',
-                'quantity'   => 1,
+                'name' => 'Biaya Layanan Platform',
+                'quantity' => 1,
                 'unit_price' => (int) $biayaPlatform,
             ];
         }
@@ -209,24 +206,24 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
         $customerPaysFee = (bool) (config('payment.drivers.singapay.customer_pays_fee') ?? config('services.singapay.customer_pays_fee', false));
 
         $payload = [
-            'reff_no'                    => (string) $payment->order_id,
-            'title'                      => $title,
-            'max_usage'                  => 1,
-            'total_amount'               => $totalAmount,
-            'items'                      => $items,
-            'required_customer_detail'   => true,
-            'customer_pays_fee'          => $customerPaysFee,
-            'expired_at'                 => (string) $expiredAt,
+            'reff_no' => (string) $payment->order_id,
+            'title' => $title,
+            'max_usage' => 1,
+            'total_amount' => $totalAmount,
+            'items' => $items,
+            'required_customer_detail' => true,
+            'customer_pays_fee' => $customerPaysFee,
+            'expired_at' => (string) $expiredAt,
             'whitelisted_payment_method' => [],
-            'redirect_url'               => $successRedirectUrl,
-            'success_redirect_url'       => $successRedirectUrl,
-            'expired_redirect_url'       => $expiredRedirectUrl,
-            'optional_metadata'          => [
+            'redirect_url' => $successRedirectUrl,
+            'success_redirect_url' => $successRedirectUrl,
+            'expired_redirect_url' => $expiredRedirectUrl,
+            'optional_metadata' => [
                 'payment_id' => (string) $payment->id,
-                'order_id'   => (string) $payment->order_id,
-                'tenant_id'  => (string) $payment->idtenant,
-                'plan_id'    => (string) $plan->id,
-                'type'       => 'subscription',
+                'order_id' => (string) $payment->order_id,
+                'tenant_id' => (string) $payment->idtenant,
+                'plan_id' => (string) $plan->id,
+                'type' => 'subscription',
             ],
         ];
 
@@ -253,8 +250,8 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
         $payment->update([
             'payment_url' => $paymentUrl,
             'external_id' => $externalId,
-            'provider'    => 'singapay',
-            'metode'      => PaymentState::METODE_SINGAPAY,
+            'provider' => 'singapay',
+            'metode' => PaymentState::METODE_SINGAPAY,
         ]);
 
         return [
@@ -264,40 +261,60 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
     }
 
     /**
-     * Check transaction status with SingaPay.
-     *
-     * @param Payment $payment
-     * @return array<string, mixed>
+     * SingaPay's client offers no transaction status endpoint, so BookQu cannot ask
+     * the provider; the payment relies on webhooks and the late-success path
+     * (ADR-0007 decision 4). The local database is never used as an answer.
      */
-    public function checkTransactionStatus(Payment $payment): array
+    public function queryOutcome(Payment $payment): ProviderOutcome
     {
-        $payment->refresh();
+        return ProviderOutcome::unknown($this->getDriverName(), (string) $payment->order_id);
+    }
 
-        if ($payment->status === PaymentState::STATUS_SUKSES) {
-            return [
-                'status'             => PaymentState::STATUS_SUKSES,
-                'transaction_status' => 'settlement',
-                'message'            => 'Pembayaran berhasil dikonfirmasi.',
-                'payment'            => $payment,
-            ];
-        }
+    /**
+     * SingaPay payment links cannot be cancelled through the client yet; the link
+     * expires on its own and a later success becomes a late success.
+     */
+    public function cancel(Payment $payment): void {}
 
-        if ($payment->isExpired() || $payment->status === PaymentState::STATUS_GAGAL) {
-            return [
-                'status'             => PaymentState::STATUS_GAGAL,
-                'is_expired'         => $payment->isExpired(),
-                'transaction_status' => 'expire',
-                'message'            => 'Waktu pembayaran telah habis atau transaksi dibatalkan.',
-                'payment'            => $payment,
-            ];
-        }
+    /**
+     * Translate a verified SingaPay Money In / Payment Link notification into
+     * BookQu's vocabulary. The caller must have verified timestamp and signature.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function outcomeFromNotification(array $payload): ProviderOutcome
+    {
+        $scalar = static fn (mixed $value): ?string => is_scalar($value) && trim((string) $value) !== '' ? trim((string) $value) : null;
 
-        return [
-            'status'             => PaymentState::STATUS_PENDING,
-            'transaction_status' => 'pending',
-            'message'            => 'Menunggu konfirmasi pembayaran dari SingaPay.',
-            'payment'            => $payment,
-        ];
+        // The root-level "status" can be an envelope status (e.g. HTTP 200); only the
+        // transaction status counts, and a missing one is never success.
+        $rawStatus = $scalar($payload['data']['transaction']['status'] ?? $payload['data']['status'] ?? null);
+
+        $amount = $payload['data']['transaction']['amount']['value']
+            ?? $payload['data']['amount']['value']
+            ?? $payload['data']['payment']['additional_info']['payment_link']['total_amount']
+            ?? $payload['data']['total_amount']
+            ?? null;
+
+        return new ProviderOutcome(
+            provider: $this->getDriverName(),
+            // data.transaction.reff_no is the primary identifier, then payment-link structures.
+            references: array_values(array_filter([
+                $scalar($payload['data']['transaction']['reff_no'] ?? null),
+                $scalar($payload['data']['payment']['additional_info']['payment_link']['reff_no'] ?? null),
+                $scalar($payload['data']['reff_no'] ?? null),
+                $scalar($payload['data']['payment_link']['reff_no'] ?? null),
+                $scalar($payload['order_id'] ?? null),
+                $scalar($payload['data']['payment']['additional_info']['payment_link']['id'] ?? null),
+                $scalar($payload['data']['id'] ?? null),
+            ])),
+            result: PaymentState::mapSingaPayStatus($rawStatus),
+            amount: is_numeric($amount) ? (string) $amount : null,
+            currency: $scalar($payload['data']['transaction']['amount']['currency'] ?? $payload['data']['amount']['currency'] ?? null),
+            transactionId: $scalar($payload['data']['transaction']['id'] ?? null),
+            method: PaymentState::METODE_SINGAPAY,
+            eventTime: $scalar($payload['data']['transaction']['created_at'] ?? $payload['timestamp'] ?? null),
+        );
     }
 
     /**

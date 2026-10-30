@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Actions\Payment\PaymentLifecycle;
+use App\Domain\Payment\PaymentTransition;
+use App\Domain\Payment\PaymentTransitionOutcome;
 use App\Mail\BookingGroupInvoiceMail;
 use App\Mail\BookingInvoiceMail;
 use App\Models\Booking;
@@ -11,7 +14,6 @@ use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Services\MidtransPaymentService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -320,10 +322,9 @@ class PaymentGroupManagementTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $service = app(MidtransPaymentService::class);
-        $result = $service->processSuccess($payment, 'gopay', 'settlement');
+        $result = app(PaymentLifecycle::class)->transition($payment, PaymentTransition::ProviderSucceeded, 'gopay');
 
-        $this->assertEquals('sukses', $result['status']);
+        $this->assertEquals('sukses', $result->status());
         $b1->refresh();
         $b2->refresh();
         $this->assertEquals('paid', $b1->status);
@@ -372,11 +373,10 @@ class PaymentGroupManagementTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $service = app(MidtransPaymentService::class);
-        $result = $service->processSuccess($payment, 'qris', 'settlement');
+        $result = app(PaymentLifecycle::class)->transition($payment, PaymentTransition::ProviderSucceeded, 'qris');
 
         // Settlement rejected to avoid resurrection
-        $this->assertEquals('gagal', $result['status']);
+        $this->assertEquals('gagal', $result->status());
 
         $payment->refresh();
         $b1->refresh();
@@ -401,10 +401,9 @@ class PaymentGroupManagementTest extends TestCase
             'jumlah' => 100000,
         ]);
 
-        $service = app(MidtransPaymentService::class);
-        $result = $service->processSuccess($payment, 'qris', 'settlement');
+        $result = app(PaymentLifecycle::class)->transition($payment, PaymentTransition::ProviderSucceeded, 'qris');
 
-        $this->assertEquals('gagal', $result['status']);
+        $this->assertEquals('gagal', $result->status());
         $payment->refresh();
         $this->assertEquals('gagal', $payment->status);
     }
@@ -434,11 +433,10 @@ class PaymentGroupManagementTest extends TestCase
             'status' => 'paid',
         ]);
 
-        $service = app(MidtransPaymentService::class);
-        $result = $service->processSuccess($payment, 'bank_transfer', 'settlement');
+        $result = app(PaymentLifecycle::class)->transition($payment, PaymentTransition::ProviderSucceeded, 'bank_transfer');
 
-        $this->assertEquals('sukses', $result['status']);
-        $this->assertStringContainsString('sebelumnya', $result['message']);
+        $this->assertEquals('sukses', $result->status());
+        $this->assertSame(PaymentTransitionOutcome::AlreadyFinal, $result->outcome);
     }
 
     public function test_booking_price_label_reflects_slot_price(): void
