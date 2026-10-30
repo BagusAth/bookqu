@@ -41,6 +41,15 @@ Done 2026-10-30. Accepted: ADR-0004 Payment lifecycle, ADR-0005 Slot bookability
 ### 3 — Guardrails
 Machines enforce the rules before big changes: MySQL integrity suite, deploy only after CI with a database backup, Pint/composer audit/doc checks, architecture tests with a shrinking allowlist, optional Larastan, branch protection on `main`.
 
+Built on branch `phase-3-guardrails` (2026-10-30): BQ-023, BQ-025, BQ-024, BQ-018 and BQ-026 (Larastan approved with the plan). It also restored CI, which had failed on `agathan` since the Boost commit because the lock file needed PHP 8.4. CI now runs three jobs: `quality` (Pint on changed files, Larastan, composer audit, npm audit report-only), `tests-sqlite` and `tests-mysql` (whole suite on MySQL 8). Production deploys call those jobs first. Items stay `in-progress` until the first GitHub Actions run is green.
+
+Open at G3 (lead):
+- run the manual `test-ssh.yml` once to confirm `mysqldump` exists on HostData;
+- protect `main`: PRs only, required checks `Quality checks`, `Tests (SQLite)`, `Tests (MySQL)`, lead approval;
+- decide BQ-072 (npm build-tool advisories).
+
+The first gated production deploy happens at the next release.
+
 ### 4 — Production readiness
 Four streams, all `launch-blocker` items must be `done`:
 - **Security:** BQ-006, BQ-008 + BQ-033 (ADR-0011), BQ-009 (ADR-0010), BQ-004, 005, 007, 010, 011 and the audit P0 items; BQ-001/002 land through the correctness and customer-access streams.
