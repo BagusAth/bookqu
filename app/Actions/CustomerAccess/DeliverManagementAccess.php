@@ -33,7 +33,7 @@ final class DeliverManagementAccess
             $context = app(LoadAccessSubject::class)->execute($snapshot);
             if ($delivery->source_grant_id !== null) {
                 $source = app(ResolveCustomerAccess::class)->execute((int) $delivery->source_grant_id);
-                $source->authorize(AccessOperation::Reschedule, $context->payment, $context->bookings->first());
+                abort_unless($source->allows(AccessOperation::Reschedule, $context->payment, $context->bookings->first()), 404);
             }
             abort_if(config('mail.default') === 'log', 503);
             $subject = $context->payment ?? $context->bookings->first();

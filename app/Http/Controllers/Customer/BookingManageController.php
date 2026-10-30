@@ -31,7 +31,7 @@ class BookingManageController extends Controller
     {
         $context = request()->attributes->get('customer_access');
         abort_unless($context instanceof AccessContext && $context->payment !== null, 404);
-        $context->authorize(AccessOperation::Manage, $context->payment);
+        abort_unless($context->allows(AccessOperation::Manage, $context->payment), 404);
         abort_unless($context->payment->order_id === $orderId, 404);
         $payment = $context->payment;
         $payment->setRelation('bookings', $context->bookings->load(['layanan', 'schedule', 'tenant.user', 'review']));
@@ -106,7 +106,7 @@ class BookingManageController extends Controller
             'invoice' => AccessOperation::Invoice,
             default => AccessOperation::Manage,
         };
-        $context->authorize($operation, booking: $booking);
+        abort_unless($context->allows($operation, booking: $booking), 404);
         $booking->load(['tenant.user', 'layanan', 'payment', 'logs', 'refund', 'review']);
 
         return $booking;

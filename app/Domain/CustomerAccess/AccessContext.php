@@ -16,16 +16,20 @@ final readonly class AccessContext
         public Collection $bookings,
     ) {}
 
-    public function authorize(AccessOperation $operation, ?Payment $payment = null, ?Booking $booking = null): void
+    public function allows(AccessOperation $operation, ?Payment $payment = null, ?Booking $booking = null): bool
     {
-        abort_unless(AccessRules::permits($this->grant->profile, $operation), 404);
-        if ($payment !== null) {
-            abort_unless($this->payment !== null && (int) $payment->id === (int) $this->payment->id
-                && (int) $payment->idtenant === (int) $this->grant->idtenant, 404);
+        if (! AccessRules::permits($this->grant->profile, $operation)) {
+            return false;
         }
-        if ($booking !== null) {
-            abort_unless((int) $booking->idtenant === (int) $this->grant->idtenant
-                && $this->bookings->contains('id', $booking->id), 404);
+        if ($payment !== null && ($this->payment === null || (int) $payment->id !== (int) $this->payment->id
+            || (int) $payment->idtenant !== (int) $this->grant->idtenant)) {
+            return false;
         }
+        if ($booking !== null && ((int) $booking->idtenant !== (int) $this->grant->idtenant
+            || ! $this->bookings->contains('id', $booking->id))) {
+            return false;
+        }
+
+        return true;
     }
 }

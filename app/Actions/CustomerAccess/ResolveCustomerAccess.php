@@ -43,7 +43,7 @@ final class ResolveCustomerAccess
         }
         ClaimSlots::lockTenant((int) $context->grant->idtenant);
         $current = $this->execute((int) $context->grant->id);
-        $current->authorize($operation, $subject instanceof Payment ? $subject : null, $subject instanceof Booking ? $subject : null);
+        abort_unless($current->allows($operation, $subject instanceof Payment ? $subject : null, $subject instanceof Booking ? $subject : null), 404);
 
         return $current;
     }

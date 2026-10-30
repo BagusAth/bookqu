@@ -16,7 +16,7 @@ class CustomerAccessMiddleware
         abort_unless($request->getHost() === $canonicalHost, 404);
         abort_if(! app()->environment('local', 'testing') && ! $request->isSecure(), 404);
         $context = app(CustomerAccessSession::class)->resolve($request);
-        $context->authorize(AccessOperation::from($operation));
+        abort_unless($context->allows(AccessOperation::from($operation)), 404);
         $order = $request->route('payment') ?? $request->route('order_id');
         if ($order !== null) {
             abort_unless($context->payment !== null && $context->payment->order_id === (string) $order, 404);
