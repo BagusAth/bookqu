@@ -3,6 +3,7 @@
 namespace Tests\Feature\Actions\Schedule;
 
 use App\Actions\Schedule\ClaimSlots;
+use App\Actions\Schedule\UpdateScheduleAvailability;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
@@ -36,6 +37,29 @@ class ClaimSlotsLockingTest extends TestCase
             DB::purge(self::SECOND_CONNECTION);
             $this->truncateTablesForAllConnections();
         });
+    }
+
+    public function test_closing_a_date_waits_for_a_claim_in_progress(): void
+    {
+        $tenant = Tenant::factory()->create();
+
+        $claimInProgress = DB::connection(self::SECOND_CONNECTION);
+        $claimInProgress->beginTransaction();
+        $claimInProgress->table('tenants')->where('id', $tenant->id)->lockForUpdate()->first();
+
+        DB::statement('SET SESSION innodb_lock_wait_timeout = 1');
+
+        try {
+            app(UpdateScheduleAvailability::class)->execute($tenant, [
+                'tanggal_block' => now()->addDays(3)->toDateString(),
+                'weekend_price_type' => 'none',
+            ]);
+            $this->fail('A date was closed while a claim held the tenant row.');
+        } catch (QueryException $exception) {
+            $this->assertMatchesRegularExpression('/^select .* from `tenants` .* for update$/', $exception->getSql());
+        }
+
+        $this->assertDatabaseCount('owner_blocked_dates', 0);
     }
 
     public function test_claim_waits_for_the_tenant_lock_before_touching_schedules(): void

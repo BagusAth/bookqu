@@ -182,6 +182,29 @@ class BookingManageTest extends TestCase
         $this->assertNotContains($closedDate, $offered);
     }
 
+    public function test_reschedule_onto_a_date_closed_by_the_owner_is_refused(): void
+    {
+        $closedDate = Carbon::tomorrow()->addDays(3)->format('Y-m-d');
+        $slot = Schedule::factory()->create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => $closedDate,
+            'jam_mulai' => '10:00:00',
+            'jam_selesai' => '11:00:00',
+            'status' => 'tersedia',
+        ]);
+        OwnerBlockedDate::create(['idtenant' => $this->tenant->id, 'tanggal' => $closedDate, 'alasan' => 'Libur']);
+        $originalSchedule = $this->booking->idschedule;
+
+        $response = $this->post('/manage/'.$this->booking->booking_code.'/reschedule?token='.$this->booking->reschedule_token, [
+            'tanggal' => $closedDate,
+            'schedule_id' => $slot->id,
+        ]);
+
+        $response->assertSessionHasErrors('reschedule');
+        $this->assertSame($originalSchedule, $this->booking->fresh()->idschedule);
+    }
+
     public function test_customer_can_reschedule_to_new_slot(): void
     {
         $newSchedule = Schedule::factory()->create([
