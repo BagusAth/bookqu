@@ -2,15 +2,17 @@
 
 namespace App\Actions\Booking;
 
+use App\Actions\CustomerAccess\IssueCustomerAccess;
+use App\Actions\CustomerAccess\RequestManagementDelivery;
 use App\Actions\Payment\CreateBookingPayment;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
+use App\Domain\CustomerAccess\AccessProfile;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Subscription\EntitlementRules;
-use App\Mail\BookingGroupInvoiceMail;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Service;
@@ -22,7 +24,6 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class CreateBooking
 {
@@ -139,8 +140,7 @@ class CreateBooking
                             'status' => BookingState::STATUS_PAID,
                             'idpayment' => $payment->id,
                             'booking_code' => Booking::generateBookingCode(),
-                            'cancellation_token' => Booking::generateSecureToken(),
-                            'reschedule_token' => Booking::generateSecureToken(),
+
                             'catatan' => $fullCatatan ?: null,
                         ]);
                         $createdBookings[] = $bk;
@@ -150,7 +150,10 @@ class CreateBooking
                         $payment->update(['idbooking' => $createdBookings[0]->id]);
                     }
 
+                    app(RequestManagementDelivery::class)->execute($payment, 'confirmed');
+
                     return [
+                        'access' => app(IssueCustomerAccess::class)->execute($payment, AccessProfile::Checkout),
                         'free' => true,
                         'payment' => $payment,
                         'bookings' => $createdBookings,
@@ -178,8 +181,7 @@ class CreateBooking
                         'status' => BookingState::STATUS_PENDING,
                         'idpayment' => $payment->id,
                         'booking_code' => Booking::generateBookingCode(),
-                        'cancellation_token' => Booking::generateSecureToken(),
-                        'reschedule_token' => Booking::generateSecureToken(),
+
                         'catatan' => $fullCatatan ?: null,
                     ]);
                     $createdBookings[] = $newBooking;
@@ -190,6 +192,7 @@ class CreateBooking
                 }
 
                 return [
+                    'access' => app(IssueCustomerAccess::class)->execute($payment, AccessProfile::Checkout),
                     'free' => false,
                     'bookings' => $createdBookings,
                     'payment' => $payment,
@@ -224,16 +227,6 @@ class CreateBooking
                     }
                 }
 
-                $recipientEmail = $firstBooking->email ?: $payment->email_pembayar;
-                if ($recipientEmail) {
-                    try {
-                        $manageUrl = $payment->getManageUrl();
-                        Mail::to($recipientEmail)
-                            ->send(new BookingGroupInvoiceMail($payment, $bookingsList, $manageUrl));
-                    } catch (Exception $e) {
-                        Log::error('Gagal kirim email invoice grup free booking: '.$e->getMessage());
-                    }
-                }
             }
 
             $this->clearBookingAvailabilityCache(

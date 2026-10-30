@@ -422,14 +422,13 @@
         ];
 
         // Back URL to manage booking
-        $backUrl = route('booking.manage', ['booking_code' => $booking->booking_code]) . ($token ? '?token=' . $token : '');
+        $backUrl = route('booking.manage', ['booking_code' => $booking->booking_code]);
 
         // WhatsApp Share URL
         $waShareText = "Halo! Berikut invoice resmi reservasi *" . ($booking->layanan->namalayanan ?? 'Layanan') . "* di *" . $booking->tenant->namabisnis . "*\n"
             . "🔖 Kode Booking: *" . $booking->booking_code . "*\n"
             . "📅 Tanggal: " . $bookingDate->translatedFormat('l, d F Y') . " (" . $jamFormatted . " WIB)\n"
-            . "💰 Total: *" . $booking->priceLabel . "* (" . $currentStatus['badge'] . ")\n"
-            . "Lihat Invoice: " . url()->full();
+            . "💰 Total: *" . $booking->priceLabel . "* (" . $currentStatus['badge'] . ")";
         $waShareUrl = 'https://api.whatsapp.com/send?text=' . urlencode($waShareText);
     @endphp
 

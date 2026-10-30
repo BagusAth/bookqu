@@ -26,7 +26,7 @@
                 </div>
             </a>
             <a
-                href="{{ route('booking.manage', ['booking_code' => $booking->booking_code, 'token' => $token]) }}"
+                href="{{ route('booking.manage', ['booking_code' => $booking->booking_code]) }}"
                 class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
             >
                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -341,7 +341,7 @@
                     {{-- Submit Form --}}
                     <form
                         method="POST"
-                        action="{{ route('booking.manage.reschedule.store', ['booking_code' => $booking->booking_code, 'token' => $token]) }}"
+                        action="{{ route('booking.manage.reschedule.store', ['booking_code' => $booking->booking_code]) }}"
                         @submit.prevent="submitReschedule"
                         x-ref="rescheduleForm"
                         class="pt-2"
@@ -391,7 +391,7 @@
         const MIN_DATE           = '{{ $minDate }}';
         const MAX_DATE           = '{{ $maxDate }}';
         const SLOTS_URL          = '{{ route('booking.manage.reschedule.slots', ['booking_code' => $booking->booking_code]) }}';
-        const TOKEN              = '{{ $token }}';
+
 
         function rescheduleManager() {
             return {
@@ -484,7 +484,7 @@
                     this.loadingSlots = true;
                     this.timeSlots    = [];
                     try {
-                        const res = await fetch(`${SLOTS_URL}?tanggal=${dateStr}&token=${TOKEN}`);
+                        const res = await fetch(`${SLOTS_URL}?tanggal=${dateStr}`);
                         const data = await res.json();
                         this.timeSlots = data.slots || [];
                     } catch (e) {

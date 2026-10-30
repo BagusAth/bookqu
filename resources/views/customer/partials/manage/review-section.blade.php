@@ -60,7 +60,6 @@
 
                             <form method="POST" action="{{ route('booking.manage.review', ['booking_code' => $booking->booking_code]) }}" class="mt-5 space-y-4">
                                 @csrf
-                                <input type="hidden" name="token" value="{{ $token }}">
                                 <input type="hidden" name="rating" :value="rating">
 
                                 <div>

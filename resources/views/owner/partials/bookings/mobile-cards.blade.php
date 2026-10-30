@@ -26,11 +26,7 @@
                     'snap_token' => $booking->payment?->snap_token ?? null,
                     'rescheduled_from_date' => $booking->rescheduled_from_date ? $booking->rescheduled_from_date->format('d M Y') : null,
                     'rescheduled_from_time' => $booking->rescheduled_from_time ?? null,
-                    'manage_url' => $booking->booking_code
-                        ? (($booking->isMultiSlot() && $booking->payment && $booking->payment->manage_token)
-                            ? $booking->payment->getManageUrl()
-                            : $booking->getManageUrl())
-                        : null,
+                    'manage_url' => null,
                 ];
 
                 $warnastatus = match($booking->status) {

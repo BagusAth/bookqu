@@ -22,8 +22,7 @@
 
         $eventTitle = 'Booking ' . ($booking->layanan?->namalayanan ?? 'Layanan') . ' - ' . ($booking->tenant?->namabisnis ?? '');
         $eventLocation = ($booking->tenant?->alamat ? $booking->tenant->alamat . ', ' : '') . ($booking->tenant?->namabisnis ?? '');
-        $manageUrl = route('booking.manage', ['booking_code' => $booking->booking_code]) . ($token ? '?token=' . $token : '');
-        $eventDetails = 'Reservasi resmi di ' . ($booking->tenant?->namabisnis ?? '') . "\nKode Booking: " . $booking->booking_code . "\nKelola Booking: " . $manageUrl;
+        $eventDetails = 'Reservasi resmi di ' . ($booking->tenant?->namabisnis ?? '') . "\nKode Booking: " . $booking->booking_code;
 
         // Google Calendar URL
         $gCalDates = $startDateTime->format('Ymd\THis') . '/' . $endDateTime->format('Ymd\THis');
@@ -37,8 +36,7 @@
         $waText = "Halo! Reservasi booking sesi *" . ($booking->layanan->namalayanan ?? 'Layanan') . "* saya di *" . $booking->tenant->namabisnis . "*\n"
             . "📅 Tanggal: " . \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') . "\n"
             . "⏰ Jam: " . \Carbon\Carbon::parse($booking->jam)->format('H:i') . " WIB\n"
-            . "🔖 Kode Booking: " . $booking->booking_code . "\n"
-            . "Kelola Reservasi: " . $manageUrl;
+            . "🔖 Kode Booking: " . $booking->booking_code;
         $waShareUrl = 'https://api.whatsapp.com/send?text=' . urlencode($waText);
 
         // Merchant WhatsApp URL

@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\CreateBooking;
+use App\Actions\CustomerAccess\CancelCheckoutPayment;
+use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Actions\Payment\OutcomeIntakeResult;
-use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Domain\Booking\BookingRules;
-use App\Domain\Payment\PaymentTransition;
 use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\CreateBookingRequest;
@@ -707,13 +707,7 @@ class BookingController extends Controller
 
         session()->forget('booking');
 
-        // Free booking: redirect to invoice
-        if (! empty($result['free'])) {
-            return CustomerBookingRoutes::route('customer.booking.invoice', [$slug_usaha, $result['payment']])
-                ->with('success', 'Booking berhasil dikonfirmasi! ('.count($result['bookings']).' slot)');
-        }
-
-        return CustomerBookingRoutes::route('customer.booking.payment', [$slug_usaha, $result['payment']]);
+        return redirect()->away(app(CustomerAccessLinks::class)->entry($result['access']));
     }
 
     public function validateVoucher(Request $request, string $slug_usaha)
@@ -755,21 +749,12 @@ class BookingController extends Controller
             ]);
         }
 
-        if ($payment->isExpired() || $payment->status === 'gagal') {
-            // Past the deadline the link is no longer payable; reclaiming asks the provider first
-            if ($payment->status === 'pending') {
-                $payment = app(PaymentOutcomeIntake::class)->check($payment)->payment ?? $payment;
-
-                if ($payment->status === 'sukses') {
-                    return CustomerBookingRoutes::route('customer.booking.invoice', [$slug_usaha, $payment]);
-                }
-            }
-
+        if ($payment->isExpired()) {
             return view('customer.booking.payment', [
                 'tenant' => $tenant,
                 'payment' => $payment,
                 'provider' => $provider,
-                'paymentState' => $payment->isExpired() ? 'expired' : ($payment->status === 'gagal' ? 'failed' : 'pending'),
+                'paymentState' => 'expired',
                 'paymentUrl' => null,
                 'snapToken' => null,
                 'clientKey' => $clientKey,
@@ -796,9 +781,7 @@ class BookingController extends Controller
             abort(404);
         }
 
-        if ($payment->status === 'pending') {
-            app(PaymentLifecycle::class)->transition($payment, PaymentTransition::CancelledByPayer);
-        }
+        app(CancelCheckoutPayment::class)->execute(request()->attributes->get('customer_access'), $payment);
 
         session()->forget('booking');
 
@@ -810,20 +793,20 @@ class BookingController extends Controller
     {
         $tenant = $this->resolveTenant($slug_usaha);
         if (! $tenant || $payment->idtenant !== $tenant->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            abort(404);
         }
 
-        return $this->paymentStatusResponse($intake->check($payment), $slug_usaha, $payment);
+        return $this->paymentStatusResponse($intake->check($payment, request()->attributes->get('customer_access')), $slug_usaha, $payment);
     }
 
     public function handleCallback(string $slug_usaha, Payment $payment, PaymentOutcomeIntake $intake)
     {
         $tenant = $this->resolveTenant($slug_usaha);
         if (! $tenant || $payment->idtenant !== $tenant->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            abort(404);
         }
 
-        return $this->paymentStatusResponse($intake->check($payment), $slug_usaha, $payment);
+        return $this->paymentStatusResponse($intake->check($payment, request()->attributes->get('customer_access')), $slug_usaha, $payment);
     }
 
     private function paymentStatusResponse(OutcomeIntakeResult $result, string $slug_usaha, Payment $payment)
@@ -876,13 +859,6 @@ class BookingController extends Controller
 
         if ($bookings->isEmpty()) {
             abort(404, 'Data booking tidak ditemukan.');
-        }
-
-        foreach ($bookings as $bk) {
-            if (! $bk->booking_code) {
-                $bk->assignManagementTokens();
-                $bk->refresh();
-            }
         }
 
         $booking = $bookings->first();

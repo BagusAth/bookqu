@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Actions\Payment;
 
+use App\Actions\CustomerAccess\ResolveCustomerAccess;
 use App\Actions\Payment\Lifecycle\BookingGroupConsequences;
 use App\Actions\Payment\Lifecycle\PaymentConsequences;
 use App\Actions\Payment\Lifecycle\SubscriptionConsequences;
+use App\Domain\CustomerAccess\AccessContext;
+use App\Domain\CustomerAccess\AccessOperation;
 use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Payment\PaymentTransition;
@@ -46,9 +49,12 @@ class PaymentLifecycle
      *
      * @param  string|null  $method  Payment method reported by the provider, or `cash` for owner settlement.
      */
-    public function transition(Payment $payment, PaymentTransition $transition, ?string $method = null): PaymentTransitionResult
+    public function transition(Payment $payment, PaymentTransition $transition, ?string $method = null, ?AccessContext $access = null): PaymentTransitionResult
     {
-        return $this->withinPaymentTenant($payment, function (?int $tenantId) use ($payment, $transition, $method): PaymentTransitionResult {
+        return $this->withinPaymentTenant($payment, function (?int $tenantId) use ($payment, $transition, $method, $access): PaymentTransitionResult {
+            if ($access !== null) {
+                app(ResolveCustomerAccess::class)->underLock($access, AccessOperation::Payment, $payment);
+            }
             $locked = $this->lock($payment, $tenantId);
 
             if ($locked === null) {

@@ -144,7 +144,7 @@
 
                     <a
                         id="btn-invoice"
-                        href="{{ route('booking.manage.invoice', ['booking_code' => $booking->booking_code, 'token' => $token]) }}"
+                        href="{{ route('booking.manage.invoice', ['booking_code' => $booking->booking_code]) }}"
                         target="_blank"
                         class="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50/70 px-3.5 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-all cursor-pointer"
                     >

@@ -8,6 +8,7 @@ use App\Domain\Payment\PaymentTransitionOutcome;
 use App\Mail\BookingGroupInvoiceMail;
 use App\Mail\BookingInvoiceMail;
 use App\Models\Booking;
+use App\Models\CustomerAccessGrant;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Schedule;
@@ -19,11 +20,13 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
 class PaymentGroupManagementTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesCustomerAccess;
 
     protected Tenant $tenant;
 
@@ -40,6 +43,7 @@ class PaymentGroupManagementTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
 
         $this->withoutMiddleware([
             PreventRequestForgery::class,
@@ -112,7 +116,7 @@ class PaymentGroupManagementTest extends TestCase
         ]);
     }
 
-    public function test_multi_slot_payment_has_one_management_token(): void
+    public function test_multi_slot_checkout_issues_one_hashed_checkout_grant(): void
     {
         $this->setBookingSession([$this->slot10->id, $this->slot11->id], ['10:00', '11:00']);
 
@@ -126,15 +130,14 @@ class PaymentGroupManagementTest extends TestCase
 
         $payment = Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->latest()->first();
         $this->assertNotNull($payment);
-        $this->assertNotNull($payment->manage_token);
-        $this->assertEquals(64, strlen($payment->manage_token));
+        $this->assertNull($payment->manage_token);
 
         $bookings = Booking::withoutGlobalScopes()->where('idpayment', $payment->id)->get();
         $this->assertCount(2, $bookings);
 
-        $manageUrl = $payment->getManageUrl();
-        $this->assertStringContainsString('/manage/payment/'.$payment->order_id, $manageUrl);
-        $this->assertStringContainsString('token='.$payment->manage_token, $manageUrl);
+        $this->assertCheckoutHandoff($response, $payment);
+        // scope-bypass: inspect trusted test fixtures without a request tenant; authorization is exercised through the real resolver.
+        $this->assertSame(1, CustomerAccessGrant::withoutGlobalScopes()->where('payment_id', $payment->id)->where('profile', 'checkout')->count());
     }
 
     public function test_payment_management_url_valid_and_shows_all_slots(): void
@@ -179,7 +182,7 @@ class PaymentGroupManagementTest extends TestCase
             'cancellation_token' => Booking::generateSecureToken(),
         ]);
 
-        $response = $this->get('/manage/payment/'.$payment->order_id.'?token='.$payment->manage_token);
+        $response = $this->grantCustomerAccess($payment)->get('/manage/payment/'.$payment->order_id.'?token='.$payment->manage_token);
         $response->assertStatus(200);
         $response->assertSee($payment->order_id);
         $response->assertSee('10:00');
@@ -214,11 +217,11 @@ class PaymentGroupManagementTest extends TestCase
 
         // Wrong token
         $response = $this->get('/manage/payment/'.$payment->order_id.'?token=wrong-token');
-        $response->assertStatus(403);
+        $response->assertNotFound();
 
         // Missing token
         $responseNoToken = $this->get('/manage/payment/'.$payment->order_id);
-        $responseNoToken->assertStatus(403);
+        $responseNoToken->assertNotFound();
     }
 
     public function test_payment_management_cross_tenant_rejected(): void
@@ -257,10 +260,10 @@ class PaymentGroupManagementTest extends TestCase
         ]);
 
         $response = $this->get('/manage/payment/'.$payment->order_id.'?token='.$payment->manage_token);
-        $response->assertStatus(403);
+        $response->assertNotFound();
     }
 
-    public function test_legacy_booking_management_link_remains_functional(): void
+    public function test_legacy_booking_management_link_is_invalid_after_cutover(): void
     {
         $booking = Booking::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
@@ -277,8 +280,8 @@ class PaymentGroupManagementTest extends TestCase
         ]);
 
         $response = $this->get('/manage/'.$booking->booking_code.'?token='.$booking->cancellation_token);
-        $response->assertStatus(200);
-        $response->assertSee($booking->booking_code);
+        $response->assertNotFound();
+        $response->assertDontSee($booking->booking_code);
     }
 
     public function test_multi_slot_payment_sends_only_one_customer_email(): void
@@ -542,7 +545,7 @@ class PaymentGroupManagementTest extends TestCase
             'booking_code' => 'BKQ-INV-1',
         ]);
 
-        $response = $this->get('/manage/payment/'.$payment->order_id.'/invoice?token='.$payment->manage_token);
+        $response = $this->grantCustomerAccess($payment)->get('/manage/payment/'.$payment->order_id.'/invoice?token='.$payment->manage_token);
         $response->assertStatus(200);
         $response->assertSee('Bukti Reservasi Resmi');
         $response->assertSee($payment->order_id);

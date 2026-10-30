@@ -2,7 +2,7 @@
 id: BQ-053
 title: [BUG-T5-02] Fatal Token Scope Mismatch pada Aksi Reschedule & Batal di Portal Payment Group
 type: bug-fix
-status: approved
+status: done
 priority: P0
 phase: 4
 domain: customer-access
@@ -16,7 +16,7 @@ source: docs/audit-bug/TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OPS.md at a68ffe8
 
 # BQ-053: [BUG-T5-02] Fatal Token Scope Mismatch pada Aksi Reschedule & Batal di Portal Payment Group
 
-Audit source retained below. Scope escalation is confirmed by source inspection; the accepted resolution is [ADR-0006](../adr/ADR-0006-management-link-module.md), implemented in BQ-001. This item records distinct scope acceptance and remains unimplemented. The original recommendation below is historical, not permission to widen legacy tokens.
+Audit source retained below. Scope escalation is confirmed by source inspection; the accepted resolution is [ADR-0006](../../adr/ADR-0006-management-link-module.md), implemented in BQ-001. This item records the implemented scope acceptance; see Evidence below. The original recommendation below is historical, not permission to widen legacy tokens.
 
 > Related to BQ-001 (manage_token acting as master token).
 
@@ -34,7 +34,10 @@ Audit source retained below. Scope escalation is confirmed by source inspection;
 
 ## Evidence
 
-_Fill in when done._
+Selesai bersama BQ-001, 2026-10-31. Management grant memberi operasi yang disebutkan secara eksplisit untuk anggota snapshot; Checkout tidak memperoleh kemampuan booking cancel/reschedule/review dari HTML atau navigasi. Semua hidden token, query token operasi lain dan fallback legacy dihapus. Bentuk route lama hanya adapter sesi grant baru.
+
+Bukti: CustomerAccessTest menguji sembilan jalur management dengan identifier saja, Checkout, foreign grant dan Management yang benar; lima jalur storefront diuji dengan payment/tenant lain. Test HTML menolak seluruh bearer/legacy token. BookingManageTest, BookingReviewTest, PaymentGroupManagementTest serta ProductionLogicSpecificationTest mempertahankan perjalanan positif, refund, multi-slot refusal dan closed-date refusal dengan grant sebenarnya. Pencabutan di antara preflight dan mutasi diperiksa ulang di bawah kunci tenant. Hasil akhir tersedia di Evidence BQ-001 dan PR yang sama.
+
 
 ## Accepted plan
 

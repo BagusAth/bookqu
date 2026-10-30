@@ -24,11 +24,13 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
 class RF09StabilityAndHardeningTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesCustomerAccess;
 
     protected User $owner;
 
@@ -43,6 +45,7 @@ class RF09StabilityAndHardeningTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
 
         $this->withoutMiddleware([
             PreventRequestForgery::class,
@@ -192,18 +195,18 @@ class RF09StabilityAndHardeningTest extends TestCase
 
         // 1. Cancellation token cannot be used to reschedule
         $rescheduleAttempt = $this->get('/manage/'.$booking->booking_code.'/reschedule?token='.$booking->cancellation_token);
-        $rescheduleAttempt->assertStatus(403);
+        $rescheduleAttempt->assertNotFound();
 
         // 2. Reschedule token cannot be used to cancel
         $cancelAttempt = $this->post('/manage/'.$booking->booking_code.'/cancel?token='.$booking->reschedule_token);
-        $cancelAttempt->assertStatus(403);
+        $cancelAttempt->assertNotFound();
 
         // 3. Invalid token returns 403 on all actions
         $invalidCancel = $this->post('/manage/'.$booking->booking_code.'/cancel?token=invalid-token');
-        $invalidCancel->assertStatus(403);
+        $invalidCancel->assertNotFound();
 
         $invalidResched = $this->get('/manage/'.$booking->booking_code.'/reschedule?token=invalid-token');
-        $invalidResched->assertStatus(403);
+        $invalidResched->assertNotFound();
 
         // 4. Token from another booking is rejected (create separate slot to respect unique_active_booking_slot)
         $otherSchedule = Schedule::create([
@@ -231,10 +234,10 @@ class RF09StabilityAndHardeningTest extends TestCase
         ]);
 
         $crossTokenAttempt = $this->get('/manage/'.$booking->booking_code.'/reschedule?token='.$otherBooking->reschedule_token);
-        $crossTokenAttempt->assertStatus(403);
+        $crossTokenAttempt->assertNotFound();
 
         // 5. Valid token allows view
-        $viewAllowed = $this->get('/manage/'.$booking->booking_code.'?token='.$booking->cancellation_token);
+        $viewAllowed = $this->grantCustomerAccess($booking)->get('/manage/'.$booking->booking_code.'?token='.$booking->cancellation_token);
         $viewAllowed->assertStatus(200);
     }
 
@@ -435,7 +438,7 @@ class RF09StabilityAndHardeningTest extends TestCase
         $this->assertSame(AvailabilityRules::STATUS_BOOKED, $this->schedule->getAvailabilityStatus());
 
         // 10. Customer management page works with token
-        $resManage = $this->get('/manage/'.$booking->booking_code.'?token='.$booking->cancellation_token);
+        $resManage = $this->grantCustomerAccess($booking)->get('/manage/'.$booking->booking_code.'?token='.$booking->cancellation_token);
         $resManage->assertStatus(200);
         $resManage->assertSee('Eko Prasetyo');
 
@@ -444,7 +447,7 @@ class RF09StabilityAndHardeningTest extends TestCase
         $booking->update(['status' => 'paid']);
 
         // 12. Customer views invoice
-        $resInvoice = $this->get('/manage/'.$booking->booking_code.'/invoice?token='.$booking->cancellation_token);
+        $resInvoice = $this->grantCustomerAccess($booking)->get('/manage/'.$booking->booking_code.'/invoice?token='.$booking->cancellation_token);
         $resInvoice->assertStatus(200);
     }
 

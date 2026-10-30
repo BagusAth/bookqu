@@ -2,12 +2,15 @@
 
 namespace App\Actions\Booking;
 
+use App\Actions\CustomerAccess\RequestManagementDelivery;
+use App\Actions\CustomerAccess\ResolveCustomerAccess;
 use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
+use App\Domain\CustomerAccess\AccessContext;
+use App\Domain\CustomerAccess\AccessOperation;
 use App\Domain\Schedule\SlotRefusal;
-use App\Mail\BookingRescheduledMail;
 use App\Models\Booking;
 use App\Models\BookingLog;
 use App\Models\Schedule;
@@ -19,7 +22,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class RescheduleBooking
 {
@@ -37,7 +40,8 @@ class RescheduleBooking
         int $newScheduleId,
         string $actor = 'customer',
         ?string $reason = null,
-        ?string $targetDate = null
+        ?string $targetDate = null,
+        ?AccessContext $access = null
     ): array {
         // Guard 1: multi-slot booking cannot be rescheduled per slot
         if ($booking->isMultiSlot()) {
@@ -80,7 +84,13 @@ class RescheduleBooking
         }
 
         try {
-            DB::transaction(function () use ($booking, $newScheduleId, $tenant, $service, $oldDate, $oldTime, $oldScheduleId, $actor, $reason, $targetDate) {
+            DB::transaction(function () use ($booking, $newScheduleId, $tenant, $service, $oldDate, $oldTime, $oldScheduleId, $actor, $reason, $targetDate, $access) {
+                ClaimSlots::lockTenant((int) $booking->idtenant);
+                if ($access !== null) {
+                    app(ResolveCustomerAccess::class)->underLock($access, AccessOperation::Reschedule, $booking);
+                    $booking->refresh();
+                    abort_unless(! $booking->isMultiSlot() && BookingRules::canReschedule($booking), 422);
+                }
                 $wib = 'Asia/Jakarta';
                 $nowWib = Carbon::now($wib);
 
@@ -140,20 +150,12 @@ class RescheduleBooking
                     ]
                 );
 
+                app(RequestManagementDelivery::class)->execute($booking, 'rescheduled', $access);
+
                 // Clear caches for old and new dates
                 $this->clearBookingAvailabilityCache((int) $tenant->id, (int) $booking->idlayanan, $oldDate);
                 $this->clearBookingAvailabilityCache((int) $tenant->id, (int) $booking->idlayanan, $newDate);
             });
-
-            // Post-transaction side effects
-            if ($booking->email) {
-                try {
-                    $booking->refresh()->load(['tenant.user', 'layanan']);
-                    Mail::to($booking->email)->send(new BookingRescheduledMail($booking));
-                } catch (\Throwable $e) {
-                    Log::warning('RescheduleBooking: Failed to send reschedule email', ['error' => $e->getMessage()]);
-                }
-            }
 
             try {
                 $booking->loadMissing(['tenant.user', 'layanan']);
@@ -186,6 +188,8 @@ class RescheduleBooking
 
             return ['success' => true, 'booking' => $booking];
 
+        } catch (HttpExceptionInterface $e) {
+            throw $e;
         } catch (Exception $e) {
             $msg = $e->getMessage();
             if ($msg === 'SLOT_NOT_FOUND' || $msg === 'SLOT_TAKEN') {

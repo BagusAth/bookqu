@@ -2,6 +2,7 @@
 
 namespace App\Actions\Booking;
 
+use App\Actions\CustomerAccess\RequestManagementDelivery;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
@@ -68,7 +69,7 @@ class CreateWalkInBooking
                     'idtenant' => $tenant->id,
                     'tipe' => 'booking',
                     'provider' => 'manual',
-                    'manage_token' => Booking::generateSecureToken(),
+
                     'jumlah' => $amount,
                     'metode' => $data['metode'] ?? 'cash',
                     'order_id' => $orderId,
@@ -92,7 +93,10 @@ class CreateWalkInBooking
                     'catatan' => $data['catatan'] ?? 'Walk-in booking via Owner Calendar',
                 ]);
 
-                $booking->assignManagementTokens();
+                $booking->assignBookingCode();
+                if ($booking->email) {
+                    app(RequestManagementDelivery::class)->execute($payment, 'confirmed');
+                }
 
                 return $booking;
             });

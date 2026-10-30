@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Actions\Payment\Lifecycle;
 
+use App\Actions\CustomerAccess\RequestManagementDelivery;
 use App\Domain\Booking\BookingState;
 use App\Domain\Payment\PaymentTransition;
-use App\Mail\BookingGroupInvoiceMail;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Tenant;
@@ -18,7 +18,6 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Booking-group adapter: a booking payment pays for every booking that carries its id.
@@ -47,7 +46,7 @@ class BookingGroupConsequences implements PaymentConsequences
                 $booking->update(['status' => BookingState::STATUS_PAID]);
 
                 if (! $booking->booking_code) {
-                    $booking->assignManagementTokens();
+                    $booking->assignBookingCode();
                     $booking->refresh();
                 }
 
@@ -67,6 +66,10 @@ class BookingGroupConsequences implements PaymentConsequences
 
         if ($paidBookings === []) {
             return;
+        }
+
+        if ($transition === PaymentTransition::ProviderSucceeded) {
+            app(RequestManagementDelivery::class)->execute($payment, 'confirmed');
         }
 
         DB::afterCommit(function () use ($paidBookings, $payment, $transition) {
@@ -148,15 +151,6 @@ class BookingGroupConsequences implements PaymentConsequences
             }
         }
 
-        $recipientEmail = $firstBooking->email ?: $payment->email_pembayar;
-        if ($recipientEmail) {
-            try {
-                Mail::to($recipientEmail)
-                    ->send(new BookingGroupInvoiceMail($payment, collect($paidBookings), $payment->getManageUrl()));
-            } catch (\Exception $e) {
-                Log::error('Gagal kirim email invoice grup ke pelanggan: '.$e->getMessage());
-            }
-        }
     }
 
     /**

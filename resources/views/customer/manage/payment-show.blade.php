@@ -92,7 +92,7 @@
             ? 'https://wa.me/' . $cleanMerchantPhone . '?text=' . urlencode("Halo {$tenant->namabisnis}, saya ingin bertanya mengenai reservasi saya ({$payment->order_id}).")
             : null;
 
-        $invoiceUrl = route('booking.manage.payment.invoice', ['order_id' => $payment->order_id]) . ($token ? '?token=' . $token : '');
+        $invoiceUrl = route('booking.manage.payment.invoice', ['order_id' => $payment->order_id]);
 
         $canReschedule = !$isMultiSlot && $firstBooking && $firstBooking->canBeRescheduled();
         $canCancel = !$isMultiSlot && $firstBooking && $firstBooking->canBeCancelled();
@@ -292,7 +292,7 @@
                     <div class="flex flex-wrap items-center gap-3">
                         @if($canReschedule)
                             <a
-                                href="{{ route('booking.manage.reschedule.show', ['booking_code' => $firstBooking->booking_code, 'token' => $firstBooking->reschedule_token ?: $token]) }}"
+                                href="{{ route('booking.manage.reschedule.show', ['booking_code' => $firstBooking->booking_code]) }}"
                                 class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl btn-theme px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
                             >
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -431,7 +431,7 @@
                     >
                         Kembali
                     </button>
-                    <form method="POST" action="{{ route('booking.manage.cancel', ['booking_code' => $firstBooking->booking_code, 'token' => $firstBooking->cancellation_token ?: $token]) }}" class="inline">
+                    <form method="POST" action="{{ route('booking.manage.cancel', ['booking_code' => $firstBooking->booking_code]) }}" class="inline">
                         @csrf
                         <button
                             type="submit"

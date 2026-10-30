@@ -2,7 +2,7 @@
 id: BQ-052
 title: [BUG-T5-01] Kebocoran Token Rahasia pada Google Calendar & Teks Berbagi WhatsApp
 type: bug-fix
-status: approved
+status: done
 priority: P0
 phase: 4
 domain: customer-access
@@ -16,7 +16,7 @@ source: docs/audit-bug/TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OPS.md at a68ffe8
 
 # BQ-052: [BUG-T5-01] Kebocoran Token Rahasia pada Google Calendar & Teks Berbagi WhatsApp
 
-Audit source retained below. The remaining individual-page leak is confirmed by source inspection; [ADR-0006](../adr/ADR-0006-management-link-module.md) defines the accepted projection/link policy. This item remains unimplemented and records the public-share regression following BQ-001.
+Audit source retained below. The remaining individual-page leak is confirmed by source inspection; [ADR-0006](../../adr/ADR-0006-management-link-module.md) defines the accepted projection/link policy. The accepted scope is implemented; the regression evidence is recorded below.
 
 > Confirmed 2026-10-30: group `payment-show.blade.php:66-87` omits credentials, but individual `show.blade.php:25-42` still embeds the presented management URL/token in Calendar and WhatsApp text. The earlier group-only spot check did not establish a complete fix.
 
@@ -38,7 +38,10 @@ Audit source retained below. The remaining individual-page leak is confirmed by 
 
 ## Evidence
 
-_Fill in when done._
+Selesai bersama BQ-001, 2026-10-31. Individual dan group Calendar/WhatsApp hanya mengekspor fakta reservasi/public reference; invoice tidak membagikan URL private atau credential. Getter token model dan link Management pada invoice storefront dihapus.
+
+Bukti: CustomerAccessTest::test_credentials_are_hash_only_and_session_and_html_contain_no_bearer_material merender lima jalur detail/invoice, menolak credential/legacy tokens dalam HTML serta mendecode tautan Calendar/WhatsApp untuk memastikan tidak ada /manage/. CustomerFrontendSpecificationTest mempertahankan regression group sharing. Hasil suite dan pemeriksaan akhir tercatat di Evidence BQ-001 dan PR yang sama.
+
 
 ## Accepted plan
 
