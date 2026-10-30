@@ -9,7 +9,7 @@
 return [
     // Removed by BQ-032 (Provider outcome intake).
     'provider-sdk' => [
-        'app/Http/Controllers/Customer/BookingController.php' => 3,
+        'app/Http/Controllers/Customer/BookingController.php' => 1,
     ],
     // Removed by BQ-035.
     'blade-queries' => [
@@ -39,10 +39,8 @@ return [
     'scope-bypass-reason' => [
         'app/Actions/Booking/CancelBooking.php' => 1,
         'app/Actions/Booking/EvictStalePendingBookings.php' => 2,
-        'app/Actions/Payment/ExpirePayment.php' => 2,
         'app/Actions/Payment/ProcessPaymentWebhook.php' => 1,
         'app/Actions/Payment/ProcessSingaPayWebhook.php' => 1,
-        'app/Actions/Payment/SynchronizePaymentStatus.php' => 4,
         'app/Actions/Schedule/BulkCreateSchedules.php' => 2,
         'app/Actions/Schedule/DeleteBlockedDate.php' => 1,
         'app/Actions/Schedule/DeleteSchedule.php' => 1,
@@ -67,19 +65,12 @@ return [
         'app/Services/Schedule/ScheduleAvailabilityCache.php' => 1,
         'app/Support/TenantContext.php' => 1,
     ],
-    // Removed by BQ-067 / BQ-032 (Payment lifecycle, Outcome intake).
+    // Real writes moved to the Payment lifecycle in BQ-067; the rest are status values in responses, removed by BQ-032 (Outcome intake).
     'payment-status-writers' => [
-        'app/Actions/Booking/CreateBooking.php' => 1,
-        'app/Actions/Booking/CreateWalkInBooking.php' => 1,
-        'app/Actions/Booking/UpdateBookingStatus.php' => 1,
         'app/Actions/Payment/CheckPaymentStatus.php' => 1,
-        'app/Actions/Payment/CreateBookingPayment.php' => 1,
-        'app/Actions/Payment/CreateSubscriptionPayment.php' => 1,
-        'app/Actions/Payment/ExpirePayment.php' => 3,
-        'app/Actions/Payment/SynchronizePaymentStatus.php' => 9,
-        'app/Http/Controllers/Customer/BookingController.php' => 9,
-        'app/Http/Controllers/Owner/OwnerCheckoutController.php' => 8,
-        'app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php' => 2,
+        'app/Http/Controllers/Customer/BookingController.php' => 8,
+        'app/Http/Controllers/Owner/OwnerCheckoutController.php' => 7,
+        'app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php' => 1,
         'app/Infrastructure/Payments/SingaPay/SingaPayPaymentGateway.php' => 2,
     ],
 ];

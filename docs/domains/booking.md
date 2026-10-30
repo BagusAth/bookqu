@@ -20,7 +20,7 @@ The central domain: creating, changing and ending reservations, including multi-
 | `UpdateBookingStatus` | Owner status change through `BookingState::canTransition`; `cancelled` delegates to `CancelBooking`. |
 | `CancelBooking` | Actor `customer` or `owner`. Customers cannot cancel multi-slot bookings and must pass `BookingRules::canCancel` (paid, before `cancel_before_hours`). Owners cancel the whole payment group. Creates a `Refund` only for customer cancellation of a successful payment (one per payment). |
 | `RescheduleBooking` | Moves a single-slot booking to another available schedule; multi-slot is rejected. |
-| `EvictStalePendingBookings` | Inside the caller's transaction: expire the stale pending booking's payment (`ExpirePayment`) and cancel the booking. |
+| `EvictStalePendingBookings` | Inside the caller's transaction: request the stale pending booking's payment expiry from `PaymentLifecycle` and cancel the booking. |
 
 ## Rules (authoritative)
 

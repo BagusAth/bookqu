@@ -28,39 +28,31 @@ class CreateBookingPayment
     /**
      * Create payment record for a free booking.
      *
-     * @param Tenant $tenant
-     * @param array<string, mixed> $customerData
-     * @param string|null $fullCatatan
-     * @return Payment
+     * @param  array<string, mixed>  $customerData
      */
     public function createFreePayment(Tenant $tenant, array $customerData, ?string $fullCatatan = null): Payment
     {
         $orderId = PaymentRules::generateOrderId('FREE', (int) $tenant->id);
 
-        return Payment::create([
-            'idtenant'       => $tenant->id,
-            'tipe'           => PaymentState::TIPE_BOOKING,
-            'jumlah'         => 0,
-            'status'         => PaymentState::STATUS_SUKSES,
-            'metode'         => PaymentState::METODE_GRATIS,
-            'provider'       => 'manual',
-            'order_id'       => $orderId,
-            'manage_token'   => Booking::generateSecureToken(),
-            'nama_pembayar'  => $customerData['namapelanggan'],
+        return app(PaymentLifecycle::class)->recordSettled([
+            'idtenant' => $tenant->id,
+            'tipe' => PaymentState::TIPE_BOOKING,
+            'jumlah' => 0,
+            'metode' => PaymentState::METODE_GRATIS,
+            'provider' => 'manual',
+            'order_id' => $orderId,
+            'manage_token' => Booking::generateSecureToken(),
+            'nama_pembayar' => $customerData['namapelanggan'],
             'email_pembayar' => $customerData['email'],
-            'hp_pembayar'    => $customerData['nomorhp'],
-            'catatan'        => $fullCatatan ?: null,
+            'hp_pembayar' => $customerData['nomorhp'],
+            'catatan' => $fullCatatan ?: null,
         ]);
     }
 
     /**
      * Create initial pending payment record for a paid booking according to active gateway driver.
      *
-     * @param Tenant $tenant
-     * @param float $hargaAkhir
-     * @param array<string, mixed> $customerData
-     * @param string|null $fullCatatan
-     * @return Payment
+     * @param  array<string, mixed>  $customerData
      */
     public function createPendingPayment(
         Tenant $tenant,
@@ -77,29 +69,26 @@ class CreateBookingPayment
         $orderId = PaymentRules::generateOrderId('BKG', (int) $tenant->id);
 
         return Payment::create([
-            'idtenant'       => $tenant->id,
-            'tipe'           => PaymentState::TIPE_BOOKING,
-            'jumlah'         => $hargaAkhir,
-            'status'         => PaymentState::STATUS_PENDING,
-            'metode'         => $providerName,
-            'provider'       => $providerName,
-            'order_id'       => $orderId,
-            'manage_token'   => Booking::generateSecureToken(),
-            'expired_at'     => now()->addMinutes($expiryMinutes),
-            'nama_pembayar'  => $customerData['namapelanggan'],
+            'idtenant' => $tenant->id,
+            'tipe' => PaymentState::TIPE_BOOKING,
+            'jumlah' => $hargaAkhir,
+            'status' => PaymentState::STATUS_PENDING,
+            'metode' => $providerName,
+            'provider' => $providerName,
+            'order_id' => $orderId,
+            'manage_token' => Booking::generateSecureToken(),
+            'expired_at' => now()->addMinutes($expiryMinutes),
+            'nama_pembayar' => $customerData['namapelanggan'],
             'email_pembayar' => $customerData['email'],
-            'hp_pembayar'    => $customerData['nomorhp'],
-            'catatan'        => $fullCatatan ?: null,
+            'hp_pembayar' => $customerData['nomorhp'],
+            'catatan' => $fullCatatan ?: null,
         ]);
     }
 
     /**
      * Initialize payment link or snap token via active or payment-specific gateway.
      *
-     * @param Payment $payment
-     * @param Service $service
-     * @param array<string, mixed> $customerData
-     * @param int $slotCount
+     * @param  array<string, mixed>  $customerData
      * @return array{payment_url?: ?string, snap_token?: ?string, external_id?: ?string}
      */
     public function initializePayment(
@@ -124,11 +113,8 @@ class CreateBookingPayment
     /**
      * Request and associate SingaPay payment link for a paid booking payment (backward compatibility).
      *
-     * @param Payment $payment
-     * @param Service $service
-     * @param array<string, mixed> $customerData
-     * @param int $slotCount
-     * @return string
+     * @param  array<string, mixed>  $customerData
+     *
      * @throws \Exception
      */
     public function generatePaymentLink(
@@ -146,11 +132,8 @@ class CreateBookingPayment
     /**
      * Request and associate Snap token for a paid booking payment (Midtrans backward compatibility).
      *
-     * @param Payment $payment
-     * @param Service $service
-     * @param array<string, mixed> $customerData
-     * @param int $slotCount
-     * @return string
+     * @param  array<string, mixed>  $customerData
+     *
      * @throws \Exception
      */
     public function generateSnapToken(

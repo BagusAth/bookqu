@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Actions\Payment\CheckPaymentStatus;
-use App\Actions\Payment\ExpirePayment;
+use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Payment\SynchronizePaymentStatus;
+use App\Domain\Payment\PaymentTransition;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Models\Payment;
 use App\Traits\ClearsBookingCache;
@@ -16,20 +17,23 @@ class MidtransPaymentService
     use ClearsBookingCache;
 
     protected MidtransPaymentGateway $gateway;
+
     protected SynchronizePaymentStatus $syncAction;
+
     protected CheckPaymentStatus $checkAction;
-    protected ExpirePayment $expireAction;
+
+    protected PaymentLifecycle $lifecycle;
 
     public function __construct(
         ?MidtransPaymentGateway $gateway = null,
         ?SynchronizePaymentStatus $syncAction = null,
         ?CheckPaymentStatus $checkAction = null,
-        ?ExpirePayment $expireAction = null
+        ?PaymentLifecycle $lifecycle = null
     ) {
-        $this->gateway      = $gateway ?? app(MidtransPaymentGateway::class);
-        $this->syncAction   = $syncAction ?? app(SynchronizePaymentStatus::class);
-        $this->checkAction  = $checkAction ?? app(CheckPaymentStatus::class);
-        $this->expireAction = $expireAction ?? app(ExpirePayment::class);
+        $this->gateway = $gateway ?? app(MidtransPaymentGateway::class);
+        $this->syncAction = $syncAction ?? app(SynchronizePaymentStatus::class);
+        $this->checkAction = $checkAction ?? app(CheckPaymentStatus::class);
+        $this->lifecycle = $lifecycle ?? app(PaymentLifecycle::class);
     }
 
     /**
@@ -43,7 +47,6 @@ class MidtransPaymentService
     /**
      * Perform server-side verification to Midtrans API and synchronize status.
      *
-     * @param Payment $payment
      * @return array<string, mixed>
      */
     public function verifyAndSync(Payment $payment): array
@@ -54,8 +57,6 @@ class MidtransPaymentService
     /**
      * Synchronize Midtrans transaction payload to Payment & Booking / Subscription.
      *
-     * @param Payment $payment
-     * @param array|object $midtransPayload
      * @return array<string, mixed>
      */
     public function syncStatus(Payment $payment, array|object $midtransPayload): array
@@ -66,9 +67,6 @@ class MidtransPaymentService
     /**
      * Process success status idempotently.
      *
-     * @param Payment $payment
-     * @param string|null $paymentType
-     * @param string|null $transactionStatus
      * @return array<string, mixed>
      */
     public function processSuccess(
@@ -82,9 +80,6 @@ class MidtransPaymentService
     /**
      * Process failed / cancelled status idempotently.
      *
-     * @param Payment $payment
-     * @param string|null $paymentType
-     * @param string|null $transactionStatus
      * @return array<string, mixed>
      */
     public function processFailed(
@@ -98,11 +93,19 @@ class MidtransPaymentService
     /**
      * Atomically expire payment and cancel associated bookings.
      *
-     * @param Payment $payment
      * @return array<string, mixed>
      */
     public function expirePayment(Payment $payment): array
     {
-        return $this->expireAction->execute($payment);
+        $result = $this->lifecycle->transition($payment, PaymentTransition::Expired);
+
+        return [
+            'status' => $result->status(),
+            'transaction_status' => 'expire',
+            'message' => $result->changed()
+                ? 'Payment kadaluarsa dan booking berhasil dibatalkan.'
+                : 'Payment sudah final, kedaluwarsa diabaikan.',
+            'payment' => $result->payment,
+        ];
     }
 }

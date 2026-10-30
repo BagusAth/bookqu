@@ -17,13 +17,11 @@ class ProcessSingaPayWebhook
     public function __construct(
         protected SingaPayPaymentGateway $gateway,
         protected SynchronizePaymentStatus $syncAction
-    ) {
-    }
+    ) {}
 
     /**
      * Process incoming SingaPay Money In / Payment Link webhook notification.
      *
-     * @param Request $request
      * @return array{success: bool, code: int, message: string}
      */
     public function execute(Request $request): array
@@ -32,40 +30,40 @@ class ProcessSingaPayWebhook
         $rawBody = (string) $request->getContent();
         $payload = json_decode($rawBody, true);
 
-        if (!is_array($payload) || json_last_error() !== JSON_ERROR_NONE) {
+        if (! is_array($payload) || json_last_error() !== JSON_ERROR_NONE) {
             Log::warning('ProcessSingaPayWebhook: Malformed JSON body received');
 
             return [
                 'success' => false,
-                'code'    => 400,
+                'code' => 400,
                 'message' => 'Malformed JSON body',
             ];
         }
 
         // 2. Replay Protection: Validate Webhook Timestamp
-        if (!$this->gateway->verifyTimestamp($request)) {
+        if (! $this->gateway->verifyTimestamp($request)) {
             Log::warning('ProcessSingaPayWebhook: Webhook rejected due to invalid or expired timestamp', [
                 'timestamp' => $request->header('X-Timestamp'),
-                'ip'        => $request->ip(),
+                'ip' => $request->ip(),
             ]);
 
             return [
                 'success' => false,
-                'code'    => 401,
+                'code' => 401,
                 'message' => 'Invalid or expired timestamp',
             ];
         }
 
         // 3. Verify HMAC Signature
-        if (!$this->gateway->verifyWebhook($request)) {
+        if (! $this->gateway->verifyWebhook($request)) {
             Log::warning('ProcessSingaPayWebhook: Invalid HMAC signature', [
                 'uri' => $request->getRequestUri(),
-                'ip'  => $request->ip(),
+                'ip' => $request->ip(),
             ]);
 
             return [
                 'success' => false,
-                'code'    => 401,
+                'code' => 401,
                 'message' => 'Invalid signature',
             ];
         }
@@ -73,35 +71,35 @@ class ProcessSingaPayWebhook
         // 4. Resolve Payment using data.transaction.reff_no as primary identifier
         $payment = $this->resolvePayment($payload);
 
-        if (!$payment) {
+        if (! $payment) {
             Log::warning('ProcessSingaPayWebhook: Payment not found for webhook notification', [
-                'reff_no'  => $this->extractReffNo($payload),
-                'event'    => $payload['event'] ?? 'unknown',
+                'reff_no' => $this->extractReffNo($payload),
+                'event' => $payload['event'] ?? 'unknown',
             ]);
 
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Payment not found',
             ];
         }
 
         Log::info('ProcessSingaPayWebhook: Processing verified webhook', [
             'payment_id' => $payment->id,
-            'order_id'   => $payment->order_id,
-            'event'      => $payload['event'] ?? 'unknown',
+            'order_id' => $payment->order_id,
+            'event' => $payload['event'] ?? 'unknown',
         ]);
 
         // 5. Validate Tenant Isolation
-        if (!$payment->idtenant || !$payment->tenant) {
+        if (! $payment->idtenant || ! $payment->tenant) {
             Log::warning('ProcessSingaPayWebhook: Payment tenant missing or invalid', [
                 'payment_id' => $payment->id,
-                'idtenant'   => $payment->idtenant,
+                'idtenant' => $payment->idtenant,
             ]);
 
             return [
                 'success' => false,
-                'code'    => 422,
+                'code' => 422,
                 'message' => 'Tenant isolation violation',
             ];
         }
@@ -120,21 +118,21 @@ class ProcessSingaPayWebhook
         if ($domainStatus === 'unknown') {
             Log::warning('ProcessSingaPayWebhook: Missing or unknown transaction status', [
                 'payment_id' => $payment->id,
-                'order_id'   => $payment->order_id,
-                'event'      => $payload['event'] ?? 'unknown',
+                'order_id' => $payment->order_id,
+                'event' => $payload['event'] ?? 'unknown',
                 'raw_status' => $rawStatus !== '' ? $rawStatus : null,
             ]);
 
             return [
                 'success' => false,
-                'code'    => 422,
+                'code' => 422,
                 'message' => 'Missing or unknown SingaPay transaction status',
             ];
         }
 
         // 7. Validate transaction amount and currency. Both are mandatory before
         // a callback may mark a payment successful.
-        $incomingAmount   = $this->extractAmount($payload);
+        $incomingAmount = $this->extractAmount($payload);
         $incomingCurrency = $this->extractCurrency($payload);
 
         if (
@@ -143,12 +141,12 @@ class ProcessSingaPayWebhook
         ) {
             Log::warning('ProcessSingaPayWebhook: Successful transaction missing amount or currency', [
                 'payment_id' => $payment->id,
-                'order_id'   => $payment->order_id,
+                'order_id' => $payment->order_id,
             ]);
 
             return [
                 'success' => false,
-                'code'    => 422,
+                'code' => 422,
                 'message' => 'Successful transaction is missing amount or currency',
             ];
         }
@@ -161,7 +159,7 @@ class ProcessSingaPayWebhook
 
             return [
                 'success' => false,
-                'code'    => 422,
+                'code' => 422,
                 'message' => 'Transaction currency mismatch',
             ];
         }
@@ -178,7 +176,7 @@ class ProcessSingaPayWebhook
 
                 return [
                     'success' => false,
-                    'code'    => 422,
+                    'code' => 422,
                     'message' => 'Transaction amount mismatch',
                 ];
             }
@@ -188,25 +186,27 @@ class ProcessSingaPayWebhook
         if ($payment->status === PaymentState::STATUS_SUKSES) {
             Log::info('ProcessSingaPayWebhook: Duplicate webhook received for already successful payment', [
                 'payment_id' => $payment->id,
-                'order_id'   => $payment->order_id,
+                'order_id' => $payment->order_id,
             ]);
 
             return [
                 'success' => true,
-                'code'    => 200,
+                'code' => 200,
                 'message' => 'Payment already processed successfully',
             ];
         }
 
-        if ($payment->status === PaymentState::STATUS_GAGAL) {
+        // A success for a payment that already failed is a late success: the lifecycle
+        // module records the refund owed and alerts the owner (ADR-0004 decision 5).
+        if ($payment->status === PaymentState::STATUS_GAGAL && $domainStatus !== PaymentState::STATUS_SUKSES) {
             Log::info('ProcessSingaPayWebhook: Webhook received for already failed/cancelled payment', [
                 'payment_id' => $payment->id,
-                'order_id'   => $payment->order_id,
+                'order_id' => $payment->order_id,
             ]);
 
             return [
                 'success' => true,
-                'code'    => 200,
+                'code' => 200,
                 'message' => 'Payment already failed or cancelled',
             ];
         }
@@ -226,13 +226,13 @@ class ProcessSingaPayWebhook
                 // unreachable unless PaymentState mappings change in the future.
                 Log::error('ProcessSingaPayWebhook: Unhandled mapped transaction status', [
                     'payment_id' => $payment->id,
-                    'order_id'   => $payment->order_id,
+                    'order_id' => $payment->order_id,
                     'raw_status' => $rawStatus,
                 ]);
 
                 return [
                     'success' => false,
-                    'code'    => 422,
+                    'code' => 422,
                     'message' => 'Unsupported SingaPay transaction status',
                 ];
             }
@@ -242,7 +242,7 @@ class ProcessSingaPayWebhook
 
         return [
             'success' => true,
-            'code'    => 200,
+            'code' => 200,
             'message' => 'OK',
         ];
     }
@@ -269,14 +269,13 @@ class ProcessSingaPayWebhook
      * Resolve Payment using data.transaction.reff_no as primary identifier,
      * with fallback to payment-link webhook structures.
      *
-     * @param array<string, mixed> $payload
-     * @return Payment|null
+     * @param  array<string, mixed>  $payload
      */
     protected function resolvePayment(array $payload): ?Payment
     {
         // 1. Primary identifier per specification: data.transaction.reff_no
         $primaryReff = $payload['data']['transaction']['reff_no'] ?? null;
-        if (!empty($primaryReff)) {
+        if (! empty($primaryReff)) {
             $payment = $this->findSingaPayPayment('order_id', (string) $primaryReff);
 
             if ($payment) {
@@ -320,8 +319,7 @@ class ProcessSingaPayWebhook
     /**
      * Extract reference number from SingaPay payload structures for logging.
      *
-     * @param array<string, mixed> $payload
-     * @return string|null
+     * @param  array<string, mixed>  $payload
      */
     protected function extractReffNo(array $payload): ?string
     {
@@ -337,8 +335,7 @@ class ProcessSingaPayWebhook
     /**
      * Extract numeric amount from SingaPay payload structures.
      *
-     * @param array<string, mixed> $payload
-     * @return float|null
+     * @param  array<string, mixed>  $payload
      */
     protected function extractAmount(array $payload): ?float
     {
@@ -354,8 +351,7 @@ class ProcessSingaPayWebhook
     /**
      * Extract currency string from SingaPay payload structures.
      *
-     * @param array<string, mixed> $payload
-     * @return string|null
+     * @param  array<string, mixed>  $payload
      */
     protected function extractCurrency(array $payload): ?string
     {

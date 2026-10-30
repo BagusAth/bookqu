@@ -5,48 +5,45 @@ declare(strict_types=1);
 namespace App\Actions\Payment;
 
 use App\Domain\Payment\PaymentState;
-use App\Mail\BookingGroupInvoiceMail;
-use App\Models\Booking;
+use App\Domain\Payment\PaymentTransition;
+use App\Domain\Payment\PaymentTransitionOutcome;
 use App\Models\Payment;
-use App\Models\Subscription;
-use App\Models\UsageLog;
-use App\Notifications\NewBookingOwnerNotification;
 use App\Support\TenantContext;
-use App\Traits\ClearsBookingCache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
+/**
+ * Maps a provider-reported transaction status to a Payment lifecycle request.
+ */
 class SynchronizePaymentStatus
 {
-    use ClearsBookingCache;
+    public function __construct(
+        protected PaymentLifecycle $lifecycle
+    ) {}
 
     /**
      * Single Source of Truth for synchronizing Midtrans transaction status to Payment & Booking / Subscription.
      * Accepts array (from webhook) or object (from MidtransTransaction::status).
      *
-     * @param Payment $payment
-     * @param array|object $midtransPayload
      * @return array<string, mixed>
      */
     public function syncStatus(Payment $payment, array|object $midtransPayload): array
     {
-        if ($payment->idtenant && !app(TenantContext::class)->hasTenant()) {
+        if ($payment->idtenant && ! app(TenantContext::class)->hasTenant()) {
             app(TenantContext::class)->setTenantId($payment->idtenant);
         }
 
         $payload = is_object($midtransPayload) ? (array) $midtransPayload : $midtransPayload;
 
         $transactionStatus = $payload['transaction_status'] ?? null;
-        $fraudStatus       = $payload['fraud_status'] ?? null;
-        $paymentType       = $payload['payment_type'] ?? null;
+        $fraudStatus = $payload['fraud_status'] ?? null;
+        $paymentType = $payload['payment_type'] ?? null;
 
         Log::info('SynchronizePaymentStatus processing:', [
-            'payment_id'         => $payment->id,
-            'order_id'           => $payment->order_id,
+            'payment_id' => $payment->id,
+            'order_id' => $payment->order_id,
             'transaction_status' => $transactionStatus,
-            'fraud_status'       => $fraudStatus,
-            'payment_type'       => $paymentType,
+            'fraud_status' => $fraudStatus,
+            'payment_type' => $paymentType,
         ]);
 
         $domainStatus = PaymentState::mapTransactionStatus($transactionStatus, $fraudStatus);
@@ -68,25 +65,22 @@ class SynchronizePaymentStatus
         }
 
         Log::warning('SynchronizePaymentStatus: Unknown transaction status encountered', [
-            'payment_id'         => $payment->id,
-            'order_id'           => $payment->order_id,
+            'payment_id' => $payment->id,
+            'order_id' => $payment->order_id,
             'transaction_status' => $transactionStatus,
         ]);
 
         return [
-            'status'             => 'unknown',
+            'status' => 'unknown',
             'transaction_status' => $transactionStatus,
-            'message'            => 'Status transaksi tidak dikenal.',
-            'payment'            => $payment,
+            'message' => 'Status transaksi tidak dikenal.',
+            'payment' => $payment,
         ];
     }
 
     /**
-     * Process payment success status idempotently with database locking and transaction.
+     * Apply a provider-reported success through the Payment lifecycle module.
      *
-     * @param Payment $payment
-     * @param string|null $paymentType
-     * @param string|null $transactionStatus
      * @return array<string, mixed>
      */
     public function processSuccess(
@@ -94,166 +88,27 @@ class SynchronizePaymentStatus
         ?string $paymentType = null,
         ?string $transactionStatus = 'settlement'
     ): array {
-        return DB::transaction(function () use ($payment, $paymentType, $transactionStatus) {
-            /** @var Payment|null $lockedPayment */
-            $lockedPayment = Payment::withoutGlobalScopes()->lockForUpdate()->find($payment->id);
-            if ($lockedPayment) {
-                app(TenantContext::class)->setTenantId($lockedPayment->idtenant);
-                $payment = $lockedPayment;
-            }
+        $result = $this->lifecycle->transition($payment, PaymentTransition::ProviderSucceeded, $paymentType);
 
-            // P0-05: State Machine check
-            if ($payment->status === PaymentState::STATUS_SUKSES) {
-                return [
-                    'status'             => PaymentState::STATUS_SUKSES,
-                    'transaction_status' => $transactionStatus,
-                    'message'            => 'Pembayaran sudah dikonfirmasi sebelumnya.',
-                    'payment'            => $payment,
-                ];
-            }
+        $message = match ($result->outcome) {
+            PaymentTransitionOutcome::Changed => 'Pembayaran berhasil dikonfirmasi.',
+            PaymentTransitionOutcome::RefundOwed => 'Pembayaran diterima setelah pesanan dibatalkan atau kedaluwarsa. Dana akan dikembalikan.',
+            default => $result->status() === PaymentState::STATUS_SUKSES
+                ? 'Pembayaran sudah dikonfirmasi sebelumnya.'
+                : 'Pembayaran sudah gagal atau dibatalkan sebelumnya dan tidak dapat diubah.',
+        };
 
-            if ($payment->status === PaymentState::STATUS_GAGAL) {
-                Log::warning('Late Settlement: Settlement received for failed/cancelled payment', [
-                    'payment_id' => $payment->id,
-                    'order_id'   => $payment->order_id,
-                ]);
-
-                return [
-                    'status'             => PaymentState::STATUS_GAGAL,
-                    'transaction_status' => $transactionStatus,
-                    'message'            => 'Pembayaran sudah gagal atau dibatalkan sebelumnya dan tidak dapat diubah.',
-                    'payment'            => $payment,
-                ];
-            }
-
-            // 1. Subscription Payment
-            if ($payment->tipe === PaymentState::TIPE_SUBSCRIPTION) {
-                $payment->update([
-                    'status' => PaymentState::STATUS_SUKSES,
-                    'metode' => $paymentType ?? $payment->metode ?? PaymentState::METODE_MIDTRANS,
-                ]);
-
-                app(\App\Actions\Subscription\ActivateSubscription::class)->execute($payment);
-            }
-
-            // 2. Booking Payment
-            if ($payment->tipe === PaymentState::TIPE_BOOKING) {
-                $bookings = Booking::withoutGlobalScopes()
-                    ->with(['layanan', 'tenant.user', 'payment'])
-                    ->lockForUpdate()
-                    ->where('idpayment', $payment->id)
-                    ->get();
-
-                // State machine check: if all bookings already paid, idempotent return
-                $allPaid = $bookings->isNotEmpty() && $bookings->every(fn($b) => in_array($b->status, ['paid', 'completed'], true));
-                if ($allPaid && $payment->status === PaymentState::STATUS_SUKSES) {
-                    return [
-                        'status'             => PaymentState::STATUS_SUKSES,
-                        'transaction_status' => $transactionStatus,
-                        'message'            => 'Seluruh booking sudah dibayar sebelumnya.',
-                        'payment'            => $payment,
-                    ];
-                }
-
-                // Late webhook / Mixed booking guard: if any booking was already cancelled, do not resurrect
-                $hasCancelled = $bookings->contains(fn($b) => $b->status === 'cancelled');
-                if ($hasCancelled) {
-                    Log::warning('Late Webhook Anomaly: Settlement received for cancelled booking(s) in payment group', [
-                        'payment_id'  => $payment->id,
-                        'booking_ids' => $bookings->pluck('id')->all(),
-                    ]);
-
-                    return [
-                        'status'             => PaymentState::STATUS_GAGAL,
-                        'transaction_status' => $transactionStatus,
-                        'message'            => 'Terdapat booking yang sudah dibatalkan dalam grup reservasi ini. Settlement diabaikan untuk mencegah inkonsistensi.',
-                        'payment'            => $payment,
-                    ];
-                }
-
-                // Update Payment status to sukses
-                $payment->update([
-                    'status' => PaymentState::STATUS_SUKSES,
-                    'metode' => $paymentType ?? $payment->metode ?? PaymentState::METODE_MIDTRANS,
-                ]);
-
-                $paidBookings = [];
-                foreach ($bookings as $booking) {
-                    if ($booking->idtenant === $payment->idtenant && $booking->status === 'pending') {
-                        $booking->update(['status' => 'paid']);
-
-                        if (!$booking->booking_code) {
-                            $booking->assignManagementTokens();
-                            $booking->refresh();
-                        }
-
-                        try {
-                            UsageLog::record($booking->idtenant, 'booking');
-                        } catch (\Exception $e) {
-                            Log::error('Gagal catat usage log booking: ' . $e->getMessage());
-                        }
-
-                        $paidBookings[] = $booking;
-                    } elseif ($booking->status === 'paid') {
-                        $paidBookings[] = $booking;
-                    }
-                }
-
-                if (!empty($paidBookings)) {
-                    DB::afterCommit(function () use ($paidBookings, $payment) {
-                        $firstBooking = $paidBookings[0];
-
-                        // Send owner notification (1 per group)
-                        $owner = $firstBooking->tenant?->user;
-                        if ($owner && $owner->email) {
-                            try {
-                                $owner->notify(new NewBookingOwnerNotification($firstBooking));
-                            } catch (\Exception $e) {
-                                Log::error('Gagal kirim notif booking ke owner: ' . $e->getMessage());
-                            }
-                        }
-
-                        // Send customer invoice email (1 per group)
-                        $recipientEmail = $firstBooking->email ?: $payment->email_pembayar;
-                        if ($recipientEmail) {
-                            try {
-                                $manageUrl = $payment->getManageUrl();
-                                Mail::to($recipientEmail)
-                                    ->send(new BookingGroupInvoiceMail($payment, collect($paidBookings), $manageUrl));
-                            } catch (\Exception $e) {
-                                Log::error('Gagal kirim email invoice grup ke pelanggan: ' . $e->getMessage());
-                            }
-                        }
-
-                        // Invalidate cache for each slot
-                        foreach ($paidBookings as $bk) {
-                            if ($bk->idlayanan && $bk->tanggalbooking) {
-                                $tanggal = is_string($bk->tanggalbooking)
-                                    ? $bk->tanggalbooking
-                                    : $bk->tanggalbooking->format('Y-m-d');
-                                $this->clearScheduleCache($bk->idtenant, $bk->idlayanan, [$tanggal]);
-                                $this->clearAvailabilityCache($bk->idtenant, $bk->idlayanan);
-                            }
-                        }
-                    });
-                }
-            }
-
-            return [
-                'status'             => PaymentState::STATUS_SUKSES,
-                'transaction_status' => $transactionStatus,
-                'message'            => 'Pembayaran berhasil dikonfirmasi.',
-                'payment'            => $payment,
-            ];
-        });
+        return [
+            'status' => $result->status(),
+            'transaction_status' => $transactionStatus,
+            'message' => $message,
+            'payment' => $result->payment,
+        ];
     }
 
     /**
-     * Process payment failed / deny / expire / cancel idempotently.
+     * Apply a provider-reported failure, denial, expiry or cancellation through the Payment lifecycle module.
      *
-     * @param Payment $payment
-     * @param string|null $paymentType
-     * @param string|null $transactionStatus
      * @return array<string, mixed>
      */
     public function processFailed(
@@ -261,73 +116,21 @@ class SynchronizePaymentStatus
         ?string $paymentType = null,
         ?string $transactionStatus = 'cancel'
     ): array {
-        return DB::transaction(function () use ($payment, $paymentType, $transactionStatus) {
-            /** @var Payment|null $lockedPayment */
-            $lockedPayment = Payment::withoutGlobalScopes()->lockForUpdate()->find($payment->id);
-            if ($lockedPayment) {
-                app(TenantContext::class)->setTenantId($lockedPayment->idtenant);
-                $payment = $lockedPayment;
-            }
+        $result = $this->lifecycle->transition($payment, PaymentTransition::ProviderFailed, $paymentType);
 
-            if ($payment->status === PaymentState::STATUS_SUKSES || $payment->status === PaymentState::STATUS_GAGAL) {
-                return [
-                    'status'             => $payment->status,
-                    'transaction_status' => $transactionStatus,
-                    'message'            => 'Pembayaran gagal/batal atau sudah selesai.',
-                    'payment'            => $payment,
-                ];
-            }
-
-            $payment->update([
-                'status' => PaymentState::STATUS_GAGAL,
-                'metode' => $paymentType ?? $payment->metode,
-            ]);
-
-            $cancelledBookings = [];
-            if ($payment->tipe === PaymentState::TIPE_BOOKING) {
-                $bookings = Booking::withoutGlobalScopes()
-                    ->where('idpayment', $payment->id)
-                    ->lockForUpdate()
-                    ->get();
-
-                foreach ($bookings as $booking) {
-                    if ($booking->idtenant === $payment->idtenant && $booking->status === 'pending') {
-                        $booking->update(['status' => 'cancelled']);
-                        $cancelledBookings[] = $booking;
-                    }
-                }
-
-                if (!empty($cancelledBookings)) {
-                    DB::afterCommit(function () use ($cancelledBookings) {
-                        foreach ($cancelledBookings as $booking) {
-                            if ($booking->idlayanan && $booking->tanggalbooking) {
-                                $tanggal = is_string($booking->tanggalbooking)
-                                    ? $booking->tanggalbooking
-                                    : $booking->tanggalbooking->format('Y-m-d');
-                                $this->clearScheduleCache($booking->idtenant, $booking->idlayanan, [$tanggal]);
-                                $this->clearAvailabilityCache($booking->idtenant, $booking->idlayanan);
-                            }
-                        }
-                    });
-                }
-            }
-
-            return [
-                'status'             => PaymentState::STATUS_GAGAL,
-                'transaction_status' => $transactionStatus,
-                'message'            => 'Pembayaran gagal atau dibatalkan.',
-                'payment'            => $payment,
-            ];
-        });
+        return [
+            'status' => $result->status(),
+            'transaction_status' => $transactionStatus,
+            'message' => $result->changed()
+                ? 'Pembayaran gagal atau dibatalkan.'
+                : 'Pembayaran gagal/batal atau sudah selesai.',
+            'payment' => $result->payment,
+        ];
     }
 
     /**
      * Process pending status idempotently.
      *
-     * @param Payment $payment
-     * @param string|null $paymentType
-     * @param string|null $transactionStatus
-     * @param string|null $customMessage
      * @return array<string, mixed>
      */
     public function processPending(
@@ -343,10 +146,10 @@ class SynchronizePaymentStatus
         }
 
         return [
-            'status'             => PaymentState::STATUS_PENDING,
+            'status' => PaymentState::STATUS_PENDING,
             'transaction_status' => $transactionStatus,
-            'message'            => $customMessage ?? 'Pembayaran belum diselesaikan. Silakan selesaikan pembayaran sesuai instruksi.',
-            'payment'            => $payment,
+            'message' => $customMessage ?? 'Pembayaran belum diselesaikan. Silakan selesaikan pembayaran sesuai instruksi.',
+            'payment' => $payment,
         ];
     }
 }

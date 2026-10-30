@@ -6,12 +6,15 @@ use App\Mail\BookingGroupInvoiceMail;
 use App\Mail\BookingInvoiceMail;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Models\Refund;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\MidtransPaymentService;
 use Carbon\Carbon;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -21,10 +24,15 @@ class PaymentGroupManagementTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected Service $service;
+
     protected string $date;
+
     protected Schedule $slot10;
+
     protected Schedule $slot11;
+
     protected Schedule $slot12;
 
     protected function setUp(): void
@@ -32,8 +40,8 @@ class PaymentGroupManagementTest extends TestCase
         parent::setUp();
 
         $this->withoutMiddleware([
-            \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
-            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            PreventRequestForgery::class,
+            ValidateCsrfToken::class,
         ]);
 
         $user = User::factory()->create(['role' => 'owner']);
@@ -98,7 +106,7 @@ class PaymentGroupManagementTest extends TestCase
                 'schedule_ids' => $scheduleIds,
                 'jam' => $times,
                 'times' => $times,
-            ]
+            ],
         ]);
     }
 
@@ -123,15 +131,15 @@ class PaymentGroupManagementTest extends TestCase
         $this->assertCount(2, $bookings);
 
         $manageUrl = $payment->getManageUrl();
-        $this->assertStringContainsString('/manage/payment/' . $payment->order_id, $manageUrl);
-        $this->assertStringContainsString('token=' . $payment->manage_token, $manageUrl);
+        $this->assertStringContainsString('/manage/payment/'.$payment->order_id, $manageUrl);
+        $this->assertStringContainsString('token='.$payment->manage_token, $manageUrl);
     }
 
     public function test_payment_management_url_valid_and_shows_all_slots(): void
     {
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
-            'order_id' => 'BQ-GRP-' . time(),
+            'order_id' => 'BQ-GRP-'.time(),
             'manage_token' => Booking::generateSecureToken(),
             'tipe' => 'booking',
             'metode' => 'midtrans',
@@ -169,7 +177,7 @@ class PaymentGroupManagementTest extends TestCase
             'cancellation_token' => Booking::generateSecureToken(),
         ]);
 
-        $response = $this->get('/manage/payment/' . $payment->order_id . '?token=' . $payment->manage_token);
+        $response = $this->get('/manage/payment/'.$payment->order_id.'?token='.$payment->manage_token);
         $response->assertStatus(200);
         $response->assertSee($payment->order_id);
         $response->assertSee('10:00');
@@ -181,7 +189,7 @@ class PaymentGroupManagementTest extends TestCase
     {
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
-            'order_id' => 'BQ-SEC-' . time(),
+            'order_id' => 'BQ-SEC-'.time(),
             'manage_token' => Booking::generateSecureToken(),
             'tipe' => 'booking',
             'metode' => 'midtrans',
@@ -203,11 +211,11 @@ class PaymentGroupManagementTest extends TestCase
         ]);
 
         // Wrong token
-        $response = $this->get('/manage/payment/' . $payment->order_id . '?token=wrong-token');
+        $response = $this->get('/manage/payment/'.$payment->order_id.'?token=wrong-token');
         $response->assertStatus(403);
 
         // Missing token
-        $responseNoToken = $this->get('/manage/payment/' . $payment->order_id);
+        $responseNoToken = $this->get('/manage/payment/'.$payment->order_id);
         $responseNoToken->assertStatus(403);
     }
 
@@ -224,7 +232,7 @@ class PaymentGroupManagementTest extends TestCase
 
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
-            'order_id' => 'BQ-XTE-' . time(),
+            'order_id' => 'BQ-XTE-'.time(),
             'manage_token' => Booking::generateSecureToken(),
             'tipe' => 'booking',
             'metode' => 'midtrans',
@@ -246,7 +254,7 @@ class PaymentGroupManagementTest extends TestCase
             'status' => 'paid',
         ]);
 
-        $response = $this->get('/manage/payment/' . $payment->order_id . '?token=' . $payment->manage_token);
+        $response = $this->get('/manage/payment/'.$payment->order_id.'?token='.$payment->manage_token);
         $response->assertStatus(403);
     }
 
@@ -266,7 +274,7 @@ class PaymentGroupManagementTest extends TestCase
             'cancellation_token' => Booking::generateSecureToken(),
         ]);
 
-        $response = $this->get('/manage/' . $booking->booking_code . '?token=' . $booking->cancellation_token);
+        $response = $this->get('/manage/'.$booking->booking_code.'?token='.$booking->cancellation_token);
         $response->assertStatus(200);
         $response->assertSee($booking->booking_code);
     }
@@ -277,7 +285,7 @@ class PaymentGroupManagementTest extends TestCase
 
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
-            'order_id' => 'BQ-EMAIL-' . time(),
+            'order_id' => 'BQ-EMAIL-'.time(),
             'manage_token' => Booking::generateSecureToken(),
             'tipe' => 'booking',
             'metode' => 'midtrans',
@@ -330,7 +338,7 @@ class PaymentGroupManagementTest extends TestCase
     {
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
-            'order_id' => 'BQ-LATE-' . time(),
+            'order_id' => 'BQ-LATE-'.time(),
             'manage_token' => Booking::generateSecureToken(),
             'tipe' => 'booking',
             'metode' => 'midtrans',
@@ -376,14 +384,16 @@ class PaymentGroupManagementTest extends TestCase
 
         $this->assertNotEquals('sukses', $payment->status);
         $this->assertEquals('cancelled', $b1->status);
-        $this->assertEquals('pending', $b2->status); // Not marked as paid
+        // Not marked as paid: the undeliverable group is withdrawn and one refund is owed (ADR-0004, BQ-067)
+        $this->assertNotEquals('paid', $b2->status);
+        $this->assertSame(1, Refund::where('payment_id', $payment->id)->count());
     }
 
     public function test_failed_payment_settlement_remains_failed(): void
     {
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
-            'order_id' => 'BQ-FAIL-' . time(),
+            'order_id' => 'BQ-FAIL-'.time(),
             'manage_token' => Booking::generateSecureToken(),
             'tipe' => 'booking',
             'metode' => 'midtrans',
@@ -403,7 +413,7 @@ class PaymentGroupManagementTest extends TestCase
     {
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
-            'order_id' => 'BQ-IDEM-' . time(),
+            'order_id' => 'BQ-IDEM-'.time(),
             'manage_token' => Booking::generateSecureToken(),
             'tipe' => 'booking',
             'metode' => 'midtrans',
@@ -435,7 +445,7 @@ class PaymentGroupManagementTest extends TestCase
     {
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
-            'order_id' => 'BQ-PRC-' . time(),
+            'order_id' => 'BQ-PRC-'.time(),
             'tipe' => 'booking',
             'metode' => 'midtrans',
             'status' => 'sukses',
@@ -465,7 +475,7 @@ class PaymentGroupManagementTest extends TestCase
 
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
-            'order_id' => 'BQ-SPEND-' . time(),
+            'order_id' => 'BQ-SPEND-'.time(),
             'manage_token' => Booking::generateSecureToken(),
             'tipe' => 'booking',
             'metode' => 'midtrans',
@@ -512,7 +522,7 @@ class PaymentGroupManagementTest extends TestCase
     {
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
-            'order_id' => 'BQ-INV-TEST-' . time(),
+            'order_id' => 'BQ-INV-TEST-'.time(),
             'manage_token' => Booking::generateSecureToken(),
             'tipe' => 'booking',
             'metode' => 'midtrans',
@@ -534,7 +544,7 @@ class PaymentGroupManagementTest extends TestCase
             'booking_code' => 'BKQ-INV-1',
         ]);
 
-        $response = $this->get('/manage/payment/' . $payment->order_id . '/invoice?token=' . $payment->manage_token);
+        $response = $this->get('/manage/payment/'.$payment->order_id.'/invoice?token='.$payment->manage_token);
         $response->assertStatus(200);
         $response->assertSee('Bukti Reservasi Resmi');
         $response->assertSee($payment->order_id);
@@ -571,7 +581,7 @@ class PaymentGroupManagementTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
             ],
-        ])->get('/' . $this->tenant->slug . '/booking/date');
+        ])->get('/'.$this->tenant->slug.'/booking/date');
 
         $response->assertStatus(200);
         $payload = $response->viewData('availabilityPayload');
@@ -607,7 +617,7 @@ class PaymentGroupManagementTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
             ],
-        ])->get('/' . $this->tenant->slug . '/booking/date');
+        ])->get('/'.$this->tenant->slug.'/booking/date');
 
         $response->assertStatus(200);
         $payload = $response->viewData('availabilityPayload');
@@ -623,7 +633,7 @@ class PaymentGroupManagementTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
             ],
-        ])->post('/' . $this->tenant->slug . '/booking/select-date', [
+        ])->post('/'.$this->tenant->slug.'/booking/select-date', [
             'tanggal' => $today,
         ]);
 

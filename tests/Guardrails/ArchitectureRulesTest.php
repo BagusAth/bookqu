@@ -81,7 +81,7 @@ class ArchitectureRulesTest extends TestCase
         $this->assertRule('payment-status-writers', $this->countMatches(
             ['app'],
             "/'status'\s*=>\s*(?:PaymentState::STATUS_(?:SUKSES|GAGAL)|'(?:sukses|gagal)')|->status\s*=\s*(?:PaymentState::STATUS_(?:SUKSES|GAGAL)|'(?:sukses|gagal)')/",
-            ['app/Domain/Payment/'],
+            ['app/Domain/Payment/', 'app/Actions/Payment/PaymentLifecycle.php', 'app/Actions/Payment/Lifecycle/'],
         ));
     }
 

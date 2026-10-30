@@ -13,10 +13,11 @@ Owns owner in-app notifications, dashboard polling, and e-mails to customers and
 
 | Message | Channel | Sent by |
 |---|---|---|
-| `NewBookingOwnerNotification` | database + mail | `CreateBooking` (free bookings), `SynchronizePaymentStatus` (paid) |
+| `NewBookingOwnerNotification` | database + mail | `CreateBooking` (free bookings), Payment lifecycle `BookingGroupConsequences` (provider success) |
+| `PaymentRefundOwedOwnerNotification` | database + mail | Payment lifecycle (late success or undeliverable group: refund owed) |
 | `BookingStatusChangedOwnerNotification` | database + mail | `CancelBooking`, `UpdateBookingStatus`, `RescheduleBooking` |
 | `TrialExpiringNotification` | mail | `CheckExpiredSubscriptions` |
-| `BookingGroupInvoiceMail` | mail | `CreateBooking` (free), `SynchronizePaymentStatus` |
+| `BookingGroupInvoiceMail` | mail | `CreateBooking` (free), Payment lifecycle `BookingGroupConsequences` (provider success) |
 | `BookingCancelledMail` / `BookingRescheduledMail` | mail | `CancelBooking` / `RescheduleBooking` |
 | `BookingInvoiceMail` | mail | single-booking invoice |
 | `BookingConfirmedMail`, `BookingPaidNotification` | — | **unused** (dead code) |

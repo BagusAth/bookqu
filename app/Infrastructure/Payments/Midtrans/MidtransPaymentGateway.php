@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Payments\Midtrans;
 
+use App\Actions\Payment\SynchronizePaymentStatus;
 use App\Contracts\Payments\PaymentGatewayInterface;
 use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
@@ -33,10 +34,7 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
     /**
      * Create Snap Token for customer booking.
      *
-     * @param Payment $payment
-     * @param Service $service
-     * @param array<string, mixed> $customerData
-     * @param int $slotCount
+     * @param  array<string, mixed>  $customerData
      * @return array{snap_token: string}
      */
     public function createBookingPayment(
@@ -45,43 +43,43 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
         array $customerData,
         int $slotCount = 1
     ): array {
-        $itemName = 'Booking: ' . $service->namalayanan;
+        $itemName = 'Booking: '.$service->namalayanan;
         if ($slotCount > 1) {
-            $itemName .= ' (' . $slotCount . ' slot)';
+            $itemName .= ' ('.$slotCount.' slot)';
         }
 
         $expiryMinutes = (int) (config('payment.drivers.singapay.expiry_minutes') ?? config('services.singapay.expiry_minutes', 15));
 
         $params = [
             'transaction_details' => [
-                'order_id'     => $payment->order_id,
+                'order_id' => $payment->order_id,
                 'gross_amount' => (int) $payment->jumlah,
             ],
             'customer_details' => [
                 'first_name' => $customerData['namapelanggan'],
-                'email'      => $customerData['email'],
-                'phone'      => $customerData['nomorhp'],
+                'email' => $customerData['email'],
+                'phone' => $customerData['nomorhp'],
             ],
             'item_details' => [
                 [
-                    'id'       => 'SRV-' . $service->id,
-                    'price'    => (int) $payment->jumlah,
+                    'id' => 'SRV-'.$service->id,
+                    'price' => (int) $payment->jumlah,
                     'quantity' => 1,
-                    'name'     => $itemName,
+                    'name' => $itemName,
                 ],
             ],
             'expiry' => [
                 'start_time' => now()->format('Y-m-d H:i:s O'),
-                'unit'       => 'minute',
-                'duration'   => $expiryMinutes,
+                'unit' => 'minute',
+                'duration' => $expiryMinutes,
             ],
         ];
 
         $snapToken = $this->createSnapToken($payment, $params);
         $payment->update([
             'snap_token' => $snapToken,
-            'provider'   => 'midtrans',
-            'metode'     => PaymentState::METODE_MIDTRANS,
+            'provider' => 'midtrans',
+            'metode' => PaymentState::METODE_MIDTRANS,
         ]);
 
         return [
@@ -92,10 +90,7 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
     /**
      * Create Snap Token for owner subscription checkout.
      *
-     * @param Payment $payment
-     * @param Plan $plan
-     * @param array<string, mixed> $payerData
-     * @param float $biayaPlatform
+     * @param  array<string, mixed>  $payerData
      * @return array{snap_token: string}
      */
     public function createSubscriptionPayment(
@@ -108,35 +103,35 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
 
         $params = [
             'transaction_details' => [
-                'order_id'     => $payment->order_id,
+                'order_id' => $payment->order_id,
                 'gross_amount' => (int) $totalBayar,
             ],
             'customer_details' => [
                 'first_name' => $payerData['nama_pembayar'],
-                'email'      => $payerData['email_pembayar'],
-                'phone'      => $payerData['hp_pembayar'],
+                'email' => $payerData['email_pembayar'],
+                'phone' => $payerData['hp_pembayar'],
             ],
             'item_details' => [
                 [
-                    'id'       => 'PLAN-' . $plan->id,
-                    'price'    => (int) $plan->hargabulanan,
+                    'id' => 'PLAN-'.$plan->id,
+                    'price' => (int) $plan->hargabulanan,
                     'quantity' => 1,
-                    'name'     => 'Subscription Plan ' . ucfirst((string) $plan->namapaket) . ' (1 Bulan)',
+                    'name' => 'Subscription Plan '.ucfirst((string) $plan->namapaket).' (1 Bulan)',
                 ],
             ],
             'expiry' => [
                 'start_time' => now()->format('Y-m-d H:i:s O'),
-                'unit'       => 'hour',
-                'duration'   => 1,
+                'unit' => 'hour',
+                'duration' => 1,
             ],
         ];
 
         if ($biayaPlatform > 0) {
             $params['item_details'][] = [
-                'id'       => 'PLATFORM-FEE',
-                'price'    => (int) $biayaPlatform,
+                'id' => 'PLATFORM-FEE',
+                'price' => (int) $biayaPlatform,
                 'quantity' => 1,
-                'name'     => 'Biaya Layanan Platform',
+                'name' => 'Biaya Layanan Platform',
             ];
         }
 
@@ -144,16 +139,16 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
             $snapToken = $this->createSnapToken($payment, $params);
             $payment->update([
                 'snap_token' => $snapToken,
-                'provider'   => 'midtrans',
-                'metode'     => PaymentState::METODE_MIDTRANS,
+                'provider' => 'midtrans',
+                'metode' => PaymentState::METODE_MIDTRANS,
             ]);
 
             return [
                 'snap_token' => $snapToken,
             ];
         } catch (\Throwable $e) {
-            Log::error('Midtrans Snap Error (Subscription): ' . $e->getMessage());
-            $payment->update(['status' => PaymentState::STATUS_GAGAL]);
+            // The caller (CreateSubscriptionPayment) records the initiation failure.
+            Log::error('Midtrans Snap Error (Subscription): '.$e->getMessage());
             throw $e;
         }
     }
@@ -161,33 +156,32 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
     /**
      * Check transaction status with Midtrans API.
      *
-     * @param Payment $payment
      * @return array<string, mixed>
      */
     public function checkTransactionStatus(Payment $payment): array
     {
         if ($payment->status === PaymentState::STATUS_SUKSES) {
             return [
-                'status'             => PaymentState::STATUS_SUKSES,
+                'status' => PaymentState::STATUS_SUKSES,
                 'transaction_status' => 'settlement',
-                'message'            => 'Pembayaran berhasil dikonfirmasi.',
-                'payment'            => $payment,
+                'message' => 'Pembayaran berhasil dikonfirmasi.',
+                'payment' => $payment,
             ];
         }
 
         try {
             $midtransStatus = $this->getTransactionStatus($payment->order_id, $payment);
 
-            return app(\App\Actions\Payment\SynchronizePaymentStatus::class)->syncStatus($payment, $midtransStatus);
+            return app(SynchronizePaymentStatus::class)->syncStatus($payment, $midtransStatus);
         } catch (\Throwable $e) {
-            Log::error('Midtrans CheckTransactionStatus Error: ' . $e->getMessage(), [
+            Log::error('Midtrans CheckTransactionStatus Error: '.$e->getMessage(), [
                 'payment_id' => $payment->id,
-                'order_id'   => $payment->order_id,
+                'order_id' => $payment->order_id,
             ]);
 
             return [
-                'status'  => 'error',
-                'message' => 'Gagal memverifikasi status transaksi ke Midtrans: ' . $e->getMessage(),
+                'status' => 'error',
+                'message' => 'Gagal memverifikasi status transaksi ke Midtrans: '.$e->getMessage(),
                 'payment' => $payment,
             ];
         }
@@ -211,6 +205,7 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
                 MidtransConfig::$isProduction = $isProd;
                 MidtransConfig::$isSanitized = true;
                 MidtransConfig::$is3ds = true;
+
                 return;
             }
         }
@@ -230,7 +225,7 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
                 ? $tenant->midtrans_prod_server_key
                 : $tenant->midtrans_sandbox_server_key;
 
-            if (!empty($customKey)) {
+            if (! empty($customKey)) {
                 return (string) $customKey;
             }
         }
@@ -241,9 +236,8 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
     /**
      * Create Snap Token via Midtrans API.
      *
-     * @param Payment $payment
-     * @param array<string, mixed> $params
-     * @return string
+     * @param  array<string, mixed>  $params
+     *
      * @throws \Exception
      */
     public function createSnapToken(Payment $payment, array $params): string
@@ -264,9 +258,6 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
     /**
      * Fetch transaction status from Midtrans API by order_id.
      *
-     * @param string $orderId
-     * @param Payment|null $payment
-     * @return array|object
      * @throws \Exception
      */
     public function getTransactionStatus(string $orderId, ?Payment $payment = null): array|object
@@ -281,9 +272,7 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
     /**
      * Validate webhook signature using the correct server key for the payment.
      *
-     * @param array<string, mixed> $payload
-     * @param Payment $payment
-     * @return bool
+     * @param  array<string, mixed>  $payload
      */
     public function verifyWebhookSignature(array $payload, Payment $payment): bool
     {
@@ -292,7 +281,7 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
         $grossAmount = (string) ($payload['gross_amount'] ?? '');
         $signatureKey = (string) ($payload['signature_key'] ?? '');
 
-        if (!$orderId || !$statusCode || !$grossAmount || !$signatureKey) {
+        if (! $orderId || ! $statusCode || ! $grossAmount || ! $signatureKey) {
             return false;
         }
 
