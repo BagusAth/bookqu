@@ -13,6 +13,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  quality:
+    name: Quality checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, curl, bcmath, fileinfo, tokenizer
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      # 192 files predate Pint enforcement, so only files changed by this push or PR are checked.
+      - name: Pint (changed PHP files)
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: |
+          if [ -z "$BASE_REF" ] || [ "$BASE_REF" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base commit to compare against; skipping."
+            exit 0
+          fi
+          vendor/bin/pint --test --diff="$BASE_REF" --format agent
+
+      - name: Composer security advisories
+        run: composer audit --no-interaction
+
+      - name: npm security advisories (high and critical, report only)
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
   tests-sqlite:
     name: Tests (SQLite)
     runs-on: ubuntu-latest

@@ -17,7 +17,7 @@ From the current state to a production-ready, maintainable BookQu. Approved by t
 | **1 — Working foundation** | Docs and workflow for team and agents | Agent | **G1:** passed 2026-10-30 | done (BQ-000) |
 | **2 — Architecture direction** | Decide target architecture (ADRs), re-sequence backlog | Lead + agent | **G2:** passed 2026-10-30 (ADR-0004…0015; lead delegated remaining choices) | done (BQ-028) |
 | **3 — Guardrails** | CI on MySQL, gated deploy, quality and architecture checks | Agent | **G3:** approve dev dependencies; set branch protection | BQ-018, BQ-023, BQ-024, BQ-025, BQ-026 |
-| **4 — Production readiness** | Close every launch blocker | Agent + Bagus | **G4:** review the launch-blocker list; provide production accounts, staging subdomain and cron (plans already approved through the ADRs) | BQ-067 first, then BQ-001 … BQ-015, BQ-017, BQ-019 … BQ-022, BQ-032, BQ-039 … BQ-066, BQ-068 … BQ-071 |
+| **4 — Production readiness** | Close every launch blocker | Agent + Bagus | **G4:** review the launch-blocker list; provide production accounts, staging subdomain and cron (plans already approved through the ADRs) | BQ-067 first, then BQ-001 … BQ-015, BQ-017, BQ-019 … BQ-022, BQ-032, BQ-039 … BQ-066, BQ-068 … BQ-072 |
 | **5 — Launch** | Release v1.0 and stabilize | Lead + Bagus + agent | **G5:** launch sign-off (`docs/operations.md` §8) | — |
 | **6 — Architecture alignment** | Structural refactor toward the ADRs | Agent + Bagus | PR reviews | BQ-016, BQ-029, BQ-030, BQ-031, BQ-033, BQ-034, BQ-035 (BQ-036 rejected by ADR-0012) |
 | **7 — Cleanup** | Dead code, old branches | Agent | branch decision | BQ-027, BQ-037 |
