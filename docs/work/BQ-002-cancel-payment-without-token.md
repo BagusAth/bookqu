@@ -2,18 +2,20 @@
 id: BQ-002
 title: Require authorization to cancel a pending payment and cancel it at the gateway
 type: bug-fix
-status: proposed
+status: approved
 priority: P0
 phase: 4
 domain: payment
 requirements: [FR-MANAGE-008, FR-MANAGE-009, FR-MANAGE-010, FR-PAYMENT-010, NFR-SEC-008]
 invariants: [INV-TOK-01, INV-PAY-03]
 launch-blocker: true
-needs-lead-approval: true
-depends-on: [BQ-028, BQ-067, BQ-001]
+needs-lead-approval: false
+depends-on: [BQ-067, BQ-001, BQ-032]
 ---
 
 # BQ-002: Require authorization to cancel a pending payment and cancel it at the gateway
+
+Plan approved via ADR-0004/ADR-0006 and [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (gateway cancel best-effort after commit), 2026-10-30.
 
 ## Problem
 

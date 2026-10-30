@@ -15,6 +15,8 @@ depends-on: [BQ-028, BQ-023, BQ-067]
 
 # BQ-012: Use one occupancy and availability definition everywhere
 
+ADR-0009 (2026-10-30) replaces the 15-minute-from-creation hold with the payment deadline + settlement margin; implement the hold through `BookingRules` with BQ-071.
+
 Design and plan approved by agathan in [ADR-0005](../adr/ADR-0005-slot-bookability-module.md), 2026-10-30. Implementation remains Phase 4, subject to the roadmap gates; this item is not implemented or verified yet.
 
 ## Problem

@@ -2,18 +2,20 @@
 id: BQ-070
 title: Owner checkout callback would trust the browser's payment result
 type: bug-fix
-status: proposed
+status: approved
 priority: P1
 phase: 4
 domain: subscription
 requirements: [FR-PAYMENT-005, FR-SUB-008, NFR-SEC-009]
 invariants: [INV-PAY-04]
 launch-blocker: true
-needs-lead-approval: true
-depends-on: [BQ-067]
+needs-lead-approval: false
+depends-on: [BQ-067, BQ-032]
 ---
 
 # BQ-070: Owner checkout callback would trust the browser's payment result
+
+Plan approved via [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) decision 5 (callback ignores browser payload, triggers a server query only), 2026-10-30.
 
 ## Problem
 

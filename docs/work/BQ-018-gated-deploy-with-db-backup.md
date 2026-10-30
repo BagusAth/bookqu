@@ -2,18 +2,20 @@
 id: BQ-018
 title: Deploy only after CI passes and back up the database before migrating
 type: ops
-status: proposed
+status: approved
 priority: P0
 phase: 3
 domain: —
 requirements: [NFR-REL-004]
 invariants: []
 launch-blocker: true
-needs-lead-approval: true
+needs-lead-approval: false
 depends-on: []
 ---
 
 # BQ-018: Deploy only after CI passes and back up the database before migrating
+
+Plan approved via [ADR-0015](../adr/ADR-0015-environments-and-release.md) (gated deploy, `mysqldump` before migrate, maintenance mode, expand/contract migrations), 2026-10-30.
 
 ## Problem
 

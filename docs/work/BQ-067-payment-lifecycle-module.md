@@ -25,7 +25,7 @@ A terminal payment status is written at 12 sites in 10 modules with different gu
 
 1. Characterization: run and read the existing payment tests; add missing ones for each of the 12 sites' current behaviour.
 2. Write the new test suite at the module's interface first (transitions, terminal guard, idempotency, typed result, late success → one refund + alert, owner settlement of a whole group, payer cancel, expiry, initiation failure, free and walk-in payments).
-3. Build the module in `app/Actions/Payment/` with the booking-group and subscription adapters behind an internal seam (ADR-0004 decisions 2–4).
+3. Build the module in `app/Actions/Payment/` with the booking-group and subscription adapters behind an internal seam (ADR-0004 decisions 2–4). Locking follows ADR-0005 decision 4 from the start: resolve the payment's tenant, lock the tenant row first, then lock and reload the payment; join the caller's outer transaction when one is open (ADR-0005 decision 3).
 4. Move the 12 sites one by one to request transitions; run the full suite after each move.
 5. Delete `ExpirePayment` and `App\Services\MidtransPaymentService` once unused; delete the old duplicated tests once the new suite covers them (replace, don't layer).
 6. Add the architecture-test rule "only the Payment lifecycle module writes `payments.status`" (BQ-025).

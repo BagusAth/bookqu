@@ -54,7 +54,7 @@ Ask for clarification only when two materially different product behaviours are 
 ## 5. Branches, commits, releases
 
 - `main` deploys to production automatically on every push (`.github/workflows/deploy-production.yml`). **Never push or merge to `main` directly**; it changes only through a release PR at a roadmap gate.
-- `agathan` is the integration branch until the branch strategy in BQ-027 is decided. Work branches start from it and return to it by PR.
+- `agathan` is the integration branch (ADR-0015); target: it deploys to staging after CI. Work branches start from it and return to it by PR. Hotfixes branch from `main` and are back-merged into `agathan`. Branch protection and clean-up of old branches are lead actions (BQ-027).
 - Branch names: `bq-NNN-slug` (or `phase-N-topic` for roadmap phases).
 - Commits follow Conventional Commits: `type(scope): summary` with types `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `ci`. Mention the item: `fix(payment): reconcile late success (BQ-003)`.
 - Releases are tagged `vMAJOR.MINOR.PATCH` with a changelog entry.

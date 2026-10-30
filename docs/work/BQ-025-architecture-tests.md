@@ -2,18 +2,20 @@
 id: BQ-025
 title: Enforce architecture rules with tests
 type: improvement
-status: proposed
+status: approved
 priority: P1
 phase: 3
 domain: —
 requirements: []
 invariants: [INV-BOOK-03, INV-PAY-05, INV-SUB-01]
 launch-blocker: false
-needs-lead-approval: true
-depends-on: [BQ-028]
+needs-lead-approval: false
+depends-on: []
 ---
 
 # BQ-025: Enforce architecture rules with tests
+
+Rule list decided in [ADR-0012](../adr/ADR-0012-module-boundaries-and-naming.md) (single writers, provider SDK, Blade queries, occupancy, entitlement, scope bypasses, `module:` gate) with a shrinking allowlist, 2026-10-30.
 
 ## Problem
 

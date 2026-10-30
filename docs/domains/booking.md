@@ -56,3 +56,5 @@ Functional: Implemented · Verification: Verified (SQLite only) · Architecture:
 | Internal exception text returned to the customer (`CreateBooking.php:313`) | BQ-005 |
 | `pending→completed` leaves the payment pending; no on-site payment record | BQ-014 |
 | Notifications and mail are sent synchronously | BQ-013 |
+
+Target decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot bookability, BQ-012), [ADR-0008](../adr/ADR-0008-booking-checkout-draft.md) (server-side checkout draft, quote = charge, BQ-029) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). Not implemented yet.

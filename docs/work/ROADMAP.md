@@ -15,11 +15,11 @@ From the current state to a production-ready, maintainable BookQu. Approved by t
 |---|---|---|---|---|
 | **0 — Baseline** | Clean, reversible starting point | Agent | — | done (tag `baseline-2026-10-30`, commit `0c3837a`) |
 | **1 — Working foundation** | Docs and workflow for team and agents | Agent | **G1:** passed 2026-10-30 | done (BQ-000) |
-| **2 — Architecture direction** | Decide target architecture (ADRs), re-sequence backlog | Lead + agent | **G2:** one decision session on the ADR package | BQ-028 (in progress: ADR-0004…0006 accepted) |
+| **2 — Architecture direction** | Decide target architecture (ADRs), re-sequence backlog | Lead + agent | **G2:** passed 2026-10-30 (ADR-0004…0015; lead delegated remaining choices) | done (BQ-028) |
 | **3 — Guardrails** | CI on MySQL, gated deploy, quality and architecture checks | Agent | **G3:** approve dev dependencies; set branch protection | BQ-018, BQ-023, BQ-024, BQ-025, BQ-026 |
-| **4 — Production readiness** | Close every launch blocker | Agent + Bagus | **G4:** approve security/payment plans as one package; provide production accounts | BQ-067 first, then BQ-001 … BQ-015, BQ-017, BQ-019 … BQ-022, BQ-039 … BQ-066, BQ-068 … BQ-070 |
+| **4 — Production readiness** | Close every launch blocker | Agent + Bagus | **G4:** review the launch-blocker list; provide production accounts, staging subdomain and cron (plans already approved through the ADRs) | BQ-067 first, then BQ-001 … BQ-015, BQ-017, BQ-019 … BQ-022, BQ-032, BQ-039 … BQ-066, BQ-068 … BQ-071 |
 | **5 — Launch** | Release v1.0 and stabilize | Lead + Bagus + agent | **G5:** launch sign-off (`docs/operations.md` §8) | — |
-| **6 — Architecture alignment** | Structural refactor toward the ADRs | Agent + Bagus | PR reviews | BQ-016, BQ-029 … BQ-036 |
+| **6 — Architecture alignment** | Structural refactor toward the ADRs | Agent + Bagus | PR reviews | BQ-016, BQ-029, BQ-030, BQ-031, BQ-033, BQ-034, BQ-035 (BQ-036 rejected by ADR-0012) |
 | **7 — Cleanup** | Dead code, old branches | Agent | branch decision | BQ-027, BQ-037 |
 | **8 — Continuous evolution** | New features and routine care | Everyone | per approval table | BQ-038 and future items |
 
@@ -36,15 +36,16 @@ Small items may be pulled forward when they block other work.
 Glossary, per-domain system map with invariants, `AGENTS.md` BookQu section, workflow, templates, path-scoped rules (`.ai/rules`), condensed product / requirements / architecture / operations, this backlog, ADR-0003. Old documents removed (history in Git). Verified by rule-inventory coverage, link checks, a fresh-agent quiz and the full test suite.
 
 ### 2 — Architecture direction
-Lead runs `/improve-codebase-architecture`; agent drafts ADR-0004 … ADR-0013 (authorization, availability authority, customer access and identifiers, payment reconciliation, Tier gating, module boundaries, async on shared hosting, testing strategy, legacy naming, environments and release). After the decision session, update `docs/architecture.md`, the affected domain files and the order of Phase 4/6 items. No code changes.
+Done 2026-10-30. Accepted: ADR-0004 Payment lifecycle, ADR-0005 Slot bookability, ADR-0006 Management link, ADR-0007 Provider outcome intake, ADR-0008 Booking checkout draft, ADR-0009 Pending-payment lifetime, ADR-0010 Authorization and tenant scoping, ADR-0011 Server-side release gating, ADR-0012 Module boundaries and naming, ADR-0013 Background work on shared hosting, ADR-0014 Testing strategy, ADR-0015 Environments and release. `docs/architecture.md`, the domain files and the Phase 4/6 order below were updated. No code changes.
 
 ### 3 — Guardrails
 Machines enforce the rules before big changes: MySQL integrity suite, deploy only after CI with a database backup, Pint/composer audit/doc checks, architecture tests with a shrinking allowlist, optional Larastan, branch protection on `main`.
 
 ### 4 — Production readiness
 Four streams, all `launch-blocker` items must be `done`:
-- **Security:** BQ-001, 002, 004, 005, 006, 007, 008, 009, 010 and the audit P0 items.
-- **Booking and payment correctness:** BQ-067 (Payment lifecycle module, ADR-0004) first; then BQ-068, 003, 014, 013, 015, 070, and BQ-012 + 069 for availability.
+- **Security:** BQ-006, BQ-008 + BQ-033 (ADR-0011), BQ-009 (ADR-0010), BQ-004, 005, 007, 010, 011 and the audit P0 items; BQ-001/002 land through the correctness and customer-access streams.
+- **Booking and payment correctness** (in order): BQ-067 Payment lifecycle (ADR-0004) → BQ-032 Outcome intake (ADR-0007) with BQ-070, BQ-002 gateway cancel and BQ-003 → BQ-071 payment deadline (ADR-0009) with BQ-012 Slot bookability (ADR-0005) → BQ-069; alongside: BQ-068, BQ-014, BQ-015; BQ-013 after BQ-020.
+- **Customer access:** BQ-001 Management link (ADR-0006) after BQ-012, with BQ-053 and BQ-052 acceptance.
 - **Operations:** BQ-017, 019, 020, 021, 022.
 - **Acceptance:** BQ-039 triage, core-flow P1 defects, end-to-end UAT with sandbox payments, MySQL concurrency suite green.
 

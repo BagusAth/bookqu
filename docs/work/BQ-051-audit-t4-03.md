@@ -16,6 +16,8 @@ source: docs/audit-bug/TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md at a68ffe8
 
 # BQ-051: [BUG-T4-03] Polling Status Mengalami Runaway Loop Tanpa Exponential Backoff
 
+Status polling uses the Checkout grant's rate limits and backoff ([ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) decision 5, ADR-0006 §7).
+
 Migrated verbatim from the 2026-10 audit (TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md, stage 4: Payment Gateway, Webhooks, Halaman Pembayaran & Expiry Engine). Status in the current code is unverified — check it first (BQ-039).
 
 ## Audit finding

@@ -23,6 +23,8 @@ Functional: Implemented, gated in the UI only · Verification: Needs Verificatio
 
 | Gap | Item |
 |---|---|
-| Hiding a link is not authorization: every Tier 3 endpoint above still works by URL | BQ-008 (decision in BQ-028) |
+| Hiding a link is not authorization: every Tier 3 endpoint above still works by URL | BQ-008 |
 | Direct-gateway keys stored unencrypted | BQ-004 |
 | Audit P0: staff/resource relations never detached when unchecked | BQ-045 |
+
+Target decision: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) — module registry `config/modules.php` with `module:<name>` middleware (`hidden` → 404, `locked` → lock page only), implemented by BQ-008. Not implemented yet.

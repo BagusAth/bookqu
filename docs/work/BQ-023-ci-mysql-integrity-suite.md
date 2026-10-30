@@ -2,7 +2,7 @@
 id: BQ-023
 title: Run integrity tests on MySQL in CI
 type: improvement
-status: proposed
+status: approved
 priority: P0
 phase: 3
 domain: booking
@@ -14,6 +14,8 @@ depends-on: []
 ---
 
 # BQ-023: Run integrity tests on MySQL in CI
+
+Plan approved via [ADR-0014](../adr/ADR-0014-testing-strategy.md) (`mysql` test group on MySQL 8 in CI, SQLite stays the fast default), 2026-10-30.
 
 ## Problem
 

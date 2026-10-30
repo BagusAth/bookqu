@@ -2,18 +2,20 @@
 id: BQ-003
 title: Reconcile late payment success and verify expiry with every provider
 type: bug-fix
-status: proposed
+status: approved
 priority: P0
 phase: 4
 domain: payment
 requirements: [BR-PAY-001, FR-PAYMENT-008, FR-PAYMENT-010, FR-PAYMENT-011]
 invariants: [INV-PAY-02, INV-PAY-03, INV-PAY-06]
 launch-blocker: true
-needs-lead-approval: true
-depends-on: [BQ-028, BQ-067]
+needs-lead-approval: false
+depends-on: [BQ-067, BQ-032]
 ---
 
 # BQ-003: Reconcile late payment success and verify expiry with every provider
+
+Plan approved via ADR-0004 (policy) and [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (one intake, provider-first status checks; SingaPay status API to be confirmed in BQ-032), 2026-10-30. Plan step 1 is decided; step 2 is BQ-032/BQ-071.
 
 ## Problem
 
@@ -23,7 +25,7 @@ When a payment is already `gagal` (expired by the scheduler or evicted as stale 
 
 ## Plan
 
-1. Decide the reconciliation policy in an ADR (BQ-028): refund record + owner/admin alert, or revive the booking if the slot is still free.
+1. ~~Decide the reconciliation policy~~ — decided in ADR-0004 (refund owed + owner alert; no revival).
 2. Implement a SingaPay server-side status query (if the API offers one) and use it before expiring.
 3. Handle late success in both webhook actions idempotently.
 4. Tests: a late success after expiry creates exactly one refund and one alert.

@@ -2,18 +2,20 @@
 id: BQ-013
 title: Send mail and notifications through the queue after commit
 type: improvement
-status: proposed
+status: approved
 priority: P1
 phase: 4
 domain: notifications
 requirements: [NFR-PERF-002, NFR-REL-003]
 invariants: []
 launch-blocker: false
-needs-lead-approval: true
+needs-lead-approval: false
 depends-on: [BQ-020, BQ-067]
 ---
 
 # BQ-013: Send mail and notifications through the queue after commit
+
+Plan approved via [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosting.md): queued after-commit mail, id-only jobs, cron-driven short-lived worker, 2026-10-30.
 
 ## Problem
 

@@ -11,7 +11,7 @@ How BookQu must be structured. This document is **normative**: it describes the 
 | Database | MySQL in production; in-memory SQLite in the test suite |
 | Session, cache, queue | Database drivers |
 | Payments | SingaPay (default) and Midtrans behind one gateway interface (ADR-0001) |
-| Hosting | HostData shared hosting, deployed by GitHub Actions on push to `main` (`docs/operations.md`) |
+| Hosting | HostData shared hosting, deployed by GitHub Actions on push to `main` (`docs/operations.md`); target environments, gated deploy and release: ADR-0015 |
 | Tests | PHPUnit 12 |
 
 ## 2. Principles
@@ -61,22 +61,25 @@ Validation is layered and every layer stays: client hints → Form Request → d
 - Tenant-owned models use `BelongsToTenant` (global `TenantScope`, fail-closed when the context is empty).
 - Bypassing the scope (`withoutGlobalScope(s)`) requires a written reason, an explicit tenant/ownership filter, and a test when it guards data.
 - Every new tenant-scoped feature answers: who owns the record, how the context is set, how authorization is checked, what happens with a foreign id, and which test proves isolation.
-- Authorization target: Laravel Policies for owner resources, with `TenantScope` as defence in depth (decision pending, BQ-028).
+- Authorization follows [ADR-0010](adr/ADR-0010-authorization-and-tenant-scoping.md): owners through Laravel Policies (foreign ids resolve to 404), admins through the `admin` gate, customers through ADR-0006 grants; `TenantScope` stays as fail-closed defence in depth.
+- Code without a request (jobs, webhooks, commands) runs inside a tenant-context runner for a trusted tenant, one tenant per transaction. Scope bypasses are allowed only in the four places ADR-0010 lists, each with an explicit filter, a `scope-bypass:` reason and a test.
 
 ## 5. Booking and availability
 
 - The Slot bookability contract, transaction participation, tenant-first synchronization across relevant writers, closure policy and cache ownership are decided in [ADR-0005](adr/ADR-0005-slot-bookability-module.md). This is the accepted target; implementation follows BQ-023 → BQ-067 → BQ-012 → BQ-069 and the roadmap gates.
-- **Occupancy** (`paid`, `completed`, or `pending` within 15 minutes) is defined only in `BookingRules`. **Availability** (status, past time, blocked date, inactive service, occupancy) is defined only in `AvailabilityRules` / `GetAvailableSchedules`. Every entry point — storefront, owner booking, both reschedule flows, calendar, reports, scheduler — uses them.
+- **Occupancy** (`paid`, `completed`, or `pending` while its payment is within its deadline plus the settlement margin — ADR-0009; today still 15 minutes from creation) is defined only in `BookingRules`. **Availability** is decided only by the Slot bookability module (ADR-0005), which every entry point — storefront, owner booking, both reschedule flows, walk-in, calendar, reports — uses; today it is spread over `AvailabilityRules` / `GetAvailableSchedules` and caller queries (BQ-012).
+- The storefront journey is a server-side Checkout draft (ADR-0008): a typed draft with step transitions, stored in the session, holding no authority; the quote shown equals the amount charged.
 - A booking write is one transaction: lock tenant first → lock and validate owned schedules → request stale-pending group expiry through Payment lifecycle → re-check availability → write → commit → side effects. A rejected operation rolls back its mutations. The `unique_active_booking_slot` index is the final guard.
 - Cancellation and rescheduling are operations (`CancelBooking`, `RescheduleBooking`), never raw status updates; state changes go through `BookingState`.
 - Multi-slot reservations are validated and persisted as one unit with one payment.
 
 ## 6. Payments
 
-- Business code depends on `PaymentGatewayInterface` through `PaymentGatewayManager`: `driver()` for new payments, `forPayment()` for existing ones. Provider SDKs, configuration and webhooks stay in `app/Infrastructure/Payments/` and webhook controllers. One configuration source: `config/payment.php`.
-- Success comes only from trusted evidence (verified webhook or server-side status query). Webhooks verify signature, timestamp, amount and currency and fail closed.
-- Provider events are processed idempotently inside a transaction with the payment row locked.
-- Payment, booking and refund states are separate lifecycles. Expiry sets the payment to `gagal` and cancels its pending bookings. A success that arrives after `gagal` is reconciled with a refund and an alert (BR-PAY-001, Proposed).
+- Business code depends on `PaymentGatewayInterface` through `PaymentGatewayManager`: `driver()` for new payments, `forPayment()` for existing ones (owner = `payments.provider`). Provider SDKs, configuration and webhooks stay in `app/Infrastructure/Payments/` and webhook controllers. One configuration source: `config/payment.php`.
+- Only the Payment lifecycle module changes a payment's status (ADR-0004), under the tenant-first lock (ADR-0005), idempotently.
+- Provider evidence enters through the Outcome intake (ADR-0007): adapters authenticate and translate webhooks and status queries into one neutral outcome; the intake checks payment, provider, exact amount, currency and tenant once, then hands over to the lifecycle. A status check always asks the provider; unreachable means `unknown`, never `gagal`.
+- Each payment has one deadline (`expired_at`, ADR-0009); slot hold, sweep, links and countdowns derive from it. Reclaim asks the provider first, then expires through the lifecycle and requests gateway cancel after commit.
+- Payment, booking and refund states are separate lifecycles. A success that arrives after `gagal` creates a refund owed and an owner alert (BR-PAY-001).
 - Adding a provider means implementing the interface and registering it in the manager; no business code changes.
 
 ## 7. Customer access
@@ -88,13 +91,14 @@ Public identifiers never authorize access (FR-MANAGE-008). Finite expiry, revoca
 ## 8. Subscription and release gating
 
 - Feature access and limits come only from `EntitlementRules`; routes use the `subscription:<feature>` middleware, which fails closed.
-- Release tiers (`docs/product.md` §8) must also be enforced server-side: a Tier 3 module is unreachable, not just unlinked (target, BQ-008).
+- Release tiers (`docs/product.md` §8) are enforced server-side through the module registry `config/modules.php` and the `module:<name>` middleware (ADR-0011): `hidden` → 404, `locked` → lock page only; navigation reads the same registry. Target, BQ-008.
 
 ## 9. Side effects, async work and the scheduler
 
 - Mail, notifications and cache invalidation run after commit; their failure never undoes the main operation.
-- Target: mail and notifications are queued (`ShouldQueue`, after commit) once a worker strategy exists for the hosting (BQ-013, BQ-020).
-- Scheduled commands find records and delegate to Actions/domain rules; they never re-implement a rule.
+- Mail and notifications are queued (`ShouldQueue`, after commit) and jobs carry ids, never tokens (target, BQ-013).
+- On shared hosting (ADR-0013): cron runs `schedule:run` and a short `queue:work --stop-when-empty --max-time=50` every minute; scheduled work runs in-process (`Schedule::call()`/`job()`), because `proc_open` is disabled. Jobs and sweeps are idempotent and process one tenant per transaction.
+- Scheduled work finds records and delegates to Actions/domain rules; it never re-implements a rule.
 
 ## 10. Data, transactions and cache
 
@@ -115,14 +119,18 @@ Public identifiers never authorize access (FR-MANAGE-008). Finite expiry, revoca
 |---|---|---|
 | Domain rule tests | Prove each rule in isolation | `tests/Unit/Domain/` |
 | Action / feature tests | Prove operations, authorization, isolation, HTTP flows | `tests/Feature/` |
-| Integrity tests on MySQL | Prove locking and unique constraints under concurrency | target (BQ-023) |
-| Architecture tests | Enforce this document (no provider calls outside Infrastructure, no queries in Blade, single occupancy rule) | target (BQ-025) |
+| Module-interface tests | Main test surface of each deep module (ADR-0004…0009) | `tests/Feature/<Area>/` |
+| Integrity tests on MySQL | Prove locking and unique constraints under concurrency (`mysql` group) | target (BQ-023) |
+| Provider contract tests | Recorded payloads per real adapter; fake adapter elsewhere | target (BQ-032) |
+| Architecture tests | Enforce this document with a shrinking allowlist (ADR-0012) | target (BQ-025) |
 
-Characterize poorly tested behaviour before refactoring it.
+Strategy: [ADR-0014](adr/ADR-0014-testing-strategy.md). Characterize poorly tested behaviour before refactoring it; replace duplicated tests, don't layer them.
 
 ## 13. Naming
 
-Canonical English terms (`docs/glossary.md`) for all new code. Existing tables and columns keep their legacy Indonesian names until a dedicated migration task; the strategy (rename before launch, gradual, or keep) is decided in BQ-028.
+Canonical English terms (`docs/glossary.md`) for all new code, tables and columns. Existing tables, columns, route URIs and views keep their legacy names; any schema rename is a post-launch item with an expand/contract plan ([ADR-0012](adr/ADR-0012-module-boundaries-and-naming.md)).
+
+Each state has one writer (ADR-0012): `payments.status` and refunds — Payment lifecycle; slot claims and availability cache — Slot bookability; customer grants — Management link; `bookings.status` — booking Actions via `BookingState`; `subscriptions.status` — subscription Actions via `SubscriptionState`.
 
 ## 14. Extending BookQu
 

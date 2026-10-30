@@ -2,7 +2,7 @@
 id: BQ-033
 title: Route all entitlement checks through EntitlementRules
 type: refactor
-status: proposed
+status: approved
 priority: P2
 phase: 6
 domain: subscription
@@ -14,6 +14,8 @@ depends-on: []
 ---
 
 # BQ-033: Route all entitlement checks through EntitlementRules
+
+Plan approved via [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) (entitlement only in `EntitlementRules`, separate from the release gate), 2026-10-30.
 
 ## Problem
 

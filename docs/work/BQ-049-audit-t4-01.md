@@ -16,6 +16,8 @@ source: docs/audit-bug/TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md at a68ffe8
 
 # BQ-049: [BUG-T4-01] Pembatalan Booking Tanpa Membatalkan Transaksi Gateway (Zombie Debits)
 
+Covered by [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) decision 6 (best-effort gateway cancel after commit); verify with BQ-032.
+
 Migrated verbatim from the 2026-10 audit (TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md, stage 4: Payment Gateway, Webhooks, Halaman Pembayaran & Expiry Engine). Status in the current code is unverified — check it first (BQ-039).
 
 > Overlaps BQ-002 (gateway cancellation) and BQ-003 (late success).

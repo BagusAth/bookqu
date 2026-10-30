@@ -2,18 +2,20 @@
 id: BQ-008
 title: Disable Tier 3 modules on the server, not only in navigation
 type: improvement
-status: proposed
+status: approved
 priority: P1
 phase: 4
 domain: staged-modules
 requirements: [NFR-SEC-006]
 invariants: []
 launch-blocker: true
-needs-lead-approval: true
-depends-on: [BQ-028]
+needs-lead-approval: false
+depends-on: []
 ---
 
 # BQ-008: Disable Tier 3 modules on the server, not only in navigation
+
+Mechanism decided in [ADR-0011](../adr/ADR-0011-server-side-release-gating.md): `config/modules.php` registry + `module:<name>` middleware (no Pennant), 2026-10-30. Plan step 1 is done.
 
 ## Problem
 

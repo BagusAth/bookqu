@@ -60,3 +60,5 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Nee
 | `MidtransPaymentService` is used for every provider; `BookingController` configures the Midtrans SDK; `config/midtrans.php` duplicates `config/payment.php` | BQ-032 |
 | Webhook mail sent synchronously | BQ-013, BQ-050 |
 | Production credentials and webhook URLs not yet verified | BQ-022 |
+
+Target decisions: [ADR-0004](../adr/ADR-0004-payment-lifecycle-module.md) (one lifecycle module, BQ-067), [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (provider outcomes through one intake, BQ-032; late success BQ-003; owner callback BQ-070; gateway cancel BQ-002/BQ-049) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (one payment deadline, provider-first sweep for booking and subscription payments, BQ-071). Not implemented yet; the gaps above describe the current code.

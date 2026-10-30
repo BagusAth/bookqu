@@ -2,18 +2,20 @@
 id: BQ-017
 title: Create a staging environment
 type: ops
-status: proposed
+status: approved
 priority: P0
 phase: 4
 domain: —
 requirements: []
 invariants: []
 launch-blocker: true
-needs-lead-approval: true
+needs-lead-approval: false
 depends-on: []
 ---
 
 # BQ-017: Create a staging environment
+
+Environment model decided in [ADR-0015](../adr/ADR-0015-environments-and-release.md): staging on a HostData subdomain, deployed from `agathan` after CI, 2026-10-30. Lead provisions the subdomain and secrets.
 
 ## Problem
 

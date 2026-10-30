@@ -38,3 +38,5 @@ Functional: Implemented · Verification: Needs Verification · Architecture: Nee
 | Synchronous mail slows webhooks and checkout | BQ-013, BQ-050 |
 | Dead mail/notification classes | BQ-037 |
 | Production mail transport not configured (`.env.example` uses `log`) | BQ-021 |
+
+Target decision: [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosting.md) — queued after-commit mail with id-only jobs, run by a cron-driven short-lived worker (BQ-013 after BQ-020). Not implemented yet.

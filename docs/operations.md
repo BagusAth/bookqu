@@ -43,6 +43,8 @@ Switching the active provider: set `PAYMENT_GATEWAY_DRIVER` → `php artisan con
 3. On the server: back up `app`, `bootstrap`, `config`, `database`, `resources`, `routes`, `composer.*` and `public/build`; replace them; `composer install --no-dev --no-scripts --optimize-autoloader` (HostData disables `proc_open`, so Composer scripts are skipped); `php artisan migrate --force`; `optimize:clear`; `optimize`; `route:cache`.
 4. Health check: `curl https://bookqu.my.id` must return 2xx/3xx. On failure the code and build are restored from the backup.
 
+Target (ADR-0015): staging deployed from `agathan` after CI; production deploy only for a commit whose CI passed, with a `mysqldump` before `migrate --force`, maintenance mode and backward-compatible (expand/contract) migrations.
+
 Known risks (all tracked):
 
 | Risk | Item |
@@ -59,6 +61,8 @@ Other workflows: `validate-deploy.yml` (manual: build and transfer test), `test-
 |---|---|---|
 | `bookings:expire-payments` | every 15 minutes | Expire pending booking payments past `expired_at`, cancel their bookings, free slots (`--dry-run` available) |
 | `app:check-expired-subscriptions` | daily | Expire trials and subscriptions; warn trials about to end |
+
+Target (ADR-0013): two cron entries every minute — `php artisan schedule:run` and `php artisan queue:work --stop-when-empty --max-time=50 --tries=3`; scheduled work runs in-process (`Schedule::call()`/`job()`) because `proc_open` is disabled; the payment sweep runs every minute for booking and subscription payments (ADR-0009).
 
 Production needs a cron entry running `php artisan schedule:run` every minute. Whether it exists on HostData is **Unknown** (BQ-020).
 

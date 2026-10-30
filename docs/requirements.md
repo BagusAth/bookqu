@@ -1289,6 +1289,10 @@ An owner may only operate on the tenant they are authorized to manage.
 
 Deactivation or normal lifecycle transitions must not unnecessarily destroy historical booking or payment information required for traceability.
 
+### BR-PAY-001 — Late Payment Success Reconciliation
+
+When a provider reports success for a payment already marked `gagal` (expired or cancelled), the system records a refund owed to the customer (`pending`, returned manually), alerts the owner and logs a critical event; the booking stays cancelled and the money is never silently ignored. Accepted in ADR-0004 (decision 5); provider evidence through ADR-0007. Tracked in BQ-003.
+
 ## Booking State Rules
 
 The current booking lifecycle is:
@@ -1634,7 +1638,3 @@ An owner can request a payout up to the available balance; the request and the b
 ### FR-PAYOUT-003 — Payout Processing (Proposed)
 
 A platform admin approves or rejects payout requests and records the transfer reference. No admin workflow exists yet (BQ-015, BQ-038).
-
-### BR-PAY-001 — Late Payment Success Reconciliation (Proposed)
-
-When a provider reports success for a payment already marked `gagal` (expired or cancelled), the system records a refund to the customer and alerts the owner and platform; it never silently ignores the money. Tracked in BQ-003.
