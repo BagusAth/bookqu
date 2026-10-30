@@ -26,3 +26,16 @@ jobs:
             command -v gzip zcat
             echo "--- Database engine (BQ-073) ---"
             cd ~/domains/bookqu.my.id/laravel && php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo "Database server version: ", Illuminate\Support\Facades\DB::scalar("select version()"), PHP_EOL;' || echo "Could not read the database version"
+            echo "--- SingaPay webhook diagnosis (BQ-076, temporary) ---"
+            cd ~/domains/bookqu.my.id/laravel/storage/logs && ls -1 laravel*.log 2>/dev/null | tail -5
+            PATTERN='SingaPay Webhook:|ProcessSingaPayWebhook:|SingaPay OAuth|Subscription Payment Error|Owner checkout error|Payment Initialization Error|PaymentOutcomeIntake:|SynchronizePaymentStatus|Late Settlement|Late Webhook'
+            echo "--- counts per day and message ---"
+            cat laravel*.log 2>/dev/null | grep -E "$PATTERN" | sed -E 's/^\[([0-9-]{10})[^]]*\] [a-z]+\.([A-Z]+): ([^{]*).*/\1 \2 \3/' | cut -c1-150 | sort | uniq -c | tail -80 || true
+            echo "--- last 25 matching lines (message only, no context) ---"
+            cat laravel*.log 2>/dev/null | grep -E "$PATTERN" | sed -E 's/^\[([^]]*)\] [a-z]+\.([A-Z]+): ([^{]*).*/\1 \2 \3/' | cut -c1-200 | tail -25 || true
+            echo "--- webhook requests in access logs ---"
+            grep -rh "/api/webhooks/singapay" ~/logs ~/domains/bookqu.my.id/logs ~/access-logs 2>/dev/null | awk '{print $4, $6, $7, $9}' | tail -25 || echo "no access log found"
+            echo "--- SingaPay payments by type and status (last 45 days) ---"
+            cd ~/domains/bookqu.my.id/laravel && php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach (Illuminate\Support\Facades\DB::table("payments")->selectRaw("tipe, status, count(*) as n")->where(function ($q) { $q->where("provider", "singapay")->orWhere("metode", "singapay"); })->where("created_at", ">=", now()->subDays(45))->groupBy("tipe", "status")->get() as $r) { echo "$r->tipe $r->status $r->n", PHP_EOL; }' || echo "Could not query payments"
+            echo "--- Laravel scheduler cron present? ---"
+            crontab -l 2>/dev/null | grep -c "schedule:run" || echo "0"
