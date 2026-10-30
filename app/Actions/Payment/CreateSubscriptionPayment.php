@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Payment;
 
+use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Payment\PaymentTransition;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
@@ -55,7 +56,7 @@ class CreateSubscriptionPayment
             'metode' => $providerName,
             'provider' => $providerName,
             'order_id' => $orderId,
-            'expired_at' => now()->addHour(),
+            'expired_at' => PaymentRules::deadlineFor(PaymentState::TIPE_SUBSCRIPTION),
             'nama_pembayar' => $payerData['nama_pembayar'],
             'email_pembayar' => $payerData['email_pembayar'],
             'hp_pembayar' => $payerData['hp_pembayar'],

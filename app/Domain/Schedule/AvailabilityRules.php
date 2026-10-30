@@ -14,9 +14,12 @@ use DateTimeInterface;
 
 class AvailabilityRules
 {
-    public const STATUS_AVAILABLE   = 'AVAILABLE';
-    public const STATUS_BOOKED      = 'BOOKED';
-    public const STATUS_BLOCKED     = 'BLOCKED';
+    public const STATUS_AVAILABLE = 'AVAILABLE';
+
+    public const STATUS_BOOKED = 'BOOKED';
+
+    public const STATUS_BLOCKED = 'BLOCKED';
+
     public const STATUS_UNAVAILABLE = 'UNAVAILABLE';
 
     /**
@@ -60,7 +63,7 @@ class AvailabilityRules
         }
 
         // 4. Date/time has already passed
-        $slotDateTime = Carbon::parse($slotDate . ' ' . $schedule->jam_mulai, 'Asia/Jakarta');
+        $slotDateTime = Carbon::parse($slotDate.' '.$schedule->jam_mulai, 'Asia/Jakarta');
         if ($slotDateTime->lessThanOrEqualTo($now)) {
             return self::STATUS_UNAVAILABLE;
         }
@@ -70,7 +73,7 @@ class AvailabilityRules
             ? $schedule->layanan
             : Service::withoutGlobalScopes()->find($schedule->idlayanan);
 
-        if ($service && (!$service->is_active || !$service->hasActiveFulfillment())) {
+        if ($service && (! $service->is_active || ! $service->hasActiveFulfillment())) {
             return self::STATUS_UNAVAILABLE;
         }
 
@@ -94,24 +97,12 @@ class AvailabilityRules
     }
 
     /**
-     * Check if a pending booking is still holding the slot within the grace window.
-     */
-    public static function isPendingBookingHoldingSlot(?DateTimeInterface $createdAt, int $graceMinutes = BookingRules::PENDING_GRACE_MINUTES): bool
-    {
-        if ($createdAt === null) {
-            return false;
-        }
-
-        return Carbon::instance($createdAt)->greaterThanOrEqualTo(now()->subMinutes($graceMinutes));
-    }
-
-    /**
      * Check if a schedule time has already passed for today.
      */
     public static function isSlotPast(string $date, string $time, string $timezone = 'Asia/Jakarta'): bool
     {
         $now = Carbon::now($timezone);
-        $slotDateTime = Carbon::parse($date . ' ' . $time, $timezone);
+        $slotDateTime = Carbon::parse($date.' '.$time, $timezone);
 
         return $slotDateTime->lessThanOrEqualTo($now);
     }

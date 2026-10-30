@@ -12,4 +12,4 @@ Schedule::command('app:check-expired-subscriptions')->daily();
 
 // Run every 15 minutes to cancel pending bookings whose payment window has expired.
 // This ensures freed slots are available to other customers within one expiry cycle.
-Schedule::command('bookings:expire-payments')->everyFifteenMinutes();
+Schedule::command('bookings:expire-payments')->everyMinute();

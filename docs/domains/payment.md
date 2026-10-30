@@ -10,7 +10,7 @@ Owns money movement for booking and subscription payments through the unified ga
 | Midtrans webhook | `POST /midtrans/webhook` (`midtrans.webhook`) → `Webhook/MidtransWebhookController` → `Actions/Payment/ProcessPaymentWebhook` (SHA-512 signature with the payment's key) → `PaymentOutcomeIntake::receive` |
 | Customer status poll / callback | `Customer/BookingController::checkPaymentStatus`, `handleCallback` → `PaymentOutcomeIntake::check` |
 | Owner subscription status | `Owner/OwnerCheckoutController::checkPaymentStatus`, `handleCallback` → `PaymentOutcomeIntake::check`; the browser's payload is ignored (BQ-070) |
-| Expiry | `bookings:expire-payments` every 15 min (`Console/Commands/ExpireBookingPayments`) → `PaymentOutcomeIntake::check` (provider first, then `Expired`); also on page view when `expired_at` has passed |
+| Expiry | `bookings:expire-payments` every minute, booking and subscription payments past `expired_at` + margin (`Console/Commands/ExpireBookingPayments`) → `PaymentOutcomeIntake::check` (provider first, then `Expired`); also on page view when `expired_at` has passed |
 
 CSRF is disabled only for the webhook paths (`bootstrap/app.php`).
 
@@ -54,7 +54,7 @@ Callers: `PaymentOutcomeIntake` (provider outcomes), `CreateBookingPayment` (fre
 
 ## Rules
 
-`App\Domain\Payment\PaymentState` (states, transitions, provider status mapping) · `App\Domain\Payment\PaymentRules` (provider ownership, exact amount, expiry, Midtrans signature, order id, subscription price) · `App\Domain\Payment\ProviderOutcome`.
+`App\Domain\Payment\PaymentState` (states, transitions, provider status mapping) · `App\Domain\Payment\PaymentRules` (one payment deadline per purpose and settlement margin — `deadlineFor`, `isReclaimable` — provider ownership, exact amount, expiry, Midtrans signature, order id, subscription price) · `App\Domain\Payment\ProviderOutcome`.
 
 ## Data
 
@@ -75,7 +75,7 @@ Callers: `PaymentOutcomeIntake` (provider outcomes), `CreateBookingPayment` (fre
 
 ## Status
 
-Functional: Implemented · Verification: Verified (partial) · Architecture: Partially aligned (lifecycle module and outcome intake done; one payment deadline BQ-071 pending)
+Functional: Implemented · Verification: Verified (partial) · Architecture: Partially aligned (lifecycle module, outcome intake and one payment deadline done; Slot bookability BQ-012 pending)
 
 ## Known gaps
 
@@ -88,4 +88,4 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Par
 | Webhook mail sent synchronously | BQ-013, BQ-050 |
 | Production credentials and webhook URLs not yet verified | BQ-022 |
 
-Target decisions: [ADR-0004](../adr/ADR-0004-payment-lifecycle-module.md) (one lifecycle module, implemented by BQ-067), [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (provider outcomes through one intake, BQ-032; late success BQ-003; owner callback BQ-070; gateway cancel BQ-002/BQ-049) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (one payment deadline, provider-first sweep for booking and subscription payments, BQ-071). ADR-0004 and ADR-0007 are implemented (BQ-067, BQ-032). ADR-0009 is not implemented yet; the gaps above describe the current code.
+Target decisions: [ADR-0004](../adr/ADR-0004-payment-lifecycle-module.md) (one lifecycle module, implemented by BQ-067), [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (provider outcomes through one intake, BQ-032; late success BQ-003; owner callback BQ-070; gateway cancel BQ-002/BQ-049) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (one payment deadline, provider-first sweep for booking and subscription payments, BQ-071). ADR-0004, ADR-0007 and ADR-0009 are implemented (BQ-067, BQ-032, BQ-071).

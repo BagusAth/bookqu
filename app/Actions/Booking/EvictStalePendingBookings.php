@@ -33,13 +33,12 @@ class EvictStalePendingBookings
             return 0;
         }
 
-        $cutoff = now()->subMinutes(BookingRules::PENDING_GRACE_MINUTES);
-
-        // Lock and retrieve stale pending bookings on these schedules
+        // Lock and retrieve pending bookings on these schedules that no longer hold their
+        // slot: the single occupancy rule decides (payment deadline + margin, ADR-0009).
         $staleBookings = Booking::withoutGlobalScopes()
             ->whereIn('idschedule', $ids)
             ->where('status', BookingState::STATUS_PENDING)
-            ->where('created_at', '<', $cutoff)
+            ->whereNot(fn ($query) => BookingRules::applyOccupiesSlotCondition($query, 'bookings.'))
             ->lockForUpdate()
             ->get();
 

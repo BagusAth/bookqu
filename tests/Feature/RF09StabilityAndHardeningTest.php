@@ -156,21 +156,16 @@ class RF09StabilityAndHardeningTest extends TestCase
     }
 
     /**
-     * P0-04: Active booking definition consistency across states and grace period
+     * P0-04: paid and completed bookings occupy their slot; cancelled ones do not (ADR-0009).
      */
     public function test_p0_04_active_booking_definition_semantics(): void
     {
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PAID));
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_COMPLETED));
-        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_CANCELLED));
+        foreach (['paid' => true, 'completed' => true, 'cancelled' => false] as $status => $occupies) {
+            $slot = $this->freshSlot();
+            $this->pendingBookingWithDeadline($slot, now()->addMinutes(10))->update(['status' => $status]);
 
-        // Pending created 5 minutes ago (< 15 min) -> occupies slot
-        $recent = Carbon::now('Asia/Jakarta')->subMinutes(5);
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $recent, 15));
-
-        // Pending created 20 minutes ago (> 15 min) -> does not occupy slot
-        $expired = Carbon::now('Asia/Jakarta')->subMinutes(20);
-        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $expired, 15));
+            $this->assertSame($occupies, BookingRules::isSlotOccupied($slot->id), $status);
+        }
     }
 
     /**
@@ -503,7 +498,6 @@ class RF09StabilityAndHardeningTest extends TestCase
         $stalePayment->refresh();
 
         // Semantic checks: stale pending booking does not occupy slot
-        $this->assertFalse(BookingState::occupiesSlot($bookingA->status, $bookingA->created_at));
         $this->assertFalse(BookingRules::isSlotOccupied($slot->id));
         $this->assertTrue(AvailabilityRules::isSlotAvailable($slot));
 
@@ -546,35 +540,72 @@ class RF09StabilityAndHardeningTest extends TestCase
     }
 
     /**
-     * Requirement 3: Unified pending grace period boundary semantics.
-     * 5 min -> occupied, 14 min -> occupied, 15+ min -> expired/not occupied.
+     * Requirement 3 (ADR-0009): a pending booking holds its slot while its payment is pending
+     * and now < payments.expired_at + settlement margin (2 minutes by default).
      */
     public function test_grace_period_boundary_semantics(): void
     {
-        $testDate = Carbon::tomorrow('Asia/Jakarta')->addDays(4)->format('Y-m-d');
-        $slot = Schedule::create([
+        $cases = [
+            'deadline ahead' => [now()->addMinutes(5), true],
+            'deadline passed, within margin' => [now()->subMinute(), true],
+            'margin almost over' => [now()->subMinutes(2)->addSecond(), true],
+            'margin over' => [now()->subMinutes(2), false],
+            'long past' => [now()->subMinutes(20), false],
+        ];
+
+        foreach ($cases as $label => [$deadline, $occupies]) {
+            $slot = $this->freshSlot();
+            $this->pendingBookingWithDeadline($slot, $deadline);
+
+            $this->assertSame($occupies, BookingRules::isSlotOccupied($slot->id), $label);
+        }
+
+        $slot = $this->freshSlot();
+        $booking = $this->pendingBookingWithDeadline($slot, now()->addMinutes(5));
+        Payment::withoutGlobalScopes()->whereKey($booking->idpayment)->update(['status' => 'gagal']);
+        $this->assertFalse(BookingRules::isSlotOccupied($slot->id), 'payment failed');
+    }
+
+    private function freshSlot(): Schedule
+    {
+        static $hour = 6;
+        $hour++;
+
+        return Schedule::create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
-            'tanggal' => $testDate,
-            'jam_mulai' => '16:00:00',
-            'jam_selesai' => '17:00:00',
+            'tanggal' => Carbon::tomorrow('Asia/Jakarta')->addDays(6)->format('Y-m-d'),
+            'jam_mulai' => sprintf('%02d:00:00', $hour % 24),
+            'jam_selesai' => sprintf('%02d:59:00', $hour % 24),
             'status' => 'tersedia',
         ]);
+    }
 
-        // Case: 5 minutes old -> occupied
-        $fiveMinOld = Carbon::now('Asia/Jakarta')->subMinutes(5);
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $fiveMinOld));
+    private function pendingBookingWithDeadline(Schedule $slot, Carbon $deadline): Booking
+    {
+        $payment = Payment::create([
+            'idtenant' => $this->tenant->id,
+            'order_id' => 'ORDER-HOLD-'.$slot->id,
+            'jumlah' => 50000,
+            'tipe' => 'booking',
+            'metode' => 'midtrans',
+            'provider' => 'midtrans',
+            'status' => 'pending',
+            'expired_at' => $deadline,
+        ]);
 
-        // Case: 14 minutes old -> occupied
-        $fourteenMinOld = Carbon::now('Asia/Jakarta')->subMinutes(14);
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $fourteenMinOld));
-
-        // Case: 15+ minutes old -> expired / not occupied
-        $fifteenMinOld = Carbon::now('Asia/Jakarta')->subMinutes(15)->subSecond();
-        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $fifteenMinOld));
-
-        $twentyMinOld = Carbon::now('Asia/Jakarta')->subMinutes(20);
-        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $twentyMinOld));
+        return Booking::create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $slot->id,
+            'idpayment' => $payment->id,
+            'namapelanggan' => 'Hold Test',
+            'nomorhp' => '08123456700',
+            'email' => 'hold@example.com',
+            'tanggalbooking' => $slot->tanggal,
+            'jam' => $slot->jam_mulai,
+            'status' => BookingState::STATUS_PENDING,
+        ]);
     }
 
     /**

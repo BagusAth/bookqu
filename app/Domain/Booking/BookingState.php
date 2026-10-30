@@ -2,17 +2,15 @@
 
 namespace App\Domain\Booking;
 
-use Carbon\Carbon;
-use DateTimeInterface;
-
 class BookingState
 {
-    public const STATUS_PENDING   = 'pending';
-    public const STATUS_PAID      = 'paid';
-    public const STATUS_CANCELLED = 'cancelled';
-    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_PENDING = 'pending';
 
-    public const PENDING_GRACE_MINUTES = BookingRules::PENDING_GRACE_MINUTES;
+    public const STATUS_PAID = 'paid';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const STATUS_COMPLETED = 'completed';
 
     /**
      * Allowed status transitions mapped from current status to target statuses.
@@ -62,37 +60,16 @@ class BookingState
     }
 
     /**
-     * Determine if a booking with the given status and creation time occupies a schedule slot.
-     */
-    public static function occupiesSlot(string $status, ?DateTimeInterface $createdAt = null, int $pendingGraceMinutes = self::PENDING_GRACE_MINUTES): bool
-    {
-        if (in_array($status, [self::STATUS_PAID, self::STATUS_COMPLETED], true)) {
-            return true;
-        }
-
-        if ($status === self::STATUS_PENDING) {
-            if ($createdAt === null) {
-                return true;
-            }
-
-            $created = Carbon::instance($createdAt);
-            return $created->greaterThanOrEqualTo(now()->subMinutes($pendingGraceMinutes));
-        }
-
-        return false;
-    }
-
-    /**
      * Human-readable Indonesian label for booking status.
      */
     public static function formatLabel(string $status): string
     {
         return match ($status) {
-            self::STATUS_PAID      => 'lunas / dikonfirmasi',
+            self::STATUS_PAID => 'lunas / dikonfirmasi',
             self::STATUS_COMPLETED => 'selesai',
             self::STATUS_CANCELLED => 'dibatalkan',
-            self::STATUS_PENDING   => 'menunggu pembayaran',
-            default                => $status,
+            self::STATUS_PENDING => 'menunggu pembayaran',
+            default => $status,
         };
     }
 }

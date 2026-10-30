@@ -182,15 +182,44 @@ class PaymentOutcomeIntakeTest extends TestCase
 
     public function test_check_asks_the_provider_before_expiring(): void
     {
-        [$paid] = $this->pendingBooking(expiredAt: now()->subMinute());
+        [$paid] = $this->pendingBooking(expiredAt: now()->subMinutes(3));
         $this->gateway->answer = $this->outcome($paid, 'sukses');
 
         $this->assertSame(PaymentState::STATUS_SUKSES, $this->intake()->check($paid)->status());
 
-        [$abandoned] = $this->pendingBooking(expiredAt: now()->subMinute());
+        [$abandoned] = $this->pendingBooking(expiredAt: now()->subMinutes(3));
         $this->gateway->answer = ProviderOutcome::unknown('midtrans', (string) $abandoned->order_id);
 
         $this->assertSame(PaymentState::STATUS_GAGAL, $this->intake()->check($abandoned)->status());
+    }
+
+    public function test_check_waits_for_the_settlement_margin_after_the_deadline(): void
+    {
+        [$payment] = $this->pendingBooking(expiredAt: now()->subMinute());
+
+        $this->assertSame(PaymentState::STATUS_PENDING, $this->intake()->check($payment)->status());
+    }
+
+    public function test_sweep_reclaims_booking_and_subscription_payments_after_the_margin(): void
+    {
+        [$staleBooking, $booking] = $this->pendingBooking(expiredAt: now()->subMinutes(3));
+        [$withinMargin] = $this->pendingBooking(expiredAt: now()->subMinute());
+        $plan = Plan::create(['namapaket' => 'pro', 'hargabulanan' => 150000, 'maxlayanan' => 10, 'maxbooking' => 100, 'isunlimited' => false]);
+        $staleSubscription = Payment::factory()->create([
+            'idtenant' => $this->tenant->id,
+            'idplan' => $plan->id,
+            'tipe' => PaymentState::TIPE_SUBSCRIPTION,
+            'provider' => 'midtrans',
+            'expired_at' => now()->subMinutes(3),
+        ]);
+
+        $this->artisan('bookings:expire-payments')->assertSuccessful();
+
+        $this->assertSame(PaymentState::STATUS_GAGAL, $staleBooking->fresh()->status);
+        $this->assertSame('cancelled', $booking->fresh()->status);
+        $this->assertSame(PaymentState::STATUS_GAGAL, $staleSubscription->fresh()->status);
+        $this->assertSame(PaymentState::STATUS_PENDING, $withinMargin->fresh()->status);
+        $this->assertSame(2, $this->gateway->queries);
     }
 
     public function test_payer_cancel_cancels_the_gateway_checkout_after_commit(): void

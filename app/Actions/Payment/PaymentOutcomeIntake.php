@@ -99,15 +99,16 @@ class PaymentOutcomeIntake
     }
 
     /**
-     * Status check for the payer or owner: ask the provider first, then expire the
-     * payment if it is still pending past its deadline (ADR-0007 decision 5).
+     * Status check for the payer, the owner and the sweep: ask the provider first, then
+     * expire the payment if it is still pending past its deadline plus the settlement
+     * margin (ADR-0007 decision 5, ADR-0009 decision 3).
      */
     public function check(Payment $payment): OutcomeIntakeResult
     {
         $result = $this->refresh($payment);
         $current = $result->payment ?? $payment;
 
-        if ($current->status === PaymentState::STATUS_PENDING && $current->isExpired()) {
+        if (PaymentRules::isReclaimable($current)) {
             $expiry = $this->lifecycle->transition($current, PaymentTransition::Expired);
 
             return new OutcomeIntakeResult(true, $expiry->payment, null, $expiry);
