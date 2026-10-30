@@ -18,9 +18,6 @@ return [
     // Removed by BQ-012 (Slot bookability).
     'slot-occupancy' => [
         'app/Actions/Booking/CreateBooking.php' => 1,
-        'app/Actions/Calendar/GetOwnerCalendarData.php' => 1,
-        'app/Actions/Schedule/ExportScheduleReport.php' => 1,
-        'app/Actions/Schedule/GenerateScheduleReport.php' => 1,
         'app/Actions/Service/DeleteService.php' => 1,
         'app/Domain/Subscription/SubscriptionUsage.php' => 1,
         'app/Http/Controllers/Customer/BookingController.php' => 1,
@@ -35,13 +32,12 @@ return [
     // Removed by BQ-009.
     'scope-bypass-reason' => [
         'app/Actions/Booking/CancelBooking.php' => 1,
-        'app/Actions/Booking/EvictStalePendingBookings.php' => 2,
+        'app/Actions/Booking/EvictStalePendingBookings.php' => 1,
         'app/Actions/Payment/ProcessPaymentWebhook.php' => 1,
         'app/Actions/Schedule/BulkCreateSchedules.php' => 2,
         'app/Actions/Schedule/DeleteBlockedDate.php' => 1,
         'app/Actions/Schedule/DeleteSchedule.php' => 1,
         'app/Actions/Schedule/GetAvailableSchedules.php' => 2,
-        'app/Actions/Schedule/UpdateScheduleAvailability.php' => 1,
         'app/Actions/Service/DeleteService.php' => 1,
         'app/Actions/Service/ToggleServiceStatus.php' => 1,
         'app/Actions/Service/UpdateService.php' => 1,
@@ -49,7 +45,7 @@ return [
         'app/Actions/Subscription/GetSubscriptionOverview.php' => 2,
         'app/Console/Commands/CheckExpiredSubscriptions.php' => 3,
         'app/Console/Commands/ExpireBookingPayments.php' => 1,
-        'app/Domain/Schedule/AvailabilityRules.php' => 2,
+        'app/Domain/Schedule/AvailabilityRules.php' => 1,
         'app/Domain/Schedule/ScheduleConflictRules.php' => 2,
         'app/Domain/Subscription/SubscriptionUsage.php' => 3,
         'app/Http/Controllers/Admin/AdminDashboardController.php' => 7,

@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Actions\Booking;
 
 use App\Actions\Payment\PaymentLifecycle;
+use App\Actions\Schedule\SlotClaimRefused;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
+use App\Domain\Payment\PaymentState;
 use App\Domain\Payment\PaymentTransition;
+use App\Domain\Schedule\SlotRefusal;
 use App\Models\Booking;
 use App\Models\Payment;
+use Illuminate\Support\Facades\Log;
 
 class EvictStalePendingBookings
 {
@@ -47,7 +51,22 @@ class EvictStalePendingBookings
 
         foreach ($staleBookings as $booking) {
             if ($booking->idpayment && ! in_array($booking->idpayment, $handledPaymentIds, true)) {
-                $payment = Payment::withoutGlobalScopes()->lockForUpdate()->find($booking->idpayment);
+                // scope-bypass: the payment of a booking already verified to belong to the claimed schedules.
+                $payment = Payment::withoutGlobalScopes()->find($booking->idpayment);
+
+                // A pending booking on a successful payment is an anomaly: refuse the claim
+                // instead of cancelling a paid reservation (ADR-0005 decision 6).
+                if ($payment && $payment->status === PaymentState::STATUS_SUKSES) {
+                    Log::warning('EvictStalePendingBookings: pending booking attached to a successful payment', [
+                        'booking_id' => $booking->id,
+                        'payment_id' => $payment->id,
+                        'schedule_id' => $booking->idschedule,
+                    ]);
+
+                    throw new SlotClaimRefused(SlotRefusal::InconsistentGroup, (int) $booking->idschedule, substr((string) $booking->jam, 0, 5));
+                }
+
+                // The whole payment group expires through the Payment lifecycle.
                 if ($payment) {
                     $this->paymentLifecycle->transition($payment, PaymentTransition::Expired);
                     $handledPaymentIds[] = $booking->idpayment;

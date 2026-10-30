@@ -22,7 +22,6 @@ class BulkCreateSchedules
     /**
      * Bulk create schedule slots for a tenant service.
      *
-     * @param Tenant $tenant
      * @param array{
      *     jenisslot: string,
      *     idlayanan: int,
@@ -45,7 +44,7 @@ class BulkCreateSchedules
     {
         $service = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->find($data['idlayanan']);
 
-        if (!$service) {
+        if (! $service) {
             return [
                 'success' => false,
                 'created_count' => 0,
@@ -61,7 +60,7 @@ class BulkCreateSchedules
                 'success' => false,
                 'created_count' => 0,
                 'days_count' => 0,
-                'error' => 'Durasi slot harus sesuai dengan durasi program (' . $service->durasi . ' menit).',
+                'error' => 'Durasi slot harus sesuai dengan durasi program ('.$service->durasi.' menit).',
                 'error_field' => 'intervalslot',
             ];
         }
@@ -69,7 +68,7 @@ class BulkCreateSchedules
         // Generate date list
         $dates = [];
         if ($data['jenisslot'] === 'harian') {
-            if (!empty($data['tanggal'])) {
+            if (! empty($data['tanggal'])) {
                 $dates[] = Carbon::parse($data['tanggal'])->format('Y-m-d');
             }
         } else {
@@ -85,17 +84,18 @@ class BulkCreateSchedules
         $blocked = OwnerBlockedDate::withoutGlobalScopes()->where('idtenant', $tenant->id)
             ->whereIn('tanggal', $dates)
             ->pluck('tanggal')
-            ->map(fn($t) => Carbon::parse($t)->format('Y-m-d'))
+            ->map(fn ($t) => Carbon::parse($t)->format('Y-m-d'))
             ->toArray();
 
-        $activeDates = array_values(array_filter($dates, fn($t) => !in_array($t, $blocked, true)));
+        $activeDates = array_values(array_filter($dates, fn ($t) => ! in_array($t, $blocked, true)));
 
         $createdCount = DB::transaction(function () use ($activeDates, $data, $service, $tenant, $intervalSlot) {
+            ClaimSlots::lockTenant((int) $tenant->id);
             $count = 0;
 
             foreach ($activeDates as $dateStr) {
-                $cursor = Carbon::parse($dateStr . ' ' . $data['jammulai']);
-                $end = Carbon::parse($dateStr . ' ' . $data['jamselesai']);
+                $cursor = Carbon::parse($dateStr.' '.$data['jammulai']);
+                $end = Carbon::parse($dateStr.' '.$data['jamselesai']);
 
                 $hargaOverride = null;
                 if (Carbon::parse($dateStr)->isWeekend()) {
@@ -119,7 +119,7 @@ class BulkCreateSchedules
                         $jamSelesai
                     );
 
-                    if (!$hasConflict) {
+                    if (! $hasConflict) {
                         Schedule::create([
                             'idtenant' => $tenant->id,
                             'idlayanan' => $data['idlayanan'],

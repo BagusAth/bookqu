@@ -23,7 +23,7 @@ Decide "slot occupied" only through `BookingRules::isSlotOccupied()` / `applyOcc
 Decide "bookable" through `AvailabilityRules` / `GetAvailableSchedules`, which cover status, past time, blocked dates, inactive service and occupancy (INV-SCH-01). Calendar, reports, owner and customer reschedule must not define their own.
 
 ## Booking writes follow the locked pattern
-Inside one `DB::transaction`: lock the schedule rows (`lockForUpdate`), call `EvictStalePendingBookings`, re-check availability, then write. Never remove the `unique_active_booking_slot` index (INV-BOOK-04/05).
+Inside one `DB::transaction`, claim slots with `App\Actions\Schedule\ClaimSlots` (ADR-0005). It locks the tenant row first and then the schedules, verifies ownership, reclaims stale pending bookings through the Payment lifecycle, and re-checks with `AvailabilityRules::refusal()`. A refusal throws `SlotClaimRefused`, so the operation rolls back; catch it outside the transaction. Any other writer that changes what a tenant's slots accept (schedules, closed dates, services, cancellation) calls `ClaimSlots::lockTenant()` first. Never remove the `unique_active_booking_slot` index (INV-BOOK-04/05).
 
 ## Status changes go through BookingState
 Use `BookingState::canTransition()`; cancellation goes through `CancelBooking`, rescheduling through `RescheduleBooking` (INV-BOOK-02).
