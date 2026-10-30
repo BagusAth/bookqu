@@ -16,7 +16,7 @@ From the current state to a production-ready, maintainable BookQu. Approved by t
 | **0 — Baseline** | Clean, reversible starting point | Agent | — | done (tag `baseline-2026-10-30`, commit `0c3837a`) |
 | **1 — Working foundation** | Docs and workflow for team and agents | Agent | **G1:** passed 2026-10-30 | done (BQ-000) |
 | **2 — Architecture direction** | Decide target architecture (ADRs), re-sequence backlog | Lead + agent | **G2:** passed 2026-10-30 (ADR-0004…0015; lead delegated remaining choices) | done (BQ-028) |
-| **3 — Guardrails** | CI on MySQL, gated deploy, quality and architecture checks | Agent | **G3:** approve dev dependencies; set branch protection | BQ-018, BQ-023, BQ-024, BQ-025, BQ-026 |
+| **3 — Guardrails** | CI on MySQL, gated deploy, quality and architecture checks | Agent | **G3:** approve dev dependencies; set branch protection | built (BQ-018, BQ-023, BQ-024, BQ-025, BQ-026 done); G3 open |
 | **4 — Production readiness** | Close every launch blocker | Agent + Bagus | **G4:** review the launch-blocker list; provide production accounts, staging subdomain and cron (plans already approved through the ADRs) | BQ-067 first, then BQ-001 … BQ-015, BQ-017, BQ-019 … BQ-022, BQ-032, BQ-039 … BQ-066, BQ-068 … BQ-072 |
 | **5 — Launch** | Release v1.0 and stabilize | Lead + Bagus + agent | **G5:** launch sign-off (`docs/operations.md` §8) | — |
 | **6 — Architecture alignment** | Structural refactor toward the ADRs | Agent + Bagus | PR reviews | BQ-016, BQ-029, BQ-030, BQ-031, BQ-033, BQ-034, BQ-035 (BQ-036 rejected by ADR-0012) |
@@ -41,7 +41,7 @@ Done 2026-10-30. Accepted: ADR-0004 Payment lifecycle, ADR-0005 Slot bookability
 ### 3 — Guardrails
 Machines enforce the rules before big changes: MySQL integrity suite, deploy only after CI with a database backup, Pint/composer audit/doc checks, architecture tests with a shrinking allowlist, optional Larastan, branch protection on `main`.
 
-Built on branch `phase-3-guardrails` (2026-10-30): BQ-023, BQ-025, BQ-024, BQ-018 and BQ-026 (Larastan approved with the plan). It also restored CI, which had failed on `agathan` since the Boost commit because the lock file needed PHP 8.4. CI now runs three jobs: `quality` (Pint on changed files, Larastan, composer audit, npm audit report-only), `tests-sqlite` and `tests-mysql` (whole suite on MySQL 8). Production deploys call those jobs first. Items stay `in-progress` until the first GitHub Actions run is green.
+Built on branch `phase-3-guardrails` (2026-10-30): BQ-023, BQ-025, BQ-024, BQ-018 and BQ-026 (Larastan approved with the plan). It also restored CI, which had failed on `agathan` since the Boost commit because the lock file needed PHP 8.4. CI now runs three jobs: `quality` (Pint on changed files, Larastan, composer audit, npm audit report-only), `tests-sqlite` and `tests-mysql` (whole suite on MySQL 8). Production deploys call those jobs first. All three jobs passed on GitHub Actions for PR #1 (run 41039402279), so the five items are `done`.
 
 Open at G3 (lead):
 - run the manual `test-ssh.yml` once to confirm `mysqldump` exists on HostData;

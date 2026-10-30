@@ -2,7 +2,7 @@
 id: BQ-025
 title: Enforce architecture rules with tests
 type: improvement
-status: in-progress
+status: done
 priority: P1
 phase: 3
 domain: —
@@ -15,7 +15,7 @@ depends-on: []
 
 # BQ-025: Enforce architecture rules with tests
 
-Rule list decided in [ADR-0012](../adr/ADR-0012-module-boundaries-and-naming.md) (single writers, provider SDK, Blade queries, occupancy, entitlement, scope bypasses, `module:` gate) with a shrinking allowlist, 2026-10-30.
+Rule list decided in [ADR-0012](../../adr/ADR-0012-module-boundaries-and-naming.md) (single writers, provider SDK, Blade queries, occupancy, entitlement, scope bypasses, `module:` gate) with a shrinking allowlist, 2026-10-30.
 
 ## Problem
 
@@ -42,3 +42,4 @@ PHPUnit tests that scan the code with an allowlist of known violations that may 
 - Probed: a new `use Midtrans\Snap;` file and a stale allowlist count each fail with a message naming the file. After restoring both, the suite passes.
 - Deferred: "staged routes carry `module:`" needs the ADR-0011 registry, so it moves to BQ-008 step 4.
 - The patterns are text scans, so they are heuristics. The first run counted adapter namespaces (`Payments\Midtrans\…`) and model constants in Blade; both patterns were narrowed before the baseline was taken.
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41039402279 (PR #1, 2026-10-30): `Quality checks`, `Tests (SQLite)` and `Tests (MySQL)` passed.

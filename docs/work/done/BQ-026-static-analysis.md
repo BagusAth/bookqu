@@ -2,7 +2,7 @@
 id: BQ-026
 title: Introduce Larastan with a baseline
 type: improvement
-status: in-progress
+status: done
 priority: P2
 phase: 3
 domain: —
@@ -32,3 +32,4 @@ If approved: install, start at a moderate level with a baseline file, run it in 
 - CI: a Larastan step in the `quality` job (`--error-format=github`, so errors annotate the PR).
 - Probed: a new file with a wrong `strlen()` call is reported; after removing it, the analysis is clean.
 - The baseline has **not** been triaged. Spot check: `TrialExpiringNotification.php:35` (`translatedFormat()` on string) is a false positive, because `trial_berakhir` is cast to `datetime`. Shrinking the baseline and raising the level belong to Phase 6 (architecture alignment), not to this item.
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41039402279 (PR #1, 2026-10-30): `Quality checks`, `Tests (SQLite)` and `Tests (MySQL)` passed.

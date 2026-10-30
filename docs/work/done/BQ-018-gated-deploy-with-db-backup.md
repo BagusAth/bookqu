@@ -2,7 +2,7 @@
 id: BQ-018
 title: Deploy only after CI passes and back up the database before migrating
 type: ops
-status: in-progress
+status: done
 priority: P0
 phase: 3
 domain: —
@@ -15,7 +15,7 @@ depends-on: []
 
 # BQ-018: Deploy only after CI passes and back up the database before migrating
 
-Plan approved via [ADR-0015](../adr/ADR-0015-environments-and-release.md) (gated deploy, `mysqldump` before migrate, maintenance mode, expand/contract migrations), 2026-10-30.
+Plan approved via [ADR-0015](../../adr/ADR-0015-environments-and-release.md) (gated deploy, `mysqldump` before migrate, maintenance mode, expand/contract migrations), 2026-10-30.
 
 ## Problem
 
@@ -32,3 +32,4 @@ Make the deploy job depend on the test job (one workflow with `needs:`, or `work
 - Restore procedure in `docs/operations.md` §6.
 - Verified locally: the extracted script passes `bash -n` and both workflows parse as YAML. The backup block, run against local MySQL 8.4, produced a dump of 33 tables, passed its own checks and removed the client file. Restoring that dump into a scratch database gave 33 tables and the same 41 migration rows; the scratch database was then dropped.
 - **Not yet verified on HostData:** whether `mysqldump` exists there (run the manual `test-ssh.yml`, which now reports it), and the first real gated deploy. Both happen at the first release to `main` (lead action).
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41039402279 (PR #1, 2026-10-30): `Quality checks`, `Tests (SQLite)` and `Tests (MySQL)` passed.

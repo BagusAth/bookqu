@@ -2,7 +2,7 @@
 id: BQ-023
 title: Run integrity tests on MySQL in CI
 type: improvement
-status: in-progress
+status: done
 priority: P0
 phase: 3
 domain: booking
@@ -15,7 +15,7 @@ depends-on: []
 
 # BQ-023: Run integrity tests on MySQL in CI
 
-Plan approved via [ADR-0014](../adr/ADR-0014-testing-strategy.md) (`mysql` test group on MySQL 8 in CI, SQLite stays the fast default), 2026-10-30.
+Plan approved via [ADR-0014](../../adr/ADR-0014-testing-strategy.md) (`mysql` test group on MySQL 8 in CI, SQLite stays the fast default), 2026-10-30.
 
 ## Problem
 
@@ -38,4 +38,4 @@ As built (branch `phase-3-guardrails`):
 - Local MySQL 8.4.3: `vendor/bin/phpunit -c phpunit.mysql.xml` → 416 tests pass (the whole suite plus the new tests).
 - Running the whole suite on MySQL first exposed one defect. `ProductionLogicSpecificationTest::test_9_concurrent_booking_cannot_double_book_slot` asserted on the non-existent column `payments.namapelanggan`. SQLite reads an unknown double-quoted identifier as a string literal, so the assertion was vacuous; it now checks `nama_pembayar`.
 - CI had been red on `agathan` since the Boost commit: the lock file needed PHP ≥ 8.4.1 (`symfony/yaml` 8.1) while CI runs 8.3. Fixed by `config.platform.php = 8.3.0` (commit `95c811b`).
-- GitHub Actions run: pending until the branch is pushed.
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41039402279 (PR #1, 2026-10-30): `Quality checks`, `Tests (SQLite)` and `Tests (MySQL)` passed.

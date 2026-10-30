@@ -2,7 +2,7 @@
 id: BQ-024
 title: Add formatting, dependency and documentation checks to CI
 type: improvement
-status: in-progress
+status: done
 priority: P1
 phase: 3
 domain: —
@@ -31,4 +31,4 @@ As built: a `quality` job in `tests.yml`, plus a documentation test instead of a
 - **`composer audit`** is blocking; clean on 2026-10-30.
 - **`npm audit --audit-level=high`** reports only (`continue-on-error`). It currently finds 6 advisories in build tooling, recorded as BQ-072.
 - **`tests/Guardrails/DocumentationIntegrityTest.php`** checks that relative Markdown links in `AGENTS.md`, `README.md`, `docs/` and `.ai/rules/` resolve; that `FR-`/`BR-`/`NFR-` (headings in `docs/requirements.md`) and `INV-` (table in `docs/domains/README.md`) are defined once and every reference exists; and that `BQ-` numbers are unique, match their front matter and every reference exists. Probed with a broken link and three made-up IDs: all four checks fail and name the file.
-- GitHub Actions run: pending until the branch is pushed.
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41039402279 (PR #1, 2026-10-30): `Quality checks`, `Tests (SQLite)` and `Tests (MySQL)` passed.
