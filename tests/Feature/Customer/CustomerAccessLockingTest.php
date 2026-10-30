@@ -22,10 +22,21 @@ class CustomerAccessLockingTest extends TestCase
 {
     use DatabaseTruncation;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['database.connections.customer_access_concurrent' => config('database.connections.mysql')]);
+        $this->beforeApplicationDestroyed(function (): void {
+            DB::connection('customer_access_concurrent')->rollBack();
+            DB::purge('customer_access_concurrent');
+            $this->truncateTablesForAllConnections();
+        });
+    }
+
     public function test_family_revocation_waits_for_tenant_mutex_and_invalidates_preexisting_grants(): void
     {
         $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
-        config(['database.connections.customer_access_concurrent' => config('database.connections.mysql')]);
         $tenant = Tenant::factory()->create();
         $payment = Payment::factory()->create(['idtenant' => $tenant->id]);
         Booking::factory()->create(['idtenant' => $tenant->id, 'idpayment' => $payment->id]);

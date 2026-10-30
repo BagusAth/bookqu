@@ -50,9 +50,11 @@ Implementasi sesuai ruang lingkup lead pada 2026-10-31: dua profil Checkout/Mana
 
 Verifikasi:
 - CustomerAccessTest: 28 kasus / 323 assertions (HTTP, scope, expiry/revocation, CSRF, sesi, HTML/share, recipient, bounded retries dan stale source).
-- MySQL: 29 tes / 328 assertions untuk CustomerAccessTest + CustomerAccessLockingTest; pencabutan terbukti menunggu query kunci tenant, kemudian version bump menolak grant yang sebelumnya valid.
+- MySQL: 29 tes / 328 assertions untuk CustomerAccessTest + CustomerAccessLockingTest; pencabutan terbukti menunggu query kunci tenant, kemudian version bump menolak grant yang sebelumnya valid. Full MySQL suite: 514 tes / 2.514 assertions lulus. Cleanup DatabaseTruncation diuji dengan urutan locking lalu HTTP agar fixture tidak bocor ke tes berikutnya.
 - Full suite: php artisan test --compact — 508 lulus / 2.498 assertions. Pint --dirty --format agent lulus (diulang dengan --max-processes=1 setelah kendala penulisan file Windows). PHPStan --memory-limit=1G lulus; baseline berkurang dari 132 menjadi 124 entri, tidak bertambah. CI PR harus tetap hijau sebelum merge.
 - graphify update . memperbarui graph kode secara deterministik. Review keamanan fokus dilakukan pada source dan regression tests; tidak ada audit produksi atau klaim verifikasi browser manual.
 
 Sisa yang secara eksplisit diizinkan lead: expiry recovery, owner resend/replacement UI dan rate limit per family. Profil sempit/Invoice-child tidak dibutuhkan oleh caller saat ini; jangan menambahkan issuer publik arbitrer. Recovery/resend memerlukan item lanjutan sebelum dikerjakan. Drop kolom legacy mengikuti rilis contract berikutnya.
 
+
+PR: https://github.com/BagusAth/bookqu/pull/9 (target agathan). Empat job CI wajib hijau pada head yang diperiksa ulang sebelum merge.
