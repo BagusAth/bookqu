@@ -2,7 +2,7 @@
 id: BQ-069
 title: Blocked dates are not enforced when creating or rescheduling a booking
 type: bug-fix
-status: in-progress
+status: done
 priority: P0
 phase: 4
 domain: schedule
@@ -15,7 +15,7 @@ depends-on: [BQ-012]
 
 # BQ-069: Blocked dates are not enforced when creating or rescheduling a booking
 
-Closure policy and plan approved by agathan in [ADR-0005](../adr/ADR-0005-slot-bookability-module.md), 2026-10-30. Implementation/acceptance remains Phase 4 after BQ-012 and the roadmap gates; the current defect is still open.
+Closure policy and plan approved by agathan in [ADR-0005](../../adr/ADR-0005-slot-bookability-module.md), 2026-10-30. Implementation/acceptance remains Phase 4 after BQ-012 and the roadmap gates; the current defect is still open.
 
 ## Problem
 
@@ -45,4 +45,4 @@ Fixed by BQ-012's Slot bookability module and verified here (2026-10-31).
    - Module rule: `ClaimSlotsTest::test_refuses_a_date_closed_by_the_owner`. Walk-ins use the same claim.
 5. **MySQL ordering.** `ClaimSlotsLockingTest::test_closing_a_date_waits_for_a_claim_in_progress`: a closure waits while a claim holds the tenant row and writes nothing. The reverse direction is `test_claim_waits_for_the_tenant_lock_before_touching_schedules`.
 
-GitHub Actions run: pending until pushed.
+GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41096222351 (PR #8): Quality checks, SQLite, MySQL and MariaDB passed.
