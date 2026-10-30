@@ -97,20 +97,32 @@ jobs:
       - name: Run tests
         run: php artisan test --compact
 
+  # Production (HostData) runs MariaDB 11.4; MySQL 8 stays for local development (BQ-073).
   tests-mysql:
-    name: Tests (MySQL)
+    name: Tests (${{ matrix.database.name }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - name: MySQL
+            image: mysql:8.0
+            health: mysqladmin ping -h 127.0.0.1 -ppassword
+          - name: MariaDB
+            image: mariadb:11.4
+            health: healthcheck.sh --connect --innodb_initialized
 
     services:
       mysql:
-        image: mysql:8.0
+        image: ${{ matrix.database.image }}
         env:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: bookqu_testing
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-cmd="${{ matrix.database.health }}"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -152,5 +164,5 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Run full suite and the mysql group on MySQL
+      - name: Run full suite and the mysql group on ${{ matrix.database.name }}
         run: vendor/bin/phpunit -c phpunit.mysql.xml
