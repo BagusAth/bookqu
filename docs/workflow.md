@@ -65,7 +65,7 @@ Ask for clarification only when two materially different product behaviours are 
 - Booking and payment changes cover: stale pending, concurrent booking, cross-tenant access, cross-booking token use, duplicate webhook, driver switching, expiry.
 - Name tests by behaviour: `test_owner_cannot_access_other_tenant_bookings`.
 - A failing test is evidence. Decide whether the code, the requirement or the test is wrong before touching the test.
-- "Verified" needs matching evidence. Concurrency claims need MySQL, not SQLite (see BQ-023).
+- "Verified" needs matching evidence. Concurrency claims need the MySQL suite (`vendor/bin/phpunit -c phpunit.mysql.xml`, `mysql` group), not SQLite.
 - Add characterization tests before refactoring poorly tested critical code.
 
 ## 7. Definition of done

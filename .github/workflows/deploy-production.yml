@@ -10,8 +10,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Deploy only a commit whose SQLite, MySQL and quality jobs pass (ADR-0015, BQ-018).
+  tests:
+    name: Tests
+    uses: ./.github/workflows/tests.yml
+
   deploy:
     name: Deploy BookQu production
+    needs: tests
     runs-on: ubuntu-latest
 
     steps:
@@ -124,11 +130,15 @@ jobs:
             LARAVEL_DIR="$HOME/domains/bookqu.my.id/laravel"
             PUBLIC_DIR="$HOME/domains/bookqu.my.id/public_html"
             BACKUP_ROOT="$HOME/domains/bookqu.my.id/deploy-backups"
+            DB_BACKUP_DIR="$HOME/domains/bookqu.my.id/db-backups"
+            BACKUP_RETENTION_DAYS=14
             TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
             BACKUP_DIR="$BACKUP_ROOT/$TIMESTAMP"
             SOURCE_DIR="$DEPLOY_DIR/laravel-source"
             BUILD_DIR="$DEPLOY_DIR/public-assets"
             DEPLOY_STARTED=0
+            MAINTENANCE_ON=0
+            DB_CNF=""
 
             echo "=== PRODUCTION DEPLOY DIAGNOSTIC ==="
             echo "DEPLOY_DIR=$DEPLOY_DIR"
@@ -169,6 +179,9 @@ jobs:
 
             rollback() {
               status=$?
+              if [ -n "$DB_CNF" ]; then
+                rm -f "$DB_CNF"
+              fi
               if [ "$status" -eq 0 ] || [ "$DEPLOY_STARTED" -ne 1 ]; then
                 exit "$status"
               fi
@@ -188,7 +201,11 @@ jobs:
               cd "$LARAVEL_DIR"
               php artisan optimize:clear || true
               php artisan optimize || true
-              echo "PRODUCTION DEPLOY FAILED; rollback attempted. Backup preserved at $BACKUP_DIR"
+              if [ "$MAINTENANCE_ON" -eq 1 ]; then
+                php artisan up || true
+              fi
+              echo "PRODUCTION DEPLOY FAILED; code rollback attempted. Code backup: $BACKUP_DIR"
+              echo "The schema may already be migrated. Database backup: ${DB_BACKUP_FILE:-none}; restore per docs/operations.md section 6."
               exit "$status"
             }
             trap rollback EXIT
@@ -228,6 +245,42 @@ jobs:
             chmod 700 "$BACKUP_DIR"
             echo "Backup created: $BACKUP_DIR"
 
+            # Database backup before anything changes. No backup, no deploy (ADR-0015).
+            # Credentials come from the live Laravel config and go into a 600 client
+            # file, never onto the command line or into the log.
+            mkdir -p "$DB_BACKUP_DIR"
+            chmod 700 "$DB_BACKUP_DIR"
+            command -v mysqldump >/dev/null
+            DB_CNF="$(umask 077; mktemp "$DB_BACKUP_DIR/.client-XXXXXX.cnf")"
+            DB_NAME="$(cd "$LARAVEL_DIR" && php -r '
+              require "vendor/autoload.php";
+              $app = require "bootstrap/app.php";
+              $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+              $db = config("database.connections.".config("database.default"));
+              $quote = fn ($value) => "\"".addcslashes((string) $value, "\\\"")."\"";
+              file_put_contents($argv[1], implode(PHP_EOL, [
+                "[client]",
+                "user=".$quote($db["username"]),
+                "password=".$quote($db["password"]),
+                "host=".$quote($db["host"]),
+                "port=".$quote($db["port"]),
+                "",
+              ]));
+              echo $db["database"];
+            ' "$DB_CNF")"
+            test -n "$DB_NAME"
+            DB_BACKUP_FILE="$DB_BACKUP_DIR/bookqu-$TIMESTAMP.sql.gz"
+            (umask 077; mysqldump --defaults-extra-file="$DB_CNF" --single-transaction --quick --routines --triggers --no-tablespaces "$DB_NAME" | gzip > "$DB_BACKUP_FILE")
+            rm -f "$DB_CNF"
+            DB_CNF=""
+            gzip -t "$DB_BACKUP_FILE"
+            zcat "$DB_BACKUP_FILE" | tail -n 1 | grep -q 'Dump completed'
+            chmod 600 "$DB_BACKUP_FILE"
+            echo "Database backup created: $DB_BACKUP_FILE ($(du -h "$DB_BACKUP_FILE" | cut -f1))"
+
+            find "$DB_BACKUP_DIR" -maxdepth 1 -name 'bookqu-*.sql.gz' -mtime +"$BACKUP_RETENTION_DAYS" -delete
+            find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -mtime +"$BACKUP_RETENTION_DAYS" -exec rm -rf {} +
+
             DEPLOY_STARTED=1
             for item in app bootstrap config database resources routes; do
               rm -rf "$LARAVEL_DIR/$item"
@@ -252,9 +305,13 @@ jobs:
             # generate the optimized autoloader without Composer lifecycle scripts;
             # the Laravel cache commands below remain the deployment validation.
             composer install --no-dev --no-scripts --optimize-autoloader
+            php artisan down --retry=60
+            MAINTENANCE_ON=1
             php artisan migrate --force
             php artisan optimize:clear
             php artisan optimize
+            php artisan up
+            MAINTENANCE_ON=0
 
             php artisan --version
             php artisan route:list >/dev/null

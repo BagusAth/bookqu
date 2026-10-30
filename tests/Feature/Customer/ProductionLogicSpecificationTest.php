@@ -11,6 +11,8 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\MidtransPaymentService;
 use Carbon\Carbon;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
@@ -20,11 +22,17 @@ class ProductionLogicSpecificationTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected Service $service;
+
     protected string $date;
+
     protected Schedule $slot10;
+
     protected Schedule $slot11;
+
     protected Schedule $slot12;
+
     protected Schedule $slot14;
 
     protected function setUp(): void
@@ -32,8 +40,8 @@ class ProductionLogicSpecificationTest extends TestCase
         parent::setUp();
 
         $this->withoutMiddleware([
-            \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
-            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            PreventRequestForgery::class,
+            ValidateCsrfToken::class,
         ]);
 
         $user = User::factory()->create(['role' => 'owner']);
@@ -112,7 +120,7 @@ class ProductionLogicSpecificationTest extends TestCase
                 'schedule_ids' => $scheduleIds,
                 'jam' => $times,
                 'times' => $times,
-            ]
+            ],
         ]);
     }
 
@@ -137,9 +145,9 @@ class ProductionLogicSpecificationTest extends TestCase
         $bookings = Booking::withoutGlobalScopes()->where('idpayment', $payment->id)->get();
         $this->assertCount(1, $bookings);
         $this->assertEquals('pending', $bookings->first()->status);
-        $this->assertEquals('10:00:00', substr($bookings->first()->jam, 0, 8) . (strlen($bookings->first()->jam) === 5 ? ':00' : ''));
+        $this->assertEquals('10:00:00', substr($bookings->first()->jam, 0, 8).(strlen($bookings->first()->jam) === 5 ? ':00' : ''));
 
-        $response->assertRedirect('/studio-foto-logic/booking/payment/' . $payment->order_id);
+        $response->assertRedirect('/studio-foto-logic/booking/payment/'.$payment->order_id);
     }
 
     /**
@@ -163,7 +171,7 @@ class ProductionLogicSpecificationTest extends TestCase
         $this->assertCount(2, $bookings);
         $this->assertEquals(['pending', 'pending'], $bookings->pluck('status')->all());
 
-        $response->assertRedirect('/studio-foto-logic/booking/payment/' . $payment->order_id);
+        $response->assertRedirect('/studio-foto-logic/booking/payment/'.$payment->order_id);
     }
 
     /**
@@ -186,7 +194,7 @@ class ProductionLogicSpecificationTest extends TestCase
         $bookings = Booking::withoutGlobalScopes()->where('idpayment', $payment->id)->get();
         $this->assertCount(3, $bookings);
 
-        $response->assertRedirect('/studio-foto-logic/booking/payment/' . $payment->order_id);
+        $response->assertRedirect('/studio-foto-logic/booking/payment/'.$payment->order_id);
     }
 
     /**
@@ -200,7 +208,7 @@ class ProductionLogicSpecificationTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
                 'tanggal' => $this->date,
-            ]
+            ],
         ]);
 
         $response = $this->post('/studio-foto-logic/booking/select-time', [
@@ -222,7 +230,7 @@ class ProductionLogicSpecificationTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
                 'tanggal' => $this->date,
-            ]
+            ],
         ]);
 
         $response = $this->post('/studio-foto-logic/booking/select-time', [
@@ -268,7 +276,7 @@ class ProductionLogicSpecificationTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
                 'tanggal' => $this->date,
-            ]
+            ],
         ]);
 
         $response = $this->post('/studio-foto-logic/booking/select-time', [
@@ -305,7 +313,7 @@ class ProductionLogicSpecificationTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
                 'tanggal' => $this->date,
-            ]
+            ],
         ]);
 
         $response = $this->post('/studio-foto-logic/booking/select-time', [
@@ -336,7 +344,7 @@ class ProductionLogicSpecificationTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
                 'tanggal' => $this->date,
-            ]
+            ],
         ]);
 
         $response = $this->post('/studio-foto-logic/booking/select-time', [
@@ -374,7 +382,7 @@ class ProductionLogicSpecificationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['jam']);
-        $this->assertDatabaseMissing('payments', ['namapelanggan' => 'Late Customer']);
+        $this->assertDatabaseMissing('payments', ['nama_pembayar' => 'Late Customer']);
     }
 
     /**
@@ -606,7 +614,7 @@ class ProductionLogicSpecificationTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->post('/studio-foto-logic/booking/payment/' . $payment->order_id . '/cancel');
+        $response = $this->post('/studio-foto-logic/booking/payment/'.$payment->order_id.'/cancel');
         $response->assertRedirect('/studio-foto-logic');
 
         $payment->refresh();
@@ -662,7 +670,7 @@ class ProductionLogicSpecificationTest extends TestCase
             'status' => 'paid',
         ]);
 
-        $response = $this->get('/studio-foto-logic/booking/payment/' . $payment->order_id . '/invoice');
+        $response = $this->get('/studio-foto-logic/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertStatus(200);
         $response->assertSee('BK-SLOT10-001');
         $response->assertSee('BK-SLOT11-002');
@@ -686,8 +694,8 @@ class ProductionLogicSpecificationTest extends TestCase
             'expired_at' => now()->addMinutes(15),
         ]);
 
-        $response = $this->get('/studio-foto-logic/booking/payment/' . $payment->order_id . '/invoice');
-        $response->assertRedirect('/studio-foto-logic/booking/payment/' . $payment->order_id);
+        $response = $this->get('/studio-foto-logic/booking/payment/'.$payment->order_id.'/invoice');
+        $response->assertRedirect('/studio-foto-logic/booking/payment/'.$payment->order_id);
     }
 
     /**
@@ -706,7 +714,7 @@ class ProductionLogicSpecificationTest extends TestCase
             'expired_at' => now()->subMinutes(15),
         ]);
 
-        $response = $this->get('/studio-foto-logic/booking/payment/' . $payment->order_id . '/invoice');
+        $response = $this->get('/studio-foto-logic/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertRedirect('/studio-foto-logic');
     }
 
@@ -847,7 +855,7 @@ class ProductionLogicSpecificationTest extends TestCase
         $this->app->instance(MidtransPaymentService::class, $mockService);
 
         // Client attempts to spoof settlement status in POST body
-        $response = $this->postJson('/studio-foto-logic/booking/payment/' . $payment->order_id . '/callback', [
+        $response = $this->postJson('/studio-foto-logic/booking/payment/'.$payment->order_id.'/callback', [
             'result' => [
                 'status_code' => '200',
                 'transaction_status' => 'settlement',

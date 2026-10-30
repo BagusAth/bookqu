@@ -34,26 +34,31 @@ Webhook URLs to register with the providers: `https://bookqu.my.id/api/webhooks/
 
 Switching the active provider: set `PAYMENT_GATEWAY_DRIVER` → `php artisan config:cache` → verify a new booking checkout (SingaPay redirect or Midtrans Snap) and a subscription checkout. Existing payments keep their original provider for webhooks and status checks.
 
-## 3. Deployment (current)
+## 3. Deployment
 
-`.github/workflows/deploy-production.yml` runs on **every push to `main`**:
+`.github/workflows/deploy-production.yml` runs on every push to `main` (ADR-0015, BQ-018):
 
-1. Build Vite assets on the runner and validate the manifest.
-2. Archive the source (excluding `.git`, `.env*`, `node_modules`, `vendor`, `storage`, `public/build`) and the build; copy both to the server over SSH.
-3. On the server: back up `app`, `bootstrap`, `config`, `database`, `resources`, `routes`, `composer.*` and `public/build`; replace them; `composer install --no-dev --no-scripts --optimize-autoloader` (HostData disables `proc_open`, so Composer scripts are skipped); `php artisan migrate --force`; `optimize:clear`; `optimize`; `route:cache`.
-4. Health check: `curl https://bookqu.my.id` must return 2xx/3xx. On failure the code and build are restored from the backup.
+1. **Tests first.** The `tests` job calls `tests.yml` (quality checks, SQLite suite, MySQL suite). The `deploy` job needs it, so a red CI never deploys.
+2. Build Vite assets on the runner and validate the manifest.
+3. Archive the source (excluding `.git`, `.env*`, `node_modules`, `vendor`, `storage`, `public/build`) and the build; copy both to the server over SSH.
+4. On the server, before anything changes:
+   - back up `app`, `bootstrap`, `config`, `database`, `resources`, `routes`, `composer.*` and `public/build` to `deploy-backups/<timestamp>/`;
+   - dump the database with `mysqldump --single-transaction --no-tablespaces` to `db-backups/bookqu-<timestamp>.sql.gz` (directory 700, file 600). Credentials are read from the live Laravel config into a temporary 600 client file, never the command line or the log. The dump must pass `gzip -t` and end with `Dump completed`, or the deploy stops before touching anything. Backups older than 14 days are deleted.
+5. Replace the code; `composer install --no-dev --no-scripts --optimize-autoloader` (HostData disables `proc_open`, so Composer scripts are skipped); `php artisan down`; `migrate --force`; `optimize:clear`; `optimize`; `php artisan up`; `route:cache`.
+6. Health check: `curl https://bookqu.my.id` must return 2xx/3xx. On any failure after the swap, code and build are restored and the site is brought back up; the schema is **not** rolled back (see §6).
 
-Target (ADR-0015): staging deployed from `agathan` after CI; production deploy only for a commit whose CI passed, with a `mysqldump` before `migrate --force`, maintenance mode and backward-compatible (expand/contract) migrations.
+Prerequisite: `mysqldump` on the server. Run the manual `test-ssh.yml` workflow once; it reports the PHP and `mysqldump` versions. Without `mysqldump` every deploy fails at the backup step, by design.
 
-Known risks (all tracked):
+Migrations must stay backward compatible with the previous release's code (expand → migrate data → contract in a later release), because a rollback restores code, not schema.
 
-| Risk | Item |
+Remaining gaps:
+
+| Gap | Item |
 |---|---|
-| Deploy does not wait for the test workflow | BQ-018 |
-| No database backup before `migrate --force`; rollback restores code but not schema or data | BQ-018, BQ-019 |
 | No staging environment | BQ-017 |
+| No scheduled backups and no restore drill on the server; `storage/app` uploads not backed up | BQ-019 |
 
-Other workflows: `validate-deploy.yml` (manual: build and transfer test), `test-ssh.yml` (manual: SSH check).
+Other workflows: `validate-deploy.yml` (manual: build and transfer test), `test-ssh.yml` (manual: SSH and deploy prerequisites).
 
 ## 4. Scheduler and queue
 
@@ -76,7 +81,19 @@ Production needs a real mail transport (credentials, sender, test delivery) and 
 
 ## 6. Backups and recovery
 
-**Target** (BQ-019): automated database backups before every migration and on a schedule, user uploads (`storage/app`) included, with a documented and tested restore. A backup counts only after a successful restore test.
+Every production deploy writes `~/domains/bookqu.my.id/db-backups/bookqu-<timestamp>.sql.gz` before migrating (§3) and keeps 14 days. **Target** (BQ-019): scheduled backups as well, user uploads (`storage/app`) included, and a restore drill on the server. A backup counts only after a successful restore test.
+
+Restore a deploy backup (verified locally on MySQL 8.4 on 2026-10-30; take a fresh dump of the current state first):
+
+```bash
+cd ~/domains/bookqu.my.id/laravel && php artisan down
+umask 077 && printf '[client]\nuser="%s"\npassword="%s"\nhost="%s"\n' '<DB_USERNAME>' '<DB_PASSWORD>' '<DB_HOST>' > ~/restore.cnf
+gunzip -c ~/domains/bookqu.my.id/db-backups/bookqu-<timestamp>.sql.gz | mysql --defaults-extra-file=~/restore.cnf <DB_DATABASE>
+rm ~/restore.cnf
+```
+
+Then restore the matching code from `deploy-backups/<timestamp>/` (or redeploy that commit), run `php artisan optimize`, `php artisan up`, and check §9. Restoring a dump overwrites everything written since it was taken: bookings and payment webhooks received after the dump must be reconciled from the provider dashboards.
+
 
 When data looks inconsistent:
 
