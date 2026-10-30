@@ -2,7 +2,7 @@
 id: BQ-067
 title: Implement the Payment lifecycle module (ADR-0004)
 type: refactor
-status: in-progress
+status: done
 priority: P0
 phase: 4
 domain: payment
@@ -73,4 +73,5 @@ Built on branch `bq-067-payment-lifecycle` (2026-10-30).
   - the `ExpirePayment` tests in `PaymentActionTest` and `RF09StabilityAndHardeningTest` now call the module (the duplicate in `PaymentActionTest` was removed).
 - **Architecture test:** the `payment-status-writers` rule exempts only the lifecycle module. Allowlist shrank from 39 to 19, and what remains are status values in JSON responses (BQ-032). `scope-bypass-reason` lost 6; `provider-sdk` lost 2 unused SDK imports.
 - **Larastan:** no new errors; the baseline lost 66 lines of entries for deleted code.
-- **Local runs:** SQLite suite 445 tests pass; lifecycle lock tests pass on MySQL 8.4. GitHub Actions run: pending until pushed.
+- **Local runs:** SQLite suite 445 tests pass; lifecycle lock tests pass on MySQL 8.4.
+- **GitHub Actions** run https://github.com/BagusAth/bookqu/actions/runs/41086120502 (PR #4): Quality checks, SQLite, MySQL and MariaDB all passed.

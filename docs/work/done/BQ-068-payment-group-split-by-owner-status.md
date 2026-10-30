@@ -2,7 +2,7 @@
 id: BQ-068
 title: Owner marking one slot paid splits a multi-slot payment group
 type: bug-fix
-status: in-progress
+status: done
 priority: P0
 phase: 4
 domain: booking
@@ -29,3 +29,4 @@ Fixed in BQ-067: `UpdateBookingStatus` requests `PaymentTransition::SettledByOwn
 - the payment is `sukses` with `metode` `cash`;
 - the sibling booking is `paid`;
 - a later provider webhook returns `already-final`, changes nothing and creates no refund.
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41086120502 (PR #4): all four jobs passed.
