@@ -56,8 +56,7 @@ jobs:
       - name: Composer security advisories
         run: composer audit --no-interaction
 
-      - name: npm security advisories (high and critical, report only)
-        continue-on-error: true
+      - name: npm security advisories (high and critical)
         run: npm audit --audit-level=high
 
   tests-sqlite:
