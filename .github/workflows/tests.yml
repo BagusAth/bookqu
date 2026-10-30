@@ -50,6 +50,9 @@ jobs:
           fi
           vendor/bin/pint --test --diff="$BASE_REF" --format agent
 
+      - name: Larastan (level 5, new errors only; see phpstan-baseline.neon)
+        run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress --error-format=github
+
       - name: Composer security advisories
         run: composer audit --no-interaction
 

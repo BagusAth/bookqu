@@ -1,0 +1,12 @@
+# Static analysis (BQ-026). Errors that existed on 2026-10-30 live in the
+# baseline; new code must not add errors. Raise the level once the baseline
+# is small, and never add entries to the baseline by hand.
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - app
+    tmpDir: storage/framework/cache/phpstan

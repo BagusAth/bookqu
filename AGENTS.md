@@ -77,6 +77,7 @@ Full process, definition of done and conventions: `docs/workflow.md`.
 | Tests (all / one file / one test) | `php artisan test --compact` · `php artisan test --compact tests/Feature/Customer/BookingFlowTest.php` · `--filter=test_name` |
 | Tests on MySQL (needs local database `bookqu_testing`) | `vendor/bin/phpunit -c phpunit.mysql.xml` · `--group mysql` for lock tests only |
 | Format changed PHP | `vendor/bin/pint --dirty --format agent` |
+| Static analysis (new errors fail CI; never extend the baseline by hand) | `vendor/bin/phpstan analyse --memory-limit=1G` |
 | Refresh the knowledge graph after code changes | `graphify update .` |
 | Local dev (server, queue, logs, Vite) | `composer run dev` |
 | Payment expiry (dry run) | `php artisan bookings:expire-payments --dry-run` |

@@ -1,0 +1,895 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$cancel_before_hours\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Booking/CancelBooking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Actions/Booking/CancelBooking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$jumlah\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Booking/CancelBooking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Booking/CancelBooking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Booking/CancelBooking.php
+
+		-
+			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Actions/Booking/CancelBooking.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>cancel_before_hours" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Booking/CancelBooking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Booking/CreateBooking.php
+
+		-
+			message: '#^Anonymous function has an unused use \$selectedTimes\.$#'
+			identifier: closure.unusedUse
+			count: 1
+			path: app/Actions/Booking/CreateBooking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Booking/CreateWalkInBooking.php
+
+		-
+			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Actions/Booking/CreateWalkInBooking.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between float and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Actions/Booking/CreateWalkInBooking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Actions/Booking/RescheduleBooking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$iduser\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Booking/RescheduleBooking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Booking/RescheduleBooking.php
+
+		-
+			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 3
+			path: app/Actions/Booking/RescheduleBooking.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>user" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Booking/RescheduleBooking.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type Illuminate\\Database\\Eloquent\\Model\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Booking/RescheduleBooking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Booking/UpdateBookingStatus.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Booking/UpdateBookingStatus.php
+
+		-
+			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Actions/Booking/UpdateBookingStatus.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga_override\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namalayanan\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 3
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Booking\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>harga" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>harga_override" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>namalayanan" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>notes" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type App\\Models\\Booking\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Customer/GetCustomerDetail.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Service\:\:\$bookingshariini\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Actions/Dashboard/GetOwnerDashboardOverview.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Service\:\:\$bookingskemarin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Dashboard/GetOwnerDashboardOverview.php
+
+		-
+			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Actions/Dashboard/GetOwnerDashboardOverview.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>namabisnis" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Owner/DeleteOwnerAccount.php
+
+		-
+			message: '#^Offset ''snap_token'' on array\{snap_token\: string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Actions/Payment/CreateBookingPayment.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 1
+			path: app/Actions/Payment/ExpirePayment.php
+
+		-
+			message: '#^Offset ''payment_type'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Actions/Payment/ProcessPaymentWebhook.php
+
+		-
+			message: '#^Offset ''transaction_status'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Actions/Payment/ProcessPaymentWebhook.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Payment/SynchronizePaymentStatus.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: app/Actions/Payment/SynchronizePaymentStatus.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''pending'' and ''sukses'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Actions/Payment/SynchronizePaymentStatus.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 2
+			path: app/Actions/Payment/SynchronizePaymentStatus.php
+
+		-
+			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Actions/Schedule/DeleteSchedule.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapelanggan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Schedule/ExportScheduleReport.php
+
+		-
+			message: '#^Variable \$sortedDays in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: app/Actions/Schedule/GenerateScheduleReport.php
+
+		-
+			message: '#^Variable \$sortedHours in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: app/Actions/Schedule/GenerateScheduleReport.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between float\|int\|numeric\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Actions/Schedule/UpdateScheduleAvailability.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$isunlimited\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Subscription/GetSubscriptionOverview.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Subscription/GetSubscriptionOverview.php
+
+		-
+			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getBookingLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Actions/Subscription/GetSubscriptionOverview.php
+
+		-
+			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getServiceLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Actions/Subscription/GetSubscriptionOverview.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>isunlimited" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Subscription/GetSubscriptionOverview.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>namapaket" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Subscription/GetSubscriptionOverview.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type App\\Models\\Subscription\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Subscription/GetSubscriptionOverview.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/CheckExpiredSubscriptions.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$cancel_before_hours\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/GenerateTestBookingToken.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namabisnis\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/GenerateTestBookingToken.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namalayanan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/GenerateTestBookingToken.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>cancel_before_hours" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/GenerateTestBookingToken.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>namabisnis" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/GenerateTestBookingToken.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>namalayanan" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/GenerateTestBookingToken.php
+
+		-
+			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 2
+			path: app/Domain/Booking/BookingRules.php
+
+		-
+			message: '#^Cannot call method isPast\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Domain/Payment/PaymentRules.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Domain/Schedule/AvailabilityRules.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:hasActiveFulfillment\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Domain/Schedule/AvailabilityRules.php
+
+		-
+			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Domain/Schedule/AvailabilityRules.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''tersedia''\|''tidak_tersedia'' and ''diblokir'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Schedule/AvailabilityRules.php
+
+		-
+			message: '#^Instanceof between App\\Models\\Schedule and App\\Models\\Schedule will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Domain/Schedule/SlotCompatibilityRules.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Domain/Subscription/EntitlementRules.php
+
+		-
+			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getBookingLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Domain/Subscription/EntitlementRules.php
+
+		-
+			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getServiceLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Domain/Subscription/EntitlementRules.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>namapaket" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Domain/Subscription/EntitlementRules.php
+
+		-
+			message: '#^Cannot call method lessThan\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 3
+			path: app/Domain/Subscription/SubscriptionState.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$maxbooking\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Customer/BookingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Customer/BookingController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Service\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Customer/BookingController.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: app/Http/Controllers/Customer/BookingController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''pending''\|''sukses'' and ''gagal'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Customer/BookingController.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Customer/BookingController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Customer/BookingController.php
+
+		-
+			message: '#^Variable \$selectedTimes in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: app/Http/Controllers/Customer/BookingController.php
+
+		-
+			message: '#^Variable \$servicesData on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: app/Http/Controllers/Customer/BookingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Http/Controllers/Customer/BookingManageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$manage_token\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Customer/BookingManageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Customer/BookingManageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Customer/BookingManageController.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Customer/BookingManageController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Customer\\BookingManageController\:\:clearBookingCaches\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/Http/Controllers/Customer/BookingManageController.php
+
+		-
+			message: '#^Parameter \#1 \$tenant of method App\\Actions\\Schedule\\GetAvailableSchedules\:\:getCustomerRescheduleSlots\(\) expects App\\Models\\Tenant, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Customer/BookingManageController.php
+
+		-
+			message: '#^Parameter \#2 \$service of method App\\Actions\\Schedule\\GetAvailableSchedules\:\:getCustomerRescheduleSlots\(\) expects App\\Models\\Service, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Customer/BookingManageController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>updated_at" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Customer/BookingManageController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Service\:\:\$bookingbayar\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$jumlah\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
+
+		-
+			message: '#^Comparison operation "\>" between int\<1, max\> and 0 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Service\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>jumlah" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>saldo_platform" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerBalanceController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerBookingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namalayanan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerBookingController.php
+
+		-
+			message: '#^Anonymous function has an unused use \$booking\.$#'
+			identifier: closure.unusedUse
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerBookingController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),mixed\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerBookingController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>namalayanan" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerBookingController.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerCheckoutController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Owner/OwnerLandingPageController.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Owner/OwnerScheduleController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Middleware/CheckSubscription.php
+
+		-
+			message: '#^Cannot access property \$id on object\|string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Requests/Schedule/BulkCreateScheduleRequest.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$midtrans_environment\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$midtrans_prod_server_key\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$midtrans_sandbox_server_key\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$payment_mode\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Infrastructure/Payments/SingaPay/SingaPayPaymentGateway.php
+
+		-
+			message: '#^Cannot call method getTimestamp\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Infrastructure/Payments/SingaPay/SingaPayPaymentGateway.php
+
+		-
+			message: '#^Offset ''name'' on array\{name\: string, quantity\: int, unit_price\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Infrastructure/Payments/SingaPay/SingaPayPaymentGateway.php
+
+		-
+			message: '#^Offset ''quantity'' on array\{name\: string, quantity\: int, unit_price\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Infrastructure/Payments/SingaPay/SingaPayPaymentGateway.php
+
+		-
+			message: '#^Offset ''unit_price'' on array\{name\: string, quantity\: int, unit_price\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Infrastructure/Payments/SingaPay/SingaPayPaymentGateway.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>slug" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Infrastructure/Payments/SingaPay/SingaPayPaymentGateway.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Infrastructure/Payments/SingaPay/SingaPayWebhookVerifier.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mail/BookingInvoiceMail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Booking.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga_override\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Booking.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Models/Booking.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>harga" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/Booking.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>harga_override" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/Booking.php
+
+		-
+			message: '#^Match arm comparison between ''reviewed'' and ''reviewed'' is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 3
+			path: app/Models/BookingLog.php
+
+		-
+			message: '#^Cannot call method isPast\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Models/Payment.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\User\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Booking\:\:\$service\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/BookingPaidNotification.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Booking\:\:\$tanggal\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/BookingPaidNotification.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Booking\:\:\$waktu_mulai\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/BookingPaidNotification.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Booking\:\:\$waktu_selesai\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/BookingPaidNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$custom_domain\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/BookingPaidNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/BookingPaidNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namabisnis\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/BookingPaidNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/BookingPaidNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namalayanan\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/BookingStatusChangedOwnerNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/BookingStatusChangedOwnerNotification.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>namalayanan" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Notifications/BookingStatusChangedOwnerNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/NewBookingOwnerNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$jumlah\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/NewBookingOwnerNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namalayanan\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/NewBookingOwnerNotification.php
+
+		-
+			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 2
+			path: app/Notifications/NewBookingOwnerNotification.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>harga" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Notifications/NewBookingOwnerNotification.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>jumlah" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Notifications/NewBookingOwnerNotification.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>namalayanan" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Notifications/NewBookingOwnerNotification.php
+
+		-
+			message: '#^Cannot call method translatedFormat\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Notifications/TrialExpiringNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Providers/AppServiceProvider.php
