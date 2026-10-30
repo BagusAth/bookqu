@@ -120,7 +120,7 @@ Public identifiers never authorize access (FR-MANAGE-008). Finite expiry, revoca
 | Domain rule tests | Prove each rule in isolation | `tests/Unit/Domain/` |
 | Action / feature tests | Prove operations, authorization, isolation, HTTP flows | `tests/Feature/` |
 | Module-interface tests | Main test surface of each deep module (ADR-0004…0009) | `tests/Feature/<Area>/` |
-| Integrity tests on MySQL | CI runs the whole suite on MySQL 8 (`phpunit.mysql.xml`); tests that need real row locks carry `#[Group('mysql')]` and are skipped on SQLite | `tests/Feature/**` (group `mysql`) |
+| Integrity tests on MySQL | CI runs the whole suite on MySQL 8 and on MariaDB 11.4, the production engine (`phpunit.mysql.xml`); tests that need real row locks carry `#[Group('mysql')]` and are skipped on SQLite | `tests/Feature/**` (group `mysql`) |
 | Provider contract tests | Recorded payloads per real adapter; fake adapter elsewhere | target (BQ-032) |
 | Architecture tests | Enforce ADR-0012 by scanning sources; known violations are counted per file in a shrinking allowlist | `tests/Guardrails/` |
 

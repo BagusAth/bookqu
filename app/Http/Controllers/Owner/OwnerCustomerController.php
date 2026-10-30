@@ -22,6 +22,11 @@ class OwnerCustomerController extends Controller
     use ResolvesOwnerTenant;
 
     /**
+     * Normalized per-tenant customer key: email, else phone, else the booking id.
+     */
+    private const string IDENTIFIER_SQL = "LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id))))";
+
+    /**
      * Customer list page with server-side search & pagination.
      *
      * Customers are derived from bookings — there is no separate customer table.
@@ -31,37 +36,44 @@ class OwnerCustomerController extends Controller
     public function index(Request $request): View
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $search   = trim((string) $request->input('search', ''));
-        $perPage  = 20;
+        $search = trim((string) $request->input('search', ''));
+        $perPage = 20;
         $idtenant = $tenant->id;
 
         // ── Aggregate customer data directly in the database ──
-        $customerQuery = DB::table('bookings')
-            ->select([
-                DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id)))) AS identifier"),
-                DB::raw("MAX(namapelanggan) AS name"),
-                DB::raw("MAX(email) AS email"),
-                DB::raw("MAX(nomorhp) AS phone"),
-                DB::raw("COUNT(*) AS total_bookings"),
-                DB::raw("MAX(tanggalbooking) AS last_booking_date"),
-                DB::raw("MIN(created_at) AS first_seen"),
-            ])
-            ->where('idtenant', $idtenant)
-            ->groupBy(DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id))))"));
+        // The identifier is computed in a derived table and grouped by name: MariaDB's
+        // ONLY_FULL_GROUP_BY rejects selecting an expression that is only repeated in GROUP BY.
+        $tenantBookings = DB::table('bookings')
+            ->select(['namapelanggan', 'email', 'nomorhp', 'tanggalbooking', 'created_at'])
+            ->selectRaw(self::IDENTIFIER_SQL.' AS identifier')
+            ->where('idtenant', $idtenant);
 
         // Apply server-side search before aggregation — filter on raw bookings rows
         if ($search !== '') {
             $like = "%{$search}%";
-            $customerQuery->where(function ($q) use ($like) {
+            $tenantBookings->where(function ($q) use ($like) {
                 $q->where('namapelanggan', 'like', $like)
-                  ->orWhere('email', 'like', $like)
-                  ->orWhere('nomorhp', 'like', $like);
+                    ->orWhere('email', 'like', $like)
+                    ->orWhere('nomorhp', 'like', $like);
             });
         }
+
+        $customerQuery = DB::query()
+            ->fromSub($tenantBookings, 'customer_bookings')
+            ->select([
+                'identifier',
+                DB::raw('MAX(namapelanggan) AS name'),
+                DB::raw('MAX(email) AS email'),
+                DB::raw('MAX(nomorhp) AS phone'),
+                DB::raw('COUNT(*) AS total_bookings'),
+                DB::raw('MAX(tanggalbooking) AS last_booking_date'),
+                DB::raw('MIN(created_at) AS first_seen'),
+            ])
+            ->groupBy('identifier');
 
         // Paginate
         $customers = $customerQuery
@@ -75,11 +87,11 @@ class OwnerCustomerController extends Controller
 
         // Total spending from payments (correct source of truth: status='sukses', tipe='booking')
         $spendingMap = [];
-        if (!empty($identifiers)) {
+        if (! empty($identifiers)) {
             $spendingRows = DB::table('bookings')
                 ->join('payments', function ($join) {
                     $join->on('bookings.idpayment', '=', 'payments.id')
-                         ->orOn('payments.idbooking', '=', 'bookings.id');
+                        ->orOn('payments.idbooking', '=', 'bookings.id');
                 })
                 ->select([
                     DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(bookings.email), ''), NULLIF(TRIM(bookings.nomorhp), ''), CONCAT('guest-', bookings.id)))) AS identifier"),
@@ -103,23 +115,25 @@ class OwnerCustomerController extends Controller
         }
 
         // Upcoming bookings for current page
-        $today       = Carbon::today()->toDateString();
+        $today = Carbon::today()->toDateString();
         $upcomingMap = [];
-        if (!empty($identifiers)) {
-            $upcomingRows = DB::table('bookings')
-                ->select([
-                    DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id)))) AS identifier"),
-                    DB::raw("MIN(tanggalbooking) AS upcoming_date"),
-                    'jam AS upcoming_time',
-                ])
+        if (! empty($identifiers)) {
+            $upcomingBookings = DB::table('bookings')
+                ->select(['tanggalbooking', 'jam'])
+                ->selectRaw(self::IDENTIFIER_SQL.' AS identifier')
                 ->where('idtenant', $idtenant)
                 ->where('tanggalbooking', '>=', $today)
-                ->whereIn('status', ['paid', 'pending'])
-                ->whereIn(
-                    DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id))))"),
-                    $identifiers
-                )
-                ->groupBy(DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id))))"), 'jam')
+                ->whereIn('status', ['paid', 'pending']);
+
+            $upcomingRows = DB::query()
+                ->fromSub($upcomingBookings, 'upcoming_bookings')
+                ->select([
+                    'identifier',
+                    DB::raw('MIN(tanggalbooking) AS upcoming_date'),
+                    'jam AS upcoming_time',
+                ])
+                ->whereIn('identifier', $identifiers)
+                ->groupBy('identifier', 'jam')
                 ->orderBy('upcoming_date')
                 ->get()
                 ->groupBy('identifier')
@@ -135,19 +149,20 @@ class OwnerCustomerController extends Controller
 
         // Attach enriched data to each customer on the current page
         $customers->getCollection()->transform(function ($c) use ($spendingMap, $upcomingMap) {
-            $totalSpent          = $spendingMap[$c->identifier] ?? 0;
-            $upcoming            = $upcomingMap[$c->identifier] ?? null;
-            $c->total_spent      = $totalSpent;
-            $c->formatted_spent  = 'Rp ' . number_format($totalSpent, 0, ',', '.');
+            $totalSpent = $spendingMap[$c->identifier] ?? 0;
+            $upcoming = $upcomingMap[$c->identifier] ?? null;
+            $c->total_spent = $totalSpent;
+            $c->formatted_spent = 'Rp '.number_format($totalSpent, 0, ',', '.');
             $c->upcoming_booking = $upcoming
-                ? $upcoming['date'] . ' ' . $upcoming['time']
+                ? $upcoming['date'].' '.$upcoming['time']
                 : null;
-            $c->last_booking     = $c->last_booking_date
+            $c->last_booking = $c->last_booking_date
                 ? Carbon::parse($c->last_booking_date)->format('d M Y')
                 : '-';
-            $c->first_seen       = $c->first_seen
+            $c->first_seen = $c->first_seen
                 ? Carbon::parse($c->first_seen)->format('d M Y')
                 : '-';
+
             return $c;
         });
 
@@ -157,7 +172,7 @@ class OwnerCustomerController extends Controller
             ->select(DB::raw("COUNT(DISTINCT LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id))))) AS cnt"))
             ->value('cnt');
 
-        $totalSpentAll    = (float) Payment::where('idtenant', $idtenant)
+        $totalSpentAll = (float) Payment::where('idtenant', $idtenant)
             ->where('tipe', 'booking')
             ->where('status', 'sukses')
             ->sum('jumlah');
@@ -181,7 +196,7 @@ class OwnerCustomerController extends Controller
     public function show(Request $request, GetCustomerDetail $getCustomerDetail): JsonResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -198,7 +213,7 @@ class OwnerCustomerController extends Controller
     public function saveNote(SaveCustomerNoteRequest $request, SaveCustomerNote $saveCustomerNote): JsonResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 

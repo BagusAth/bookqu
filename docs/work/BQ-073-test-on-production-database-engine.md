@@ -2,7 +2,7 @@
 id: BQ-073
 title: Run the integrity suite on the production database engine
 type: ops
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: —
@@ -15,7 +15,7 @@ depends-on: [BQ-023]
 
 # BQ-073: Run the integrity suite on the production database engine
 
-Found by the G3 run of `test-ssh.yml` (2026-10-30, run 41078956371).
+Found by the G3 run of `test-ssh.yml` (2026-10-30, run 41078956371). Approved by agathan on 2026-10-30.
 
 ## Problem
 
@@ -43,4 +43,9 @@ The existing `mysql` group and the whole suite on the production engine.
 
 ## Evidence (fill when done)
 
-_Fill in when done._
+- Engine confirmed: `test-ssh.yml` (which now prints the server version) reported `11.4.10-MariaDB-cll-lve`, run https://github.com/BagusAth/bookqu/actions/runs/41081391576. Recorded in `docs/operations.md` §1.
+- CI: `tests-mysql` is a matrix of MySQL 8.0 and MariaDB 11.4 (`Tests (MySQL)`, `Tests (MariaDB)`). Branch protection on `main` must require both.
+- The first MariaDB run failed 10 tests, all from one query: the owner customer list (`Owner/OwnerCustomerController::index`) returned 500 because MariaDB's `ONLY_FULL_GROUP_BY` rejects selecting the identifier expression that is only repeated in `GROUP BY` (error 1055). **Production is affected the same way** (`strict` mode is on), so `/owner/customers` most likely fails there today. The `mysql` lock group passed on MariaDB unchanged.
+- Fix: the list and the upcoming-booking queries compute the identifier in a derived table and group by that column. New test `test_upcoming_booking_is_the_earliest_future_booking` covers the second query, which had no test.
+- ADR-0014, `docs/architecture.md` §12 and `.ai/rules/tests.md` now name MariaDB 11.4.
+- Local: SQLite and MySQL 8.4 pass for `CustomerManagementTest` (19 tests); Pint and Larastan clean. GitHub Actions run: pending until the branch is pushed.
