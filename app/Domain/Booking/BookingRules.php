@@ -2,16 +2,16 @@
 
 namespace App\Domain\Booking;
 
+use App\Domain\Payment\PaymentRules;
+use App\Domain\Payment\PaymentState;
 use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class BookingRules
 {
-    public const PENDING_GRACE_MINUTES = 15;
     /**
      * Validate that multi-slot schedules are contiguous without any gaps.
      * Assumes schedules are already sorted by jam_mulai ascending.
@@ -26,8 +26,8 @@ class BookingRules
             $prev = is_array($orderedSchedules[$i - 1]) ? (object) $orderedSchedules[$i - 1] : $orderedSchedules[$i - 1];
             $curr = is_array($orderedSchedules[$i]) ? (object) $orderedSchedules[$i] : $orderedSchedules[$i];
 
-            $prevStart = Carbon::parse($date . ' ' . $prev->jam_mulai, $timezone);
-            $currStart = Carbon::parse($date . ' ' . $curr->jam_mulai, $timezone);
+            $prevStart = Carbon::parse($date.' '.$prev->jam_mulai, $timezone);
+            $currStart = Carbon::parse($date.' '.$curr->jam_mulai, $timezone);
 
             if ((int) abs($currStart->diffInMinutes($prevStart)) !== $durationMinutes) {
                 return false;
@@ -57,37 +57,54 @@ class BookingRules
 
         return [
             'slot_prices' => $slotPrices,
-            'total'       => $total,
+            'total' => $total,
         ];
     }
 
     /**
      * Apply the slot-occupying conditions to a query builder, join clause, or eloquent builder.
+     * This is the single home of the occupancy rule (INV-BOOK-03).
      *
-     * ACTIVE/OCCUPIED:
-     * - paid
-     * - completed
-     * - pending only if within PENDING_GRACE_MINUTES (15 minutes)
+     * Occupied: `paid`, `completed`, and `pending` while its payment is `pending` and
+     * `now < payments.expired_at + settlement margin` (ADR-0009 decision 2). Legacy pending
+     * bookings whose payment has no deadline hold the slot for the booking payment window
+     * plus margin from their creation.
      *
-     * NOT OCCUPIED:
-     * - cancelled
-     * - pending exceeding PENDING_GRACE_MINUTES
-     *
-     * @param mixed $query
-     * @param string $prefix
-     * @return mixed
+     * Not occupied: `cancelled`, and `pending` once its payment failed, succeeded without
+     * marking it paid (anomaly), or passed its deadline plus margin.
      */
     public static function applyOccupiesSlotCondition(mixed $query, string $prefix = 'bookings.'): mixed
     {
-        $prefix = $prefix !== '' ? rtrim($prefix, '.') . '.' : '';
-        $cutoff = now()->subMinutes(self::PENDING_GRACE_MINUTES);
+        $prefix = $prefix !== '' ? rtrim($prefix, '.').'.' : '';
+        $holdCutoff = now()->subMinutes(PaymentRules::settlementMarginMinutes());
+        $legacyCutoff = now()->subMinutes(PaymentRules::deadlineMinutes(PaymentState::TIPE_BOOKING) + PaymentRules::settlementMarginMinutes());
+        $paymentOfBooking = $prefix === '' ? 'bookings.idpayment' : $prefix.'idpayment';
 
-        return $query->where(function ($q) use ($prefix, $cutoff) {
-            $q->whereIn($prefix . 'status', [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
-              ->orWhere(function ($sub) use ($prefix, $cutoff) {
-                  $sub->where($prefix . 'status', BookingState::STATUS_PENDING)
-                      ->where($prefix . 'created_at', '>=', $cutoff);
-              });
+        return $query->where(function ($q) use ($prefix, $holdCutoff, $legacyCutoff, $paymentOfBooking) {
+            $q->whereIn($prefix.'status', [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
+                ->orWhere(function ($pending) use ($prefix, $holdCutoff, $legacyCutoff, $paymentOfBooking) {
+                    $pending->where($prefix.'status', BookingState::STATUS_PENDING)
+                        ->where(function ($hold) use ($prefix, $holdCutoff, $legacyCutoff, $paymentOfBooking) {
+                            $hold->whereExists(function ($payment) use ($holdCutoff, $paymentOfBooking) {
+                                $payment->selectRaw('1')
+                                    ->from('payments')
+                                    ->whereColumn('payments.id', $paymentOfBooking)
+                                    ->where('payments.status', PaymentState::STATUS_PENDING)
+                                    ->where('payments.expired_at', '>', $holdCutoff);
+                            })->orWhere(function ($legacy) use ($prefix, $legacyCutoff, $paymentOfBooking) {
+                                $legacy->where($prefix.'created_at', '>=', $legacyCutoff)
+                                    ->whereNotExists(function ($payment) use ($paymentOfBooking) {
+                                        $payment->selectRaw('1')
+                                            ->from('payments')
+                                            ->whereColumn('payments.id', $paymentOfBooking)
+                                            ->where(function ($decided) {
+                                                $decided->whereNotNull('payments.expired_at')
+                                                    ->orWhere('payments.status', '!=', PaymentState::STATUS_PENDING);
+                                            });
+                                    });
+                            });
+                        });
+                });
         });
     }
 
@@ -98,7 +115,7 @@ class BookingRules
     {
         $query = DB::table('bookings')
             ->where('idschedule', $scheduleId)
-            ->when($excludeBookingId !== null, fn($q) => $q->where('id', '!=', $excludeBookingId));
+            ->when($excludeBookingId !== null, fn ($q) => $q->where('id', '!=', $excludeBookingId));
 
         return self::applyOccupiesSlotCondition($query, '')->exists();
     }
@@ -117,7 +134,7 @@ class BookingRules
         }
 
         $tenant = $booking->tenant;
-        if (!$tenant) {
+        if (! $tenant) {
             return false;
         }
 
@@ -125,7 +142,7 @@ class BookingRules
         $bookingDateStr = $booking->tanggalbooking instanceof Carbon
             ? $booking->tanggalbooking->toDateString()
             : Carbon::parse($booking->tanggalbooking)->toDateString();
-        $bookingDateTime = Carbon::parse($bookingDateStr . ' ' . $booking->jam);
+        $bookingDateTime = Carbon::parse($bookingDateStr.' '.$booking->jam);
 
         return now()->addHours($cancelBeforeHours)->lessThan($bookingDateTime);
     }
@@ -144,7 +161,7 @@ class BookingRules
         }
 
         $tenant = $booking->tenant;
-        if (!$tenant) {
+        if (! $tenant) {
             return false;
         }
 
@@ -152,7 +169,7 @@ class BookingRules
         $bookingDateStr = $booking->tanggalbooking instanceof Carbon
             ? $booking->tanggalbooking->toDateString()
             : Carbon::parse($booking->tanggalbooking)->toDateString();
-        $bookingDateTime = Carbon::parse($bookingDateStr . ' ' . $booking->jam);
+        $bookingDateTime = Carbon::parse($bookingDateStr.' '.$booking->jam);
 
         return now()->addHours($rescheduleBeforeHours)->lessThan($bookingDateTime);
     }

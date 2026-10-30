@@ -24,11 +24,14 @@ Secrets come from the server `.env`, never from Git, frontend code or docs. Afte
 ```env
 PAYMENT_GATEWAY_DRIVER=singapay        # or midtrans
 SINGAPAY_BASE_URL=…  SINGAPAY_CLIENT_ID=…  SINGAPAY_CLIENT_SECRET=…  SINGAPAY_API_KEY=…
-SINGAPAY_HMAC_VALIDATION_KEY=…  SINGAPAY_ACCOUNT_ID=  SINGAPAY_PAYMENT_EXPIRY_MINUTES=15
+SINGAPAY_HMAC_VALIDATION_KEY=…  SINGAPAY_ACCOUNT_ID=
 SINGAPAY_WEBHOOK_TOLERANCE_SECONDS=300  SINGAPAY_CUSTOMER_PAYS_FEE=false
 MIDTRANS_MERCHANT_ID=…  MIDTRANS_CLIENT_KEY=…  MIDTRANS_SERVER_KEY=…
 MIDTRANS_IS_PRODUCTION=false  MIDTRANS_IS_SANITIZED=true  MIDTRANS_IS_3DS=true
+PAYMENT_BOOKING_DEADLINE_MINUTES=15  PAYMENT_SUBSCRIPTION_DEADLINE_MINUTES=60  PAYMENT_SETTLEMENT_MARGIN_MINUTES=2
 ```
+
+One deadline per payment (ADR-0009): `payments.expired_at` is set from these values. The provider link, the slot hold, the sweep and the countdowns all follow it. `SINGAPAY_PAYMENT_EXPIRY_MINUTES` is still read as a fallback for the booking window.
 
 Webhook URLs to register with the providers: `https://bookqu.my.id/api/webhooks/singapay/transaction` and `https://bookqu.my.id/midtrans/webhook`.
 
@@ -64,7 +67,7 @@ Other workflows: `validate-deploy.yml` (manual: build and transfer test), `test-
 
 | Command | Schedule (`routes/console.php`) | Purpose |
 |---|---|---|
-| `bookings:expire-payments` | every 15 minutes | Expire pending booking payments past `expired_at`, cancel their bookings, free slots (`--dry-run` available) |
+| `bookings:expire-payments` | every minute | Reclaim booking and subscription payments past `expired_at` + settlement margin. It asks the payment's provider first: a success is applied, anything else expires the payment and cancels its bookings (`--dry-run` available) |
 | `app:check-expired-subscriptions` | daily | Expire trials and subscriptions; warn trials about to end |
 
 Target (ADR-0013): two cron entries every minute — `php artisan schedule:run` and `php artisan queue:work --stop-when-empty --max-time=50 --tries=3`; scheduled work runs in-process (`Schedule::call()`/`job()`) because `proc_open` is disabled; the payment sweep runs every minute for booking and subscription payments (ADR-0009).

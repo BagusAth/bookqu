@@ -7,6 +7,7 @@ use App\Actions\Payment\OutcomeIntakeResult;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Actions\Schedule\GetAvailableSchedules;
+use App\Domain\Booking\BookingRules;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
@@ -484,16 +485,7 @@ class BookingController extends Controller
                     return null;
                 }
 
-                $isBooked = DB::table('bookings')
-                    ->where('idschedule', $scheduleId)
-                    ->where(function ($q) {
-                        $q->whereIn('status', ['paid', 'completed'])
-                            ->orWhere(function ($sub) {
-                                $sub->where('status', 'pending')
-                                    ->where('created_at', '>=', now()->subMinutes(15));
-                            });
-                    })
-                    ->exists();
+                $isBooked = BookingRules::isSlotOccupied((int) $scheduleId);
 
                 return $isBooked ? null : $row;
             });
@@ -764,9 +756,13 @@ class BookingController extends Controller
         }
 
         if ($payment->isExpired() || $payment->status === 'gagal') {
-            if ($payment->status === 'pending' && $payment->isExpired()) {
-                app(PaymentLifecycle::class)->transition($payment, PaymentTransition::Expired);
-                $payment->refresh();
+            // Past the deadline the link is no longer payable; reclaiming asks the provider first
+            if ($payment->status === 'pending') {
+                $payment = app(PaymentOutcomeIntake::class)->check($payment)->payment ?? $payment;
+
+                if ($payment->status === 'sukses') {
+                    return CustomerBookingRoutes::route('customer.booking.invoice', [$slug_usaha, $payment]);
+                }
             }
 
             return view('customer.booking.payment', [

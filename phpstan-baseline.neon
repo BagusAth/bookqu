@@ -409,12 +409,6 @@ parameters:
 			path: app/Http/Controllers/Customer/BookingController.php
 
 		-
-			message: '#^Right side of && is always true\.$#'
-			identifier: booleanAnd.rightAlwaysTrue
-			count: 1
-			path: app/Http/Controllers/Customer/BookingController.php
-
-		-
 			message: '#^Strict comparison using \=\=\= between ''pending''\|''sukses'' and ''gagal'' will always evaluate to false\.$#'
 			identifier: identical.alwaysFalse
 			count: 1
@@ -610,12 +604,6 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Infrastructure/Payments/SingaPay/SingaPayPaymentGateway.php
-
-		-
-			message: '#^Cannot call method getTimestamp\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 2
 			path: app/Infrastructure/Payments/SingaPay/SingaPayPaymentGateway.php
 
 		-

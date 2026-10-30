@@ -63,9 +63,6 @@ class CreateBookingPayment
         $activeDriver = $this->gatewayManager->driver();
         $providerName = $activeDriver->getDriverName();
 
-        $expiryMinutes = (int) (config("payment.drivers.{$providerName}.expiry_minutes")
-            ?? config('services.singapay.expiry_minutes', 15));
-
         $orderId = PaymentRules::generateOrderId('BKG', (int) $tenant->id);
 
         return Payment::create([
@@ -77,7 +74,7 @@ class CreateBookingPayment
             'provider' => $providerName,
             'order_id' => $orderId,
             'manage_token' => Booking::generateSecureToken(),
-            'expired_at' => now()->addMinutes($expiryMinutes),
+            'expired_at' => PaymentRules::deadlineFor(PaymentState::TIPE_BOOKING),
             'nama_pembayar' => $customerData['namapelanggan'],
             'email_pembayar' => $customerData['email'],
             'hp_pembayar' => $customerData['nomorhp'],

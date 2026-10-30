@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Actions\Payment\PaymentOutcomeIntake;
+use App\Domain\Payment\PaymentRules;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Support\TenantContext;
@@ -19,7 +20,7 @@ class ExpireBookingPayments extends Command
     protected $signature = 'bookings:expire-payments
                             {--dry-run : Show what would be expired without making changes}';
 
-    protected $description = 'Cancel pending bookings whose payment has expired, and invalidate availability cache for freed slots.';
+    protected $description = 'Reclaim booking and subscription payments past their deadline: ask the provider first, then expire them and free their slots.';
 
     public function handle(PaymentOutcomeIntake $intake): int
     {
@@ -27,12 +28,14 @@ class ExpireBookingPayments extends Command
 
         $this->info($isDryRun ? '[DRY RUN] Checking expired booking payments...' : 'Checking expired booking payments...');
 
-        // Find all pending payments of type=booking that have passed expired_at across all tenants
+        // scope-bypass: the sweep covers every tenant; each payment is reclaimed in its own tenant-locked transaction.
+        // Booking and subscription payments past their deadline plus the settlement margin (ADR-0009)
         $expiredPayments = Payment::withoutGlobalScopes()
-            ->where('tipe', 'booking')
+            ->whereIn('tipe', ['booking', 'subscription'])
             ->where('status', 'pending')
             ->whereNotNull('expired_at')
-            ->where('expired_at', '<', now())
+            ->where('expired_at', '<', now()->subMinutes(PaymentRules::settlementMarginMinutes()))
+            ->orderBy('idtenant')
             ->get();
 
         if ($expiredPayments->isEmpty()) {

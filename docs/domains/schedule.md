@@ -48,7 +48,7 @@ Functional: Implemented · Verification: Verified (SQLite only) · Architecture:
 
 | Gap | Item |
 |---|---|
-| "Available" is re-implemented outside the rules: `BookingController::selectTime` (hard-coded 15 min), `BookingManageController::showReschedule` (own SQL, ignores blocked dates), `GetOwnerCalendarData` and `GenerateScheduleReport` (treat every pending as occupied) | BQ-012 |
+| "Available" is re-implemented outside the rules: `BookingManageController::showReschedule` (own query; uses the occupancy rule since BQ-071 but ignores blocked dates), `GetOwnerCalendarData` and `GenerateScheduleReport` (treat every pending as occupied) | BQ-012 |
 | `AvailabilityRules` checks status `diblokir`, which the DB enum cannot store | BQ-016 |
 
 Target decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (one bookability module, BQ-012/BQ-069) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (hold derived from the payment deadline, BQ-071). Not implemented yet.

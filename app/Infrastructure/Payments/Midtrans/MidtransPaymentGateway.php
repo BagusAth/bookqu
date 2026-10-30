@@ -48,7 +48,8 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
             $itemName .= ' ('.$slotCount.' slot)';
         }
 
-        $expiryMinutes = (int) (config('payment.drivers.singapay.expiry_minutes') ?? config('services.singapay.expiry_minutes', 15));
+        // The Snap link expires at the payment's own deadline (ADR-0009).
+        $expiryMinutes = PaymentRules::minutesUntilDeadline($payment);
 
         $params = [
             'transaction_details' => [
@@ -121,8 +122,8 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
             ],
             'expiry' => [
                 'start_time' => now()->format('Y-m-d H:i:s O'),
-                'unit' => 'hour',
-                'duration' => 1,
+                'unit' => 'minute',
+                'duration' => PaymentRules::minutesUntilDeadline($payment),
             ],
         ];
 

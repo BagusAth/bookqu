@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Payments\SingaPay;
 
 use App\Contracts\Payments\PaymentGatewayInterface;
+use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Payment\ProviderOutcome;
 use App\Models\Payment;
@@ -65,12 +66,8 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
         $tenant = $payment->tenant;
         $tenantSlug = $tenant?->slug ?? 'tenant';
 
-        $expiryMinutes = (int) (config('payment.drivers.singapay.expiry_minutes') ?? config('services.singapay.expiry_minutes', 15));
-
-        // SingaPay requires epoch milliseconds for expired_at
-        $expiredAt = $payment->expired_at
-            ? (int) ($payment->expired_at->getTimestamp() * 1000)
-            : (int) (now()->addMinutes($expiryMinutes)->getTimestamp() * 1000);
+        // SingaPay requires epoch milliseconds; the link expires at the payment's own deadline (ADR-0009)
+        $expiredAt = (int) (($payment->expired_at ?? PaymentRules::deadlineFor(PaymentState::TIPE_BOOKING))->getTimestamp() * 1000);
 
         $totalAmount = (int) round((float) $payment->jumlah);
 
@@ -174,11 +171,7 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
         array $payerData,
         float $biayaPlatform = 0.0
     ): array {
-        $expiryHours = (int) (config('payment.drivers.singapay.subscription_expiry_hours') ?? 1);
-
-        $expiredAt = $payment->expired_at
-            ? (int) ($payment->expired_at->getTimestamp() * 1000)
-            : (int) (now()->addHours($expiryHours)->getTimestamp() * 1000);
+        $expiredAt = (int) (($payment->expired_at ?? PaymentRules::deadlineFor(PaymentState::TIPE_SUBSCRIPTION))->getTimestamp() * 1000);
 
         $totalAmount = (int) round((float) $payment->jumlah);
 

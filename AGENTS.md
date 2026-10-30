@@ -32,7 +32,7 @@ This section is the BookQu part of this file. Everything after it is the Laravel
 2. **User-supplied identifiers are untrusted.** Check existence, ownership, tenant and eligibility for every id, `order_id` and `booking_code`. A public identifier alone never grants access — require a scoped token.
 3. **Authorization is server-side.** A hidden menu, disabled button or Alpine state is not authorization.
 4. **Booking states** are `pending`, `paid`, `cancelled`, `completed`; change them only through `BookingState::canTransition` (INV-BOOK-01/02).
-5. **One occupancy rule.** "Slot occupied" and the 15-minute pending grace live only in `App\Domain\Booking\BookingRules`; never re-implement them (INV-BOOK-03).
+5. **One occupancy rule.** "Slot occupied" and the pending hold (payment deadline + settlement margin, ADR-0009) live only in `App\Domain\Booking\BookingRules`; never re-implement them (INV-BOOK-03).
 6. **No double booking.** Booking writes lock schedules in a transaction, evict stale pending first, and rely on the `unique_active_booking_slot` index (INV-BOOK-04/05).
 7. **Payment is separate from booking.** Payment states are `pending`, `sukses`, `gagal`. Success comes only from a verified webhook or a server-side status query; repeated events must be idempotent (INV-PAY-*).
 8. **Provider code stays behind** `PaymentGatewayInterface` / `PaymentGatewayManager`.

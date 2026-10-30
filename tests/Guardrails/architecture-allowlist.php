@@ -23,8 +23,7 @@ return [
         'app/Actions/Schedule/GenerateScheduleReport.php' => 1,
         'app/Actions/Service/DeleteService.php' => 1,
         'app/Domain/Subscription/SubscriptionUsage.php' => 1,
-        'app/Http/Controllers/Customer/BookingController.php' => 2,
-        'app/Http/Controllers/Customer/BookingManageController.php' => 1,
+        'app/Http/Controllers/Customer/BookingController.php' => 1,
     ],
     // Removed by BQ-033.
     'plan-name-checks' => [
@@ -49,7 +48,7 @@ return [
         'app/Actions/Subscription/ActivateSubscription.php' => 2,
         'app/Actions/Subscription/GetSubscriptionOverview.php' => 2,
         'app/Console/Commands/CheckExpiredSubscriptions.php' => 3,
-        'app/Console/Commands/ExpireBookingPayments.php' => 2,
+        'app/Console/Commands/ExpireBookingPayments.php' => 1,
         'app/Domain/Schedule/AvailabilityRules.php' => 2,
         'app/Domain/Schedule/ScheduleConflictRules.php' => 2,
         'app/Domain/Subscription/SubscriptionUsage.php' => 3,

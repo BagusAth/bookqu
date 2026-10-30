@@ -1319,22 +1319,21 @@ paid
 completed
 ```
 
-A `pending` booking occupies a schedule only while it remains within the configured pending-payment grace period.
-
-The current grace period is:
+A `pending` booking occupies a schedule only while its payment is `pending` and the payment deadline plus the settlement margin has not passed (ADR-0009). The deadline is `payments.expired_at`, set at creation from `config/payment.php`:
 
 ```text
-15 minutes
+booking payment window: 15 minutes (PAYMENT_BOOKING_DEADLINE_MINUTES)
+settlement margin:       2 minutes (PAYMENT_SETTLEMENT_MARGIN_MINUTES)
 ```
 
 Therefore:
 
 ```text
-pending + within grace period
+pending + now < expired_at + margin
         ↓
 occupies schedule
 
-pending + beyond grace period
+pending + now ≥ expired_at + margin (or payment failed)
         ↓
 does not remain an active occupied reservation
 
@@ -1347,7 +1346,7 @@ The application must not treat all historical `pending` records as permanently o
 
 ## Stale Pending Booking Rules
 
-When a pending booking exceeds the payment grace period, it must be treated as expired for availability purposes.
+When a pending booking's payment passes its deadline plus the settlement margin, the booking must be treated as expired for availability purposes.
 
 Stale pending handling must not produce a false double-booking condition.
 

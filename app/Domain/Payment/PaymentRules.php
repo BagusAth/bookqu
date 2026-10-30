@@ -6,6 +6,7 @@ namespace App\Domain\Payment;
 
 use App\Models\Payment;
 use App\Models\Plan;
+use Illuminate\Support\Carbon;
 
 class PaymentRules
 {
@@ -15,6 +16,53 @@ class PaymentRules
     public static function isExpired(Payment $payment): bool
     {
         return $payment->expired_at !== null && $payment->expired_at->isPast();
+    }
+
+    /**
+     * Minutes a new payment of this purpose stays payable (ADR-0009 decision 1).
+     */
+    public static function deadlineMinutes(string $tipe): int
+    {
+        return $tipe === PaymentState::TIPE_SUBSCRIPTION
+            ? (int) config('payment.deadline.subscription_minutes', 60)
+            : (int) config('payment.deadline.booking_minutes', 15);
+    }
+
+    /**
+     * The deadline for a payment created now; stored in `payments.expired_at` and
+     * used for the provider link.
+     */
+    public static function deadlineFor(string $tipe): Carbon
+    {
+        return now()->addMinutes(self::deadlineMinutes($tipe));
+    }
+
+    /**
+     * Grace after the deadline for a provider success already in flight.
+     */
+    public static function settlementMarginMinutes(): int
+    {
+        return (int) config('payment.deadline.settlement_margin_minutes', 2);
+    }
+
+    /**
+     * Whole minutes left until the payment's deadline, at least one (for provider links).
+     */
+    public static function minutesUntilDeadline(Payment $payment): int
+    {
+        $deadline = $payment->expired_at ?? self::deadlineFor((string) $payment->tipe);
+
+        return max(1, (int) ceil(now()->diffInSeconds($deadline, false) / 60));
+    }
+
+    /**
+     * A pending payment past its deadline plus margin may be reclaimed (ADR-0009 decision 3).
+     */
+    public static function isReclaimable(Payment $payment): bool
+    {
+        return $payment->status === PaymentState::STATUS_PENDING
+            && $payment->expired_at !== null
+            && Carbon::parse($payment->expired_at)->addMinutes(self::settlementMarginMinutes())->isPast();
     }
 
     /**

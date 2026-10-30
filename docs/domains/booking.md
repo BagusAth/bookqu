@@ -24,7 +24,7 @@ The central domain: creating, changing and ending reservations, including multi-
 
 ## Rules (authoritative)
 
-`App\Domain\Booking\BookingState` (states, transitions, labels) · `App\Domain\Booking\BookingRules` (grace period, occupancy condition, contiguity, pricing, cancel/reschedule policy).
+`App\Domain\Booking\BookingState` (states, transitions, labels) · `App\Domain\Booking\BookingRules` (pending hold from the payment deadline, occupancy condition, contiguity, pricing, cancel/reschedule policy).
 
 ## Data
 
@@ -34,7 +34,7 @@ The central domain: creating, changing and ending reservations, including multi-
 
 - **INV-BOOK-01** — status ∈ `pending`, `paid`, `cancelled`, `completed`.
 - **INV-BOOK-02** — transitions only via `BookingState::canTransition`: pending→paid / cancelled / completed; paid→completed / cancelled. `pending→completed` is used when the owner completes an unpaid online booking (e.g. paid on site); the online payment stays `pending` until it expires (BQ-014).
-- **INV-BOOK-03** — occupying = `paid`, `completed`, or `pending` younger than 15 minutes.
+- **INV-BOOK-03** — occupying = `paid`, `completed`, or `pending` while its payment is `pending` and `now < payments.expired_at + settlement margin` (ADR-0009). The rule lives only in `BookingRules::applyOccupiesSlotCondition`.
 - **INV-BOOK-04** — at most one occupying booking per schedule (row lock + `unique_active_booking_slot`).
 - **INV-BOOK-05** — stale pending is evicted inside the booking transaction.
 - **INV-BOOK-06** — multi-slot is contiguous, all-or-nothing, one payment; customers cannot cancel or reschedule it partially.

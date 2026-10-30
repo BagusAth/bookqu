@@ -4,9 +4,7 @@ namespace App\Http\Controllers\Owner;
 
 use App\Actions\Payment\CreateSubscriptionPayment;
 use App\Actions\Payment\OutcomeIntakeResult;
-use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Payment\PaymentOutcomeIntake;
-use App\Domain\Payment\PaymentTransition;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscription\ProcessSubscriptionCheckoutRequest;
 use App\Models\Payment;
@@ -106,7 +104,10 @@ class OwnerCheckoutController extends Controller
 
         // Jika expired, kembali ke subscription
         if ($payment->isExpired() && $payment->status === 'pending') {
-            app(PaymentLifecycle::class)->transition($payment, PaymentTransition::Expired);
+            // Reclaiming asks the provider first; a success in flight still activates the plan
+            if (app(PaymentOutcomeIntake::class)->check($payment)->status() === 'sukses') {
+                return redirect()->route('owner.checkout.invoice', $payment);
+            }
 
             return redirect()->route('owner.subscription')
                 ->with('pesan', 'Waktu pembayaran telah habis. Silakan buat pesanan baru.');
