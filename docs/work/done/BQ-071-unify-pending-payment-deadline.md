@@ -2,7 +2,7 @@
 id: BQ-071
 title: Derive slot hold, expiry sweep and links from one payment deadline
 type: refactor
-status: in-progress
+status: done
 priority: P0
 phase: 4
 domain: payment
@@ -15,7 +15,7 @@ depends-on: [BQ-067, BQ-032]
 
 # BQ-071: Derive slot hold, expiry sweep and links from one payment deadline
 
-Plan approved by agathan in [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md), 2026-10-30.
+Plan approved by agathan in [ADR-0009](../../adr/ADR-0009-pending-payment-lifetime.md), 2026-10-30.
 
 ## Problem
 
@@ -65,4 +65,4 @@ Built on branch `bq-071-one-payment-deadline` (2026-10-30).
 
 **Not done here:** the MySQL "sweep vs claim" concurrency test. It needs the BQ-012 claim path, so it moves to BQ-012.
 
-**Local runs:** SQLite suite 464 tests pass; Pint and Larastan clean (baseline lost 12 lines). GitHub Actions run: pending until pushed.
+**Local runs:** SQLite suite 464 tests pass; Pint and Larastan clean (baseline lost 12 lines). GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41091607393 (PR #6): Quality checks, SQLite, MySQL and MariaDB passed.

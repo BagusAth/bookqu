@@ -36,6 +36,8 @@ The occupancy rule is re-implemented in `BookingController::selectTime` (`:495`,
 
 ## Decision and scope
 
+Also from BQ-071: add a MySQL test of the expiry sweep against a claim on the same slot (sweep reclaims through the Payment lifecycle; the claim locks the tenant first).
+
 ADR-0005 is the authority for the module contract, synchronization and closure policy. BQ-069 follows this module for blocked-date acceptance. Management-link authorization and the pending-payment deadline decision remain separate Phase 2 candidates.
 
 ## Evidence
