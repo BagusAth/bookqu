@@ -51,7 +51,7 @@ Functional: Implemented · Verification: Verified (SQLite only) · Architecture:
 
 | Gap | Item |
 |---|---|
-| `Customer/BookingController` is 1,034 lines and re-implements quota, blocked-date, occupancy and contiguity checks | BQ-029, BQ-012 |
+| `Customer/BookingController` is 1,034 lines and re-implements quota and contiguity checks before checkout (the claim itself goes through `ClaimSlots`) | BQ-029 |
 | Concurrency not proven on MySQL | BQ-023 |
 | Internal exception text returned to the customer (`CreateBooking.php:313`) | BQ-005 |
 | `pending→completed` leaves the payment pending; no on-site payment record | BQ-014 |

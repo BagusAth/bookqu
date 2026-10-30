@@ -3,6 +3,7 @@
 namespace App\Actions\Booking;
 
 use App\Actions\Payment\PaymentLifecycle;
+use App\Actions\Schedule\ClaimSlots;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
 use App\Mail\BookingCancelledMail;
@@ -61,6 +62,8 @@ class CancelBooking
 
         try {
             DB::transaction(function () use ($booking, $actor, $reason) {
+                // Tenant-first synchronization with claims and payment outcomes (ADR-0005 decision 4)
+                ClaimSlots::lockTenant((int) $booking->idtenant);
                 // If owner cancels a multi-slot booking, cancel all linked bookings for this payment group
                 $targetBookings = ($actor === 'owner' && $booking->isMultiSlot() && $booking->idpayment)
                     ? Booking::withoutGlobalScope(TenantScope::class)

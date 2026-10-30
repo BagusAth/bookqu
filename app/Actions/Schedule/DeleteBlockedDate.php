@@ -7,6 +7,7 @@ namespace App\Actions\Schedule;
 use App\Models\OwnerBlockedDate;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
+use Illuminate\Support\Facades\DB;
 
 class DeleteBlockedDate
 {
@@ -17,8 +18,6 @@ class DeleteBlockedDate
     /**
      * Delete an owner blocked date.
      *
-     * @param Tenant $tenant
-     * @param OwnerBlockedDate|int|string $blockedDate
      * @return array{success: bool, error?: string, code?: int}
      */
     public function execute(Tenant $tenant, OwnerBlockedDate|int|string $blockedDate): array
@@ -35,7 +34,10 @@ class DeleteBlockedDate
             ];
         }
 
-        $target->delete();
+        DB::transaction(function () use ($tenant, $target) {
+            ClaimSlots::lockTenant((int) $tenant->id);
+            $target->delete();
+        });
 
         $this->availabilityCache->clearAllServicesAvailability((int) $tenant->id);
 

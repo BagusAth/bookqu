@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Calendar;
 
+use App\Domain\Booking\BookingRules;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
@@ -50,7 +51,7 @@ class GetOwnerCalendarData
             $endOfWeek = $currentDate->copy()->endOfWeek();
             $prevDate = $startOfWeek->copy()->subWeek()->toDateString();
             $nextDate = $startOfWeek->copy()->addWeek()->toDateString();
-            $dateLabel = $startOfWeek->translatedFormat('d M') . ' - ' . $endOfWeek->translatedFormat('d M Y');
+            $dateLabel = $startOfWeek->translatedFormat('d M').' - '.$endOfWeek->translatedFormat('d M Y');
             $weekStart = $startOfWeek;
             $weekEnd = $endOfWeek;
         }
@@ -81,11 +82,11 @@ class GetOwnerCalendarData
 
         if ($selectedStatus === 'available') {
             $schedulesQuery->where('status', 'tersedia')
-                ->whereDoesntHave('bookings', fn($q) => $q->whereIn('status', ['pending', 'paid', 'completed']));
+                ->whereDoesntHave('bookings', fn ($q) => BookingRules::applyOccupiesSlotCondition($q, 'bookings.'));
         } elseif ($selectedStatus === 'blocked') {
             $schedulesQuery->where('status', 'diblokir');
         } elseif ($selectedStatus !== 'all' && in_array($selectedStatus, ['paid', 'pending', 'completed', 'cancelled'], true)) {
-            $schedulesQuery->whereHas('bookings', fn($q) => $q->where('status', $selectedStatus));
+            $schedulesQuery->whereHas('bookings', fn ($q) => $q->where('status', $selectedStatus));
         }
 
         $schedules = $schedulesQuery->orderBy('tanggal')->orderBy('jam_mulai')->get();
@@ -112,40 +113,43 @@ class GetOwnerCalendarData
         $wEnd = $currentDate->copy()->endOfWeek();
         $weekSchedules = $schedules->filter(function ($s) use ($wStart, $wEnd) {
             $t = Carbon::parse($s->tanggal);
+
             return $t->betweenIncluded($wStart, $wEnd);
         })->values();
 
         // Month bookings grouped by day (1..31) for month view
         $monthBookings = $bookings->filter(function ($b) use ($currentDate) {
             $t = Carbon::parse($b->tanggalbooking);
+
             return $t->month === $currentDate->month && $t->year === $currentDate->year;
-        })->groupBy(fn($b) => Carbon::parse($b->tanggalbooking)->format('j'));
+        })->groupBy(fn ($b) => Carbon::parse($b->tanggalbooking)->format('j'));
 
         // Month schedules grouped by day (1..31) for month view
         $monthSchedules = $schedules->filter(function ($s) use ($currentDate) {
             $t = Carbon::parse($s->tanggal);
+
             return $t->month === $currentDate->month && $t->year === $currentDate->year;
-        })->groupBy(fn($s) => Carbon::parse($s->tanggal)->format('j'));
+        })->groupBy(fn ($s) => Carbon::parse($s->tanggal)->format('j'));
 
         return [
-            'tenant'          => $tenant,
-            'services'        => $services,
-            'bookings'        => $bookings,
-            'schedules'       => $schedules,
-            'weekSchedules'   => $weekSchedules,
-            'monthBookings'   => $monthBookings,
-            'monthSchedules'  => $monthSchedules,
-            'blockedDates'    => $blockedDates,
-            'view'            => $view,
-            'currentDate'     => $currentDate,
-            'prevDate'        => $prevDate,
-            'nextDate'        => $nextDate,
-            'todayDate'       => $todayDate,
-            'dateLabel'       => $dateLabel,
-            'weekStart'       => $weekStart,
-            'weekEnd'         => $weekEnd,
+            'tenant' => $tenant,
+            'services' => $services,
+            'bookings' => $bookings,
+            'schedules' => $schedules,
+            'weekSchedules' => $weekSchedules,
+            'monthBookings' => $monthBookings,
+            'monthSchedules' => $monthSchedules,
+            'blockedDates' => $blockedDates,
+            'view' => $view,
+            'currentDate' => $currentDate,
+            'prevDate' => $prevDate,
+            'nextDate' => $nextDate,
+            'todayDate' => $todayDate,
+            'dateLabel' => $dateLabel,
+            'weekStart' => $weekStart,
+            'weekEnd' => $weekEnd,
             'selectedService' => $selectedService,
-            'selectedStatus'  => $selectedStatus,
+            'selectedStatus' => $selectedStatus,
         ];
     }
 }

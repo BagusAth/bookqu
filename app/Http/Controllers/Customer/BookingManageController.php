@@ -307,6 +307,13 @@ class BookingManageController extends Controller
                 ->where('schedules.idtenant', $tenant->id)
                 ->where('schedules.idlayanan', $service->id)
                 ->where('schedules.status', 'tersedia')
+                // Dates closed by the owner are not offered (BUG-T5-08); the claim refuses them too
+                ->whereNotExists(function ($closed) use ($booking) {
+                    $closed->selectRaw('1')
+                        ->from('owner_blocked_dates')
+                        ->where('owner_blocked_dates.idtenant', $booking->idtenant)
+                        ->whereRaw('substr(owner_blocked_dates.tanggal, 1, 10) = substr(schedules.tanggal, 1, 10)');
+                })
                 ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()])
                 ->groupBy('schedules.tanggal')
                 ->orderBy('schedules.tanggal')

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Schedule;
 
+use App\Domain\Booking\BookingRules;
 use App\Models\Schedule;
 use App\Models\Tenant;
 use App\Support\TenantContext;
@@ -46,14 +47,17 @@ class ExportScheduleReport
         $schedules = $schedulesQuery->orderBy('tanggal')->orderBy('jam_mulai')->get();
 
         $totalSlots = $schedules->count();
-        $bookedSlots = $schedules->filter(fn($s) => $s->bookings->whereIn('status', ['paid', 'completed'])->isNotEmpty())->count();
-        $availableSlots = $schedules->filter(fn($s) => $s->status === 'tersedia' && $s->bookings->whereIn('status', ['pending', 'paid', 'completed'])->isEmpty())->count();
+        $bookedSlots = $schedules->filter(fn ($s) => $s->bookings->whereIn('status', ['paid', 'completed'])->isNotEmpty())->count();
+        $availableSlots = (clone $schedulesQuery)
+            ->where('status', 'tersedia')
+            ->whereDoesntHave('bookings', fn ($q) => BookingRules::applyOccupiesSlotCondition($q, 'bookings.'))
+            ->count();
         $utilizationRate = $totalSlots > 0 ? round(($bookedSlots / $totalSlots) * 100, 1) : 0;
 
-        $filename = 'schedule-report-' . ($tenant->slug ?? 'tenant') . '-' . $period . '-' . date('Ymd') . '.csv';
+        $filename = 'schedule-report-'.($tenant->slug ?? 'tenant').'-'.$period.'-'.date('Ymd').'.csv';
 
         $headers = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
@@ -70,7 +74,7 @@ class ExportScheduleReport
             fputcsv($file, ['Total Slots', $totalSlots]);
             fputcsv($file, ['Booked Slots', $bookedSlots]);
             fputcsv($file, ['Available Slots', $availableSlots]);
-            fputcsv($file, ['Utilization Rate (%)', $utilizationRate . '%']);
+            fputcsv($file, ['Utilization Rate (%)', $utilizationRate.'%']);
             fputcsv($file, []);
             fputcsv($file, ['RINCIAN SLOT OPERASIONAL']);
             fputcsv($file, ['Tanggal', 'Jam Mulai', 'Jam Selesai', 'Layanan', 'Tarif (Rp)', 'Status Availability', 'Nama Tamu / Pemesan']);

@@ -24,8 +24,11 @@ class FiveModulesFullIntegrationTest extends TestCase
     use RefreshDatabase;
 
     protected User $owner;
+
     protected Tenant $tenant;
+
     protected Service $service;
+
     protected Schedule $schedule;
 
     protected function tearDown(): void
@@ -42,9 +45,9 @@ class FiveModulesFullIntegrationTest extends TestCase
             ['namapaket' => 'pro'],
             [
                 'hargabulanan' => 100000,
-                'maxlayanan'   => 50,
-                'maxbooking'   => 500,
-                'isunlimited'  => true,
+                'maxlayanan' => 50,
+                'maxbooking' => 500,
+                'isunlimited' => true,
             ]
         );
 
@@ -54,37 +57,37 @@ class FiveModulesFullIntegrationTest extends TestCase
         ]);
 
         $this->tenant = Tenant::create([
-            'iduser'      => $this->owner->id,
-            'namabisnis'  => 'Barbershop Eksklusif',
+            'iduser' => $this->owner->id,
+            'namabisnis' => 'Barbershop Eksklusif',
             'jenisbisnis' => 'Barbershop',
-            'slug'        => 'barbershop-eksklusif',
-            'alamat'      => 'Jl. Sudirman No. 10',
-            'nomorhp'     => '081234567890',
+            'slug' => 'barbershop-eksklusif',
+            'alamat' => 'Jl. Sudirman No. 10',
+            'nomorhp' => '081234567890',
         ]);
 
         Subscription::create([
-            'idtenant'       => $this->tenant->id,
-            'idplan'         => $plan->id,
-            'status'         => 'active',
+            'idtenant' => $this->tenant->id,
+            'idplan' => $plan->id,
+            'status' => 'active',
             'trial_berakhir' => now()->addDays(30),
         ]);
 
         $this->service = Service::create([
-            'idtenant'    => $this->tenant->id,
+            'idtenant' => $this->tenant->id,
             'namalayanan' => 'Gentleman Haircut & Wash',
-            'harga'       => 75000,
-            'durasi'      => 45,
-            'is_active'   => true,
+            'harga' => 75000,
+            'durasi' => 45,
+            'is_active' => true,
         ]);
 
         // Create schedule today so it is always present across all period filters
         $this->schedule = Schedule::create([
-            'idtenant'    => $this->tenant->id,
-            'idlayanan'   => $this->service->id,
-            'tanggal'     => Carbon::today()->toDateString(),
-            'jam_mulai'   => '10:00:00',
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => Carbon::today()->toDateString(),
+            'jam_mulai' => '10:00:00',
             'jam_selesai' => '10:45:00',
-            'status'      => 'tersedia',
+            'status' => 'tersedia',
         ]);
 
         app(TenantContext::class)->setTenantId($this->tenant->id);
@@ -116,30 +119,51 @@ class FiveModulesFullIntegrationTest extends TestCase
         $resMonth->assertStatus(200);
     }
 
-    public function test_calendar_quick_walkin_booking_creation(): void
+    public function test_walkin_for_a_slot_that_already_started_is_refused(): void
     {
+        $this->travelTo(Carbon::today()->setTime(10, 30));
         $this->actingAs($this->owner);
         session(['current_tenant_id' => $this->tenant->id]);
         app(TenantContext::class)->setTenantId($this->tenant->id);
 
         $response = $this->post(route('owner.bookings.walkin'), [
-            'idschedule'     => $this->schedule->id,
-            'namapelanggan'  => 'Walkin Guest John',
-            'nomorhp'        => '081299998888',
-            'email'          => 'walkin@example.com',
-            'metode'         => 'cash',
-            'catatan'        => 'Tamu walk-in langsung di kasir',
+            'idschedule' => $this->schedule->id,
+            'namapelanggan' => 'Late Walkin',
+            'nomorhp' => '081299997777',
+            'metode' => 'cash',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasErrors('error');
+        $this->assertDatabaseMissing('bookings', ['namapelanggan' => 'Late Walkin']);
+        $this->assertDatabaseMissing('payments', ['nama_pembayar' => 'Late Walkin']);
+    }
+
+    public function test_calendar_quick_walkin_booking_creation(): void
+    {
+        $this->travelTo(Carbon::today()->setTime(8, 0));
+        $this->actingAs($this->owner);
+        session(['current_tenant_id' => $this->tenant->id]);
+        app(TenantContext::class)->setTenantId($this->tenant->id);
+
+        $response = $this->post(route('owner.bookings.walkin'), [
+            'idschedule' => $this->schedule->id,
+            'namapelanggan' => 'Walkin Guest John',
+            'nomorhp' => '081299998888',
+            'email' => 'walkin@example.com',
+            'metode' => 'cash',
+            'catatan' => 'Tamu walk-in langsung di kasir',
         ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('bookings', [
-            'idtenant'       => $this->tenant->id,
-            'idschedule'     => $this->schedule->id,
-            'namapelanggan'  => 'Walkin Guest John',
-            'nomorhp'        => '081299998888',
-            'status'         => 'paid',
+            'idtenant' => $this->tenant->id,
+            'idschedule' => $this->schedule->id,
+            'namapelanggan' => 'Walkin Guest John',
+            'nomorhp' => '081299998888',
+            'status' => 'paid',
         ]);
 
         $booking = Booking::withoutGlobalScopes()->where('idschedule', $this->schedule->id)->first();
@@ -147,11 +171,11 @@ class FiveModulesFullIntegrationTest extends TestCase
         $this->assertNotNull($booking->idpayment);
 
         $this->assertDatabaseHas('payments', [
-            'id'             => $booking->idpayment,
-            'idtenant'       => $this->tenant->id,
-            'metode'         => 'cash',
-            'status'         => 'sukses',
-            'jumlah'         => 75000,
+            'id' => $booking->idpayment,
+            'idtenant' => $this->tenant->id,
+            'metode' => 'cash',
+            'status' => 'sukses',
+            'jumlah' => 75000,
         ]);
     }
 
@@ -162,25 +186,25 @@ class FiveModulesFullIntegrationTest extends TestCase
         app(TenantContext::class)->setTenantId($this->tenant->id);
 
         $schedule2 = Schedule::create([
-            'idtenant'    => $this->tenant->id,
-            'idlayanan'   => $this->service->id,
-            'tanggal'     => Carbon::today()->toDateString(),
-            'jam_mulai'   => '11:00:00',
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => Carbon::today()->toDateString(),
+            'jam_mulai' => '11:00:00',
             'jam_selesai' => '11:45:00',
-            'status'      => 'tersedia',
+            'status' => 'tersedia',
         ]);
 
         // Booking 1: Test transition from paid to completed
         $booking1 = Booking::create([
-            'idtenant'       => $this->tenant->id,
-            'idlayanan'      => $this->service->id,
-            'idschedule'     => $this->schedule->id,
-            'namapelanggan'  => 'Status Test Guest 1',
-            'nomorhp'        => '081200001111',
-            'email'          => 'status1@example.com',
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $this->schedule->id,
+            'namapelanggan' => 'Status Test Guest 1',
+            'nomorhp' => '081200001111',
+            'email' => 'status1@example.com',
             'tanggalbooking' => Carbon::today()->toDateString(),
-            'jam'            => '10:00:00',
-            'status'         => 'paid',
+            'jam' => '10:00:00',
+            'status' => 'paid',
         ]);
 
         $resComplete = $this->patch(route('owner.bookings.status', $booking1->id), [
@@ -191,15 +215,15 @@ class FiveModulesFullIntegrationTest extends TestCase
 
         // Booking 2: Test transition from paid to cancelled
         $booking2 = Booking::create([
-            'idtenant'       => $this->tenant->id,
-            'idlayanan'      => $this->service->id,
-            'idschedule'     => $schedule2->id,
-            'namapelanggan'  => 'Status Test Guest 2',
-            'nomorhp'        => '081200002222',
-            'email'          => 'status2@example.com',
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $schedule2->id,
+            'namapelanggan' => 'Status Test Guest 2',
+            'nomorhp' => '081200002222',
+            'email' => 'status2@example.com',
             'tanggalbooking' => Carbon::today()->toDateString(),
-            'jam'            => '11:00:00',
-            'status'         => 'paid',
+            'jam' => '11:00:00',
+            'status' => 'paid',
         ]);
 
         $resCancel = $this->patch(route('owner.bookings.status', $booking2->id), [
@@ -261,14 +285,14 @@ class FiveModulesFullIntegrationTest extends TestCase
         app(TenantContext::class)->setTenantId($this->tenant->id);
 
         $catA = Category::create([
-            'idtenant'  => $this->tenant->id,
-            'name'      => 'Alpha Category',
+            'idtenant' => $this->tenant->id,
+            'name' => 'Alpha Category',
             'is_active' => true,
         ]);
 
         $catB = Category::create([
-            'idtenant'  => $this->tenant->id,
-            'name'      => 'Beta Category',
+            'idtenant' => $this->tenant->id,
+            'name' => 'Beta Category',
             'is_active' => false,
         ]);
 
@@ -291,14 +315,14 @@ class FiveModulesFullIntegrationTest extends TestCase
 
         // Update name and assert slug sync
         $resUpdate = $this->put(route('owner.categories.update', $catA->id), [
-            'name'        => 'Alpha Category Premium',
+            'name' => 'Alpha Category Premium',
             'description' => 'Updated desc',
-            'is_active'   => 1,
+            'is_active' => 1,
         ]);
         $resUpdate->assertRedirect(route('owner.categories'));
 
         $this->assertDatabaseHas('categories', [
-            'id'   => $catA->id,
+            'id' => $catA->id,
             'name' => 'Alpha Category Premium',
             'slug' => 'alpha-category-premium',
         ]);
@@ -316,46 +340,46 @@ class FiveModulesFullIntegrationTest extends TestCase
 
         // Create Staff with preset working hours
         $resStaff = $this->post(route('owner.staff.store'), [
-            'name'                  => 'Rian Barber Pro',
-            'role'                  => 'Senior Barber',
-            'phone'                 => '08555444333',
+            'name' => 'Rian Barber Pro',
+            'role' => 'Senior Barber',
+            'phone' => '08555444333',
             'availability_schedule' => 'Senin - Jumat (09:00 - 17:00)',
-            'service_ids'           => [$this->service->id],
+            'service_ids' => [$this->service->id],
         ]);
         $resStaff->assertRedirect();
 
         $this->assertDatabaseHas('staff', [
-            'idtenant'              => $this->tenant->id,
-            'name'                  => 'Rian Barber Pro',
+            'idtenant' => $this->tenant->id,
+            'name' => 'Rian Barber Pro',
             'availability_schedule' => 'Senin - Jumat (09:00 - 17:00)',
         ]);
 
         $staff = Staff::withoutGlobalScopes()->where('name', 'Rian Barber Pro')->first();
         $this->assertNotNull($staff);
         $this->assertDatabaseHas('service_staff', [
-            'idstaff'   => $staff->id,
+            'idstaff' => $staff->id,
             'idservice' => $this->service->id,
         ]);
 
         // Create Resource
         $resResource = $this->post(route('owner.resources.store'), [
-            'name'        => 'Kursi Barber Hidrolik #1',
-            'type'        => 'Barber Chair',
-            'capacity'    => 1,
+            'name' => 'Kursi Barber Hidrolik #1',
+            'type' => 'Barber Chair',
+            'capacity' => 1,
             'service_ids' => [$this->service->id],
         ]);
         $resResource->assertRedirect();
 
         $this->assertDatabaseHas('resources', [
             'idtenant' => $this->tenant->id,
-            'name'     => 'Kursi Barber Hidrolik #1',
+            'name' => 'Kursi Barber Hidrolik #1',
         ]);
 
         $resource = Resource::withoutGlobalScopes()->where('name', 'Kursi Barber Hidrolik #1')->first();
         $this->assertNotNull($resource);
         $this->assertDatabaseHas('service_resource', [
             'idresource' => $resource->id,
-            'idservice'  => $this->service->id,
+            'idservice' => $this->service->id,
         ]);
 
         // Toggle staff active state
@@ -376,54 +400,54 @@ class FiveModulesFullIntegrationTest extends TestCase
         app(TenantContext::class)->setTenantId($this->tenant->id);
 
         $resAddon = $this->post(route('owner.additional-items.store'), [
-            'name'         => 'Pomade Premium Matte',
-            'description'  => 'Pomade wangi maskulin natural',
-            'price'        => 35000,
-            'stock'        => 5,
+            'name' => 'Pomade Premium Matte',
+            'description' => 'Pomade wangi maskulin natural',
+            'price' => 35000,
+            'stock' => 5,
             'is_unlimited' => 0,
-            'service_ids'  => [$this->service->id],
+            'service_ids' => [$this->service->id],
         ]);
         $resAddon->assertRedirect(route('owner.additional-items'));
 
         $this->assertDatabaseHas('additional_items', [
             'idtenant' => $this->tenant->id,
-            'name'     => 'Pomade Premium Matte',
+            'name' => 'Pomade Premium Matte',
         ]);
 
         $addon = AdditionalItem::withoutGlobalScopes()->where('name', 'Pomade Premium Matte')->first();
         $this->assertNotNull($addon);
         $this->assertDatabaseHas('additional_item_service', [
             'idadditional_item' => $addon->id,
-            'idservice'         => $this->service->id,
+            'idservice' => $this->service->id,
         ]);
 
         // Also create a staff for checkout testing
         $staff = Staff::create([
-            'idtenant'              => $this->tenant->id,
-            'name'                  => 'Bima Stylist',
-            'role'                  => 'Expert Barber',
+            'idtenant' => $this->tenant->id,
+            'name' => 'Bima Stylist',
+            'role' => 'Expert Barber',
             'availability_schedule' => 'Shift Pagi (08:00 - 15:00)',
-            'is_active'             => true,
+            'is_active' => true,
         ]);
         $this->service->staff()->attach($staff->id);
 
         // 2. Customer visits checkout page (staff & addon are shut down on customer checkout per Section 17 & 18)
         $bookingDate = Carbon::tomorrow()->toDateString();
         $checkoutSchedule = Schedule::create([
-            'idtenant'    => $this->tenant->id,
-            'idlayanan'   => $this->service->id,
-            'tanggal'     => $bookingDate,
-            'jam_mulai'   => '10:00:00',
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => $bookingDate,
+            'jam_mulai' => '10:00:00',
             'jam_selesai' => '10:45:00',
-            'status'      => 'tersedia',
+            'status' => 'tersedia',
         ]);
 
         $sessionData = [
             'booking' => [
-                'tenant_id'   => $this->tenant->id,
-                'service_id'  => $this->service->id,
-                'tanggal'     => $bookingDate,
-                'jam'         => '10:00',
+                'tenant_id' => $this->tenant->id,
+                'service_id' => $this->service->id,
+                'tanggal' => $bookingDate,
+                'jam' => '10:00',
                 'schedule_id' => $checkoutSchedule->id,
             ],
         ];
@@ -437,10 +461,10 @@ class FiveModulesFullIntegrationTest extends TestCase
         // 3. Submitting checkout with selected_addons is rejected per Section 18
         $rejectRes = $this->withSession($sessionData)
             ->post(route('customer.booking.process-checkout', $this->tenant->slug), [
-                'namapelanggan'   => 'Customer Adit',
-                'email'           => 'adit@example.com',
-                'nomorhp'         => '081234560000',
-                'catatan'         => 'Mohon jangan terlalu pendek sampingnya.',
+                'namapelanggan' => 'Customer Adit',
+                'email' => 'adit@example.com',
+                'nomorhp' => '081234560000',
+                'catatan' => 'Mohon jangan terlalu pendek sampingnya.',
                 'selected_addons' => [$addon->id],
             ]);
         $rejectRes->assertSessionHasErrors(['selected_addons']);
@@ -451,10 +475,10 @@ class FiveModulesFullIntegrationTest extends TestCase
         \Mockery::mock('alias:Midtrans\Snap')->shouldReceive('getSnapToken')->andReturn('mocked-snap-token-addon');
 
         $postData = [
-            'namapelanggan'   => 'Customer Adit',
-            'email'           => 'adit@example.com',
-            'nomorhp'         => '081234560000',
-            'catatan'         => 'Mohon jangan terlalu pendek sampingnya.',
+            'namapelanggan' => 'Customer Adit',
+            'email' => 'adit@example.com',
+            'nomorhp' => '081234560000',
+            'catatan' => 'Mohon jangan terlalu pendek sampingnya.',
         ];
 
         $processRes = $this->withSession($sessionData)
