@@ -2,7 +2,7 @@
 id: BQ-012
 title: Use one occupancy and availability definition everywhere
 type: refactor
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: schedule
@@ -17,7 +17,7 @@ depends-on: [BQ-028, BQ-023, BQ-067]
 
 ADR-0009 (2026-10-30) replaces the 15-minute-from-creation hold with the payment deadline + settlement margin; implement the hold through `BookingRules` with BQ-071.
 
-Design and plan approved by agathan in [ADR-0005](../adr/ADR-0005-slot-bookability-module.md), 2026-10-30. Implementation remains Phase 4, subject to the roadmap gates; this item is not implemented or verified yet.
+Design and plan approved by agathan in [ADR-0005](../../adr/ADR-0005-slot-bookability-module.md), 2026-10-30. Implementation remains Phase 4, subject to the roadmap gates; this item is not implemented or verified yet.
 
 ## Problem
 
@@ -78,4 +78,4 @@ A refusal throws `SlotClaimRefused`, so stale cleanup rolls back too; before, th
 
 **Split out:** availability cache ownership (decision 9) is BQ-075. Recording blocked-date acceptance is BQ-069 as planned.
 
-**Local runs:** SQLite suite 477 tests pass; `tests/Feature/Actions` passes on MySQL 8.4; Pint and Larastan clean (baseline lost 6 entries). GitHub Actions run: pending until pushed.
+**Local runs:** SQLite suite 477 tests pass; `tests/Feature/Actions` passes on MySQL 8.4; Pint and Larastan clean (baseline lost 6 entries). GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41095042246 (PR #7): Quality checks, SQLite, MySQL and MariaDB passed.
