@@ -2,7 +2,7 @@
 id: BQ-069
 title: Blocked dates are not enforced when creating or rescheduling a booking
 type: bug-fix
-status: approved
+status: in-progress
 priority: P0
 phase: 4
 domain: schedule
@@ -31,4 +31,18 @@ Blocking a date only inserts an `owner_blocked_dates` row (`UpdateScheduleAvaila
 
 ## Evidence
 
-_Fill in when done._
+Fixed by BQ-012's Slot bookability module and verified here (2026-10-31).
+
+**Plan steps:**
+1. **Write boundary.** `ClaimSlots` refuses closed dates (`SlotRefusal::DateClosed`) for checkout, both reschedule paths and walk-ins; the selection pages are no longer the protection.
+2. **Tenant-first.** Closing and reopening a date (`UpdateScheduleAvailability`, `DeleteBlockedDate`) lock the tenant row first. Both clear every service's availability cache after the transaction commits.
+3. **Existing reservations kept.** Closing a date does not cancel or refund existing pending or paid reservations.
+4. **Regression tests:**
+   - `RF09StabilityAndHardeningTest::test_direct_checkout_onto_a_closed_date_is_refused`: no booking and no payment are created.
+   - `BookingManageTest::test_reschedule_onto_a_date_closed_by_the_owner_is_refused`: the booking keeps its schedule.
+   - `BookingManageTest::test_reschedule_page_does_not_offer_a_date_closed_by_the_owner` (from BQ-012).
+   - `RF09StabilityAndHardeningTest::test_closing_a_date_keeps_existing_reservations`.
+   - Module rule: `ClaimSlotsTest::test_refuses_a_date_closed_by_the_owner`. Walk-ins use the same claim.
+5. **MySQL ordering.** `ClaimSlotsLockingTest::test_closing_a_date_waits_for_a_claim_in_progress`: a closure waits while a claim holds the tenant row and writes nothing. The reverse direction is `test_claim_waits_for_the_tenant_lock_before_touching_schedules`.
+
+GitHub Actions run: pending until pushed.

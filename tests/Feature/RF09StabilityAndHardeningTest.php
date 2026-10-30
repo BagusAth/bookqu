@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Actions\Booking\CancelBooking;
 use App\Actions\Payment\PaymentLifecycle;
+use App\Actions\Schedule\UpdateScheduleAvailability;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Schedule\AvailabilityRules;
 use App\Models\Booking;
+use App\Models\OwnerBlockedDate;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Refund;
@@ -540,6 +542,78 @@ class RF09StabilityAndHardeningTest extends TestCase
     }
 
     /**
+     * BQ-069: a direct checkout request onto a date the owner closed is refused
+     * without creating a booking or a payment.
+     */
+    public function test_direct_checkout_onto_a_closed_date_is_refused(): void
+    {
+        $date = Carbon::tomorrow('Asia/Jakarta')->addDays(8)->format('Y-m-d');
+        $slot = Schedule::create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => $date,
+            'jam_mulai' => '15:00:00',
+            'jam_selesai' => '16:00:00',
+            'status' => 'tersedia',
+        ]);
+        OwnerBlockedDate::create(['idtenant' => $this->tenant->id, 'tanggal' => $date, 'alasan' => 'Libur']);
+
+        $response = $this->withSession([
+            'booking' => [
+                'tenant_id' => $this->tenant->id,
+                'service_id' => $this->service->id,
+                'tanggal' => $date,
+                'jam' => ['15:00'],
+                'schedule_ids' => [$slot->id],
+            ],
+        ])->post('/'.$this->tenant->slug.'/booking/checkout', [
+            'namapelanggan' => 'Closed Day Customer',
+            'nomorhp' => '08123456703',
+            'email' => 'closed-day@example.com',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('bookings', ['email' => 'closed-day@example.com']);
+        $this->assertDatabaseMissing('payments', ['email_pembayar' => 'closed-day@example.com']);
+    }
+
+    /**
+     * BQ-069 / ADR-0005 decision 7: closing a date keeps reservations already made.
+     */
+    public function test_closing_a_date_keeps_existing_reservations(): void
+    {
+        $date = Carbon::tomorrow('Asia/Jakarta')->addDays(9)->format('Y-m-d');
+        $slot = Schedule::create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => $date,
+            'jam_mulai' => '15:00:00',
+            'jam_selesai' => '16:00:00',
+            'status' => 'tersedia',
+        ]);
+        $booking = Booking::create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $slot->id,
+            'namapelanggan' => 'Already Paid',
+            'nomorhp' => '08123456704',
+            'email' => 'already-paid@example.com',
+            'tanggalbooking' => $date,
+            'jam' => '15:00:00',
+            'status' => BookingState::STATUS_PAID,
+        ]);
+
+        app(UpdateScheduleAvailability::class)->execute($this->tenant, [
+            'tanggal_block' => $date,
+            'alasan' => 'Renovasi',
+            'weekend_price_type' => 'none',
+        ]);
+
+        $this->assertSame(BookingState::STATUS_PAID, $booking->fresh()->status);
+        $this->assertDatabaseHas('owner_blocked_dates', ['idtenant' => $this->tenant->id, 'alasan' => 'Renovasi']);
+    }
+
+    /**
      * Requirement 3 (ADR-0009): a pending booking holds its slot while its payment is pending
      * and now < payments.expired_at + settlement margin (2 minutes by default).
      */
@@ -721,6 +795,7 @@ class RF09StabilityAndHardeningTest extends TestCase
             'idschedule' => $slot1->id,
             'namapelanggan' => 'User One',
             'nomorhp' => '08123456704',
+            'email' => 'already-paid@example.com',
             'email' => 'userone@example.com',
             'tanggalbooking' => $date,
             'jam' => $slot1->jam_mulai,
