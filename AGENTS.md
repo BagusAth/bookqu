@@ -75,6 +75,7 @@ Full process, definition of done and conventions: `docs/workflow.md`.
 | Purpose | Command |
 |---|---|
 | Tests (all / one file / one test) | `php artisan test --compact` · `php artisan test --compact tests/Feature/Customer/BookingFlowTest.php` · `--filter=test_name` |
+| Tests on MySQL (needs local database `bookqu_testing`) | `vendor/bin/phpunit -c phpunit.mysql.xml` · `--group mysql` for lock tests only |
 | Format changed PHP | `vendor/bin/pint --dirty --format agent` |
 | Refresh the knowledge graph after code changes | `graphify update .` |
 | Local dev (server, queue, logs, Vite) | `composer run dev` |

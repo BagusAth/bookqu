@@ -2,7 +2,7 @@
 id: BQ-023
 title: Run integrity tests on MySQL in CI
 type: improvement
-status: approved
+status: in-progress
 priority: P0
 phase: 3
 domain: booking

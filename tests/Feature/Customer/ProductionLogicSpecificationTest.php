@@ -374,7 +374,7 @@ class ProductionLogicSpecificationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['jam']);
-        $this->assertDatabaseMissing('payments', ['namapelanggan' => 'Late Customer']);
+        $this->assertDatabaseMissing('payments', ['nama_pembayar' => 'Late Customer']);
     }
 
     /**
