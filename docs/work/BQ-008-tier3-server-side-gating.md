@@ -26,6 +26,7 @@ ADR-0002 hides Tier 3 modules from navigation, but every endpoint still works by
 1. Choose the gating mechanism in an ADR (config + middleware, or Laravel Pennant) — BQ-028.
 2. Put every Tier 3 route group behind it; keep Tier 2 pages reachable but locked where required.
 3. Tests: Tier 3 routes return 404/403 when disabled; `OwnerSidebarNavigationTest` still passes.
+4. Add the ADR-0012 rule "staged routes carry `module:`" to `tests/Guardrails/ArchitectureRulesTest.php` (deferred from BQ-025 because the registry does not exist yet).
 
 ## Evidence
 

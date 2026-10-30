@@ -2,7 +2,7 @@
 id: BQ-025
 title: Enforce architecture rules with tests
 type: improvement
-status: approved
+status: in-progress
 priority: P1
 phase: 3
 domain: —
