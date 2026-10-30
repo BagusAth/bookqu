@@ -23,7 +23,7 @@
         $firstBooking = $bookings->first();
         $bookingDate = $firstBooking?->tanggalbooking ? \Carbon\Carbon::parse($firstBooking->tanggalbooking)->translatedFormat('l, d F Y') : '-';
         $durasiMenit = (int) ($firstBooking?->layanan?->durasi ?? 60);
-        $backManageUrl = route('booking.manage.payment', ['order_id' => $payment->order_id]) . ($token ? '?token=' . $token : '');
+        $backManageUrl = route('booking.manage.payment', ['order_id' => $payment->order_id]);
     @endphp
 
     {{-- Top Floating Navigation --}}

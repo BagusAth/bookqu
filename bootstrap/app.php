@@ -1,8 +1,24 @@
 <?php
 
+use App\Console\Commands\CheckExpiredSubscriptions;
+use App\Http\Middleware\CheckSubscription;
+use App\Http\Middleware\CustomerAccessHeaders;
+use App\Http\Middleware\CustomerAccessMiddleware;
+use App\Http\Middleware\EnsureOwnerProfileComplete;
+use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\TenantMiddleware;
+use Illuminate\Auth\Middleware\Authenticate;
+use Illuminate\Auth\Middleware\Authorize;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Routing\Middleware\ThrottleRequestsWithRedis;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,27 +27,30 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withCommands([
-        \App\Console\Commands\CheckExpiredSubscriptions::class,
+        CheckExpiredSubscriptions::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(prepend: [CustomerAccessHeaders::class]);
         $middleware->alias([
-            'tenant' => \App\Http\Middleware\TenantMiddleware::class,
-            'role' => \App\Http\Middleware\RoleMiddleware::class,
-            'owner.profile' => \App\Http\Middleware\EnsureOwnerProfileComplete::class,
-            'subscription' => \App\Http\Middleware\CheckSubscription::class,
+            'customer.access' => CustomerAccessMiddleware::class,
+            'tenant' => TenantMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'owner.profile' => EnsureOwnerProfileComplete::class,
+            'subscription' => CheckSubscription::class,
         ]);
 
         $middleware->priority([
-            \Illuminate\Cookie\Middleware\EncryptCookies::class,
-            \Illuminate\Session\Middleware\StartSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
-            \Illuminate\Routing\Middleware\ThrottleRequests::class,
-            \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
-            \Illuminate\Auth\Middleware\Authenticate::class,
-            \App\Http\Middleware\TenantMiddleware::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \Illuminate\Auth\Middleware\Authorize::class,
+            EncryptCookies::class,
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            AuthenticatesRequests::class,
+            ThrottleRequests::class,
+            ThrottleRequestsWithRedis::class,
+            Authenticate::class,
+            CustomerAccessMiddleware::class,
+            TenantMiddleware::class,
+            SubstituteBindings::class,
+            Authorize::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
@@ -42,5 +61,5 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->dontFlash(['credential']);
     })->create();

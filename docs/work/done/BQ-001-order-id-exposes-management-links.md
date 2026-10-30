@@ -2,7 +2,7 @@
 id: BQ-001
 title: Implement the Management link module and protect storefront access
 type: bug-fix
-status: approved
+status: done
 priority: P0
 phase: 4
 domain: customer-access
@@ -15,7 +15,7 @@ depends-on: [BQ-028, BQ-023, BQ-067, BQ-012]
 
 # BQ-001: Implement the Management link module and protect storefront access
 
-Design and plan accepted in [ADR-0006](../adr/ADR-0006-management-link-module.md), 2026-10-30. Agathan confirmed the module/Checkout choices and delegated the remaining candidate #3 decisions. This is Phase 4 work subject to roadmap gates; the vulnerabilities remain open until implementation and verification.
+Design and plan accepted in [ADR-0006](../../adr/ADR-0006-management-link-module.md), 2026-10-30. Agathan confirmed the module/Checkout choices and delegated the remaining candidate #3 decisions. This is Phase 4 work subject to roadmap gates; the vulnerabilities remain open until implementation and verification.
 
 ## Problem
 
@@ -39,4 +39,22 @@ ADR-0006 is the authority for profile permissions, lifetime, recovery, delivery,
 
 ## Evidence
 
-_Fill in when done._
+Implementasi sesuai ruang lingkup lead pada 2026-10-31: dua profil Checkout/Management, satu branch dan satu PR.
+
+- Grant hash-only, snapshot anggota, recipient terenkripsi, expiry ADR-0006, pencabutan individual/family dan referensi sesi server-side telah diterapkan. Tidak ada import atau fallback token lama; kolom lama tetap untuk contract migration berikutnya.
+- Checkout menerbitkan grant dalam transaksi booking. Browser menerima fragment link sekali, menukarnya melalui POST CSRF pada origin canonical, lalu memakai URL bersih. Custom domain hanya storefront/handoff; provider tidak menerima credential.
+- Seluruh route pembayaran/invoice/status/callback/cancel serta kelola booking/grup memeriksa grant, tenant dan payment/member yang tepat. Mutasi memeriksa ulang setelah kunci tenant; cancel menggunakan PaymentLifecycle::transition(CancelledByPayer), status/callback menggunakan PaymentOutcomeIntake::check. GET tidak lagi melakukan sinkronisasi provider atau lazy token issuance.
+- Email menggunakan delivery intent immutable yang dicatat dalam transaksi. Job hanya membawa ID, mint tepat sebelum transport setelah commit, maksimal tiga percobaan; generation atau source-grant yang dicabut menolak pengiriman. Eksekusi tetap sinkron sampai BQ-013/BQ-020. Transport log menolak pengiriman credential aktif.
+- Getter URL rahasia, token tersembunyi pada form dan ekspor URL private Calendar/WhatsApp dihapus. Command diagnostik hanya local/testing; owner list tidak lagi mengeluarkan customer bearer URL.
+- Cutover test lama diubah secara eksplisit: token lama ditolak 404, jalur positif memakai grant nyata. Assertions untuk refund, state, multi-slot dan tanggal diblokir dipertahankan.
+
+Verifikasi:
+- CustomerAccessTest: 28 kasus / 323 assertions (HTTP, scope, expiry/revocation, CSRF, sesi, HTML/share, recipient, bounded retries dan stale source).
+- MySQL: 29 tes / 328 assertions untuk CustomerAccessTest + CustomerAccessLockingTest; pencabutan terbukti menunggu query kunci tenant, kemudian version bump menolak grant yang sebelumnya valid. Full MySQL suite: 514 tes / 2.514 assertions lulus. Cleanup DatabaseTruncation diuji dengan urutan locking lalu HTTP agar fixture tidak bocor ke tes berikutnya.
+- Full suite: php artisan test --compact — 508 lulus / 2.498 assertions. Pint --dirty --format agent lulus (diulang dengan --max-processes=1 setelah kendala penulisan file Windows). PHPStan --memory-limit=1G lulus; baseline berkurang dari 132 menjadi 124 entri, tidak bertambah. CI PR harus tetap hijau sebelum merge.
+- graphify update . memperbarui graph kode secara deterministik. Review keamanan fokus dilakukan pada source dan regression tests; tidak ada audit produksi atau klaim verifikasi browser manual.
+
+Sisa yang secara eksplisit diizinkan lead: expiry recovery, owner resend/replacement UI dan rate limit per family. Profil sempit/Invoice-child tidak dibutuhkan oleh caller saat ini; jangan menambahkan issuer publik arbitrer. Recovery/resend memerlukan item lanjutan sebelum dikerjakan. Drop kolom legacy mengikuti rilis contract berikutnya.
+
+
+PR: https://github.com/BagusAth/bookqu/pull/9 (target agathan). Empat job CI wajib hijau pada head yang diperiksa ulang sebelum merge.

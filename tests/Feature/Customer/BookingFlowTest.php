@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Domain\CustomerAccess\AccessProfile;
 use App\Domain\Payment\ProviderOutcome;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Models\Booking;
@@ -15,15 +16,18 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
 class BookingFlowTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesCustomerAccess;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
         $this->withoutMiddleware([
             PreventRequestForgery::class,
             ValidateCsrfToken::class,
@@ -155,7 +159,7 @@ class BookingFlowTest extends TestCase
         $this->assertEquals('John Doe', $booking->namapelanggan);
         $this->assertEquals('pending', $booking->status);
 
-        $response->assertRedirect('/my-business/booking/payment/'.$payment->order_id);
+        $this->assertCheckoutHandoff($response, $payment);
     }
 
     public function test_customer_payment_page_renders_realtime_indicator_and_correct_routes(): void
@@ -171,7 +175,10 @@ class BookingFlowTest extends TestCase
             'expired_at' => now()->addMinutes(15),
         ]);
 
-        $response = $this->get('/my-business/booking/payment/'.$payment->order_id);
+        $slot = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id]);
+        Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $slot->id, 'idpayment' => $payment->id]);
+
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id);
         $response->assertStatus(200);
         $response->assertSee('Sistem memantau pembayaran Anda secara otomatis');
         $response->assertSee('BQ-TEST-12345');
@@ -193,7 +200,10 @@ class BookingFlowTest extends TestCase
             'expired_at' => now()->addMinutes(15),
         ]);
 
-        $response = $this->postJson('/my-business/booking/payment/'.$payment->order_id.'/check-status');
+        $slot = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id]);
+        Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $slot->id, 'idpayment' => $payment->id]);
+
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->postJson('/my-business/booking/payment/'.$payment->order_id.'/check-status');
         $response->assertStatus(200);
         $response->assertJson([
             'status' => 'sukses',
@@ -227,7 +237,10 @@ class BookingFlowTest extends TestCase
             ));
         });
 
-        $response = $this->postJson('/my-business/booking/payment/'.$payment->order_id.'/callback', [
+        $slot = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id]);
+        Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $slot->id, 'idpayment' => $payment->id]);
+
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->postJson('/my-business/booking/payment/'.$payment->order_id.'/callback', [
             'result' => [
                 'status_code' => '200',
                 'transaction_status' => 'settlement',
@@ -333,7 +346,7 @@ class BookingFlowTest extends TestCase
             'cancellation_token' => 'token123',
         ]);
 
-        $response = $this->get('/my-business/booking/payment/'.$payment->order_id.'/invoice');
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertStatus(200);
         $response->assertSee('Booking Berhasil Dikonfirmasi!');
         $response->assertSee('Google Calendar');
@@ -373,13 +386,13 @@ class BookingFlowTest extends TestCase
             'cancellation_token' => null,
         ]);
 
-        $response = $this->get('/my-business/booking/payment/'.$payment->order_id.'/invoice');
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertStatus(200);
         $response->assertSee('Booking Berhasil Dikonfirmasi!');
 
         $booking->refresh();
-        $this->assertNotNull($booking->booking_code);
-        $this->assertNotNull($booking->cancellation_token);
+        $this->assertNull($booking->booking_code);
+        $this->assertNull($booking->cancellation_token);
     }
 
     public function test_customer_can_cancel_pending_payment_and_release_booking_slot(): void
@@ -408,7 +421,7 @@ class BookingFlowTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->post('/my-business/booking/payment/'.$payment->order_id.'/cancel');
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->post('/my-business/booking/payment/'.$payment->order_id.'/cancel');
         $response->assertRedirect('/my-business');
         $response->assertSessionHas('info');
 
@@ -457,7 +470,9 @@ class BookingFlowTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $response->assertSessionHas('success');
+        // scope-bypass: inspect trusted test fixtures without a request tenant; authorization is exercised through the real resolver.
+        $payment = Payment::withoutGlobalScopes()->where('email_pembayar', 'diana@example.com')->firstOrFail();
+        $this->assertCheckoutHandoff($response, $payment);
         $this->assertNull(session('booking'));
 
         $this->assertDatabaseHas('payments', [

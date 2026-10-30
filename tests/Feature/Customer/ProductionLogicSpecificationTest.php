@@ -3,6 +3,7 @@
 namespace Tests\Feature\Customer;
 
 use App\Actions\Payment\PaymentLifecycle;
+use App\Domain\CustomerAccess\AccessProfile;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Payment\ProviderOutcome;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
@@ -18,11 +19,13 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
 class ProductionLogicSpecificationTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesCustomerAccess;
 
     protected Tenant $tenant;
 
@@ -41,6 +44,7 @@ class ProductionLogicSpecificationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
 
         $this->withoutMiddleware([
             PreventRequestForgery::class,
@@ -150,7 +154,7 @@ class ProductionLogicSpecificationTest extends TestCase
         $this->assertEquals('pending', $bookings->first()->status);
         $this->assertEquals('10:00:00', substr($bookings->first()->jam, 0, 8).(strlen($bookings->first()->jam) === 5 ? ':00' : ''));
 
-        $response->assertRedirect('/studio-foto-logic/booking/payment/'.$payment->order_id);
+        $this->assertCheckoutHandoff($response, $payment);
     }
 
     /**
@@ -174,7 +178,7 @@ class ProductionLogicSpecificationTest extends TestCase
         $this->assertCount(2, $bookings);
         $this->assertEquals(['pending', 'pending'], $bookings->pluck('status')->all());
 
-        $response->assertRedirect('/studio-foto-logic/booking/payment/'.$payment->order_id);
+        $this->assertCheckoutHandoff($response, $payment);
     }
 
     /**
@@ -197,7 +201,7 @@ class ProductionLogicSpecificationTest extends TestCase
         $bookings = Booking::withoutGlobalScopes()->where('idpayment', $payment->id)->get();
         $this->assertCount(3, $bookings);
 
-        $response->assertRedirect('/studio-foto-logic/booking/payment/'.$payment->order_id);
+        $this->assertCheckoutHandoff($response, $payment);
     }
 
     /**
@@ -611,7 +615,7 @@ class ProductionLogicSpecificationTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->post('/studio-foto-logic/booking/payment/'.$payment->order_id.'/cancel');
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->post('/studio-foto-logic/booking/payment/'.$payment->order_id.'/cancel');
         $response->assertRedirect('/studio-foto-logic');
 
         $payment->refresh();
@@ -667,7 +671,7 @@ class ProductionLogicSpecificationTest extends TestCase
             'status' => 'paid',
         ]);
 
-        $response = $this->get('/studio-foto-logic/booking/payment/'.$payment->order_id.'/invoice');
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/studio-foto-logic/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertStatus(200);
         $response->assertSee('BK-SLOT10-001');
         $response->assertSee('BK-SLOT11-002');
@@ -691,7 +695,9 @@ class ProductionLogicSpecificationTest extends TestCase
             'expired_at' => now()->addMinutes(15),
         ]);
 
-        $response = $this->get('/studio-foto-logic/booking/payment/'.$payment->order_id.'/invoice');
+        Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $this->slot10->id, 'idpayment' => $payment->id]);
+
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/studio-foto-logic/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertRedirect('/studio-foto-logic/booking/payment/'.$payment->order_id);
     }
 
@@ -711,7 +717,9 @@ class ProductionLogicSpecificationTest extends TestCase
             'expired_at' => now()->subMinutes(15),
         ]);
 
-        $response = $this->get('/studio-foto-logic/booking/payment/'.$payment->order_id.'/invoice');
+        Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $this->slot10->id, 'idpayment' => $payment->id]);
+
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/studio-foto-logic/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertRedirect('/studio-foto-logic');
     }
 
@@ -849,7 +857,7 @@ class ProductionLogicSpecificationTest extends TestCase
         });
 
         // Client attempts to spoof settlement status in POST body
-        $response = $this->postJson('/studio-foto-logic/booking/payment/'.$payment->order_id.'/callback', [
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->postJson('/studio-foto-logic/booking/payment/'.$payment->order_id.'/callback', [
             'result' => [
                 'status_code' => '200',
                 'transaction_status' => 'settlement',
@@ -912,7 +920,7 @@ class ProductionLogicSpecificationTest extends TestCase
 
         $this->assertTrue($b1->isMultiSlot());
 
-        $response = $this->post('/manage/BK-MULTI-01/cancel?token=valid-cancel-token-1');
+        $response = $this->grantCustomerAccess($payment)->post('/manage/BK-MULTI-01/cancel?token=valid-cancel-token-1');
         $response->assertSessionHasErrors(['cancel']);
 
         $b1->refresh();
@@ -966,12 +974,12 @@ class ProductionLogicSpecificationTest extends TestCase
         ]);
 
         // Attempting to visit reschedule page should redirect back with error
-        $showResponse = $this->get('/manage/BK-MULTI-RESCHED-01/reschedule?token=valid-reschedule-token-1');
-        $showResponse->assertRedirect('/manage/BK-MULTI-RESCHED-01?token=valid-reschedule-token-1');
+        $showResponse = $this->grantCustomerAccess($payment)->get('/manage/BK-MULTI-RESCHED-01/reschedule?token=valid-reschedule-token-1');
+        $showResponse->assertRedirect('/manage/BK-MULTI-RESCHED-01');
         $showResponse->assertSessionHasErrors(['reschedule']);
 
         // Attempting to post reschedule should be blocked with error
-        $postResponse = $this->post('/manage/BK-MULTI-RESCHED-01/reschedule?token=valid-reschedule-token-1', [
+        $postResponse = $this->grantCustomerAccess($payment)->post('/manage/BK-MULTI-RESCHED-01/reschedule?token=valid-reschedule-token-1', [
             'tanggal' => $this->date,
             'schedule_id' => $this->slot14->id,
         ]);

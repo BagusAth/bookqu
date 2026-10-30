@@ -71,14 +71,14 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
 
         $totalAmount = (int) round((float) $payment->jumlah);
 
-        $successRedirectUrl = CustomerBookingRoutes::url('customer.booking.invoice', [
-            $tenantSlug,
-            $payment->order_id ?? $payment->id,
+        $successRedirectUrl = CustomerBookingRoutes::canonical('customer.booking.invoice', [
+            'slug_usaha' => $tenantSlug,
+            'payment' => $payment->order_id ?? $payment->id,
         ]);
 
-        $expiredRedirectUrl = CustomerBookingRoutes::url('customer.booking.payment', [
-            $tenantSlug,
-            $payment->order_id ?? $payment->id,
+        $expiredRedirectUrl = CustomerBookingRoutes::canonical('customer.booking.payment', [
+            'slug_usaha' => $tenantSlug,
+            'payment' => $payment->order_id ?? $payment->id,
         ]);
 
         $title = mb_substr((string) ($description ?: ("Booking #{$payment->order_id}")), 0, 100);

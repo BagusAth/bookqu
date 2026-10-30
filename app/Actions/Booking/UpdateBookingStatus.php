@@ -70,7 +70,7 @@ class UpdateBookingStatus
         $booking->update(['status' => $newStatus]);
 
         if (in_array($newStatus, [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED], true) && ! $booking->booking_code) {
-            $booking->assignManagementTokens();
+            $booking->assignBookingCode();
         }
 
         // Invalidate availability cache when a completion frees/affects a slot

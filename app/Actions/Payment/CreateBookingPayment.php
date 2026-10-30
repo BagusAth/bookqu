@@ -41,7 +41,7 @@ class CreateBookingPayment
             'metode' => PaymentState::METODE_GRATIS,
             'provider' => 'manual',
             'order_id' => $orderId,
-            'manage_token' => Booking::generateSecureToken(),
+
             'nama_pembayar' => $customerData['namapelanggan'],
             'email_pembayar' => $customerData['email'],
             'hp_pembayar' => $customerData['nomorhp'],
@@ -73,7 +73,7 @@ class CreateBookingPayment
             'metode' => $providerName,
             'provider' => $providerName,
             'order_id' => $orderId,
-            'manage_token' => Booking::generateSecureToken(),
+
             'expired_at' => PaymentRules::deadlineFor(PaymentState::TIPE_BOOKING),
             'nama_pembayar' => $customerData['namapelanggan'],
             'email_pembayar' => $customerData['email'],

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Payment\PaymentOutcomeIntake;
+use App\Domain\CustomerAccess\AccessProfile;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -11,11 +12,13 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
 class P0SecurityTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesCustomerAccess;
 
     public function test_tenant_context_is_request_scoped_and_cleared()
     {
@@ -73,9 +76,11 @@ class P0SecurityTest extends TestCase
         $response = $this->get("/tenant1/booking/payment/{$payment1->id}");
         $response->assertStatus(404);
 
-        // Using proper order_id should pass
-        $response = $this->get("/tenant1/booking/payment/{$payment1->order_id}");
-        $response->assertStatus(200);
+        // A public order_id alone still fails; only a matching Checkout grant authorizes the page.
+        $this->get("/tenant1/booking/payment/{$payment1->order_id}")->assertNotFound();
+        Booking::factory()->create(['idtenant' => $tenant->id, 'idpayment' => $payment1->id]);
+        $response = $this->grantCustomerAccess($payment1, AccessProfile::Checkout)->get("/tenant1/booking/payment/{$payment1->order_id}");
+        $response->assertOk();
     }
 
     public function test_customer_booking_management_idor_requires_secure_token()
@@ -90,15 +95,15 @@ class P0SecurityTest extends TestCase
 
         // Accessing without token
         $response = $this->get("/manage/{$booking->booking_code}");
-        $response->assertStatus(403);
+        $response->assertNotFound();
 
         // Accessing with wrong token
         $response = $this->get("/manage/{$booking->booking_code}?token=wrong-token");
-        $response->assertStatus(403);
+        $response->assertNotFound();
 
         // Accessing with correct token
-        $response = $this->get("/manage/{$booking->booking_code}?token=secure-token-123");
-        $response->assertStatus(200);
+        $this->get("/manage/{$booking->booking_code}?token=secure-token-123")->assertNotFound();
+        $this->grantCustomerAccess($booking)->get("/manage/{$booking->booking_code}")->assertOk();
     }
 
     public function test_late_webhook_cannot_reactivate_cancelled_booking()

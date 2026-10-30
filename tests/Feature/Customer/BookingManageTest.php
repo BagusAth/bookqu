@@ -14,11 +14,13 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
 class BookingManageTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesCustomerAccess;
 
     protected Tenant $tenant;
 
@@ -33,6 +35,7 @@ class BookingManageTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
         $this->withoutMiddleware([
             PreventRequestForgery::class,
             ValidateCsrfToken::class,
@@ -84,7 +87,7 @@ class BookingManageTest extends TestCase
 
     public function test_customer_can_view_booking_with_valid_token(): void
     {
-        $response = $this->get('/manage/'.$this->booking->booking_code.'?token='.$this->booking->cancellation_token);
+        $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'?token='.$this->booking->cancellation_token);
         $response->assertStatus(200);
         $response->assertSee($this->booking->booking_code);
     }
@@ -92,20 +95,20 @@ class BookingManageTest extends TestCase
     public function test_customer_cannot_view_booking_with_invalid_token(): void
     {
         $response = $this->get('/manage/'.$this->booking->booking_code.'?token=wrong-token');
-        $response->assertStatus(403);
+        $response->assertNotFound();
     }
 
     public function test_customer_can_view_invoice(): void
     {
-        $response = $this->get('/manage/'.$this->booking->booking_code.'/invoice?token='.$this->booking->cancellation_token);
+        $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'/invoice?token='.$this->booking->cancellation_token);
         $response->assertStatus(200);
         $response->assertSee($this->booking->booking_code);
     }
 
     public function test_customer_can_cancel_booking_within_policy(): void
     {
-        $response = $this->post('/manage/'.$this->booking->booking_code.'/cancel?token='.$this->booking->cancellation_token);
-        $response->assertRedirect('/manage/'.$this->booking->booking_code.'?token='.$this->booking->cancellation_token);
+        $response = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/cancel?token='.$this->booking->cancellation_token);
+        $response->assertRedirect('/manage/'.$this->booking->booking_code);
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('bookings', [
@@ -128,7 +131,7 @@ class BookingManageTest extends TestCase
             'jam' => Carbon::now()->addHours(2)->format('H:i:s'),
         ]);
 
-        $response = $this->post('/manage/'.$this->booking->booking_code.'/cancel?token='.$this->booking->cancellation_token);
+        $response = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/cancel?token='.$this->booking->cancellation_token);
         $response->assertSessionHasErrors('cancel');
 
         $this->assertDatabaseHas('bookings', [
@@ -139,7 +142,7 @@ class BookingManageTest extends TestCase
 
     public function test_customer_can_view_reschedule_page_and_get_slots(): void
     {
-        $response = $this->get('/manage/'.$this->booking->booking_code.'/reschedule?token='.$this->booking->reschedule_token);
+        $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'/reschedule?token='.$this->booking->reschedule_token);
         $response->assertStatus(200);
 
         // New slot for tomorrow
@@ -174,7 +177,7 @@ class BookingManageTest extends TestCase
         }
         OwnerBlockedDate::create(['idtenant' => $this->tenant->id, 'tanggal' => $closedDate, 'alasan' => 'Libur']);
 
-        $response = $this->get('/manage/'.$this->booking->booking_code.'/reschedule?token='.$this->booking->reschedule_token);
+        $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'/reschedule?token='.$this->booking->reschedule_token);
 
         $response->assertOk();
         $offered = collect($response->viewData('availabilityPayload'))->pluck('date')->all();
@@ -196,7 +199,7 @@ class BookingManageTest extends TestCase
         OwnerBlockedDate::create(['idtenant' => $this->tenant->id, 'tanggal' => $closedDate, 'alasan' => 'Libur']);
         $originalSchedule = $this->booking->idschedule;
 
-        $response = $this->post('/manage/'.$this->booking->booking_code.'/reschedule?token='.$this->booking->reschedule_token, [
+        $response = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/reschedule?token='.$this->booking->reschedule_token, [
             'tanggal' => $closedDate,
             'schedule_id' => $slot->id,
         ]);
@@ -216,12 +219,12 @@ class BookingManageTest extends TestCase
             'status' => 'tersedia',
         ]);
 
-        $response = $this->post('/manage/'.$this->booking->booking_code.'/reschedule?token='.$this->booking->reschedule_token, [
+        $response = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/reschedule?token='.$this->booking->reschedule_token, [
             'tanggal' => $newSchedule->tanggal,
             'schedule_id' => $newSchedule->id,
         ]);
 
-        $response->assertRedirect('/manage/'.$this->booking->booking_code.'?token='.$this->booking->reschedule_token);
+        $response->assertRedirect('/manage/'.$this->booking->booking_code);
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('bookings', [

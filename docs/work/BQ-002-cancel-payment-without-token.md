@@ -37,4 +37,4 @@ Partial, BQ-032 (2026-10-30): the gateway cancel part is built.
 - After the Payment lifecycle commits a payer cancel, expiry or owner settlement it calls `PaymentGatewayInterface::cancel()`: Midtrans expires the Snap transaction; SingaPay has no cancel call and does nothing.
 - A failure is logged and does not reverse the local decision (`PaymentOutcomeIntakeTest::test_payer_cancel_cancels_the_gateway_checkout_after_commit`, `test_failing_gateway_cancel_does_not_reverse_the_local_decision`).
 
-Still open: the cancellation endpoint must require the BQ-001 pending-payment cancellation grant.
+BQ-001 (2026-10-31) adds the pending-payment capability check, exact tenant/payment matching and authorization revalidation under the tenant mutex through CancelCheckoutPayment. CustomerAccessTest covers identifier-only and foreign-payment refusal plus authorized cancellation. Remaining before closing this item: its full terminal/expired and provider-after-commit acceptance audit.

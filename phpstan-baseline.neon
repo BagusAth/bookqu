@@ -271,42 +271,6 @@ parameters:
 			path: app/Console/Commands/CheckExpiredSubscriptions.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$cancel_before_hours\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Console/Commands/GenerateTestBookingToken.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namabisnis\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Console/Commands/GenerateTestBookingToken.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namalayanan\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Console/Commands/GenerateTestBookingToken.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>cancel_before_hours" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Console/Commands/GenerateTestBookingToken.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>namabisnis" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Console/Commands/GenerateTestBookingToken.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>namalayanan" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Console/Commands/GenerateTestBookingToken.php
-
-		-
 			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
 			identifier: instanceof.alwaysFalse
 			count: 2
@@ -391,12 +355,6 @@ parameters:
 			path: app/Http/Controllers/Customer/BookingController.php
 
 		-
-			message: '#^Strict comparison using \=\=\= between ''pending''\|''sukses'' and ''gagal'' will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: app/Http/Controllers/Customer/BookingController.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -418,12 +376,6 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
 			identifier: property.notFound
 			count: 5
-			path: app/Http/Controllers/Customer/BookingManageController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$manage_token\.$#'
-			identifier: property.notFound
-			count: 1
 			path: app/Http/Controllers/Customer/BookingManageController.php
 
 		-

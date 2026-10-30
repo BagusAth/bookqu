@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Payment;
 
+use App\Domain\CustomerAccess\AccessContext;
 use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Payment\PaymentTransition;
@@ -29,7 +30,7 @@ class PaymentOutcomeIntake
     /**
      * Validate an authenticated provider outcome and apply it.
      */
-    public function receive(ProviderOutcome $outcome): OutcomeIntakeResult
+    public function receive(ProviderOutcome $outcome, ?AccessContext $access = null): OutcomeIntakeResult
     {
         $payment = $this->find($outcome->references);
 
@@ -67,8 +68,8 @@ class PaymentOutcomeIntake
         ]);
 
         $transition = match ($outcome->result) {
-            PaymentState::STATUS_SUKSES => $this->lifecycle->transition($payment, PaymentTransition::ProviderSucceeded, $outcome->method),
-            PaymentState::STATUS_GAGAL => $this->lifecycle->transition($payment, PaymentTransition::ProviderFailed, $outcome->method),
+            PaymentState::STATUS_SUKSES => $this->lifecycle->transition($payment, PaymentTransition::ProviderSucceeded, $outcome->method, $access),
+            PaymentState::STATUS_GAGAL => $this->lifecycle->transition($payment, PaymentTransition::ProviderFailed, $outcome->method, $access),
             default => null,
         };
 
@@ -80,7 +81,7 @@ class PaymentOutcomeIntake
      * (ADR-0007 decisions 4–5). A successful payment cannot change any more, and
      * manual payments (free, cash) have no provider to ask.
      */
-    public function refresh(Payment $payment): OutcomeIntakeResult
+    public function refresh(Payment $payment, ?AccessContext $access = null): OutcomeIntakeResult
     {
         $payment = $payment->fresh() ?? $payment;
         $provider = PaymentRules::providerOf($payment);
@@ -95,7 +96,7 @@ class PaymentOutcomeIntake
             return new OutcomeIntakeResult(true, $payment);
         }
 
-        return $this->receive($outcome);
+        return $this->receive($outcome, $access);
     }
 
     /**
@@ -103,13 +104,13 @@ class PaymentOutcomeIntake
      * expire the payment if it is still pending past its deadline plus the settlement
      * margin (ADR-0007 decision 5, ADR-0009 decision 3).
      */
-    public function check(Payment $payment): OutcomeIntakeResult
+    public function check(Payment $payment, ?AccessContext $access = null): OutcomeIntakeResult
     {
-        $result = $this->refresh($payment);
+        $result = $this->refresh($payment, $access);
         $current = $result->payment ?? $payment;
 
         if (PaymentRules::isReclaimable($current)) {
-            $expiry = $this->lifecycle->transition($current, PaymentTransition::Expired);
+            $expiry = $this->lifecycle->transition($current, PaymentTransition::Expired, access: $access);
 
             return new OutcomeIntakeResult(true, $expiry->payment, null, $expiry);
         }

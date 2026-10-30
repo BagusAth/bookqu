@@ -2,10 +2,13 @@
 
 namespace App\Actions\Booking;
 
+use App\Actions\CustomerAccess\ResolveCustomerAccess;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Schedule\ClaimSlots;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
+use App\Domain\CustomerAccess\AccessContext;
+use App\Domain\CustomerAccess\AccessOperation;
 use App\Mail\BookingCancelledMail;
 use App\Models\Booking;
 use App\Models\BookingLog;
@@ -16,6 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class CancelBooking
 {
@@ -31,7 +35,7 @@ class CancelBooking
      * @param  string  $actor  'customer'|'owner'
      * @return array{success: bool, error?: string, booking?: Booking}
      */
-    public function execute(Booking $booking, string $actor = 'customer', ?string $reason = null): array
+    public function execute(Booking $booking, string $actor = 'customer', ?string $reason = null, ?AccessContext $access = null): array
     {
         // Guard 1: customer cannot cancel individual slot of a multi-slot booking
         if ($actor === 'customer' && $booking->isMultiSlot()) {
@@ -61,9 +65,14 @@ class CancelBooking
         }
 
         try {
-            DB::transaction(function () use ($booking, $actor, $reason) {
+            DB::transaction(function () use ($booking, $actor, $reason, $access) {
                 // Tenant-first synchronization with claims and payment outcomes (ADR-0005 decision 4)
                 ClaimSlots::lockTenant((int) $booking->idtenant);
+                if ($access !== null) {
+                    app(ResolveCustomerAccess::class)->underLock($access, AccessOperation::CancelBooking, $booking);
+                    $booking->refresh();
+                    abort_unless(! $booking->isMultiSlot() && BookingRules::canCancel($booking), 422);
+                }
                 // If owner cancels a multi-slot booking, cancel all linked bookings for this payment group
                 $targetBookings = ($actor === 'owner' && $booking->isMultiSlot() && $booking->idpayment)
                     ? Booking::withoutGlobalScope(TenantScope::class)
@@ -134,6 +143,8 @@ class CancelBooking
 
             return ['success' => true, 'booking' => $booking];
 
+        } catch (HttpExceptionInterface $e) {
+            throw $e;
         } catch (\Throwable $e) {
             Log::error('CancelBooking failed', [
                 'booking_id' => $booking->id,
