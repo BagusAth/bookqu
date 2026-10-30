@@ -47,7 +47,7 @@ Switching the active provider: set `PAYMENT_GATEWAY_DRIVER` → `php artisan con
 5. Replace the code; `composer install --no-dev --no-scripts --optimize-autoloader` (HostData disables `proc_open`, so Composer scripts are skipped); `php artisan down`; `migrate --force`; `optimize:clear`; `optimize`; `php artisan up`; `route:cache`.
 6. Health check: `curl https://bookqu.my.id` must return 2xx/3xx. On any failure after the swap, code and build are restored and the site is brought back up; the schema is **not** rolled back (see §6).
 
-Prerequisite: `mysqldump` on the server. Run the manual `test-ssh.yml` workflow once; it reports the PHP and `mysqldump` versions. Without `mysqldump` every deploy fails at the backup step, by design.
+Prerequisite: `mysqldump` on the server. Run the manual `test-ssh.yml` workflow once; it reports the PHP and `mysqldump` versions. Without `mysqldump` every deploy fails at the backup step, by design. Checked 2026-10-30: present as the MariaDB 11.4 client (PHP 8.4.27); production is therefore most likely MariaDB, not MySQL (BQ-073).
 
 Migrations must stay backward compatible with the previous release's code (expand → migrate data → contract in a later release), because a rollback restores code, not schema.
 
