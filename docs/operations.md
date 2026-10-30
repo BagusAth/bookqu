@@ -7,9 +7,9 @@ How BookQu is run, deployed, verified and recovered. Statements here are facts f
 | Environment | Where | Notes |
 |---|---|---|
 | Local | Laragon (Windows), `composer run dev` (server, queue listener, Pail logs, Vite) | `.env` from `.env.example`; SingaPay sandbox by default |
-| Test / CI | GitHub Actions `tests.yml` — PHP 8.3, Node 22, in-memory SQLite | Runs on push/PR to `agathan`, `Refactor`, `main`, `payment` |
+| Test / CI | GitHub Actions `tests.yml` — PHP 8.3, Node 22; quality checks, then the suite on in-memory SQLite, MySQL 8 and MariaDB 11.4 | Runs on push to `agathan`, on every PR, and before each production deploy |
 | Staging | **Target** (BQ-017) | Needed before launch: sandbox payments, same hosting type |
-| Production | HostData shared hosting, `bookqu.my.id` (`~/domains/bookqu.my.id/laravel`, web root `public_html`) | Not launched to real customers yet; receives every push to `main` |
+| Production | HostData shared hosting, `bookqu.my.id` (`~/domains/bookqu.my.id/laravel`, web root `public_html`); PHP 8.4, MariaDB 11.4 (checked 2026-10-30) | Not launched to real customers yet; receives every push to `main` |
 
 Never copy production secrets into local or CI environments.
 
@@ -47,7 +47,7 @@ Switching the active provider: set `PAYMENT_GATEWAY_DRIVER` → `php artisan con
 5. Replace the code; `composer install --no-dev --no-scripts --optimize-autoloader` (HostData disables `proc_open`, so Composer scripts are skipped); `php artisan down`; `migrate --force`; `optimize:clear`; `optimize`; `php artisan up`; `route:cache`.
 6. Health check: `curl https://bookqu.my.id` must return 2xx/3xx. On any failure after the swap, code and build are restored and the site is brought back up; the schema is **not** rolled back (see §6).
 
-Prerequisite: `mysqldump` on the server. Run the manual `test-ssh.yml` workflow once; it reports the PHP and `mysqldump` versions. Without `mysqldump` every deploy fails at the backup step, by design. Checked 2026-10-30: present as the MariaDB 11.4 client (PHP 8.4.27); production is therefore most likely MariaDB, not MySQL (BQ-073).
+Prerequisite: `mysqldump` on the server. Run the manual `test-ssh.yml` workflow once; it reports the PHP and `mysqldump` versions. Without `mysqldump` every deploy fails at the backup step, by design. Checked 2026-10-30: present as the MariaDB 11.4 client (PHP 8.4.27); the database server is MariaDB 11.4.10, which CI also tests (BQ-073).
 
 Migrations must stay backward compatible with the previous release's code (expand → migrate data → contract in a later release), because a rollback restores code, not schema.
 

@@ -13,7 +13,7 @@
 
 1. **The module interface is the main test surface.** Each deep module (ADR-0004…0009) has one suite at its interface covering its rules and failure modes. HTTP tests prove routing, validation, authorization, isolation and wiring — not the rule matrix again.
 2. **Domain rules keep unit tests** (`tests/Unit/Domain/`); pure and fast.
-3. **Two databases, one suite.** SQLite in memory remains the fast default. A `mysql` group (`#[Group('mysql')]`) proves locks, unique indexes and concurrency (competing claims, claim vs closure, sweep vs claim, revocation vs action) on MySQL 8 in CI (BQ-023). A lock-dependent claim is not "verified" until the MySQL group proves it.
+3. **Two databases, one suite.** SQLite in memory remains the fast default. A `mysql` group (`#[Group('mysql')]`) proves locks, unique indexes and concurrency (competing claims, claim vs closure, sweep vs claim, revocation vs action) in CI on MySQL 8 and on MariaDB 11.4, the production engine (BQ-023; MariaDB added by BQ-073 on 2026-10-30). A lock-dependent claim is not "verified" until the MySQL group proves it.
 4. **Provider tests never touch the network.** A fake adapter at the gateway seam drives payment tests; each real adapter has contract tests with recorded payloads and signature tests (ADR-0007).
 5. **Time and tenancy are explicit.** Deadline tests freeze time (`travelTo`) in the business timezone (Asia/Jakarta); every tenant-owned feature has a foreign-tenant test (404 for owners, generic 404 for customers).
 6. **Refactor safely.** Characterize before changing; replace duplicated tests only after equivalent coverage exists at the module interface (replace, don't layer); never edit a test just to make it pass (AGENTS.md rule 14).

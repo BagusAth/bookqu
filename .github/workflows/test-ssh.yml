@@ -24,3 +24,5 @@ jobs:
             php --version | head -n 1
             command -v mysqldump && mysqldump --version || echo "MISSING: mysqldump (the gated deploy will refuse to migrate)"
             command -v gzip zcat
+            echo "--- Database engine (BQ-073) ---"
+            cd ~/domains/bookqu.my.id/laravel && php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo "Database server version: ", Illuminate\Support\Facades\DB::scalar("select version()"), PHP_EOL;' || echo "Could not read the database version"

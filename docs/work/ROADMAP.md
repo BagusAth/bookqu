@@ -44,9 +44,9 @@ Machines enforce the rules before big changes: MySQL integrity suite, deploy onl
 Built on branch `phase-3-guardrails` (2026-10-30): BQ-023, BQ-025, BQ-024, BQ-018 and BQ-026 (Larastan approved with the plan). It also restored CI, which had failed on `agathan` since the Boost commit because the lock file needed PHP 8.4. CI now runs three jobs: `quality` (Pint on changed files, Larastan, composer audit, npm audit report-only), `tests-sqlite` and `tests-mysql` (whole suite on MySQL 8). Production deploys call those jobs first. All three jobs passed on GitHub Actions for PR #1 (run 41039402279), so the five items are `done`.
 
 G3 (lead):
-- done: `test-ssh.yml` confirmed `mysqldump` on HostData (MariaDB 11.4 client, so production is most likely MariaDB; BQ-073);
+- done: `test-ssh.yml` confirmed `mysqldump` on HostData; the server is MariaDB 11.4.10, now tested in CI (BQ-073);
 - done: BQ-072 approved and fixed in PR #2;
-- open: protect `main` (PRs only, required checks `Quality checks`, `Tests (SQLite)`, `Tests (MySQL)`, one approval). Needs a repository admin; agathan has push rights only on `BagusAth/bookqu`.
+- open: protect `main` (PRs only, required checks `Quality checks`, `Tests (SQLite)`, `Tests (MySQL)`, `Tests (MariaDB)`, one approval). Needs a repository admin; agathan has push rights only on `BagusAth/bookqu`.
 
 The first gated production deploy happens at the next release.
 
