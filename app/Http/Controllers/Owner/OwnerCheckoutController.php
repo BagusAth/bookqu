@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Owner;
 
-use App\Actions\Payment\CheckPaymentStatus;
 use App\Actions\Payment\CreateSubscriptionPayment;
+use App\Actions\Payment\OutcomeIntakeResult;
 use App\Actions\Payment\PaymentLifecycle;
+use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Domain\Payment\PaymentTransition;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscription\ProcessSubscriptionCheckoutRequest;
@@ -12,9 +13,8 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
-use App\Services\MidtransPaymentService;
 use App\Traits\ResolvesOwnerTenant;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 class OwnerCheckoutController extends Controller
@@ -123,15 +123,15 @@ class OwnerCheckoutController extends Controller
             'provider' => $provider,
             'paymentUrl' => $payment->payment_url,
             'snapToken' => $payment->snap_token,
-            'clientKey' => ($provider === 'midtrans') ? config('midtrans.client_key') : null,
-            'snapUrl' => ($provider === 'midtrans') ? config('midtrans.snap_url') : null,
+            'clientKey' => ($provider === 'midtrans') ? config('payment.drivers.midtrans.client_key') : null,
+            'snapUrl' => ($provider === 'midtrans') ? config('payment.drivers.midtrans.snap_url') : null,
         ]);
     }
 
     /**
      * Cek status pembayaran ke gateway provider aktif.
      */
-    public function checkPaymentStatus(Payment $payment, MidtransPaymentService $paymentService)
+    public function checkPaymentStatus(Payment $payment, PaymentOutcomeIntake $intake)
     {
         $tenant = $this->resolveTenant();
 
@@ -139,54 +139,7 @@ class OwnerCheckoutController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Fast-path: jika database sudah sukses
-        if ($payment->status === 'sukses') {
-            return response()->json([
-                'status' => 'sukses',
-                'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => route('owner.checkout.invoice', $payment),
-            ]);
-        }
-
-        $syncResult = $paymentService
-            ? $paymentService->verifyAndSync($payment)
-            : app(CheckPaymentStatus::class)->execute($payment);
-
-        if ($syncResult['status'] === 'sukses') {
-            return response()->json([
-                'status' => 'sukses',
-                'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => route('owner.checkout.invoice', $payment),
-            ]);
-        }
-
-        if ($syncResult['status'] === 'gagal') {
-            return response()->json([
-                'status' => 'gagal',
-                'message' => $syncResult['message'] ?? 'Pembayaran gagal atau dibatalkan.',
-            ]);
-        }
-
-        if ($syncResult['status'] === 'error') {
-            $payment->refresh();
-            if ($payment->status === 'sukses') {
-                return response()->json([
-                    'status' => 'sukses',
-                    'message' => 'Pembayaran berhasil dikonfirmasi!',
-                    'redirect' => route('owner.checkout.invoice', $payment),
-                ]);
-            }
-
-            return response()->json([
-                'status' => 'pending',
-                'message' => 'Sedang memverifikasi dengan payment gateway...',
-            ]);
-        }
-
-        return response()->json([
-            'status' => 'pending',
-            'message' => $syncResult['message'] ?? 'Menunggu pembayaran diselesaikan...',
-        ]);
+        return $this->statusResponse($intake->check($payment), $payment);
     }
 
     /**
@@ -219,9 +172,10 @@ class OwnerCheckoutController extends Controller
     }
 
     /**
-     * Handle callback dari gateway (client-side).
+     * Callback dari gateway (client-side). The browser's payload is never trusted:
+     * the callback only triggers a server-side status query (BQ-070).
      */
-    public function handleCallback(Payment $payment, Request $request, ?MidtransPaymentService $paymentService = null)
+    public function handleCallback(Payment $payment, PaymentOutcomeIntake $intake)
     {
         $tenant = $this->resolveTenant();
 
@@ -229,44 +183,25 @@ class OwnerCheckoutController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Fast-path: jika database sudah sukses
-        if ($payment->status === 'sukses') {
-            return response()->json([
+        return $this->statusResponse($intake->check($payment), $payment);
+    }
+
+    private function statusResponse(OutcomeIntakeResult $result, Payment $payment): JsonResponse
+    {
+        return match ($result->status()) {
+            'sukses' => response()->json([
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil dikonfirmasi!',
                 'redirect' => route('owner.checkout.invoice', $payment),
-            ]);
-        }
-
-        /** @var CheckPaymentStatus $checkAction */
-        $checkAction = app(CheckPaymentStatus::class);
-        $syncResult = $checkAction->execute($payment);
-
-        if ($syncResult['status'] === 'error') {
-            $result = $request->input('result');
-            if ($result && $paymentService) {
-                $syncResult = $paymentService->syncStatus($payment, $result);
-            }
-        }
-
-        if ($syncResult['status'] === 'sukses') {
-            return response()->json([
-                'status' => 'sukses',
-                'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => route('owner.checkout.invoice', $payment),
-            ]);
-        }
-
-        if ($syncResult['status'] === 'pending') {
-            return response()->json([
+            ]),
+            'gagal' => response()->json([
+                'status' => 'gagal',
+                'message' => 'Pembayaran gagal, dibatalkan, atau waktu pembayaran telah habis.',
+            ]),
+            default => response()->json([
                 'status' => 'pending',
-                'message' => $syncResult['message'] ?? 'Pembayaran pending. Silakan selesaikan pembayaran.',
-            ]);
-        }
-
-        return response()->json([
-            'status' => 'gagal',
-            'message' => $syncResult['message'] ?? 'Pembayaran gagal.',
-        ]);
+                'message' => 'Menunggu pembayaran diselesaikan...',
+            ]),
+        };
     }
 }

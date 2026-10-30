@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Models\Booking;
 use App\Models\Payment;
-use App\Services\MidtransPaymentService;
+use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ExpireBookingPayments extends Command
@@ -22,7 +21,7 @@ class ExpireBookingPayments extends Command
 
     protected $description = 'Cancel pending bookings whose payment has expired, and invalidate availability cache for freed slots.';
 
-    public function handle(MidtransPaymentService $paymentService): int
+    public function handle(PaymentOutcomeIntake $intake): int
     {
         $isDryRun = $this->option('dry-run');
 
@@ -38,16 +37,17 @@ class ExpireBookingPayments extends Command
 
         if ($expiredPayments->isEmpty()) {
             $this->info('No expired booking payments found.');
+
             return Command::SUCCESS;
         }
 
         $this->info("Found {$expiredPayments->count()} expired payment(s).");
 
-        $processed    = 0;
+        $processed = 0;
         $cacheCleared = [];
 
         foreach ($expiredPayments as $payment) {
-            app(\App\Support\TenantContext::class)->setTenantId($payment->idtenant);
+            app(TenantContext::class)->setTenantId($payment->idtenant);
 
             // Load all pending bookings linked to this payment
             $bookings = Booking::withoutGlobalScopes()
@@ -57,40 +57,35 @@ class ExpireBookingPayments extends Command
 
             if ($isDryRun) {
                 $this->line(" [DRY] Would cancel Payment #{$payment->id} (order: {$payment->order_id}) and {$bookings->count()} booking(s)");
+
                 continue;
             }
 
             try {
-                // Verify with Midtrans only for Midtrans payments to prevent API 404 on SingaPay/Manual
-                if ($payment->provider === 'midtrans' || empty($payment->provider)) {
-                    $paymentService->verifyAndSync($payment);
-                    $payment->refresh();
+                // Ask the payment's own provider first, then expire it if it is still pending (ADR-0007)
+                $result = $intake->check($payment);
 
-                    // If it became successful after sync, skip cancelling
-                    if ($payment->status === 'sukses') {
-                        $this->line("  Payment #{$payment->id} verified as successful from Midtrans. Skipped cancellation.");
-                        continue;
-                    }
+                if ($result->status() === 'sukses') {
+                    $this->line("  Payment #{$payment->id} verified as successful by its provider. Skipped cancellation.");
+
+                    continue;
                 }
-
-                // Delegate to centralized expirePayment for atomic transaction, row locking, and cache invalidation
-                $paymentService->expirePayment($payment);
 
                 $this->line("  Cancelled Payment #{$payment->id} and {$bookings->count()} Booking(s)");
                 $processed++;
 
             } catch (\Throwable $e) {
-                Log::error("ExpireBookingPayments: Failed to expire Payment #{$payment->id}: " . $e->getMessage());
-                $this->error("  Failed to expire Payment #{$payment->id}: " . $e->getMessage());
+                Log::error("ExpireBookingPayments: Failed to expire Payment #{$payment->id}: ".$e->getMessage());
+                $this->error("  Failed to expire Payment #{$payment->id}: ".$e->getMessage());
             }
         }
 
-        if (!$isDryRun) {
+        if (! $isDryRun) {
             $this->info("Done. Cancelled {$processed} expired booking payment(s).");
-            $this->info('Cache cleared for ' . count($cacheCleared) . ' slot(s).');
+            $this->info('Cache cleared for '.count($cacheCleared).' slot(s).');
         }
 
-        app(\App\Support\TenantContext::class)->clear();
+        app(TenantContext::class)->clear();
 
         return Command::SUCCESS;
     }

@@ -7,9 +7,11 @@ namespace App\Actions\Payment;
 use App\Actions\Payment\Lifecycle\BookingGroupConsequences;
 use App\Actions\Payment\Lifecycle\PaymentConsequences;
 use App\Actions\Payment\Lifecycle\SubscriptionConsequences;
+use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Payment\PaymentTransitionOutcome;
+use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Refund;
@@ -36,6 +38,7 @@ class PaymentLifecycle
         protected BookingGroupConsequences $bookingGroup,
         protected SubscriptionConsequences $subscription,
         protected TenantContext $tenantContext,
+        protected PaymentGatewayManager $gateways,
     ) {}
 
     /**
@@ -204,18 +207,29 @@ class PaymentLifecycle
     }
 
     /**
-     * Gateway cancellation of the open payment link (ADR-0004 decision 9). Provider
-     * implementations arrive with the provider-outcome work (BQ-002); until then this is
-     * a logged no-op.
+     * Best-effort gateway cancellation of the open checkout after commit (ADR-0004
+     * decision 9, ADR-0007 decision 6). A failure is logged and never reverses the
+     * local decision; a later success becomes a late success.
      */
     private function requestGatewayCancellation(Payment $payment, PaymentTransition $transition): void
     {
-        Log::info('PaymentLifecycle: gateway cancellation requested (not implemented by providers yet, BQ-002)', [
-            'payment_id' => $payment->id,
-            'order_id' => $payment->order_id,
-            'provider' => $payment->provider,
-            'transition' => $transition->value,
-        ]);
+        $provider = PaymentRules::providerOf($payment);
+
+        if (! in_array($provider, [PaymentState::METODE_SINGAPAY, PaymentState::METODE_MIDTRANS], true)) {
+            return;
+        }
+
+        try {
+            $this->gateways->driver($provider)->cancel($payment);
+        } catch (\Throwable $e) {
+            Log::warning('PaymentLifecycle: gateway cancellation failed', [
+                'payment_id' => $payment->id,
+                'order_id' => $payment->order_id,
+                'provider' => $provider,
+                'transition' => $transition->value,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function consequencesFor(Payment $payment): PaymentConsequences

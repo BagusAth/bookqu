@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Payments\Midtrans;
 
-use App\Actions\Payment\SynchronizePaymentStatus;
 use App\Contracts\Payments\PaymentGatewayInterface;
 use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
+use App\Domain\Payment\ProviderOutcome;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Service;
@@ -154,37 +154,64 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
     }
 
     /**
-     * Check transaction status with Midtrans API.
-     *
-     * @return array<string, mixed>
+     * Ask Midtrans for the transaction status; an unreachable API yields `unknown`.
      */
-    public function checkTransactionStatus(Payment $payment): array
+    public function queryOutcome(Payment $payment): ProviderOutcome
     {
-        if ($payment->status === PaymentState::STATUS_SUKSES) {
-            return [
-                'status' => PaymentState::STATUS_SUKSES,
-                'transaction_status' => 'settlement',
-                'message' => 'Pembayaran berhasil dikonfirmasi.',
-                'payment' => $payment,
-            ];
-        }
-
         try {
-            $midtransStatus = $this->getTransactionStatus($payment->order_id, $payment);
-
-            return app(SynchronizePaymentStatus::class)->syncStatus($payment, $midtransStatus);
+            $status = $this->getTransactionStatus((string) $payment->order_id, $payment);
         } catch (\Throwable $e) {
-            Log::error('Midtrans CheckTransactionStatus Error: '.$e->getMessage(), [
+            Log::warning('Midtrans status query failed: '.$e->getMessage(), [
                 'payment_id' => $payment->id,
                 'order_id' => $payment->order_id,
             ]);
 
-            return [
-                'status' => 'error',
-                'message' => 'Gagal memverifikasi status transaksi ke Midtrans: '.$e->getMessage(),
-                'payment' => $payment,
-            ];
+            return ProviderOutcome::unknown($this->getDriverName(), (string) $payment->order_id);
         }
+
+        return $this->outcomeFromNotification(is_object($status) ? (array) $status : $status);
+    }
+
+    /**
+     * Translate a Midtrans notification or status response into BookQu's vocabulary.
+     * The caller must have verified the notification signature first.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function outcomeFromNotification(array $payload): ProviderOutcome
+    {
+        $scalar = static fn (mixed $value): ?string => is_scalar($value) && (string) $value !== '' ? (string) $value : null;
+
+        $result = PaymentState::mapTransactionStatus(
+            $scalar($payload['transaction_status'] ?? null),
+            $scalar($payload['fraud_status'] ?? null)
+        );
+
+        return new ProviderOutcome(
+            provider: $this->getDriverName(),
+            references: array_filter([$scalar($payload['order_id'] ?? null)]),
+            result: $result,
+            amount: $scalar($payload['gross_amount'] ?? null),
+            // Midtrans Indonesia settles in rupiah only; older notifications omit the field.
+            currency: $scalar($payload['currency'] ?? null) ?? 'IDR',
+            transactionId: $scalar($payload['transaction_id'] ?? null),
+            method: $scalar($payload['payment_type'] ?? null),
+            eventTime: $scalar($payload['settlement_time'] ?? $payload['transaction_time'] ?? null),
+        );
+    }
+
+    /**
+     * Expire the open Snap transaction. Payments that never reached Midtrans have no
+     * Snap token and nothing to cancel.
+     */
+    public function cancel(Payment $payment): void
+    {
+        if (empty($payment->snap_token) || empty($payment->order_id)) {
+            return;
+        }
+
+        $this->configureForPayment($payment);
+        MidtransTransaction::expire((string) $payment->order_id);
     }
 
     /**
@@ -230,7 +257,7 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
             }
         }
 
-        return (string) config('midtrans.server_key');
+        return (string) config('payment.drivers.midtrans.server_key');
     }
 
     /**
@@ -301,10 +328,10 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
      */
     protected function setDefaultConfig(): void
     {
-        MidtransConfig::$serverKey = config('midtrans.server_key');
-        MidtransConfig::$isProduction = (bool) config('midtrans.is_production', false);
-        MidtransConfig::$isSanitized = (bool) config('midtrans.is_sanitized', true);
-        MidtransConfig::$is3ds = (bool) config('midtrans.is_3ds', true);
+        MidtransConfig::$serverKey = config('payment.drivers.midtrans.server_key');
+        MidtransConfig::$isProduction = (bool) config('payment.drivers.midtrans.is_production', false);
+        MidtransConfig::$isSanitized = (bool) config('payment.drivers.midtrans.is_sanitized', true);
+        MidtransConfig::$is3ds = (bool) config('payment.drivers.midtrans.is_3ds', true);
 
         // P0-17: SSL Hardening
         $curlOptions = [CURLOPT_HTTPHEADER => []];

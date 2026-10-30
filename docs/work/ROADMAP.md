@@ -17,7 +17,7 @@ From the current state to a production-ready, maintainable BookQu. Approved by t
 | **1 — Working foundation** | Docs and workflow for team and agents | Agent | **G1:** passed 2026-10-30 | done (BQ-000) |
 | **2 — Architecture direction** | Decide target architecture (ADRs), re-sequence backlog | Lead + agent | **G2:** passed 2026-10-30 (ADR-0004…0015; lead delegated remaining choices) | done (BQ-028) |
 | **3 — Guardrails** | CI on MySQL, gated deploy, quality and architecture checks | Agent | **G3:** approve dev dependencies; set branch protection | built (BQ-018, BQ-023, BQ-024, BQ-025, BQ-026 done); G3 open |
-| **4 — Production readiness** | Close every launch blocker | Agent + Bagus | **G4:** review the launch-blocker list; provide production accounts, staging subdomain and cron (plans already approved through the ADRs) | BQ-067 first, then BQ-001 … BQ-015, BQ-017, BQ-019 … BQ-022, BQ-032, BQ-039 … BQ-066, BQ-068 … BQ-073 |
+| **4 — Production readiness** | Close every launch blocker | Agent + Bagus | **G4:** review the launch-blocker list; provide production accounts, staging subdomain and cron (plans already approved through the ADRs) | BQ-067 first, then BQ-001 … BQ-015, BQ-017, BQ-019 … BQ-022, BQ-032, BQ-039 … BQ-066, BQ-068 … BQ-074 |
 | **5 — Launch** | Release v1.0 and stabilize | Lead + Bagus + agent | **G5:** launch sign-off (`docs/operations.md` §8) | — |
 | **6 — Architecture alignment** | Structural refactor toward the ADRs | Agent + Bagus | PR reviews | BQ-016, BQ-029, BQ-030, BQ-031, BQ-033, BQ-034, BQ-035 (BQ-036 rejected by ADR-0012) |
 | **7 — Cleanup** | Dead code, old branches | Agent | branch decision | BQ-027, BQ-037 |
@@ -58,7 +58,7 @@ Four streams, all `launch-blocker` items must be `done`:
 - **Operations:** BQ-017, 019, 020, 021, 022.
 - **Acceptance:** BQ-039 triage, core-flow P1 defects, end-to-end UAT with sandbox payments, MySQL concurrency suite green.
 
-Progress (2026-10-30): BQ-073 (CI on MariaDB 11.4, the production engine; fixed the owner customer list) and BQ-067 Payment lifecycle done, which also closed BQ-068 and BQ-014 and covered BQ-003 steps 3–4. Next: BQ-032.
+Progress (2026-10-30): BQ-073 (CI on MariaDB 11.4, the production engine; fixed the owner customer list) and BQ-067 Payment lifecycle done (also closed BQ-068 and BQ-014). BQ-032 Outcome intake done (also closed BQ-070 and BQ-003; gateway cancel for BQ-002). Next: BQ-071 with BQ-012.
 
 ### 5 — Launch
 Release PR `agathan` → `main`, tag `v1.0.0`, changelog, production smoke test, two weeks of close monitoring, hotfix procedure (hotfix branch → `main` → back-merge), post-launch review.
