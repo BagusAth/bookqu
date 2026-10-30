@@ -2,7 +2,7 @@
 id: BQ-032
 title: Implement the Provider outcome intake (ADR-0007)
 type: refactor
-status: in-progress
+status: done
 priority: P0
 phase: 4
 domain: payment
@@ -15,7 +15,7 @@ depends-on: [BQ-067]
 
 # BQ-032: Implement the Provider outcome intake (ADR-0007)
 
-Rescoped and approved as the implementation of [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (Provider outcome intake), 2026-10-30: neutral `ProviderOutcome`, one intake, provider-first status checks, gateway cancel, removal of `MidtransPaymentService`/`CheckPaymentStatus`/fast paths, `config/midtrans.php` folded into `config/payment.php`. Moved to Phase 4 because BQ-003 depends on it. Also confirm whether SingaPay offers a server-side status API.
+Rescoped and approved as the implementation of [ADR-0007](../../adr/ADR-0007-provider-outcome-intake.md) (Provider outcome intake), 2026-10-30: neutral `ProviderOutcome`, one intake, provider-first status checks, gateway cancel, removal of `MidtransPaymentService`/`CheckPaymentStatus`/fast paths, `config/midtrans.php` folded into `config/payment.php`. Moved to Phase 4 because BQ-003 depends on it. Also confirm whether SingaPay offers a server-side status API.
 
 ## Problem
 
@@ -58,4 +58,4 @@ Built on branch `bq-032-outcome-intake` (2026-10-30).
 - Tests that drove the deleted classes now use the intake or lifecycle entry points. Their assertions are unchanged, except the message check in `PaymentGroupManagementTest::test_idempotent_duplicate_settlement`, which now checks the `already-final` outcome.
 - `SingaPayIntegrationTest` passes unchanged.
 
-**Local runs:** SQLite suite 464 tests pass; Pint and Larastan clean (baseline lost 6 entries). GitHub Actions run: pending until pushed.
+**Local runs:** SQLite suite 464 tests pass; Pint and Larastan clean (baseline lost 6 entries). GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41089021605 (PR #5): Quality checks, SQLite, MySQL and MariaDB passed.

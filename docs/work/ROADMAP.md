@@ -58,7 +58,7 @@ Four streams, all `launch-blocker` items must be `done`:
 - **Operations:** BQ-017, 019, 020, 021, 022.
 - **Acceptance:** BQ-039 triage, core-flow P1 defects, end-to-end UAT with sandbox payments, MySQL concurrency suite green.
 
-Progress (2026-10-30): BQ-073 (CI on MariaDB 11.4, the production engine; fixed the owner customer list) and BQ-067 Payment lifecycle done, which also closed BQ-068 and BQ-014 and covered BQ-003 steps 3–4. Next: BQ-032.
+Progress (2026-10-30): BQ-073 (CI on MariaDB 11.4, the production engine; fixed the owner customer list) and BQ-067 Payment lifecycle done (also closed BQ-068 and BQ-014). BQ-032 Outcome intake done (also closed BQ-070 and BQ-003; gateway cancel for BQ-002). Next: BQ-071 with BQ-012.
 
 ### 5 — Launch
 Release PR `agathan` → `main`, tag `v1.0.0`, changelog, production smoke test, two weeks of close monitoring, hotfix procedure (hotfix branch → `main` → back-merge), post-launch review.

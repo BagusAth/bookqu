@@ -2,7 +2,7 @@
 id: BQ-070
 title: Owner checkout callback would trust the browser's payment result
 type: bug-fix
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: subscription
@@ -15,7 +15,7 @@ depends-on: [BQ-067, BQ-032]
 
 # BQ-070: Owner checkout callback would trust the browser's payment result
 
-Plan approved via [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) decision 5 (callback ignores browser payload, triggers a server query only), 2026-10-30.
+Plan approved via [ADR-0007](../../adr/ADR-0007-provider-outcome-intake.md) decision 5 (callback ignores browser payload, triggers a server query only), 2026-10-30.
 
 ## Problem
 
@@ -28,3 +28,4 @@ Remove the client-payload branch; the callback only triggers a server-side statu
 ## Evidence
 
 Fixed in BQ-032: `OwnerCheckoutController::handleCallback` no longer reads the request body. It calls `PaymentOutcomeIntake::check()`, which only asks the provider server-side. `CheckoutMidtransTest::test_owner_callback_ignores_the_browser_payload` posts a `settlement` result while Midtrans answers `unknown`; the payment stays `pending`.
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41089021605 (PR #5): all four jobs passed.

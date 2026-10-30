@@ -2,7 +2,7 @@
 id: BQ-003
 title: Reconcile late payment success and verify expiry with every provider
 type: bug-fix
-status: in-progress
+status: done
 priority: P0
 phase: 4
 domain: payment
@@ -15,7 +15,7 @@ depends-on: [BQ-067, BQ-032]
 
 # BQ-003: Reconcile late payment success and verify expiry with every provider
 
-Plan approved via ADR-0004 (policy) and [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (one intake, provider-first status checks; SingaPay status API to be confirmed in BQ-032), 2026-10-30. Plan step 1 is decided; step 2 is BQ-032/BQ-071.
+Plan approved via ADR-0004 (policy) and [ADR-0007](../../adr/ADR-0007-provider-outcome-intake.md) (one intake, provider-first status checks; SingaPay status API to be confirmed in BQ-032), 2026-10-30. Plan step 1 is decided; step 2 is BQ-032/BQ-071.
 
 ## Problem
 
@@ -41,3 +41,4 @@ Step 2 (provider-first status before expiry, SingaPay status query) remains with
 Step 2 done by BQ-032 (2026-10-30):
 - `bookings:expire-payments` and every status check now ask the payment's own provider before expiring (`PaymentOutcomeIntake::check`); SingaPay payments are no longer answered from the local database.
 - SingaPay's client has no status endpoint, so SingaPay answers `unknown` and relies on webhooks plus the late-success path. Confirming a SingaPay status API is BQ-074.
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41089021605 (PR #5): all four jobs passed.
