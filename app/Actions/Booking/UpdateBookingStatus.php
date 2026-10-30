@@ -2,8 +2,12 @@
 
 namespace App\Actions\Booking;
 
+use App\Actions\Payment\PaymentLifecycle;
 use App\Domain\Booking\BookingState;
+use App\Domain\Payment\PaymentState;
+use App\Domain\Payment\PaymentTransition;
 use App\Models\Booking;
+use App\Models\Payment;
 use App\Notifications\BookingStatusChangedOwnerNotification;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
@@ -14,15 +18,15 @@ class UpdateBookingStatus
     use ClearsBookingCache;
 
     public function __construct(
-        protected CancelBooking $cancelBooking
+        protected CancelBooking $cancelBooking,
+        protected PaymentLifecycle $paymentLifecycle
     ) {}
 
     /**
      * Update booking status (used primarily by owner).
      *
-     * @param Booking $booking
-     * @param string $newStatus 'paid'|'completed'|'cancelled'
-     * @param string $actor 'owner'
+     * @param  string  $newStatus  'paid'|'completed'|'cancelled'
+     * @param  string  $actor  'owner'
      * @return array{success: bool, error?: string, booking?: Booking}
      */
     public function execute(Booking $booking, string $newStatus, string $actor = 'owner'): array
@@ -30,10 +34,10 @@ class UpdateBookingStatus
         $statusLama = $booking->status;
 
         // Check if transition is valid
-        if (!BookingState::canTransition($statusLama, $newStatus)) {
+        if (! BookingState::canTransition($statusLama, $newStatus)) {
             return [
                 'success' => false,
-                'error'   => "Status tidak dapat diubah dari '{$statusLama}' ke '{$newStatus}'.",
+                'error' => "Status tidak dapat diubah dari '{$statusLama}' ke '{$newStatus}'.",
             ];
         }
 
@@ -42,17 +46,31 @@ class UpdateBookingStatus
             return $this->cancelBooking->execute($booking, $actor);
         }
 
-        // Multi-slot check on completed if applicable
+        // Marking paid or completed records an open payment as settled by the owner for the
+        // whole payment group (ADR-0004 decision 6); a slot of a group is never settled alone.
+        $payment = $booking->payment;
+        if (in_array($newStatus, [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED], true)
+            && $payment instanceof Payment && $payment->status !== PaymentState::STATUS_SUKSES) {
+            $settlement = $this->paymentLifecycle->transition(
+                $payment,
+                PaymentTransition::SettledByOwner,
+                PaymentState::METODE_CASH
+            );
+
+            if ($settlement->status() !== PaymentState::STATUS_SUKSES) {
+                return [
+                    'success' => false,
+                    'error' => 'Pembayaran untuk booking ini tidak dapat dicatat lunas.',
+                ];
+            }
+
+            $booking->refresh();
+        }
+
         $booking->update(['status' => $newStatus]);
 
-        // If marked as paid or completed, ensure management tokens exist and payment status is updated
-        if (in_array($newStatus, [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED], true)) {
-            if (!$booking->booking_code) {
-                $booking->assignManagementTokens();
-            }
-            if ($booking->payment && $booking->payment->status !== 'sukses') {
-                $booking->payment->update(['status' => 'sukses']);
-            }
+        if (in_array($newStatus, [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED], true) && ! $booking->booking_code) {
+            $booking->assignManagementTokens();
         }
 
         // Invalidate availability cache when a completion frees/affects a slot
@@ -80,7 +98,7 @@ class UpdateBookingStatus
                 ));
             }
         } catch (\Throwable $e) {
-            Log::warning('UpdateBookingStatus: Notification failed: ' . $e->getMessage());
+            Log::warning('UpdateBookingStatus: Notification failed: '.$e->getMessage());
         }
 
         return ['success' => true, 'booking' => $booking];

@@ -2,12 +2,13 @@
 
 namespace App\Actions\Booking;
 
+use App\Actions\Payment\PaymentLifecycle;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
 use App\Mail\BookingCancelledMail;
 use App\Models\Booking;
 use App\Models\BookingLog;
-use App\Models\Refund;
+use App\Models\Scopes\TenantScope;
 use App\Notifications\BookingStatusChangedOwnerNotification;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
@@ -19,12 +20,14 @@ class CancelBooking
 {
     use ClearsBookingCache;
 
+    public function __construct(
+        protected PaymentLifecycle $paymentLifecycle
+    ) {}
+
     /**
      * Cancel a booking (shared between Customer and Owner).
      *
-     * @param Booking $booking
-     * @param string $actor 'customer'|'owner'
-     * @param string|null $reason
+     * @param  string  $actor  'customer'|'owner'
      * @return array{success: bool, error?: string, booking?: Booking}
      */
     public function execute(Booking $booking, string $actor = 'customer', ?string $reason = null): array
@@ -33,24 +36,26 @@ class CancelBooking
         if ($actor === 'customer' && $booking->isMultiSlot()) {
             return [
                 'success' => false,
-                'error'   => 'Booking multi-slot tidak dapat dibatalkan per slot secara individual. Silakan hubungi pengelola bisnis.',
+                'error' => 'Booking multi-slot tidak dapat dibatalkan per slot secara individual. Silakan hubungi pengelola bisnis.',
             ];
         }
 
         // Guard 2: check valid status transition
-        if (!BookingState::canTransition($booking->status, BookingState::STATUS_CANCELLED)) {
+        if (! BookingState::canTransition($booking->status, BookingState::STATUS_CANCELLED)) {
             $msg = $actor === 'owner'
                 ? "Status tidak dapat diubah dari '{$booking->status}' ke 'cancelled'."
                 : "Booking ini tidak dapat dibatalkan (status: {$booking->status}).";
+
             return ['success' => false, 'error' => $msg];
         }
 
         // Guard 3: Customer policy check (minimal X hours before slot)
-        if ($actor === 'customer' && !BookingRules::canCancel($booking)) {
+        if ($actor === 'customer' && ! BookingRules::canCancel($booking)) {
             $cancelHours = $booking->tenant?->cancel_before_hours ?? 24;
+
             return [
                 'success' => false,
-                'error'   => "Booking tidak dapat dibatalkan. Pembatalan hanya diizinkan minimal {$cancelHours} jam sebelum jadwal.",
+                'error' => "Booking tidak dapat dibatalkan. Pembatalan hanya diizinkan minimal {$cancelHours} jam sebelum jadwal.",
             ];
         }
 
@@ -58,7 +63,7 @@ class CancelBooking
             DB::transaction(function () use ($booking, $actor, $reason) {
                 // If owner cancels a multi-slot booking, cancel all linked bookings for this payment group
                 $targetBookings = ($actor === 'owner' && $booking->isMultiSlot() && $booking->idpayment)
-                    ? Booking::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+                    ? Booking::withoutGlobalScope(TenantScope::class)
                         ->where('idpayment', $booking->idpayment)
                         ->where('idtenant', $booking->idtenant)
                         ->get()
@@ -74,7 +79,7 @@ class CancelBooking
                             'cancelled',
                             $reason ?? ($actor === 'owner' ? 'Booking dibatalkan oleh owner.' : 'Booking dibatalkan oleh customer.'),
                             [
-                                'actor'        => $actor,
+                                'actor' => $actor,
                                 'cancelled_at' => now()->toIso8601String(),
                             ]
                         );
@@ -92,18 +97,9 @@ class CancelBooking
                     }
                 }
 
-                // Create refund record if customer cancelled, payment was successful, and no refund exists yet
-                if ($actor === 'customer' && $booking->payment && $booking->payment->status === 'sukses') {
-                    $hasRefund = Refund::where('payment_id', $booking->payment->id)->exists();
-                    if (!$hasRefund) {
-                        Refund::create([
-                            'booking_id' => $booking->id,
-                            'payment_id' => $booking->payment->id,
-                            'jumlah'     => $booking->payment->jumlah,
-                            'status'     => 'pending',
-                            'catatan'    => $reason ?? 'Refund otomatis dari pembatalan booking oleh customer.',
-                        ]);
-                    }
+                // A customer cancelling a paid booking is owed one refund (ADR-0004 decision 7)
+                if ($actor === 'customer') {
+                    $this->paymentLifecycle->refundCancelledBooking($booking, $reason);
                 }
             });
 
@@ -138,12 +134,12 @@ class CancelBooking
         } catch (\Throwable $e) {
             Log::error('CancelBooking failed', [
                 'booking_id' => $booking->id,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return [
                 'success' => false,
-                'error'   => 'Terjadi kesalahan saat membatalkan booking. Silakan coba lagi.',
+                'error' => 'Terjadi kesalahan saat membatalkan booking. Silakan coba lagi.',
             ];
         }
     }

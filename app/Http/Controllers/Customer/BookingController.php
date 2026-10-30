@@ -2,32 +2,33 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Actions\Booking\CreateBooking;
+use App\Actions\Payment\PaymentLifecycle;
+use App\Actions\Schedule\GetAvailableSchedules;
+use App\Domain\Payment\PaymentTransition;
+use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
-
+use App\Http\Requests\Booking\CreateBookingRequest;
+use App\Models\Booking;
+use App\Models\Payment;
+use App\Models\Schedule;
 use App\Models\Service;
+use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Services\MidtransPaymentService;
+use App\Support\CustomerBookingRoutes;
+use App\Support\TenantContext;
+use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-
-use App\Models\Booking;
-use App\Models\Payment;
-use App\Models\Schedule;
-use App\Mail\BookingGroupInvoiceMail;
-use App\Services\MidtransPaymentService;
-use App\Traits\ClearsBookingCache;
-use App\Support\CustomerBookingRoutes;
-use App\Actions\Booking\CreateBooking;
-use App\Http\Requests\Booking\CreateBookingRequest;
-use Illuminate\Support\Facades\Log;
 use Midtrans\Config as MidtransConfig;
-use Midtrans\Snap;
-use Midtrans\Transaction as MidtransTransaction;
 
 class BookingController extends Controller
 {
     use ClearsBookingCache;
+
     public function __construct()
     {
         MidtransConfig::$serverKey = config('midtrans.server_key');
@@ -45,11 +46,12 @@ class BookingController extends Controller
         }
         MidtransConfig::$curlOptions = $curlOptions;
     }
+
     public function showProgramSelection(?string $slug_usaha = null)
     {
         $tenant = $this->resolveTenant((string) ($slug_usaha ?? request()->route('slug_usaha')));
 
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404);
         }
 
@@ -69,7 +71,7 @@ class BookingController extends Controller
         $services = $services->filter(fn (Service $service) => $service->hasActiveFulfillment());
 
         $servicesPayload = $services->map(function (Service $service) {
-            $priceLabel = 'Rp ' . number_format($service->harga, 0, ',', '.');
+            $priceLabel = 'Rp '.number_format($service->harga, 0, ',', '.');
 
             return [
                 'id' => $service->id,
@@ -93,7 +95,7 @@ class BookingController extends Controller
     {
         $tenant = $this->resolveTenant($slug_usaha);
 
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404);
         }
 
@@ -103,8 +105,8 @@ class BookingController extends Controller
 
         $service = $this->resolveService($tenant->id, (int) $validated['service_id']);
 
-        if (!$service || !$service->hasActiveFulfillment()) {
-                return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha)
+        if (! $service || ! $service->hasActiveFulfillment()) {
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha)
                 ->withErrors(['service' => 'Layanan ini sedang tidak tersedia karena staf atau sumber daya tidak aktif.']);
         }
 
@@ -126,7 +128,7 @@ class BookingController extends Controller
 
         $simulate = request()->boolean('simulate') && app()->environment('local');
 
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404);
         }
 
@@ -135,20 +137,22 @@ class BookingController extends Controller
 
         if ($sessionTenantId && (int) $sessionTenantId !== $tenant->id) {
             session()->forget('booking');
-                return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
+
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $serviceId = $booking['service_id'] ?? null;
 
-        if (!$serviceId) {
+        if (! $serviceId) {
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
-        if (!$service || !$service->hasActiveFulfillment()) {
+        if (! $service || ! $service->hasActiveFulfillment()) {
             session()->forget('booking');
-                return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
+
+            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         session()->put('booking.tenant_id', $tenant->id);
@@ -158,10 +162,10 @@ class BookingController extends Controller
         $minDate = Carbon::today($wib);
         $maxDate = Carbon::today($wib)->addDays(30);
 
-        $availabilityPayload = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+        $availabilityPayload = app(GetAvailableSchedules::class)
             ->getDateAvailability($tenant, $service, $minDate, $maxDate);
 
-        $priceLabel = 'Rp ' . number_format($service->harga, 0, ',', '.');
+        $priceLabel = 'Rp '.number_format($service->harga, 0, ',', '.');
         $servicePayload = [
             'id' => $service->id,
             'name' => $service->namalayanan,
@@ -192,7 +196,7 @@ class BookingController extends Controller
 
         $simulate = $request->boolean('simulate') && app()->environment('local');
 
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404);
         }
 
@@ -201,19 +205,21 @@ class BookingController extends Controller
 
         if ($sessionTenantId && (int) $sessionTenantId !== $tenant->id) {
             session()->forget('booking');
+
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $serviceId = $booking['service_id'] ?? null;
 
-        if (!$serviceId) {
+        if (! $serviceId) {
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
-        if (!$service || !$service->hasActiveFulfillment()) {
+        if (! $service || ! $service->hasActiveFulfillment()) {
             session()->forget('booking');
+
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
@@ -243,8 +249,8 @@ class BookingController extends Controller
         }
 
         // Subscription monthly booking limit check via EntitlementRules
-        $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
-        if (!\App\Domain\Subscription\EntitlementRules::isUnlimitedBooking($subscription)) {
+        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+        if (! EntitlementRules::isUnlimitedBooking($subscription)) {
             $dateCarbon = Carbon::parse($selectedDate);
             $totalMonthlyBookings = DB::table('bookings')
                 ->where('idtenant', $tenant->id)
@@ -253,10 +259,10 @@ class BookingController extends Controller
                 ->whereIn('status', ['pending', 'paid', 'completed'])
                 ->count();
 
-            $bookingQuota = \App\Domain\Subscription\EntitlementRules::canCreateBooking($subscription, $totalMonthlyBookings, 1);
-            if (!$bookingQuota['allowed']) {
+            $bookingQuota = EntitlementRules::canCreateBooking($subscription, $totalMonthlyBookings, 1);
+            if (! $bookingQuota['allowed']) {
                 return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
-                    ->withErrors(['tanggal' => 'Kapasitas kuota booking bulanan bisnis ini telah penuh (maksimal ' . $subscription->plan->maxbooking . ' booking/bulan). Silakan hubungi pemilik bisnis.']);
+                    ->withErrors(['tanggal' => 'Kapasitas kuota booking bulanan bisnis ini telah penuh (maksimal '.$subscription->plan->maxbooking.' booking/bulan). Silakan hubungi pemilik bisnis.']);
             }
         }
 
@@ -270,7 +276,7 @@ class BookingController extends Controller
                 ->withErrors(['tanggal' => 'Tanggal ini sedang ditutup oleh pemilik bisnis.']);
         }
 
-        $availableSlots = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+        $availableSlots = app(GetAvailableSchedules::class)
             ->countAvailableSlotsOnDate($tenant, $service, $selectedDate);
 
         if ($availableSlots < 1) {
@@ -290,7 +296,7 @@ class BookingController extends Controller
 
         $simulate = request()->boolean('simulate') && app()->environment('local');
 
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404);
         }
 
@@ -299,24 +305,26 @@ class BookingController extends Controller
 
         if ($sessionTenantId && (int) $sessionTenantId !== $tenant->id) {
             session()->forget('booking');
+
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
 
-        if (!$serviceId) {
+        if (! $serviceId) {
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
-        if (!$selectedDate) {
+        if (! $selectedDate) {
             return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
-        if (!$service || !$service->hasActiveFulfillment()) {
+        if (! $service || ! $service->hasActiveFulfillment()) {
             session()->forget('booking');
+
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
@@ -333,10 +341,10 @@ class BookingController extends Controller
                 ->withErrors(['tanggal' => 'Tanggal ini telah ditutup oleh pemilik bisnis.']);
         }
 
-        $timeSlotsPayload = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+        $timeSlotsPayload = app(GetAvailableSchedules::class)
             ->getTimeSlots($tenant, $service, $selectedDate);
 
-        $priceLabel = 'Rp ' . number_format($service->harga, 0, ',', '.');
+        $priceLabel = 'Rp '.number_format($service->harga, 0, ',', '.');
         $servicePayload = [
             'id' => $service->id,
             'name' => $service->namalayanan,
@@ -379,7 +387,7 @@ class BookingController extends Controller
 
         $simulate = $request->boolean('simulate') && app()->environment('local');
 
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404);
         }
 
@@ -388,24 +396,26 @@ class BookingController extends Controller
 
         if ($sessionTenantId && (int) $sessionTenantId !== $tenant->id) {
             session()->forget('booking');
+
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
 
-        if (!$serviceId) {
+        if (! $serviceId) {
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
-        if (!$selectedDate) {
+        if (! $selectedDate) {
             return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
-        if (!$service || !$service->hasActiveFulfillment()) {
+        if (! $service || ! $service->hasActiveFulfillment()) {
             session()->forget('booking');
+
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
@@ -431,15 +441,15 @@ class BookingController extends Controller
 
         // Validate arrays for multi-select
         $rules = [
-            'jam'   => ['required', 'array', 'min:1'],
+            'jam' => ['required', 'array', 'min:1'],
             'jam.*' => ['required', 'date_format:H:i', 'distinct'],
         ];
 
         if ($simulate) {
-            $rules['schedule_ids']   = ['nullable', 'array'];
+            $rules['schedule_ids'] = ['nullable', 'array'];
             $rules['schedule_ids.*'] = ['nullable', 'integer'];
         } else {
-            $rules['schedule_ids']   = ['required', 'array', 'min:1'];
+            $rules['schedule_ids'] = ['required', 'array', 'min:1'];
             $rules['schedule_ids.*'] = ['required', 'integer', 'distinct'];
         }
 
@@ -488,7 +498,7 @@ class BookingController extends Controller
                     ->lockForUpdate()
                     ->first();
 
-                if (!$row) {
+                if (! $row) {
                     return null;
                 }
 
@@ -496,22 +506,22 @@ class BookingController extends Controller
                     ->where('idschedule', $scheduleId)
                     ->where(function ($q) {
                         $q->whereIn('status', ['paid', 'completed'])
-                          ->orWhere(function ($sub) {
-                              $sub->where('status', 'pending')
-                                  ->where('created_at', '>=', now()->subMinutes(15));
-                          });
+                            ->orWhere(function ($sub) {
+                                $sub->where('status', 'pending')
+                                    ->where('created_at', '>=', now()->subMinutes(15));
+                            });
                     })
                     ->exists();
 
                 return $isBooked ? null : $row;
             });
 
-            if (!$schedule) {
+            if (! $schedule) {
                 return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
                     ->withErrors(['jam' => "Jam {$jamValue} sudah tidak tersedia. Silakan pilih jam lain."]);
             }
 
-            $slotDateTime = Carbon::parse($selectedDate . ' ' . $schedule->jam_mulai, $wib);
+            $slotDateTime = Carbon::parse($selectedDate.' '.$schedule->jam_mulai, $wib);
             $resolvedTime = $slotDateTime->format('H:i');
 
             if ($jamValue !== $resolvedTime) {
@@ -528,20 +538,20 @@ class BookingController extends Controller
         }
 
         // Contiguous sequence check based on service duration
-        usort($validatedSchedules, fn($a, $b) => strcmp($a->jam_mulai, $b->jam_mulai));
+        usort($validatedSchedules, fn ($a, $b) => strcmp($a->jam_mulai, $b->jam_mulai));
         $durationMinutes = (int) $service->durasi;
 
         for ($i = 1; $i < count($validatedSchedules); $i++) {
-            $prevStart = Carbon::parse($selectedDate . ' ' . $validatedSchedules[$i - 1]->jam_mulai, $wib);
-            $currStart = Carbon::parse($selectedDate . ' ' . $validatedSchedules[$i]->jam_mulai, $wib);
+            $prevStart = Carbon::parse($selectedDate.' '.$validatedSchedules[$i - 1]->jam_mulai, $wib);
+            $currStart = Carbon::parse($selectedDate.' '.$validatedSchedules[$i]->jam_mulai, $wib);
             if ((int) abs($currStart->diffInMinutes($prevStart)) !== $durationMinutes) {
                 return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
                     ->withErrors(['jam' => 'Slot harus berurutan tanpa jeda.']);
             }
         }
 
-        $validatedScheduleIds = array_map(fn($s) => $s->id, $validatedSchedules);
-        $validatedTimes = array_map(fn($s) => Carbon::parse($selectedDate . ' ' . $s->jam_mulai, $wib)->format('H:i'), $validatedSchedules);
+        $validatedScheduleIds = array_map(fn ($s) => $s->id, $validatedSchedules);
+        $validatedTimes = array_map(fn ($s) => Carbon::parse($selectedDate.' '.$s->jam_mulai, $wib)->format('H:i'), $validatedSchedules);
 
         // Store both scalar (for single slot test assertion) and array in session
         $storedJam = $wasOriginalJamArray ? $validatedTimes : (count($validatedTimes) === 1 ? $validatedTimes[0] : $validatedTimes);
@@ -556,7 +566,7 @@ class BookingController extends Controller
     {
         $tenant = $this->resolveTenant($slug_usaha);
 
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404);
         }
 
@@ -564,18 +574,18 @@ class BookingController extends Controller
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
         $rawJam = $booking['jam'] ?? null;
-        $rawScheduleIds = $booking['schedule_ids'] ?? (!empty($booking['schedule_id']) ? [$booking['schedule_id']] : []);
+        $rawScheduleIds = $booking['schedule_ids'] ?? (! empty($booking['schedule_id']) ? [$booking['schedule_id']] : []);
 
         // Normalise to arrays
         $selectedTimes = is_array($rawJam) ? $rawJam : ($rawJam ? [$rawJam] : []);
-        $scheduleIds   = is_array($rawScheduleIds) ? $rawScheduleIds : ($rawScheduleIds ? [$rawScheduleIds] : []);
+        $scheduleIds = is_array($rawScheduleIds) ? $rawScheduleIds : ($rawScheduleIds ? [$rawScheduleIds] : []);
 
-        if (!$serviceId || !$selectedDate || empty($selectedTimes)) {
+        if (! $serviceId || ! $selectedDate || empty($selectedTimes)) {
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
-        if (!$service || !$service->hasActiveFulfillment()) {
+        if (! $service || ! $service->hasActiveFulfillment()) {
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
@@ -591,18 +601,18 @@ class BookingController extends Controller
                     ->whereDate('tanggal', $selectedDate)
                     ->find($sid);
             }
-            if (!$schedule) {
+            if (! $schedule) {
                 $schedule = Schedule::where('idtenant', $tenant->id)
                     ->where('idlayanan', $service->id)
                     ->whereDate('tanggal', $selectedDate)
                     ->where(function ($q) use ($time) {
                         $q->where('jam_mulai', $time)
-                          ->orWhere('jam_mulai', $time . ':00');
+                            ->orWhere('jam_mulai', $time.':00');
                     })
                     ->first();
             }
 
-            if (!$schedule) {
+            if (! $schedule) {
                 return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
                     ->withErrors(['jam' => 'Pilihan jadwal sudah tidak tersedia.']);
             }
@@ -632,7 +642,7 @@ class BookingController extends Controller
     public function processCheckout(CreateBookingRequest $request, string $slug_usaha, CreateBooking $createBooking)
     {
         $tenant = $this->resolveTenant($slug_usaha);
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404);
         }
 
@@ -640,7 +650,7 @@ class BookingController extends Controller
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
         $rawJam = $booking['jam'] ?? $request->input('jam');
-        $rawScheduleIds = $booking['schedule_ids'] ?? (!empty($booking['schedule_id']) ? [$booking['schedule_id']] : ($request->input('schedule_ids') ?? ($request->has('schedule_id') ? [$request->input('schedule_id')] : [])));
+        $rawScheduleIds = $booking['schedule_ids'] ?? (! empty($booking['schedule_id']) ? [$booking['schedule_id']] : ($request->input('schedule_ids') ?? ($request->has('schedule_id') ? [$request->input('schedule_id')] : [])));
 
         if (is_string($rawJam)) {
             $rawJam = [$rawJam];
@@ -651,10 +661,10 @@ class BookingController extends Controller
 
         // Normalise to arrays
         $selectedTimes = is_array($rawJam) ? $rawJam : ($rawJam ? [$rawJam] : []);
-        $scheduleIds   = is_array($rawScheduleIds) ? $rawScheduleIds : ($rawScheduleIds ? [$rawScheduleIds] : []);
+        $scheduleIds = is_array($rawScheduleIds) ? $rawScheduleIds : ($rawScheduleIds ? [$rawScheduleIds] : []);
 
         // Fallback: If scheduleIds is empty but selectedTimes is present, lookup schedule IDs from DB
-        if (empty($scheduleIds) && !empty($selectedTimes) && $selectedDate && $serviceId) {
+        if (empty($scheduleIds) && ! empty($selectedTimes) && $selectedDate && $serviceId) {
             foreach ($selectedTimes as $time) {
                 $foundSchedule = DB::table('schedules')
                     ->where('idtenant', $tenant->id)
@@ -662,7 +672,7 @@ class BookingController extends Controller
                     ->whereDate('tanggal', $selectedDate)
                     ->where(function ($q) use ($time) {
                         $q->where('jam_mulai', $time)
-                          ->orWhere('jam_mulai', $time . ':00');
+                            ->orWhere('jam_mulai', $time.':00');
                     })
                     ->first();
                 if ($foundSchedule) {
@@ -671,13 +681,13 @@ class BookingController extends Controller
             }
         }
 
-        if (!$serviceId || !$selectedDate || empty($selectedTimes)) {
+        if (! $serviceId || ! $selectedDate || empty($selectedTimes)) {
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
 
-        if (!$service || !$service->hasActiveFulfillment()) {
+        if (! $service || ! $service->hasActiveFulfillment()) {
             return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
         }
 
@@ -693,9 +703,9 @@ class BookingController extends Controller
 
         $customerData = [
             'namapelanggan' => $request->input('namapelanggan'),
-            'nomorhp'       => $request->input('nomorhp'),
-            'email'         => $request->input('email'),
-            'catatan'       => $request->input('catatan'),
+            'nomorhp' => $request->input('nomorhp'),
+            'email' => $request->input('email'),
+            'catatan' => $request->input('catatan'),
         ];
 
         $result = $createBooking->execute(
@@ -709,13 +719,14 @@ class BookingController extends Controller
 
         // Handle slot conflict or quota error
         if (isset($result['error'])) {
-            if (!empty($result['snap_error'])) {
+            if (! empty($result['snap_error'])) {
                 return back()->with('error', $result['error']);
             }
             if (isset($result['quota_error'])) {
                 return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
                     ->withErrors(['tanggal' => $result['error']]);
             }
+
             return CustomerBookingRoutes::route('customer.booking.time', $slug_usaha)
                 ->withErrors(['jam' => $result['error']]);
         }
@@ -723,9 +734,9 @@ class BookingController extends Controller
         session()->forget('booking');
 
         // Free booking: redirect to invoice
-        if (!empty($result['free'])) {
+        if (! empty($result['free'])) {
             return CustomerBookingRoutes::route('customer.booking.invoice', [$slug_usaha, $result['payment']])
-                ->with('success', 'Booking berhasil dikonfirmasi! (' . count($result['bookings']) . ' slot)');
+                ->with('success', 'Booking berhasil dikonfirmasi! ('.count($result['bookings']).' slot)');
         }
 
         return CustomerBookingRoutes::route('customer.booking.payment', [$slug_usaha, $result['payment']]);
@@ -734,7 +745,7 @@ class BookingController extends Controller
     public function validateVoucher(Request $request, string $slug_usaha)
     {
         return response()->json([
-            'valid'   => false,
+            'valid' => false,
             'message' => 'Fitur voucher saat ini belum aktif.',
         ], 422);
     }
@@ -742,7 +753,7 @@ class BookingController extends Controller
     public function showPayment(string $slug_usaha, Payment $payment)
     {
         $tenant = $this->resolveTenant($slug_usaha);
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             abort(404);
         }
 
@@ -772,7 +783,7 @@ class BookingController extends Controller
 
         if ($payment->isExpired() || $payment->status === 'gagal') {
             if ($payment->status === 'pending' && $payment->isExpired()) {
-                app(\App\Actions\Payment\ExpirePayment::class)->execute($payment);
+                app(PaymentLifecycle::class)->transition($payment, PaymentTransition::Expired);
                 $payment->refresh();
             }
 
@@ -803,32 +814,12 @@ class BookingController extends Controller
     public function cancelPayment(string $slug_usaha, Payment $payment)
     {
         $tenant = $this->resolveTenant($slug_usaha);
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             abort(404);
         }
 
         if ($payment->status === 'pending') {
-            DB::transaction(function () use ($payment) {
-                $lockedPayment = Payment::lockForUpdate()->find($payment->id);
-                if ($lockedPayment && $lockedPayment->status === 'pending') {
-                    $lockedPayment->update(['status' => 'gagal']);
-                    $bookings = Booking::lockForUpdate()->where('idpayment', $lockedPayment->id)->get();
-                    foreach ($bookings as $bk) {
-                        $bk->update(['status' => 'cancelled']);
-                    }
-
-                    DB::afterCommit(function () use ($bookings) {
-                        foreach ($bookings as $bk) {
-                            if ($bk->idlayanan && $bk->tanggalbooking) {
-                                $tanggal = is_string($bk->tanggalbooking)
-                                    ? $bk->tanggalbooking
-                                    : $bk->tanggalbooking->format('Y-m-d');
-                                $this->clearBookingAvailabilityCache((int) $bk->idtenant, (int) $bk->idlayanan, $tanggal);
-                            }
-                        }
-                    });
-                }
-            });
+            app(PaymentLifecycle::class)->transition($payment, PaymentTransition::CancelledByPayer);
         }
 
         session()->forget('booking');
@@ -840,7 +831,7 @@ class BookingController extends Controller
     public function checkPaymentStatus(string $slug_usaha, Payment $payment, MidtransPaymentService $paymentService)
     {
         $tenant = $this->resolveTenant($slug_usaha);
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -856,7 +847,7 @@ class BookingController extends Controller
         // Fast-path: jika payment sudah kedaluwarsa
         if ($payment->isExpired()) {
             if ($payment->status === 'pending') {
-                app(\App\Actions\Payment\ExpirePayment::class)->execute($payment);
+                app(PaymentLifecycle::class)->transition($payment, PaymentTransition::Expired);
                 $payment->refresh();
             }
 
@@ -911,7 +902,7 @@ class BookingController extends Controller
     public function handleCallback(string $slug_usaha, Payment $payment, Request $request, MidtransPaymentService $paymentService)
     {
         $tenant = $this->resolveTenant($slug_usaha);
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -950,7 +941,7 @@ class BookingController extends Controller
     public function showInvoice(string $slug_usaha, Payment $payment)
     {
         $tenant = $this->resolveTenant($slug_usaha);
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             abort(404);
         }
 
@@ -976,7 +967,7 @@ class BookingController extends Controller
         }
 
         foreach ($bookings as $bk) {
-            if (!$bk->booking_code) {
+            if (! $bk->booking_code) {
                 $bk->assignManagementTokens();
                 $bk->refresh();
             }
@@ -989,8 +980,8 @@ class BookingController extends Controller
 
     private function resolveTenant(string $slug_usaha): ?Tenant
     {
-        if (app(\App\Support\TenantContext::class)->hasTenant()) {
-            $contextTenantId = app(\App\Support\TenantContext::class)->getTenantId();
+        if (app(TenantContext::class)->hasTenant()) {
+            $contextTenantId = app(TenantContext::class)->getTenantId();
             if ($contextTenantId) {
                 $tenant = Tenant::find($contextTenantId);
                 if ($tenant) {
@@ -1003,13 +994,13 @@ class BookingController extends Controller
             return Tenant::query()->where('slug', $slug_usaha)->orWhere('custom_domain', $slug_usaha)->first()?->getAttributes();
         });
 
-        if (!$tenantData) {
+        if (! $tenantData) {
             return null;
         }
 
         $tenant = Tenant::hydrate([$tenantData])->first();
-        if ($tenant && !app(\App\Support\TenantContext::class)->hasTenant()) {
-            app(\App\Support\TenantContext::class)->setTenantId($tenant->id);
+        if ($tenant && ! app(TenantContext::class)->hasTenant()) {
+            app(TenantContext::class)->setTenantId($tenant->id);
         }
 
         return $tenant;
@@ -1025,7 +1016,7 @@ class BookingController extends Controller
                 ->first()?->getAttributes();
         });
 
-        if (!$serviceData) {
+        if (! $serviceData) {
             return null;
         }
 

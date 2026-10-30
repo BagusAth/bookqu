@@ -2,7 +2,7 @@
 id: BQ-014
 title: Record on-site payment when the owner completes a pending booking
 type: product-change
-status: approved
+status: done
 priority: P2
 phase: 4
 domain: booking
@@ -27,4 +27,7 @@ Lead decides whether completing a pending booking must record a cash payment (e.
 
 ## Evidence
 
-_Fill in when done._
+Implemented in BQ-067 as decided in ADR-0004 decision 6: completing or marking paid a pending booking settles the whole payment group as `sukses` with `metode = cash` through the Payment lifecycle, and gateway cancellation is requested (a logged no-op until BQ-002).
+- `PaymentLifecycleTest::test_owner_completing_a_pending_booking_records_a_cash_payment` covers completing a pending booking.
+- `test_owner_cannot_mark_paid_a_booking_whose_payment_failed` checks that a failed payment is not overwritten.
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41086120502 (PR #4): all four jobs passed.

@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Payment\CheckPaymentStatus;
 use App\Actions\Payment\CreateSubscriptionPayment;
+use App\Actions\Payment\PaymentLifecycle;
+use App\Domain\Payment\PaymentTransition;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Subscription\ProcessSubscriptionCheckoutRequest;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Services\MidtransPaymentService;
-use Carbon\Carbon;
+use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class OwnerCheckoutController extends Controller
@@ -19,8 +22,7 @@ class OwnerCheckoutController extends Controller
     /**
      * Resolve tenant dari session / auth user.
      */
-    use \App\Traits\ResolvesOwnerTenant;
-
+    use ResolvesOwnerTenant;
 
     /**
      * Halaman 1: Review Pesanan & Data Kontak.
@@ -30,7 +32,7 @@ class OwnerCheckoutController extends Controller
         $tenant = $this->resolveTenant();
         $user = auth()->user();
 
-        if (!$tenant) {
+        if (! $tenant) {
             return redirect()->route('owner.subscription')
                 ->with('pesan', 'Silakan lengkapi profil bisnis terlebih dahulu.');
         }
@@ -54,10 +56,10 @@ class OwnerCheckoutController extends Controller
     /**
      * Proses checkout: buat Payment record & generate Snap token via CreateSubscriptionPayment action.
      */
-    public function processCheckout(\App\Http\Requests\Subscription\ProcessSubscriptionCheckoutRequest $request, CreateSubscriptionPayment $createSubscriptionPayment)
+    public function processCheckout(ProcessSubscriptionCheckoutRequest $request, CreateSubscriptionPayment $createSubscriptionPayment)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             return redirect()->route('owner.subscription')
                 ->with('pesan', 'Tenant tidak ditemukan.');
         }
@@ -69,17 +71,17 @@ class OwnerCheckoutController extends Controller
                 $tenant,
                 $plan,
                 [
-                    'nama_pembayar'  => $request->nama_pembayar,
+                    'nama_pembayar' => $request->nama_pembayar,
                     'email_pembayar' => $request->email_pembayar,
-                    'hp_pembayar'    => $request->hp_pembayar,
-                    'catatan'        => $request->catatan,
+                    'hp_pembayar' => $request->hp_pembayar,
+                    'catatan' => $request->catatan,
                 ]
             );
         } catch (\Throwable $e) {
-            Log::error('Owner checkout error: ' . $e->getMessage());
+            Log::error('Owner checkout error: '.$e->getMessage());
 
             return redirect()->route('owner.subscription')
-                ->with('pesan', 'Gagal memproses pembayaran. Silakan coba lagi. Error: ' . $e->getMessage());
+                ->with('pesan', 'Gagal memproses pembayaran. Silakan coba lagi. Error: '.$e->getMessage());
         }
 
         return redirect()->route('owner.checkout.payment', $payment);
@@ -93,7 +95,7 @@ class OwnerCheckoutController extends Controller
         $tenant = $this->resolveTenant();
 
         // Security: pastikan payment milik tenant yang sedang login
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             abort(403, 'Unauthorized');
         }
 
@@ -104,7 +106,8 @@ class OwnerCheckoutController extends Controller
 
         // Jika expired, kembali ke subscription
         if ($payment->isExpired() && $payment->status === 'pending') {
-            $payment->update(['status' => 'gagal']);
+            app(PaymentLifecycle::class)->transition($payment, PaymentTransition::Expired);
+
             return redirect()->route('owner.subscription')
                 ->with('pesan', 'Waktu pembayaran telah habis. Silakan buat pesanan baru.');
         }
@@ -132,7 +135,7 @@ class OwnerCheckoutController extends Controller
     {
         $tenant = $this->resolveTenant();
 
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -147,7 +150,7 @@ class OwnerCheckoutController extends Controller
 
         $syncResult = $paymentService
             ? $paymentService->verifyAndSync($payment)
-            : app(\App\Actions\Payment\CheckPaymentStatus::class)->execute($payment);
+            : app(CheckPaymentStatus::class)->execute($payment);
 
         if ($syncResult['status'] === 'sukses') {
             return response()->json([
@@ -193,7 +196,7 @@ class OwnerCheckoutController extends Controller
     {
         $tenant = $this->resolveTenant();
 
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             abort(403, 'Unauthorized');
         }
 
@@ -222,7 +225,7 @@ class OwnerCheckoutController extends Controller
     {
         $tenant = $this->resolveTenant();
 
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -235,8 +238,8 @@ class OwnerCheckoutController extends Controller
             ]);
         }
 
-        /** @var \App\Actions\Payment\CheckPaymentStatus $checkAction */
-        $checkAction = app(\App\Actions\Payment\CheckPaymentStatus::class);
+        /** @var CheckPaymentStatus $checkAction */
+        $checkAction = app(CheckPaymentStatus::class);
         $syncResult = $checkAction->execute($payment);
 
         if ($syncResult['status'] === 'error') {
@@ -267,4 +270,3 @@ class OwnerCheckoutController extends Controller
         ]);
     }
 }
-

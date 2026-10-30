@@ -4,23 +4,24 @@ declare(strict_types=1);
 
 namespace App\Actions\Booking;
 
-use App\Actions\Payment\ExpirePayment;
+use App\Actions\Payment\PaymentLifecycle;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
+use App\Domain\Payment\PaymentTransition;
 use App\Models\Booking;
 use App\Models\Payment;
 
 class EvictStalePendingBookings
 {
     public function __construct(
-        protected ExpirePayment $expirePayment
+        protected PaymentLifecycle $paymentLifecycle
     ) {}
 
     /**
      * Evict (expire/cancel) stale pending bookings that have exceeded the grace period.
      * Must be called within a database transaction where target schedules are locked.
      *
-     * @param array<int>|int $scheduleIds
+     * @param  array<int>|int  $scheduleIds
      * @return int Number of stale bookings evicted
      */
     public function execute(array|int $scheduleIds): int
@@ -46,15 +47,15 @@ class EvictStalePendingBookings
         $handledPaymentIds = [];
 
         foreach ($staleBookings as $booking) {
-            if ($booking->idpayment && !in_array($booking->idpayment, $handledPaymentIds, true)) {
+            if ($booking->idpayment && ! in_array($booking->idpayment, $handledPaymentIds, true)) {
                 $payment = Payment::withoutGlobalScopes()->lockForUpdate()->find($booking->idpayment);
                 if ($payment) {
-                    $this->expirePayment->execute($payment);
+                    $this->paymentLifecycle->transition($payment, PaymentTransition::Expired);
                     $handledPaymentIds[] = $booking->idpayment;
                 }
             }
 
-            // Ensure booking is cancelled if not handled by expirePayment
+            // Ensure booking is cancelled if the payment expiry did not cancel it
             $booking->refresh();
             if ($booking->status === BookingState::STATUS_PENDING) {
                 $booking->update(['status' => BookingState::STATUS_CANCELLED]);

@@ -2,7 +2,7 @@
 id: BQ-068
 title: Owner marking one slot paid splits a multi-slot payment group
 type: bug-fix
-status: approved
+status: done
 priority: P0
 phase: 4
 domain: booking
@@ -25,4 +25,8 @@ Fixed by construction in BQ-067 (ADR-0004 decision 6: owner settlement applies t
 
 ## Evidence
 
-_Fill in when done._
+Fixed in BQ-067: `UpdateBookingStatus` requests `PaymentTransition::SettledByOwner`, which settles the whole group. `PaymentLifecycleTest::test_owner_marking_one_slot_paid_settles_the_whole_group` marks one slot of a 2-slot group paid. It then checks:
+- the payment is `sukses` with `metode` `cash`;
+- the sibling booking is `paid`;
+- a later provider webhook returns `already-final`, changes nothing and creates no refund.
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41086120502 (PR #4): all four jobs passed.

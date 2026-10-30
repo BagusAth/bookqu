@@ -32,4 +32,8 @@ When a payment is already `gagal` (expired by the scheduler or evicted as stale 
 
 ## Evidence
 
-_Fill in when done._
+Plan steps 3–4 done by BQ-067 (2026-10-30):
+- both webhooks hand a success for a `gagal` payment to the Payment lifecycle, which records exactly one refund owed and one owner alert (`PaymentLifecycleTest::test_late_success_records_one_refund_and_alerts_the_owner`);
+- the SingaPay webhook no longer returns early for that case.
+
+Step 2 (provider-first status before expiry, SingaPay status query) remains with BQ-032 and BQ-071.
