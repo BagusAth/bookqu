@@ -2,7 +2,7 @@
 id: BQ-073
 title: Run the integrity suite on the production database engine
 type: ops
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: —
@@ -48,4 +48,4 @@ The existing `mysql` group and the whole suite on the production engine.
 - The first MariaDB run failed 10 tests, all from one query: the owner customer list (`Owner/OwnerCustomerController::index`) returned 500 because MariaDB's `ONLY_FULL_GROUP_BY` rejects selecting the identifier expression that is only repeated in `GROUP BY` (error 1055). **Production is affected the same way** (`strict` mode is on), so `/owner/customers` most likely fails there today. The `mysql` lock group passed on MariaDB unchanged.
 - Fix: the list and the upcoming-booking queries compute the identifier in a derived table and group by that column. New test `test_upcoming_booking_is_the_earliest_future_booking` covers the second query, which had no test.
 - ADR-0014, `docs/architecture.md` §12 and `.ai/rules/tests.md` now name MariaDB 11.4.
-- Local: SQLite and MySQL 8.4 pass for `CustomerManagementTest` (19 tests); Pint and Larastan clean. GitHub Actions run: pending until the branch is pushed.
+- Local: SQLite and MySQL 8.4 pass for `CustomerManagementTest` (19 tests); Pint and Larastan clean. GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41082279757: all four jobs passed, including `Tests (MariaDB)`.
