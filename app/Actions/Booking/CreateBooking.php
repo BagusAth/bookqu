@@ -21,7 +21,6 @@ use App\Models\Tenant;
 use App\Notifications\NewBookingOwnerNotification;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
-use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -222,8 +221,8 @@ class CreateBooking
                 if ($owner) {
                     try {
                         $owner->notify(new NewBookingOwnerNotification($firstBooking));
-                    } catch (Exception $e) {
-                        Log::error('Gagal kirim notif free booking ke owner: '.$e->getMessage());
+                    } catch (\Throwable $e) {
+                        Log::error('Gagal kirim notif free booking ke owner', ['exception_type' => $e::class, 'booking_id' => $firstBooking->id]);
                     }
                 }
 
@@ -253,8 +252,11 @@ class CreateBooking
             );
             $result['payment_url'] = $paymentResult['payment_url'] ?? $payment->payment_url;
             $result['snapToken'] = $paymentResult['snap_token'] ?? $payment->snap_token;
-        } catch (Exception $e) {
-            Log::error('Payment Initialization Error (Booking): '.$e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Payment Initialization Error (Booking)', [
+                'exception_type' => $e::class, 'exception_file' => $e->getFile(), 'exception_line' => $e->getLine(),
+                'tenant_id' => $tenant->id, 'payment_id' => $payment->id, 'order_id' => $payment->order_id,
+            ]);
             // Payment initialization failed — the payment fails and its bookings are cancelled
             $this->paymentLifecycle->transition($payment, PaymentTransition::InitiationFailed);
 
@@ -266,7 +268,7 @@ class CreateBooking
             );
 
             return [
-                'error' => 'Gagal memproses pembayaran. Error: '.$e->getMessage(),
+                'error' => 'Gagal memproses pembayaran. Silakan coba lagi.',
                 'snap_error' => true,
             ];
         }

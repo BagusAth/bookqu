@@ -22,6 +22,8 @@ The central domain: creating, changing and ending reservations, including multi-
 | `RescheduleBooking` | Moves a single-slot booking to another available schedule; multi-slot is rejected. |
 | `EvictStalePendingBookings` | Inside the caller's transaction: request the stale pending booking's payment expiry from `PaymentLifecycle` and cancel the booking. |
 
+Unexpected checkout/reschedule failures return generic Indonesian messages to customers and owners. Provider initialization failures (Exception or Error) still transition through PaymentLifecycle and release the pending bookings. Explicit slot-refusal messages remain actionable. Related diagnostics log operation identifiers and exception type/location, without raw exception messages, objects or provider response bodies (BQ-005).
+
 ## Rules (authoritative)
 
 `App\Domain\Booking\BookingState` (states, transitions, labels) · `App\Domain\Booking\BookingRules` (pending hold from the payment deadline, occupancy condition, contiguity, pricing, cancel/reschedule policy).
@@ -43,6 +45,8 @@ The central domain: creating, changing and ending reservations, including multi-
 
 `tests/Unit/Domain/BookingRulesTest.php`, `BookingStateTest.php`, `tests/Feature/CoreFlowIntegrationTest.php`, `Customer/BookingFlowTest.php`, `Customer/ProductionLogicSpecificationTest.php`, `Owner/BookingManagementTest.php`. Concurrency is only exercised on SQLite, where `lockForUpdate` has no effect.
 
+`tests/Feature/Customer/SafeOperationErrorsTest.php` verifies generic checkout/session and reschedule/JSON errors, Exception/Error cleanup, preserved slot-refusal messages and redacted diagnostics with fake providers.
+
 ## Status
 
 Functional: Implemented · Verification: Verified (SQLite only) · Architecture: Needs Refactor
@@ -53,7 +57,6 @@ Functional: Implemented · Verification: Verified (SQLite only) · Architecture:
 |---|---|
 | `Customer/BookingController` is 1,034 lines and re-implements quota and contiguity checks before checkout (the claim itself goes through `ClaimSlots`) | BQ-029 |
 | Concurrency not proven on MySQL | BQ-023 |
-| Internal exception text returned to the customer (`CreateBooking.php:313`) | BQ-005 |
 | `pending→completed` leaves the payment pending; no on-site payment record | BQ-014 |
 | Notifications and mail are sent synchronously | BQ-013 |
 

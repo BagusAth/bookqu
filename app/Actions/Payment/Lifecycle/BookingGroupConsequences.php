@@ -54,7 +54,7 @@ class BookingGroupConsequences implements PaymentConsequences
                     try {
                         UsageLog::record($booking->idtenant, 'booking');
                     } catch (\Exception $e) {
-                        Log::error('Gagal catat usage log booking: '.$e->getMessage());
+                        Log::error('Gagal catat usage log booking', ['exception_type' => $e::class, 'booking_id' => $booking->id]);
                     }
                 }
 
@@ -147,7 +147,7 @@ class BookingGroupConsequences implements PaymentConsequences
             try {
                 $owner->notify(new NewBookingOwnerNotification($firstBooking));
             } catch (\Exception $e) {
-                Log::error('Gagal kirim notif booking ke owner: '.$e->getMessage());
+                Log::error('Gagal kirim notif booking ke owner', ['exception_type' => $e::class, 'booking_id' => $firstBooking->id]);
             }
         }
 

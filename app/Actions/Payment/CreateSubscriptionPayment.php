@@ -67,7 +67,9 @@ class CreateSubscriptionPayment
             $activeDriver->createSubscriptionPayment($payment, $plan, $payerData, $biayaPlatform);
             $payment->refresh();
         } catch (\Throwable $e) {
-            Log::error("Subscription Payment Error ({$providerName}): ".$e->getMessage());
+            Log::error('Subscription Payment Error', [
+                'exception_type' => $e::class, 'payment_id' => $payment->id, 'tenant_id' => $tenant->id, 'provider' => $providerName,
+            ]);
             app(PaymentLifecycle::class)->transition($payment, PaymentTransition::InitiationFailed);
             throw $e;
         }

@@ -205,7 +205,7 @@ class PaymentLifecycle
                     $owner->notify(new PaymentRefundOwedOwnerNotification($payment, $refund));
                 }
             } catch (\Throwable $e) {
-                Log::error('PaymentLifecycle: refund-owed notification failed: '.$e->getMessage());
+                Log::error('PaymentLifecycle: refund-owed notification failed', ['exception_type' => $e::class, 'payment_id' => $payment->id]);
             }
         });
 
@@ -233,7 +233,7 @@ class PaymentLifecycle
                 'order_id' => $payment->order_id,
                 'provider' => $provider,
                 'transition' => $transition->value,
-                'error' => $e->getMessage(),
+                'exception_type' => $e::class,
             ]);
         }
     }
