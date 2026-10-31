@@ -10,7 +10,7 @@ Owns money movement for booking and subscription payments through the unified ga
 | Midtrans webhook | `POST /midtrans/webhook` (`midtrans.webhook`) → `Webhook/MidtransWebhookController` → `Actions/Payment/ProcessPaymentWebhook` (SHA-512 signature with the payment's key) → `PaymentOutcomeIntake::receive` |
 | Customer status poll / callback | `Customer/BookingController::checkPaymentStatus`, `handleCallback` → `PaymentOutcomeIntake::check` |
 | Owner subscription status | `Owner/OwnerCheckoutController::checkPaymentStatus`, `handleCallback` → `PaymentOutcomeIntake::check`; the browser's payload is ignored (BQ-070) |
-| Expiry | `bookings:expire-payments` every minute, booking and subscription payments past `expired_at` + margin (`Console/Commands/ExpireBookingPayments`) → `PaymentOutcomeIntake::check` (provider first, then `Expired`); also on page view when `expired_at` has passed |
+| Expiry | `bookings:expire-payments` every minute, booking and subscription payments past `expired_at` + margin (`Console/Commands/ExpireBookingPayments`) → `PaymentOutcomeIntake::check` (provider first, then `Expired`); GET pages only display stored state |
 
 CSRF is disabled only for the webhook paths (`bootstrap/app.php`).
 
@@ -21,7 +21,7 @@ CSRF is disabled only for the webhook paths (`bootstrap/app.php`).
 - `transition(payment, PaymentTransition, method)` → `PaymentTransitionResult` (`changed`, `already-final`, `rejected` + reason, `refund-owed`). Reasons: `ProviderSucceeded`, `ProviderFailed`, `Expired`, `CancelledByPayer`, `InitiationFailed`, `SettledByOwner`. One transaction (joins the caller's), tenant row locked first, then the payment; transitions validated by `PaymentState`; idempotent.
 - `recordSettled(attributes)` for payments settled at creation (free `gratis`, walk-in).
 - `refundCancelledBooking(booking)` — at most one refund per payment, only when the payment succeeded.
-- Consequences go through an internal seam: `Lifecycle/BookingGroupConsequences` (whole group paid or cancelled, tokens, usage log, owner notification + invoice for provider success, cache) and `Lifecycle/SubscriptionConsequences` (activate the plan).
+- Consequences go through an internal seam: `Lifecycle/BookingGroupConsequences` (whole group paid or cancelled, customer-access delivery intent, usage log, owner notification + invoice for provider success, cache) and `Lifecycle/SubscriptionConsequences` (activate the plan).
 - A provider success for a payment already `gagal`, or for a group with a cancelled booking, records one refund owed, keeps the bookings cancelled, notifies the owner (`PaymentRefundOwedOwnerNotification`) and logs `critical`.
 - Payer cancel, expiry and owner settlement request gateway cancellation after commit (`PaymentGatewayInterface::cancel`). Midtrans expires the Snap transaction; SingaPay has no cancel call and does nothing. A failure is logged and never reverses the local decision.
 
@@ -41,6 +41,8 @@ Callers: `PaymentOutcomeIntake` (provider outcomes), `CreateBookingPayment` (fre
 - `refresh(payment)` asks the payment's own provider (`queryOutcome`) and applies the answer. Successful and manual payments are not sent to a provider.
 - `check(payment)` runs `refresh`, then expiry if the payment is still pending past `expired_at`.
 - Webhook responses come from `WebhookResponse`; a payment of another provider answers like a missing one.
+
+Payer cancellation (BQ-002) runs through CustomerAccess/CancelCheckoutPayment: a matching Checkout/Management grant is revalidated under the tenant lock. Only pending payments with a known future deadline can be cancelled; exact deadline, terminal state or a rejected lifecycle result yields a sanitized 422. The entire pending group is cancelled once, with no initial refund. Model expiry/payability delegates to PaymentRules (expired at now >= expired_at); settlement margin remains a separate occupancy/reclaim rule.
 
 ## Infrastructure boundary
 
@@ -73,9 +75,11 @@ Callers: `PaymentOutcomeIntake` (provider outcomes), `CreateBookingPayment` (fre
 
 `tests/Feature/Payment/PaymentLifecycleTest.php` (module interface), `tests/Feature/Actions/Payment/PaymentLifecycleLockingTest.php` (tenant-first and payment locks, MySQL/MariaDB), `tests/Feature/Payment/PaymentActionTest.php`, `PaymentGatewayDriverTest.php`, `SingaPayIntegrationTest.php` (65 tests), `Owner/CheckoutMidtransTest.php`, `Customer/PaymentGroupManagementTest.php`, `tests/Unit/Domain/PaymentStateTest.php`, `PaymentRulesTest.php`.
 
+Additional payer-cancel evidence: tests/Feature/Customer/CancelCheckoutPaymentTest.php and tests/Feature/Actions/CustomerAccess/CancelCheckoutPaymentTransactionTest.php (real commit visibility, released tenant mutex and rollback suppression on MySQL).
+
 ## Status
 
-Functional: Implemented · Verification: Verified (partial) · Architecture: Partially aligned (lifecycle module, outcome intake and one payment deadline done; Slot bookability BQ-012 pending)
+Functional: Implemented · Verification: Verified (partial) · Architecture: Partially aligned (lifecycle module, outcome intake and one payment deadline done; Slot bookability BQ-012 and payer-cancel BQ-002 verified)
 
 ## Known gaps
 
@@ -83,8 +87,8 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Par
 |---|---|
 | SingaPay cannot be asked for a payment's status: the client has no status endpoint and the vendor API is not confirmed. A missed SingaPay webhook is only recovered when SingaPay retries it | BQ-074 |
 | `payments.provider` is backfilled but still nullable | BQ-074 |
-| SingaPay payment links are not cancelled at the gateway (no cancel call in the client) | BQ-002, BQ-049 |
-| An owner cancelling a pending booking leaves its payment `pending` with an open link; a later payment becomes a refund owed | BQ-002 |
+| SingaPay payment links are not cancelled at the gateway (unsupported: ADR-0007 no-op; late success is refunded) | BQ-049 |
+| An owner cancelling a pending booking leaves its payment `pending` with an open link; a later payment becomes a refund owed | BQ-049 follow-up (outside payer-cancel scope) |
 | Webhook mail sent synchronously | BQ-013, BQ-050 |
 | Production credentials and webhook URLs not yet verified | BQ-022 |
 

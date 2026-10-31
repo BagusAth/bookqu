@@ -15,7 +15,7 @@ class PaymentRules
      */
     public static function isExpired(Payment $payment): bool
     {
-        return $payment->expired_at !== null && $payment->expired_at->isPast();
+        return $payment->expired_at !== null && Carbon::parse($payment->expired_at)->lessThanOrEqualTo(now());
     }
 
     /**

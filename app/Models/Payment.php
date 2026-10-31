@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Payment\PaymentRules;
 use App\Models\Scopes\TenantScope;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -78,7 +79,7 @@ class Payment extends Model
      */
     public function isExpired(): bool
     {
-        return $this->expired_at && $this->expired_at->isPast();
+        return PaymentRules::isExpired($this);
     }
 
     /**
@@ -86,7 +87,7 @@ class Payment extends Model
      */
     public function isPending(): bool
     {
-        return $this->status === 'pending' && ! $this->isExpired();
+        return PaymentRules::canProcess($this);
     }
 
     /**
