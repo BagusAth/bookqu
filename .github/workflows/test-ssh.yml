@@ -8,6 +8,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Probe SingaPay webhook route (BQ-076, temporary)
+        run: |
+          curl -s -i -X POST -H "Content-Type: application/json" -H "Accept: application/json" \
+            -d '{"probe":"bq-076"}' https://bookqu.my.id/api/webhooks/singapay/transaction -o response.txt || true
+          echo "--- status line and selected headers ---"
+          grep -iE "^HTTP/|^server:|^x-powered-by:|^cf-ray:|^x-litespeed|^content-type:|^x-imunify" response.txt || true
+          echo "--- first 200 characters of the body ---"
+          sed '1,/^\r\?$/d' response.txt | head -c 200; echo
+
       - name: Test SSH connection
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -26,26 +35,3 @@ jobs:
             command -v gzip zcat
             echo "--- Database engine (BQ-073) ---"
             cd ~/domains/bookqu.my.id/laravel && php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo "Database server version: ", Illuminate\Support\Facades\DB::scalar("select version()"), PHP_EOL;' || echo "Could not read the database version"
-            echo "--- SingaPay webhook diagnosis (BQ-076, temporary) ---"
-            cd ~/domains/bookqu.my.id/laravel/storage/logs && ls -1 laravel*.log 2>/dev/null | tail -5
-            PATTERN='SingaPay Webhook:|ProcessSingaPayWebhook:|SingaPay OAuth|Subscription Payment Error|Owner checkout error|Payment Initialization Error|PaymentOutcomeIntake:|SynchronizePaymentStatus|Late Settlement|Late Webhook'
-            echo "--- counts per day and message ---"
-            cat laravel*.log 2>/dev/null | grep -E "$PATTERN" | sed -E 's/^\[([0-9-]{10})[^]]*\] [a-z]+\.([A-Z]+): ([^{]*).*/\1 \2 \3/' | cut -c1-150 | sort | uniq -c | tail -80 || true
-            echo "--- last 25 matching lines (message only, no context) ---"
-            cat laravel*.log 2>/dev/null | grep -E "$PATTERN" | sed -E 's/^\[([^]]*)\] [a-z]+\.([A-Z]+): ([^{]*).*/\1 \2 \3/' | cut -c1-200 | tail -25 || true
-            echo "--- webhook requests in access logs ---"
-            grep -rh "/api/webhooks/singapay" ~/logs ~/domains/bookqu.my.id/logs ~/access-logs 2>/dev/null | awk '{print $4, $6, $7, $9}' | tail -25 || echo "no access log found"
-            echo "--- SingaPay payments by type and status (last 45 days) ---"
-            cd ~/domains/bookqu.my.id/laravel && php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach (Illuminate\Support\Facades\DB::table("payments")->selectRaw("tipe, status, count(*) as n")->where(function ($q) { $q->where("provider", "singapay")->orWhere("metode", "singapay"); })->where("created_at", ">=", now()->subDays(45))->groupBy("tipe", "status")->get() as $r) { echo "$r->tipe $r->status $r->n", PHP_EOL; }' || echo "Could not query payments"
-            echo "--- Laravel scheduler cron present? ---"
-            crontab -l 2>/dev/null | grep -c "schedule:run" || echo "0"
-            echo "--- logging config and env flags (no secret values) ---"
-            cd ~/domains/bookqu.my.id/laravel && php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $c = config("logging.default"); echo "env=", app()->environment(), " log_default=", $c, " level=", config("logging.channels.$c.level") ?? "-", " stack=", implode(",", (array) config("logging.channels.stack.channels")), " single_level=", config("logging.channels.single.level"), " payment_default=", config("payment.default"), " singapay_secret_set=", config("services.singapay.client_secret") ? "yes" : "no", " hmac_key_set=", config("payment.drivers.singapay.hmac_validation_key") ? "yes" : "no", " customer_pays_fee=", var_export(config("services.singapay.customer_pays_fee"), true), PHP_EOL;'
-            echo "--- payments last 45 days by type, provider, metode, status ---"
-            php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach (Illuminate\Support\Facades\DB::table("payments")->selectRaw("tipe, provider, metode, status, count(*) as n, min(created_at) as first_at, max(created_at) as last_at")->where("created_at", ">=", now()->subDays(45))->groupBy("tipe", "provider", "metode", "status")->get() as $r) { echo "$r->tipe provider=", $r->provider ?? "null", " metode=$r->metode $r->status n=$r->n first=$r->first_at last=$r->last_at", PHP_EOL; }'
-            echo "--- SingaPay payments detail (no customer data) ---"
-            php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach (Illuminate\Support\Facades\DB::table("payments")->where(function ($q) { $q->where("provider", "singapay")->orWhere("metode", "singapay"); })->where("created_at", ">=", now()->subDays(45))->get() as $p) { $b = Illuminate\Support\Facades\DB::table("bookings")->where("idpayment", $p->id)->pluck("status")->implode(","); echo "id=$p->id $p->tipe status=$p->status metode=$p->metode created=$p->created_at updated=$p->updated_at expired_at=$p->expired_at has_external=", $p->external_id ? "yes" : "no", " has_link=", $p->payment_url ? "yes" : "no", " bookings=[$b]", PHP_EOL; }'
-            echo "--- webhook route reachability (expect 400 JSON, not 404/419/500) ---"
-            curl -s -o /dev/null -w "%{http_code}\n" -X POST -H "Content-Type: application/json" -d "not-json" https://bookqu.my.id/api/webhooks/singapay/transaction || true
-            sleep 1
-            tail -c 3000 ~/domains/bookqu.my.id/laravel/storage/logs/laravel.log | grep -o "ProcessSingaPayWebhook: [A-Za-z ]*" | tail -2 || echo "no webhook line written"
