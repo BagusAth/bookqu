@@ -8,15 +8,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Probe SingaPay webhook route (BQ-076, temporary)
-        run: |
-          curl -s -i -X POST -H "Content-Type: application/json" -H "Accept: application/json" \
-            -d '{"probe":"bq-076"}' https://bookqu.my.id/api/webhooks/singapay/transaction -o response.txt || true
-          echo "--- status line and selected headers ---"
-          grep -iE "^HTTP/|^server:|^x-powered-by:|^cf-ray:|^x-litespeed|^content-type:|^x-imunify" response.txt || true
-          echo "--- first 200 characters of the body ---"
-          sed '1,/^\r\?$/d' response.txt | head -c 200; echo
-
       - name: Test SSH connection
         uses: appleboy/ssh-action@v1.2.2
         with:
