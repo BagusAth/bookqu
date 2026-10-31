@@ -77,6 +77,8 @@ Payer cancellation (BQ-002) runs through CustomerAccess/CancelCheckoutPayment: a
 
 Additional payer-cancel evidence: tests/Feature/Customer/CancelCheckoutPaymentTest.php and tests/Feature/Actions/CustomerAccess/CancelCheckoutPaymentTransactionTest.php (real commit visibility, released tenant mutex and rollback suppression on MySQL).
 
+BQ-005: subscription checkout returns a generic payment failure to the owner; the failed payment still uses InitiationFailed. Midtrans/SingaPay initiation, status and cancellation diagnostics retain payment/order identifiers, exception type or HTTP status, without raw remote response bodies/messages. `tests/Feature/Customer/SafeOperationErrorsTest.php` covers both gateway layers and user-facing responses. Remaining operational/service log redaction is tracked in BQ-077.
+
 ## Status
 
 Functional: Implemented · Verification: Verified (partial) · Architecture: Partially aligned (lifecycle module, outcome intake and one payment deadline done; Slot bookability BQ-012 and payer-cancel BQ-002 verified)

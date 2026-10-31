@@ -121,7 +121,7 @@ class CancelBooking
                     $booking->refresh()->load(['tenant.user', 'layanan', 'payment', 'refund']);
                     Mail::to($booking->email)->send(new BookingCancelledMail($booking));
                 } catch (\Throwable $e) {
-                    Log::warning('CancelBooking: Failed to send cancellation email', ['error' => $e->getMessage()]);
+                    Log::warning('CancelBooking: Failed to send cancellation email', ['exception_type' => $e::class, 'booking_id' => $booking->id]);
                 }
             }
 
@@ -137,7 +137,7 @@ class CancelBooking
                         ));
                     }
                 } catch (\Throwable $e) {
-                    Log::warning('CancelBooking: Failed to notify owner', ['error' => $e->getMessage()]);
+                    Log::warning('CancelBooking: Failed to notify owner', ['exception_type' => $e::class, 'booking_id' => $booking->id]);
                 }
             }
 
@@ -148,7 +148,7 @@ class CancelBooking
         } catch (\Throwable $e) {
             Log::error('CancelBooking failed', [
                 'booking_id' => $booking->id,
-                'error' => $e->getMessage(),
+                'exception_type' => $e::class,
             ]);
 
             return [

@@ -76,10 +76,13 @@ class OwnerCheckoutController extends Controller
                 ]
             );
         } catch (\Throwable $e) {
-            Log::error('Owner checkout error: '.$e->getMessage());
+            Log::error('Owner checkout error', [
+                'exception_type' => $e::class, 'exception_file' => $e->getFile(), 'exception_line' => $e->getLine(),
+                'tenant_id' => $tenant->id, 'plan_id' => $plan->id,
+            ]);
 
             return redirect()->route('owner.subscription')
-                ->with('pesan', 'Gagal memproses pembayaran. Silakan coba lagi. Error: '.$e->getMessage());
+                ->with('pesan', 'Gagal memproses pembayaran. Silakan coba lagi.');
         }
 
         return redirect()->route('owner.checkout.payment', $payment);

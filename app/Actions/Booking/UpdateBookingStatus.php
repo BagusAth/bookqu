@@ -98,7 +98,7 @@ class UpdateBookingStatus
                 ));
             }
         } catch (\Throwable $e) {
-            Log::warning('UpdateBookingStatus: Notification failed: '.$e->getMessage());
+            Log::warning('UpdateBookingStatus: Notification failed', ['exception_type' => $e::class, 'booking_id' => $booking->id]);
         }
 
         return ['success' => true, 'booking' => $booking];

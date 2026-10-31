@@ -177,20 +177,20 @@ class RescheduleBooking
                         $owner->notify($notification);
                     } catch (\Throwable $mailException) {
                         Log::warning('RescheduleBooking: Mail notification to owner failed, ensuring database notification', [
-                            'error' => $mailException->getMessage(),
+                            'exception_type' => $mailException::class, 'booking_id' => $booking->id,
                         ]);
                         $owner->notifyNow($notification, ['database']);
                     }
                 }
             } catch (\Throwable $e) {
-                Log::warning('RescheduleBooking: Failed to notify owner', ['error' => $e->getMessage()]);
+                Log::warning('RescheduleBooking: Failed to notify owner', ['exception_type' => $e::class, 'booking_id' => $booking->id]);
             }
 
             return ['success' => true, 'booking' => $booking];
 
         } catch (HttpExceptionInterface $e) {
             throw $e;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $msg = $e->getMessage();
             if ($msg === 'SLOT_NOT_FOUND' || $msg === 'SLOT_TAKEN') {
                 $userMsg = $actor === 'owner'
@@ -202,12 +202,12 @@ class RescheduleBooking
 
             Log::error('RescheduleBooking: Exception', [
                 'booking_id' => $booking->id,
-                'error' => $e->getMessage(),
+                'exception_type' => $e::class, 'exception_file' => $e->getFile(), 'exception_line' => $e->getLine(),
             ]);
 
             return [
                 'success' => false,
-                'error' => $actor === 'owner' ? $e->getMessage() : 'Terjadi kesalahan. Silakan coba lagi.',
+                'error' => 'Terjadi kesalahan. Silakan coba lagi.',
             ];
         }
     }

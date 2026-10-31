@@ -137,7 +137,7 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
         if (empty($paymentUrl)) {
             Log::error('SingaPay Create Payment Link: Missing payment_url in response', [
                 'order_id' => $payment->order_id,
-                'response' => $response,
+                'payment_id' => $payment->id,
             ]);
 
             throw new Exception('Payment gateway did not return a valid payment link URL.');
@@ -234,7 +234,7 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
         if (empty($paymentUrl)) {
             Log::error('SingaPay Create Subscription Payment Link: Missing payment_url in response', [
                 'order_id' => $payment->order_id,
-                'response' => $response,
+                'payment_id' => $payment->id,
             ]);
 
             throw new Exception('Payment gateway did not return a valid payment link URL.');

@@ -149,7 +149,7 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
             ];
         } catch (\Throwable $e) {
             // The caller (CreateSubscriptionPayment) records the initiation failure.
-            Log::error('Midtrans Snap Error (Subscription): '.$e->getMessage());
+            Log::error('Midtrans Snap Error (Subscription)', ['exception_type' => $e::class, 'payment_id' => $payment->id]);
             throw $e;
         }
     }
@@ -162,7 +162,8 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
         try {
             $status = $this->getTransactionStatus((string) $payment->order_id, $payment);
         } catch (\Throwable $e) {
-            Log::warning('Midtrans status query failed: '.$e->getMessage(), [
+            Log::warning('Midtrans status query failed', [
+                'exception_type' => $e::class,
                 'payment_id' => $payment->id,
                 'order_id' => $payment->order_id,
             ]);

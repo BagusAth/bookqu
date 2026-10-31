@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Payments\SingaPay;
 
+use Carbon\Carbon;
 use Exception;
+use Illuminate\Http\Client\Factory;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -12,18 +15,22 @@ use Illuminate\Support\Facades\Log;
 class SingaPayClient
 {
     protected string $baseUrl;
+
     protected ?string $clientId;
+
     protected ?string $clientSecret;
+
     protected ?string $apiKey;
+
     protected ?string $accountId;
 
     public function __construct()
     {
-        $this->baseUrl      = rtrim((string) config('services.singapay.base_url', 'https://payment-b2b.singapay.id'), '/');
-        $this->clientId     = config('services.singapay.client_id');
+        $this->baseUrl = rtrim((string) config('services.singapay.base_url', 'https://payment-b2b.singapay.id'), '/');
+        $this->clientId = config('services.singapay.client_id');
         $this->clientSecret = config('services.singapay.client_secret');
-        $this->apiKey       = config('services.singapay.api_key');
-        $this->accountId    = config('services.singapay.account_id');
+        $this->apiKey = config('services.singapay.api_key');
+        $this->accountId = config('services.singapay.account_id');
     }
 
     /**
@@ -32,11 +39,12 @@ class SingaPayClient
     protected function isHttpFaked(): bool
     {
         try {
-            $factory = app(\Illuminate\Http\Client\Factory::class);
+            $factory = app(Factory::class);
             $ref = new \ReflectionProperty($factory, 'stubCallbacks');
             $ref->setAccessible(true);
             $stubs = $ref->getValue($factory);
-            return $stubs instanceof \Illuminate\Support\Collection && $stubs->isNotEmpty();
+
+            return $stubs instanceof Collection && $stubs->isNotEmpty();
         } catch (\Throwable) {
             return false;
         }
@@ -50,7 +58,7 @@ class SingaPayClient
      */
     public function getAccessToken(): string
     {
-        if (app()->environment('testing') && !$this->isHttpFaked()) {
+        if (app()->environment('testing') && ! $this->isHttpFaked()) {
             return 'mocked-singapay-access-token';
         }
 
@@ -58,19 +66,19 @@ class SingaPayClient
             throw new Exception('SingaPay credentials (CLIENT_ID or CLIENT_SECRET) are not configured.');
         }
 
-        $cacheKey = 'singapay_b2b_jwt_' . md5($this->clientId . ($this->apiKey ?? ''));
+        $cacheKey = 'singapay_b2b_jwt_'.md5($this->clientId.($this->apiKey ?? ''));
 
         return Cache::remember($cacheKey, now()->addMinutes(45), function () {
-            $currentDate = \Carbon\Carbon::now('Asia/Jakarta')->format('Ymd');
-            $payload     = "{$this->clientId}_{$this->clientSecret}_{$currentDate}";
-            $signature   = hash_hmac('sha512', $payload, $this->clientSecret);
+            $currentDate = Carbon::now('Asia/Jakarta')->format('Ymd');
+            $payload = "{$this->clientId}_{$this->clientSecret}_{$currentDate}";
+            $signature = hash_hmac('sha512', $payload, $this->clientSecret);
 
             $headers = [
-                'X-PARTNER-ID'  => (string) $this->apiKey,
-                'X-CLIENT-ID'   => (string) $this->clientId,
-                'X-Signature'   => $signature,
-                'Content-Type'  => 'application/json',
-                'Accept'        => 'application/json',
+                'X-PARTNER-ID' => (string) $this->apiKey,
+                'X-CLIENT-ID' => (string) $this->clientId,
+                'X-Signature' => $signature,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
             ];
 
             $body = [
@@ -83,13 +91,12 @@ class SingaPayClient
                 ->retry(2, 200, throw: false)
                 ->post("{$this->baseUrl}/api/v1.1/access-token/b2b", $body);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('SingaPay OAuth Token Error:', [
                     'status' => $response->status(),
-                    'error'  => $response->json('message') ?? $response->json('error') ?? 'Authentication failed',
                 ]);
 
-                throw new Exception('Failed to obtain SingaPay access token: HTTP ' . $response->status());
+                throw new Exception('Failed to obtain SingaPay access token: HTTP '.$response->status());
             }
 
             $json = $response->json();
@@ -97,7 +104,7 @@ class SingaPayClient
                 ?? $json['access_token']
                 ?? null;
 
-            if (!$token) {
+            if (! $token) {
                 throw new Exception('Invalid access token response structure from SingaPay.');
             }
 
@@ -115,44 +122,44 @@ class SingaPayClient
      */
     public function resolveAccountId(): string
     {
-        if (!empty($this->accountId)) {
+        if (! empty($this->accountId)) {
             return (string) $this->accountId;
         }
 
-        if (app()->environment('testing') && !$this->isHttpFaked()) {
+        if (app()->environment('testing') && ! $this->isHttpFaked()) {
             return '01JTESTACCOUNTULID00000000000';
         }
 
-        $cacheKey = 'singapay_merchant_account_id_' . md5((string) $this->apiKey);
+        $cacheKey = 'singapay_merchant_account_id_'.md5((string) $this->apiKey);
 
         return Cache::remember($cacheKey, now()->addHours(24), function () {
             $token = $this->getAccessToken();
 
             $response = Http::withHeaders([
                 'Authorization' => "Bearer {$token}",
-                'X-PARTNER-ID'  => (string) $this->apiKey,
-                'Accept'        => 'application/json',
+                'X-PARTNER-ID' => (string) $this->apiKey,
+                'Accept' => 'application/json',
             ])
                 ->connectTimeout(5)
                 ->timeout(15)
                 ->get("{$this->baseUrl}/api/v1.0/accounts");
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('SingaPay List Accounts Error:', [
                     'status' => $response->status(),
-                    'error'  => $response->json('message') ?? $response->json('error') ?? 'Failed to list accounts',
                 ]);
 
-                throw new Exception('Failed to retrieve SingaPay merchant accounts: HTTP ' . $response->status());
+                throw new Exception('Failed to retrieve SingaPay merchant accounts: HTTP '.$response->status());
             }
 
             $accounts = $response->json('data') ?? [];
-            if (!is_array($accounts)) {
+            if (! is_array($accounts)) {
                 $accounts = [];
             }
 
             $activeAccounts = array_values(array_filter($accounts, function ($acc) {
                 $status = strtolower((string) ($acc['status'] ?? ''));
+
                 return $status === 'active' || empty($status);
             }));
 
@@ -164,7 +171,7 @@ class SingaPayClient
                 throw new Exception('Multiple active SingaPay accounts found. Please configure SINGAPAY_ACCOUNT_ID explicitly in your configuration.');
             }
 
-            if (count($activeAccounts) === 1 && !empty($activeAccounts[0]['id'])) {
+            if (count($activeAccounts) === 1 && ! empty($activeAccounts[0]['id'])) {
                 return (string) $activeAccounts[0]['id'];
             }
 
@@ -176,49 +183,47 @@ class SingaPayClient
      * Create a payment link using SingaPay Payment Link API.
      * Endpoint: POST /api/v1.0/payment-link-manage/{account_id}
      *
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
+     *
      * @throws Exception
      */
     public function createPaymentLink(array $payload): array
     {
-        if (app()->environment('testing') && !$this->isHttpFaked()) {
+        if (app()->environment('testing') && ! $this->isHttpFaked()) {
             return [
-                'status'  => 200,
+                'status' => 200,
                 'success' => true,
-                'data'    => [
-                    'id'          => 12345,
-                    'reff_no'     => $payload['reff_no'] ?? 'MOCK-REFF',
-                    'payment_url' => 'https://payment-link.singapay.id/b2b/' . ($payload['reff_no'] ?? 'MOCK-REFF'),
+                'data' => [
+                    'id' => 12345,
+                    'reff_no' => $payload['reff_no'] ?? 'MOCK-REFF',
+                    'payment_url' => 'https://payment-link.singapay.id/b2b/'.($payload['reff_no'] ?? 'MOCK-REFF'),
                 ],
             ];
         }
 
-        $token     = $this->getAccessToken();
+        $token = $this->getAccessToken();
         $accountId = $this->resolveAccountId();
 
         $response = Http::withHeaders([
             'Authorization' => "Bearer {$token}",
-            'X-PARTNER-ID'  => (string) $this->apiKey,
-            'Content-Type'  => 'application/json',
-            'Accept'        => 'application/json',
+            'X-PARTNER-ID' => (string) $this->apiKey,
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
         ])
             ->connectTimeout(5)
             ->timeout(20)
             ->post("{$this->baseUrl}/api/v1.0/payment-link-manage/{$accountId}", $payload);
 
-        if (!$response->successful()) {
-            $errorCode = $response->json('code') ?? $response->json('error.code');
-            $errorMsg  = $response->json('message')
+        if (! $response->successful()) {
+            $errorMsg = $response->json('message')
                 ?? $response->json('error.message')
                 ?? $response->json('error')
-                ?? ('HTTP ' . $response->status());
+                ?? ('HTTP '.$response->status());
 
             Log::error('SingaPay Create Payment Link Error:', [
-                'status'     => $response->status(),
-                'error_code' => $errorCode,
-                'error_msg'  => $errorMsg,
-                'reff_no'    => $payload['reff_no'] ?? null,
+                'status' => $response->status(),
+                'reff_no' => $payload['reff_no'] ?? null,
             ]);
 
             throw new Exception("SingaPay API Error: {$errorMsg}");
