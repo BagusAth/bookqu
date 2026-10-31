@@ -8,6 +8,7 @@ use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Actions\Payment\OutcomeIntakeResult;
 use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Actions\Schedule\GetAvailableSchedules;
+use App\Actions\Tenant\GetStorefrontTenant;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
@@ -868,30 +869,9 @@ class BookingController extends Controller
 
     private function resolveTenant(string $slug_usaha): ?Tenant
     {
-        if (app(TenantContext::class)->hasTenant()) {
-            $contextTenantId = app(TenantContext::class)->getTenantId();
-            if ($contextTenantId) {
-                $tenant = Tenant::find($contextTenantId);
-                if ($tenant) {
-                    return $tenant;
-                }
-            }
-        }
+        $tenantId = app(TenantContext::class)->getTenantId();
 
-        $tenantData = Cache::remember("tenant:slug:{$slug_usaha}", now()->addSeconds(3600), function () use ($slug_usaha) {
-            return Tenant::query()->where('slug', $slug_usaha)->orWhere('custom_domain', $slug_usaha)->first()?->getAttributes();
-        });
-
-        if (! $tenantData) {
-            return null;
-        }
-
-        $tenant = Tenant::hydrate([$tenantData])->first();
-        if ($tenant && ! app(TenantContext::class)->hasTenant()) {
-            app(TenantContext::class)->setTenantId($tenant->id);
-        }
-
-        return $tenant;
+        return $tenantId === null ? null : app(GetStorefrontTenant::class)->execute($tenantId);
     }
 
     private function resolveService(int $tenantId, int $serviceId): ?Service

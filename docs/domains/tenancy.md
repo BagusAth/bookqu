@@ -16,6 +16,8 @@ Owns tenant isolation, tenant resolution (slug and custom domain), and the busin
 `Actions/Tenant/CreateInitialProfile`, `UpdateBusinessProfile` (also uploads logo), `UpdatePaymentSettings` (Tier 3), `UpdateAppearanceSettings` (Tier 3).
 Tenant creation happens at registration (`Auth/RegisteredUserController::store`, slug = `Str::slug(business name)` with numeric suffix on collision).
 
+`GetStorefrontTenant` loads a public-field projection under `tenant:public:v2:{id}` using the tenant id already verified by middleware. Profile, appearance, landing-page and payment-setting writes invalidate it. Missing middleware context fails closed; a slug used as an unregistered hostname is not a custom-domain mapping.
+
 ## Mechanism
 
 - `App\Support\TenantContext` — request-scoped holder of the current tenant id (registered `scoped` in `AppServiceProvider`), cleared after each request.
@@ -28,6 +30,8 @@ Tenant creation happens at registration (`Auth/RegisteredUserController::store`,
 
 `tenants`: `iduser`, `namabisnis`, `slug` (unique), `custom_domain`, `jenisbisnis`, `alamat`, `deskripsi`, `nomorhp`, `logo_path`, `banner_path`, `cancel_before_hours`, `reschedule_before_hours`, `weekend_price_type/value`, `saldo_platform`, appearance fields, direct-gateway fields (`payment_mode`, `midtrans_*`).
 
+The four Midtrans sandbox/production client/server key columns use encrypted casts and nullable TEXT storage; all four are hidden from model array/JSON serialization. Gateway code reads decrypted attributes explicitly. The BQ-004 migration handles legacy backfill and reversible decryption; rollback order and APP_KEY retention are mandatory in `docs/operations.md` §3/§6.
+
 ## Invariants
 
 - **INV-TEN-01** — no cross-tenant read or write; `TenantScope` fails closed.
@@ -36,6 +40,8 @@ Tenant creation happens at registration (`Auth/RegisteredUserController::store`,
 ## Evidence
 
 `tests/Feature/P0SecurityTest.php`, `RF09StabilityAndHardeningTest.php`, `Customer/CustomDomainBookingTest.php`, `Owner/SettingsTest.php`, `Actions/OwnerApplicationActionsTest.php`.
+
+BQ-004: `Tenancy/TenantGatewayCredentialsTest.php` (storage, serialization, gateway reads, key rotation, public cache), `Tenancy/TenantCredentialMigrationTest.php` (MySQL backfill/down/cache purge), and `Ops/TenantCredentialRollbackTest.php` (automatic rollback ordering and fail-closed behavior).
 
 ## Status
 
@@ -47,7 +53,6 @@ Functional: Implemented · Verification: Needs Verification · Architecture: Tar
 |---|---|
 | 55 `withoutGlobalScope(s)` calls in 29 files not individually justified | BQ-009 |
 | Main-domain detection defined twice (`TenantMiddleware::$isCustomDomain` vs `routes/web.php` exclusion list) | BQ-035 |
-| Tenant direct-gateway secrets stored in plain text and cached with the tenant (`tenant:slug:*`) | BQ-004 |
 | Slugs can collide with app routes (`login`, `owner`, `manage`, `admin`, …) | BQ-011 |
 | Custom-domain storefront behaviour only partly tested | BQ-039 |
 
