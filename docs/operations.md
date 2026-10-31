@@ -58,11 +58,28 @@ Switching the active provider: set `PAYMENT_GATEWAY_DRIVER` → `php artisan con
    - back up `app`, `bootstrap`, `config`, `database`, `resources`, `routes`, `composer.*` and `public/build` to `deploy-backups/<timestamp>/`;
    - dump the database with `mysqldump --single-transaction --no-tablespaces` to `db-backups/bookqu-<timestamp>.sql.gz` (directory 700, file 600). Credentials are read from the live Laravel config into a temporary 600 client file, never the command line or the log. The dump must pass `gzip -t` and end with `Dump completed`, or the deploy stops before touching anything. Backups older than 14 days are deleted.
 5. Replace the code; `composer install --no-dev --no-scripts --optimize-autoloader` (HostData disables `proc_open`, so Composer scripts are skipped); `php artisan down`; `migrate --force`; `optimize:clear`; `optimize`; `php artisan up`; `route:cache`.
-6. Health check: `curl https://bookqu.my.id` must return 2xx/3xx. On any failure after the swap, code and build are restored and the site is brought back up; the schema is **not** rolled back (see §6).
+6. Health check: `curl https://bookqu.my.id` must return 2xx/3xx. On any failure after the swap, code and build are restored and the site is brought back up; the schema is **not** rolled back, except for the approved BQ-004 credential-data reversal below (see §6).
 
 Prerequisite: `mysqldump` on the server. Run the manual `test-ssh.yml` workflow once; it reports the PHP and `mysqldump` versions. Without `mysqldump` every deploy fails at the backup step, by design. Checked 2026-10-30: present as the MariaDB 11.4 client (PHP 8.4.27); the database server is MariaDB 11.4.10, which CI also tests (BQ-073).
 
 Migrations must stay backward compatible with the previous release's code (expand → migrate data → contract in a later release), because a rollback restores code, not schema.
+
+### BQ-004: tenant credential encryption release
+
+Lead-approved exception to ADR-0015: migration `2026_11_01_001033_encrypt_tenant_gateway_credentials` encrypts four tenant Midtrans client/server keys in place. Previous code expects plaintext and cannot run against these encrypted rows. Before releasing, verify the database dump, preserve the matching `APP_KEY`, pause queue/scheduler entry points and let running workers finish. Keep requests in maintenance mode during the migration and any reversal. Never print tenant keys or dump their model attributes into logs.
+
+The migration expands the four columns to nullable TEXT, backfills plaintext without encrypting already valid ciphertext again, and purges the legacy tenant and public-projection cache namespaces. Database-cache purging includes retired slugs and preserves unrelated records. Other cache drivers remove current tenant slug/domain and public keys; if such a driver contains retired legacy slug keys, remove that namespace using its backend tooling before bringing requests back. Storefront caching now stores only an explicit public-field projection.
+
+**Rollback to code from before BQ-004 must first run this migration's `down()` using the encryption-aware code and its matching key.** Record its batch from `php artisan migrate:status` and, while requests and workers remain stopped, run:
+
+```bash
+php artisan down
+php artisan migrate:rollback --batch=<BQ004_BATCH> --path=database/migrations/2026_11_01_001033_encrypt_tenant_gateway_credentials.php --force --no-interaction
+```
+
+Only after successful decryption restore the old code, clear/rebuild its caches, restart workers with that code, and bring requests up. `down()` restores plaintext and removes tenant caches; columns stay TEXT to avoid truncating values written since deployment. Do not run the new encrypted-cast code against the restored plaintext rows. To return to new code later, rerun its migration before reopening traffic.
+
+Automatic deployment rollback enforces this order for the first encryption release: when migrations started and the backup lacks this migration, enter maintenance and reverse the migration before copying old code. If reversal fails, keep maintenance mode and stop without copying old code; recover the correct key and complete reversal manually. Backups from later encrypted releases already contain the migration, so ordinary code rollback keeps ciphertext. No production rollback was executed as part of BQ-004; the rollback function is exercised with isolated shell fixtures and the data reversal with MySQL tests.
 
 Remaining gaps:
 
@@ -95,6 +112,8 @@ Production needs a real mail transport (credentials, sender, test delivery) and 
 ## 6. Backups and recovery
 
 Every production deploy writes `~/domains/bookqu.my.id/db-backups/bookqu-<timestamp>.sql.gz` before migrating (§3) and keeps 14 days. **Target** (BQ-019): scheduled backups as well, user uploads (`storage/app`) included, and a restore drill on the server. A backup counts only after a successful restore test.
+
+Since BQ-004, `APP_KEY` also decrypts tenant gateway credentials. An encrypted database backup is usable only with its matching `APP_KEY` (or that key retained in `APP_PREVIOUS_KEYS`). Back up the key separately in protected secret storage; do not commit it or include it in diagnostic output. Rotation requires a new `APP_KEY` plus the previous key in `APP_PREVIOUS_KEYS`, followed by config-cache rebuild and worker restart. Keep previous keys until all dependent database values and relevant backups can be decrypted without them; `key:generate` alone would make existing tenant credentials unreadable.
 
 Restore a deploy backup (verified locally on MySQL 8.4 on 2026-10-30; take a fresh dump of the current state first):
 

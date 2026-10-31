@@ -7,10 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 class Tenant extends Model
 {
     use HasFactory;
+
+    protected $hidden = ['midtrans_sandbox_client_key', 'midtrans_sandbox_server_key', 'midtrans_prod_client_key', 'midtrans_prod_server_key'];
+
     protected $fillable = [
         'iduser',
         'namabisnis',
@@ -42,10 +46,21 @@ class Tenant extends Model
         'card_style',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'midtrans_sandbox_client_key' => 'encrypted',
+            'midtrans_sandbox_server_key' => 'encrypted',
+            'midtrans_prod_client_key' => 'encrypted',
+            'midtrans_prod_server_key' => 'encrypted',
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'iduser');
     }
+
     public function services(): HasMany
     {
         return $this->hasMany(Service::class, 'idtenant');
@@ -89,7 +104,8 @@ class Tenant extends Model
         if (str_starts_with($this->logo_path, 'http://') || str_starts_with($this->logo_path, 'https://') || str_starts_with($this->logo_path, '/')) {
             return $this->logo_path;
         }
-        return \Illuminate\Support\Facades\Storage::url($this->logo_path);
+
+        return Storage::url($this->logo_path);
     }
 
     public function getBannerUrlAttribute(): ?string
@@ -100,6 +116,7 @@ class Tenant extends Model
         if (str_starts_with($this->banner_path, 'http://') || str_starts_with($this->banner_path, 'https://') || str_starts_with($this->banner_path, '/')) {
             return $this->banner_path;
         }
-        return \Illuminate\Support\Facades\Storage::url($this->banner_path);
+
+        return Storage::url($this->banner_path);
     }
 }

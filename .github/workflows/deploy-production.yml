@@ -137,6 +137,8 @@ jobs:
             SOURCE_DIR="$DEPLOY_DIR/laravel-source"
             BUILD_DIR="$DEPLOY_DIR/public-assets"
             DEPLOY_STARTED=0
+            MIGRATIONS_STARTED=0
+            CREDENTIALS_MIGRATION="database/migrations/2026_11_01_001033_encrypt_tenant_gateway_credentials.php"
             MAINTENANCE_ON=0
             DB_CNF=""
 
@@ -184,6 +186,21 @@ jobs:
               fi
               if [ "$status" -eq 0 ] || [ "$DEPLOY_STARTED" -ne 1 ]; then
                 exit "$status"
+              fi
+
+              # The first encryption release cannot restore old code over encrypted tenant keys.
+              # Later releases keep encrypted data because their backup code already contains the migration.
+              if [ "$MIGRATIONS_STARTED" -eq 1 ] && [ -f "$LARAVEL_DIR/$CREDENTIALS_MIGRATION" ] && [ ! -f "$BACKUP_DIR/$CREDENTIALS_MIGRATION" ]; then
+                cd "$LARAVEL_DIR"
+                if ! php artisan down --no-interaction; then
+                  echo "Cannot enter maintenance for tenant credential rollback; manual recovery required." >&2
+                  exit 1
+                fi
+                MAINTENANCE_ON=1
+                if ! php artisan migrate:rollback --path="$CREDENTIALS_MIGRATION" --force --no-interaction; then
+                  echo "Tenant credential rollback failed; keep maintenance and recover with the matching APP_KEY before restoring old code." >&2
+                  exit 1
+                fi
               fi
 
               echo "Deployment failed. Restoring Laravel source and public build from $BACKUP_DIR"
@@ -307,6 +324,7 @@ jobs:
             composer install --no-dev --no-scripts --optimize-autoloader
             php artisan down --retry=60
             MAINTENANCE_ON=1
+            MIGRATIONS_STARTED=1
             php artisan migrate --force
             php artisan optimize:clear
             php artisan optimize

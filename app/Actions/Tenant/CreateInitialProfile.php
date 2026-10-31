@@ -22,7 +22,8 @@ class CreateInitialProfile
     /**
      * Store initial business profile and setup free trial subscription.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
+     *
      * @throws ValidationException
      */
     public function execute(User $user, array $data, ?Tenant $existingTenant = null): Tenant
@@ -48,16 +49,16 @@ class CreateInitialProfile
             throw ValidationException::withMessages(['namabisnis' => 'Slug sudah dipakai. Coba variasi nama bisnis lain.']);
         }
 
-        $isNewTenant = !Tenant::where('iduser', $user->id)->exists();
+        $isNewTenant = ! Tenant::where('iduser', $user->id)->exists();
 
         $tenant = Tenant::updateOrCreate(
             ['iduser' => $user->id],
             [
-                'namabisnis'  => $namabisnis,
-                'slug'        => $slug,
+                'namabisnis' => $namabisnis,
+                'slug' => $slug,
                 'jenisbisnis' => $data['jenisbisnis'],
-                'alamat'      => $data['alamat'],
-                'nomorhp'     => $data['nomorhp'],
+                'alamat' => $data['alamat'],
+                'nomorhp' => $data['nomorhp'],
             ]
         );
 
@@ -66,6 +67,8 @@ class CreateInitialProfile
         }
 
         app(TenantContext::class)->setTenantId($tenant->id);
+
+        app(GetStorefrontTenant::class)->forget((int) $tenant->id);
 
         return $tenant;
     }

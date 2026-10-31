@@ -394,6 +394,7 @@ class FiveModulesFullIntegrationTest extends TestCase
 
     public function test_additional_items_linked_to_service_and_public_checkout(): void
     {
+        $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
         // 1. Owner creates Additional Item and assigns it to service
         $this->actingAs($this->owner);
         session(['current_tenant_id' => $this->tenant->id]);
@@ -453,14 +454,14 @@ class FiveModulesFullIntegrationTest extends TestCase
         ];
 
         $checkoutPageRes = $this->withSession($sessionData)
-            ->get(route('customer.booking.checkout', $this->tenant->slug));
+            ->get(route('customer.booking.slug.checkout', $this->tenant->slug));
         $checkoutPageRes->assertStatus(200);
         $checkoutPageRes->assertDontSee('Pomade Premium Matte');
         $checkoutPageRes->assertDontSee('Bima Stylist');
 
         // 3. Submitting checkout with selected_addons is rejected per Section 18
         $rejectRes = $this->withSession($sessionData)
-            ->post(route('customer.booking.process-checkout', $this->tenant->slug), [
+            ->post(route('customer.booking.slug.process-checkout', $this->tenant->slug), [
                 'namapelanggan' => 'Customer Adit',
                 'email' => 'adit@example.com',
                 'nomorhp' => '081234560000',
@@ -482,7 +483,7 @@ class FiveModulesFullIntegrationTest extends TestCase
         ];
 
         $processRes = $this->withSession($sessionData)
-            ->post(route('customer.booking.process-checkout', $this->tenant->slug), $postData);
+            ->post(route('customer.booking.slug.process-checkout', $this->tenant->slug), $postData);
 
         // Expected total: 75000 (service only)
         $processRes->assertRedirect();
