@@ -13,6 +13,16 @@ How BookQu is run, deployed, verified and recovered. Statements here are facts f
 
 Never copy production secrets into local or CI environments.
 
+### SingaPay payments outside production
+
+SingaPay sends a webhook only to the one URL registered in its dashboard, and BookQu cannot ask SingaPay for a payment's status (BQ-074). A local or dev instance therefore never learns that a SingaPay payment succeeded: the booking stays `pending` and the subscription is not activated. This is how the setup works, not a code defect (BQ-076). Two ways to test the success path:
+
+- **Simulate the webhook (no SingaPay needed):** create the booking or subscription checkout, then run `php artisan singapay:simulate-webhook <order_id>`. Use `--status=failed` or `--status=expired` for the other outcomes. The command signs a SingaPay-shaped notification with `SINGAPAY_CLIENT_SECRET` and runs it through the real webhook flow (`ProcessSingaPayWebhook` → Outcome intake → Payment lifecycle). It refuses to run when `APP_ENV=production`.
+- **Receive real sandbox webhooks:**
+  1. Expose the app with a tunnel; Laragon includes `ngrok`: `ngrok http 80`.
+  2. Register `https://<tunnel-host>/api/webhooks/singapay/transaction` as the webhook URL of the SingaPay **sandbox** merchant. Never change the production merchant's URL.
+  3. Register the dev machine's public IP with SingaPay. API calls from unregistered IPs fail with "IP address not registered".
+
 ## 2. Configuration
 
 Production must have `APP_ENV=production`, `APP_DEBUG=false`, a stable `APP_KEY` (never rotated casually — it decrypts sessions and encrypted fields), and the real `APP_URL`. Drivers from `.env.example`: `DB_CONNECTION=mysql`, `SESSION_DRIVER=database`, `CACHE_STORE=database`, `QUEUE_CONNECTION=database`, `FILESYSTEM_DISK=local`, `MAIL_MAILER=log` (development only).

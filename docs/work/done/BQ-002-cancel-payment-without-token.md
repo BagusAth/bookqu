@@ -42,6 +42,6 @@ Selesai 2026-10-31, sesudah BQ-001 dan BQ-032.
 - Kegagalan gateway tidak membalikkan keputusan lokal. SingaPay yang belum mempunyai cancel API tetap no-op sesuai ADR-0007; tidak ada klaim link eksternalnya telah dinonaktifkan. Provider success terlambat menghasilkan satu refund owed dan tidak menghidupkan booking, termasuk callback duplikat.
 - CancelCheckoutPaymentTest: 19 kasus HTTP/application mencakup dua profil, terminal/expiry boundaries, replay, stale authorization, CSRF, gateway failure dan late success.
 - CancelCheckoutPaymentTransactionTest (MySQL): gateway mengamati payment/booking yang sudah commit dari koneksi kedua pada transaction level 0 dan dapat mengambil kunci tenant. Rollback transaksi terluar mengembalikan data pending dan tidak memanggil gateway. Fixture ditruncate setelah tes.
-- Verifikasi akhir: lihat PR branch bq-002-payer-cancellation; SQLite 527 tes / 2.623 assertions, PHPStan tanpa error (baseline turun dua entri), Pint lulus. MySQL penuh 535 tes / 2.651 assertions lulus.
+- Verifikasi akhir: lihat PR branch bq-002-payer-cancellation; SQLite 530 tes / 2.632 assertions setelah sinkronisasi agathan (BQ-076), PHPStan tanpa error (baseline turun dua entri), Pint lulus. MySQL penuh 538 tes / 2.660 assertions lulus.
 
 Batas scope: pembatalan oleh owner atas pending booking dan kemampuan cancel SingaPay tetap dicatat di BQ-049. Keduanya tidak diubah diam-diam oleh jalur payer ini. API provider live tidak dipanggil selama pengujian.
