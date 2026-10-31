@@ -2,7 +2,7 @@
 id: BQ-076
 title: SingaPay success never reaches local/dev; add a webhook simulator
 type: bug-fix
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: payment
@@ -46,4 +46,4 @@ The permanent fix (asking SingaPay for status) is BQ-074.
 ## Evidence
 
 - `tests/Feature/Console/SimulateSingaPayWebhookTest.php`: a paid simulation settles the payment and the booking through the real webhook; the command refuses in production; an unknown order fails.
-- GitHub Actions run: pending until pushed.
+- GitHub Actions run https://github.com/BagusAth/bookqu/actions/runs/41221348557 (PR #10): Quality checks, SQLite, MySQL and MariaDB passed.
