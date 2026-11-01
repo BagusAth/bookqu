@@ -7,7 +7,8 @@ on:
 
 concurrency:
   group: bookqu-production
-  cancel-in-progress: true
+  # Never cancel a running deploy: it may be in the middle of a migration. A newer push waits.
+  cancel-in-progress: false
 
 jobs:
   # Deploy only a commit whose SQLite, MySQL and quality jobs pass (ADR-0015, BQ-018).
@@ -211,6 +212,8 @@ jobs:
               for item in composer.json composer.lock; do
                 cp -a "$BACKUP_DIR/$item" "$LARAVEL_DIR/$item"
               done
+              # Old code needs its own dependencies back
+              (cd "$LARAVEL_DIR" && composer install --no-dev --no-scripts --optimize-autoloader) || true
               rm -rf "$PUBLIC_DIR/build"
               if [ -d "$BACKUP_DIR/public-build" ]; then
                 cp -a "$BACKUP_DIR/public-build" "$PUBLIC_DIR/build"
@@ -298,6 +301,11 @@ jobs:
             find "$DB_BACKUP_DIR" -maxdepth 1 -name 'bookqu-*.sql.gz' -mtime +"$BACKUP_RETENTION_DAYS" -delete
             find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -mtime +"$BACKUP_RETENTION_DAYS" -exec rm -rf {} +
 
+            # Maintenance first, still on the old code: no request may reach new code
+            # before its migrations have run (release audit F1).
+            cd "$LARAVEL_DIR"
+            php artisan down --retry=60
+            MAINTENANCE_ON=1
             DEPLOY_STARTED=1
             for item in app bootstrap config database resources routes; do
               rm -rf "$LARAVEL_DIR/$item"
@@ -322,8 +330,6 @@ jobs:
             # generate the optimized autoloader without Composer lifecycle scripts;
             # the Laravel cache commands below remain the deployment validation.
             composer install --no-dev --no-scripts --optimize-autoloader
-            php artisan down --retry=60
-            MAINTENANCE_ON=1
             MIGRATIONS_STARTED=1
             php artisan migrate --force
             php artisan optimize:clear

@@ -2,7 +2,7 @@
 id: BQ-047
 title: [BUG-T3-01] Seluruh Rute Form Submission & Navigasi Rusak Total pada Custom Domain
 type: bug-fix
-status: in-progress
+status: done
 priority: P0
 phase: 4
 domain: tenancy
@@ -54,3 +54,5 @@ Migrated verbatim from the 2026-10 audit (TAHAP-3-CUSTOMER-BOOKING-JOURNEY.md, s
 Partial fixed (Sesi 3): 22 call sites pada view yang diizinkan memakai CustomerBookingRoutes::url; CustomDomainBookingTest melewati katalog → tanggal → waktu → checkout dengan host custom domain.
 Skipped: resources/views/customer/booking/payment.blade.php:5 tidak disentuh sesuai batas sesi; pola back URL lamanya ditinggalkan untuk sesi pemilik file (halaman privat saat ini canonical-host-only).
 Tidak ada perubahan domain, grant, gateway, middleware atau skema.
+
+Done 2026-11-01 (release fixes). The payment page back link now uses `CustomerBookingRoutes::url`, like the other 22 call sites. Private payment and management pages stay canonical-host-only by design (`CustomerAccessMiddleware`).
