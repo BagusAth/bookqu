@@ -15,7 +15,7 @@ Never copy production secrets into local or CI environments.
 
 ### SingaPay payments outside production
 
-SingaPay sends a webhook only to the one URL registered in its dashboard, and BookQu cannot ask SingaPay for a payment's status (BQ-074). A local or dev instance therefore never learns that a SingaPay payment succeeded: the booking stays `pending` and the subscription is not activated. This is how the setup works, not a code defect (BQ-076). Two ways to test the success path:
+SingaPay sends a webhook only to the one URL registered in its dashboard, which a local or dev instance cannot receive (BQ-076). BookQu also asks SingaPay for the status itself (BQ-074): while the payment page is open, or when "Periksa Status" is clicked, a paid sandbox payment becomes `sukses` without a webhook. Point the instance at the sandbox merchant (`SINGAPAY_BASE_URL=https://sandbox-payment-b2b.singapay.id` with the sandbox credentials) and register the machine's public IP there. Other ways to test:
 
 - **Simulate the webhook (no SingaPay needed):** create the booking or subscription checkout, then run `php artisan singapay:simulate-webhook <order_id>`. Use `--status=failed` or `--status=expired` for the other outcomes. The command signs a SingaPay-shaped notification with `SINGAPAY_CLIENT_SECRET` and runs it through the real webhook flow (`ProcessSingaPayWebhook` → Outcome intake → Payment lifecycle). It refuses to run when `APP_ENV=production`.
 - **Receive real sandbox webhooks:**

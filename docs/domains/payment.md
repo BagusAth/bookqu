@@ -49,7 +49,7 @@ Payer cancellation (BQ-002) runs through CustomerAccess/CancelCheckoutPayment: a
 `App\Contracts\Payments\PaymentGatewayInterface` (`createBookingPayment`, `createSubscriptionPayment`, `queryOutcome` → `ProviderOutcome`, `cancel`) implemented by `Infrastructure/Payments/SingaPay/SingaPayPaymentGateway` (+ `SingaPayClient`, `SingaPayWebhookVerifier`: HMAC signature over the sorted payload + `X-TIMESTAMP` tolerance `SINGAPAY_WEBHOOK_TOLERANCE_SECONDS`) and `Infrastructure/Payments/Midtrans/MidtransPaymentGateway` (Snap, SHA-512 signature, status API, `expire` for cancel).
 
 - Each adapter translates its notifications with `outcomeFromNotification()`, so provider status words stay in the adapters.
-- SingaPay's client has no status endpoint. Its `queryOutcome` answers `unknown`, so SingaPay payments rely on webhooks plus the late-success path.
+- SingaPay's `queryOutcome` (BQ-074) reads the payment link stored in `external_id`. Once the link's `current_usage` is at least 1, it looks up the paid entry of that link in the merchant's payment-link history (newest first, up to 500 entries) and reports `sukses` with the paid amount. Anything else is `unknown`: SingaPay never reports `gagal` through a query, and expiry stays with BookQu's deadline (ADR-0009). An unpaid answer is reused for 10 seconds per payment, so status pages that poll do not call SingaPay on every request.
 - All provider settings live in `config/payment.php`; `config/midtrans.php` was removed.
 
 `PaymentGatewayManager::driver()` picks `config('payment.default')` (`PAYMENT_GATEWAY_DRIVER`); `forPayment()` picks the payment's own `provider`.
@@ -73,7 +73,7 @@ Payer cancellation (BQ-002) runs through CustomerAccess/CancelCheckoutPayment: a
 
 ## Evidence
 
-`tests/Feature/Payment/PaymentLifecycleTest.php` (module interface), `tests/Feature/Actions/Payment/PaymentLifecycleLockingTest.php` (tenant-first and payment locks, MySQL/MariaDB), `tests/Feature/Payment/PaymentActionTest.php`, `PaymentGatewayDriverTest.php`, `SingaPayIntegrationTest.php` (65 tests), `Owner/CheckoutMidtransTest.php`, `Customer/PaymentGroupManagementTest.php`, `tests/Unit/Domain/PaymentStateTest.php`, `PaymentRulesTest.php`.
+`tests/Feature/Payment/PaymentLifecycleTest.php` (module interface), `tests/Feature/Actions/Payment/PaymentLifecycleLockingTest.php` (tenant-first and payment locks, MySQL/MariaDB), `tests/Feature/Payment/PaymentActionTest.php`, `PaymentGatewayDriverTest.php`, `SingaPayIntegrationTest.php` (65 tests), `SingaPayStatusQueryTest.php` (status query from recorded sandbox responses), `Owner/CheckoutMidtransTest.php`, `Customer/PaymentGroupManagementTest.php`, `tests/Unit/Domain/PaymentStateTest.php`, `PaymentRulesTest.php`.
 
 Additional payer-cancel evidence: tests/Feature/Customer/CancelCheckoutPaymentTest.php and tests/Feature/Actions/CustomerAccess/CancelCheckoutPaymentTransactionTest.php (real commit visibility, released tenant mutex and rollback suppression on MySQL).
 
@@ -87,7 +87,7 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Par
 
 | Gap | Item |
 |---|---|
-| SingaPay cannot be asked for a payment's status: the client has no status endpoint and the vendor API is not confirmed. A missed SingaPay webhook is only recovered when SingaPay retries it | BQ-074 |
+| The SingaPay status query uses endpoints confirmed against the sandbox API and a community SDK, not official vendor documentation. Its history list ignores filters, so a payment older than the newest 500 link payments of the merchant stays `unknown` | BQ-074 |
 | `payments.provider` is backfilled but still nullable | BQ-074 |
 | SingaPay payment links are not cancelled at the gateway (unsupported: ADR-0007 no-op; late success is refunded) | BQ-049 |
 | An owner cancelling a pending booking leaves its payment `pending` with an open link; a later payment becomes a refund owed | BQ-049 follow-up (outside payer-cancel scope) |
