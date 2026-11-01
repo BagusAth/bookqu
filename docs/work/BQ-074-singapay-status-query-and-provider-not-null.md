@@ -2,7 +2,7 @@
 id: BQ-074
 title: Confirm a SingaPay status query and make payments.provider NOT NULL
 type: improvement
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: payment
