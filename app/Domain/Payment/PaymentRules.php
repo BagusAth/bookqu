@@ -83,7 +83,8 @@ class PaymentRules
         return match (strtolower(trim((string) $payment->metode))) {
             PaymentState::METODE_SINGAPAY => PaymentState::METODE_SINGAPAY,
             PaymentState::METODE_GRATIS, PaymentState::METODE_CASH => 'manual',
-            default => PaymentState::METODE_MIDTRANS,
+            // Only SingaPay stores a hosted link; legacy `metode` may hold a payment type instead
+            default => ! empty($payment->payment_url) ? PaymentState::METODE_SINGAPAY : PaymentState::METODE_MIDTRANS,
         };
     }
 

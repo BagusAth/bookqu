@@ -185,6 +185,30 @@ class BookingManagementTest extends TestCase
         $this->assertSame('cancelled', $b2->status);
     }
 
+    public function test_owner_walk_in_without_email_is_recorded_without_a_management_delivery(): void
+    {
+        $walkinSchedule = Schedule::factory()->create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => now()->addDays(3)->toDateString(),
+            'jam_mulai' => '18:00',
+            'jam_selesai' => '19:00',
+            'status' => 'tersedia',
+        ]);
+
+        $this->actingAs($this->user)->post('/owner/bookings/walkin', [
+            'idschedule' => $walkinSchedule->id,
+            'namapelanggan' => 'Walkin Tanpa Email',
+            'nomorhp' => '089988776600',
+            'metode' => 'cash',
+        ])->assertRedirect()->assertSessionHas('sukses');
+
+        $booking = Booking::withoutGlobalScopes()->where('namapelanggan', 'Walkin Tanpa Email')->firstOrFail();
+        $this->assertNull($booking->email);
+        $this->assertSame('paid', $booking->status);
+        $this->assertDatabaseMissing('customer_access_deliveries', ['payment_id' => $booking->idpayment]);
+    }
+
     public function test_owner_walk_in_booking_creates_payment_with_management_delivery_and_provider(): void
     {
         $walkinSchedule = Schedule::factory()->create([

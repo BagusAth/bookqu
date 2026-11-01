@@ -14,6 +14,9 @@ return new class extends Migration
     {
         DB::table('payments')->whereNull('provider')->where('metode', 'singapay')->update(['provider' => 'singapay']);
         DB::table('payments')->whereNull('provider')->whereIn('metode', ['gratis', 'cash'])->update(['provider' => 'manual']);
+        // Legacy code overwrote `metode` with the payment type (qris, va, …); only SingaPay ever
+        // stored a hosted payment link, so the link is the reliable evidence (release audit F2).
+        DB::table('payments')->whereNull('provider')->whereNotNull('payment_url')->where('payment_url', '!=', '')->update(['provider' => 'singapay']);
         DB::table('payments')->whereNull('provider')->update(['provider' => 'midtrans']);
     }
 
