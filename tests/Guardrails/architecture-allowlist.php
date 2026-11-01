@@ -20,7 +20,6 @@ return [
         'app/Actions/Booking/CreateBooking.php' => 1,
         'app/Actions/Service/DeleteService.php' => 1,
         'app/Domain/Subscription/SubscriptionUsage.php' => 1,
-        'app/Http/Controllers/Customer/BookingController.php' => 1,
     ],
     // Removed by BQ-033.
     'plan-name-checks' => [

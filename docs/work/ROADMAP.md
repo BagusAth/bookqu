@@ -67,6 +67,8 @@ Sesi 4 (2026-11-01): BQ-043/044/045/046/054/055/058/059/060/080 fixed; BQ-056 al
 S7 (2026-11-01): BQ-013/050 done in code (queued after-commit email, ID-only customer delivery); BQ-020/021 in-progress (in-process scheduler, heartbeat, trusted proxy and production checklist ready; cron/SMTP/monitoring/live smoke evidence waits for lead). BQ-017/019 status unchanged: setelah rilis / menunggu lead; launch gates remain lead-owned. Release notes: `docs/release-notes/v1.0.0.md`.
 
 ### 5 — Launch
+BQ-084 (2026-11-01): approved three-step booking port implemented from Bagus's new-ui commits with preserved authorship and BQ-083 safeguards; legacy GETs redirect to Jadwal, AJAX/shared validation verified. PR remains open for Bagus review and lead manual acceptance; no release or merge authorized.
+
 Release PR `agathan` → `main`, tag `v1.0.0`, changelog, production smoke test, two weeks of close monitoring, hotfix procedure (hotfix branch → `main` → back-merge), post-launch review.
 
 ### 6 — Architecture alignment

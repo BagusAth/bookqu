@@ -79,7 +79,7 @@ class CustomDomainBookingTest extends TestCase
                 'service_id' => $this->service->id,
             ]);
 
-        $response->assertRedirect('http://studiobrama.com/booking/date');
+        $response->assertRedirect('http://studiobrama.com/booking/schedule');
         $this->assertEquals($this->service->id, session('booking.service_id'));
     }
 
@@ -93,8 +93,7 @@ class CustomDomainBookingTest extends TestCase
 
         foreach ([
             '/' => '/booking/select-program',
-            '/booking/date' => '/booking/select-date',
-            '/booking/time' => '/booking/select-time',
+            '/booking/schedule' => '/booking/select-schedule',
             '/booking/checkout' => '/booking/checkout',
         ] as $page => $action) {
             $this->get('http://studiobrama.com'.$page)->assertOk()

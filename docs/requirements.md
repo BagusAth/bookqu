@@ -340,11 +340,11 @@ A customer shall be able to select an eligible service from the tenant's public 
 
 ### FR-BOOKING-002 — Date Selection
 
-A customer shall be able to select an eligible booking date.
+A customer shall be able to select an eligible booking date on the combined Jadwal page (step 2 of Layanan → Jadwal → Data & Pembayaran). Changing the date loads its time slots without reloading the page; full or owner-closed dates cannot be selected.
 
 ### FR-BOOKING-003 — Time Selection
 
-A customer shall be able to select an available schedule.
+A customer shall be able to select one or more available, contiguous time slots on the same Jadwal page. Times are displayed in 24-hour WIB format. Date and slot selections are validated server-side before continuing to customer details and payment; legacy date/time GET URLs redirect to Jadwal.
 
 ### FR-BOOKING-004 — Customer Information
 

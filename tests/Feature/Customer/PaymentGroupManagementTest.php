@@ -554,7 +554,7 @@ class PaymentGroupManagementTest extends TestCase
 
     public function test_past_slots_on_today_are_not_counted_as_available_in_date_selection(): void
     {
-        Carbon::setTestNow(Carbon::parse('2026-09-22 14:00:00', 'Asia/Jakarta'));
+        $this->travelTo(Carbon::parse('2026-09-22 14:00:00', 'Asia/Jakarta'));
 
         $today = '2026-09-22';
 
@@ -583,23 +583,27 @@ class PaymentGroupManagementTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
             ],
-        ])->get('/'.$this->tenant->slug.'/booking/date');
+        ])->get('/'.$this->tenant->slug.'/booking/schedule');
 
         $response->assertStatus(200);
-        $payload = $response->viewData('availabilityPayload');
+        $payload = $response->viewData('dates');
 
         $todayAvailability = collect($payload)->firstWhere('date', $today);
         $this->assertNotNull($todayAvailability);
-        $this->assertEquals(2, $todayAvailability['total_slots']);
-        // Only 1 slot (16:00) is available, slot 09:00 must NOT be counted!
-        $this->assertEquals(1, $todayAvailability['available_slots']);
 
-        Carbon::setTestNow(); // reset
+        $slotsResponse = $this->getJson('/'.$this->tenant->slug.'/booking/schedule/slots?tanggal='.$today)->assertOk();
+        $todaySlots = collect($slotsResponse->json('morning'))->merge($slotsResponse->json('afternoon'))->merge($slotsResponse->json('evening'));
+        $this->assertCount(2, $todaySlots);
+        // Only 1 slot (16:00) is available, slot 09:00 must NOT be counted!
+        $this->assertTrue($todayAvailability['is_available']);
+        $this->assertCount(1, $todaySlots->where('is_available', true));
+
+        $this->travelBack();
     }
 
     public function test_today_with_only_past_slots_shows_zero_available_and_select_date_fails(): void
     {
-        Carbon::setTestNow(Carbon::parse('2026-09-22 18:00:00', 'Asia/Jakarta'));
+        $this->travelTo(Carbon::parse('2026-09-22 18:00:00', 'Asia/Jakarta'));
 
         $today = '2026-09-22';
 
@@ -619,15 +623,18 @@ class PaymentGroupManagementTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
             ],
-        ])->get('/'.$this->tenant->slug.'/booking/date');
+        ])->get('/'.$this->tenant->slug.'/booking/schedule');
 
         $response->assertStatus(200);
-        $payload = $response->viewData('availabilityPayload');
+        $payload = $response->viewData('dates');
         $todayAvailability = collect($payload)->firstWhere('date', $today);
 
         $this->assertNotNull($todayAvailability);
-        $this->assertEquals(1, $todayAvailability['total_slots']);
-        $this->assertEquals(0, $todayAvailability['available_slots']);
+        $slotsResponse = $this->getJson('/'.$this->tenant->slug.'/booking/schedule/slots?tanggal='.$today)->assertOk();
+        $todaySlots = collect($slotsResponse->json('morning'))->merge($slotsResponse->json('afternoon'))->merge($slotsResponse->json('evening'));
+        $this->assertCount(1, $todaySlots);
+        $this->assertCount(0, $todaySlots->where('is_available', true));
+        $this->assertFalse($todayAvailability['is_available']);
 
         // 2. Submitting selectDate for today should fail
         $selectResponse = $this->withSession([
@@ -641,6 +648,6 @@ class PaymentGroupManagementTest extends TestCase
 
         $selectResponse->assertSessionHasErrors('tanggal');
 
-        Carbon::setTestNow(); // reset
+        $this->travelBack();
     }
 }

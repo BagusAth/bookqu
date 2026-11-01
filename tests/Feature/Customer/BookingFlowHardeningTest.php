@@ -78,7 +78,7 @@ class BookingFlowHardeningTest extends TestCase
             ->assertRedirect('/my-business/booking/date')
             ->assertSessionHasInput('tanggal', $this->tomorrow);
 
-        $this->get('/my-business/booking/date')->assertOk()->assertSee(self::EXPIRED_HINT);
+        $this->followingRedirects()->get('/my-business/booking/date')->assertOk()->assertSee(self::EXPIRED_HINT);
     }
 
     public function test_an_expired_token_on_a_finished_checkout_still_explains_itself_on_the_first_step(): void

@@ -105,7 +105,7 @@ class CustomerFrontendSpecificationTest extends TestCase
             ],
         ]);
 
-        $response = $this->get('/'.$this->tenant->slug.'/booking/date');
+        $response = $this->get('/'.$this->tenant->slug.'/booking/schedule');
 
         $response->assertStatus(200);
         $response->assertSee('Pilih Tanggal');
@@ -123,15 +123,15 @@ class CustomerFrontendSpecificationTest extends TestCase
             ],
         ]);
 
-        $response = $this->get('/'.$this->tenant->slug.'/booking/time');
+        $response = $this->get('/'.$this->tenant->slug.'/booking/schedule');
 
         $response->assertStatus(200);
         $response->assertSee('Pilih Waktu');
         $response->assertSee('10:00 – 11:00');
         $response->assertSee('11:00 – 12:00');
         $response->assertSee('Rp 150.000');
-        $response->assertSee('Lanjut ke Data Pemesan');
-        $response->assertSee('Kembali ke Pilih Tanggal');
+        $response->assertSee('Lanjutkan');
+        $response->assertSee('Kembali ke Pilih Layanan');
     }
 
     public function test_checkout_view_renders_mobile_reservation_review_card_and_canonical_copy(): void
@@ -154,7 +154,7 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response->assertSee('Detail Reservasi');
         $response->assertSee('Simpan data kontak di perangkat ini untuk pemesanan berikutnya.');
         $response->assertSee('Lanjut ke Pembayaran');
-        $response->assertSee('Kembali ke Pilih Waktu');
+        $response->assertSee('Kembali ke Jadwal');
         $response->assertSee('2 sesi (120 menit)');
         // Ensure obsolete voucher input is removed
         $response->assertDontSee('voucher_code_input');

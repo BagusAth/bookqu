@@ -383,10 +383,10 @@ class RF09StabilityAndHardeningTest extends TestCase
         $resStep2 = $this->post('/'.$this->tenant->slug.'/booking/select-program', [
             'service_id' => $this->service->id,
         ]);
-        $resStep2->assertRedirect('/'.$this->tenant->slug.'/booking/date');
+        $resStep2->assertRedirect('/'.$this->tenant->slug.'/booking/schedule');
 
         // 3. Customer views date selection
-        $resStep3 = $this->get('/'.$this->tenant->slug.'/booking/date');
+        $resStep3 = $this->get('/'.$this->tenant->slug.'/booking/schedule');
         $resStep3->assertStatus(200);
 
         // 4. Customer selects date via POST
@@ -396,7 +396,7 @@ class RF09StabilityAndHardeningTest extends TestCase
         $resStep4->assertRedirect('/'.$this->tenant->slug.'/booking/time');
 
         // 5. Customer views time slots & selects a slot via POST
-        $resStep5 = $this->get('/'.$this->tenant->slug.'/booking/time');
+        $resStep5 = $this->get('/'.$this->tenant->slug.'/booking/schedule');
         $resStep5->assertStatus(200);
         $resStep5->assertSee('10:00');
 
