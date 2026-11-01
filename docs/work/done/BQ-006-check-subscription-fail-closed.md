@@ -15,7 +15,7 @@ depends-on: []
 
 # BQ-006: Make the subscription middleware fail closed
 
-Plan approved via [ADR-0010](../adr/ADR-0010-authorization-and-tenant-scoping.md) (fail closed everywhere), 2026-10-30.
+Plan approved via [ADR-0010](../../adr/ADR-0010-authorization-and-tenant-scoping.md) (fail closed everywhere), 2026-10-30.
 
 ## Problem
 

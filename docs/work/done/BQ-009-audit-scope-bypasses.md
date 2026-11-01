@@ -15,7 +15,7 @@ depends-on: []
 
 # BQ-009: Audit every withoutGlobalScope(s) usage
 
-Classification rule decided in [ADR-0010](../adr/ADR-0010-authorization-and-tenant-scoping.md) (decision 5: four allowed places, tenant-context runner elsewhere), 2026-10-30.
+Classification rule decided in [ADR-0010](../../adr/ADR-0010-authorization-and-tenant-scoping.md) (decision 5: four allowed places, tenant-context runner elsewhere), 2026-10-30.
 
 ## Problem
 
