@@ -2,7 +2,7 @@
 id: BQ-063
 title: Audit stage 3 P1-P3 defects (Customer Booking Journey: Storefront & 6-Langkah Reservasi hingga Checkout)
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: booking
@@ -85,4 +85,4 @@ Migrated verbatim from TAHAP-3-CUSTOMER-BOOKING-JOURNEY.md (Customer Booking Jou
 
 ## Evidence
 
-_Fill in when done._
+Closed 2026-11-01 (repo cleanup). The P1 items for customer journey were resolved in sessions 3–6 (see the ticked boxes). Remaining P2/P3 boxes moved to BQ-082.

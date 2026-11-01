@@ -2,7 +2,7 @@
 id: BQ-065
 title: Audit stage 5 P1-P3 defects (Customer Self-Service (Tanpa Akun) & Owner Booking Operations)
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: customer-access
@@ -93,4 +93,4 @@ Migrated verbatim from TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OPS.md (Customer Self
 
 ## Evidence
 
-_Fill in when done._
+Closed 2026-11-01 (repo cleanup). The P1 items for self-service & owner booking ops were resolved in sessions 3–6 (see the ticked boxes). BUG-T5-11 (walk-in form data loss) is part of BQ-057/BQ-081. Remaining P2/P3 boxes moved to BQ-082.

@@ -2,7 +2,7 @@
 id: BQ-062
 title: Audit stage 2 P1-P3 defects (Owner Core Operations: Services, Kategori, Jadwal & Kalender Interaktif)
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: catalog
@@ -93,3 +93,5 @@ T2-09 already fixed (type=time dan BulkCreateScheduleRequest date_format:H:i); T
 P2/P3 tetap terbuka dan tidak dikerjakan.
 
 _Fill in when done._
+
+Closed 2026-11-01 (repo cleanup). The P1 items for owner core were resolved in sessions 3–6 (see the ticked boxes). Remaining P2/P3 boxes moved to BQ-082.

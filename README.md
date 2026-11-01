@@ -46,7 +46,8 @@ Dengan BookQu, setiap pemilik bisnis (*Tenant/Owner*) memiliki halaman etalase p
   - Pengaturan nama layanan, tarif, durasi menit, kapasitas, dan status aktif/nonaktif.
   - Tampilan cover gambar persegi proporsional (rasio 1:1) dengan upload media otomatis.
   - Proteksi hapus: mencegah penghapusan layanan jika masih ada reservasi aktif.
-* **Modul Bisnis Pendukung** (sebagian masih dirilis bertahap — Tier 2 terkunci / Tier 3 tersembunyi, lihat `docs/product.md` §8):
+* **Saldo & Withdraw**: Pembayaran booking yang sukses masuk ke saldo owner (fee 0%); owner mengajukan withdraw ke rekening bank, admin mereview dan mentransfer manual dengan bukti.
+* **Modul Bisnis Pendukung** (dirilis bertahap dan dikunci di server lewat `config/modules.php` — Tier 2 terkunci / Tier 3 tersembunyi (404), lihat `docs/product.md` §8):
   - **Service Categories**: Pengelompokan jenis layanan.
   - **Staff & Resources**: Penugasan staf dan aset/ruangan khusus pada layanan tertentu.
   - **Additional Items (Add-ons)**: Upselling barang/jasa sewa tambahan pada booking.
@@ -62,10 +63,11 @@ Dengan BookQu, setiap pemilik bisnis (*Tenant/Owner*) memiliki halaman etalase p
 * **Pemilih Tanggal & Slot Real-time**: Ketersediaan slot jam dicek secara dinamis langsung dari database.
 * **Checkout & Integrasi Pembayaran**: Gateway terpadu — SingaPay (payment link, QRIS, Virtual Account, e-wallet) atau Midtrans Snap, dipilih lewat `PAYMENT_GATEWAY_DRIVER`.
 * **Konfirmasi & Kode Booking Unik**: Generate kode booking terstruktur (contoh: `#BKQ-20260910-XYZ123`).
-* **Self-Service Customer Portal**: Halaman kelola reservasi mandiri dengan tautan aman ber-token untuk membatalkan atau menjadwalkan ulang sesuai kebijakan batas waktu bisnis.
+* **Self-Service Customer Portal**: Halaman kelola reservasi mandiri lewat tautan akses aman untuk membatalkan atau menjadwalkan ulang sesuai kebijakan batas waktu bisnis.
 
 ### 3. 🛡️ Admin Panel (`/admin`)
-* Dasbor platform (baca saja): jumlah tenant, status langganan (*Small*, *Medium*, *Pro*), dan pendapatan langganan.
+* Dasbor platform: jumlah tenant, status langganan (*Small*, *Medium*, *Pro*), dan pendapatan langganan.
+* Review withdraw owner (`/admin/payouts`): setujui, catat transfer dan bukti, atau tolak dengan alasan.
 
 ---
 

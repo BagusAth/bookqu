@@ -2,7 +2,7 @@
 id: BQ-061
 title: Audit stage 1 P1-P3 defects (Guest Public Pages, Landing Page, Legal, Auth & Owner Onboarding)
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: auth
@@ -81,3 +81,5 @@ T1-06 rel noopener/noreferrer (components/landing/footer.blade.php:34); T1-07 ta
 P2/P3 tidak dikerjakan dan tetap terbuka.
 
 _Fill in when done._
+
+Closed 2026-11-01 (repo cleanup). The P1 items for auth & public were resolved in sessions 3–6 (see the ticked boxes). Remaining P2/P3 boxes moved to BQ-082.

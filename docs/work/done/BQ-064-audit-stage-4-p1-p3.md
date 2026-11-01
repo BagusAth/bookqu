@@ -2,7 +2,7 @@
 id: BQ-064
 title: Audit stage 4 P1-P3 defects (Payment Gateway, Webhooks, Halaman Pembayaran & Expiry Engine)
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: payment
@@ -86,4 +86,4 @@ Migrated verbatim from TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md (Payment Gateway, Webho
 
 ## Evidence
 
-_Fill in when done._
+Closed 2026-11-01 (repo cleanup). The P1 items for payment page were resolved in sessions 3–6 (see the ticked boxes). Remaining P2/P3 boxes moved to BQ-082.

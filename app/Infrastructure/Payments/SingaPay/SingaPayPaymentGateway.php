@@ -101,7 +101,7 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
             ];
         }
 
-        $customerPaysFee = (bool) (config('payment.drivers.singapay.customer_pays_fee') ?? config('services.singapay.customer_pays_fee', false));
+        $customerPaysFee = (bool) config('services.singapay.customer_pays_fee', false);
 
         $payload = [
             'reff_no' => (string) $payment->order_id,
@@ -196,7 +196,7 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
             ];
         }
 
-        $customerPaysFee = (bool) (config('payment.drivers.singapay.customer_pays_fee') ?? config('services.singapay.customer_pays_fee', false));
+        $customerPaysFee = (bool) config('services.singapay.customer_pays_fee', false);
 
         $payload = [
             'reff_no' => (string) $payment->order_id,

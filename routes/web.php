@@ -253,12 +253,6 @@ Route::prefix('admin')
         Route::post('/payouts/{payout}/fail', [AdminPayoutController::class, 'fail'])->whereNumber('payout')->name('admin.payouts.fail');
     });
 
-if (app()->environment('local', 'staging', 'testing')) {
-    Route::get('/test-isolasi/{slug}', function () {
-        return 'Route Test Isolasi Tenant';
-    });
-}
-
 // Shared booking sub-routes (no root GET /) — used by both custom-domain and slug groups.
 $bookingSubRoutes = function (string $namePrefix) {
     Route::post('/booking/select-program', [BookingController::class, 'selectProgram'])

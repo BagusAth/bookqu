@@ -14,8 +14,6 @@
     <!-- Vite CSS -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- html2canvas for instant image download -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         :root {
@@ -458,14 +456,6 @@
                 <span>Bagikan WA</span>
             </a>
 
-            {{-- Save as Image (PNG) --}}
-            <button type="button" id="btn-save-image" onclick="saveInvoiceAsImage()" class="btn-action btn-secondary" title="Download invoice format gambar PNG">
-                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <span>Simpan Gambar</span>
-            </button>
-
             {{-- Print / Save PDF --}}
             <button type="button" onclick="window.print()" class="btn-action btn-primary" title="Cetak atau simpan sebagai PDF">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -762,41 +752,5 @@
         </div>
     </main>
 
-    {{-- ── SCRIPT FOR DOWNLOADING INVOICE AS IMAGE ── --}}
-    <script>
-        async function saveInvoiceAsImage() {
-            const btn = document.getElementById('btn-save-image');
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = `
-                <svg class="w-4 h-4 animate-spin text-slate-600 inline-block" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Menyiapkan...</span>
-            `;
-            btn.disabled = true;
-
-            try {
-                const invoiceEl = document.getElementById('invoice-card');
-                const canvas = await html2canvas(invoiceEl, {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#ffffff',
-                    logging: false
-                });
-
-                const link = document.createElement('a');
-                link.download = 'Invoice-{{ $booking->booking_code }}.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            } catch (err) {
-                console.error('Failed to export invoice image:', err);
-                alert('Gagal mendownload gambar. Silakan gunakan tombol Cetak / Simpan PDF sebagai alternatif.');
-            } finally {
-                btn.innerHTML = originalContent;
-                btn.disabled = false;
-            }
-        }
-    </script>
 </body>
 </html>

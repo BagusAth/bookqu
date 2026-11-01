@@ -43,16 +43,7 @@ return [
 
     'drivers' => [
 
-        'singapay' => [
-            'base_url' => env('SINGAPAY_BASE_URL', 'https://payment-b2b.singapay.id'),
-            'client_id' => env('SINGAPAY_CLIENT_ID'),
-            'client_secret' => env('SINGAPAY_CLIENT_SECRET'),
-            'api_key' => env('SINGAPAY_API_KEY'),
-            'hmac_validation_key' => env('SINGAPAY_HMAC_VALIDATION_KEY'),
-            'account_id' => env('SINGAPAY_ACCOUNT_ID'),
-            'webhook_tolerance_seconds' => (int) env('SINGAPAY_WEBHOOK_TOLERANCE_SECONDS', 300),
-            'customer_pays_fee' => (bool) env('SINGAPAY_CUSTOMER_PAYS_FEE', false),
-        ],
+        // SingaPay credentials live in config/services.php (`services.singapay`).
 
         'midtrans' => [
             'merchant_id' => env('MIDTRANS_MERCHANT_ID'),

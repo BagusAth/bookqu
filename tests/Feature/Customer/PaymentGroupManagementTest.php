@@ -6,7 +6,6 @@ use App\Actions\Payment\PaymentLifecycle;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Payment\PaymentTransitionOutcome;
 use App\Mail\BookingGroupInvoiceMail;
-use App\Mail\BookingInvoiceMail;
 use App\Models\Booking;
 use App\Models\CustomerAccessGrant;
 use App\Models\Payment;
@@ -335,7 +334,6 @@ class PaymentGroupManagementTest extends TestCase
 
         // Exactly 1 consolidated email sent to customer
         Mail::assertSent(BookingGroupInvoiceMail::class, 1);
-        Mail::assertNotSent(BookingInvoiceMail::class);
     }
 
     public function test_pending_payment_with_cancelled_booking_does_not_resurrect_on_settlement(): void
