@@ -21,6 +21,8 @@ Plan approved via [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) (ent
 
 The sidebar view composer decides "Pro" with `str_contains(namapaket, 'pro')` (`app/Providers/AppServiceProvider.php:68`); `CheckExpiredSubscriptions` updates statuses with raw queries instead of `SubscriptionState` rules.
 
+> 2026-11-01: the sidebar badge and fail-closed entitlement for expired or missing subscriptions move to BQ-086; this item keeps the remaining cleanup.
+
 ## Plan
 
 Use `EntitlementRules` / `SubscriptionState` in both places; tests for the sidebar badge and for expiry.

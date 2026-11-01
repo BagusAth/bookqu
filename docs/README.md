@@ -13,6 +13,7 @@ Every question has one authoritative source. Start with `AGENTS.md` (always load
 | How is work planned, approved, implemented, reviewed? | `workflow.md` | Process |
 | How is BookQu deployed, operated and recovered? | `operations.md` | Process |
 | Why was a decision made? | `adr/` | Rationale |
+| Which product decisions wait for the Product Lead, and which were taken? | `product-decisions.md` | Decisions (Indonesian) |
 | What is planned, in progress or done? | `work/ROADMAP.md`, `work/BQ-*.md` | Status |
 | Which rules apply to the file I am editing? | `../.ai/rules/index.md` | Rules by path |
 
@@ -24,6 +25,6 @@ Every question has one authoritative source. Start with `AGENTS.md` (always load
 - **Status vocabulary.** Capabilities: `Implemented`, `Partial`, `Planned`, `Deprecated`; verification and architecture status as defined in `domains/README.md`. Work items: `proposed`, `approved`, `in-progress`, `done`, `rejected`.
 - **No history in active docs.** Git keeps it (the pre-2026-10-30 documents are at tag `baseline-2026-10-30`).
 - **Historical records stay as written.** Completed work items (`work/done/`) and accepted ADRs may name people ("lead: agathan") or the former integration branch `agathan`; they record who decided at the time. Current roles: `AGENTS.md` → "Roles"; current branches: `workflow.md` §6.
-- **Language.** Authority docs, rules and ADRs are English; `README.md`, release notes and UI copy are Indonesian (`workflow.md` §11).
+- **Language.** Authority docs, rules and ADRs are English; `README.md`, `product-decisions.md`, release notes and UI copy are Indonesian (`workflow.md` §11).
 - **New documents** only for a long-lived responsibility no existing document can hold.
 - Changes to authority documents need Tech Lead approval (`AGENTS.md` → "Who decides"). How to keep docs in sync with code: `workflow.md` §9.

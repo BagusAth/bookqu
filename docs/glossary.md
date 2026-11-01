@@ -51,6 +51,7 @@ Canonical BookQu terms and the legacy names that still appear in the code.
 | **Product Lead** / **Tech Lead** / **Developer** | Decision roles; holders listed in `AGENTS.md` → "Roles" |
 | **Integration branch** | `integration`: where finished work is combined by PR before release (`docs/workflow.md` §6). Older records call it `agathan`. |
 | **Light lane** / **Heavy lane** | How much process a task needs: light (UI, copy, tests, docs) or heavy (domain rules, schema, security, payment, product) — `docs/workflow.md` §3 |
+| **Product decision** (`D-NNN`) | A question for the Product Lead with a proposed answer, kept in `docs/product-decisions.md`; work items follow only after approval — `docs/workflow.md` §5 |
 
 ## State values
 

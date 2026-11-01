@@ -9,7 +9,7 @@ This section is the BookQu part of this file. Everything after it is the Laravel
 1. Classify the task (bug fix, feature, refactor, product change, docs, ops) and pick its lane — **light** or **heavy** — see `docs/workflow.md` §2–§3.
 2. Read the domain file for the area in `docs/domains/` (start at `docs/domains/README.md`). Read only the domains you touch.
 3. Read `.ai/rules/index.md` and every rule file whose globs match the paths you will touch.
-4. Find the requirement ID by searching `docs/requirements.md` (grep the `FR-`/`BR-` ID or keyword; do not read the whole file). No requirement ⇒ it is a product change: ask the Product Lead through the developer and stop.
+4. Find the requirement ID by searching `docs/requirements.md` (grep the `FR-`/`BR-` ID or keyword; do not read the whole file). No requirement ⇒ it is a product change: add an entry to `docs/product-decisions.md` for the Product Lead (through the developer) and stop.
 5. Optional: if the `graphify` tool is installed and `graphify-out/graph.json` exists, query it before broad searches (`graphify query "…"`). It is a personal tool, not a requirement. Verify string-based references (routes, views, middleware aliases) with grep.
 
 ## Where things are
@@ -25,6 +25,7 @@ This section is the BookQu part of this file. Everything after it is the Laravel
 | How is it deployed and operated? | `docs/operations.md` |
 | Why was a decision made? | `docs/adr/` |
 | What is planned or in progress? | `docs/work/ROADMAP.md`, `docs/work/BQ-*.md` |
+| Which product decisions are waiting or already taken? | `docs/product-decisions.md` |
 
 ## Non-negotiable rules
 
@@ -66,13 +67,13 @@ The agent asks **the developer running the session**. When the decision belongs 
 |---|---|
 | Implementation inside an assigned task: UI, copy, tests, internal structure, docs typos | Developer — agent may proceed |
 | Domain rules (booking, availability, payment, subscription), DB schema, security, auth, `AGENTS.md`, `docs/*.md` authority docs, `.ai/rules`, ADRs, new dependencies, releasing a Tier 2/3 module | Tech Lead, **before** coding |
-| Anything not in `docs/product.md` / `docs/requirements.md`, plan pricing, release to production | Product Lead |
+| Anything not in `docs/product.md` / `docs/requirements.md`, plan pricing, release to production | Product Lead, through a `D-NNN` entry in `docs/product-decisions.md`; no work item until approved |
 
 ## How work flows
 
 1. Work happens on your own branch (`agathan`, `bagus`, or `<name>/<topic>`), synced from `integration` before you start.
 2. **Light lane** (UI, copy, tests, non-authority docs, behaviour-preserving refactors): implement, run related tests, then the full suite once.
-3. **Heavy lane** (domain rules, schema, security/auth, payment, tenancy, product changes): write a work item `docs/work/BQ-NNN-slug.md` from `docs/work/_TEMPLATE.md`, get the decision from the table above, then implement with full verification.
+3. **Heavy lane** (domain rules, schema, security/auth, payment, tenancy, product changes): write a work item `docs/work/BQ-NNN-slug.md` from `docs/work/_TEMPLATE.md`, get the decision from the table above, then implement with full verification. A product change starts as a `D-NNN` entry in `docs/product-decisions.md`; its work item is written only after the Product Lead approves.
 4. Update the domain file, requirement or ADR only where their content changed.
 5. Sync from `integration` again, then open a PR into `integration` using `.github/pull_request_template.md`. The Tech Lead audits and merges. Never push to `integration` or `main` directly.
 

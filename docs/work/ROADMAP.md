@@ -8,6 +8,8 @@ From the current state to a production-ready, maintainable BookQu. Each phase en
 - **Code for v1 is complete:** payment lifecycle and outcome intake, slot claims, one payment deadline, customer access links, server-side module gating, balance and withdrawals, queued mail with an in-process scheduler, three-step storefront booking (BQ-084) and storefront hardening (BQ-083).
 - **CI:** four jobs (quality, SQLite, MySQL 8, MariaDB 11.4) on every PR and before every production deploy; the deploy backs up the database first.
 - **Open before launch (Tech Lead, operations):** BQ-020 cron on HostData, BQ-021 SMTP and monitoring, BQ-022 production SingaPay credentials and webhook URL. Branch protection for `main` and `integration` needs a repository admin.
+- **Open before launch (code, found 2026-11-01):** BQ-086 expired trials keep Pro entitlement; BQ-087 owner actions during an open online payment and ignored double payments.
+- **Waiting for a Product Lead decision** ([product decisions](../product-decisions.md)): D-001 optional refunds (blocks launch; its fallback is enough for launch), D-002 trial and subscription end, D-003 admin scope.
 - **Deferred until after launch:** BQ-017 staging, BQ-019 scheduled backups and restore drill, Phase 6 refactors, BQ-082 polish.
 
 ## Phases
@@ -18,11 +20,11 @@ From the current state to a production-ready, maintainable BookQu. Each phase en
 | **1 — Working foundation** | Docs and workflow for team and agents | Tech Lead | done (BQ-000) |
 | **2 — Architecture direction** | Target architecture as ADRs, backlog re-sequenced | Tech Lead | done (BQ-028, ADR-0004…0015) |
 | **3 — Guardrails** | CI on MySQL/MariaDB, gated deploy, quality and architecture checks | Tech Lead | built; branch protection still open |
-| **4 — Production readiness** | Close every launch blocker | Tech Lead | code done; BQ-020, BQ-021, BQ-022 open |
+| **4 — Production readiness** | Close every launch blocker | Tech Lead | BQ-086, BQ-087, D-001 and BQ-020, BQ-021, BQ-022 open |
 | **5 — Launch** | Release v1.0.0 and stabilize | Product Lead (go/no-go), Tech Lead (execution) | next |
 | **6 — Architecture alignment** | Structural refactor toward the ADRs | Tech Lead (PR audits) | after launch: BQ-016, BQ-029, BQ-030, BQ-031, BQ-033, BQ-034, BQ-035, BQ-075, BQ-077 |
 | **7 — Cleanup** | Dead code, old branches | Tech Lead | BQ-037 done; old branch clean-up per BQ-085 |
-| **8 — Continuous evolution** | New features and routine care | per decision table | BQ-038, BQ-082 and future items |
+| **8 — Continuous evolution** | New features and routine care | per decision table | BQ-082, BQ-088, D-002, D-003 and future items |
 
 ```text
 0 → 1 → 2 → 3 → 4 → 5 → 8
