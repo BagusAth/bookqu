@@ -33,6 +33,10 @@ Found in the owner UI audit of 2026-11-02. A control that looks like a setting b
 - Bookings table has a Staff/Resource column; the detail modal shows "General Staff" / "General Facility" (`partials/bookings/desktop-table.blade.php:91-96`, `detail-modal.blade.php:120-124`).
 - Sidebar icon switch still carries icons for hidden modules (harmless, remove with BQ-090's icon component).
 
+Added 2026-11-02 (deep audit):
+- Integrations page links to a Tier 3 hidden route (`app/Http/Controllers/Owner/OwnerIntegrationController.php:33` provides `"action_url" => route('owner.settings.payment-setting')` labeled "Konfigurasi Midtrans →"). Route `owner.settings.payment-setting` is wrapped by `middleware('module:direct-payment')`, which returns an immediate 404 because `direct-payment` is `hidden` in `config/modules.php`. It also violates ADR-0001 and BQ-079 (platform payment only in v1).
+- Subscription page leaks hidden staff module (`resources/views/owner/subscription.blade.php:67-73` renders a "Staff Members" usage quota bar displaying "0 / 5 Staf Aktif"), even though staff is a Tier 3 hidden module.
+
 ## Plan
 
 1. Remove the notification preference toggles. If the Product Lead wants owner-controlled notifications, that is a new entry in `docs/product-decisions.md`.

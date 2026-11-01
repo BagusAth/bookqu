@@ -74,6 +74,25 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 ---
 
+### D-004 · Rekening bank penarikan saldo disimpan atau diisi setiap pengajuan
+
+*Status:* Menunggu · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* tidak
+
+*Masalah*
+Setiap kali owner ingin mencairkan saldo hasil booking, owner harus mengetik ulang nama bank, nomor rekening, dan nama pemilik rekening dari awal. Jika terjadi salah ketik pada nomor rekening, ada risiko dana salah ditransfer oleh admin platform. Selain itu, owner merasa kerepotan karena tidak ada rekening tujuan yang tersimpan secara praktis.
+
+*Usulan keputusan*
+1. Owner dapat menyimpan satu rekening bank utama pada profil atau pengaturan bisnis.
+2. Saat membuka formulir penarikan saldo, kolom rekening otomatis terisi dengan data rekening utama tersebut, namun owner tetap bisa menyesuaikannya jika diperlukan.
+3. Nama pemilik rekening dianjurkan sesuai dengan nama pemilik akun untuk mempermudah verifikasi transfer oleh admin.
+4. Setiap pembaruan data rekening bank utama mengirimkan notifikasi konfirmasi ke email owner demi keamanan akun.
+
+*Kalau belum diputuskan:* sistem tetap menggunakan pengisian manual pada setiap pengajuan penarikan agar alur pencairan saldo tetap berjalan sederhana untuk rilis awal.
+
+*Jawaban Product Lead:* —
+
+---
+
 ## Untuk diketahui (tidak perlu keputusan)
 
 Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:

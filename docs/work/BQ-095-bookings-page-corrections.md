@@ -31,6 +31,7 @@ Found in the owner UI audit of 2026-11-02.
 | 6 | The booking payload for the detail modal is built twice, once per partial | `desktop-table.blade.php` and `mobile-cards.blade.php` `@php` blocks |
 | 7 | Staff/resource column and "General Staff / General Facility" placeholders show a hidden Tier 3 module (see BQ-097) | `desktop-table.blade.php:91-96`, `detail-modal.blade.php:120-124` |
 | 8 | Inline flash duplicates the toast (BQ-092); title "Bookings Management" (BQ-093) | `owner/bookings.blade.php:15-34` |
+| 9 | Calendar detail modal completes booking without confirmation: "✓ Selesai" immediately submits POST `/owner/bookings/{id}/status` with `status: 'completed'` without a confirm dialog; `completed` is an irreversible terminal state (INV-BOOK-02) | `resources/views/owner/partials/calendar/detail-modal.blade.php:250-257` (Added 2026-11-02 deep audit) |
 
 ## Plan
 

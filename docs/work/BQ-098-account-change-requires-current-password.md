@@ -30,6 +30,9 @@ Anyone who gets a logged-in owner session (shared computer, stolen session cooki
 
 Account deletion should be checked the same way (the form asks the owner to type the email in the browser; confirm the server requires the password).
 
+Added 2026-11-02 (deep audit):
+Account deletion verification confirmed completely missing password check: `app/Actions/Owner/DeleteOwnerAccount.php:21-31` validates only that the input matches `$user->email` or `$tenant->namabisnis`, both of which are printed on the screen (`resources/views/owner/settings.blade.php:301-303`). There is zero server-side password check or re-authentication. A stolen session or cross-site attack can permanently delete the tenant, logo, media assets, and user account without knowing the owner's password.
+
 ## Plan
 
 1. Require `current_password` (Laravel rule) for any change of email or password; keep name/phone edits free.

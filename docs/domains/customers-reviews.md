@@ -30,3 +30,5 @@ Functional: Implemented · Verification: Verified · Architecture: Target
 |---|---|
 | Owner review page prints `$rev->review`, but the column is `komentar`, so review text is blank (`resources/views/owner/reviews.blade.php:137`) | BQ-059 |
 | Audit P1: `$dispatch` error when saving a CRM note; fetch errors close the drawer silently; no review module in the payment-group portal | BQ-066, BQ-065 |
+| Customer CRM identifier in Alpine single-quotes, unescaped search, missing mobile cards, and drawer form submit guard | BQ-100 |
+| Reviews unbounded memory load without pagination, unescaped search interpolation, and reply modal governance | BQ-101 |

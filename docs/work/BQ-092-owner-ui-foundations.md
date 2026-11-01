@@ -29,6 +29,7 @@ Found in the owner UI audit of 2026-11-02. This item is the base for the page it
 - Page headers: some pages use `components/owner/page-header`, others hand-write `<h1>` with different sizes and weights.
 - Flash messages appear twice: as a toast (`components/owner/toast.blade.php:16-20`) and again inline on balance, bookings, categories, customers, programs and settings; the layout also prints `session('pesan')` inline while the toast shows it as a warning (`layouts/owner-layout.blade.php:53-60`).
 - Confirmation: most deletes use `confirm-modal`, notifications use native `confirm()` (`resources/views/owner/notifications.blade.php:234`), program modals and settings use native `alert/confirm`.
+- `confirm-modal` limitations: hardcodes a red trash-can icon and rose "Ya, Hapus" button (`components/owner/confirm-modal.blade.php:25-45`), making non-destructive confirmation look like a deletion; lacks `role="dialog"`, `aria-modal="true"`, focus trap, and return-focus (Added 2026-11-02 deep audit).
 - Toast ids use `Date.now()`, so two toasts in the same millisecond share a key; no `aria-live`; close button without label.
 - Stat cards: `components/owner/stat-card` plus a hand-copied "customers" card on the dashboard.
 
