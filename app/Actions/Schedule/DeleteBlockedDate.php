@@ -24,6 +24,7 @@ class DeleteBlockedDate
     {
         $target = $blockedDate instanceof OwnerBlockedDate
             ? $blockedDate
+            // scope-bypass: filtered by the authenticated tenant and re-checked below
             : OwnerBlockedDate::withoutGlobalScopes()->where('idtenant', $tenant->id)->findOrFail((int) $blockedDate);
 
         if ((int) $target->idtenant !== (int) $tenant->id) {

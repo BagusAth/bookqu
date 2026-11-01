@@ -41,28 +41,29 @@ class GetSubscriptionOverview
     {
         if ($tenant === null) {
             return [
-                'langgananaktif'        => null,
-                'semuapaket'            => Plan::all(),
-                'jumlahlayanan'         => 0,
+                'langgananaktif' => null,
+                'semuapaket' => Plan::all(),
+                'jumlahlayanan' => 0,
                 'jumlahbookingbulanini' => 0,
-                'jumlahstaff'           => 0,
-                'maxlayanan'            => 0,
-                'maxbooking'            => 0,
-                'maxstaff'              => 0,
-                'isunlimited'           => false,
-                'isunlimitedstaff'      => false,
-                'persenlayanan'         => 0,
-                'persenbooking'         => 0,
-                'persenstaff'           => 0,
-                'statustrial'           => false,
-                'sisahari'              => 0,
-                'riwayatpembayaran'     => collect(),
+                'jumlahstaff' => 0,
+                'maxlayanan' => 0,
+                'maxbooking' => 0,
+                'maxstaff' => 0,
+                'isunlimited' => false,
+                'isunlimitedstaff' => false,
+                'persenlayanan' => 0,
+                'persenbooking' => 0,
+                'persenstaff' => 0,
+                'statustrial' => false,
+                'sisahari' => 0,
+                'riwayatpembayaran' => collect(),
             ];
         }
 
         $idtenant = $tenant->id;
 
         /** @var Subscription|null $langgananaktif */
+        // scope-bypass: filtered by the authenticated tenant
         $langgananaktif = Subscription::withoutGlobalScopes()
             ->where('idtenant', $idtenant)
             ->with('plan')
@@ -77,7 +78,7 @@ class GetSubscriptionOverview
 
         $isTrial = $langgananaktif !== null
             && $langgananaktif->status === SubscriptionState::STATUS_TRIAL
-            && !SubscriptionState::isExpired($langgananaktif);
+            && ! SubscriptionState::isExpired($langgananaktif);
 
         $plan = $langgananaktif?->plan;
         $planName = strtolower(trim((string) ($plan?->namapaket ?? PlanCapability::PLAN_SMALL)));
@@ -95,6 +96,7 @@ class GetSubscriptionOverview
         $sisahari = SubscriptionState::getRemainingTrialDays($langgananaktif);
         $statustrial = $isTrial && $langgananaktif?->trial_berakhir !== null;
 
+        // scope-bypass: filtered by the authenticated tenant
         $riwayatpembayaran = Payment::withoutGlobalScopes()
             ->where('idtenant', $idtenant)
             ->where('tipe', 'subscription')
@@ -103,22 +105,22 @@ class GetSubscriptionOverview
             ->get();
 
         return [
-            'langgananaktif'        => $langgananaktif,
-            'semuapaket'            => $semuapaket,
-            'jumlahlayanan'         => $jumlahlayanan,
+            'langgananaktif' => $langgananaktif,
+            'semuapaket' => $semuapaket,
+            'jumlahlayanan' => $jumlahlayanan,
             'jumlahbookingbulanini' => $jumlahbookingbulanini,
-            'jumlahstaff'           => $jumlahstaff,
-            'maxlayanan'            => $maxlayanan,
-            'maxbooking'            => $maxbooking,
-            'maxstaff'              => $maxstaff,
-            'isunlimited'           => $isunlimited,
-            'isunlimitedstaff'      => $isunlimitedstaff,
-            'persenlayanan'         => $persenlayanan,
-            'persenbooking'         => $persenbooking,
-            'persenstaff'           => $persenstaff,
-            'statustrial'           => $statustrial,
-            'sisahari'              => $sisahari,
-            'riwayatpembayaran'     => $riwayatpembayaran,
+            'jumlahstaff' => $jumlahstaff,
+            'maxlayanan' => $maxlayanan,
+            'maxbooking' => $maxbooking,
+            'maxstaff' => $maxstaff,
+            'isunlimited' => $isunlimited,
+            'isunlimitedstaff' => $isunlimitedstaff,
+            'persenlayanan' => $persenlayanan,
+            'persenbooking' => $persenbooking,
+            'persenstaff' => $persenstaff,
+            'statustrial' => $statustrial,
+            'sisahari' => $sisahari,
+            'riwayatpembayaran' => $riwayatpembayaran,
         ];
     }
 }

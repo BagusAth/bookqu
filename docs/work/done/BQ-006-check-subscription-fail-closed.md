@@ -2,7 +2,7 @@
 id: BQ-006
 title: Make the subscription middleware fail closed
 type: bug-fix
-status: approved
+status: done
 priority: P1
 phase: 4
 domain: subscription
@@ -27,4 +27,4 @@ Deny (redirect to the subscription page or 403) when no tenant or subscription i
 
 ## Evidence
 
-_Fill in when done._
+Done 2026-11-01 (session 2 bundle). `CheckSubscription` aborts 403 when no tenant resolves. Test: `ReleaseGateAndHardeningTest::test_subscription_gate_refuses_a_request_without_tenant`.

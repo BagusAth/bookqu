@@ -275,11 +275,8 @@ class BookingFlowTest extends TestCase
             'service_id' => $this->service->id,
         ]);
 
-        $response->assertStatus(422);
-        $response->assertJson([
-            'valid' => false,
-            'message' => 'Fitur voucher saat ini belum aktif.',
-        ]);
+        // Vouchers are a hidden Tier 3 module: the route does not exist (ADR-0011)
+        $response->assertNotFound();
     }
 
     public function test_checkout_with_voucher_is_rejected_while_feature_disabled(): void

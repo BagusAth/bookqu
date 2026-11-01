@@ -14,8 +14,11 @@ class AnalyticsAndSubscriptionTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Tenant $tenant;
+
     protected Plan $proPlan;
+
     protected Plan $starterPlan;
 
     protected function setUp(): void
@@ -83,6 +86,9 @@ class AnalyticsAndSubscriptionTest extends TestCase
 
     public function test_owner_can_view_and_update_landing_page(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.landing-page' => 'released']);
+
         $response = $this->actingAs($this->user)->get('/owner/landing-page');
         $response->assertStatus(200);
 

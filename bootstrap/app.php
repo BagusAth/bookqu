@@ -4,6 +4,7 @@ use App\Console\Commands\CheckExpiredSubscriptions;
 use App\Http\Middleware\CheckSubscription;
 use App\Http\Middleware\CustomerAccessHeaders;
 use App\Http\Middleware\CustomerAccessMiddleware;
+use App\Http\Middleware\EnsureModuleReleased;
 use App\Http\Middleware\EnsureOwnerProfileComplete;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\TenantMiddleware;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'owner.profile' => EnsureOwnerProfileComplete::class,
             'subscription' => CheckSubscription::class,
+            'module' => EnsureModuleReleased::class,
         ]);
 
         $middleware->priority([

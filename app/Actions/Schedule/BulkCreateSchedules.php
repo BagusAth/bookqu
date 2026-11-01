@@ -42,6 +42,7 @@ class BulkCreateSchedules
      */
     public function execute(Tenant $tenant, array $data): array
     {
+        // scope-bypass: filtered by the authenticated tenant
         $service = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->find($data['idlayanan']);
 
         if (! $service) {
@@ -81,6 +82,7 @@ class BulkCreateSchedules
         }
 
         // Exclude owner blocked dates
+        // scope-bypass: filtered by the authenticated tenant
         $blocked = OwnerBlockedDate::withoutGlobalScopes()->where('idtenant', $tenant->id)
             ->whereIn('tanggal', $dates)
             ->pluck('tanggal')

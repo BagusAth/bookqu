@@ -6,11 +6,14 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Service extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use BelongsToTenant, HasFactory;
+
     protected $fillable = [
         'idtenant',
         'namalayanan',
@@ -56,17 +59,17 @@ class Service extends Model
         return $this->hasMany(Schedule::class, 'idlayanan');
     }
 
-    public function staff(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function staff(): BelongsToMany
     {
         return $this->belongsToMany(Staff::class, 'service_staff', 'idservice', 'idstaff')->withTimestamps();
     }
 
-    public function resources(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function resources(): BelongsToMany
     {
         return $this->belongsToMany(Resource::class, 'service_resource', 'idservice', 'idresource')->withTimestamps();
     }
 
-    public function additionalItems(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function additionalItems(): BelongsToMany
     {
         return $this->belongsToMany(AdditionalItem::class, 'additional_item_service', 'idservice', 'idadditional_item')->withTimestamps();
     }
@@ -78,13 +81,15 @@ class Service extends Model
      */
     public function hasActiveFulfillment(): bool
     {
+        // scope-bypass: pivot rows of this service only; staff/resource ids are tenant-validated on write
         $staffQuery = $this->staff()->withoutGlobalScopes();
-        if ($staffQuery->exists() && !$this->staff()->withoutGlobalScopes()->where('staff.is_active', true)->exists()) {
+        if ($staffQuery->exists() && ! $this->staff()->withoutGlobalScopes()->where('staff.is_active', true)->exists()) {
             return false;
         }
 
+        // scope-bypass: pivot rows of this service only; staff/resource ids are tenant-validated on write
         $resourceQuery = $this->resources()->withoutGlobalScopes();
-        if ($resourceQuery->exists() && !$this->resources()->withoutGlobalScopes()->where('resources.is_active', true)->exists()) {
+        if ($resourceQuery->exists() && ! $this->resources()->withoutGlobalScopes()->where('resources.is_active', true)->exists()) {
             return false;
         }
 
@@ -99,6 +104,7 @@ class Service extends Model
         if (str_starts_with($this->image_url, 'http://') || str_starts_with($this->image_url, 'https://') || str_starts_with($this->image_url, '/')) {
             return $this->image_url;
         }
-        return \Illuminate\Support\Facades\Storage::url($this->image_url);
+
+        return Storage::url($this->image_url);
     }
 }

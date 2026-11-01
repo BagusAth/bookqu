@@ -26,6 +26,7 @@ class DeleteSchedule
     {
         $slot = $schedule instanceof Schedule
             ? $schedule
+            // scope-bypass: filtered by the authenticated tenant and re-checked below
             : Schedule::withoutGlobalScopes()->where('idtenant', $tenant->id)->findOrFail((int) $schedule);
 
         if ((int) $slot->idtenant !== (int) $tenant->id) {

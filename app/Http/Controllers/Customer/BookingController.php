@@ -877,6 +877,7 @@ class BookingController extends Controller
     private function resolveService(int $tenantId, int $serviceId): ?Service
     {
         $serviceData = Cache::remember($this->getServiceCacheKey($tenantId, $serviceId), now()->addSeconds(3600), function () use ($tenantId, $serviceId) {
+            // scope-bypass: filtered by the resolved storefront tenant
             return Service::withoutGlobalScopes()
                 ->where('id', $serviceId)
                 ->where('idtenant', $tenantId)

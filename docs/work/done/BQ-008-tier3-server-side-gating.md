@@ -2,7 +2,7 @@
 id: BQ-008
 title: Disable Tier 3 modules on the server, not only in navigation
 type: improvement
-status: approved
+status: done
 priority: P1
 phase: 4
 domain: staged-modules
@@ -30,4 +30,4 @@ ADR-0002 hides Tier 3 modules from navigation, but every endpoint still works by
 
 ## Evidence
 
-_Fill in when done._
+Done 2026-11-01. `config/modules.php` registry plus `module:<name>` middleware (`EnsureModuleReleased`) on every Tier 3 route (404) and Tier 2 route (GET only, writes 403); unknown modules are hidden. Storefront `validate-voucher` now answers 404. Tests: `ReleaseGateAndHardeningTest` (hidden/locked/released/unregistered and a guard that every staged route carries its gate); module behaviour tests release their module via config. Not included: the sidebar still uses its own visibility list (proven by `OwnerSidebarNavigationTest`); moving it to the registry is left to BQ-033/BQ-034.

@@ -334,6 +334,9 @@ class FiveModulesFullIntegrationTest extends TestCase
 
     public function test_staff_and_resources_crud_and_pivot_relationships(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.staff-resources' => 'released']);
+
         $this->actingAs($this->owner);
         session(['current_tenant_id' => $this->tenant->id]);
         app(TenantContext::class)->setTenantId($this->tenant->id);
@@ -394,6 +397,9 @@ class FiveModulesFullIntegrationTest extends TestCase
 
     public function test_additional_items_linked_to_service_and_public_checkout(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.additional-items' => 'released']);
+
         $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
         // 1. Owner creates Additional Item and assigns it to service
         $this->actingAs($this->owner);

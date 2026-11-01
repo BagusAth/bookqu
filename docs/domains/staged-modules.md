@@ -15,6 +15,8 @@ Modules whose backend exists but which are not fully released. The release polic
 | Analytics, schedule report | see `insights.md` | | 2 (locked) | Reachable |
 | Platform balance | see `balance-payout.md` | | 2 | Payout request reachable |
 
+Since BQ-008 (2026-11-01) the "Server-side state" column describes the code behind the gate: `module:<name>` (`config/modules.php`) answers 404 for every Tier 3 route and refuses Tier 2 writes with 403, unless an environment releases the module.
+
 ## Status
 
 Functional: Implemented, gated in the UI only · Verification: Needs Verification · Architecture: Needs Refactor
@@ -23,8 +25,8 @@ Functional: Implemented, gated in the UI only · Verification: Needs Verificatio
 
 | Gap | Item |
 |---|---|
-| Hiding a link is not authorization: every Tier 3 endpoint above still works by URL | BQ-008 |
+| Sidebar visibility still uses its own list instead of `config/modules.php` | BQ-033 |
 | Direct-gateway keys stored unencrypted | BQ-004 |
 | Audit P0: staff/resource relations never detached when unchecked | BQ-045 |
 
-Target decision: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) — module registry `config/modules.php` with `module:<name>` middleware (`hidden` → 404, `locked` → lock page only), implemented by BQ-008. Not implemented yet.
+Target decision: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) — module registry `config/modules.php` with `module:<name>` middleware (`hidden` → 404, `locked` → lock page only), implemented by BQ-008 (2026-11-01): Tier 3 routes answer 404, Tier 2 routes refuse writes with 403.

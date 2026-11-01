@@ -29,31 +29,8 @@ return [
         'resources/views/owner/landing-page.blade.php' => 1,
         'resources/views/owner/subscription.blade.php' => 5,
     ],
-    // Removed by BQ-009.
-    'scope-bypass-reason' => [
-        'app/Actions/Booking/CancelBooking.php' => 1,
-        'app/Actions/Booking/EvictStalePendingBookings.php' => 1,
-        'app/Actions/Payment/ProcessPaymentWebhook.php' => 1,
-        'app/Actions/Schedule/BulkCreateSchedules.php' => 2,
-        'app/Actions/Schedule/DeleteBlockedDate.php' => 1,
-        'app/Actions/Schedule/DeleteSchedule.php' => 1,
-        'app/Actions/Schedule/GetAvailableSchedules.php' => 2,
-        'app/Actions/Service/DeleteService.php' => 1,
-        'app/Actions/Service/ToggleServiceStatus.php' => 1,
-        'app/Actions/Service/UpdateService.php' => 1,
-        'app/Actions/Subscription/ActivateSubscription.php' => 2,
-        'app/Actions/Subscription/GetSubscriptionOverview.php' => 2,
-        'app/Console/Commands/CheckExpiredSubscriptions.php' => 3,
-        'app/Console/Commands/ExpireBookingPayments.php' => 1,
-        'app/Domain/Schedule/AvailabilityRules.php' => 1,
-        'app/Domain/Schedule/ScheduleConflictRules.php' => 2,
-        'app/Domain/Subscription/SubscriptionUsage.php' => 3,
-        'app/Http/Controllers/Admin/AdminDashboardController.php' => 7,
-        'app/Http/Controllers/Customer/BookingController.php' => 1,
-        'app/Models/Service.php' => 4,
-        'app/Services/Schedule/ScheduleAvailabilityCache.php' => 1,
-        'app/Support/TenantContext.php' => 1,
-    ],
+    // Emptied by BQ-009: every bypass now states its reason.
+    'scope-bypass-reason' => [],
     // Real writes moved to the Payment lifecycle in BQ-067; the rest are status values in responses, removed by BQ-032 (Outcome intake).
     'payment-status-writers' => [
         'app/Http/Controllers/Customer/BookingController.php' => 2,
