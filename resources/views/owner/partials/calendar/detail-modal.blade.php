@@ -319,6 +319,7 @@
                             </button>
                             <form method="POST" :action="`/owner/schedule/slots/${selectedSlot.raw_schedule_id}`" :id="`form-delete-calendar-slot-${selectedSlot.raw_schedule_id}`" class="flex-1 sm:flex-none inline">
                                 @csrf
+                                <input type="hidden" name="return_to" value="calendar">
                                 @method('DELETE')
                                 <button
                                     type="button"

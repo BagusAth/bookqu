@@ -2,7 +2,7 @@
 id: BQ-059
 title: [BUG-T6-02] Kolom Isi Ulasan Pelanggan Blank / Kosong Melompong pada Seluruh Halaman Ulasan
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: customers-reviews
@@ -35,4 +35,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-6-CRM-REVIEWS-BILLING-SETTINGS.m
 
 ## Evidence
 
-_Fill in when done._
+fixed: owner/reviews.blade.php membaca komentar (kolom model Review), menggantikan atribut review yang tidak ada. Perubahan presentasi saja (Sesi 4).

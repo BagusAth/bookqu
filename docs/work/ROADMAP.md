@@ -62,6 +62,8 @@ Progress (2026-10-30): BQ-073 (CI on MariaDB 11.4, the production engine; fixed 
 
 Sesi 3 (2026-11-01): BQ-040/041 already fixed, BQ-042 logout 419 UX fixed, BQ-061 P1 already fixed; BQ-047 URL custom domain diperbaiki pada view yang diizinkan, payment.blade.php tetap di luar scope. BQ-078/079/080 dari branch dasar hanya dicatat.
 
+Sesi 4 (2026-11-01): BQ-043/044/045/046/054/055/058/059/060/080 fixed; BQ-056 already fixed dan dibuktikan tes; P1 BQ-062 selesai; P1 BQ-066 selesai selain T6-07 (upload logo sengaja disembunyikan oleh release-tier test). P2/P3 tetap terbuka. BQ-057 skipped karena bug kontrak email walk-in (BQ-081) memerlukan area terlarang.
+
 ### 5 — Launch
 Release PR `agathan` → `main`, tag `v1.0.0`, changelog, production smoke test, two weeks of close monitoring, hotfix procedure (hotfix branch → `main` → back-merge), post-launch review.
 

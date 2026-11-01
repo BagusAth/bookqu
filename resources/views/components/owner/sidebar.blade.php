@@ -6,9 +6,8 @@
     $tenant = auth()->user()?->tenant;
     $subscription = $tenant?->subscription;
     $isTrial = $subscription && $subscription->status === 'trial';
-    $daysLeft = $subscription && $subscription->trial_berakhir
-        ? max(0, (int) now()->diffInDays($subscription->trial_berakhir, false))
-        : 8;
+    $endsAt = $isTrial ? $subscription?->trial_berakhir : $subscription?->langganan_berakhir;
+    $daysLeft = $endsAt ? max(0, (int) now()->diffInDays($endsAt, false)) : 0;
 
     $unreadNotifCount = auth()->user()?->unreadNotifications()->count() ?? 0;
 
@@ -507,7 +506,7 @@
                     <div class="flex items-center justify-between">
                         <p class="text-xs font-black text-[#231a3d]">Active Plan</p>
                         <span class="rounded-full bg-[#f3effe] px-2 py-0.5 text-[10px] font-extrabold text-[#382186] border border-[#b499ff]/40">
-                            {{ $isTrial ? 'Trial' : 'Pro' }}
+                            {{ $isTrial ? 'Trial' : ucfirst($subscription?->plan?->namapaket ?? 'Free') }}
                         </span>
                     </div>
                     <p class="text-[11px] font-semibold text-[#6e6584] mt-0.5">{{ $daysLeft }} days left</p>
@@ -527,7 +526,7 @@
                 class="craft-btn mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#382186] hover:bg-[#2d1a6d] py-2 px-3 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98]"
                 id="btn-sidebar-upgrade"
             >
-                <span>Upgrade now</span>
+                <span>Kelola Langganan</span>
                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>

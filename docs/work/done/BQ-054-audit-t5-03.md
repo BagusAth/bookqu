@@ -2,7 +2,7 @@
 id: BQ-054
 title: [BUG-T5-03] Mismatch Total 6 Atribut Payload `$bookingData` Merusak Modal Reschedule Owner
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: booking
@@ -37,4 +37,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OP
 
 ## Evidence
 
-_Fill in when done._
+fixed: payload desktop/mobile menyertakan namapelanggan, booking_code, jam, idschedule, tanggalbooking ISO dan layanan.namalayanan, sambil mempertahankan key detail lama; dikirim dengan @js() (Sesi 4).

@@ -22,12 +22,12 @@ Migrated verbatim from TAHAP-6-CRM-REVIEWS-BILLING-SETTINGS.md (CRM Pelanggan, M
 
 ## P1 checklist
 
-- [ ] BUG-T6-04: Tombol Utama "Change Plan" Tidak Memiliki Aksi Apapun (Dead Button)
-- [ ] BUG-T6-05: Kartu Langganan di Sidebar Menampilkan Info Palsu pada Pelanggan Berbayar
-- [ ] BUG-T6-06: Runtime Error `$dispatch is not defined` pada Simpan Catatan CRM
+- [x] BUG-T6-04: Tombol Utama "Change Plan" Tidak Memiliki Aksi Apapun (Dead Button)
+- [x] BUG-T6-05: Kartu Langganan di Sidebar Menampilkan Info Palsu pada Pelanggan Berbayar
+- [x] BUG-T6-06: Runtime Error `$dispatch is not defined` pada Simpan Catatan CRM
 - [ ] BUG-T6-07: Input Upload File Logo Bisnis Hilang dari UI Halaman Pengaturan
-- [ ] BUG-T6-08: Tampilan Tombol Ganda Redundan pada Halaman Checkout Payment
-- [ ] BUG-T6-09: Unhandled Fetch Error Status & Silently Closed Drawer pada CRM Detail
+- [x] BUG-T6-08: Tampilan Tombol Ganda Redundan pada Halaman Checkout Payment
+- [x] BUG-T6-09: Unhandled Fetch Error Status & Silently Closed Drawer pada CRM Detail
 
 ## P2 / P3 checklist
 
@@ -96,5 +96,9 @@ Migrated verbatim from TAHAP-6-CRM-REVIEWS-BILLING-SETTINGS.md (CRM Pelanggan, M
 - **Rekomendasi Perbaikan**: Periksa `if (!r.ok)` sebelum assign state dan tampilkan toast error jika gagal.
 
 ## Evidence
+
+Sesi 4: T6-04/08 selesai melalui BQ-080; T6-05 sidebar memakai paket aktual dan langganan_berakhir.
+T6-06/09 CRM memeriksa HTTP status, mengirim native toast event dan menjaga error panel; T6-07 skipped: OwnerSidebarNavigationTest mewajibkan logo tetap tersembunyi; promosi release tier di luar bundel bug-fix ini. Browser dan tes presentasi terkait lulus.
+P2/P3 tetap terbuka dan tidak dikerjakan.
 
 _Fill in when done._

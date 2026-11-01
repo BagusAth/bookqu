@@ -20,13 +20,13 @@ Migrated verbatim from TAHAP-2-OWNER-CORE-OPERATIONS.md (Owner Core Operations: 
 
 ## P1 checklist
 
-- [ ] BUG-T2-05: Slot Waktu Tersedia Tertutup Total oleh Booking pada Desktop Week View
-- [ ] BUG-T2-06: Form Tambah Jadwal Massal Kehilangan Hari Terpilih saat Validasi Gagal
-- [ ] BUG-T2-07: Toggle Status Aktif Layanan Tidak Menampilkan Indikator Loading
-- [ ] BUG-T2-08: Ketiadaan Dialog Konfirmasi Dampak Hapus Kategori pada Layanan
-- [ ] BUG-T2-09: Validasi Format 24-Jam Tidak Ditegakkan pada Time Picker Jadwal
-- [ ] BUG-T2-10: Error Penanganan AJAX Kalender Hanya Menampilkan Objek Kosong
-- [ ] BUG-T2-11: Modal Tambah Layanan Tidak Memiliki Focus Trap untuk Aksesibilitas
+- [x] BUG-T2-05: Slot Waktu Tersedia Tertutup Total oleh Booking pada Desktop Week View
+- [x] BUG-T2-06: Form Tambah Jadwal Massal Kehilangan Hari Terpilih saat Validasi Gagal
+- [x] BUG-T2-07: Toggle Status Aktif Layanan Tidak Menampilkan Indikator Loading
+- [x] BUG-T2-08: Ketiadaan Dialog Konfirmasi Dampak Hapus Kategori pada Layanan
+- [x] BUG-T2-09: Validasi Format 24-Jam Tidak Ditegakkan pada Time Picker Jadwal
+- [x] BUG-T2-10: Error Penanganan AJAX Kalender Hanya Menampilkan Objek Kosong
+- [x] BUG-T2-11: Modal Tambah Layanan Tidak Memiliki Focus Trap untuk Aksesibilitas
 
 ## P2 / P3 checklist
 
@@ -87,5 +87,9 @@ Migrated verbatim from TAHAP-2-OWNER-CORE-OPERATIONS.md (Owner Core Operations: 
 - **Deskripsi**: Menekan tombol `Tab` pada modal dapat mengalirkan fokus ke elemen di latar belakang dashboard yang tertutup overlay.
 
 ## Evidence
+
+Sesi 4: T2-05 already fixed (week-view: booking dan slot memakai @if terpisah); T2-06 already fixed/superseded (UI bulk saat ini tanggal/rentang, tidak memiliki checkbox hari); T2-08 already fixed (dialog menguraikan dampak hapus kategori).
+T2-09 already fixed (type=time dan BulkCreateScheduleRequest date_format:H:i); T2-10 already fixed/superseded (kalender sekarang navigasi server, tanpa fetch kalender). T2-07 loading toggle dan T2-11 focus trap diperbaiki; browser Tab/Shift+Tab lulus.
+P2/P3 tetap terbuka dan tidak dikerjakan.
 
 _Fill in when done._

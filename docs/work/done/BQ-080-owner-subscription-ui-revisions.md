@@ -2,7 +2,7 @@
 id: BQ-080
 title: Owner subscription and checkout UI revisions
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: subscription
@@ -45,3 +45,7 @@ None. Presentation only (AGENTS.md rule 11). Entitlement stays in `EntitlementRu
 None beyond this item's Evidence.
 
 ## Evidence (fill when done)
+
+fixed (owner scope): countdown integer, Bayar Sekarang tanpa ikon, tombol buka ulang kondisional, Change Plan dihapus; fitur bersama dari config/plans.php, batas tetap dibaca dari Plan.
+SubscriptionPresentationTest membuktikan countdown pecahan menjadi integer serta daftar fitur landing/subscription identik; browser payment dan print-only invoice lulus, tanpa html2canvas/dependency baru.
+Penyelarasan invoice customer disebut sebagai lanjutan di rencana lama dan tidak termasuk bundel UI owner ini; tidak ada perubahan payment/domain/skema (Sesi 4).

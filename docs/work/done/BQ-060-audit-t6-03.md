@@ -2,7 +2,7 @@
 id: BQ-060
 title: [BUG-T6-03] Fatal Error Potensial `Attempt to read property "email" on null` pada Modal Hapus Akun
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: auth
@@ -31,4 +31,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-6-CRM-REVIEWS-BILLING-SETTINGS.m
 
 ## Evidence
 
-_Fill in when done._
+fixed: modal hapus akun memakai tenant?->user?->email dengan fallback auth user; target JS juga nullsafe. OwnerUiAuditTest memaksa relasi user null dan membuktikan settings HTTP 200 (Sesi 4).

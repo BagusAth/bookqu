@@ -10,7 +10,7 @@ requirements: []
 invariants: []
 launch-blocker: true
 needs-lead-approval: false
-depends-on: [BQ-039]
+depends-on: [BQ-039, BQ-081]
 source: docs/audit-bug/TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OPS.md at a68ffe8
 ---
 
@@ -28,4 +28,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OP
 
 ## Evidence
 
-_Fill in when done._
+Skipped Sesi 4: uji POST walk-in tanpa email gagal NOT NULL bookings.email meskipun validator nullable. Bug dicatat BQ-081; Action Booking/skema dilarang disentuh. UI baru dan uji eksplorasinya ditarik bersama scope yang belum dapat dikirim, bukan diubah agar tampak lulus.

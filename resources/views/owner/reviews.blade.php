@@ -134,7 +134,7 @@
                 </div>
 
                 {{-- Review Text --}}
-                <p class="text-xs text-bq-text leading-relaxed pl-12">{{ $rev->review }}</p>
+                <p class="text-xs text-bq-text leading-relaxed pl-12">{{ $rev->komentar }}</p>
 
                 {{-- Owner Reply Box --}}
                 @if($rev->balasan)
