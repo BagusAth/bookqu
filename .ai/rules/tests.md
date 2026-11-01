@@ -5,10 +5,10 @@ paths:
 
 # Tests
 
-Context: `docs/workflow.md` §6.
+Context: `docs/workflow.md` §7.
 
 ## What to cover
-Behaviour changes need tests for the happy path, validation, authorization, tenant isolation and state transitions; booking and payment changes also cover stale pending, concurrency, cross-booking tokens, duplicate webhooks and driver switching.
+Behaviour changes need tests for the happy path, validation, authorization, tenant isolation and state transitions; booking and payment changes also cover stale pending, concurrency, cross-booking access, duplicate webhooks and driver switching.
 
 ## Names describe behaviour
 `test_customer_cannot_cancel_with_reschedule_token`, not `test_cancel`.

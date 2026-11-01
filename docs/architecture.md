@@ -66,9 +66,9 @@ Validation is layered and every layer stays: client hints → Form Request → d
 
 ## 5. Booking and availability
 
-- The Slot bookability contract, transaction participation, tenant-first synchronization across relevant writers, closure policy and cache ownership are decided in [ADR-0005](adr/ADR-0005-slot-bookability-module.md). This is the accepted target; implementation follows BQ-023 → BQ-067 → BQ-012 → BQ-069 and the roadmap gates.
-- **Occupancy** (`paid`, `completed`, or `pending` while its payment is within its deadline plus the settlement margin — ADR-0009) is defined only in `BookingRules`. **Availability** is decided only by the Slot bookability module (ADR-0005), which every entry point — storefront, owner booking, both reschedule flows, walk-in, calendar, reports — uses; today it is spread over `AvailabilityRules` / `GetAvailableSchedules` and caller queries (BQ-012).
-- The storefront journey is a server-side Checkout draft (ADR-0008): a typed draft with step transitions, stored in the session, holding no authority; the quote shown equals the amount charged.
+- The Slot bookability contract, transaction participation, tenant-first synchronization across relevant writers, closure policy and cache ownership are decided in [ADR-0005](adr/ADR-0005-slot-bookability-module.md); writes claim slots through `ClaimSlots` (BQ-012). Moving availability-cache ownership into the module remains open (BQ-075).
+- **Occupancy** (`paid`, `completed`, or `pending` while its payment is within its deadline plus the settlement margin — ADR-0009) is defined only in `BookingRules`. **Availability** is decided only by `AvailabilityRules` / `GetAvailableSchedules`, which every entry point — storefront, owner booking, both reschedule flows, walk-in, calendar, reports — uses.
+- The storefront journey has three steps (service → schedule → checkout). Its selection lives in the session; the checkout page carries a fingerprint of service, date, slots and prices, and a stale fingerprint returns the customer to checkout (BQ-083), so the quote shown equals the amount charged. The typed Checkout draft of ADR-0008 is the accepted target and is **not implemented yet**.
 - A booking write is one transaction: lock tenant first → lock and validate owned schedules → request stale-pending group expiry through Payment lifecycle → re-check availability → write → commit → side effects. A rejected operation rolls back its mutations. The `unique_active_booking_slot` index is the final guard.
 - Cancellation and rescheduling are operations (`CancelBooking`, `RescheduleBooking`), never raw status updates; state changes go through `BookingState`.
 - Multi-slot reservations are validated and persisted as one unit with one payment.
@@ -91,12 +91,12 @@ Public identifiers never authorize access (FR-MANAGE-008). Finite expiry, revoca
 ## 8. Subscription and release gating
 
 - Feature access and limits come only from `EntitlementRules`; routes use the `subscription:<feature>` middleware, which fails closed.
-- Release tiers (`docs/product.md` §8) are enforced server-side through the module registry `config/modules.php` and the `module:<name>` middleware (ADR-0011): `hidden` → 404, `locked` → lock page only; navigation reads the same registry. Target, BQ-008.
+- Release tiers (`docs/product.md` §8) are enforced server-side through the module registry `config/modules.php` and the `module:<name>` middleware (ADR-0011): `hidden` → 404, `locked` → lock page only; navigation reads the same registry (BQ-008).
 
 ## 9. Side effects, async work and the scheduler
 
 - Mail, notifications and cache invalidation run after commit; their failure never undoes the main operation.
-- Mail and notifications are queued (`ShouldQueue`, after commit) and jobs carry ids, never tokens (target, BQ-013).
+- Mail and notifications are queued (`ShouldQueue`, after commit) and jobs carry ids, never credentials (BQ-013).
 - On shared hosting (ADR-0013): cron runs `schedule:run` and a short `queue:work --stop-when-empty --max-time=50` every minute; scheduled work runs in-process (`Schedule::call()`/`job()`), because `proc_open` is disabled. Jobs and sweeps are idempotent and process one tenant per transaction.
 - Scheduled work finds records and delegates to Actions/domain rules; it never re-implements a rule.
 
@@ -121,7 +121,7 @@ Public identifiers never authorize access (FR-MANAGE-008). Finite expiry, revoca
 | Action / feature tests | Prove operations, authorization, isolation, HTTP flows | `tests/Feature/` |
 | Module-interface tests | Main test surface of each deep module (ADR-0004…0009) | `tests/Feature/<Area>/` |
 | Integrity tests on MySQL | CI runs the whole suite on MySQL 8 and on MariaDB 11.4, the production engine (`phpunit.mysql.xml`); tests that need real row locks carry `#[Group('mysql')]` and are skipped on SQLite | `tests/Feature/**` (group `mysql`) |
-| Provider contract tests | Recorded payloads per real adapter; fake adapter elsewhere | target (BQ-032) |
+| Provider contract tests | Recorded payloads per real adapter; fake adapter elsewhere | `tests/Feature/Payment/SingaPay*Test.php` (SingaPay webhook and status query); other adapters remain a target |
 | Architecture tests | Enforce ADR-0012 by scanning sources; known violations are counted per file in a shrinking allowlist | `tests/Guardrails/` |
 
 Strategy: [ADR-0014](adr/ADR-0014-testing-strategy.md). Characterize poorly tested behaviour before refactoring it; replace duplicated tests, don't layer them.

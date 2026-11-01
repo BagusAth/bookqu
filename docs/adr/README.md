@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR)
 
-Why significant architectural decisions were made. Write one with `_TEMPLATE.md` when a decision affects several domains, changes an integration, tenancy, concurrency or payment strategy, introduces a new pattern, or would otherwise leave future contributors guessing (`docs/workflow.md` §8). ADRs are decided by the lead; accepted ADRs are not edited except to fix facts or mark them superseded.
+Why significant architectural decisions were made. Write one with `_TEMPLATE.md` when a decision affects several domains, changes an integration, tenancy, concurrency or payment strategy, introduces a new pattern, or would otherwise leave future contributors guessing (`docs/workflow.md` §9). ADRs are decided by the Tech Lead; accepted ADRs are not edited except to fix facts or mark them superseded.
 
 ## Records
 

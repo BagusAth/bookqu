@@ -21,7 +21,7 @@ Production SingaPay/Midtrans credentials and webhook URLs have not been verified
 
 ## Plan
 
-Lead sets the production credentials; register the webhook URLs; run one real low-value transaction per provider and one refund path; record the evidence.
+Tech Lead sets the production credentials; register the webhook URLs; run one real low-value transaction per provider and one refund path; record the evidence.
 
 ## Evidence
 

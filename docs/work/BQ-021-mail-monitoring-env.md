@@ -25,5 +25,5 @@ Configure a transactional mail provider and an alert channel (for example mail o
 
 ## Evidence
 
-S7 (2026-11-01), plan approved by lead: production env checklist, opt-in cached trusted-proxy configuration and scheduler health checks implemented/documented; release notes prepared.
-Waiting for lead: production SMTP + queued test email, config cache rebuild, UptimeRobot `/up` every five minutes, payment live setup/smoke test, and operational alert verification. No production secrets were read or changed.
+2026-11-01, plan approved by the Tech Lead: production env checklist, opt-in cached trusted-proxy configuration and scheduler health checks implemented/documented; release notes prepared.
+Waiting for the Tech Lead: production SMTP + queued test email, config cache rebuild, UptimeRobot `/up` every five minutes, payment live setup/smoke test, and operational alert verification. No production secrets were read or changed.

@@ -11,12 +11,12 @@ This is the descriptive map of the current system. The normative rules live in `
 | Tenancy & business profile | [tenancy.md](tenancy.md) | Implemented | Needs Verification | Target (gaps noted) |
 | Authentication & accounts | [auth.md](auth.md) | Implemented | Verified (partial) | Needs Refactor |
 | Catalog (services, categories) | [catalog.md](catalog.md) | Implemented | Verified | Target |
-| Schedule & availability | [schedule.md](schedule.md) | Implemented | Verified (SQLite only) | Needs Refactor |
-| Booking | [booking.md](booking.md) | Implemented | Verified (SQLite only) | Needs Refactor |
-| Customer access (management links) | [customer-access.md](customer-access.md) | Implemented | Needs Verification | Needs Refactor |
+| Schedule & availability | [schedule.md](schedule.md) | Implemented | Verified | Needs Refactor |
+| Booking | [booking.md](booking.md) | Implemented | Verified | Needs Refactor |
+| Customer access (access links) | [customer-access.md](customer-access.md) | Implemented | Verified | Target |
 | Payment & refund | [payment.md](payment.md) | Implemented | Verified (partial) | Needs Refactor |
 | Subscription & billing | [subscription.md](subscription.md) | Implemented | Verified (partial) | Target (gaps noted) |
-| Platform balance & payouts | [balance-payout.md](balance-payout.md) | Partial | Needs Verification | Target |
+| Platform balance & payouts | [balance-payout.md](balance-payout.md) | Implemented | Verified | Target |
 | Customers CRM & reviews | [customers-reviews.md](customers-reviews.md) | Implemented | Verified | Target |
 | Notifications & mail | [notifications.md](notifications.md) | Implemented | Needs Verification | Needs Refactor |
 | Insights (dashboard, calendar, analytics, reports) | [insights.md](insights.md) | Implemented | Needs Verification | Needs Refactor |
@@ -45,7 +45,7 @@ Invariants are the rules that must hold at all times. Each one has a home domain
 | INV-SCH-01 | A schedule is bookable only if it is `tersedia`, in the future, not on a blocked date, its service is active with active fulfillment, and it is not occupied. | schedule |
 | INV-BOOK-01 | Booking status is one of `pending`, `paid`, `cancelled`, `completed`. | booking |
 | INV-BOOK-02 | Booking status changes only through `BookingState::canTransition`: pending→paid/cancelled/completed, paid→completed/cancelled; `cancelled` and `completed` are terminal. | booking |
-| INV-BOOK-03 | A booking occupies its schedule when `paid`, `completed`, or `pending` created within the last 15 minutes (`BookingRules::PENDING_GRACE_MINUTES`). | booking |
+| INV-BOOK-03 | A booking occupies its schedule when `paid`, `completed`, or `pending` while its payment is within its deadline (`payments.expired_at`) plus the settlement margin (ADR-0009). Defined only in `BookingRules`. | booking |
 | INV-BOOK-04 | At most one occupying booking per schedule: row lock in the booking transaction plus DB unique index `unique_active_booking_slot`. | booking |
 | INV-BOOK-05 | Stale pending bookings are evicted inside the booking transaction before a new booking claims the slot. | booking |
 | INV-BOOK-06 | A multi-slot booking is contiguous, all-or-nothing, and shares one payment. | booking |
@@ -55,5 +55,5 @@ Invariants are the rules that must hold at all times. Each one has a home domain
 | INV-PAY-04 | Payment success comes only from trusted provider evidence (verified webhook or server-side status query). | payment |
 | INV-PAY-05 | An existing payment always resolves its own provider (`PaymentGatewayManager::forPayment`). | payment |
 | INV-PAY-06 | Refunds have their own lifecycle; at most one refund per payment. | payment |
-| INV-TOK-01 | A management token authorizes only its own booking/payment group and only its own capability. | customer-access |
+| INV-TOK-01 | A customer access grant authorizes only its exact booking/payment group and only its profile's operations (ADR-0006). | customer-access |
 | INV-SUB-01 | Feature access and limits are decided by `EntitlementRules`. | subscription |

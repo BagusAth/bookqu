@@ -5,10 +5,10 @@ What BookQu must do. Product meaning is in `docs/product.md`; how the current co
 ## How to use this document
 
 - IDs: `FR-{DOMAIN}-{NNN}` functional, `BR-{DOMAIN}-{NNN}` business rule, `NFR-{AREA}-{NNN}` non-functional, `AC-…` acceptance criteria. IDs are stable — never renumber or reuse them.
-- Every behaviour change references an ID. No matching ID means a product change: the lead decides, then this file is updated **before** code (`docs/workflow.md` §2).
+- Every behaviour change references an ID. No matching ID means a product change: the Product Lead decides, then this file is updated **before** code (`docs/workflow.md` §2).
 - Requirements describe behaviour, not classes. Implementation status lives in the domain files, not here.
-- Entries marked **Proposed** describe behaviour that exists in code or is needed but has not been formally accepted; the lead accepts or rejects them.
-- A requirement is never marked verified because a screen or code path exists; verification needs evidence (`docs/workflow.md` §6).
+- Entries marked **Proposed** describe behaviour that exists in code or is needed but has not been formally accepted; the Product Lead accepts or rejects them.
+- A requirement is never marked verified because a screen or code path exists; verification needs evidence (`docs/workflow.md` §7).
 
 ## Actors
 
@@ -575,9 +575,9 @@ Refund state is separate from both booking state and payment state.
 
 A customer shall be able to access eligible booking management functionality without requiring a normal BookQu account.
 
-### FR-MANAGE-002 — Secure Access Token
+### FR-MANAGE-002 — Secure Access Grant
 
-The system shall use secure tokenized authorization for customer booking management.
+The system shall authorize customer booking management through secure access grants delivered as access links (ADR-0006). Legacy `?token=` links never authorize access.
 
 ### FR-MANAGE-003 — Booking Details
 
@@ -1412,11 +1412,11 @@ A duplicate refund record must not be created for the same cancellation event.
 
 Owner cancellation must follow the defined owner-cancellation policy and must not automatically imply a refund unless the accepted requirement explicitly requires one.
 
-## Token Authorization Rules
+## Access Grant Authorization Rules
 
-Customer booking management uses scoped token authorization.
+Customer booking management uses scoped access grants (ADR-0006).
 
-The system must distinguish the purpose of a tokenized operation.
+The system must distinguish the purpose of each grant (its profile).
 
 Examples include:
 
@@ -1428,11 +1428,11 @@ cancellation
 rescheduling
 ```
 
-A valid token for one purpose must not automatically authorize unrelated operations.
+A valid grant for one purpose must not automatically authorize unrelated operations.
 
-A token belonging to one booking must not authorize operations on another booking.
+A grant belonging to one booking or payment group must not authorize operations on another.
 
-Cross-booking token use must be rejected.
+Cross-booking grant use must be rejected.
 
 ## Multi-Slot Booking Rules
 
@@ -1612,7 +1612,7 @@ A new capability must not be treated as accepted simply because it is technicall
 
 ## Proposed requirements
 
-Added 2026-10-30 from the Phase 1 review. Status: **Proposed** until the lead accepts them (tracked in `docs/work/`).
+Added 2026-10-30 from the Phase 1 review. Status: **Proposed** until the Product Lead accepts them (tracked in `docs/work/`).
 
 ### FR-AUTH-007 — Password Reset (Proposed)
 

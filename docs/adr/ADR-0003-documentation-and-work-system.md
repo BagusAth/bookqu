@@ -27,5 +27,5 @@ By October 2026 BookQu had about 18,000 lines of guidance: `AGENT.md` (1,876 lin
 
 - Agents load ~85 lines of BookQu guidance plus only the rules and domain files they need, instead of ignoring 1,876 lines.
 - Plans and code change in the same PR; both developers and every agent read the same files.
-- Discipline required: update the domain file, requirement or ADR when content changes (`workflow.md` §8). CI checks for links and IDs are planned (BQ-024).
+- Discipline required: update the domain file, requirement or ADR when content changes (`workflow.md` §9). CI checks for links and IDs are planned (BQ-024).
 - If the team grows beyond three people, mirror work items in GitHub Issues/Projects (roadmap phase 8).

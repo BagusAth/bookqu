@@ -60,7 +60,7 @@ Dengan BookQu, setiap pemilik bisnis (*Tenant/Owner*) memiliki halaman etalase p
 
 ### 2. 🛍️ Portal Pelanggan Publik (`/{tenant-slug}`)
 * **Etalase Layanan Responsif**: Tampilan responsif di ponsel, tablet, maupun desktop.
-* **Pemilih Tanggal & Slot Real-time**: Ketersediaan slot jam dicek secara dinamis langsung dari database.
+* **Alur Booking 3 Langkah**: Layanan → Jadwal (pilih tanggal lalu satu atau beberapa slot berurutan di satu halaman, slot dimuat langsung dari database) → Data & Pembayaran. Pelanggan yang meninggalkan pembayaran bisa melanjutkannya sebelum batas waktu.
 * **Checkout & Integrasi Pembayaran**: Gateway terpadu — SingaPay (payment link, QRIS, Virtual Account, e-wallet) atau Midtrans Snap, dipilih lewat `PAYMENT_GATEWAY_DRIVER`.
 * **Konfirmasi & Kode Booking Unik**: Generate kode booking terstruktur (contoh: `#BKQ-20260910-XYZ123`).
 * **Self-Service Customer Portal**: Halaman kelola reservasi mandiri lewat tautan akses aman untuk membatalkan atau menjadwalkan ulang sesuai kebijakan batas waktu bisnis.
@@ -144,6 +144,8 @@ DB_PASSWORD=
 ```
 > **Catatan**: Pastikan Anda telah membuat database kosong bernama `bookqu` di MySQL/phpMyAdmin lokal Anda sebelum melanjutkan.
 
+> **Penting — `APP_URL` harus sama persis dengan alamat yang Anda buka di browser.** Pakai `http://localhost:8000` untuk `php artisan serve`, atau `http://bookqu.test` untuk Laragon. Link akses pelanggan (halaman pembayaran, invoice, kelola booking) hanya berlaku di host `APP_URL`; kalau berbeda, halaman itu menjawab "Halaman tidak tersedia" dan redirect setelah bayar menuju alamat yang salah.
+
 #### Langkah 5: Generate Application Key
 ```bash
 php artisan key:generate
@@ -166,7 +168,25 @@ php artisan db:seed --class=BramaStudioSeeder
 ```
 
 #### Langkah 8: Konfigurasi Payment Gateway (Opsional / Sandbox)
-Pilih driver dengan `PAYMENT_GATEWAY_DRIVER=singapay` (default) atau `midtrans`, lalu isi kredensial sandbox provider tersebut di `.env`. Daftar lengkap variabel ada di `docs/operations.md` §2.
+Pilih driver dengan `PAYMENT_GATEWAY_DRIVER=singapay` (default) atau `midtrans`, lalu isi kredensial sandbox provider tersebut di `.env`. Daftar lengkap variabel ada di `docs/operations.md` §2. Kredensial sandbox dibagikan di luar repo (pesan langsung atau password manager) dan tidak pernah di-commit.
+
+Untuk SingaPay sandbox:
+* Gunakan `SINGAPAY_BASE_URL=https://sandbox-payment-b2b.singapay.id` beserta kredensial dari dashboard **sandbox** (kredensial sandbox tidak berlaku di URL produksi).
+* Daftarkan IP publik laptop Anda di dashboard SingaPay (Credential → IP Address Configuration). IP yang dilihat SingaPay bisa berbeda dari situs cek IP; pesan error SingaPay di `storage/logs/laravel.log` menyebutkan IP yang harus didaftarkan.
+* SingaPay tidak bisa mengirim webhook ke laptop. Untuk menandai pembayaran uji sebagai lunas, jalankan `php artisan singapay:simulate-webhook <order_id>` (lihat `docs/operations.md` §1).
+
+#### Langkah 9: Email di Lokal
+Email (konfirmasi, link akses pelanggan, notifikasi owner) dikirim lewat antrean. Dengan `MAIL_MAILER=log` isi email ditulis ke `storage/logs/laravel.log`. `composer run dev` sudah menjalankan antrean; kalau memakai Laragon tanpa perintah itu, jalankan `php artisan queue:work --stop-when-empty` untuk memproses email yang menunggu.
+
+#### Setiap Kali Menarik Kode Terbaru
+```bash
+git pull
+composer install
+npm install
+php artisan migrate
+php artisan optimize:clear
+npm run build
+```
 
 ---
 
@@ -285,7 +305,17 @@ Mulai dari [`AGENTS.md`](AGENTS.md) lalu [`docs/README.md`](docs/README.md). Rin
 
 ## 🤝 Kontribusi
 
-Ikuti [`docs/workflow.md`](docs/workflow.md): buat item kerja di `docs/work/`, kerjakan di branch `bq-NNN-slug` dari branch integrasi, lalu buka Pull Request dengan template yang tersedia. **Jangan push langsung ke `main`** — setiap push ke `main` langsung ter-deploy ke produksi.
+Peran dan siapa memutuskan apa ada di [`AGENTS.md`](AGENTS.md) → "Roles"; proses lengkap di [`docs/workflow.md`](docs/workflow.md).
+
+| Branch | Fungsi | Cara perubahan masuk |
+| :--- | :--- | :--- |
+| `main` | Produksi — setiap push langsung ter-deploy | Hanya PR rilis dari `integration` |
+| `integration` | Pusat penggabungan hasil kerja semua developer | PR + 4 cek CI hijau, diaudit dan di-merge Tech Lead |
+| `agathan`, `bagus` | Ruang eksplorasi masing-masing developer | Push bebas oleh pemiliknya |
+
+Aturan branch pribadi: tarik `integration` terbaru sebelum mulai tugas, ajukan satu tugas per PR, dan tarik `integration` lagi sebelum membuka PR. **Jangan push langsung ke `main` atau `integration`.**
+
+Agent AI (Claude Code, Codex, Antigravity, Cursor) membaca `AGENTS.md` otomatis. Memori, skill, atau plugin pribadi di komputer masing-masing tidak menggantikan aturan repo; kalau bertentangan, aturan repo yang berlaku.
 
 ---
 

@@ -40,7 +40,7 @@ Functional: Implemented for the BQ-001 scope · Verification: automated HTTP/HTM
 
 | Gap | Tracking |
 |---|---|
-| Expired-link recovery, owner resend/security replacement UI and per-family rate limits | Explicitly deferred by the lead's BQ-001 scope; see its Evidence |
+| Expired-link recovery, owner resend/security replacement UI and per-family rate limits | Explicitly deferred by the Tech Lead's BQ-001 scope; see its Evidence |
 | Background delivery and operations verification | BQ-013, BQ-020 |
 | Drop legacy credential columns | Later contract migration after cutover |
 | Customer reschedule availability query still needs architectural alignment | BQ-012 follow-up / Phase 6 |

@@ -3,7 +3,7 @@ name: Tests
 on:
   push:
     branches:
-      - agathan
+      - integration
   pull_request:
   # main runs these jobs through deploy-production.yml before deploying.
   workflow_call:

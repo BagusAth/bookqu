@@ -27,13 +27,13 @@ Found while implementing BQ-032 (2026-10-30).
 1. Confirm with SingaPay documentation or support whether a status endpoint exists. If it does, implement `queryOutcome()` with contract tests from recorded responses. If it does not, record that in `docs/domains/payment.md`.
 2. After one release with the backfill in production: make `payments.provider` NOT NULL, remove the legacy inference from `PaymentRules::providerOf()`, and verify that no row is null before migrating.
 
-Needs lead approval: step 1 needs vendor contact, and step 2 is a schema change.
+Needs Tech Lead approval: step 1 needs vendor contact, and step 2 is a schema change.
 
 ## Evidence
 
-Lead decision 2026-11-01: v1 ships without a SingaPay status query and relies on webhooks (SingaPay retries), the simulator and BQ-078 logging. Bagus asks SingaPay about a status API.
+Tech Lead decision 2026-11-01: v1 ships without a SingaPay status query and relies on webhooks (SingaPay retries), the simulator and BQ-078 logging. Bagus asks SingaPay about a status API.
 
-**Step 1 done (2026-11-01, lead reopened it the same day).** The sandbox API answers two read endpoints with the existing credentials:
+**Step 1 done (2026-11-01, the Tech Lead reopened it the same day).** The sandbox API answers two read endpoints with the existing credentials:
 - `GET /api/v1.0/payment-link-manage/{account_id}/{id}`: `current_usage` becomes 1 once paid (`status` changes from `open` to `closed`). An expired, unpaid link still reports `status: open`, so the status word alone is not used.
 - `GET /api/v1.0/payment-link-histories/{account_id}?page=&per_page=`: one entry per payment with `payment_link_reff_no` (= BookQu `order_id`), `amount` and `status: paid`. The endpoint ignores filter parameters.
 

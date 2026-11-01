@@ -8,10 +8,13 @@ paths:
 
 # Documentation
 
-Context: `docs/workflow.md` §8 and §10.
+Context: `docs/workflow.md` §9 and §11.
 
 ## Authority
-`AGENTS.md`, `docs/*.md` and ADRs change only with lead approval. Work items (`docs/work/BQ-*.md`) and domain files may be updated as part of approved work.
+`AGENTS.md`, `docs/*.md`, `.ai/rules` and ADRs change only with Tech Lead approval (heavy lane). Work items (`docs/work/BQ-*.md`), domain files and `README.md` may be updated as part of the task they describe. Completed work items and accepted ADRs are historical records: do not rewrite them; supersede or amend instead.
+
+## Language and roles
+Authority docs, rules and ADRs are English; `README.md`, release notes and UI copy are Indonesian. Name roles (Product Lead, Tech Lead, Developer), not people, outside the roles table in `AGENTS.md`.
 
 ## One rule, one place
 Do not copy a rule into a second document; link to its home. Keep IDs stable (`FR-`, `BR-`, `NFR-`, `INV-`, `BQ-`, `ADR-`).

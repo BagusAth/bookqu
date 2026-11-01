@@ -21,7 +21,7 @@ The admin portal is a read-only dashboard. Refund processing and payout approval
 
 ## Plan
 
-Lead defines the admin capabilities (payouts, refunds, tenant support); requirements first, then implementation.
+The Product Lead defines the admin capabilities (payouts, refunds, tenant support); requirements first, then implementation.
 
 ## Evidence
 
