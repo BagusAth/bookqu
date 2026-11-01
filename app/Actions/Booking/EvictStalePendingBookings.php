@@ -39,6 +39,7 @@ class EvictStalePendingBookings
 
         // Lock and retrieve pending bookings on these schedules that no longer hold their
         // slot: the single occupancy rule decides (payment deadline + margin, ADR-0009).
+        // scope-bypass: schedule ids come from the caller's tenant-locked schedules
         $staleBookings = Booking::withoutGlobalScopes()
             ->whereIn('idschedule', $ids)
             ->where('status', BookingState::STATUS_PENDING)

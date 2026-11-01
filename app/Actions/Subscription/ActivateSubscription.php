@@ -15,6 +15,7 @@ class ActivateSubscription
      */
     public function execute(Payment $payment): Subscription
     {
+        // scope-bypass: tenant taken from the verified subscription payment
         $existing = Subscription::withoutGlobalScopes()
             ->where('idtenant', $payment->idtenant)
             ->where('idplan', $payment->idplan)
@@ -27,16 +28,17 @@ class ActivateSubscription
         }
 
         // Expire older active/trial subscriptions
+        // scope-bypass: tenant taken from the verified subscription payment
         Subscription::withoutGlobalScopes()
             ->where('idtenant', $payment->idtenant)
             ->whereIn('status', [SubscriptionState::STATUS_TRIAL, SubscriptionState::STATUS_ACTIVE])
             ->update(['status' => SubscriptionState::STATUS_EXPIRED]);
 
         return Subscription::create([
-            'idtenant'           => $payment->idtenant,
-            'idplan'             => $payment->idplan,
-            'status'             => SubscriptionState::STATUS_ACTIVE,
-            'langganan_mulai'    => now(),
+            'idtenant' => $payment->idtenant,
+            'idplan' => $payment->idplan,
+            'status' => SubscriptionState::STATUS_ACTIVE,
+            'langganan_mulai' => now(),
             'langganan_berakhir' => now()->addMonth(),
         ]);
     }

@@ -88,6 +88,7 @@ class ScheduleAvailabilityCache
      */
     public function clearAllServicesAvailability(int $tenantId): void
     {
+        // scope-bypass: filtered by the given tenant id
         $serviceIds = Service::withoutGlobalScopes()
             ->where('idtenant', $tenantId)
             ->pluck('id');

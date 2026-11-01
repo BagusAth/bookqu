@@ -6,7 +6,6 @@ use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
 use App\Models\Category;
-use App\Models\CustomerNote;
 use App\Models\Resource;
 use App\Models\Review;
 use App\Models\Schedule;
@@ -15,7 +14,6 @@ use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Voucher;
-use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -26,9 +24,13 @@ class OwnerModulesCrudTest extends TestCase
     use RefreshDatabase;
 
     protected User $userA;
+
     protected Tenant $tenantA;
+
     protected User $userB;
+
     protected Tenant $tenantB;
+
     protected Service $serviceA;
 
     protected function setUp(): void
@@ -153,6 +155,9 @@ class OwnerModulesCrudTest extends TestCase
     // ──────────────────────────────────────────
     public function test_owner_can_crud_staff_and_resources(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.staff-resources' => 'released']);
+
         // View page
         $res = $this->actingAs($this->userA)->get(route('owner.staff-resources'));
         $res->assertStatus(200);
@@ -169,7 +174,7 @@ class OwnerModulesCrudTest extends TestCase
             'idtenant' => $this->tenantA->id,
             'name' => 'Andi Fotografer',
         ]);
-        
+
         $staff = Staff::withoutGlobalScopes()->where('idtenant', $this->tenantA->id)->first();
         $this->assertNotNull($staff);
         $this->assertDatabaseHas('service_staff', [
@@ -189,7 +194,7 @@ class OwnerModulesCrudTest extends TestCase
             'idtenant' => $this->tenantA->id,
             'name' => 'Studio Room 1',
         ]);
-        
+
         $resource = Resource::withoutGlobalScopes()->where('idtenant', $this->tenantA->id)->first();
         $this->assertNotNull($resource);
         $this->assertDatabaseHas('service_resource', [
@@ -230,6 +235,9 @@ class OwnerModulesCrudTest extends TestCase
     // ──────────────────────────────────────────
     public function test_owner_can_crud_additional_items(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.additional-items' => 'released']);
+
         $res = $this->actingAs($this->userA)->get(route('owner.additional-items'));
         $res->assertStatus(200);
 
@@ -264,6 +272,9 @@ class OwnerModulesCrudTest extends TestCase
     // ──────────────────────────────────────────
     public function test_owner_can_crud_vouchers(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.vouchers' => 'released']);
+
         $res = $this->actingAs($this->userA)->get(route('owner.vouchers'));
         $res->assertStatus(200);
 
@@ -367,36 +378,38 @@ class OwnerModulesCrudTest extends TestCase
     {
         // Create a booking so the IDOR guard passes (customer_identifier must exist in this tenant's bookings)
         $schedule = Schedule::factory()->create([
-            'idtenant'  => $this->tenantA->id,
+            'idtenant' => $this->tenantA->id,
             'idlayanan' => $this->serviceA->id,
         ]);
         Booking::factory()->create([
-            'idtenant'   => $this->tenantA->id,
-            'idlayanan'  => $this->serviceA->id,
+            'idtenant' => $this->tenantA->id,
+            'idlayanan' => $this->serviceA->id,
             'idschedule' => $schedule->id,
-            'nomorhp'    => '081234567890',
-            'email'      => '',
-            'status'     => 'paid',
+            'nomorhp' => '081234567890',
+            'email' => '',
+            'status' => 'paid',
         ]);
 
         $res = $this->actingAs($this->userA)->postJson(route('owner.customers.note'), [
             'customer_identifier' => '081234567890',
-            'notes'               => 'Customer VIP, minta lighting hangat.',
+            'notes' => 'Customer VIP, minta lighting hangat.',
         ]);
         $res->assertOk()->assertJsonFragment(['success' => true]);
         $this->assertDatabaseHas('customer_notes', [
-            'idtenant'            => $this->tenantA->id,
+            'idtenant' => $this->tenantA->id,
             'customer_identifier' => '081234567890',
-            'notes'               => 'Customer VIP, minta lighting hangat.',
+            'notes' => 'Customer VIP, minta lighting hangat.',
         ]);
     }
-
 
     // ──────────────────────────────────────────
     // 6. ASSETS & APPEARANCE TEST
     // ──────────────────────────────────────────
     public function test_owner_can_upload_and_delete_assets(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.assets' => 'released']);
+
         Storage::fake('public');
 
         $file = UploadedFile::fake()->create('banner.jpg', 100, 'image/jpeg');
@@ -423,6 +436,9 @@ class OwnerModulesCrudTest extends TestCase
 
     public function test_owner_can_update_appearance_settings(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.appearance' => 'released']);
+
         $res = $this->actingAs($this->userA)->post(route('owner.settings.appearance.update'), [
             'theme_color' => '#10B981',
             'button_style' => 'pill',

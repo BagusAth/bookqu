@@ -32,6 +32,7 @@ class UpdateService
         app(TenantContext::class)->setTenantId($tenant->id);
 
         $targetId = $service instanceof Service ? $service->id : (int) $service;
+        // scope-bypass: filtered by the authenticated tenant
         $layanan = Service::withoutGlobalScopes()
             ->where('idtenant', $tenant->id)
             ->findOrFail($targetId);

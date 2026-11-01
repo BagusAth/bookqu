@@ -58,6 +58,7 @@ class ProcessPaymentWebhook
         }
 
         /** @var Payment|null $payment */
+        // scope-bypass: webhooks carry no tenant context; the tenant is derived from the payment before any write
         $payment = Payment::withoutGlobalScope(TenantScope::class)
             ->where('order_id', $orderId)
             ->first();

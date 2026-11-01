@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\ReservedTenantSlugs;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -34,27 +35,28 @@ class RegisteredUserController extends Controller
 
         $user = User::create([
             'namalengkap' => $validated['name'],
-            'email'       => $validated['email'],
-            'password'    => Hash::make($validated['password']),
-            'nomorhp'     => $validated['nomorhp'],
-            'role'        => 'owner',
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'nomorhp' => $validated['nomorhp'],
+            'role' => 'owner',
         ]);
 
         // FS-002 & FS-003: Buat Tenant dengan auto-generate slug dari nama bisnis
-        $slug     = Str::slug($validated['nama_bisnis']);
+        $slug = Str::slug($validated['nama_bisnis']) ?: 'bisnis';
         $slugBase = $slug;
-        $counter  = 1;
-        while (Tenant::where('slug', $slug)->exists()) {
-            $slug = $slugBase . '-' . $counter++;
+        $counter = 1;
+        // Reserved words would be shadowed by an application route (BQ-011)
+        while (ReservedTenantSlugs::contains($slug) || Tenant::where('slug', $slug)->exists()) {
+            $slug = $slugBase.'-'.$counter++;
         }
 
         $tenant = Tenant::create([
-            'iduser'      => $user->id,
-            'namabisnis'  => $validated['nama_bisnis'],
+            'iduser' => $user->id,
+            'namabisnis' => $validated['nama_bisnis'],
             'jenisbisnis' => $validated['jenis_bisnis'],
-            'alamat'      => $validated['alamat'],
-            'nomorhp'     => $validated['nomorhp'],
-            'slug'        => $slug,
+            'alamat' => $validated['alamat'],
+            'nomorhp' => $validated['nomorhp'],
+            'slug' => $slug,
         ]);
 
         // FS-018: Buat Subscription trial 7 hari setara paket Pro via CreateTrialSubscription

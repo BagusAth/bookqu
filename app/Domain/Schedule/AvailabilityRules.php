@@ -111,6 +111,7 @@ class AvailabilityRules
      */
     public static function isDateBlocked(int $tenantId, string $date): bool
     {
+        // scope-bypass: filtered by the given tenant id
         return OwnerBlockedDate::withoutGlobalScopes()
             ->where('idtenant', $tenantId)
             ->whereDate('tanggal', $date)

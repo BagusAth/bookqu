@@ -7,6 +7,7 @@ namespace App\Actions\Tenant;
 use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\ReservedTenantSlugs;
 use App\Support\TenantContext;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -34,9 +35,7 @@ class CreateInitialProfile
         if ($slug === '') {
             throw ValidationException::withMessages(['namabisnis' => 'Nama bisnis tidak valid untuk dijadikan URL.']);
         }
-
-        $reserved = ['owner', 'admin', 'login', 'register'];
-        if (in_array($slug, $reserved, true)) {
+        if (ReservedTenantSlugs::contains($slug)) {
             throw ValidationException::withMessages(['namabisnis' => 'Nama bisnis ini tidak bisa dipakai sebagai URL.']);
         }
 

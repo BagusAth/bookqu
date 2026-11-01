@@ -6,6 +6,7 @@ namespace App\Actions\Tenant;
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\ReservedTenantSlugs;
 use App\Support\TenantContext;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -35,9 +36,7 @@ class UpdateBusinessProfile
             if ($slug === '') {
                 throw ValidationException::withMessages(['namabisnis' => 'Nama bisnis tidak valid untuk dijadikan URL.']);
             }
-
-            $reserved = ['owner', 'admin', 'login', 'register'];
-            if (in_array($slug, $reserved, true)) {
+            if (ReservedTenantSlugs::contains($slug)) {
                 throw ValidationException::withMessages(['namabisnis' => 'Nama bisnis ini tidak bisa dipakai sebagai URL.']);
             }
 
