@@ -19,7 +19,7 @@ Plan approved via [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosting.m
 
 ## Problem
 
-All mail and notifications are sent synchronously inside checkout requests and webhooks (only the unused `BookingPaidNotification` implements `ShouldQueue`). This slows webhooks (audit BUG-T4-02) and ties provider callbacks to SMTP latency.
+All mail and notifications are sent synchronously inside checkout requests and webhooks. This slows webhooks (audit BUG-T4-02) and ties provider callbacks to SMTP latency.
 
 ## Plan
 

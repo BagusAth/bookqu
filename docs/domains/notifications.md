@@ -19,10 +19,10 @@ Owns owner in-app notifications, dashboard polling, and e-mails to customers and
 | `TrialExpiringNotification` | mail | `CheckExpiredSubscriptions` |
 | `BookingGroupInvoiceMail` | mail | `CreateBooking` (free), Payment lifecycle `BookingGroupConsequences` (provider success) |
 | `BookingCancelledMail` / `BookingRescheduledMail` | mail | `CancelBooking` / `RescheduleBooking` |
-| `BookingInvoiceMail` | mail | single-booking invoice |
-| `BookingConfirmedMail`, `BookingPaidNotification` | — | **unused** (dead code) |
+| `BookingConfirmedMail` | mail | `DeliverManagementAccess` (management link for a booking without payment) |
+| `OwnerPayoutStatusChangedNotification` | database | `ProcessOwnerPayout` (admin payout review, BQ-015) |
 
-Sends happen after the main transaction and are wrapped in `try/catch`, so a mail failure does not undo the booking or payment. Nothing implements `ShouldQueue` except the unused `BookingPaidNotification`, so every e-mail is sent inside the HTTP request or webhook.
+Sends happen after the main transaction and are wrapped in `try/catch`, so a mail failure does not undo the booking or payment. Nothing implements `ShouldQueue`, so every e-mail is sent inside the HTTP request or webhook.
 
 ## Evidence
 

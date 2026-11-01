@@ -1,4 +1,4 @@
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 <script>
     const snapToken = @json($payment->snap_token ?? null);
     const paymentUrl = @json($payment->payment_url ?? null);

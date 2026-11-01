@@ -565,12 +565,6 @@ parameters:
 			path: app/Infrastructure/Payments/SingaPay/SingaPayWebhookVerifier.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Mail/BookingInvoiceMail.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'
 			identifier: property.notFound
 			count: 1
@@ -611,54 +605,6 @@ parameters:
 			identifier: property.phpDocType
 			count: 1
 			path: app/Models/User.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Booking\:\:\$service\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/BookingPaidNotification.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Booking\:\:\$tanggal\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/BookingPaidNotification.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Booking\:\:\$waktu_mulai\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/BookingPaidNotification.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Booking\:\:\$waktu_selesai\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/BookingPaidNotification.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$custom_domain\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/BookingPaidNotification.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Notifications/BookingPaidNotification.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namabisnis\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Notifications/BookingPaidNotification.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/BookingPaidNotification.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namalayanan\.$#'

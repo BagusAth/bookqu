@@ -2,7 +2,7 @@
 id: BQ-066
 title: Audit stage 6 P1-P3 defects (CRM Pelanggan, Moderasi Ulasan, Billing Langganan & Pengaturan Akun)
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: customers-reviews
@@ -102,3 +102,5 @@ T6-06/09 CRM memeriksa HTTP status, mengirim native toast event dan menjaga erro
 P2/P3 tetap terbuka dan tidak dikerjakan.
 
 _Fill in when done._
+
+Closed 2026-11-01 (repo cleanup). The P1 items for CRM, reviews, billing, settings were resolved in sessions 3–6 (see the ticked boxes). BUG-T6-07 is intentional: the logo upload stays hidden (`OwnerSidebarNavigationTest` asserts it), so it is not a defect. Remaining P2/P3 boxes moved to BQ-082.
