@@ -9,12 +9,12 @@ use App\Actions\Schedule\DeleteBlockedDate;
 use App\Actions\Schedule\DeleteSchedule;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Actions\Schedule\UpdateScheduleAvailability;
-use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,6 +24,7 @@ class ScheduleActionTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected Service $service;
 
     protected function setUp(): void
@@ -32,7 +33,7 @@ class ScheduleActionTest extends TestCase
 
         $user = User::factory()->create();
         $this->tenant = Tenant::factory()->create(['iduser' => $user->id]);
-        app(\App\Support\TenantContext::class)->setTenantId($this->tenant->id);
+        app(TenantContext::class)->setTenantId($this->tenant->id);
 
         $this->service = Service::factory()->create([
             'idtenant' => $this->tenant->id,
@@ -63,7 +64,7 @@ class ScheduleActionTest extends TestCase
         $this->assertDatabaseHas('schedules', [
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
-            'tanggal' => $date . ' 00:00:00',
+            'tanggal' => $date.' 00:00:00',
             'jam_mulai' => '09:00:00',
             'jam_selesai' => '09:59:00',
         ]);
@@ -102,7 +103,7 @@ class ScheduleActionTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertDatabaseHas('owner_blocked_dates', [
             'idtenant' => $this->tenant->id,
-            'tanggal' => $blockDate . ' 00:00:00',
+            'tanggal' => $blockDate.' 00:00:00',
             'alasan' => 'Renovasi studio',
         ]);
 
