@@ -2,7 +2,7 @@
 
 > **Status:** Proposed | Accepted | Superseded by ADR-NNNN
 > **Date:** YYYY-MM-DD
-> **Decider:** agathan (architecture lead)
+> **Decider:** Tech Lead (name) — Product Lead too when the decision changes the product
 > **Work item:** BQ-NNN
 
 ## Context

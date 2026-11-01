@@ -23,7 +23,7 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 
 ## Status
 
-Functional: **Implemented** (BQ-015) · Verification: Tested · Architecture: Target
+Functional: Implemented (BQ-015) · Verification: Verified (`OwnerPayoutFlowTest`) · Architecture: Target
 
 ## Known gaps
 

@@ -1,14 +1,17 @@
 # Workflow
 
-How changes to BookQu are planned, approved, implemented, verified and documented — by people and by AI agents alike. The approval table lives in `AGENTS.md` → "Who decides".
+How changes to BookQu are planned, approved, implemented, verified and documented — by people and by AI agents alike. Roles and the decision table live in `AGENTS.md` → "Roles" and "Who decides".
 
 ## 1. Roles
 
-| Role | Who | Responsibility |
-|---|---|---|
-| Lead | agathan | Product and architecture decisions, approves plans for critical domains, owns `AGENTS.md`, `docs/*.md` and ADRs, signs off releases |
-| Peer | Bagus | Implements and reviews PRs, reads new guidance for clarity |
-| Agent | Claude Code, Codex, Antigravity | Turns instructions into work items, implements approved work, keeps docs in sync, never self-approves what the approval table reserves for the lead |
+| Role | Responsibility |
+|---|---|
+| Product Lead | Decides what BookQu offers, priorities, pricing and when to release |
+| Tech Lead | Owns architecture, technical rules, `AGENTS.md`, `docs/*.md`, `.ai/rules` and ADRs; assigns tasks; audits and merges PRs into `integration`; executes releases and production operations |
+| Developer | Implements assigned tasks in their own branch; decides implementation details |
+| Agent | Turns the developer's instructions into changes; asks the developer running the session; never decides what the table in `AGENTS.md` reserves for another role |
+
+Who holds each role: `AGENTS.md` → "Roles". The agent never contacts other people; the developer coordinates with the Product Lead or Tech Lead outside the repository and confirms the outcome in the session.
 
 ## 2. Task types
 
@@ -18,79 +21,111 @@ How changes to BookQu are planned, approved, implemented, verified and documente
 | Feature | Adds a capability already accepted in `product.md` / `requirements.md` | No |
 | Refactor | Changes structure, not behaviour | No |
 | Technical improvement | Security, performance, tests, tooling, observability | No |
-| Product change | Changes what BookQu does (new capability, new rule, new policy) | **Yes — lead decision first** |
+| Product change | Changes what BookQu does (new capability, new rule, new policy) | **Yes — Product Lead decision first** |
 | Documentation | Changes docs only | No |
 | Operational change | Deployment, scheduler, queue, environment, backups | No; update `operations.md` |
 
 A refactor or bug fix that turns out to change behaviour becomes a product change. Never hide a product change inside another type.
 
-## 3. Lifecycle
+## 3. Lanes
+
+Every task runs in one of two lanes. When unsure, use the heavy lane.
+
+| | Light lane | Heavy lane |
+|---|---|---|
+| **Covers** | UI and copy, tests, non-authority docs, behaviour-preserving refactors, small bug fixes outside the areas on the right | Domain rules (booking, availability, payment, subscription), DB schema, security and auth, tenancy, provider integration, authority docs (`AGENTS.md`, `docs/*.md`, ADRs, `.ai/rules`), product changes |
+| **Work item** | Not needed; the PR description is the record | Required: `docs/work/BQ-NNN-slug.md` |
+| **Decision** | Developer | Tech Lead before coding (Product Lead for product changes) |
+| **Tests** | Related tests while working, full suite once before the PR | Narrow → related → full suite; MySQL suite for concurrency claims |
+| **Docs** | Only what the change made wrong | Domain file, requirement or ADR where content changed; item `done` with evidence |
+
+Findings outside the task are recorded as a new work item in either lane, never fixed in passing.
+
+## 4. Lifecycle
 
 ```text
-instruction ─► work item (proposed) ─► approval? ─► branch ─► implement + test ─► PR ─► review ─► merge ─► item done
+instruction ─► lane ─► (heavy: work item + decision) ─► own branch ─► implement + test ─► PR into integration ─► Tech Lead audit ─► merge
 ```
 
-1. **Capture.** For non-trivial work, create `docs/work/BQ-NNN-slug.md` from `docs/work/_TEMPLATE.md`. Non-trivial means any of: touches business logic, more than one file of behaviour, database schema, security, payment, or needs a decision. Typos, copy and single-line obvious fixes may skip the item.
-2. **Plan.** Fill in the item: requirement IDs, domain, current code, target change, invariants at risk, tests, docs to update.
-3. **Approve.** Check `AGENTS.md` → "Who decides". If the lead must approve, set `status: proposed` and stop. The lead sets `approved` (or `rejected` with a reason).
-4. **Implement.** Branch `bq-NNN-slug`. Small, coherent commits. Characterize poorly tested behaviour before changing it. A small related refactor is fine when it directly reduces risk or duplication for this task; anything else becomes a new item.
-5. **Verify.** Narrow tests → related tests → full suite. Record manual checks (UI, payment sandbox, custom domain) in the item.
-6. **Document.** Update only the sources whose content changed (section 8).
-7. **Review.** PR with `.github/pull_request_template.md`. The peer reviews; the lead also reviews items that required lead approval.
-8. **Close.** After merge set `status: done`, add evidence, and move the file to `docs/work/done/`.
+1. **Capture.** Heavy lane: create `docs/work/BQ-NNN-slug.md` from `docs/work/_TEMPLATE.md` with requirement IDs, domain, current code, target change, invariants at risk, tests and docs to update.
+2. **Decide.** Check `AGENTS.md` → "Who decides". If the decision belongs to the Tech Lead or Product Lead, set `status: proposed`, tell the developer, and stop until the developer confirms the decision (`approved` or `rejected` with a reason).
+3. **Implement.** Small, coherent commits on your own branch. Characterize poorly tested behaviour before changing it. A small related refactor is fine when it directly reduces risk or duplication for this task.
+4. **Verify.** Per lane (§3). Record manual checks (UI, payment sandbox, custom domain) in the PR or item.
+5. **Document.** Update only the sources whose content changed (§9).
+6. **Review.** PR into `integration` with `.github/pull_request_template.md`. The Tech Lead audits and merges after the four CI jobs pass.
+7. **Close.** Heavy lane: set `status: done`, add evidence, move the item to `docs/work/done/`.
 
-Ask for clarification only when two materially different product behaviours are plausible and the repository cannot decide between them. Difficulty is not a reason to stop; record the decision you made in the item instead.
+Ask for clarification only when two materially different product behaviours are plausible and the repository cannot decide between them. Difficulty is not a reason to stop; record the decision you made.
 
-## 4. Work items
+## 5. Work items
 
 - One file per item: `docs/work/BQ-NNN-short-slug.md`. IDs are never reused or renumbered.
 - `status`: `proposed` → `approved` → `in-progress` → `done` (or `rejected`).
 - `priority`: `P0` (security, data integrity, core flow broken) · `P1` (important) · `P2` (improvement).
 - `phase`: the roadmap phase (`docs/work/ROADMAP.md`).
+- `approval`: `none`, `tech-lead` or `product-lead`. Older items use `needs-lead-approval`; leave them as they are.
 - `launch-blocker: true` items must be `done` before production launch.
 - Items may be written in English or Indonesian; IDs, file paths and code names stay in English.
-- Unrelated findings discovered during work become new items, not scope creep.
 
-## 5. Branches, commits, releases
+## 6. Branches, commits, releases
 
-- `main` deploys to production automatically on every push (`.github/workflows/deploy-production.yml`). **Never push or merge to `main` directly**; it changes only through a release PR at a roadmap gate.
-- `agathan` is the integration branch (ADR-0015); target: it deploys to staging after CI. Work branches start from it and return to it by PR. Hotfixes branch from `main` and are back-merged into `agathan`. Branch protection and clean-up of old branches are lead actions (BQ-027).
-- Branch names: `bq-NNN-slug` (or `phase-N-topic` for roadmap phases).
-- Commits follow Conventional Commits: `type(scope): summary` with types `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `ci`. Mention the item: `fix(payment): reconcile late success (BQ-003)`.
-- Releases are tagged `vMAJOR.MINOR.PATCH` with a changelog entry.
+| Branch | Purpose | Who pushes | Changes arrive by |
+|---|---|---|---|
+| `main` | Production; every push deploys (`.github/workflows/deploy-production.yml`) | Nobody directly | Release PR from `integration` |
+| `integration` | Where all finished work is combined and tested before release (ADR-0015) | Nobody directly | PR, four green CI jobs, Tech Lead audit and merge |
+| `agathan`, `bagus` | Each developer's own exploration branch | Its owner, freely | Direct push |
+| `<name>/<topic>` | Optional short-lived branch for one task | Its owner | Direct push |
 
-## 6. Testing
+Rules for own branches, so they never drift far from `integration` (a branch 90 commits behind is a painful merge):
+
+1. **Sync before you start** a task: merge or rebase the latest `integration` into your branch.
+2. **Merge small and often:** one finished task per PR; do not batch many features.
+3. **Sync again before the PR**, so conflicts are resolved in your branch, not in `integration`.
+
+Releases: the Product Lead decides; the Tech Lead opens the release PR `integration` → `main`, tags `vMAJOR.MINOR.PATCH` and updates `docs/release-notes/`. Hotfixes branch from `main`, merge into `main` by PR, then merge back into `integration`.
+
+Commits follow Conventional Commits: `type(scope): summary` with types `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `ci`; mention the item when there is one: `fix(payment): reconcile late success (BQ-003)`.
+
+### Parallel work with worktrees
+
+Two agents in one checkout overwrite each other. For parallel work use `git worktree add <folder> -b <branch> origin/integration`, then:
+
+- copy `vendor` into the worktree (`robocopy <main>\vendor <worktree>\vendor /E /MT:16` on Windows). Never link it: PHP resolves a junction, so tests would silently run the main checkout's code. Linking `node_modules` and `public/build` is fine;
+- copy `.env`;
+- run PHPStan as `php -d opcache.enable_cli=0 vendor/phpstan/phpstan/phpstan.phar analyse --memory-limit=1G` when CLI opcache is on;
+- before `git worktree remove`, unlink junctions (`cmd /c rmdir <link>`) so their targets survive.
+
+## 7. Testing
 
 - Run the narrowest test first (`--filter`, one file), then related tests, then `php artisan test --compact`.
-- Booking and payment changes cover: stale pending, concurrent booking, cross-tenant access, cross-booking token use, duplicate webhook, driver switching, expiry.
+- Booking and payment changes cover: stale pending, concurrent booking, cross-tenant access, cross-booking access, duplicate webhook, driver switching, expiry.
 - Name tests by behaviour: `test_owner_cannot_access_other_tenant_bookings`.
 - A failing test is evidence. Decide whether the code, the requirement or the test is wrong before touching the test.
 - "Verified" needs matching evidence. Concurrency claims need the MySQL suite (`vendor/bin/phpunit -c phpunit.mysql.xml`, `mysql` group), not SQLite.
 - Add characterization tests before refactoring poorly tested critical code.
 
-## 7. Definition of done
+## 8. Definition of done
 
-Every item:
+Every change:
 
-- [ ] Requirement identified (or product change approved)
-- [ ] Approval obtained where required
+- [ ] Lane chosen; decision obtained where the table requires it
 - [ ] Implementation complete; validation and authorization handled; tenant isolation checked
-- [ ] Invariants listed in the item still hold
-- [ ] Tests added or updated; focused and full suites pass
+- [ ] Tests added or updated; related and full suites pass
 - [ ] `vendor/bin/pint --dirty --format agent` run on changed PHP
 - [ ] Manual verification recorded where automated tests cannot reach
-- [ ] Docs updated per section 8; item set to `done` with evidence
+- [ ] Docs updated per §9
+- [ ] Branch synced with `integration`; four CI jobs green
 
-Extra per type:
+Heavy lane also: requirement identified (or product change decided), invariants in the item still hold, item `done` with evidence.
 
 | Type | Also required |
 |---|---|
 | Bug fix | Root cause stated; regression test reproduces the bug |
 | Feature | Product and requirement exist; UI verified |
 | Refactor | Behaviour unchanged (tests before and after); no duplicated rules left behind |
-| Product change | `product.md` and `requirements.md` updated before code; lead approved |
+| Product change | `product.md` and `requirements.md` updated before code; Product Lead decided |
 
-## 8. Keeping documentation in sync
+## 9. Keeping documentation in sync
 
 Update only what changed:
 
@@ -104,18 +139,21 @@ Update only what changed:
 | Deployment, scheduler, queue, environment, backups | `docs/operations.md` |
 | A rule for editing certain paths | `.ai/rules/<area>.md`, then regenerate `.ai/rules/index.md` (command in `.ai/rules/documentation.md`) |
 | Work status | the `BQ-*` item only |
+| Local setup steps | `README.md` |
 
 Write an ADR (`docs/adr/_TEMPLATE.md`) when a decision affects several domains, changes an integration or tenancy/concurrency/payment strategy, introduces a new pattern, or would otherwise leave future contributors guessing.
 
-## 9. When sources disagree
+## 10. When sources disagree
 
-Classify the conflict — product, requirement, architecture, implementation drift, test drift or documentation drift — then fix the authoritative source. Do not rewrite docs to hide wrong code, and do not change correct code because an outdated doc says otherwise. Record the resolution in the work item.
+Classify the conflict — product, requirement, architecture, implementation drift, test drift or documentation drift — then fix the authoritative source. Do not rewrite docs to hide wrong code, and do not change correct code because an outdated doc says otherwise. Record the resolution in the PR or work item.
 
-## 10. Writing docs for humans and agents
+## 11. Writing docs for humans and agents
 
+- **Language:** authority docs, rules, ADRs and work-item structure are English; `README.md`, release notes and all user-facing UI copy are Indonesian.
 - Put the answer first; one topic per section; short sentences.
 - One rule lives in one place; everywhere else links to it.
 - Use stable IDs (`FR-`, `BR-`, `NFR-`, `INV-`, `BQ-`, `ADR-`) and real paths, class and route names.
-- Prefer tables and numbered steps over prose and ASCII diagrams.
+- Name roles, not people, outside the roles table.
+- Prefer tables and numbered steps over prose.
 - Describe the current system in `docs/domains/`, the target in `docs/architecture.md`; never present the target as already implemented.
-- No history in active docs — Git keeps it.
+- No history in active docs — Git and `docs/work/done/` keep it.

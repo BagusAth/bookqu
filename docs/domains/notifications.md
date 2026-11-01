@@ -42,4 +42,4 @@ Functional: Implemented · Verification: Verified (partial; production worker/SM
 | Production scheduler/worker execution not yet verified | BQ-020 |
 | Production mail transport not configured (`.env.example` uses `log`) | BQ-021 |
 
-Implemented decision: [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosting.md) — queued after-commit mail with id-only customer-access jobs, run by a cron-driven short-lived worker. Hosting setup remains a lead action (BQ-020/021), documented in [operations §4](../operations.md#4-scheduler-and-queue).
+Implemented decision: [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosting.md) — queued after-commit mail with id-only customer-access jobs, run by a cron-driven short-lived worker. Hosting setup remains a Tech Lead action (BQ-020/021), documented in [operations §4](../operations.md#4-scheduler-and-queue).

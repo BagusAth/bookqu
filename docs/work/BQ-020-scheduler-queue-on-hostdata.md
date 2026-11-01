@@ -15,7 +15,7 @@ depends-on: []
 
 # BQ-020: Verify scheduler and queue execution on HostData
 
-Strategy decided in [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosting.md): two cron entries every minute and in-process schedule entries (`Schedule::call()`/`job()`) because `proc_open` is disabled, 2026-10-30. Lead checks the hosting cron panel.
+Strategy decided in [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosting.md): two cron entries every minute and in-process schedule entries (`Schedule::call()`/`job()`) because `proc_open` is disabled, 2026-10-30. Tech Lead checks the hosting cron panel.
 
 ## Problem
 
@@ -23,11 +23,11 @@ Payment expiry and subscription expiry depend on `schedule:run` every minute; qu
 
 ## Plan
 
-Lead checks the hosting cron panel; configure `schedule:run` every minute and a cron-driven `queue:work --stop-when-empty --max-time=50`; verify with `schedule:list` and a test job; record the evidence.
+Tech Lead checks the hosting cron panel; configure `schedule:run` every minute and a cron-driven `queue:work --stop-when-empty --max-time=50`; verify with `schedule:list` and a test job; record the evidence.
 
-S7 approved by lead (2026-11-01): use named in-process callbacks with overlap protection, publish a minute heartbeat, and fail `/up` only when an existing heartbeat is older than five minutes. Never-seen heartbeat remains healthy for first deployment; cron verification is still required before launch.
+Approved by the Tech Lead (2026-11-01): use named in-process callbacks with overlap protection, publish a minute heartbeat, and fail `/up` only when an existing heartbeat is older than five minutes. Never-seen heartbeat remains healthy for first deployment; cron verification is still required before launch.
 
 ## Evidence
 
-S7 code ready (2026-11-01): named in-process callbacks, overlap locks, minute heartbeat and `/up` stale-heartbeat check. `OperationsReadinessTest` passes with `proc_open` disabled; `schedule:list` shows the original expiry frequencies plus heartbeat.
-Still in-progress: lead must install both cron entries from operations §4, prove one worker email, and record server evidence before release. No hosting change was executed by the agent.
+Code ready (2026-11-01): named in-process callbacks, overlap locks, minute heartbeat and `/up` stale-heartbeat check. `OperationsReadinessTest` passes with `proc_open` disabled; `schedule:list` shows the original expiry frequencies plus heartbeat.
+Still in-progress: the Tech Lead must install both cron entries from operations §4, prove one worker email, and record server evidence before release. No hosting change was executed by the agent.

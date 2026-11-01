@@ -8,8 +8,9 @@ phase: 4                 # roadmap phase, see docs/work/ROADMAP.md
 domain: booking          # file name in docs/domains/
 requirements: []         # e.g. [FR-BOOKING-017, NFR-SEC-008]
 invariants: []           # e.g. [INV-BOOK-04]
+lane: heavy              # heavy (work items are for the heavy lane, docs/workflow.md §3)
+approval: tech-lead      # none | tech-lead | product-lead
 launch-blocker: false
-needs-lead-approval: true
 depends-on: []           # e.g. [BQ-028]
 ---
 
@@ -31,7 +32,7 @@ Tests to add or update; manual checks needed.
 
 ## Docs to update
 
-Only the sources whose content changes (see `docs/workflow.md` §8).
+Only the sources whose content changes (see `docs/workflow.md` §9).
 
 ## Evidence (fill when done)
 

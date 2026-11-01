@@ -25,4 +25,4 @@ Scheduled database + uploads backup with retention, stored outside the web root;
 
 ## Evidence
 
-S7 (2026-11-01): status unchanged; setelah rilis / menunggu lead untuk backup terjadwal, uploads dan restore drill. Per-deploy database dumps already exist (operations §3/§6); this does not close scheduled backup/restore work or change its launch-blocker flag.
+2026-11-01: deferred until after launch; waiting for the Tech Lead to set up scheduled backups, uploads and a restore drill. Per-deploy database dumps already exist (operations §3/§6); this does not close scheduled backup/restore work or change its launch-blocker flag.

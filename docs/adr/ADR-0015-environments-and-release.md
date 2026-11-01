@@ -28,3 +28,12 @@ Every push to `main` deploys to `bookqu.my.id` without waiting for tests and run
 - Nothing reaches production untested or without a restorable backup.
 - Staging becomes the place for sandbox payments and UAT (Phase 4 acceptance).
 - Lead actions: create the staging subdomain and secrets, set branch protection, decide branch clean-up (G3/G4).
+
+## Amendment 2026-11-01 (BQ-085)
+
+Decided by the Tech Lead with the team; replaces decision 2 where they differ.
+
+1. **Roles.** Decisions belong to roles — Product Lead, Tech Lead, Developer — listed with their holders in `AGENTS.md` → "Roles". "Lead" above means the Tech Lead; release sign-off (decision 5) is the Product Lead's, executed by the Tech Lead.
+2. **Integration branch `integration`** replaces `agathan` in that role. Changes arrive only by PR with four green CI jobs, audited and merged by the Tech Lead.
+3. **Developer branches.** Each developer owns a long-lived exploration branch (`agathan`, `bagus`) or short-lived `<name>/<topic>` branches, synced from `integration` before each task and before each PR (`docs/workflow.md` §6). `bq-NNN-slug` branch names are no longer required.
+4. `main` stays production: release PRs from `integration` only; hotfixes merge back into `integration`.

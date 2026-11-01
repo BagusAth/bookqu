@@ -1,6 +1,6 @@
 # ADR-0008: Booking checkout draft module
 
-> **Status:** Accepted
+> **Status:** Accepted — not implemented (2026-11-01: the storefront still keeps its selection in a session array; BQ-083 added a checkout fingerprint and BQ-084 merged the date and time steps. Implementation stays with BQ-029.)
 > **Date:** 2026-10-30
 > **Decider:** agathan (architecture lead) — delegated to the agent's recommendation on 2026-10-30
 > **Work item:** BQ-029 (implementation), BQ-063 (stage-3 defects), BQ-028 (Phase 2 package)

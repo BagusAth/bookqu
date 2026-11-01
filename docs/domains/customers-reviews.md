@@ -8,7 +8,7 @@ Owns the owner's view of customers (derived from bookings), internal customer no
 |---|---|
 | `owner.customers`, `owner.customers.detail`, `owner.customers.note` | `Owner/OwnerCustomerController` → `Actions/Customer/GetCustomerDetail`, `SaveCustomerNote` |
 | `owner.reviews`, `owner.reviews.reply`, `owner.reviews.toggle` | `Owner/OwnerReviewController` |
-| `booking.manage.review` | `Customer/BookingManageController::storeReview` (management token required) |
+| `booking.manage.review` | `Customer/BookingManageController::storeReview` (Management access grant required) |
 
 Customers are not stored as their own table: a customer is identified from booking contact fields (name, phone, email) within one tenant. Notes live in `customer_notes`.
 

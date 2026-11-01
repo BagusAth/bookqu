@@ -23,5 +23,7 @@ Every question has one authoritative source. Start with `AGENTS.md` (always load
 - **Current vs target vs status.** `domains/` describes what exists now (with evidence); `architecture.md` describes the target; `work/` holds status and plans. Never present the target as implemented.
 - **Status vocabulary.** Capabilities: `Implemented`, `Partial`, `Planned`, `Deprecated`; verification and architecture status as defined in `domains/README.md`. Work items: `proposed`, `approved`, `in-progress`, `done`, `rejected`.
 - **No history in active docs.** Git keeps it (the pre-2026-10-30 documents are at tag `baseline-2026-10-30`).
+- **Historical records stay as written.** Completed work items (`work/done/`) and accepted ADRs may name people ("lead: agathan") or the former integration branch `agathan`; they record who decided at the time. Current roles: `AGENTS.md` → "Roles"; current branches: `workflow.md` §6.
+- **Language.** Authority docs, rules and ADRs are English; `README.md`, release notes and UI copy are Indonesian (`workflow.md` §11).
 - **New documents** only for a long-lived responsibility no existing document can hold.
-- Changes to authority documents need lead approval (`AGENTS.md` → "Who decides"). How to keep docs in sync with code: `workflow.md` §8.
+- Changes to authority documents need Tech Lead approval (`AGENTS.md` → "Who decides"). How to keep docs in sync with code: `workflow.md` §9.

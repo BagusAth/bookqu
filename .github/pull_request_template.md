@@ -2,18 +2,20 @@
 
 <!-- What changed and why. -->
 
-Work item: BQ-
+Lane: <!-- light | heavy (docs/workflow.md §3) -->
+Work item: <!-- BQ-NNN (heavy lane), or "none (light lane)" -->
 Requirements: <!-- FR-/BR-/NFR- IDs, or "none (refactor/docs)" -->
 Type: <!-- bug-fix | feature | refactor | improvement | product-change | docs | ops -->
 
 ## Checklist
 
-- [ ] Lead approved the plan (required for domain rules, schema, security, architecture, product changes)
+- [ ] Decision recorded where `AGENTS.md` → "Who decides" requires it (Tech Lead / Product Lead)
 - [ ] Tenant isolation and authorization checked
-- [ ] Invariants listed in the work item still hold
+- [ ] Invariants listed in the work item still hold (heavy lane)
 - [ ] Tests added/updated; `php artisan test --compact` passes
 - [ ] `vendor/bin/pint --dirty --format agent` run
-- [ ] Docs updated where content changed (`docs/workflow.md` §8)
+- [ ] Docs updated where content changed (`docs/workflow.md` §9)
+- [ ] Branch synced with the latest `integration`
 - [ ] No unrelated changes
 
 ## Verification

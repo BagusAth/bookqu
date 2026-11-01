@@ -55,15 +55,12 @@ BQ-084: `ThreeStepBookingFlowTest` covers the combined flow, AJAX validation/iso
 
 ## Status
 
-Functional: Implemented · Verification: Verified (SQLite only) · Architecture: Needs Refactor
+Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 8 and MariaDB 11.4 in CI; lock tests in `CreateBookingLockingTest`) · Architecture: Needs Refactor
 
 ## Known gaps
 
 | Gap | Item |
 |---|---|
-| `Customer/BookingController` is 1,034 lines and re-implements quota and contiguity checks before checkout (the claim itself goes through `ClaimSlots`) | BQ-029 |
-| Concurrency not proven on MySQL | BQ-023 |
-| `pending→completed` leaves the payment pending; no on-site payment record | BQ-014 |
-| Notifications and mail are sent synchronously | BQ-013 |
+| `Customer/BookingController` (≈850 lines) still holds the storefront session handling and repeats contiguity checks before checkout (the claim itself goes through `ClaimSlots`; date checks live in `ValidateBookingDate`) | BQ-029 |
 
-Target decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot bookability, BQ-012), [ADR-0008](../adr/ADR-0008-booking-checkout-draft.md) (server-side checkout draft, quote = charge, BQ-029) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). Not implemented yet.
+Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). Not implemented yet: [ADR-0008](../adr/ADR-0008-booking-checkout-draft.md) (typed checkout draft, BQ-029); until then BQ-083's checkout fingerprint keeps the quote equal to the charge.

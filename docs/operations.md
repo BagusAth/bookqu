@@ -7,7 +7,7 @@ How BookQu is run, deployed, verified and recovered. Statements here are facts f
 | Environment | Where | Notes |
 |---|---|---|
 | Local | Laragon (Windows), `composer run dev` (server, queue listener, Pail logs, Vite) | `.env` from `.env.example`; SingaPay sandbox by default |
-| Test / CI | GitHub Actions `tests.yml` — PHP 8.3, Node 22; quality checks, then the suite on in-memory SQLite, MySQL 8 and MariaDB 11.4 | Runs on push to `agathan`, on every PR, and before each production deploy |
+| Test / CI | GitHub Actions `tests.yml` — PHP 8.3, Node 22; quality checks, then the suite on in-memory SQLite, MySQL 8 and MariaDB 11.4 | Runs on push to `integration`, on every PR, and before each production deploy |
 | Staging | **Target** (BQ-017) | Needed before launch: sandbox payments, same hosting type |
 | Production | HostData shared hosting, `bookqu.my.id` (`~/domains/bookqu.my.id/laravel`, web root `public_html`); PHP 8.4, MariaDB 11.4 (checked 2026-10-30) | Not launched to real customers yet; receives every push to `main` |
 
@@ -29,34 +29,34 @@ Production must have `APP_ENV=production`, `APP_DEBUG=false`, a stable `APP_KEY`
 
 Secrets come from the server `.env`, never from Git, frontend code or docs. After changing configuration: `php artisan config:cache`, then restart anything long-running.
 
-### Checklist `.env` produksi (S7, lead)
+### Production `.env` checklist (Tech Lead)
 
-Nilai kredensial di bawah adalah petunjuk pengisian, bukan secret. Verifikasi langsung di server tanpa menyalin nilainya ke PR atau log.
+The values below describe what to fill in; they are not secrets. Verify on the server without copying values into PRs or logs.
 
-| Nama | Nilai produksi |
+| Name | Production value |
 |---|---|
 | `APP_ENV` | `production` |
 | `APP_DEBUG` | `false` |
-| `APP_URL` | `https://bookqu.my.id` (persis, tanpa path atau trailing slash) |
-| `APP_KEY` | Pertahankan key yang cocok dengan database; backup terpisah dari database (§6) |
+| `APP_URL` | `https://bookqu.my.id` (exact, no path or trailing slash; customer access links require the request host to equal it) |
+| `APP_KEY` | Keep the key that matches the database; back it up separately from the database (§6) |
 | `LOG_LEVEL` | `warning` |
 | `DB_CONNECTION`, `SESSION_DRIVER`, `CACHE_STORE` | `mysql`, `database`, `database` |
 | `QUEUE_CONNECTION` | `database` |
 | `MAIL_MAILER` | `smtp` |
-| `MAIL_HOST`, `MAIL_PORT`, `MAIL_SCHEME` | Host, port dan skema TLS sesuai penyedia SMTP |
-| `MAIL_USERNAME`, `MAIL_PASSWORD` | Kredensial SMTP produksi dari secret storage |
-| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Alamat pengirim terverifikasi dan `BookQu` |
-| `PAYMENT_GATEWAY_DRIVER` | `singapay` (booking dan langganan v1) |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_SCHEME` | Host, port and TLS scheme of the SMTP provider |
+| `MAIL_USERNAME`, `MAIL_PASSWORD` | Production SMTP credentials from secret storage |
+| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | A verified sender address and `BookQu` |
+| `PAYMENT_GATEWAY_DRIVER` | `singapay` (bookings and subscriptions in v1) |
 | `PAYMENT_BOOKING_DEADLINE_MINUTES` | `15` |
 | `PAYMENT_SUBSCRIPTION_DEADLINE_MINUTES` | `60` |
 | `PAYMENT_SETTLEMENT_MARGIN_MINUTES` | `2` |
-| `SINGAPAY_BASE_URL` | `https://payment-b2b.singapay.id` |
-| `SINGAPAY_CLIENT_ID`, `SINGAPAY_CLIENT_SECRET`, `SINGAPAY_API_KEY`, `SINGAPAY_ACCOUNT_ID` | Kredensial live milik platform |
-| `TRUSTED_PROXIES` | Kosong secara default; isi IP/CIDR proxy hosting yang terverifikasi, dipisahkan koma, hanya jika link pelanggan 404 karena HTTPS berakhir di proxy |
+| `SINGAPAY_BASE_URL` | `https://payment-b2b.singapay.id` (the sandbox is `https://sandbox-payment-b2b.singapay.id`) |
+| `SINGAPAY_CLIENT_ID`, `SINGAPAY_CLIENT_SECRET`, `SINGAPAY_API_KEY`, `SINGAPAY_ACCOUNT_ID` | The platform's live credentials |
+| `TRUSTED_PROXIES` | Empty by default; set comma-separated verified IP/CIDR of the hosting proxy only if customer links answer 404 because HTTPS ends at a proxy |
 
-Hapus `SINGAPAY_PAYMENT_EXPIRY_MINUTES` yang lama. Jangan isi `TRUSTED_PROXIES=*` tanpa memastikan origin hanya dapat dijangkau melalui proxy tepercaya. Konfigurasi ini mengizinkan Laravel membaca HTTPS dari forwarded headers; proxy kosong tetap mengabaikan header dari pengirim yang tidak dipercaya.
+Remove the obsolete `SINGAPAY_PAYMENT_EXPIRY_MINUTES`. Never set `TRUSTED_PROXIES=*` unless the origin is reachable only through trusted proxies; the setting lets Laravel read HTTPS from forwarded headers, and an empty value keeps ignoring headers from untrusted senders.
 
-Setelah pengisian, jalankan `php artisan config:cache`. Lead juga mendaftarkan IP server pada whitelist SingaPay dan Transaction Notif URL `https://bookqu.my.id/api/webhooks/singapay/transaction`, lalu mengirim satu email uji melalui antrean untuk membuktikan SMTP dan worker.
+After filling it in, run `php artisan config:cache`. The Tech Lead also registers the server IP in the SingaPay whitelist and the Transaction Notif URL `https://bookqu.my.id/api/webhooks/singapay/transaction`, then sends one test e-mail through the queue to prove SMTP and the worker.
 
 ### Payment provider
 
@@ -95,7 +95,7 @@ Migrations must stay backward compatible with the previous release's code (expan
 
 ### BQ-004: tenant credential encryption release
 
-Lead-approved exception to ADR-0015: migration `2026_11_01_001033_encrypt_tenant_gateway_credentials` encrypts four tenant Midtrans client/server keys in place. Previous code expects plaintext and cannot run against these encrypted rows. Before releasing, verify the database dump, preserve the matching `APP_KEY`, pause queue/scheduler entry points and let running workers finish. Keep requests in maintenance mode during the migration and any reversal. Never print tenant keys or dump their model attributes into logs.
+Tech Lead-approved exception to ADR-0015: migration `2026_11_01_001033_encrypt_tenant_gateway_credentials` encrypts four tenant Midtrans client/server keys in place. Previous code expects plaintext and cannot run against these encrypted rows. Before releasing, verify the database dump, preserve the matching `APP_KEY`, pause queue/scheduler entry points and let running workers finish. Keep requests in maintenance mode during the migration and any reversal. Never print tenant keys or dump their model attributes into logs.
 
 The migration expands the four columns to nullable TEXT, backfills plaintext without encrypting already valid ciphertext again, and purges the legacy tenant and public-projection cache namespaces. Database-cache purging includes retired slugs and preserves unrelated records. Other cache drivers remove current tenant slug/domain and public keys; if such a driver contains retired legacy slug keys, remove that namespace using its backend tooling before bringing requests back. Storefront caching now stores only an explicit public-field projection.
 
@@ -129,18 +129,18 @@ Other workflows: `validate-deploy.yml` (manual: build and transfer test), `test-
 
 Implemented (ADR-0013, BQ-013/020): scheduled commands use named `Schedule::call()` callbacks calling `Artisan::call()` in-process, with cache-based `withoutOverlapping()` locks. No child process or `proc_open` is needed. The payment sweep remains every minute; subscription expiry remains daily.
 
-Lead memasang **dua entri cron, masing-masing setiap menit** di panel HostData (belum dijalankan oleh agen):
+The Tech Lead installs **two cron entries, each every minute**, in the HostData panel (not yet done):
 
 ```bash
 cd ~/domains/bookqu.my.id/laravel && php artisan schedule:run >> /dev/null 2>&1
 cd ~/domains/bookqu.my.id/laravel && php artisan queue:work --stop-when-empty --max-time=50 --tries=3 >> /dev/null 2>&1
 ```
 
-Empat notification email owner/trial dan email pembatalan masuk antrean setelah commit. Konfirmasi/invoice/reschedule pelanggan diproses oleh `SendManagementAccess`, yang hanya membawa ID delivery; link akses baru dibuat saat job mengirim email. Mailables berisi kredensial tetap tidak `ShouldQueue`, sehingga link mentah tidak tersimpan dalam payload antrean. Worker menggunakan koneksi database, berakhir saat antrean kosong atau batas waktunya tercapai; target jeda email ≤1 menit ketika cron, kapasitas antrean dan SMTP normal.
+Without the queue entry **no e-mail is sent**, including customer access links. The four owner/trial notifications and the cancellation e-mail are queued after commit. Customer confirmation, invoice and reschedule mail goes through `SendManagementAccess`, which carries only the delivery id; the access link is minted when the job sends. Mailables that contain credentials are never `ShouldQueue`, so raw links never sit in the queue payload. The worker uses the database connection and stops when the queue is empty or its time limit is reached; target mail delay ≤1 minute when cron, queue capacity and SMTP are healthy.
 
-Verifikasi lead (BQ-020 masih **in-progress**): jalankan `php artisan schedule:list` untuk melihat tiga callback dan jadwalnya, tunggu cron, buka `/up`, lalu pastikan satu email antrean benar-benar diterima. `/up` mengembalikan 500 bila heartbeat yang ada berumur **lebih dari lima menit**; heartbeat baru atau umur tepat lima menit mengembalikan 200. Heartbeat yang belum pernah ada, kedaluwarsa setelah satu hari, atau terhapus oleh cache clear tidak membuat health gagal: respons 200 sendiri bukan bukti cron sudah terpasang. Cache harus persisten dan sama antara CLI dan web (`CACHE_STORE=database`).
+Verification (BQ-020 is **in-progress**): run `php artisan schedule:list` to see the three callbacks and their schedules, wait for cron, open `/up`, then confirm one queued e-mail actually arrives. `/up` answers 500 when an existing heartbeat is **older than five minutes**; a fresh heartbeat or exactly five minutes answers 200. A heartbeat that never existed, expired after one day or was removed by a cache clear does not fail the check: a 200 alone does not prove cron is installed. The cache must be persistent and shared by CLI and web (`CACHE_STORE=database`).
 
-Jika worker berhenti, periksa jumlah/baris `jobs`, `failed_jobs`, cron dan log; `/up` memantau scheduler, bukan keberhasilan SMTP. Lead merekam bukti cron dan email sebelum rilis. Jangan gunakan `schedule:work` atau worker persisten pada shared hosting ini.
+If the worker stops, check `jobs` / `failed_jobs`, cron and logs; `/up` monitors the scheduler, not SMTP. The Tech Lead records cron and e-mail evidence before release. Never use `schedule:work` or a persistent worker on this shared hosting.
 
 Retry failed jobs (`php artisan queue:failed`, `queue:retry`) only after confirming the job is idempotent — payment and refund work especially.
 
@@ -148,7 +148,7 @@ Retry failed jobs (`php artisan queue:failed`, `queue:retry`) only after confirm
 
 Production needs a real mail transport (credentials, sender, test delivery) and an error alerting channel; both are **Target** (BQ-021). Until then, `storage/logs/laravel.log` is the only diagnostic source. Never enable `APP_DEBUG` in production to debug.
 
-S7 menyiapkan konfigurasi dan health check; BQ-021 tetap **in-progress**, menunggu lead mengisi SMTP, membuktikan satu email uji, dan mengaktifkan UptimeRobot paket gratis ke `https://bookqu.my.id/up` setiap lima menit. Alert exception aplikasi dan kegagalan antrean tetap perlu diverifikasi oleh lead; uptime sehat tidak membuktikan email berhasil.
+Configuration and the health check are ready; BQ-021 stays **in-progress** until the Tech Lead fills in SMTP, proves one test e-mail and enables a free UptimeRobot monitor on `https://bookqu.my.id/up` every five minutes. Application exception alerts and queue failures still need verification; a healthy uptime does not prove that e-mail works.
 
 ## 6. Backups and recovery
 
