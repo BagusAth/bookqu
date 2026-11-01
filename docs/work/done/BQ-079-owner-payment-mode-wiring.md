@@ -2,7 +2,7 @@
 id: BQ-079
 title: Decide and finish the tenant-owned Midtrans payment mode
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: payment
@@ -41,4 +41,6 @@ INV-TEN-01: the resolver must read only the payment's own tenant. INV-PAY-*: web
 
 `docs/domains/payment.md` (Known gaps), `docs/domains/tenancy.md`, and `docs/requirements.md` if (B) adds a requirement.
 
-## Evidence (fill when done)
+## Evidence
+
+Done 2026-11-01. Lead chose option A: no tenant-owned Midtrans mode in v1. The direct-payment settings are hidden by the BQ-008 module gate (404). Migration `2026_11_01_120000_force_platform_payment_mode` moves every `owner` tenant to `platform` and keeps the encrypted keys; it is irreversible on purpose. Test: `PlatformPaymentModeMigrationTest`. Releasing the mode later needs the option (B) work from this item.

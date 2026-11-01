@@ -135,6 +135,19 @@
                 }
             });
         }
+
+        // A page restored from the back-forward cache must be submittable again (BQ-063 T3-06)
+        window.addEventListener('pageshow', function (event) {
+            if (!event.persisted) {
+                return;
+            }
+            [submitBtn, mobileSubmitBtn].forEach(function (button) {
+                if (button) {
+                    button.disabled = false;
+                    button.classList.remove('opacity-75', 'cursor-not-allowed');
+                }
+            });
+        });
     });
 </script>
 @endsection

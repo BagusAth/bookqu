@@ -22,10 +22,10 @@ Migrated verbatim from TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OPS.md (Customer Self
 
 ## P1 checklist
 
-- [ ] BUG-T5-07: Slot Waktu Jam Lampau (Past Time) Tetap Muncul pada Modal Reschedule Owner
-- [ ] BUG-T5-08: Customer Reschedule Mengabaikan Tanggal Blokir / Libur Merchant
-- [ ] BUG-T5-09: Tombol Unduh Invoice Mengarah ke HTTP 404 pada Booking Pending / Cancelled
-- [ ] BUG-T5-10: Status Invoice Tercetak "LUNAS / SUKSES" untuk Reservasi yang Sudah Batal
+- [x] BUG-T5-07: Slot Waktu Jam Lampau (Past Time) Tetap Muncul pada Modal Reschedule Owner — fixed session 5 (started slots not offered)
+- [x] BUG-T5-08: Customer Reschedule Mengabaikan Tanggal Blokir / Libur Merchant — already fixed: BQ-069
+- [x] BUG-T5-09: Tombol Unduh Invoice Mengarah ke HTTP 404 pada Booking Pending / Cancelled — fixed session 5 (invoice button only for paid/completed)
+- [x] BUG-T5-10: Status Invoice Tercetak "LUNAS / SUKSES" untuk Reservasi yang Sudah Batal — fixed session 5 (cancelled group shows DIBATALKAN)
 - [ ] BUG-T5-11: Data Form Walk-In di Kalender Terhapus Bersih Saat Validasi Gagal (Data Loss)
 - [ ] BUG-T5-12: Ketiadaan Modul Ulasan (Review) pada Portal Payment Group
 

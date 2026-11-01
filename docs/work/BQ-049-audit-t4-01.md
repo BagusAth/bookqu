@@ -8,7 +8,7 @@ phase: 4
 domain: payment
 requirements: []
 invariants: []
-launch-blocker: true
+launch-blocker: false
 needs-lead-approval: false
 depends-on: [BQ-039]
 source: docs/audit-bug/TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md at a68ffe8
@@ -41,3 +41,5 @@ Migrated verbatim from the 2026-10 audit (TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md, sta
 Partial verification, BQ-002 (2026-10-31): payer cancellation now requires an exact grant, cancels the whole group through the lifecycle and requests the payment's own provider only after commit. Gateway failure cannot reverse local state; duplicate late success creates one refund owed without reviving bookings. Tests: CancelCheckoutPaymentTest and CancelCheckoutPaymentTransactionTest.
 
 Still open: SingaPay cancellation is unsupported and intentionally a no-op under ADR-0007; owner cancellation of a pending booking remains a separate path for triage. This audit item is not closed by the payer-only acceptance. The historical recommendation to call the provider before local state is superseded by ADR-0007: external calls follow commit.
+
+Session 5 triage (2026-11-01): taken off the launch blockers. An owner cancelling a pending booking leaves the payment open, but a later payment becomes a refund owed through the lifecycle and the owner is notified (ADR-0007), so no money is lost silently. SingaPay links cannot be cancelled at the gateway. Closing the payment on owner cancellation needs a new payment transition; that is post-launch work.

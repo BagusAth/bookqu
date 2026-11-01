@@ -2,7 +2,7 @@
 id: BQ-078
 title: Log SingaPay's safe rejection reason again
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: payment
@@ -38,4 +38,6 @@ Extend `tests/Feature/Customer/SafeOperationErrorsTest.php` or `SingaPayIntegrat
 
 `docs/domains/payment.md` Evidence only, if needed.
 
-## Evidence (fill when done)
+## Evidence
+
+Done 2026-11-01 (session 5). `SingaPayClient` logs a sanitized `provider_code` (`[A-Za-z0-9_.-]`, max 40 characters) on OAuth, account and payment-link failures. The free-text message is still never logged: `SafeOperationErrorsTest` shows a provider can echo secrets into it. Test: `test_singapay_rejection_logs_only_its_sanitized_error_code`.

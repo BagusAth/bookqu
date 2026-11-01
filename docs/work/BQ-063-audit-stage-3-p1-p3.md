@@ -20,11 +20,11 @@ Migrated verbatim from TAHAP-3-CUSTOMER-BOOKING-JOURNEY.md (Customer Booking Jou
 
 ## P1 checklist
 
-- [ ] BUG-T3-03: Hilangnya Modifier Classes BEM pada Slot Kartu Waktu Step 3
-- [ ] BUG-T3-04: Ketiadaan Nominal Total Harga pada Mobile Bottom Bar Step 3
-- [ ] BUG-T3-05: Teks Tautan Manajemen Invoice Menghilangkan Token Rahasia (Memicu 403 Forbidden)
-- [ ] BUG-T3-06: Pembekuan Tombol Submit Checkout Akibat BFCache Navigasi Kembali
-- [ ] BUG-T3-07: Format Tanggal Step 3 Menampilkan Bahasa Inggris Mentah Mengabaikan Kamus Lokalisasi
+- [x] BUG-T3-03: Hilangnya Modifier Classes BEM pada Slot Kartu Waktu Step 3 — fixed session 5 (BEM modifiers bound)
+- [x] BUG-T3-04: Ketiadaan Nominal Total Harga pada Mobile Bottom Bar Step 3 — fixed session 5 (mobile bar shows total)
+- [x] BUG-T3-05: Teks Tautan Manajemen Invoice Menghilangkan Token Rahasia (Memicu 403 Forbidden) — already fixed: BQ-001 removed token links; management uses grants
+- [x] BUG-T3-06: Pembekuan Tombol Submit Checkout Akibat BFCache Navigasi Kembali — fixed session 5 (pageshow re-enables submit)
+- [x] BUG-T3-07: Format Tanggal Step 3 Menampilkan Bahasa Inggris Mentah Mengabaikan Kamus Lokalisasi — fixed session 5 (Indonesian `translatedFormat`)
 
 ## P2 / P3 checklist
 

@@ -197,6 +197,13 @@
                             <span class="h-2 w-2 rounded-full bg-amber-500"></span>
                             Menunggu Pembayaran
                         </span>
+                        {{-- The provider's hosted link lets the payer resume (BQ-064 T4-09) --}}
+                        @if(! empty($payment->payment_url))
+                            <a href="{{ $payment->payment_url }}" target="_blank" rel="noopener noreferrer"
+                               class="ml-2 inline-flex items-center gap-1.5 rounded-xl btn-theme px-3.5 py-1.5 text-xs font-bold text-white shadow-xs">
+                                Lanjutkan Pembayaran
+                            </a>
+                        @endif
                     @else
                         <span class="inline-flex items-center gap-1.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-1.5 text-xs font-bold text-red-700 shadow-xs">
                             <span class="h-2 w-2 rounded-full bg-red-500"></span>

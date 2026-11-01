@@ -347,7 +347,7 @@ class BookingController extends Controller
         } elseif (is_string($rawJam) && $rawJam !== '') {
             $selectedTimes = [$rawJam];
         }
-        $selectedDateLabel = Carbon::parse($selectedDate)->format('l, F jS');
+        $selectedDateLabel = Carbon::parse($selectedDate)->locale('id')->translatedFormat('l, j F');
 
         return view('customer.booking.time-selection', [
             'tenant' => $tenant,

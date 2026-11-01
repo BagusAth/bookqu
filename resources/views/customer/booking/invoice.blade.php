@@ -51,7 +51,7 @@
     {{-- Success Hero Banner with Celebration Confetti (S6.1) --}}
     <div class="text-center mb-8 relative overflow-hidden py-3">
         {{-- Decorative Confetti Particles --}}
-        <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div class="no-print absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
             <span class="confetti-dot bg-[#4F46E5]" style="left: 12%; top: 5px; animation-delay: 0.1s;"></span>
             <span class="confetti-dot bg-emerald-500" style="left: 26%; top: 15px; animation-delay: 0.35s;"></span>
             <span class="confetti-dot bg-amber-400" style="left: 45%; top: 0px; animation-delay: 0.2s;"></span>

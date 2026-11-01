@@ -162,4 +162,25 @@ class ScheduleActionTest extends TestCase
         $this->assertCount(1, $rescheduleSlots);
         $this->assertTrue($rescheduleSlots[0]['is_available']);
     }
+
+    public function test_reschedule_slots_that_already_started_today_are_not_offered(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-02 12:00:00', 'Asia/Jakarta'));
+        $date = '2026-11-02';
+        foreach (['08:00:00', '15:00:00'] as $start) {
+            Schedule::factory()->create([
+                'idtenant' => $this->tenant->id,
+                'idlayanan' => $this->service->id,
+                'tanggal' => $date,
+                'jam_mulai' => $start,
+                'jam_selesai' => substr($start, 0, 2).':59:00',
+                'status' => 'tersedia',
+            ]);
+        }
+
+        $slots = app(GetAvailableSchedules::class)->getSlotsForReschedule($this->tenant, $this->service->id, $date);
+
+        $this->assertFalse($slots->firstWhere('jam_mulai', '08:00')['is_available']);
+        $this->assertTrue($slots->firstWhere('jam_mulai', '15:00')['is_available']);
+    }
 }
