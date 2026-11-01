@@ -2,7 +2,7 @@
 id: BQ-050
 title: [BUG-T4-02] Pengiriman Email Sinkronik Memperlambat Webhook dan Menimbulkan Pantulan Invoice Prematur
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: notifications
@@ -34,4 +34,6 @@ Migrated verbatim from the 2026-10 audit (TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md, sta
 
 ## Evidence
 
-_Fill in when done._
+S7 (2026-11-01): removed synchronous customer delivery from the webhook path; owner notification queues after commit. `SingaPayIntegrationTest::test_webhook_paid_status` proves paid state plus queued notification/job and no immediate mail.
+The old recommendation to queue `BookingGroupInvoiceMail` directly is superseded by ADR-0006/0013: the ID-only worker mints/sends the credential, so raw links never enter the queue payload. Customer controller/invoice behavior is unchanged.
+Verification: full SQLite suite 596 tests / 3,123 assertions; Pint/PHPStan pass, baseline unchanged. Production cron and mail evidence remain BQ-020/021.

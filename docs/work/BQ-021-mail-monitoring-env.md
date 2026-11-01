@@ -2,7 +2,7 @@
 id: BQ-021
 title: Production mail, error alerting and environment checklist
 type: ops
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: —
@@ -25,4 +25,5 @@ Configure a transactional mail provider and an alert channel (for example mail o
 
 ## Evidence
 
-_Fill in when done._
+S7 (2026-11-01), plan approved by lead: production env checklist, opt-in cached trusted-proxy configuration and scheduler health checks implemented/documented; release notes prepared.
+Waiting for lead: production SMTP + queued test email, config cache rebuild, UptimeRobot `/up` every five minutes, payment live setup/smoke test, and operational alert verification. No production secrets were read or changed.

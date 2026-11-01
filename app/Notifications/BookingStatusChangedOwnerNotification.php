@@ -5,27 +5,30 @@ namespace App\Notifications;
 use App\Models\Booking;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class BookingStatusChangedOwnerNotification extends Notification
+class BookingStatusChangedOwnerNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     public Booking $booking;
+
     public string $action;
+
     public array $extra;
 
     /**
-     * @param Booking $booking
-     * @param string  $action ('cancelled', 'rescheduled', 'completed', 'status_updated')
-     * @param array   $extra  Additional payload info, e.g. old_date, old_time, new_date, new_time, note
+     * @param  string  $action  ('cancelled', 'rescheduled', 'completed', 'status_updated')
+     * @param  array  $extra  Additional payload info, e.g. old_date, old_time, new_date, new_time, note
      */
     public function __construct(Booking $booking, string $action, array $extra = [])
     {
         $this->booking = $booking;
         $this->action = $action;
         $this->extra = $extra;
+        $this->afterCommit();
     }
 
     /**
@@ -41,22 +44,22 @@ class BookingStatusChangedOwnerNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $booking  = $this->booking;
-        $layanan  = $booking->layanan;
-        $tenant   = $booking->tenant;
+        $booking = $this->booking;
+        $layanan = $booking->layanan;
+        $tenant = $booking->tenant;
         $namaLayanan = $layanan?->namalayanan ?? 'Layanan';
-        $bisnisName  = $tenant->namabisnis ?? 'BookQu';
+        $bisnisName = $tenant->namabisnis ?? 'BookQu';
 
-        $dashboardUrl = url('/owner/bookings?katakunci=' . urlencode($booking->booking_code ?? $booking->namapelanggan));
+        $dashboardUrl = url('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan));
 
-        $mail = (new MailMessage)->greeting('Halo ' . ($notifiable->namalengkap ?? 'Owner') . ',');
+        $mail = (new MailMessage)->greeting('Halo '.($notifiable->namalengkap ?? 'Owner').',');
 
         if ($this->action === 'cancelled') {
             $mail->subject("⚠️ Booking Dibatalkan — {$bisnisName}")
                 ->line("Pemberitahuan: Booking oleh **{$booking->namapelanggan}** telah **dibatalkan**.")
-                ->line("**Kode Booking:** " . ($booking->booking_code ?? '-'))
+                ->line('**Kode Booking:** '.($booking->booking_code ?? '-'))
                 ->line("**Layanan     :** {$namaLayanan}")
-                ->line("**Jadwal Awal :** " . $this->formatDate($booking->tanggalbooking) . " pukul {$booking->jam}");
+                ->line('**Jadwal Awal :** '.$this->formatDate($booking->tanggalbooking)." pukul {$booking->jam}");
 
             if ($booking->payment && $booking->payment->status === 'sukses') {
                 $mail->line('Status Refund: Otomatis diajukan (Pending verifikasi refund).');
@@ -71,7 +74,7 @@ class BookingStatusChangedOwnerNotification extends Notification
 
             $mail->subject("🗓️ Jadwal Booking Diubah (Rescheduled) — {$bisnisName}")
                 ->line("Pelanggan **{$booking->namapelanggan}** telah mengubah jadwal booking:")
-                ->line("**Kode Booking:** " . ($booking->booking_code ?? '-'))
+                ->line('**Kode Booking:** '.($booking->booking_code ?? '-'))
                 ->line("**Layanan     :** {$namaLayanan}")
                 ->line("**Jadwal Lama :** {$oldDate} pukul {$oldTime}")
                 ->line("**Jadwal Baru :** {$newDate} pukul {$newTime}")
@@ -79,14 +82,14 @@ class BookingStatusChangedOwnerNotification extends Notification
         } elseif ($this->action === 'completed') {
             $mail->subject("✅ Booking Selesai — {$bisnisName}")
                 ->line("Booking atas nama **{$booking->namapelanggan}** telah ditandai sebagai **Selesai**.")
-                ->line("**Kode Booking:** " . ($booking->booking_code ?? '-'))
+                ->line('**Kode Booking:** '.($booking->booking_code ?? '-'))
                 ->line("**Layanan     :** {$namaLayanan}")
-                ->line("**Tanggal     :** " . $this->formatDate($booking->tanggalbooking) . " pukul {$booking->jam}");
+                ->line('**Tanggal     :** '.$this->formatDate($booking->tanggalbooking)." pukul {$booking->jam}");
         } else {
             $statusLabel = ucfirst($booking->status);
             $mail->subject("🔔 Perubahan Status Booking — {$bisnisName}")
                 ->line("Status booking untuk **{$booking->namapelanggan}** telah diperbarui menjadi **{$statusLabel}**.")
-                ->line("**Kode Booking:** " . ($booking->booking_code ?? '-'))
+                ->line('**Kode Booking:** '.($booking->booking_code ?? '-'))
                 ->line("**Layanan     :** {$namaLayanan}");
         }
 
@@ -105,50 +108,50 @@ class BookingStatusChangedOwnerNotification extends Notification
         $tanggal = $this->formatDateShort($booking->tanggalbooking);
 
         $title = match ($this->action) {
-            'cancelled'   => 'Booking Dibatalkan',
+            'cancelled' => 'Booking Dibatalkan',
             'rescheduled' => 'Jadwal Booking Diubah',
-            'completed'   => 'Booking Selesai',
-            default       => 'Status Booking Berubah',
+            'completed' => 'Booking Selesai',
+            default => 'Status Booking Berubah',
         };
 
         $message = match ($this->action) {
-            'cancelled'   => "{$booking->namapelanggan} membatalkan reservasi {$namaLayanan} ({$tanggal})",
+            'cancelled' => "{$booking->namapelanggan} membatalkan reservasi {$namaLayanan} ({$tanggal})",
             'rescheduled' => "{$booking->namapelanggan} menjadwalkan ulang {$namaLayanan} untuk {$tanggal} pukul {$booking->jam}",
-            'completed'   => "Booking {$namaLayanan} atas nama {$booking->namapelanggan} telah selesai",
-            default       => "Status booking {$booking->namapelanggan} ({$namaLayanan}) diubah ke {$booking->status}",
+            'completed' => "Booking {$namaLayanan} atas nama {$booking->namapelanggan} telah selesai",
+            default => "Status booking {$booking->namapelanggan} ({$namaLayanan}) diubah ke {$booking->status}",
         };
 
         $badgeColor = match ($this->action) {
-            'cancelled'   => 'rose',
+            'cancelled' => 'rose',
             'rescheduled' => 'amber',
-            'completed'   => 'indigo',
-            default       => 'blue',
+            'completed' => 'indigo',
+            default => 'blue',
         };
 
         $icon = match ($this->action) {
-            'cancelled'   => 'x-circle',
+            'cancelled' => 'x-circle',
             'rescheduled' => 'clock-rewind',
-            'completed'   => 'check-circle-2',
-            default       => 'refresh-cw',
+            'completed' => 'check-circle-2',
+            default => 'refresh-cw',
         };
 
         return [
-            'event_type'     => $this->action,
-            'title'          => $title,
-            'message'        => $message,
-            'booking_id'     => $booking->id,
-            'booking_code'   => $booking->booking_code,
-            'customer_name'  => $booking->namapelanggan,
+            'event_type' => $this->action,
+            'title' => $title,
+            'message' => $message,
+            'booking_id' => $booking->id,
+            'booking_code' => $booking->booking_code,
+            'customer_name' => $booking->namapelanggan,
             'customer_email' => $booking->email,
             'customer_phone' => $booking->nomorhp,
-            'service_name'   => $namaLayanan,
-            'tanggal'        => $tanggal,
-            'jam'            => $booking->jam,
-            'status'         => $booking->status,
-            'badge_color'    => $badgeColor,
-            'icon'           => $icon,
-            'extra'          => $this->extra,
-            'url'            => url('/owner/bookings?katakunci=' . urlencode($booking->booking_code ?? $booking->namapelanggan)),
+            'service_name' => $namaLayanan,
+            'tanggal' => $tanggal,
+            'jam' => $booking->jam,
+            'status' => $booking->status,
+            'badge_color' => $badgeColor,
+            'icon' => $icon,
+            'extra' => $this->extra,
+            'url' => url('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan)),
         ];
     }
 
@@ -157,11 +160,13 @@ class BookingStatusChangedOwnerNotification extends Notification
         if ($date instanceof Carbon) {
             return $date->translatedFormat('l, d F Y');
         }
-        if (is_string($date) && !empty($date)) {
+        if (is_string($date) && ! empty($date)) {
             try {
                 return Carbon::parse($date)->translatedFormat('l, d F Y');
-            } catch (\Exception) {}
+            } catch (\Exception) {
+            }
         }
+
         return '-';
     }
 
@@ -170,11 +175,13 @@ class BookingStatusChangedOwnerNotification extends Notification
         if ($date instanceof Carbon) {
             return $date->translatedFormat('d M Y');
         }
-        if (is_string($date) && !empty($date)) {
+        if (is_string($date) && ! empty($date)) {
             try {
                 return Carbon::parse($date)->translatedFormat('d M Y');
-            } catch (\Exception) {}
+            } catch (\Exception) {
+            }
         }
+
         return '-';
     }
 }
