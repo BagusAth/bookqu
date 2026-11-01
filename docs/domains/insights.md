@@ -26,4 +26,6 @@ Functional: Implemented · Verification: Needs Verification (metric definitions 
 | Calendar and schedule report count every `pending` booking as occupied, ignoring the 15-minute grace; analytics and schedule controller use their own "booked" status lists | BQ-012 |
 | `OwnerAnalyticsController` holds aggregation queries directly | BQ-029 (pattern), BQ-012 |
 | Dashboard view is 597 lines | BQ-034 |
+| Dashboard live refresh inserts customer names with `innerHTML` (stored XSS) | BQ-089 |
+| Dashboard figures truncated, unsigned or mislabelled; fake trend indicators | BQ-094 |
 | Audit P0/P1: deleting a slot from the calendar redirects out of it; week view hides free slots; empty AJAX error | BQ-046, BQ-062 |
