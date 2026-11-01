@@ -17,10 +17,9 @@
         </div>
     @endif
 
-    @if (session('error'))
-        <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-700">
-            {{ session('error') }}
-        </div>
+    {{-- session('error') is shown once by the booking shell --}}
+    @if (! empty($pendingCheckout))
+        <x-customer.pending-checkout-banner :pending="$pendingCheckout" class="mb-6" />
     @endif
 
     <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-7 shadow-xs space-y-5">

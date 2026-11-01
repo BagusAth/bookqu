@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\CreateBooking;
+use App\Actions\Booking\StorefrontCheckoutState;
 use App\Actions\CustomerAccess\CancelCheckoutPayment;
 use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Actions\Payment\OutcomeIntakeResult;
@@ -26,6 +27,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class BookingController extends Controller
 {
@@ -71,8 +73,9 @@ class BookingController extends Controller
         })->values();
 
         $categories = $services->pluck('category')->filter(fn ($cat) => $cat && $cat->is_active)->unique('id')->values();
+        $pendingCheckout = app(StorefrontCheckoutState::class)->pending($tenant);
 
-        return view('customer.booking.program-selection', compact('tenant', 'services', 'servicesPayload', 'categories'));
+        return view('customer.booking.program-selection', compact('tenant', 'services', 'servicesPayload', 'categories', 'pendingCheckout'));
     }
 
     public function selectProgram(Request $request, string $slug_usaha)
@@ -128,7 +131,7 @@ class BookingController extends Controller
         $serviceId = $booking['service_id'] ?? null;
 
         if (! $serviceId) {
-            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
+            return $this->restartBooking($slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
@@ -219,7 +222,7 @@ class BookingController extends Controller
 
         if ($selectedDate < $minDate->toDateString() || $selectedDate > $maxDate->toDateString()) {
             return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
-                ->withErrors(['tanggal' => 'Selected date is outside the booking window.']);
+                ->withErrors(['tanggal' => 'Tanggal yang dipilih di luar rentang pemesanan (hari ini sampai 30 hari ke depan).']);
         }
 
         if ($simulate) {
@@ -265,7 +268,7 @@ class BookingController extends Controller
 
         if ($availableSlots < 1) {
             return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
-                ->withErrors(['tanggal' => 'Selected date is fully booked.']);
+                ->withErrors(['tanggal' => 'Tanggal ini sudah penuh. Silakan pilih tanggal lain.']);
         }
 
         session()->put('booking.tanggal', $selectedDate);
@@ -297,7 +300,7 @@ class BookingController extends Controller
         $selectedDate = $booking['tanggal'] ?? null;
 
         if (! $serviceId) {
-            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
+            return $this->restartBooking($slug_usaha);
         }
 
         if (! $selectedDate) {
@@ -556,7 +559,7 @@ class BookingController extends Controller
         $scheduleIds = is_array($rawScheduleIds) ? $rawScheduleIds : ($rawScheduleIds ? [$rawScheduleIds] : []);
 
         if (! $serviceId || ! $selectedDate || empty($selectedTimes)) {
-            return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
+            return $this->restartBooking($slug_usaha);
         }
 
         $service = $this->resolveService($tenant->id, (int) $serviceId);
@@ -598,6 +601,9 @@ class BookingController extends Controller
 
         $hargaAkhir = array_sum($hargaPerSlot);
         $selectedTime = $selectedTimes[0] ?? null;
+        $checkoutState = app(StorefrontCheckoutState::class);
+        $checkoutFingerprint = $checkoutState->fingerprint($service, $selectedDate, $schedules);
+        $pendingCheckout = $checkoutState->pending($tenant);
 
         return view('customer.booking.checkout', compact(
             'tenant',
@@ -606,7 +612,9 @@ class BookingController extends Controller
             'selectedTime',
             'selectedTimes',
             'hargaAkhir',
-            'schedules'
+            'schedules',
+            'checkoutFingerprint',
+            'pendingCheckout'
         ));
     }
 
@@ -676,6 +684,16 @@ class BookingController extends Controller
                 ->withErrors(['jam' => 'Jadwal yang dipilih tidak boleh duplikat.']);
         }
 
+        // The page carries a fingerprint of what it showed; another tab or a price change makes it stale.
+        $checkoutState = app(StorefrontCheckoutState::class);
+        $fingerprint = $request->input('checkout_fingerprint');
+        if (is_string($fingerprint) && $fingerprint !== ''
+            && ! hash_equals((string) $checkoutState->fingerprintFor($tenant, $service, $selectedDate, $scheduleIds), $fingerprint)) {
+            return CustomerBookingRoutes::route('customer.booking.checkout', $slug_usaha)
+                ->withInput($request->except('checkout_fingerprint'))
+                ->with('error', 'Pilihan jadwal atau harga berubah, misalnya karena diubah di tab lain. Periksa kembali ringkasan pesanan sebelum melanjutkan.');
+        }
+
         $customerData = [
             'namapelanggan' => $request->input('namapelanggan'),
             'nomorhp' => $request->input('nomorhp'),
@@ -707,6 +725,9 @@ class BookingController extends Controller
         }
 
         session()->forget('booking');
+        if (empty($result['free']) && ($result['payment'] ?? null) instanceof Payment) {
+            $checkoutState->remember($result['payment']);
+        }
 
         return redirect()->away(app(CustomerAccessLinks::class)->entry($result['access']));
     }
@@ -782,7 +803,17 @@ class BookingController extends Controller
             abort(404);
         }
 
-        app(CancelCheckoutPayment::class)->execute(request()->attributes->get('customer_access'), $payment);
+        try {
+            app(CancelCheckoutPayment::class)->execute(request()->attributes->get('customer_access'), $payment);
+        } catch (HttpException $refused) {
+            // Paid or expired meanwhile: a form submit returns to the payment page, which shows the real state.
+            if ($refused->getStatusCode() !== 422 || request()->expectsJson()) {
+                throw $refused;
+            }
+
+            return CustomerBookingRoutes::route('customer.booking.payment', [$slug_usaha, $payment->order_id])
+                ->with('error', 'Pesanan tidak dapat dibatalkan karena pembayarannya sudah diterima atau sudah berakhir.');
+        }
 
         session()->forget('booking');
 
@@ -865,6 +896,16 @@ class BookingController extends Controller
         $booking = $bookings->first();
 
         return view('customer.booking.invoice', compact('tenant', 'payment', 'bookings', 'booking'));
+    }
+
+    /**
+     * Back to the first step, keeping a message flashed by the request that sent the customer here.
+     */
+    private function restartBooking(string $slug_usaha)
+    {
+        session()->reflash();
+
+        return CustomerBookingRoutes::route('customer.booking.program', $slug_usaha);
     }
 
     private function resolveTenant(string $slug_usaha): ?Tenant

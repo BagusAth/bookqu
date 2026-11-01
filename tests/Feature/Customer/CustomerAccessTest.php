@@ -216,6 +216,34 @@ class CustomerAccessTest extends TestCase
         $this->assertSame($expiry, $issued->grant->fresh()->expires_at->toISOString());
     }
 
+    public function test_a_second_booking_in_the_same_browser_keeps_access_to_the_first(): void
+    {
+        [$first] = $this->reservation('pending');
+        [$second] = $this->reservation('pending', $first->tenant);
+        [$unrelated] = $this->reservation('pending', $first->tenant);
+
+        $this->enter($first, AccessProfile::Checkout);
+        $this->enter($second, AccessProfile::Checkout);
+
+        $this->get('/'.$first->tenant->slug.'/booking/payment/'.$first->order_id)->assertOk();
+        $this->get('/'.$second->tenant->slug.'/booking/payment/'.$second->order_id)->assertOk();
+        $this->get('/'.$unrelated->tenant->slug.'/booking/payment/'.$unrelated->order_id)->assertNotFound();
+    }
+
+    public function test_earlier_grants_keep_their_own_timeouts_and_only_the_newest_five_are_kept(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $payments = collect(range(1, 6))->map(fn () => $this->reservation('pending', $tenant)[0]);
+        $payments->each(fn (Payment $payment) => $this->enter($payment, AccessProfile::Checkout));
+        $path = fn (Payment $payment) => '/'.$tenant->slug.'/booking/payment/'.$payment->order_id;
+
+        $this->get($path($payments[0]))->assertNotFound();
+        $this->get($path($payments[1]))->assertOk();
+
+        $this->travelTo(now()->addMinutes(30));
+        $this->get($path($payments[5]))->assertNotFound();
+    }
+
     public function test_expiry_uses_the_fixed_adr_boundaries(): void
     {
         [$payment] = $this->reservation();

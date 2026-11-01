@@ -89,6 +89,10 @@
                 </div>
             </div>
 
+            @if (! empty($pendingCheckout))
+                <x-customer.pending-checkout-banner :pending="$pendingCheckout" class="mb-6" />
+            @endif
+
             @if ($errors->any())
                 <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-700">
                     {{ $errors->first() }}

@@ -204,6 +204,15 @@
                 }
             });
 
+            // 419: this page's form token expired; 404: the access session ended. Retrying cannot help.
+            if (response.status === 419 || response.status === 404) {
+                stopAutoPolling();
+                showInlineFeedback(response.status === 419
+                    ? 'Sesi halaman ini telah berakhir. Muat ulang halaman untuk melihat status terbaru.'
+                    : 'Akses ke halaman pembayaran ini telah berakhir. Muat ulang halaman atau buka kembali tautan dari email konfirmasi.', 'error');
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
             }
@@ -293,6 +302,8 @@
 
         // Expiry countdown: synchronized with server remaining seconds
         let remainingSeconds = {{ max(0, $payment->expired_at ? (int) now()->diffInSeconds($payment->expired_at, false) : 900) }};
+        // Count against a fixed deadline: background tabs (e.g. while paying in an e-wallet app) throttle timers
+        const deadlineAt = Date.now() + remainingSeconds * 1000;
 
         // Declared before updateCountdown() runs: an expired page must not hit the TDZ (BQ-048)
         let timer = null;
@@ -343,7 +354,7 @@
         updateCountdown();
         if (remainingSeconds > 0) {
             timer = setInterval(function() {
-                remainingSeconds--;
+                remainingSeconds = Math.max(0, Math.round((deadlineAt - Date.now()) / 1000));
                 updateCountdown();
             }, 1000);
         }

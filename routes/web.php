@@ -313,7 +313,7 @@ $customDomainPattern = '^(?!('.implode('|', array_map(fn ($d) => preg_quote($d, 
 
 Route::domain('{custom_domain}')
     ->where(['custom_domain' => $customDomainPattern])
-    ->middleware('tenant')
+    ->middleware(['tenant', 'no-store'])
     ->group(function () use ($bookingSubRoutes) {
         Route::get('/', [BookingController::class, 'showProgramSelection'])
             ->name('customer.booking.program');
@@ -326,7 +326,7 @@ Route::domain('{custom_domain}')
 // bookqu.my.id/ is NOT included here — it stays as the welcome page (defined above at line 33).
 Route::prefix('{slug_usaha}')
     ->where(['slug_usaha' => '^(?!(sitemap\.xml|kebijakan-privasi|privacy-policy|syarat-ketentuan|terms-conditions)$)[^/]+$'])
-    ->middleware('tenant')
+    ->middleware(['tenant', 'no-store'])
     ->group(function () use ($bookingSubRoutes) {
         Route::get('/', [BookingController::class, 'showProgramSelection'])
             ->name('customer.booking.slug.program');

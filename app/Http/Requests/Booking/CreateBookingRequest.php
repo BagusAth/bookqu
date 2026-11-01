@@ -20,12 +20,24 @@ class CreateBookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'namapelanggan'   => ['required', 'string', 'max:150'],
-            'nomorhp'         => ['required', 'string', 'max:20'],
-            'email'           => ['required', 'email', 'max:100'],
-            'catatan'         => ['nullable', 'string', 'max:500'],
+            'namapelanggan' => ['required', 'string', 'min:2', 'max:150'],
+            // 10–15 digits, optionally "+" first and single spaces or dashes between digits
+            'nomorhp' => ['required', 'string', 'max:20', 'regex:/^\+?(?:\d[\s\-]?){9,14}\d$/'],
+            'email' => ['required', 'email', 'max:100'],
+            'catatan' => ['nullable', 'string', 'max:500'],
             'selected_addons' => ['nullable'],
-            'voucher_code'    => ['nullable'],
+            'voucher_code' => ['nullable'],
+            'checkout_fingerprint' => ['nullable', 'string', 'max:128'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'nomorhp.regex' => 'Nomor WhatsApp / HP harus berisi 10–15 digit angka (boleh diawali +62).',
         ];
     }
 
@@ -36,7 +48,7 @@ class CreateBookingRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             // Guard: Add-on feature disabled in production
-            if ($this->filled('selected_addons') || (!empty($this->selected_addons))) {
+            if ($this->filled('selected_addons') || (! empty($this->selected_addons))) {
                 $validator->errors()->add('selected_addons', 'Fitur item tambahan (add-on) belum tersedia.');
                 $validator->errors()->add('addons', 'Fitur item tambahan (add-on) belum tersedia.');
             }
