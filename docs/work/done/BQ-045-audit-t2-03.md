@@ -2,7 +2,7 @@
 id: BQ-045
 title: [BUG-T2-03] Relasi Staff & Sumber Daya Tidak Pernah Terlepas saat Checkbox Dikosongkan (Relationship Desync)
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: staged-modules
@@ -46,4 +46,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-2-OWNER-CORE-OPERATIONS.md, stag
 
 ## Evidence
 
-_Fill in when done._
+fixed: UpdateService selalu sync(staff_ids ?? []) dan sync(resource_ids ?? []). OwnerUiAuditTest membuktikan PUT tanpa checkbox melepaskan kedua pivot. Tier 3 tetap tersembunyi (Sesi 4).

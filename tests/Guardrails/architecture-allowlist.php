@@ -27,7 +27,7 @@ return [
         'app/Http/Controllers/Owner/OwnerLandingPageController.php' => 2,
         'app/Providers/AppServiceProvider.php' => 1,
         'resources/views/owner/landing-page.blade.php' => 1,
-        'resources/views/owner/subscription.blade.php' => 5,
+        'resources/views/owner/subscription.blade.php' => 1,
     ],
     // Removed by BQ-009.
     'scope-bypass-reason' => [

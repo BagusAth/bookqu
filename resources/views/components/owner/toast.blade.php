@@ -12,10 +12,10 @@
     }"
     @toast.window="add($event.detail.type, $event.detail.message)"
     x-init="
-        @if(session('sukses')) add('success', '{{ addslashes(session('sukses')) }}'); @endif
-        @if(session('pesan')) add('warning', '{{ addslashes(session('pesan')) }}'); @endif
-        @if(session('error')) add('error', '{{ addslashes(session('error')) }}'); @endif
-        @if(isset($errors) && $errors->any()) add('error', '{{ addslashes($errors->first()) }}'); @endif
+        @if(session('sukses')) add('success', @js(session('sukses'))); @endif
+        @if(session('pesan')) add('warning', @js(session('pesan'))); @endif
+        @if(session('error')) add('error', @js(session('error'))); @endif
+        @if(isset($errors) && $errors->any()) add('error', @js($errors->first())); @endif
     "
     class="fixed top-4 right-4 z-[120] flex flex-col gap-2.5 pointer-events-none"
 >

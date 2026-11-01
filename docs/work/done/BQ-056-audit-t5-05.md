@@ -2,7 +2,7 @@
 id: BQ-056
 title: [BUG-T5-05] Bahaya Fatal Crash HTTP 500 (`Attempt to read property on null`) pada Tabel Owner
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: booking
@@ -29,4 +29,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OP
 
 ## Evidence
 
-_Fill in when done._
+already fixed: akses relasi layanan pada desktop/mobile sudah memakai fallback ?? yang aman untuk rantai properti null. OwnerUiAuditTest memaksa relasi layanan null dan membuktikan HTTP 200 serta Standard Service; ekspresi lama tidak diubah (Sesi 4).

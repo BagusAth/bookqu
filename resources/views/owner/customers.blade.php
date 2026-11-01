@@ -7,6 +7,7 @@
      x-data="{
          detailOpen: false,
          loading: false,
+         detailError: '',
          activeCustomer: null,
          activeTab: 'overview',
          openCustomer(identifier) {
@@ -14,18 +15,23 @@
              this.detailOpen = true;
              this.activeTab = 'overview';
              this.activeCustomer = null;
+             this.detailError = '';
 
              fetch(`{{ route('owner.customers.detail') }}?identifier=${encodeURIComponent(identifier)}`, {
                  headers: { 'X-Requested-With': 'XMLHttpRequest' }
              })
-             .then(r => r.json())
+             .then(r => {
+                 if (!r.ok) throw new Error('customer-load-failed');
+                 return r.json();
+             })
              .then(data => {
                  this.activeCustomer = data;
                  this.loading = false;
              })
              .catch(() => {
-                 this.detailOpen = false;
+                 this.detailError = 'Data pelanggan tidak dapat dimuat. Tutup panel dan coba lagi.';
                  this.loading = false;
+                 window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: this.detailError } }));
              });
          },
          saveNote() {
@@ -40,10 +46,14 @@
                  },
                  body: fd,
              })
-             .then(r => r.json())
+             .then(r => {
+                 if (!r.ok) throw new Error('note-save-failed');
+                 return r.json();
+             })
              .then(() => {
-                 $dispatch('toast', { message: 'Catatan berhasil disimpan!', type: 'success' });
-             });
+                 window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Catatan berhasil disimpan!', type: 'success' } }));
+             })
+             .catch(() => window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Catatan gagal disimpan. Silakan coba lagi.', type: 'error' } })));
          }
      }">
 

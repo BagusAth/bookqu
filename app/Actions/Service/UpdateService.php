@@ -63,12 +63,8 @@ class UpdateService
                 'image_url' => $imageUrl,
             ]);
 
-            if (array_key_exists('staff_ids', $data)) {
-                $layanan->staff()->sync($data['staff_ids'] ?? []);
-            }
-            if (array_key_exists('resource_ids', $data)) {
-                $layanan->resources()->sync($data['resource_ids'] ?? []);
-            }
+            $layanan->staff()->sync($data['staff_ids'] ?? []);
+            $layanan->resources()->sync($data['resource_ids'] ?? []);
             if (array_key_exists('additional_item_ids', $data)) {
                 $layanan->additionalItems()->sync($data['additional_item_ids'] ?? []);
             }

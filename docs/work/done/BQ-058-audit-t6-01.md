@@ -2,7 +2,7 @@
 id: BQ-058
 title: [BUG-T6-01] Karakter Kutip pada Nama Bisnis Menyebabkan Crash Total JavaScript di Halaman Settings
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: tenancy
@@ -34,4 +34,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-6-CRM-REVIEWS-BILLING-SETTINGS.m
 
 ## Evidence
 
-_Fill in when done._
+fixed: targetAccount/targetBusiness di owner/settings.blade.php memakai @js(), tanpa string JS mentah. Browser dengan nama bisnis berisi apostrof/kutip ganda lulus (Sesi 4).

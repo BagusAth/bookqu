@@ -2,7 +2,7 @@
 id: BQ-046
 title: [BUG-T2-04] Calendar Redirect Trap: Menghapus Slot Waktu Melemparkan Owner Keluar dari Kalender
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: insights
@@ -33,4 +33,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-2-OWNER-CORE-OPERATIONS.md, stag
 
 ## Evidence
 
-_Fill in when done._
+fixed: form kalender mengirim return_to=calendar; destroy hanya memilih tujuan internal calendar/schedule. OwnerUiAuditTest membuktikan slot terhapus dan redirect kembali ke kalender (Sesi 4).

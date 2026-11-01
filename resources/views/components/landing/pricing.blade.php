@@ -193,48 +193,7 @@
                         <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3.5">
                             Semua kebutuhan booking dasar
                         </p>
-                        <ul class="space-y-2.5 text-xs sm:text-sm text-gray-600 mb-6">
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>&lt;300 booking/bulan</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>1 bisnis / 1 lokasi</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>5 layanan</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>1 admin + 2 staff</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Customer booking page</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Calendar & automatic slots</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Email notification</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Basic dashboard</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Automatic invoice</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Pembayaran via BookQu</span>
-                            </li>
-                        </ul>
+                        <x-plan-features :plan="$plans->get('small')" plan-key="small" class="text-gray-600 mb-6" />
                     </div>
                 </div>
 
@@ -288,52 +247,7 @@
                         <p class="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-3.5">
                             Lebih banyak kontrol, lebih sedikit pekerjaan manual
                         </p>
-                        <ul class="space-y-2.5 text-xs sm:text-sm text-gray-600 mb-6">
-                            <li class="flex items-start gap-2.5 font-medium text-gray-900">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>&lt;500 booking/bulan</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 font-medium text-indigo-700">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Semua fitur Small</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Unlimited services</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Hingga 15 staff</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Role management</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Customer CRM</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>WhatsApp & email reminders</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Promo & voucher</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Complete analytics</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Export Excel / CSV</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>BYOPG + platform payment</span>
-                            </li>
-                        </ul>
+                        <x-plan-features :plan="$plans->get('medium')" plan-key="medium" class="text-gray-600 mb-6" />
                     </div>
                 </div>
 
@@ -386,52 +300,7 @@
                         <p class="text-xs font-bold uppercase tracking-wider text-purple-600 mb-3.5">
                             Booking tanpa batas & kontrol penuh
                         </p>
-                        <ul class="space-y-2.5 text-xs sm:text-sm text-gray-600 mb-6">
-                            <li class="flex items-start gap-2.5 font-medium text-gray-900">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Unlimited booking</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 font-medium text-purple-700">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Semua fitur Medium</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Unlimited staff</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Multi-location</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Custom domain</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Landing page builder</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Advanced permission</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>White-label</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Advanced analytics</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Automation workflow</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Priority support</span>
-                            </li>
-                        </ul>
+                        <x-plan-features :plan="$plans->get('pro')" plan-key="pro" class="text-gray-600 mb-6" />
                     </div>
                 </div>
 

@@ -36,9 +36,6 @@
                     @endif
                 </p>
             </div>
-            <button class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5" id="btn-change-plan">
-                Change Plan
-            </button>
         </div>
     </div>
 
@@ -95,24 +92,7 @@
                 @endif
                 <h3 class="text-lg font-bold text-bq-text capitalize">{{ $paket->namapaket }}</h3>
                 <p class="mt-1 text-2xl font-bold text-bq-text">Rp {{ number_format($paket->hargabulanan, 0, ',', '.') }}<span class="text-sm font-normal text-bq-text-muted">/mo</span></p>
-                <ul class="mt-4 space-y-2.5 text-sm text-bq-text-muted">
-                    <li class="flex items-center gap-2">
-                        <svg class="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        {{ $paket->maxlayanan > 0 ? 'Hingga ' . $paket->maxlayanan . ' layanan' : 'Unlimited layanan' }}
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <svg class="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        {{ ($paket->isunlimited || $paket->maxbooking == 0) ? 'Unlimited booking' : '<' . number_format($paket->maxbooking) . ' booking/bulan' }}
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <svg class="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        {{ $paket->namapaket === 'pro' ? 'Unlimited staff' : ($paket->namapaket === 'medium' ? 'Hingga 15 staff' : '1 admin + 2 staff') }}
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <svg class="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        {{ $paket->namapaket === 'pro' ? 'Multi-location, custom domain & landing page' : ($paket->namapaket === 'medium' ? 'Analytics, CRM, promo & voucher' : 'Customer booking page & auto invoice') }}
-                    </li>
-                </ul>
+                <x-plan-features :plan="$paket" class="mt-4 text-bq-text-muted" />
                 @if ($adalahaktif)
                     <button class="mt-5 w-full rounded-lg py-2.5 text-sm font-semibold transition-all border border-bq-border bg-bq-background text-bq-text-muted cursor-default" disabled>
                         Current Plan

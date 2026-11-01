@@ -2,7 +2,7 @@
 id: BQ-055
 title: [BUG-T5-04] Input Tanggal pada Modal Reschedule Owner Tidak Memiliki Atribut `name="tanggal"`
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: booking
@@ -29,4 +29,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OP
 
 ## Evidence
 
-_Fill in when done._
+fixed: components/owner/modal-reschedule-booking.blade.php input date memiliki name="tanggal". Tidak ada perubahan Action/domain reschedule (Sesi 4).

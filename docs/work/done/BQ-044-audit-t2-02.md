@@ -2,7 +2,7 @@
 id: BQ-044
 title: [BUG-T2-02] Tabrakan Delimiter Kutip `@click` pada Kartu Layanan, Kategori, dan Jadwal
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: catalog
@@ -34,4 +34,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-2-OWNER-CORE-OPERATIONS.md, stag
 
 ## Evidence
 
-_Fill in when done._
+fixed: payload @click layanan/kategori/jadwal memakai @js(); nama kategori dan pencarian tidak lagi disisipkan sebagai string JS mentah. Browser halaman services/categories/schedule dengan kutip lulus (Sesi 4).

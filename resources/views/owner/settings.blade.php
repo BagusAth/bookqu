@@ -6,8 +6,8 @@
 <div class="mx-auto max-w-4xl space-y-6" x-data="{
     deleteModalOpen: {{ $errors->has('confirm_account') ? 'true' : 'false' }},
     confirmInput: '',
-    targetAccount: '{{ strtolower(trim($tenant->user->email ?? '')) }}',
-    targetBusiness: '{{ strtolower(trim($tenant->namabisnis ?? '')) }}'
+    targetAccount: @js(strtolower(trim($tenant?->user?->email ?? auth()->user()?->email ?? ''))),
+    targetBusiness: @js(strtolower(trim($tenant?->namabisnis ?? '')))
 }">
 
     {{-- ── Flash Notifications ── --}}
@@ -299,7 +299,7 @@
                             Ketikkan email akun Anda untuk konfirmasi:
                         </label>
                         <div class="select-all font-mono text-xs font-bold text-rose-700 bg-white border border-rose-200 px-3 py-1.5 rounded-lg text-center mb-2.5">
-                            {{ $tenant->user->email }}
+                            {{ $tenant?->user?->email ?? auth()->user()?->email }}
                         </div>
                         <input
                             type="text"

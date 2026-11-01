@@ -2,7 +2,7 @@
 id: BQ-043
 title: [BUG-T2-01] Crash Global Alpine.js Akibat Karakter Kutip pada Flash Message Toast
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: catalog
@@ -43,4 +43,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-2-OWNER-CORE-OPERATIONS.md, stag
 
 ## Evidence
 
-_Fill in when done._
+fixed: components/owner/toast.blade.php memakai @js() untuk seluruh flash/error. Browser fixture dengan apostrof, kutip ganda dan newline lulus tanpa Alpine error (Sesi 4).
