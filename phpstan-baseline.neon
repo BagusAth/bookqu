@@ -331,12 +331,6 @@ parameters:
 			path: app/Domain/Subscription/SubscriptionState.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$maxbooking\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Customer/BookingController.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1

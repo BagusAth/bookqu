@@ -175,7 +175,7 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('tanggal');
-        $response->assertRedirect(route(CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug));
+        $response->assertRedirect(route(CustomerBookingRoutes::name('customer.booking.schedule'), $tenant->slug));
     }
 
     /**

@@ -79,7 +79,7 @@ class BookingFlowTest extends TestCase
             'service_id' => $this->service->id,
         ]);
 
-        $responseSelect->assertRedirect('/my-business/booking/date');
+        $responseSelect->assertRedirect('/my-business/booking/schedule');
         $this->assertEquals($this->service->id, session('booking.service_id'));
     }
 
@@ -94,7 +94,7 @@ class BookingFlowTest extends TestCase
         ]);
 
         $response = $this->get('/my-business/booking/date');
-        $response->assertStatus(200);
+        $response->assertRedirect('/my-business/booking/schedule');
 
         $responseSelect = $this->post('/my-business/booking/select-date', [
             'tanggal' => $this->tomorrow,
@@ -116,7 +116,7 @@ class BookingFlowTest extends TestCase
         ]);
 
         $response = $this->get('/my-business/booking/time');
-        $response->assertStatus(200);
+        $response->assertRedirect('/my-business/booking/schedule');
 
         $responseSelect = $this->post('/my-business/booking/select-time', [
             'jam' => ['10:00'],

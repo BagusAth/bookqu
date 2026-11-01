@@ -55,7 +55,7 @@
         </div>
 
         {{-- Price difference alert if price is overridden --}}
-        @if($hargaAkhir != $service->harga)
+        @if($hasPriceOverride)
         <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
             *Harga pada jadwal ini berbeda dengan harga standar layanan (Rp {{ number_format($service->harga, 0, ',', '.') }}).
         </div>
