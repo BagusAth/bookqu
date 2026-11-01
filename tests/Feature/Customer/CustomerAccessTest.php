@@ -11,6 +11,7 @@ use App\Actions\CustomerAccess\ResolveCustomerAccess;
 use App\Actions\CustomerAccess\RevokeCustomerAccess;
 use App\Domain\CustomerAccess\AccessProfile;
 use App\Domain\CustomerAccess\IssuedGrant;
+use App\Jobs\SendManagementAccess;
 use App\Mail\BookingGroupInvoiceMail;
 use App\Models\Booking;
 use App\Models\CustomerAccessDelivery;
@@ -260,6 +261,8 @@ class CustomerAccessTest extends TestCase
         app(RequestManagementDelivery::class)->execute($payment, 'confirmed');
         // scope-bypass: inspect trusted test fixtures without a request tenant; authorization is exercised through the real resolver.
         $delivery = CustomerAccessDelivery::withoutGlobalScopes()->firstOrFail();
+        Queue::assertPushed(SendManagementAccess::class, fn (SendManagementAccess $job) => $job->deliveryId === $delivery->id);
+        Mail::assertNothingSent();
         $originalRecipient = $payment->email_pembayar;
         $payment->update(['email_pembayar' => 'changed@example.test']);
         app(DeliverManagementAccess::class)->execute($delivery->id);

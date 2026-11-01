@@ -5,7 +5,7 @@ namespace Tests\Feature\Customer;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Payment\PaymentTransitionOutcome;
-use App\Mail\BookingGroupInvoiceMail;
+use App\Jobs\SendManagementAccess;
 use App\Models\Booking;
 use App\Models\CustomerAccessGrant;
 use App\Models\Payment;
@@ -19,6 +19,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
@@ -283,9 +284,10 @@ class PaymentGroupManagementTest extends TestCase
         $response->assertDontSee($booking->booking_code);
     }
 
-    public function test_multi_slot_payment_sends_only_one_customer_email(): void
+    public function test_multi_slot_payment_queues_only_one_customer_email_delivery(): void
     {
         Mail::fake();
+        Queue::fake([SendManagementAccess::class]);
 
         $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
@@ -332,8 +334,9 @@ class PaymentGroupManagementTest extends TestCase
         $this->assertEquals('paid', $b1->status);
         $this->assertEquals('paid', $b2->status);
 
-        // Exactly 1 consolidated email sent to customer
-        Mail::assertSent(BookingGroupInvoiceMail::class, 1);
+        // Exactly one id-only delivery is queued for the consolidated customer email.
+        Queue::assertPushed(SendManagementAccess::class, 1);
+        Mail::assertNothingSent();
     }
 
     public function test_pending_payment_with_cancelled_booking_does_not_resurrect_on_settlement(): void

@@ -2,7 +2,7 @@
 id: BQ-020
 title: Verify scheduler and queue execution on HostData
 type: ops
-status: approved
+status: in-progress
 priority: P0
 phase: 4
 domain: —
@@ -25,6 +25,9 @@ Payment expiry and subscription expiry depend on `schedule:run` every minute; qu
 
 Lead checks the hosting cron panel; configure `schedule:run` every minute and a cron-driven `queue:work --stop-when-empty --max-time=50`; verify with `schedule:list` and a test job; record the evidence.
 
+S7 approved by lead (2026-11-01): use named in-process callbacks with overlap protection, publish a minute heartbeat, and fail `/up` only when an existing heartbeat is older than five minutes. Never-seen heartbeat remains healthy for first deployment; cron verification is still required before launch.
+
 ## Evidence
 
-_Fill in when done._
+S7 code ready (2026-11-01): named in-process callbacks, overlap locks, minute heartbeat and `/up` stale-heartbeat check. `OperationsReadinessTest` passes with `proc_open` disabled; `schedule:list` shows the original expiry frequencies plus heartbeat.
+Still in-progress: lead must install both cron entries from operations §4, prove one worker email, and record server evidence before release. No hosting change was executed by the agent.

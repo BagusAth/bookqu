@@ -45,8 +45,7 @@ final class RequestManagementDelivery
             ]);
             DB::afterCommit(function () use ($delivery): void {
                 try {
-                    // Keep current synchronous delivery until BQ-013/BQ-020 provide a supervised worker.
-                    SendManagementAccess::dispatchSync((int) $delivery->id);
+                    SendManagementAccess::dispatch((int) $delivery->id);
                 } catch (\Throwable) {
                     Log::warning('Customer access delivery failed after commit', ['delivery_id' => $delivery->id]);
                 }

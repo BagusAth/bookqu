@@ -29,6 +29,35 @@ Production must have `APP_ENV=production`, `APP_DEBUG=false`, a stable `APP_KEY`
 
 Secrets come from the server `.env`, never from Git, frontend code or docs. After changing configuration: `php artisan config:cache`, then restart anything long-running.
 
+### Checklist `.env` produksi (S7, lead)
+
+Nilai kredensial di bawah adalah petunjuk pengisian, bukan secret. Verifikasi langsung di server tanpa menyalin nilainya ke PR atau log.
+
+| Nama | Nilai produksi |
+|---|---|
+| `APP_ENV` | `production` |
+| `APP_DEBUG` | `false` |
+| `APP_URL` | `https://bookqu.my.id` (persis, tanpa path atau trailing slash) |
+| `APP_KEY` | Pertahankan key yang cocok dengan database; backup terpisah dari database (§6) |
+| `LOG_LEVEL` | `warning` |
+| `DB_CONNECTION`, `SESSION_DRIVER`, `CACHE_STORE` | `mysql`, `database`, `database` |
+| `QUEUE_CONNECTION` | `database` |
+| `MAIL_MAILER` | `smtp` |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_SCHEME` | Host, port dan skema TLS sesuai penyedia SMTP |
+| `MAIL_USERNAME`, `MAIL_PASSWORD` | Kredensial SMTP produksi dari secret storage |
+| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Alamat pengirim terverifikasi dan `BookQu` |
+| `PAYMENT_GATEWAY_DRIVER` | `singapay` (booking dan langganan v1) |
+| `PAYMENT_BOOKING_DEADLINE_MINUTES` | `15` |
+| `PAYMENT_SUBSCRIPTION_DEADLINE_MINUTES` | `60` |
+| `PAYMENT_SETTLEMENT_MARGIN_MINUTES` | `2` |
+| `SINGAPAY_BASE_URL` | `https://payment-b2b.singapay.id` |
+| `SINGAPAY_CLIENT_ID`, `SINGAPAY_CLIENT_SECRET`, `SINGAPAY_API_KEY`, `SINGAPAY_ACCOUNT_ID` | Kredensial live milik platform |
+| `TRUSTED_PROXIES` | Kosong secara default; isi IP/CIDR proxy hosting yang terverifikasi, dipisahkan koma, hanya jika link pelanggan 404 karena HTTPS berakhir di proxy |
+
+Hapus `SINGAPAY_PAYMENT_EXPIRY_MINUTES` yang lama. Jangan isi `TRUSTED_PROXIES=*` tanpa memastikan origin hanya dapat dijangkau melalui proxy tepercaya. Konfigurasi ini mengizinkan Laravel membaca HTTPS dari forwarded headers; proxy kosong tetap mengabaikan header dari pengirim yang tidak dipercaya.
+
+Setelah pengisian, jalankan `php artisan config:cache`. Lead juga mendaftarkan IP server pada whitelist SingaPay dan Transaction Notif URL `https://bookqu.my.id/api/webhooks/singapay/transaction`, lalu mengirim satu email uji melalui antrean untuk membuktikan SMTP dan worker.
+
 ### Payment provider
 
 ```env
@@ -41,7 +70,7 @@ MIDTRANS_IS_PRODUCTION=false  MIDTRANS_IS_SANITIZED=true  MIDTRANS_IS_3DS=true
 PAYMENT_BOOKING_DEADLINE_MINUTES=15  PAYMENT_SUBSCRIPTION_DEADLINE_MINUTES=60  PAYMENT_SETTLEMENT_MARGIN_MINUTES=2
 ```
 
-One deadline per payment (ADR-0009): `payments.expired_at` is set from these values. The provider link, the slot hold, the sweep and the countdowns all follow it. `SINGAPAY_PAYMENT_EXPIRY_MINUTES` is still read as a fallback for the booking window.
+One deadline per payment (ADR-0009): `payments.expired_at` is set from these values. The provider link, the slot hold, the sweep and the countdowns all follow it. The obsolete `SINGAPAY_PAYMENT_EXPIRY_MINUTES` setting must be removed; the booking window uses `PAYMENT_BOOKING_DEADLINE_MINUTES`.
 
 Webhook URLs to register with the providers: `https://bookqu.my.id/api/webhooks/singapay/transaction` and `https://bookqu.my.id/midtrans/webhook`.
 
@@ -96,18 +125,30 @@ Other workflows: `validate-deploy.yml` (manual: build and transfer test), `test-
 |---|---|---|
 | `bookings:expire-payments` | every minute | Reclaim booking and subscription payments past `expired_at` + settlement margin. It asks the payment's provider first: a success is applied, anything else expires the payment and cancels its bookings (`--dry-run` available) |
 | `app:check-expired-subscriptions` | daily | Expire trials and subscriptions; warn trials about to end |
+| `ops:scheduler-heartbeat` | every minute | Record a timestamp in shared cache for the `/up` health check (retained for one day) |
 
-Target (ADR-0013): two cron entries every minute — `php artisan schedule:run` and `php artisan queue:work --stop-when-empty --max-time=50 --tries=3`; scheduled work runs in-process (`Schedule::call()`/`job()`) because `proc_open` is disabled; the payment sweep runs every minute for booking and subscription payments (ADR-0009).
+Implemented (ADR-0013, BQ-013/020): scheduled commands use named `Schedule::call()` callbacks calling `Artisan::call()` in-process, with cache-based `withoutOverlapping()` locks. No child process or `proc_open` is needed. The payment sweep remains every minute; subscription expiry remains daily.
 
-Production needs a cron entry running `php artisan schedule:run` every minute. Whether it exists on HostData is **Unknown** (BQ-020).
+Lead memasang **dua entri cron, masing-masing setiap menit** di panel HostData (belum dijalankan oleh agen):
 
-The database queue needs a worker. Shared hosting cannot keep a long-running worker; the expected pattern is a cron-driven `php artisan queue:work --stop-when-empty`. **Unknown** whether it is configured (BQ-020). Today almost all mail is sent synchronously, so a missing worker mainly affects anything queued in future (BQ-013).
+```bash
+cd ~/domains/bookqu.my.id/laravel && php artisan schedule:run >> /dev/null 2>&1
+cd ~/domains/bookqu.my.id/laravel && php artisan queue:work --stop-when-empty --max-time=50 --tries=3 >> /dev/null 2>&1
+```
+
+Empat notification email owner/trial dan email pembatalan masuk antrean setelah commit. Konfirmasi/invoice/reschedule pelanggan diproses oleh `SendManagementAccess`, yang hanya membawa ID delivery; link akses baru dibuat saat job mengirim email. Mailables berisi kredensial tetap tidak `ShouldQueue`, sehingga link mentah tidak tersimpan dalam payload antrean. Worker menggunakan koneksi database, berakhir saat antrean kosong atau batas waktunya tercapai; target jeda email ≤1 menit ketika cron, kapasitas antrean dan SMTP normal.
+
+Verifikasi lead (BQ-020 masih **in-progress**): jalankan `php artisan schedule:list` untuk melihat tiga callback dan jadwalnya, tunggu cron, buka `/up`, lalu pastikan satu email antrean benar-benar diterima. `/up` mengembalikan 500 bila heartbeat yang ada berumur **lebih dari lima menit**; heartbeat baru atau umur tepat lima menit mengembalikan 200. Heartbeat yang belum pernah ada, kedaluwarsa setelah satu hari, atau terhapus oleh cache clear tidak membuat health gagal: respons 200 sendiri bukan bukti cron sudah terpasang. Cache harus persisten dan sama antara CLI dan web (`CACHE_STORE=database`).
+
+Jika worker berhenti, periksa jumlah/baris `jobs`, `failed_jobs`, cron dan log; `/up` memantau scheduler, bukan keberhasilan SMTP. Lead merekam bukti cron dan email sebelum rilis. Jangan gunakan `schedule:work` atau worker persisten pada shared hosting ini.
 
 Retry failed jobs (`php artisan queue:failed`, `queue:retry`) only after confirming the job is idempotent — payment and refund work especially.
 
 ## 5. Mail and monitoring
 
 Production needs a real mail transport (credentials, sender, test delivery) and an error alerting channel; both are **Target** (BQ-021). Until then, `storage/logs/laravel.log` is the only diagnostic source. Never enable `APP_DEBUG` in production to debug.
+
+S7 menyiapkan konfigurasi dan health check; BQ-021 tetap **in-progress**, menunggu lead mengisi SMTP, membuktikan satu email uji, dan mengaktifkan UptimeRobot paket gratis ke `https://bookqu.my.id/up` setiap lima menit. Alert exception aplikasi dan kegagalan antrean tetap perlu diverifikasi oleh lead; uptime sehat tidak membuktikan email berhasil.
 
 ## 6. Backups and recovery
 

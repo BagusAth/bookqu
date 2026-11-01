@@ -35,6 +35,13 @@ return Application::configure(basePath: dirname(__DIR__))
         CheckExpiredSubscriptions::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
+        app()->booted(function () use ($middleware): void {
+            $trustedProxies = trim((string) config('app.trusted_proxies', ''));
+            if ($trustedProxies !== '') {
+                $middleware->trustProxies(at: $trustedProxies);
+            }
+        });
+
         $middleware->web(prepend: [CustomerAccessHeaders::class]);
         $middleware->alias([
             'customer.access' => CustomerAccessMiddleware::class,

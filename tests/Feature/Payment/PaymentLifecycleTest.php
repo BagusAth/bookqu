@@ -9,7 +9,7 @@ use App\Actions\Payment\PaymentLifecycle;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Payment\PaymentTransitionOutcome;
-use App\Mail\BookingGroupInvoiceMail;
+use App\Jobs\SendManagementAccess;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -26,6 +26,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -47,6 +48,7 @@ class PaymentLifecycleTest extends TestCase
 
         Mail::fake();
         Notification::fake();
+        Queue::fake([SendManagementAccess::class]);
 
         $this->owner = User::factory()->create(['role' => 'owner']);
         $this->tenant = Tenant::factory()->create(['iduser' => $this->owner->id]);
@@ -68,7 +70,8 @@ class PaymentLifecycleTest extends TestCase
             $this->assertNotNull($booking->fresh()->booking_code);
         }
         Notification::assertSentToTimes($this->owner, NewBookingOwnerNotification::class, 1);
-        Mail::assertSent(BookingGroupInvoiceMail::class, 1);
+        Queue::assertPushed(SendManagementAccess::class, 1);
+        Mail::assertNothingSent();
     }
 
     public function test_repeated_provider_success_changes_nothing(): void
@@ -81,7 +84,7 @@ class PaymentLifecycleTest extends TestCase
         $this->assertSame(PaymentTransitionOutcome::AlreadyFinal, $result->outcome);
         $this->assertSame(PaymentState::STATUS_SUKSES, $result->status());
         Notification::assertSentToTimes($this->owner, NewBookingOwnerNotification::class, 1);
-        Mail::assertSent(BookingGroupInvoiceMail::class, 1);
+        Queue::assertPushed(SendManagementAccess::class, 1);
     }
 
     public function test_provider_failure_cancels_pending_group(): void
@@ -170,7 +173,7 @@ class PaymentLifecycleTest extends TestCase
             $this->assertSame('paid', $booking->fresh()->status);
         }
         Notification::assertNotSentTo($this->owner, NewBookingOwnerNotification::class);
-        Mail::assertNotSent(BookingGroupInvoiceMail::class);
+        Queue::assertNotPushed(SendManagementAccess::class);
     }
 
     public function test_owner_marking_one_slot_paid_settles_the_whole_group(): void

@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Payment;
 use App\Models\Refund;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,14 +13,16 @@ use Illuminate\Notifications\Notification;
  * Money arrived for a payment whose purchase can no longer be delivered (late
  * success after expiry or cancellation): a refund is owed (ADR-0004 decision 8).
  */
-class PaymentRefundOwedOwnerNotification extends Notification
+class PaymentRefundOwedOwnerNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     public function __construct(
         public Payment $payment,
         public Refund $refund,
-    ) {}
+    ) {
+        $this->afterCommit();
+    }
 
     /**
      * @return array<int, string>
