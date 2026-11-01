@@ -53,6 +53,7 @@ class ExpireBookingPayments extends Command
             app(TenantContext::class)->setTenantId($payment->idtenant);
 
             // Load all pending bookings linked to this payment
+            // scope-bypass: bookings of one payment; tenant context set from that payment
             $bookings = Booking::withoutGlobalScopes()
                 ->where('idpayment', $payment->id)
                 ->where('status', 'pending')

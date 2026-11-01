@@ -58,15 +58,15 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 // ── Authentication Routes ──
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
-    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:10,1,auth-login:')->name('login.store');
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
-    Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
+    Route::post('/register', [RegisteredUserController::class, 'store'])->middleware('throttle:5,1,auth-register:')->name('register.store');
 
     Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->middleware('throttle:5,1,auth-password:')->name('password.email');
     Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
-    Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
-    Route::post('/reset-password-update', [NewPasswordController::class, 'store'])->name('password.update');
+    Route::post('/reset-password', [NewPasswordController::class, 'store'])->middleware('throttle:5,1,auth-password:')->name('password.store');
+    Route::post('/reset-password-update', [NewPasswordController::class, 'store'])->middleware('throttle:5,1,auth-password:')->name('password.update');
 });
 
 Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
@@ -100,8 +100,8 @@ Route::prefix('owner')
         Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');
         Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
         Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');
-        Route::post('/settings/payment', [OwnerSettingController::class, 'updatePaymentSettings'])->name('owner.settings.payment');
-        Route::post('/payouts', [OwnerSettingController::class, 'requestPayout'])->name('owner.payouts.request');
+        Route::post('/settings/payment', [OwnerSettingController::class, 'updatePaymentSettings'])->middleware('module:direct-payment')->name('owner.settings.payment');
+        Route::post('/payouts', [OwnerSettingController::class, 'requestPayout'])->middleware('module:balance')->name('owner.payouts.request');
 
         // ── Checkout Routes (tanpa owner.profile middleware, karena ini billing) ──
         Route::get('/checkout/{plan}', [OwnerCheckoutController::class, 'showCheckout'])->name('owner.checkout');
@@ -127,16 +127,16 @@ Route::prefix('owner')
             Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
             Route::get('/bookings/{booking}/available-slots', [OwnerBookingController::class, 'getAvailableSlots'])->name('owner.bookings.available-slots');
             Route::post('/bookings/{booking}/reschedule', [OwnerBookingController::class, 'reschedule'])->name('owner.bookings.reschedule');
-            Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('subscription:medium');
-            Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware('subscription:medium');
+            Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware(['module:analytics', 'subscription:medium']);
+            Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware(['module:analytics', 'subscription:medium']);
             Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
-            Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page')->middleware('subscription:pro');
-            Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware('subscription:pro');
+            Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page')->middleware(['module:landing-page', 'subscription:pro']);
+            Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware(['module:landing-page', 'subscription:pro']);
 
             // ── Extended Core Business Modules (Tahap 2) ──
             Route::get('/calendar', [OwnerCalendarController::class, 'index'])->name('owner.calendar');
-            Route::get('/schedule-report', [OwnerScheduleReportController::class, 'index'])->name('owner.schedule-report');
-            Route::get('/schedule-report/export', [OwnerScheduleReportController::class, 'export'])->name('owner.schedule-report.export');
+            Route::get('/schedule-report', [OwnerScheduleReportController::class, 'index'])->middleware('module:schedule-report')->name('owner.schedule-report');
+            Route::get('/schedule-report/export', [OwnerScheduleReportController::class, 'export'])->middleware('module:schedule-report')->name('owner.schedule-report.export');
 
             // Services & Programs
             Route::get('/services', [OwnerProgramController::class, 'index'])->name('owner.services');
@@ -154,29 +154,29 @@ Route::prefix('owner')
             Route::match(['post', 'patch'], '/categories/{id}/toggle', [OwnerCategoryController::class, 'toggleStatus'])->name('owner.categories.toggle');
 
             // Staff & Resources
-            Route::get('/staff-resources', [OwnerStaffResourceController::class, 'index'])->name('owner.staff-resources');
-            Route::post('/staff', [OwnerStaffResourceController::class, 'storeStaff'])->name('owner.staff.store');
-            Route::put('/staff/{id}', [OwnerStaffResourceController::class, 'updateStaff'])->name('owner.staff.update');
-            Route::delete('/staff/{id}', [OwnerStaffResourceController::class, 'destroyStaff'])->name('owner.staff.destroy');
-            Route::match(['post', 'patch'], '/staff/{id}/toggle', [OwnerStaffResourceController::class, 'toggleStaffStatus'])->name('owner.staff.toggle');
-            Route::post('/resources', [OwnerStaffResourceController::class, 'storeResource'])->name('owner.resources.store');
-            Route::put('/resources/{id}', [OwnerStaffResourceController::class, 'updateResource'])->name('owner.resources.update');
-            Route::delete('/resources/{id}', [OwnerStaffResourceController::class, 'destroyResource'])->name('owner.resources.destroy');
-            Route::match(['post', 'patch'], '/resources/{id}/toggle', [OwnerStaffResourceController::class, 'toggleResourceStatus'])->name('owner.resources.toggle');
+            Route::get('/staff-resources', [OwnerStaffResourceController::class, 'index'])->middleware('module:staff-resources')->name('owner.staff-resources');
+            Route::post('/staff', [OwnerStaffResourceController::class, 'storeStaff'])->middleware('module:staff-resources')->name('owner.staff.store');
+            Route::put('/staff/{id}', [OwnerStaffResourceController::class, 'updateStaff'])->middleware('module:staff-resources')->name('owner.staff.update');
+            Route::delete('/staff/{id}', [OwnerStaffResourceController::class, 'destroyStaff'])->middleware('module:staff-resources')->name('owner.staff.destroy');
+            Route::match(['post', 'patch'], '/staff/{id}/toggle', [OwnerStaffResourceController::class, 'toggleStaffStatus'])->middleware('module:staff-resources')->name('owner.staff.toggle');
+            Route::post('/resources', [OwnerStaffResourceController::class, 'storeResource'])->middleware('module:staff-resources')->name('owner.resources.store');
+            Route::put('/resources/{id}', [OwnerStaffResourceController::class, 'updateResource'])->middleware('module:staff-resources')->name('owner.resources.update');
+            Route::delete('/resources/{id}', [OwnerStaffResourceController::class, 'destroyResource'])->middleware('module:staff-resources')->name('owner.resources.destroy');
+            Route::match(['post', 'patch'], '/resources/{id}/toggle', [OwnerStaffResourceController::class, 'toggleResourceStatus'])->middleware('module:staff-resources')->name('owner.resources.toggle');
 
             // Additional Items
-            Route::get('/additional-items', [OwnerAdditionalItemController::class, 'index'])->name('owner.additional-items');
-            Route::post('/additional-items', [OwnerAdditionalItemController::class, 'store'])->name('owner.additional-items.store');
-            Route::put('/additional-items/{id}', [OwnerAdditionalItemController::class, 'update'])->name('owner.additional-items.update');
-            Route::delete('/additional-items/{id}', [OwnerAdditionalItemController::class, 'destroy'])->name('owner.additional-items.destroy');
-            Route::match(['post', 'patch'], '/additional-items/{id}/toggle', [OwnerAdditionalItemController::class, 'toggleStatus'])->name('owner.additional-items.toggle');
+            Route::get('/additional-items', [OwnerAdditionalItemController::class, 'index'])->middleware('module:additional-items')->name('owner.additional-items');
+            Route::post('/additional-items', [OwnerAdditionalItemController::class, 'store'])->middleware('module:additional-items')->name('owner.additional-items.store');
+            Route::put('/additional-items/{id}', [OwnerAdditionalItemController::class, 'update'])->middleware('module:additional-items')->name('owner.additional-items.update');
+            Route::delete('/additional-items/{id}', [OwnerAdditionalItemController::class, 'destroy'])->middleware('module:additional-items')->name('owner.additional-items.destroy');
+            Route::match(['post', 'patch'], '/additional-items/{id}/toggle', [OwnerAdditionalItemController::class, 'toggleStatus'])->middleware('module:additional-items')->name('owner.additional-items.toggle');
 
             // Vouchers
-            Route::get('/vouchers', [OwnerVoucherController::class, 'index'])->name('owner.vouchers');
-            Route::post('/vouchers', [OwnerVoucherController::class, 'store'])->name('owner.vouchers.store');
-            Route::put('/vouchers/{id}', [OwnerVoucherController::class, 'update'])->name('owner.vouchers.update');
-            Route::delete('/vouchers/{id}', [OwnerVoucherController::class, 'destroy'])->name('owner.vouchers.destroy');
-            Route::match(['post', 'patch'], '/vouchers/{id}/toggle', [OwnerVoucherController::class, 'toggleStatus'])->name('owner.vouchers.toggle');
+            Route::get('/vouchers', [OwnerVoucherController::class, 'index'])->middleware('module:vouchers')->name('owner.vouchers');
+            Route::post('/vouchers', [OwnerVoucherController::class, 'store'])->middleware('module:vouchers')->name('owner.vouchers.store');
+            Route::put('/vouchers/{id}', [OwnerVoucherController::class, 'update'])->middleware('module:vouchers')->name('owner.vouchers.update');
+            Route::delete('/vouchers/{id}', [OwnerVoucherController::class, 'destroy'])->middleware('module:vouchers')->name('owner.vouchers.destroy');
+            Route::match(['post', 'patch'], '/vouchers/{id}/toggle', [OwnerVoucherController::class, 'toggleStatus'])->middleware('module:vouchers')->name('owner.vouchers.toggle');
 
             // Reviews
             Route::get('/reviews', [OwnerReviewController::class, 'index'])->name('owner.reviews');
@@ -190,15 +190,15 @@ Route::prefix('owner')
 
             // Settings & Configurations
             Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
-            Route::get('/settings/appearance', [OwnerAppearanceController::class, 'index'])->name('owner.settings.appearance');
-            Route::post('/settings/appearance', [OwnerAppearanceController::class, 'update'])->name('owner.settings.appearance.update');
-            Route::get('/settings/payment-setting', [OwnerPaymentSettingsController::class, 'index'])->name('owner.settings.payment-setting');
-            Route::get('/settings/payments', [OwnerPaymentSettingsController::class, 'index'])->name('owner.settings.payments');
-            Route::get('/settings/assets', [OwnerAssetController::class, 'index'])->name('owner.settings.assets');
-            Route::post('/settings/assets', [OwnerAssetController::class, 'store'])->name('owner.settings.assets.store');
-            Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->name('owner.settings.assets.destroy');
-            Route::get('/settings/balance', [OwnerBalanceController::class, 'index'])->name('owner.settings.balance');
-            Route::get('/settings/integrations', [OwnerIntegrationController::class, 'index'])->name('owner.settings.integrations');
+            Route::get('/settings/appearance', [OwnerAppearanceController::class, 'index'])->middleware('module:appearance')->name('owner.settings.appearance');
+            Route::post('/settings/appearance', [OwnerAppearanceController::class, 'update'])->middleware('module:appearance')->name('owner.settings.appearance.update');
+            Route::get('/settings/payment-setting', [OwnerPaymentSettingsController::class, 'index'])->middleware('module:direct-payment')->name('owner.settings.payment-setting');
+            Route::get('/settings/payments', [OwnerPaymentSettingsController::class, 'index'])->middleware('module:direct-payment')->name('owner.settings.payments');
+            Route::get('/settings/assets', [OwnerAssetController::class, 'index'])->middleware('module:assets')->name('owner.settings.assets');
+            Route::post('/settings/assets', [OwnerAssetController::class, 'store'])->middleware('module:assets')->name('owner.settings.assets.store');
+            Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->middleware('module:assets')->name('owner.settings.assets.destroy');
+            Route::get('/settings/balance', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.settings.balance');
+            Route::get('/settings/integrations', [OwnerIntegrationController::class, 'index'])->middleware('module:integrations')->name('owner.settings.integrations');
         });
     });
 
@@ -273,9 +273,11 @@ $bookingSubRoutes = function (string $namePrefix) {
         ->name($namePrefix.'checkout');
 
     Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])
+        ->middleware('throttle:10,1,storefront-checkout:')
         ->name($namePrefix.'process-checkout');
 
     Route::post('/booking/validate-voucher', [BookingController::class, 'validateVoucher'])
+        ->middleware('module:vouchers')
         ->name($namePrefix.'validate-voucher');
 
     Route::get('/booking/payment/{payment:order_id}', [BookingController::class, 'showPayment'])

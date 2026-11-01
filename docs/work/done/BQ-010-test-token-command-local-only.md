@@ -2,7 +2,7 @@
 id: BQ-010
 title: Restrict booking:generate-test-token to local and testing
 type: improvement
-status: approved
+status: done
 priority: P1
 phase: 4
 domain: customer-access
@@ -25,4 +25,4 @@ Abort unless `app()->environment('local', 'testing')`; add a test that it refuse
 
 ## Evidence
 
-_Fill in when done._
+Already fixed before this bundle: `GenerateTestBookingToken::handle` refuses outside `local`/`testing`. Regression test added: `test_test_token_command_refuses_outside_local_and_testing`.

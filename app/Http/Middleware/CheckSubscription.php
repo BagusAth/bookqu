@@ -22,18 +22,19 @@ class CheckSubscription
     public function handle(Request $request, Closure $next, ...$features): Response
     {
         $tenantId = app(TenantContext::class)->getTenantId();
-        if (!$tenantId) {
+        if (! $tenantId) {
             $tenantId = auth()->user()?->tenant?->id;
         }
 
-        if (!$tenantId) {
-            return $next($request);
+        // Fail closed: a gated route without a tenant is never served (BQ-006)
+        if (! $tenantId) {
+            abort(403);
         }
 
         /** @var Subscription|null $subscription */
         $subscription = Subscription::with('plan')->where('idtenant', $tenantId)->latest()->first();
 
-        if (!$subscription) {
+        if (! $subscription) {
             return redirect()->route('owner.subscription')->with('error', 'Silakan berlangganan untuk mengakses fitur ini.');
         }
 
@@ -42,10 +43,10 @@ class CheckSubscription
         }
 
         // Feature gating via centralized EntitlementRules
-        if (!empty($features)) {
+        if (! empty($features)) {
             foreach ($features as $feature) {
                 $decision = EntitlementRules::canAccessFeature($subscription, (string) $feature);
-                if (!$decision['allowed']) {
+                if (! $decision['allowed']) {
                     return redirect()->route('owner.subscription')->with('error', $decision['message']);
                 }
             }
@@ -54,4 +55,3 @@ class CheckSubscription
         return $next($request);
     }
 }
-

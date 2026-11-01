@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Schedule;
 
+use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Service;
 
@@ -20,15 +21,16 @@ class ScheduleConflictRules
         string $jamSelesai,
         ?int $excludeScheduleId = null
     ): bool {
+        // scope-bypass: filtered by the given tenant id or an already-resolved schedule id
         return Schedule::withoutGlobalScopes()
             ->where('idtenant', $tenantId)
             ->where('idlayanan', $serviceId)
             ->whereDate('tanggal', $date)
             ->where(function ($query) use ($jamMulai, $jamSelesai) {
                 $query->where('jam_mulai', '<=', $jamSelesai)
-                      ->where('jam_selesai', '>=', $jamMulai);
+                    ->where('jam_selesai', '>=', $jamMulai);
             })
-            ->when($excludeScheduleId !== null, fn($q) => $q->where('id', '!=', $excludeScheduleId))
+            ->when($excludeScheduleId !== null, fn ($q) => $q->where('id', '!=', $excludeScheduleId))
             ->exists();
     }
 
@@ -45,7 +47,8 @@ class ScheduleConflictRules
      */
     public static function canDeleteSchedule(Schedule $schedule): bool
     {
-        return !\App\Models\Booking::withoutGlobalScopes()
+        // scope-bypass: filtered by the given tenant id or an already-resolved schedule id
+        return ! Booking::withoutGlobalScopes()
             ->where('idschedule', $schedule->id)
             ->where('status', '!=', 'cancelled')
             ->exists();

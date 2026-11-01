@@ -2,7 +2,7 @@
 id: BQ-009
 title: Audit every withoutGlobalScope(s) usage
 type: improvement
-status: approved
+status: done
 priority: P1
 phase: 4
 domain: tenancy
@@ -15,7 +15,7 @@ depends-on: []
 
 # BQ-009: Audit every withoutGlobalScope(s) usage
 
-Classification rule decided in [ADR-0010](../adr/ADR-0010-authorization-and-tenant-scoping.md) (decision 5: four allowed places, tenant-context runner elsewhere), 2026-10-30.
+Classification rule decided in [ADR-0010](../../adr/ADR-0010-authorization-and-tenant-scoping.md) (decision 5: four allowed places, tenant-context runner elsewhere), 2026-10-30.
 
 ## Problem
 
@@ -27,4 +27,4 @@ List each call with file:line, reason and ownership check; fix or justify; add a
 
 ## Evidence
 
-_Fill in when done._
+Done 2026-11-01. Reviewed all 40 unexplained `withoutGlobalScope(s)` calls in 22 files. Every one either re-filters by the authenticated or resolved tenant, or is cross-tenant by design (console jobs, `role:admin` dashboard, webhook lookup before tenant derivation). None needed a code fix. Each call now carries a `// scope-bypass:` reason, and the `scope-bypass-reason` allowlist is empty, so `ArchitectureRulesTest` blocks new unexplained bypasses.

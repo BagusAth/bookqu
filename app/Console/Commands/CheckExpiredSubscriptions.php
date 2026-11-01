@@ -18,6 +18,7 @@ class CheckExpiredSubscriptions extends Command
     public function handle(): int
     {
         // FS-020: Kirim email notifikasi ke owner yang trialnya akan habis H-1
+        // scope-bypass: platform job across all tenants; time-based status change only
         $expiringTrials = Subscription::withoutGlobalScopes()->with(['tenant.user'])
             ->where('status', 'trial')
             ->whereNotNull('trial_berakhir')
@@ -33,7 +34,7 @@ class CheckExpiredSubscriptions extends Command
                     $owner->notify(new TrialExpiringNotification($sub));
                     $notifKirim++;
                 } catch (\Exception $e) {
-                    Log::error("Gagal kirim notif trial ke owner tenant {$sub->idtenant}: " . $e->getMessage());
+                    Log::error("Gagal kirim notif trial ke owner tenant {$sub->idtenant}: ".$e->getMessage());
                 }
             } else {
                 Log::warning("Tenant {$sub->idtenant} tidak memiliki user/email, notif trial dilewati.");
@@ -43,12 +44,14 @@ class CheckExpiredSubscriptions extends Command
         $this->info("Notifikasi trial H-1 terkirim: {$notifKirim}.");
 
         // FS-021: Update status trial yang sudah lewat → expired
+        // scope-bypass: platform job across all tenants; time-based status change only
         $expiredTrials = Subscription::withoutGlobalScopes()->where('status', 'trial')
             ->whereNotNull('trial_berakhir')
             ->where('trial_berakhir', '<', now())
             ->update(['status' => 'expired']);
 
         // FS-021: Update langganan aktif yang sudah lewat → expired
+        // scope-bypass: platform job across all tenants; time-based status change only
         $expiredActives = Subscription::withoutGlobalScopes()->where('status', 'active')
             ->whereNotNull('langganan_berakhir')
             ->where('langganan_berakhir', '<', now())

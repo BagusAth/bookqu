@@ -75,6 +75,7 @@ class CancelBooking
                 }
                 // If owner cancels a multi-slot booking, cancel all linked bookings for this payment group
                 $targetBookings = ($actor === 'owner' && $booking->isMultiSlot() && $booking->idpayment)
+                    // scope-bypass: payment group re-filtered by the booking's own idtenant
                     ? Booking::withoutGlobalScope(TenantScope::class)
                         ->where('idpayment', $booking->idpayment)
                         ->where('idtenant', $booking->idtenant)
