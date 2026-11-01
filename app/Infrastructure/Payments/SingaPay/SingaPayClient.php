@@ -237,6 +237,80 @@ class SingaPayClient
     }
 
     /**
+     * Read one payment link, e.g. its `reff_no` and `current_usage` (BQ-074).
+     * Endpoint: GET /api/v1.0/payment-link-manage/{account_id}/{payment_link_id}
+     *
+     * @return array<string, mixed> the link (`data` of the response)
+     *
+     * @throws Exception
+     */
+    public function findPaymentLink(string $paymentLinkId): array
+    {
+        if (app()->environment('testing') && ! $this->isHttpFaked()) {
+            return [];
+        }
+
+        $data = $this->get("/api/v1.0/payment-link-manage/{$this->resolveAccountId()}/".rawurlencode($paymentLinkId), [], 'SingaPay Find Payment Link Error:')['data'] ?? [];
+
+        return is_array($data) ? $data : [];
+    }
+
+    /**
+     * Read one page of the merchant's payment-link payments, newest first (BQ-074).
+     * The endpoint ignores filters, so callers match `payment_link_reff_no` themselves.
+     * Endpoint: GET /api/v1.0/payment-link-histories/{account_id}
+     *
+     * @return array{items: list<array<string, mixed>>, total_pages: int}
+     *
+     * @throws Exception
+     */
+    public function paymentLinkHistories(int $page = 1, int $perPage = 100): array
+    {
+        if (app()->environment('testing') && ! $this->isHttpFaked()) {
+            return ['items' => [], 'total_pages' => 1];
+        }
+
+        $json = $this->get("/api/v1.0/payment-link-histories/{$this->resolveAccountId()}", [
+            'page' => $page,
+            'per_page' => $perPage,
+        ], 'SingaPay Payment Link Histories Error:');
+        $items = is_array($json['data'] ?? null) ? array_values(array_filter($json['data'], 'is_array')) : [];
+
+        return ['items' => $items, 'total_pages' => max(1, (int) ($json['pagination']['totalPages'] ?? 1))];
+    }
+
+    /**
+     * Authenticated GET against the merchant API.
+     *
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     *
+     * @throws Exception
+     */
+    private function get(string $path, array $query, string $errorLog): array
+    {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer '.$this->getAccessToken(),
+            'X-PARTNER-ID' => (string) $this->apiKey,
+            'Accept' => 'application/json',
+        ])
+            ->connectTimeout(5)
+            ->timeout(10)
+            ->get($this->baseUrl.$path, $query);
+
+        if (! $response->successful()) {
+            Log::warning($errorLog, [
+                'status' => $response->status(),
+                ...$this->providerReason($response),
+            ]);
+
+            throw new Exception('SingaPay API Error: HTTP '.$response->status());
+        }
+
+        return $response->json() ?? [];
+    }
+
+    /**
      * SingaPay's own error code, reduced to a short token (BQ-078). The free-text message is
      * never logged: a provider may echo request data back into it (BQ-005).
      *

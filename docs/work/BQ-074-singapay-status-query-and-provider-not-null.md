@@ -31,6 +31,15 @@ Needs lead approval: step 1 needs vendor contact, and step 2 is a schema change.
 
 ## Evidence
 
-_Fill in when done._
-
 Lead decision 2026-11-01: v1 ships without a SingaPay status query and relies on webhooks (SingaPay retries), the simulator and BQ-078 logging. Bagus asks SingaPay about a status API.
+
+**Step 1 done (2026-11-01, lead reopened it the same day).** The sandbox API answers two read endpoints with the existing credentials:
+- `GET /api/v1.0/payment-link-manage/{account_id}/{id}`: `current_usage` becomes 1 once paid (`status` changes from `open` to `closed`). An expired, unpaid link still reports `status: open`, so the status word alone is not used.
+- `GET /api/v1.0/payment-link-histories/{account_id}?page=&per_page=`: one entry per payment with `payment_link_reff_no` (= BookQu `order_id`), `amount` and `status: paid`. The endpoint ignores filter parameters.
+
+The endpoints were found in the community SDK `aliziodev/laravel-singapay`, then confirmed against the sandbox. `SingaPayPaymentGateway::queryOutcome()` now reports `sukses` from the paid history, and `unknown` otherwise (see `docs/domains/payment.md`).
+
+- `tests/Feature/Payment/SingaPayStatusQueryTest.php` uses recorded sandbox responses. It covers: a paid history settles the booking group, an unused link is `unknown` and throttled, a different amount is rejected, and another order's link or a missing history, link id or provider is `unknown`.
+- Sandbox run: order `BKG-6-1793535530-174` was paid at SingaPay but `pending` locally. One `PaymentOutcomeIntake::check()` made it `sukses` and its booking `paid`. An unpaid order stayed `unknown`.
+
+Step 2 (`payments.provider` NOT NULL) stays open until one release after the backfill.

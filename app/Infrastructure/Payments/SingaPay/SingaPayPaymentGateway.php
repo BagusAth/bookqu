@@ -14,10 +14,16 @@ use App\Models\Service;
 use App\Support\CustomerBookingRoutes;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class SingaPayPaymentGateway implements PaymentGatewayInterface
 {
+    /**
+     * Histories are listed newest first, 100 per page; a status query looks back this far.
+     */
+    private const HISTORY_PAGE_LIMIT = 5;
+
     public function __construct(
         protected SingaPayClient $client,
         protected SingaPayWebhookVerifier $verifier
@@ -254,13 +260,88 @@ class SingaPayPaymentGateway implements PaymentGatewayInterface
     }
 
     /**
-     * SingaPay's client offers no transaction status endpoint, so BookQu cannot ask
-     * the provider; the payment relies on webhooks and the late-success path
-     * (ADR-0007 decision 4). The local database is never used as an answer.
+     * Ask SingaPay whether the payment link was paid (BQ-074). A link counts its use
+     * (`current_usage`) once paid; the paid amount comes from the link's payment
+     * history. Only a paid history is an answer: anything else is `unknown`, so expiry
+     * stays with BookQu's own deadline (ADR-0009). The local database is never used
+     * as an answer (ADR-0007 decision 4).
      */
     public function queryOutcome(Payment $payment): ProviderOutcome
     {
-        return ProviderOutcome::unknown($this->getDriverName(), (string) $payment->order_id);
+        $orderId = (string) $payment->order_id;
+        $linkId = (string) $payment->external_id;
+        $unknown = ProviderOutcome::unknown($this->getDriverName(), $orderId);
+        $unpaidKey = 'singapay:unpaid:'.$payment->id;
+
+        // Payment links created before their id was stored cannot be looked up.
+        if ($linkId === '' || $linkId === $orderId || Cache::has($unpaidKey)) {
+            return $unknown;
+        }
+
+        try {
+            $link = $this->client->findPaymentLink($linkId);
+
+            if (($link['reff_no'] ?? null) !== $orderId || (int) ($link['current_usage'] ?? 0) < 1) {
+                // Status pages poll every few seconds; spare the provider between checks.
+                Cache::put($unpaidKey, true, now()->addSeconds(10));
+
+                return $unknown;
+            }
+
+            $paid = $this->findPaidHistory($orderId);
+        } catch (\Throwable $e) {
+            Log::warning('SingaPay status query failed', [
+                'exception_type' => $e::class,
+                'payment_id' => $payment->id,
+                'order_id' => $orderId,
+            ]);
+
+            return $unknown;
+        }
+
+        if ($paid === null) {
+            Log::warning('SingaPay status query: used payment link has no paid history', [
+                'payment_id' => $payment->id,
+                'order_id' => $orderId,
+            ]);
+
+            return $unknown;
+        }
+
+        return new ProviderOutcome(
+            provider: $this->getDriverName(),
+            references: [$orderId],
+            result: PaymentState::mapSingaPayStatus('paid'),
+            amount: is_numeric($paid['amount'] ?? null) ? (string) $paid['amount'] : null,
+            // SingaPay settles payment links in rupiah only; histories carry no currency field.
+            currency: 'IDR',
+            transactionId: is_scalar($paid['reff_no'] ?? null) ? (string) $paid['reff_no'] : null,
+            method: PaymentState::METODE_SINGAPAY,
+            eventTime: is_scalar($paid['payment_date'] ?? null) ? (string) $paid['payment_date'] : null,
+        );
+    }
+
+    /**
+     * The paid history entry of one payment link, searched newest first.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function findPaidHistory(string $orderId): ?array
+    {
+        $page = 1;
+
+        do {
+            $histories = $this->client->paymentLinkHistories($page);
+
+            foreach ($histories['items'] as $history) {
+                if (($history['payment_link_reff_no'] ?? null) === $orderId
+                    && strtolower((string) ($history['status'] ?? '')) === 'paid') {
+                    return $history;
+                }
+            }
+        } while (++$page <= min($histories['total_pages'], self::HISTORY_PAGE_LIMIT));
+
+        return null;
     }
 
     /**
