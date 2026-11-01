@@ -192,6 +192,11 @@
 
         <script>
             window.addEventListener('pageshow', function (event) {
+                // A copy restored by the Back button holds an outdated form token and selection.
+                if (event.persisted) {
+                    window.location.reload();
+                    return;
+                }
                 window.dispatchEvent(new CustomEvent('booking-reset-submitting'));
                 const main = document.querySelector('main.booking-shell');
                 if (main) {
