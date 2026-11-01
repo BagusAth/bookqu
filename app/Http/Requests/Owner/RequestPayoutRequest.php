@@ -23,6 +23,9 @@ class RequestPayoutRequest extends FormRequest
     {
         return [
             'jumlah' => ['required', 'numeric', 'min:10000', 'decimal:0,2'],
+            'bank_nama' => ['required', 'string', 'max:100'],
+            'nomor_rekening' => ['required', 'string', 'regex:/^[0-9]{5,30}$/'],
+            'nama_pemilik_rekening' => ['required', 'string', 'max:150'],
         ];
     }
 }

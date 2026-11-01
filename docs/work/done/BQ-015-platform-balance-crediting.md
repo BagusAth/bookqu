@@ -2,7 +2,7 @@
 id: BQ-015
 title: Define and implement platform balance crediting and payout processing
 type: product-change
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: balance-payout
@@ -38,4 +38,9 @@ Order: lead decides fee and settlement timing → requirement in `docs/requireme
 
 ## Evidence
 
-_Fill in when done._
+Done 2026-11-01 (session 6). Lead decision: withdraw ships in v1 with a 0% fee.
+- Crediting: `TenantBalanceLedger::creditPaidBooking`, called by the booking-group adapter on `ProviderSucceeded`, idempotent via `payments.balance_credited_at`. Refunds of credited payments are debited in `PaymentLifecycle::refundCancelledBooking`.
+- Payouts: bank account on request, admin review at `/admin/payouts` (`ProcessOwnerPayout`, `PayoutState`), proof on the private disk, owner database notifications. The `balance` module is released and has a sidebar entry "Saldo & Withdraw".
+- Migration `2026_11_01_130000_expand_owner_payouts_and_balance_credit`.
+- Tests: `tests/Feature/Payout/OwnerPayoutFlowTest.php` (10). The locked-module example in `ReleaseGateAndHardeningTest` moved from `balance` to `integrations`.
+- Known v1 limits: manual transfers; a balance can go negative after a refund.

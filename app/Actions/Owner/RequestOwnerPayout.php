@@ -12,23 +12,26 @@ use Illuminate\Validation\ValidationException;
 class RequestOwnerPayout
 {
     /**
-     * Request payout withdrawal for tenant on platform mode.
+     * Request payout withdrawal for tenant on platform mode. The amount is held (debited)
+     * at request time; a rejected or failed payout returns it (BQ-015).
+     *
+     * @param  array{bank_nama: string, nomor_rekening: string, nama_pemilik_rekening: string}  $bankAccount
      *
      * @throws ValidationException
      */
-    public function execute(Tenant $tenant, float $amount): OwnerPayout
+    public function execute(Tenant $tenant, float $amount, array $bankAccount): OwnerPayout
     {
-        if (!is_finite($amount) || $amount < 10000 || abs($amount - round($amount, 2)) > 0.00001) {
+        if (! is_finite($amount) || $amount < 10000 || abs($amount - round($amount, 2)) > 0.00001) {
             throw ValidationException::withMessages([
                 'jumlah' => 'Nominal withdraw minimal Rp 10.000 dan maksimal dua angka desimal.',
             ]);
         }
 
-        return DB::transaction(function () use ($tenant, $amount): OwnerPayout {
+        return DB::transaction(function () use ($tenant, $amount, $bankAccount): OwnerPayout {
             // Serialize withdrawals for this tenant so parallel requests cannot
             // both spend the same previously-read balance.
             $lockedTenant = Tenant::query()->lockForUpdate()->find($tenant->id);
-            if (!$lockedTenant) {
+            if (! $lockedTenant) {
                 throw ValidationException::withMessages([
                     'jumlah' => 'Tenant tidak ditemukan.',
                 ]);
@@ -52,10 +55,13 @@ class RequestOwnerPayout
             $lockedTenant->save();
 
             return OwnerPayout::create([
-                'idtenant'     => $lockedTenant->id,
-                'jumlah'       => $amount,
-                'status'       => 'pending',
+                'idtenant' => $lockedTenant->id,
+                'jumlah' => $amount,
+                'status' => 'pending',
                 'requested_at' => now(),
+                'bank_nama' => $bankAccount['bank_nama'],
+                'nomor_rekening' => $bankAccount['nomor_rekening'],
+                'nama_pemilik_rekening' => $bankAccount['nama_pemilik_rekening'],
             ]);
         });
     }

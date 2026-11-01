@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Payment\Lifecycle;
 
 use App\Actions\CustomerAccess\RequestManagementDelivery;
+use App\Actions\Owner\TenantBalanceLedger;
 use App\Domain\Booking\BookingState;
 use App\Domain\Payment\PaymentTransition;
 use App\Models\Booking;
@@ -69,6 +70,8 @@ class BookingGroupConsequences implements PaymentConsequences
         }
 
         if ($transition === PaymentTransition::ProviderSucceeded) {
+            // Money collected by the platform becomes the owner's balance (BQ-015)
+            app(TenantBalanceLedger::class)->creditPaidBooking($payment);
             app(RequestManagementDelivery::class)->execute($payment, 'confirmed');
         }
 

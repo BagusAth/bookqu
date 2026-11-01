@@ -1626,14 +1626,14 @@ Login, registration, password-reset requests and other public state-changing end
 
 BookQu's own landing page presents the product and the subscription plans with their prices, and links to registration. Implemented in commit `fbe1539`.
 
-### FR-PAYOUT-001 — Platform Balance (Proposed)
+### FR-PAYOUT-001 — Platform Balance (Accepted 2026-11-01)
 
-Under the platform escrow model, each tenant has a platform balance credited from its successful booking payments according to a defined fee and settlement rule. Not yet credited by the code (BQ-015).
+Under the platform escrow model, each tenant has a platform balance. When a booking payment succeeds through the provider, the full amount is credited exactly once (fee 0% for v1). Owner-settled, free and walk-in payments credit nothing. A refund owed on a credited payment debits the balance (BQ-015).
 
-### FR-PAYOUT-002 — Payout Request (Proposed)
+### FR-PAYOUT-002 — Payout Request (Accepted 2026-11-01)
 
-An owner can request a payout up to the available balance; the request and the balance debit happen atomically.
+An owner can request a payout of at least Rp 10.000, up to the available balance, to a stated bank account (bank, account number, holder name). The request and the balance hold happen atomically.
 
-### FR-PAYOUT-003 — Payout Processing (Proposed)
+### FR-PAYOUT-003 — Payout Processing (Accepted 2026-11-01)
 
-A platform admin approves or rejects payout requests and records the transfer reference. No admin workflow exists yet (BQ-015, BQ-038).
+A platform admin reviews payouts: `pending → approved → success | failed`, or `pending → rejected`. Reject and fail require a reason and return the held amount to the balance. Success requires a transfer reference and accepts an optional proof file that only the owning tenant can download. The owner is notified of every change.

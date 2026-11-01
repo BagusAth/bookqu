@@ -20,5 +20,6 @@ return [
     'integrations' => env('MODULE_INTEGRATIONS', 'locked'),
     'analytics' => env('MODULE_ANALYTICS', 'locked'),
     'schedule-report' => env('MODULE_SCHEDULE_REPORT', 'locked'),
-    'balance' => env('MODULE_BALANCE', 'locked'),
+    // Released by BQ-015 (lead decision 2026-11-01: withdraw in v1, fee 0%)
+    'balance' => env('MODULE_BALANCE', 'released'),
 ];

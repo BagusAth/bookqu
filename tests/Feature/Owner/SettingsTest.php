@@ -94,7 +94,7 @@ class SettingsTest extends TestCase
             'nama_pemilik_rekening' => 'John Doe',
         ]);
 
-        $response->assertRedirect('/owner/settings');
+        $response->assertRedirect(route('owner.settings.balance'));
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('owner_payouts', [
@@ -117,6 +117,9 @@ class SettingsTest extends TestCase
 
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
             'jumlah' => 600000,
+            'bank_nama' => 'BCA',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
         ]);
 
         $response->assertSessionHasErrors('jumlah');
@@ -134,6 +137,9 @@ class SettingsTest extends TestCase
 
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
             'jumlah' => 10000.001,
+            'bank_nama' => 'BCA',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
         ]);
 
         $response->assertSessionHasErrors('jumlah');

@@ -150,6 +150,12 @@
                     'icon'  => 'integrations',
                 ],
                 [
+                    'label' => 'Saldo & Withdraw',
+                    'href'  => '/owner/settings/balance',
+                    'route' => ['owner.settings.balance'],
+                    'icon'  => 'balance',
+                ],
+                [
                     'label' => 'Subscription',
                     'href'  => '/owner/subscription',
                     'route' => ['owner.subscription'],
