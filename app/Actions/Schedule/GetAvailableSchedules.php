@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Schedule;
 
 use App\Domain\Booking\BookingRules;
+use App\Domain\Schedule\AvailabilityRules;
 use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -231,8 +232,10 @@ class GetAvailableSchedules
             ->filter()
             ->toArray();
 
-        return $slots->map(function ($slot) use ($takenSlotIds, $excludeBookingId) {
-            $isOccupied = in_array($slot->id, $takenSlotIds, true);
+        return $slots->map(function ($slot) use ($takenSlotIds, $excludeBookingId, $date) {
+            // A started slot cannot be claimed (SlotRefusal::Past), so it is never offered (BQ-065 T5-07)
+            $isOccupied = in_array($slot->id, $takenSlotIds, true)
+                || AvailabilityRules::isSlotPast(Carbon::parse($date)->toDateString(), substr($slot->jam_mulai, 0, 5));
             $isCurrentSlot = ($excludeBookingId !== null && $slot->bookings()->where('id', $excludeBookingId)->exists());
 
             return [

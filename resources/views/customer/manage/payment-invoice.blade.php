@@ -55,9 +55,16 @@
                 @endif
             </div>
             <div class="sm:text-right">
-                <span class="inline-flex items-center rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-200 mb-2">
-                    LUNAS / SUKSES
-                </span>
+                {{-- The badge follows the bookings: a fully cancelled group is not a paid document (BQ-065 T5-10) --}}
+                @if($bookings->isNotEmpty() && $bookings->every(fn ($bk) => $bk->status === 'cancelled'))
+                    <span class="inline-flex items-center rounded-lg bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 border border-red-200 mb-2">
+                        DIBATALKAN
+                    </span>
+                @else
+                    <span class="inline-flex items-center rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-200 mb-2">
+                        LUNAS / SUKSES
+                    </span>
+                @endif
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Order ID</p>
                 <p class="font-mono text-sm font-extrabold text-slate-900">{{ $payment->order_id }}</p>
                 <p class="text-[11px] text-slate-400 mt-1">{{ ($payment->updated_at ?? $payment->created_at)->format('d M Y, H:i') }} WIB</p>

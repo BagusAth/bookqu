@@ -94,6 +94,11 @@
     let isProcessingSuccess = false;
     let pollInterval = null;
     let isChecking = false;
+    // Polling stops after 5 minutes or 3 consecutive failures (BQ-051)
+    const MAX_POLL_ATTEMPTS = 120;
+    const MAX_POLL_FAILURES = 3;
+    let pollAttempts = 0;
+    let pollFailures = 0;
 
     async function sendPaymentCallback(result) {
         if (isProcessingSuccess) return;
@@ -199,7 +204,12 @@
                 }
             });
 
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+
             const data = await response.json();
+            pollFailures = 0;
 
             if (data.status === 'sukses' && data.redirect) {
                 showSuccessRedirect(data.redirect);
@@ -227,6 +237,10 @@
             }
         } catch (error) {
             console.error('Status check error:', error);
+            pollFailures++;
+            if (pollFailures >= MAX_POLL_FAILURES) {
+                stopAutoPolling();
+            }
             if (!isSilent) {
                 showInlineFeedback('Gagal memeriksa status pembayaran. Periksa koneksi internet Anda.', 'error');
             }
@@ -246,7 +260,13 @@
 
     function startAutoPolling() {
         if (pollInterval) clearInterval(pollInterval);
+        pollAttempts = 0;
+        pollFailures = 0;
         pollInterval = setInterval(() => {
+            if (++pollAttempts > MAX_POLL_ATTEMPTS) {
+                stopAutoPolling();
+                return;
+            }
             if (!document.hidden) {
                 checkPaymentStatus(true);
             }
@@ -274,10 +294,15 @@
         // Expiry countdown: synchronized with server remaining seconds
         let remainingSeconds = {{ max(0, $payment->expired_at ? (int) now()->diffInSeconds($payment->expired_at, false) : 900) }};
 
+        // Declared before updateCountdown() runs: an expired page must not hit the TDZ (BQ-048)
+        let timer = null;
+
         function updateCountdown() {
             if (remainingSeconds <= 0) {
                 if (timer) clearInterval(timer);
                 stopAutoPolling();
+                // Let the server reconcile at the deadline; a late success still redirects (BQ-064 T4-08)
+                checkPaymentStatus(true);
                 if (countdownCard) {
                     countdownCard.className = "mt-4 mx-auto max-w-sm rounded-2xl border border-red-200 bg-red-50 p-3 sm:p-4 text-center";
                 }
@@ -316,10 +341,12 @@
         }
 
         updateCountdown();
-        const timer = setInterval(function() {
-            remainingSeconds--;
-            updateCountdown();
-        }, 1000);
+        if (remainingSeconds > 0) {
+            timer = setInterval(function() {
+                remainingSeconds--;
+                updateCountdown();
+            }, 1000);
+        }
 
         if (payButton) {
             payButton.addEventListener('click', openSnapPayment);

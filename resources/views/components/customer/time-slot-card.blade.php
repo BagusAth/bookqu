@@ -5,8 +5,8 @@
     class="booking-time-slot relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl border transition-all text-center"
     :class="{
         'border-[#E2E8F0] bg-white hover:border-[#4F46E5] hover:bg-[#EEF2FF]/40 cursor-pointer shadow-2xs': {{ $slotVar }}.isAvailable && !{{ $slotVar }}.isSelected,
-        'border-[#4F46E5] bg-[#4F46E5] text-white shadow-md shadow-[#4F46E5]/25': {{ $slotVar }}.isSelected,
-        'border-[#E2E8F0] bg-[#F8FAFC] opacity-60 cursor-not-allowed': {{ $slotVar }}.isDisabled
+        'booking-time-slot--selected border-[#4F46E5] bg-[#4F46E5] text-white shadow-md shadow-[#4F46E5]/25': {{ $slotVar }}.isSelected,
+        'booking-time-slot--disabled border-[#E2E8F0] bg-[#F8FAFC] opacity-60 cursor-not-allowed': {{ $slotVar }}.isDisabled
     }"
     :disabled="{{ $slotVar }}.isDisabled"
     :aria-selected="{{ $slotVar }}.isSelected"

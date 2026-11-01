@@ -2,7 +2,7 @@
 id: BQ-048
 title: [BUG-T3-02] JavaScript TDZ ReferenceError Mematikan Seluruh Interaksi Halaman Pembayaran
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: payment
@@ -34,4 +34,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-3-CUSTOMER-BOOKING-JOURNEY.md, s
 
 ## Evidence
 
-_Fill in when done._
+Done 2026-11-01 (session 5). `timer` is declared before the first `updateCountdown()`, and the interval starts only while time remains, so an expired page no longer throws a TDZ ReferenceError (`customer/partials/payment/scripts.blade.php`).

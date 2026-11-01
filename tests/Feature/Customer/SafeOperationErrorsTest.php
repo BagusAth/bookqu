@@ -146,6 +146,32 @@ class SafeOperationErrorsTest extends TestCase
         $this->assertSafeDiagnostics('Payment Initialization Error (Booking)', \Exception::class, 'payment_id', $payment->id);
     }
 
+    public function test_singapay_rejection_logs_only_its_sanitized_error_code(): void
+    {
+        config([
+            'payment.default' => 'singapay', 'services.singapay.base_url' => 'https://gateway.example.test',
+            'services.singapay.client_id' => 'fixture-client', 'services.singapay.client_secret' => 'fixture-client-secret',
+            'services.singapay.api_key' => 'fixture-api', 'services.singapay.account_id' => 'fixture-account',
+        ]);
+        Http::preventStrayRequests();
+        Http::fake([
+            'gateway.example.test/api/v1.1/access-token/b2b' => Http::response(['access_token' => 'fixture-access-token']),
+            'gateway.example.test/api/v1.0/payment-link-manage/*' => Http::response(['code' => 'AMOUNT_INVALID <x>', 'message' => self::INTERNAL_ERROR], 422),
+        ]);
+        [$tenant, $service, $schedule] = $this->storefront();
+        $url = '/'.$tenant->slug.'/booking/checkout';
+
+        $this->from($url)->withSession($this->selection($tenant, $service, $schedule))
+            ->post($url, ['namapelanggan' => 'Pelanggan', 'email' => 'customer@example.test', 'nomorhp' => '081234567890'])
+            ->assertRedirect($url)->assertSessionHas('error', 'Gagal memproses pembayaran. Silakan coba lagi.');
+
+        $rejection = collect($this->logs->getRecords())->firstWhere('message', 'SingaPay Create Payment Link Error:');
+        $this->assertNotNull($rejection);
+        $this->assertSame('AMOUNT_INVALIDx', $rejection->context['provider_code']);
+        $payment = DB::table('payments')->where('idtenant', $tenant->id)->sole();
+        $this->assertSafeDiagnostics('Payment Initialization Error (Booking)', \Exception::class, 'payment_id', $payment->id);
+    }
+
     /** @return array<string, array{string, class-string<\Throwable>}> */
     public static function rescheduleFailures(): array
     {

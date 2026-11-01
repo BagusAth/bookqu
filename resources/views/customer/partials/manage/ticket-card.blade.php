@@ -142,6 +142,8 @@
                         <span>Bagikan ke WA</span>
                     </a>
 
+                    {{-- The invoice exists only for a paid or completed booking (BQ-065 T5-09) --}}
+                    @if(in_array($booking->status, ['paid', 'completed'], true))
                     <a
                         id="btn-invoice"
                         href="{{ route('booking.manage.invoice', ['booking_code' => $booking->booking_code]) }}"
@@ -153,6 +155,7 @@
                         </svg>
                         <span>Unduh Invoice Resmi</span>
                     </a>
+                    @endif
                 </div>
             </div>
         </div>

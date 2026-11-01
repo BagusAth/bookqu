@@ -270,6 +270,7 @@
                 <p class="text-[11px] text-[#64748B] truncate" x-text="selectedCount + ' sesi terpilih' + (service?.duration ? ' (' + (selectedCount * service.duration) + ' ' + (service.duration_unit || 'menit') + ')' : '')"></p>
                 <div class="flex items-baseline gap-1.5">
                     <p class="text-xs sm:text-sm font-bold text-[#0F172A] truncate" x-text="selectedTimesLabel"></p>
+                    <span class="text-sm font-extrabold text-[#4F46E5] shrink-0" x-text="totalLabel"></span>
                 </div>
             </div>
             <button

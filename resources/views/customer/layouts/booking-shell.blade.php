@@ -68,10 +68,18 @@
                 }
             </style>
         @endif
+        {{-- Printed invoices show only the document (BQ-064 T4-06) --}}
+        <style>
+            @media print {
+                .no-print { display: none !important; }
+                body.booking-page { background: #fff !important; }
+                main.booking-shell { padding: 0 !important; }
+            }
+        </style>
     </head>
     <body class="booking-page min-h-screen flex flex-col bg-[#F8FAFC]">
         {{-- Clean, Focused Booking Header --}}
-        <header class="sticky top-0 z-40 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md shadow-xs">
+        <header class="no-print sticky top-0 z-40 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md shadow-xs">
             <div class="booking-shell mx-auto flex w-full max-w-[1280px] items-center justify-between px-4 sm:px-6 py-3.5">
                 {{-- Business & Platform Identity --}}
                 <div class="flex items-center gap-3">
@@ -127,7 +135,7 @@
 
         {{-- Stepper Progress Bar (Step 1-6) --}}
         @hasSection('current_step')
-            <section class="border-b border-[#E2E8F0] bg-white py-3.5 sm:py-4">
+            <section class="no-print border-b border-[#E2E8F0] bg-white py-3.5 sm:py-4">
                 <div class="booking-shell mx-auto w-full max-w-[1280px] px-4 sm:px-6">
                     <x-customer.progress-header :current="intval($__env->yieldContent('current_step', 1))" />
                 </div>

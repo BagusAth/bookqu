@@ -32,3 +32,5 @@ Needs lead approval: step 1 needs vendor contact, and step 2 is a schema change.
 ## Evidence
 
 _Fill in when done._
+
+Lead decision 2026-11-01: v1 ships without a SingaPay status query and relies on webhooks (SingaPay retries), the simulator and BQ-078 logging. Bagus asks SingaPay about a status API.

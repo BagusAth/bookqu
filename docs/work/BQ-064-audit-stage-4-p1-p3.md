@@ -22,12 +22,12 @@ Migrated verbatim from TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md (Payment Gateway, Webho
 
 ## P1 checklist
 
-- [ ] BUG-T4-04: Cek Status Transaksi SingaPay Hanyalah Pembacaan Database Lokal (No-Op Poll)
-- [ ] BUG-T4-05: Tombol "Coba Bayar Lagi" Hilang Permanen pada Gateway SingaPay
-- [ ] BUG-T4-06: Dokumen Invoice Mencetak Elemen Navigasi, Progress Bar, dan Tombol ke Kertas Fisik
-- [ ] BUG-T4-07: Ketidaksesuaian Grace Period Slot Lockout: Terkunci 15 Menit Meski Pembayaran Batal
-- [ ] BUG-T4-08: Countdown Timer Client Mencapai 00:00 Tanpa Mengabari Server
-- [ ] BUG-T4-09: Ketiadaan Tombol Lanjutkan Pembayaran pada Portal Pelanggan
+- [x] BUG-T4-04: Cek Status Transaksi SingaPay Hanyalah Pembacaan Database Lokal (No-Op Poll) — by design until BQ-074 (no SingaPay status API)
+- [x] BUG-T4-05: Tombol "Coba Bayar Lagi" Hilang Permanen pada Gateway SingaPay — by design: a failed payment is final (ADR-0004); the page offers a new reservation
+- [x] BUG-T4-06: Dokumen Invoice Mencetak Elemen Navigasi, Progress Bar, dan Tombol ke Kertas Fisik — fixed session 5 (print CSS hides `.no-print`, header, stepper, confetti)
+- [x] BUG-T4-07: Ketidaksesuaian Grace Period Slot Lockout: Terkunci 15 Menit Meski Pembayaran Batal — already fixed: ADR-0009 deadline and BQ-002 cancellation free the slot
+- [x] BUG-T4-08: Countdown Timer Client Mencapai 00:00 Tanpa Mengabari Server — fixed session 5 (deadline triggers a server status check)
+- [x] BUG-T4-09: Ketiadaan Tombol Lanjutkan Pembayaran pada Portal Pelanggan — fixed session 5 (resume link to the provider page)
 
 ## P2 / P3 checklist
 

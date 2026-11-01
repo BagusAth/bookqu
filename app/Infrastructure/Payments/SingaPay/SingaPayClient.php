@@ -7,6 +7,7 @@ namespace App\Infrastructure\Payments\SingaPay;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Client\Factory;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -94,6 +95,7 @@ class SingaPayClient
             if (! $response->successful()) {
                 Log::error('SingaPay OAuth Token Error:', [
                     'status' => $response->status(),
+                    ...$this->providerReason($response),
                 ]);
 
                 throw new Exception('Failed to obtain SingaPay access token: HTTP '.$response->status());
@@ -147,6 +149,7 @@ class SingaPayClient
             if (! $response->successful()) {
                 Log::error('SingaPay List Accounts Error:', [
                     'status' => $response->status(),
+                    ...$this->providerReason($response),
                 ]);
 
                 throw new Exception('Failed to retrieve SingaPay merchant accounts: HTTP '.$response->status());
@@ -224,11 +227,26 @@ class SingaPayClient
             Log::error('SingaPay Create Payment Link Error:', [
                 'status' => $response->status(),
                 'reff_no' => $payload['reff_no'] ?? null,
+                ...$this->providerReason($response),
             ]);
 
             throw new Exception("SingaPay API Error: {$errorMsg}");
         }
 
         return $response->json() ?? [];
+    }
+
+    /**
+     * SingaPay's own error code, reduced to a short token (BQ-078). The free-text message is
+     * never logged: a provider may echo request data back into it (BQ-005).
+     *
+     * @return array{provider_code: ?string}
+     */
+    private function providerReason(Response $response): array
+    {
+        $code = $response->json('code') ?? $response->json('error.code');
+        $code = is_scalar($code) ? preg_replace('/[^A-Za-z0-9_.-]/', '', (string) $code) : '';
+
+        return ['provider_code' => $code === '' ? null : substr($code, 0, 40)];
     }
 }
