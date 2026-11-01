@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Actions;
 
-use App\Actions\Calendar\GetOwnerCalendarData;
 use App\Actions\Customer\GetCustomerDetail;
 use App\Actions\Customer\SaveCustomerNote;
 use App\Actions\Dashboard\GetOwnerDashboardOverview;
 use App\Actions\Owner\DeleteOwnerAccount;
 use App\Actions\Owner\RequestOwnerPayout;
 use App\Actions\Owner\UpdateOwnerAccount;
-use App\Actions\Schedule\GenerateScheduleReport;
-use App\Actions\Tenant\CreateInitialProfile;
 use App\Actions\Tenant\UpdateAppearanceSettings;
 use App\Actions\Tenant\UpdateBusinessProfile;
 use App\Actions\Tenant\UpdatePaymentSettings;
@@ -25,7 +22,6 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -35,8 +31,11 @@ class OwnerApplicationActionsTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Tenant $tenant;
+
     protected Service $service;
+
     protected Schedule $schedule;
 
     protected function setUp(): void
@@ -44,38 +43,38 @@ class OwnerApplicationActionsTest extends TestCase
         parent::setUp();
 
         $this->user = User::factory()->create([
-            'role'     => 'owner',
-            'email'    => 'owner@example.com',
+            'role' => 'owner',
+            'email' => 'owner@example.com',
             'password' => Hash::make('password123'),
         ]);
 
         $this->tenant = Tenant::create([
-            'iduser'         => $this->user->id,
-            'namabisnis'     => 'Glow Clinic',
-            'slug'           => 'glow-clinic',
-            'jenisbisnis'    => 'Klinik Kecantikan',
-            'nomorhp'        => '081234567890',
-            'alamat'         => 'Jl. Senopati No. 8',
+            'iduser' => $this->user->id,
+            'namabisnis' => 'Glow Clinic',
+            'slug' => 'glow-clinic',
+            'jenisbisnis' => 'Klinik Kecantikan',
+            'nomorhp' => '081234567890',
+            'alamat' => 'Jl. Senopati No. 8',
             'saldo_platform' => 500000,
-            'payment_mode'   => 'platform',
+            'payment_mode' => 'platform',
         ]);
 
         app(TenantContext::class)->setTenantId($this->tenant->id);
 
         $this->service = Service::create([
-            'idtenant'    => $this->tenant->id,
+            'idtenant' => $this->tenant->id,
             'namalayanan' => 'Facial Glow',
-            'harga'       => 250000,
-            'durasi'      => 60,
+            'harga' => 250000,
+            'durasi' => 60,
         ]);
 
         $this->schedule = Schedule::create([
-            'idtenant'    => $this->tenant->id,
-            'idlayanan'   => $this->service->id,
-            'tanggal'     => now()->toDateString(),
-            'jam_mulai'   => '09:00:00',
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => now()->toDateString(),
+            'jam_mulai' => '09:00:00',
             'jam_selesai' => '10:00:00',
-            'status'      => 'tersedia',
+            'status' => 'tersedia',
         ]);
     }
 
@@ -83,15 +82,15 @@ class OwnerApplicationActionsTest extends TestCase
     {
         // Must have at least one booking to be valid customer
         Booking::create([
-            'idtenant'       => $this->tenant->id,
-            'idlayanan'      => $this->service->id,
-            'idschedule'     => $this->schedule->id,
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $this->schedule->id,
             'tanggalbooking' => now()->toDateString(),
-            'jam'            => '09:00:00',
-            'namapelanggan'  => 'Siti Rahma',
-            'nomorhp'        => '08123456789',
-            'email'          => 'siti@example.com',
-            'status'         => 'paid',
+            'jam' => '09:00:00',
+            'namapelanggan' => 'Siti Rahma',
+            'nomorhp' => '08123456789',
+            'email' => 'siti@example.com',
+            'status' => 'paid',
         ]);
 
         $action = app(SaveCustomerNote::class);
@@ -100,9 +99,9 @@ class OwnerApplicationActionsTest extends TestCase
         $this->assertInstanceOf(CustomerNote::class, $note);
         $this->assertEquals('Alergi minyak kayu putih', $note->notes);
         $this->assertDatabaseHas('customer_notes', [
-            'idtenant'            => $this->tenant->id,
+            'idtenant' => $this->tenant->id,
             'customer_identifier' => 'siti@example.com',
-            'notes'               => 'Alergi minyak kayu putih',
+            'notes' => 'Alergi minyak kayu putih',
         ]);
     }
 
@@ -110,24 +109,24 @@ class OwnerApplicationActionsTest extends TestCase
     {
         $payment = Payment::create([
             'idtenant' => $this->tenant->id,
-            'tipe'     => 'booking',
-            'status'   => 'sukses',
-            'jumlah'   => 250000,
-            'metode'   => 'qris',
+            'tipe' => 'booking',
+            'status' => 'sukses',
+            'jumlah' => 250000,
+            'metode' => 'qris',
             'order_id' => 'PAY-TEST-001',
         ]);
 
         Booking::create([
-            'idtenant'       => $this->tenant->id,
-            'idlayanan'      => $this->service->id,
-            'idschedule'     => $this->schedule->id,
-            'idpayment'      => $payment->id,
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $this->schedule->id,
+            'idpayment' => $payment->id,
             'tanggalbooking' => now()->toDateString(),
-            'jam'            => '10:00:00',
-            'namapelanggan'  => 'Rina Kusuma',
-            'nomorhp'        => '08999888777',
-            'email'          => 'rina@example.com',
-            'status'         => 'paid',
+            'jam' => '10:00:00',
+            'namapelanggan' => 'Rina Kusuma',
+            'nomorhp' => '08999888777',
+            'email' => 'rina@example.com',
+            'status' => 'paid',
         ]);
 
         $action = app(GetCustomerDetail::class);
@@ -159,11 +158,11 @@ class OwnerApplicationActionsTest extends TestCase
         $action = app(UpdateBusinessProfile::class);
 
         $updated = $action->execute($this->user, $this->tenant, [
-            'namabisnis'  => 'Glow Beauty Aesthetic',
+            'namabisnis' => 'Glow Beauty Aesthetic',
             'jenisbisnis' => 'Klinik & Salon',
-            'alamat'      => 'Jl. Baru No. 99',
-            'nomorhp'     => '081999888777',
-            'deskripsi'   => 'Layanan kecantikan terlengkap',
+            'alamat' => 'Jl. Baru No. 99',
+            'nomorhp' => '081999888777',
+            'deskripsi' => 'Layanan kecantikan terlengkap',
         ]);
 
         $this->assertEquals('Glow Beauty Aesthetic', $updated->namabisnis);
@@ -175,11 +174,11 @@ class OwnerApplicationActionsTest extends TestCase
         $action = app(UpdatePaymentSettings::class);
 
         $updated = $action->execute($this->tenant, [
-            'payment_mode'                 => 'owner',
-            'midtrans_environment'         => 'sandbox',
+            'payment_mode' => 'owner',
+            'midtrans_environment' => 'sandbox',
             'midtrans_sandbox_merchant_id' => 'M123456',
-            'midtrans_sandbox_client_key'  => 'SB-Mid-client-xxx',
-            'midtrans_sandbox_server_key'  => 'SB-Mid-server-yyy',
+            'midtrans_sandbox_client_key' => 'SB-Mid-client-xxx',
+            'midtrans_sandbox_server_key' => 'SB-Mid-server-yyy',
         ]);
 
         $this->assertEquals('owner', $updated->payment_mode);
@@ -191,10 +190,11 @@ class OwnerApplicationActionsTest extends TestCase
     {
         $action = app(RequestOwnerPayout::class);
 
-        $payout = $action->execute($this->tenant, 200000);
+        $payout = $action->execute($this->tenant, 200000, ['bank_nama' => 'BCA', 'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'John Doe']);
 
         $this->assertEquals(200000, $payout->jumlah);
         $this->assertEquals('pending', $payout->status);
+        $this->assertEquals('1234567890', $payout->nomor_rekening);
         $this->assertEquals(300000, $this->tenant->fresh()->saldo_platform);
     }
 
@@ -203,7 +203,7 @@ class OwnerApplicationActionsTest extends TestCase
         $action = app(RequestOwnerPayout::class);
 
         $this->expectException(ValidationException::class);
-        $action->execute($this->tenant, 9999999);
+        $action->execute($this->tenant, 9999999, ['bank_nama' => 'BCA', 'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'John Doe']);
     }
 
     public function test_update_appearance_settings_action(): void
@@ -211,10 +211,10 @@ class OwnerApplicationActionsTest extends TestCase
         $action = app(UpdateAppearanceSettings::class);
 
         $updated = $action->execute($this->tenant, [
-            'theme_color'  => '#3b82f6',
+            'theme_color' => '#3b82f6',
             'button_style' => 'rounded-full',
-            'font_family'  => 'Inter',
-            'card_style'   => 'glass',
+            'font_family' => 'Inter',
+            'card_style' => 'glass',
         ]);
 
         $this->assertEquals('#3b82f6', $updated->theme_color);
@@ -229,9 +229,9 @@ class OwnerApplicationActionsTest extends TestCase
 
         $updated = $action->execute($this->user, [
             'namalengkap' => 'Owner Sukses Baru',
-            'email'       => 'owner_baru@example.com',
-            'nomorhp'     => '082223334444',
-            'password'    => 'newpassword123',
+            'email' => 'owner_baru@example.com',
+            'nomorhp' => '082223334444',
+            'password' => 'newpassword123',
         ]);
 
         $this->assertEquals('Owner Sukses Baru', $updated->namalengkap);

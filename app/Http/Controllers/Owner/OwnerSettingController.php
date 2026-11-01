@@ -36,8 +36,8 @@ class OwnerSettingController extends Controller
         $tenant = $this->resolveTenant();
         $user = auth()->user();
 
-        if (!$tenant) {
-            $tenant = new Tenant();
+        if (! $tenant) {
+            $tenant = new Tenant;
             if ($user) {
                 $tenant->setRelation('user', $user);
             }
@@ -60,7 +60,7 @@ class OwnerSettingController extends Controller
     public function storeProfile(StoreInitialProfileRequest $request, CreateInitialProfile $createInitialProfile): RedirectResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(403, 'User tidak ditemukan.');
         }
 
@@ -75,7 +75,7 @@ class OwnerSettingController extends Controller
     public function updateBusinessProfile(UpdateBusinessProfileRequest $request, UpdateBusinessProfile $updateBusinessProfile): RedirectResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(403, 'User tidak ditemukan.');
         }
 
@@ -95,7 +95,7 @@ class OwnerSettingController extends Controller
     public function updateAccount(UpdateOwnerAccountRequest $request, UpdateOwnerAccount $updateOwnerAccount): RedirectResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(403, 'User tidak ditemukan.');
         }
 
@@ -107,12 +107,12 @@ class OwnerSettingController extends Controller
     public function updatePaymentSettings(UpdatePaymentSettingsRequest $request, UpdatePaymentSettings $updatePaymentSettings): RedirectResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(403, 'User tidak ditemukan.');
         }
 
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -124,13 +124,13 @@ class OwnerSettingController extends Controller
     public function requestPayout(RequestPayoutRequest $request, RequestOwnerPayout $requestOwnerPayout): RedirectResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $requestOwnerPayout->execute($tenant, (float) $request->input('jumlah'));
+        $requestOwnerPayout->execute($tenant, (float) $request->input('jumlah'), $request->safe()->only(['bank_nama', 'nomor_rekening', 'nama_pemilik_rekening']));
 
-        return redirect()->route('owner.settings')->with('sukses', 'Permintaan withdraw berhasil dibuat.');
+        return redirect()->route('owner.settings.balance')->with('sukses', 'Permintaan withdraw berhasil dibuat dan menunggu review admin.');
     }
 
     /**
@@ -139,7 +139,7 @@ class OwnerSettingController extends Controller
     public function deleteAccount(Request $request, DeleteOwnerAccount $deleteOwnerAccount): RedirectResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(403, 'User tidak ditemukan.');
         }
 

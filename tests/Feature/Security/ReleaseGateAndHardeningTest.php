@@ -39,17 +39,10 @@ class ReleaseGateAndHardeningTest extends TestCase
 
     public function test_locked_module_serves_reads_but_refuses_writes(): void
     {
-        $this->actingAs($this->owner)->get('/owner/settings/balance')->assertOk();
+        Route::middleware(['web', 'module:integrations'])->match(['get', 'post'], '/_test/locked-module', fn () => 'ok');
 
-        $this->actingAs($this->owner)->post('/owner/payouts', [
-            'jumlah' => 100000,
-            'bank_nama' => 'BCA',
-            'nomor_rekening' => '1234567890',
-            'nama_pemilik_rekening' => 'John Doe',
-        ])->assertForbidden();
-
-        $this->assertDatabaseCount('owner_payouts', 0);
-        $this->assertEquals(500000, (float) $this->tenant->fresh()->saldo_platform);
+        $this->get('/_test/locked-module')->assertOk();
+        $this->post('/_test/locked-module')->assertForbidden();
     }
 
     public function test_released_module_is_served(): void

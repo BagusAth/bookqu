@@ -13,7 +13,7 @@ Modules whose backend exists but which are not fully released. The release polic
 | Landing page builder | `owner.landing-page*` (`subscription:pro`) | `Owner/OwnerLandingPageController` | 3 | Reachable for Pro/trial |
 | Integrations | `owner.settings.integrations` | `Owner/OwnerIntegrationController` | 2 ("Coming soon") | Display only |
 | Analytics, schedule report | see `insights.md` | | 2 (locked) | Reachable |
-| Platform balance | see `balance-payout.md` | | 2 | Payout request reachable |
+| Platform balance | see `balance-payout.md` | | 1 (released by BQ-015) | Released: withdraw request and admin review |
 
 Since BQ-008 (2026-11-01) the "Server-side state" column describes the code behind the gate: `module:<name>` (`config/modules.php`) answers 404 for every Tier 3 route and refuses Tier 2 writes with 403, unless an environment releases the module.
 

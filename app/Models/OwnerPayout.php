@@ -16,6 +16,13 @@ class OwnerPayout extends Model
         'status',
         'requested_at',
         'processed_at',
+        'bank_nama',
+        'nomor_rekening',
+        'nama_pemilik_rekening',
+        'rejection_reason',
+        'transfer_reference',
+        'proof_path',
+        'processed_by',
     ];
 
     protected function casts(): array

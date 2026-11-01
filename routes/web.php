@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminPayoutController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -198,6 +199,7 @@ Route::prefix('owner')
             Route::post('/settings/assets', [OwnerAssetController::class, 'store'])->middleware('module:assets')->name('owner.settings.assets.store');
             Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->middleware('module:assets')->name('owner.settings.assets.destroy');
             Route::get('/settings/balance', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.settings.balance');
+            Route::get('/payouts/{payout}/proof', [OwnerBalanceController::class, 'proof'])->whereNumber('payout')->middleware('module:balance')->name('owner.payouts.proof');
             Route::get('/settings/integrations', [OwnerIntegrationController::class, 'index'])->middleware('module:integrations')->name('owner.settings.integrations');
         });
     });
@@ -244,6 +246,11 @@ Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+        Route::get('/payouts', [AdminPayoutController::class, 'index'])->name('admin.payouts');
+        Route::post('/payouts/{payout}/approve', [AdminPayoutController::class, 'approve'])->whereNumber('payout')->name('admin.payouts.approve');
+        Route::post('/payouts/{payout}/complete', [AdminPayoutController::class, 'complete'])->whereNumber('payout')->name('admin.payouts.complete');
+        Route::post('/payouts/{payout}/reject', [AdminPayoutController::class, 'reject'])->whereNumber('payout')->name('admin.payouts.reject');
+        Route::post('/payouts/{payout}/fail', [AdminPayoutController::class, 'fail'])->whereNumber('payout')->name('admin.payouts.fail');
     });
 
 if (app()->environment('local', 'staging', 'testing')) {

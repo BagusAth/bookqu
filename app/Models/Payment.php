@@ -42,6 +42,7 @@ class Payment extends Model
         return [
             'jumlah' => 'decimal:2',
             'expired_at' => 'datetime',
+            'balance_credited_at' => 'datetime',
             'customer_access_version' => 'integer',
         ];
     }

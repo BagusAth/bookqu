@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Payment;
 
 use App\Actions\CustomerAccess\ResolveCustomerAccess;
+use App\Actions\Owner\TenantBalanceLedger;
 use App\Actions\Payment\Lifecycle\BookingGroupConsequences;
 use App\Actions\Payment\Lifecycle\PaymentConsequences;
 use App\Actions\Payment\Lifecycle\SubscriptionConsequences;
@@ -151,13 +152,17 @@ class PaymentLifecycle
                 return null;
             }
 
-            return Refund::create([
+            $refund = Refund::create([
                 'booking_id' => $booking->id,
                 'payment_id' => $locked->id,
                 'jumlah' => $locked->jumlah,
                 'status' => 'pending',
                 'catatan' => $reason ?? 'Refund otomatis dari pembatalan booking oleh customer.',
             ]);
+            // The refunded amount leaves the owner's balance again (BQ-015)
+            app(TenantBalanceLedger::class)->debitRefund($locked, $refund);
+
+            return $refund;
         });
     }
 

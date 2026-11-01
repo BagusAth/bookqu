@@ -25,6 +25,7 @@
         <main class="mx-auto max-w-6xl px-6 py-10 space-y-8">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">Dashboard Superadmin</h1>
+                <a href="{{ route('admin.payouts') }}" class="mt-2 inline-flex text-sm font-semibold text-[#4F46E5] hover:underline">Review withdraw owner →</a>
                 <p class="mt-1 text-sm text-slate-500">Ringkasan seluruh tenant dan aktivitas platform BookQu.</p>
             </div>
 

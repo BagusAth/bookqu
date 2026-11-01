@@ -6,26 +6,28 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 
 | Route | Code |
 |---|---|
-| `owner.settings.balance` (Tier 2: balance visible, self-service withdrawal on hold) | `Owner/OwnerBalanceController` |
+| `owner.settings.balance` (released by BQ-015: balance, withdraw form, history) | `Owner/OwnerBalanceController` |
+| `owner.payouts.proof` (own tenant only) | `OwnerBalanceController::proof` |
+| `admin.payouts*` (`role:admin`) | `Admin/AdminPayoutController` → `Actions/Admin/ProcessOwnerPayout` |
 | `owner.payouts.request` | `Owner/OwnerSettingController::requestPayout` → `Actions/Owner/RequestOwnerPayout` |
 
-`RequestOwnerPayout` locks the tenant row, checks `saldo_platform`, debits it and creates an `owner_payouts` row in one transaction; amounts are positive with at most two decimals.
+`RequestOwnerPayout` locks the tenant row, checks `saldo_platform`, holds (debits) the amount and creates an `owner_payouts` row with the bank account in one transaction. `TenantBalanceLedger` credits a booking payment's full amount on provider success (fee 0%, idempotent through `payments.balance_credited_at`, inside the lifecycle's tenant-locked transaction) and debits a refund of a credited payment. `ProcessOwnerPayout` applies `Domain/Payout/PayoutState` transitions under the tenant lock; `rejected` and `failed` return the amount; owners get a database notification.
 
 ## Data
 
-`tenants.saldo_platform`; `owner_payouts`: `idtenant`, amount, `status` (`pending`, `success`, `rejected`).
+`tenants.saldo_platform`; `payments.balance_credited_at`; `owner_payouts`: `idtenant`, amount, bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk), `processed_by`.
 
 ## Evidence
 
-`tests/Feature/Actions/OwnerApplicationActionsTest.php`, `Owner/SettingsTest.php`.
+`tests/Feature/Payout/OwnerPayoutFlowTest.php`, `tests/Feature/Actions/OwnerApplicationActionsTest.php`, `Owner/SettingsTest.php`.
 
 ## Status
 
-Functional: **Partial** · Verification: Needs Verification · Architecture: Target
+Functional: **Implemented** (BQ-015) · Verification: Tested · Architecture: Target
 
 ## Known gaps
 
 | Gap | Item |
 |---|---|
-| Nothing ever credits `saldo_platform` (it is only debited), so the balance stays at its initial value; there is no requirement yet defining fees, settlement timing or who approves payouts | BQ-015 |
-| Requirements FR-PAYOUT-001…003 are `Proposed` | BQ-015 |
+| Transfers are manual (no disbursement API); the admin records the reference and proof | — (v1 decision) |
+| A refund can drive the balance below zero when the owner has already withdrawn; the admin settles it outside the app | — (v1 decision) |
