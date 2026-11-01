@@ -23,7 +23,7 @@
 
     <div class="mt-6">
         <a
-            href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
+            href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}"
             class="inline-flex justify-center items-center rounded-xl bg-[#4F46E5] px-6 py-3.5 text-sm font-bold text-white shadow-md hover:bg-[#4338CA] transition-colors"
         >
             Buat Reservasi Baru

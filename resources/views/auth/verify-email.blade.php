@@ -80,11 +80,40 @@
             </form>
 
             <div class="mt-6 pt-5 border-t border-slate-100 text-center">
-                <form method="POST" action="{{ route('logout') }}" class="inline">
+                <form method="POST" action="{{ route('logout') }}" class="inline"
+                      x-data="{
+                          submitting: false,
+                          error: '',
+                          async logout() {
+                              this.submitting = true;
+                              this.error = '';
+                              try {
+                                  const response = await fetch(this.$el.action, {
+                                      method: 'POST',
+                                      body: new FormData(this.$el),
+                                      credentials: 'same-origin',
+                                      headers: { Accept: 'application/json' }
+                                  });
+                                  if (response.status === 419) {
+                                      window.location.reload();
+                                      return;
+                                  }
+                                  if (!response.ok) {
+                                      throw new Error('logout-failed');
+                                  }
+                                  window.location.assign(response.url);
+                              } catch {
+                                  this.error = 'Tidak dapat keluar. Periksa koneksi dan coba lagi.';
+                              } finally {
+                                  this.submitting = false;
+                              }
+                          }
+                      }" @submit.prevent="logout">
                     @csrf
-                    <button type="submit" class="text-sm font-medium text-slate-600 hover:text-rose-600 transition-colors cursor-pointer">
+                    <button type="submit" :disabled="submitting" class="text-sm font-medium text-slate-600 hover:text-rose-600 transition-colors cursor-pointer disabled:opacity-50">
                         Keluar dari Akun
                     </button>
+                    <p x-show="error" x-text="error" role="alert" class="mt-2 text-sm text-rose-600" x-cloak></p>
                 </form>
             </div>
         </div>

@@ -2,7 +2,7 @@
 
 @section('title', 'Pilih Tanggal')
 @section('current_step', 2)
-@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug))
+@section('back_url', \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug))
 @section('back_label', 'Kembali ke Pilih Layanan')
 
 @section('content')
@@ -22,7 +22,7 @@
         id="booking-date-form"
         class="max-w-4xl mx-auto w-full"
         method="POST"
-        action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.select-date'), $tenant->slug) }}"
+        action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.select-date', $tenant->slug) }}"
         x-ref="confirmForm"
     >
         @csrf

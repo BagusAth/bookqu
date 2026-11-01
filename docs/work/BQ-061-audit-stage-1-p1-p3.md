@@ -20,11 +20,11 @@ Migrated verbatim from TAHAP-1-PUBLIC-AUTH-ONBOARDING.md (Guest Public Pages, La
 
 ## P1 checklist
 
-- [ ] BUG-T1-04: Ketiadaan Hamburger Menu & Navigasi Mobile pada Halaman Publik
-- [ ] BUG-T1-05: Kehilangan Seluruh Data Input Modal Onboarding Profil saat Validasi Gagal
-- [ ] BUG-T1-06: Kerentanan Reverse Tabnabbing pada Tautan Eksternal & WhatsApp
-- [ ] BUG-T1-07: Tautan Syarat & Ketentuan pada Register Membuka di Tab Sama
-- [ ] BUG-T1-08: Flash Status Session Message Hilang pada Tampilan Login
+- [x] BUG-T1-04: Ketiadaan Hamburger Menu & Navigasi Mobile pada Halaman Publik
+- [x] BUG-T1-05: Kehilangan Seluruh Data Input Modal Onboarding Profil saat Validasi Gagal
+- [x] BUG-T1-06: Kerentanan Reverse Tabnabbing pada Tautan Eksternal & WhatsApp
+- [x] BUG-T1-07: Tautan Syarat & Ketentuan pada Register Membuka di Tab Sama
+- [x] BUG-T1-08: Flash Status Session Message Hilang pada Tampilan Login
 
 ## P2 / P3 checklist
 
@@ -75,5 +75,9 @@ Migrated verbatim from TAHAP-1-PUBLIC-AUTH-ONBOARDING.md (Guest Public Pages, La
 - **Deskripsi**: Pesan redirect dari verifikasi email sukses (`session('status')`) tidak memiliki banner penampil di halaman login, sehingga pengguna tidak tahu apakah akun mereka sudah aktif atau belum.
 
 ## Evidence
+
+already fixed (Sesi 3): T1-04 navbar mobile (components/landing/navbar.blade.php:69–114); T1-05 old() dan error reopen (components/owner/modal-complete-profile.blade.php:4–6,71–122).
+T1-06 rel noopener/noreferrer (components/landing/footer.blade.php:34); T1-07 tab baru aman (auth/register.blade.php:237); T1-08 flash status (auth/login.blade.php:34–39).
+P2/P3 tidak dikerjakan dan tetap terbuka.
 
 _Fill in when done._

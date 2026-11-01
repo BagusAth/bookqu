@@ -2,7 +2,7 @@
 
 @section('title', 'Bukti Reservasi & Pembayaran')
 @section('current_step', 6)
-@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug))
+@section('back_url', \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug))
 @section('back_label', 'Beranda')
 
 @php
@@ -295,7 +295,7 @@
         </button>
 
         <a
-                            href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
+                            href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] px-6 py-3 text-sm font-bold text-white shadow-md shadow-[#4F46E5]/20 transition active:scale-98"
         >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -305,7 +305,7 @@
         </a>
 
         <a
-            href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
+            href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] hover:bg-[#F1F5F9] hover:border-[#94A3B8] px-5 py-3 text-sm font-bold text-[#1E293B] shadow-2xs transition active:scale-98 cursor-pointer"
         >
             <svg class="h-4 w-4 text-[#475569]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">

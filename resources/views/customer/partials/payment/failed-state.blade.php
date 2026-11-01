@@ -32,14 +32,14 @@
             </button>
         @else
             <a
-                href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
+                href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}"
                 class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#4338CA] transition-colors"
             >
                 Buat Reservasi Baru
             </a>
         @endif
         <a
-            href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
+            href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}"
             class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl border border-[#CBD5E1] bg-white px-6 py-3 text-sm font-semibold text-[#334155] hover:bg-[#F8FAFC] transition-colors"
         >
             Kembali ke Pemesanan

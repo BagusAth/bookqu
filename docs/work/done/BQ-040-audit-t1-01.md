@@ -2,7 +2,7 @@
 id: BQ-040
 title: [BUG-T1-01] Tombol "Lupa Password?" pada Login Mengarah ke `#` (Dead Link)
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: auth
@@ -43,4 +43,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-1-PUBLIC-AUTH-ONBOARDING.md, sta
 
 ## Evidence
 
-_Fill in when done._
+already fixed: resources/views/auth/login.blade.php:98 memakai route('password.request'); routes/web.php:65–68 menyediakan reset password. Tidak ada perubahan kode.

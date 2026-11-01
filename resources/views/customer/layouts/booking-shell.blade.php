@@ -75,7 +75,7 @@
             <div class="booking-shell mx-auto flex w-full max-w-[1280px] items-center justify-between px-4 sm:px-6 py-3.5">
                 {{-- Business & Platform Identity --}}
                 <div class="flex items-center gap-3">
-                    <a href="{{ isset($tenant) && $tenant ? route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) : url('/') }}" class="flex items-center gap-2.5 transition hover:opacity-90">
+                    <a href="{{ isset($tenant) && $tenant ? \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) : url('/') }}" class="flex items-center gap-2.5 transition hover:opacity-90">
                         @if(isset($tenant) && $tenant->logo_path)
                             <img src="{{ Storage::url($tenant->logo_path) }}" alt="{{ $tenant->namabisnis }}" class="h-9 w-9 rounded-xl object-cover border border-[#E2E8F0] shadow-xs" />
                         @else

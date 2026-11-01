@@ -2,7 +2,7 @@
 id: BQ-041
 title: [BUG-T1-02] Jebakan Redirect Loop pada Tombol "Masuk ke Dashboard Bisnis"
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: public-site
@@ -44,4 +44,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-1-PUBLIC-AUTH-ONBOARDING.md, sta
 
 ## Evidence
 
-_Fill in when done._
+already fixed: resources/views/components/landing/navbar.blade.php:24–32,117–125 memeriksa hasVerifiedEmail() dan mengarah ke verification.notice untuk owner belum terverifikasi. Tidak ada perubahan kode.

@@ -2,7 +2,7 @@
 id: BQ-042
 title: [BUG-T1-03] Ketiadaan Proteksi CSRF & Token Expired Handling pada Tombol Logout di Notice Verifikasi
 type: bug-fix
-status: proposed
+status: done
 priority: P0
 phase: 4
 domain: auth
@@ -28,4 +28,4 @@ Migrated verbatim from the 2026-10 audit (TAHAP-1-PUBLIC-AUTH-ONBOARDING.md, sta
 
 ## Evidence
 
-_Fill in when done._
+fixed: form logout verify-email tetap memakai @csrf; fetch menangani 419 dengan reload aman dan error koneksi bisa dicoba ulang. AuthTest membuktikan token lama ditolak, token baru logout; Alpine 419/200/500 diperiksa. PR Sesi 3.
