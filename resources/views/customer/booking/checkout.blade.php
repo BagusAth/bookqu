@@ -2,7 +2,7 @@
 
 @section('title', 'Data Pemesan')
 @section('current_step', 4)
-@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug))
+@section('back_url', \App\Support\CustomerBookingRoutes::url('customer.booking.time', $tenant->slug))
 @section('back_label', 'Kembali ke Pilih Waktu')
 
 @section('content')
@@ -56,7 +56,7 @@
         id="booking-checkout-form"
         class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
         method="POST"
-        action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.process-checkout'), $tenant->slug) }}"
+        action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.process-checkout', $tenant->slug) }}"
     >
         @csrf
 

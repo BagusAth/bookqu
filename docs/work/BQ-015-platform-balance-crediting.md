@@ -25,6 +25,17 @@ depends-on: [BQ-067]
 
 Lead defines fee, settlement timing and payout approval (product change). Then credit the balance atomically and idempotently in `SynchronizePaymentStatus` on booking success, handle refunds, add an admin payout screen, and test it. Alternative: hide payouts until this is defined.
 
+## Withdraw flow requested by the client (2026-10, "Revisian BookQu", tab 2)
+
+This is part of this item's payout processing; it is not a separate item. What exists today: `RequestOwnerPayout`, `OwnerPayout` (`pending`/`success`/`rejected`), `owner/balance.blade.php`, route `owner.payouts.request`. What is missing:
+- the owner's destination bank account;
+- an admin review screen with approve/reject and a rejection reason;
+- a transfer reference or proof upload;
+- the status path `pending → approved → success | failed | rejected`;
+- owner notifications on every status change.
+
+Order: lead decides fee and settlement timing → requirement in `docs/requirements.md` → expand migration on `owner_payouts` → admin screen → notifications → tests per transition and per admin/owner permission.
+
 ## Evidence
 
 _Fill in when done._

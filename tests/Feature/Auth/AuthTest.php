@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -40,7 +41,7 @@ class AuthTest extends TestCase
         $this->assertAuthenticated();
         // Since register redirects to email verification notice
         $response->assertRedirect('/email/verify');
-        
+
         $this->assertDatabaseHas('users', [
             'email' => 'owner@example.com',
             'namalengkap' => 'Test Owner',
@@ -53,7 +54,7 @@ class AuthTest extends TestCase
         $user = User::factory()->create([
             'email' => 'owner2@example.com',
             'password' => Hash::make('password123'),
-            'role' => 'owner'
+            'role' => 'owner',
         ]);
 
         $response = $this->post('/login', [
@@ -62,9 +63,9 @@ class AuthTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        
+
         // If unverified, should redirect to verification notice
-        if (!$user->hasVerifiedEmail()) {
+        if (! $user->hasVerifiedEmail()) {
             $response->assertRedirect('/email/verify');
         } else {
             $response->assertRedirect('/owner/dashboard');
@@ -101,7 +102,7 @@ class AuthTest extends TestCase
             'role' => 'owner',
         ]);
 
-        $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $verificationUrl = URL::temporarySignedRoute(
             'verification.verify',
             now()->addMinutes(60),
             ['id' => $user->id, 'hash' => sha1($user->getEmailForVerification())]
@@ -121,7 +122,7 @@ class AuthTest extends TestCase
             'role' => 'owner',
         ]);
 
-        $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $verificationUrl = URL::temporarySignedRoute(
             'verification.verify',
             now()->addMinutes(60),
             ['id' => $user->id, 'hash' => 'invalid-hash-string']
@@ -151,7 +152,7 @@ class AuthTest extends TestCase
     {
         $user = User::factory()->create([
             'email_verified_at' => null,
-            'role'              => 'owner',
+            'role' => 'owner',
         ]);
 
         $response = $this->actingAs($user)->get('/');
@@ -163,7 +164,7 @@ class AuthTest extends TestCase
     {
         $user = User::factory()->create([
             'email_verified_at' => now(),
-            'role'              => 'owner',
+            'role' => 'owner',
         ]);
 
         $response = $this->actingAs($user)->get('/');
@@ -178,7 +179,7 @@ class AuthTest extends TestCase
         ]);
 
         $response = $this->from('/login')->post('/login', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'wrong-password',
             'remember' => 'on',
         ]);
@@ -189,11 +190,24 @@ class AuthTest extends TestCase
         $this->assertEquals('on', session()->getOldInput('remember'));
     }
 
+    public function test_verification_logout_rejects_an_expired_token_and_accepts_a_fresh_token(): void
+    {
+        $user = User::factory()->unverified()->create();
+        $this->actingAs($user)->withSession(['_token' => 'fresh-verification-token']);
+        $this->app->instance('env', 'local');
+
+        $this->postJson('/logout', ['_token' => 'expired-token'])->assertStatus(419);
+        $this->assertAuthenticatedAs($user);
+
+        $this->post('/logout', ['_token' => 'fresh-verification-token'])->assertRedirect('/');
+        $this->assertGuest();
+    }
+
     public function test_verified_owner_visiting_verification_notice_is_redirected_to_dashboard(): void
     {
         $user = User::factory()->create([
             'email_verified_at' => now(),
-            'role'              => 'owner',
+            'role' => 'owner',
         ]);
 
         $response = $this->actingAs($user)->get(route('verification.notice'));

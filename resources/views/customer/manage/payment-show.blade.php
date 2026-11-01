@@ -104,7 +104,7 @@
     <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
         <div class="mx-auto flex w-full max-w-4xl items-center justify-between px-4 sm:px-6 py-3.5">
             <div class="flex items-center gap-3">
-                <a href="{{ $tenant->slug ? route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) : '/' }}" class="flex items-center gap-2.5 group">
+                <a href="{{ $tenant->slug ? \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) : '/' }}" class="flex items-center gap-2.5 group">
                     @if($tenant->logo_path)
                         <img src="{{ \Illuminate\Support\Facades\Storage::url($tenant->logo_path) }}" alt="{{ $tenant->namabisnis }}" class="h-9 w-9 rounded-xl object-cover border border-[#E2E8F0] shadow-xs group-hover:scale-105 transition-transform" />
                     @else

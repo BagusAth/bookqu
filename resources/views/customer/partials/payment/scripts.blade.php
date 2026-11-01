@@ -2,8 +2,8 @@
 <script>
     const snapToken = @json($payment->snap_token ?? null);
     const paymentUrl = @json($payment->payment_url ?? null);
-    const callbackUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.callback"), [$tenant->slug, $payment]) }}';
-    const checkStatusUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.check-status"), [$tenant->slug, $payment]) }}';
+    const callbackUrl = '{{ \App\Support\CustomerBookingRoutes::url("customer.booking.callback", [$tenant->slug, $payment]) }}';
+    const checkStatusUrl = '{{ \App\Support\CustomerBookingRoutes::url("customer.booking.check-status", [$tenant->slug, $payment]) }}';
     const csrfToken = '{{ csrf_token() }}';
 
     function showInlineFeedback(message, type = 'error') {

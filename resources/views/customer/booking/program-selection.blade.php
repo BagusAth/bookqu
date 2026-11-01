@@ -10,7 +10,7 @@
         id="booking-program-form"
         class="max-w-5xl mx-auto w-full"
         method="POST"
-        action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.select-program'), $tenant->slug) }}"
+        action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.select-program', $tenant->slug) }}"
         x-ref="confirmForm"
     >
         @csrf

@@ -93,5 +93,7 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Par
 | An owner cancelling a pending booking leaves its payment `pending` with an open link; a later payment becomes a refund owed | BQ-049 follow-up (outside payer-cancel scope) |
 | Webhook mail sent synchronously | BQ-013, BQ-050 |
 | Production credentials and webhook URLs not yet verified | BQ-022 |
+| SingaPay rejection reasons are not logged after BQ-005 | BQ-078 |
+| Tenant-owned Midtrans mode is only partly wired (ignored under SingaPay; platform client key under Midtrans) | BQ-079 |
 
 Target decisions: [ADR-0004](../adr/ADR-0004-payment-lifecycle-module.md) (one lifecycle module, implemented by BQ-067), [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (provider outcomes through one intake, BQ-032; late success BQ-003; owner callback BQ-070; gateway cancel BQ-002/BQ-049) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (one payment deadline, provider-first sweep for booking and subscription payments, BQ-071). ADR-0004, ADR-0007 and ADR-0009 are implemented (BQ-067, BQ-032, BQ-071).

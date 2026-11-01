@@ -2,7 +2,7 @@
 
 @section('title', 'Pilih Waktu')
 @section('current_step', 3)
-@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug))
+@section('back_url', \App\Support\CustomerBookingRoutes::url('customer.booking.date', $tenant->slug))
 @section('back_label', 'Kembali ke Pilih Tanggal')
 
 @section('content')
@@ -22,7 +22,7 @@
         id="booking-time-form"
         class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] max-w-6xl mx-auto w-full"
         method="POST"
-        action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.select-time'), $tenant->slug) }}"
+        action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.select-time', $tenant->slug) }}"
         x-ref="confirmForm"
     >
         @csrf
@@ -139,7 +139,7 @@
                     <h4 class="text-sm font-bold text-[#0F172A]">Tidak Ada Slot Tersedia</h4>
                     <p class="text-xs text-[#64748B] mt-1">Semua slot pada tanggal ini sudah penuh atau tidak tersedia. Silakan pilih tanggal lain.</p>
                     <a
-                        href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug) }}"
+                        href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.date', $tenant->slug) }}"
                         class="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-[#CBD5E1] bg-white px-4 py-2 text-xs font-bold text-[#0F172A] hover:bg-[#F8FAFC]"
                     >
                         &larr; Pilih Tanggal Lain
