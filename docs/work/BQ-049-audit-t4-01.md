@@ -16,6 +16,8 @@ source: docs/audit-bug/TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md at a68ffe8
 
 # BQ-049: [BUG-T4-01] Pembatalan Booking Tanpa Membatalkan Transaksi Gateway (Zombie Debits)
 
+> **2026-11-01:** the remaining scope is absorbed by BQ-087 (owner cancellation leaves the payment open) and product decision D-001 in `docs/product-decisions.md` (refunds are recorded but never processed). Close this item together with BQ-087.
+
 Covered by [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) decision 6 (best-effort gateway cancel after commit); verify with BQ-032.
 
 Migrated verbatim from the 2026-10 audit (TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md, stage 4: Payment Gateway, Webhooks, Halaman Pembayaran & Expiry Engine). Status in the current code is unverified — check it first (BQ-039).

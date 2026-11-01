@@ -10,6 +10,7 @@ requirements: []         # e.g. [FR-BOOKING-017, NFR-SEC-008]
 invariants: []           # e.g. [INV-BOOK-04]
 lane: heavy              # heavy (work items are for the heavy lane, docs/workflow.md §3)
 approval: tech-lead      # none | tech-lead | product-lead
+decision:                # D-NNN from docs/product-decisions.md when this implements an approved product decision
 launch-blocker: false
 depends-on: []           # e.g. [BQ-028]
 ---

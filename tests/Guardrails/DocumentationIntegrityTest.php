@@ -8,7 +8,7 @@ use RecursiveIteratorIterator;
 
 /**
  * Keeps the documentation system of ADR-0003 navigable: relative links resolve,
- * and every requirement, invariant and work-item ID is defined exactly once and
+ * and every requirement, invariant, product-decision and work-item ID is defined exactly once and
  * referenced only when it exists.
  */
 class DocumentationIntegrityTest extends TestCase
@@ -47,6 +47,13 @@ class DocumentationIntegrityTest extends TestCase
         preg_match_all('/^\|\s*(INV-[A-Z]+-\d+)\s*\|/m', $this->read('docs/domains/README.md'), $definitions);
 
         $this->assertDefinedOnceAndReferenced('invariant', $definitions[1], '/\bINV-[A-Z]+-\d+\b/');
+    }
+
+    public function test_product_decision_ids_are_defined_once_and_references_exist(): void
+    {
+        preg_match_all('/^(?:###\s+|-\s+)(D-\d{3})\b/m', $this->read('docs/product-decisions.md'), $definitions);
+
+        $this->assertDefinedOnceAndReferenced('product decision', $definitions[1], '/\bD-\d{3}\b/');
     }
 
     public function test_work_items_have_unique_numbers_matching_their_front_matter(): void

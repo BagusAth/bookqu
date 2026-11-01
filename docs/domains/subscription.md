@@ -42,7 +42,9 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Tar
 | Gap | Item |
 |---|---|
 | `CheckSubscription` lets the request through when no tenant is resolved | BQ-006 |
-| Sidebar decides "Pro" with `str_contains(namapaket, 'pro')` (`AppServiceProvider.php:68`); expiry command updates status with raw queries | BQ-033 |
+| An expired trial or paid plan keeps the expired plan's limits (Pro for trials: unlimited services, staff and storefront bookings); a missing subscription is treated as unlimited | BQ-086 |
+| What an expired tenant may still do, trial-to-paid timing, renewal losing remaining paid days, reminders | D-002 |
+| Sidebar decides "Pro" with `str_contains(namapaket, 'pro')` and the `status` column (`AppServiceProvider.php:75-85`); expiry command updates status with raw queries | BQ-086 (badge), BQ-033 |
 | Quota also re-checked in `BookingController::selectDate` | BQ-029 |
 | Audit P1: "Change plan" button dead, sidebar subscription card wrong for paid plans | BQ-066 |
 

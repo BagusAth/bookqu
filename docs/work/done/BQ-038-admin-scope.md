@@ -2,7 +2,7 @@
 id: BQ-038
 title: Define the platform admin scope
 type: product-change
-status: proposed
+status: rejected
 priority: P2
 phase: 8
 domain: admin
@@ -14,6 +14,8 @@ depends-on: []
 ---
 
 # BQ-038: Define the platform admin scope
+
+> **2026-11-01:** closed as a work item. Product questions now live in `docs/product-decisions.md` (`docs/workflow.md` §5); this one continues as D-003. Payouts got their admin workflow in BQ-015; refunds depend on D-001.
 
 ## Problem
 

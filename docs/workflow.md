@@ -21,7 +21,7 @@ Who holds each role: `AGENTS.md` → "Roles". The agent never contacts other peo
 | Feature | Adds a capability already accepted in `product.md` / `requirements.md` | No |
 | Refactor | Changes structure, not behaviour | No |
 | Technical improvement | Security, performance, tests, tooling, observability | No |
-| Product change | Changes what BookQu does (new capability, new rule, new policy) | **Yes — Product Lead decision first** |
+| Product change | Changes what BookQu does (new capability, new rule, new policy) | **Yes — Product Lead decision first**, through `docs/product-decisions.md` (§5) |
 | Documentation | Changes docs only | No |
 | Operational change | Deployment, scheduler, queue, environment, backups | No; update `operations.md` |
 
@@ -48,7 +48,7 @@ instruction ─► lane ─► (heavy: work item + decision) ─► own branch �
 ```
 
 1. **Capture.** Heavy lane: create `docs/work/BQ-NNN-slug.md` from `docs/work/_TEMPLATE.md` with requirement IDs, domain, current code, target change, invariants at risk, tests and docs to update.
-2. **Decide.** Check `AGENTS.md` → "Who decides". If the decision belongs to the Tech Lead or Product Lead, set `status: proposed`, tell the developer, and stop until the developer confirms the decision (`approved` or `rejected` with a reason).
+2. **Decide.** Check `AGENTS.md` → "Who decides". If the decision belongs to the Tech Lead, set `status: proposed`, tell the developer, and stop until the developer confirms the decision (`approved` or `rejected` with a reason). If it belongs to the Product Lead, do not create a work item: add a `D-NNN` entry to `docs/product-decisions.md` (§5), tell the developer, and stop. The work item is created only after the Product Lead approves, with `decision: D-NNN`.
 3. **Implement.** Small, coherent commits on your own branch. Characterize poorly tested behaviour before changing it. A small related refactor is fine when it directly reduces risk or duplication for this task.
 4. **Verify.** Per lane (§3). Record manual checks (UI, payment sandbox, custom domain) in the PR or item.
 5. **Document.** Update only the sources whose content changed (§9).
@@ -66,6 +66,18 @@ Ask for clarification only when two materially different product behaviours are 
 - `approval`: `none`, `tech-lead` or `product-lead`. Older items use `needs-lead-approval`; leave them as they are.
 - `launch-blocker: true` items must be `done` before production launch.
 - Items may be written in English or Indonesian; IDs, file paths and code names stay in English.
+- `docs/work/` holds work that is decided or waiting only for the Tech Lead. A question for the Product Lead never becomes a work item before it is approved; `decision: D-NNN` links an item to the approved product decision it implements.
+
+### Product decisions
+
+`docs/product-decisions.md` is the single place for decisions the Product Lead must validate, and the record of product decisions already taken. The Tech Lead shares it outside the repository (for example by chat); the Product Lead does not need repository access.
+
+- **Entry:** a `### D-NNN · title` heading, status, date proposed, whether it blocks the launch, the problem in two to four plain sentences, a numbered proposal, optional alternatives, what applies until it is decided, and the Product Lead's answer. IDs are never reused.
+- **Writing:** Indonesian, for a non-technical reader: no file paths, code names or tables, short enough to send one entry per chat message.
+- **Who writes:** the Tech Lead, or an agent at the request of the developer running the session. Only the Tech Lead records the Product Lead's answer, with its date.
+- **Statuses:** `Menunggu` → `Disetujui` or `Ditolak`. A revision keeps `Menunggu`, updates the proposal and notes "Revisi N".
+- **After the answer:** the Tech Lead creates the work items (`decision: D-NNN`) and moves the entry to "Sudah diputuskan" as one line, `- D-NNN · title · outcome and date → item IDs`. That work updates `product.md` and `requirements.md` before code (§8).
+- **Untuk diketahui:** Tech Lead decisions that owners or customers will notice are listed for the Product Lead's information; they need no answer.
 
 ## 6. Branches, commits, releases
 
@@ -123,7 +135,7 @@ Heavy lane also: requirement identified (or product change decided), invariants 
 | Bug fix | Root cause stated; regression test reproduces the bug |
 | Feature | Product and requirement exist; UI verified |
 | Refactor | Behaviour unchanged (tests before and after); no duplicated rules left behind |
-| Product change | `product.md` and `requirements.md` updated before code; Product Lead decided |
+| Product change | `product.md` and `requirements.md` updated before code; Product Lead decided (`D-NNN` approved in `docs/product-decisions.md`) |
 
 ## 9. Keeping documentation in sync
 
@@ -131,6 +143,7 @@ Update only what changed:
 
 | When you change… | Update |
 |---|---|
+| A question or decision for the Product Lead | `docs/product-decisions.md` (§5) |
 | What BookQu offers or a release tier | `docs/product.md` |
 | Required behaviour or a business rule | `docs/requirements.md` |
 | A structural rule or layer boundary | `docs/architecture.md` (+ ADR if significant) |
@@ -149,11 +162,11 @@ Classify the conflict — product, requirement, architecture, implementation dri
 
 ## 11. Writing docs for humans and agents
 
-- **Language:** authority docs, rules, ADRs and work-item structure are English; `README.md`, release notes and all user-facing UI copy are Indonesian.
+- **Language:** authority docs, rules, ADRs and work-item structure are English; `README.md`, `docs/product-decisions.md`, release notes and all user-facing UI copy are Indonesian.
 - Put the answer first; one topic per section; short sentences.
 - One rule lives in one place; everywhere else links to it.
-- Use stable IDs (`FR-`, `BR-`, `NFR-`, `INV-`, `BQ-`, `ADR-`) and real paths, class and route names.
+- Use stable IDs (`FR-`, `BR-`, `NFR-`, `INV-`, `BQ-`, `ADR-`, `D-`) and real paths, class and route names.
 - Name roles, not people, outside the roles table.
 - Prefer tables and numbered steps over prose.
 - Describe the current system in `docs/domains/`, the target in `docs/architecture.md`; never present the target as already implemented.
-- No history in active docs — Git and `docs/work/done/` keep it.
+- No history in active docs — Git and `docs/work/done/` keep it. Exception: "Sudah diputuskan" in `docs/product-decisions.md` is the record of product decisions.
