@@ -39,6 +39,9 @@ For a multi-slot booking where one payment covers multiple slots, the entire pay
 ### 3. CSV Formula Injection Vulnerability (CWE-1236, NFR-SEC-004)
 Both `OwnerAnalyticsController::export` and `app/Actions/Schedule/ExportScheduleReport.php:84-92` output customer names, emails, and notes directly into `fputcsv()`. If a customer name begins with `=`, `+`, `-`, or `@`, spreadsheet applications like Microsoft Excel execute it as a formula upon opening the exported CSV.
 
+### 4. Export works while the module is locked (added by the Tech Lead review, 2026-11-02)
+Analytics and schedule report are Tier 2 `locked` modules. `EnsureModuleReleased` lets every safe (GET) request through for a locked module (`app/Http/Middleware/EnsureModuleReleased.php:27-28`), so `GET /owner/analytics/export` and `GET /owner/schedule-report/export` still download full CSV data although the UI shows the module as locked. The lock should stop data exports too (export answers 403 while locked), or the routes must check the module state themselves. Release-tier behaviour is a Tech Lead decision (ADR-0011).
+
 ## Plan
 
 1. Replace 12-month and 30-day query loops in `OwnerAnalyticsController` with single aggregated queries using `selectRaw('DATE_FORMAT(...) as period, sum(...) as total, count(...) as cnt')->groupBy('period')`.

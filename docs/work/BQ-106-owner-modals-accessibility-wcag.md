@@ -46,7 +46,7 @@ Assistive technology and screen readers do not recognize these overlays as dialo
 - When a dialog or drawer is closed, focus drops to `document.body` instead of returning to the button or element that initially opened the modal.
 
 ### 3. Inconsistent Keyboard Dismissal (Escape Key) (WCAG 2.1.2)
-While `modal-add-program.blade.php` includes `@keydown.escape.window="open = false"`, `modal-edit-program.blade.php`, the category add/edit modals, the review reply modal, and the customer drawer do not handle the Escape key. A keyboard-only user has no standard way to dismiss them without tabbing through the entire DOM to the close button.
+While `modal-add-program.blade.php` and the category modals (`categories.blade.php`) handle `@keydown.escape`, `modal-edit-program.blade.php`, the review reply modal and the customer drawer do not handle the Escape key. (Corrected by the Tech Lead review on 2026-11-02: the category modals were wrongly listed.) A keyboard-only user has no standard way to dismiss them without tabbing through the entire DOM to the close button.
 
 ## Plan
 

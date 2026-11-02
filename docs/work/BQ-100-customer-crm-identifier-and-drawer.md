@@ -26,11 +26,7 @@ In `resources/views/owner/partials/customers/table.blade.php:79`:
 ```blade
 @click="openCustomer('{{ addslashes($c->identifier) }}')"
 ```
-Interpolating customer identifiers (phone numbers, emails, or names containing special characters or quotes) directly inside single-quoted HTML attributes violates `.ai/rules/frontend.md` and risks breaking Alpine attribute evaluation or causing syntax errors. In addition, in `resources/views/owner/customers.blade.php:12`:
-```blade
-search: '{{ addslashes($search ?? '') }}'
-```
-interpolates raw search input into the Alpine component initialization.
+Interpolating customer identifiers (phone numbers, emails, or names containing special characters or quotes) directly inside single-quoted HTML attributes violates `.ai/rules/frontend.md` (`@js` for values in JavaScript) and can break the Alpine expression for identifiers with backslashes or unusual characters. (Corrected by the Tech Lead review on 2026-11-02: the search-field interpolation quoted here is in `reviews.blade.php:7`, tracked in BQ-101, not in `customers.blade.php`.)
 
 ### 2. Missing Mobile Card Representation (375px / 768px Viewports)
 Unlike the bookings page which cleanly renders responsive `mobile-cards.blade.php` below `md:`, the customers directory (`/owner/customers`) only provides an 8-column wide table inside `overflow-x-auto`. On mobile screens (375px–768px), owners are forced to scroll horizontally back and forth across large empty cell paddings to inspect customer metrics, contact info, and the drawer trigger button.

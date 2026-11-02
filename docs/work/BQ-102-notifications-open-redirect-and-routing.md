@@ -1,66 +1,49 @@
 ---
 id: BQ-102
-title: Open redirect in mark-as-read and missing deep link routing in notifications
+title: Validate the redirect target of notification mark-as-read, and use the shared confirm dialog
 type: bug-fix
 status: proposed
-priority: P1
+priority: P2
 phase: 8
 domain: notifications
-requirements: [FR-NOTIFICATION-001, FR-NOTIFICATION-002, NFR-SEC-006, NFR-SEC-008]
+requirements: [FR-NOTIFICATION-001, NFR-SEC-006]
 invariants: []
 lane: heavy
 approval: tech-lead
 decision:
-launch-blocker: true
-depends-on: []
+launch-blocker: false
+depends-on: [BQ-092]
 ---
 
-# BQ-102: Open redirect in mark-as-read and missing deep link routing in notifications
+# BQ-102: Validate the redirect target of notification mark-as-read, and use the shared confirm dialog
 
-Found during the owner UI deep audit on 2026-11-02 in `OwnerNotificationController` and `/owner/notifications`.
+Found during the owner UI deep audit on 2026-11-02. Corrected by the Tech Lead review on 2026-11-02: severity lowered from P1 launch blocker to P2 hardening, and the "missing deep link" claim removed because it was wrong.
 
 ## Problem
 
-### 1. Open Redirect Vulnerability in Notification Read Action (CWE-601)
-In `app/Http/Controllers/Owner/OwnerNotificationController.php:94-101`:
-```php
-public function markAsRead(Request $request, string $id)
-{
-    $notification = $request->user()->notifications()->findOrFail($id);
-    $notification->markAsRead();
+### 1. Unvalidated redirect target (hardening)
+`app/Http/Controllers/Owner/OwnerNotificationController.php:83-101` (`markAsRead`) ends with:
+`$redirectUrl = $request->input('redirect') ?: back()->getTargetUrl(); return redirect($redirectUrl);`
+Any absolute URL in `redirect` is followed. The route is `POST owner/notifications/{id}/read` and is CSRF-protected, and no owner view sends a `redirect` field today, so it cannot be triggered from another site. It is still an open-redirect pattern that becomes exploitable if the endpoint is ever reached by GET or a form starts passing user-controlled URLs.
 
-    $redirectUrl = $request->input('redirect') ?: back()->getTargetUrl();
+### 2. Native confirm on notification delete
+Deleting a notification uses `onsubmit="return confirm('Hapus notifikasi ini?')"` (`resources/views/owner/notifications.blade.php:234`) instead of the shared `confirm-modal` (BQ-092).
 
-    return redirect($redirectUrl);
-}
-```
-The controller accepts an arbitrary `redirect` parameter from user input and immediately issues a redirect without validating that the target URL belongs to the application's domain. An external attacker or malicious link could supply `?redirect=https://evil.example.com` or protocol-relative URLs (`//attacker.com`), redirecting an authenticated business owner to an external phishing or credential-harvesting site.
-
-### 2. Missing Deep Links for Actionable Notifications
-In `resources/views/owner/notifications.blade.php:208`:
-- When rendering booking notifications containing `$notification->data['booking_code']`, the "Lihat Detail" CTA links generically to `route('owner.bookings')` without passing the booking code as a query filter.
-- As a result, the owner is dropped onto the general bookings index and must manually find or copy-paste the booking code to locate the customer's reservation.
-
-### 3. Native Confirmation on Bulk Notification Deletion
-In `resources/views/owner/notifications.blade.php:234`:
-Bulk clearing of notifications triggers a browser-native `confirm()` popup, bypassing the standard `components/owner/confirm-modal.blade.php` component and violating the UI consistency guidelines established in BQ-092.
+### Checked and not a problem
+Booking notifications already link to the booking: the notification data stores `url` = `/owner/bookings?katakunci=<booking_code>` (`app/Notifications/NewBookingOwnerNotification.php:102`, `BookingStatusChangedOwnerNotification.php:154`) and the page uses it (`notifications.blade.php:106`).
 
 ## Plan
 
-1. Sanitize and validate the `redirect` URL in `OwnerNotificationController::markAsRead`:
-   - Reject external schemes/hosts and only allow relative local paths or URLs matching the application host (e.g. using `Redirector::to()` with local validation or `url()->isValidUrl()` within the trusted domain).
-2. Update notification item action links in `notifications.blade.php` to pass `['katakunci' => $code]` to `route('owner.bookings', ...)` when a booking code exists, landing the owner directly on the targeted booking.
-3. Replace native `confirm()` on notification clearing with the shared `confirm-modal` component.
+1. Accept only same-host relative paths in `redirect` (otherwise fall back to `route('owner.notifications')`), or drop the parameter because nothing uses it.
+2. Replace the native `confirm()` with `confirm-modal`.
 
 ## Invariants at risk
 
-None. Notification ownership (`$request->user()->notifications()`) remains strictly isolated per user.
+None. Notifications stay scoped to the authenticated user.
 
 ## Tests
 
-- Security test: submitting `POST /owner/notifications/{id}/read?redirect=https://evil.example.com` rejects external host and falls back to a safe internal route (e.g. `route('owner.notifications')`).
-- Security test: local relative path `?redirect=/owner/bookings` is honored safely.
-- Feature test: clicking notification action link for a booking directs to `route('owner.bookings', ['katakunci' => $code])`.
+- `POST /owner/notifications/{id}/read` with `redirect=https://evil.example.com` redirects to an internal page; `redirect=/owner/bookings` is honoured (or ignored, if the parameter is removed).
 
 ## Docs to update
 

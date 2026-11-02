@@ -1,6 +1,6 @@
 ---
 id: BQ-099
-title: Broken category filter link, service modal governance, and unsafe script interpolation
+title: Broken category filter link, hidden service card actions, and native alerts in service modals
 type: bug-fix
 status: approved
 priority: P1
@@ -15,46 +15,41 @@ launch-blocker: false
 depends-on: [BQ-092]
 ---
 
-# BQ-099: Broken category filter link, service modal governance, and unsafe script interpolation
+# BQ-099: Broken category filter link, hidden service card actions, and native alerts in service modals
 
-Found during the owner UI deep audit on 2026-11-02 across `/owner/categories` and `/owner/programs`.
+Found during the owner UI deep audit on 2026-11-02 across `/owner/categories` and `/owner/services`. Corrected by the Tech Lead review on 2026-11-02 (quotes and line numbers re-checked against the code).
 
 ## Problem
 
-### 1. Broken Category Filter Navigation
-On the categories page (`/owner/categories`), each category card provides a "Lihat Layanan" link intended to view all services under that category:
-- `resources/views/owner/categories.blade.php:160`:
-  `href="{{ route('owner.programs', ['category_id' => $category->id]) }}"`
-- However, `app/Http/Controllers/Owner/OwnerProgramController.php:42` and `resources/views/owner/programs.blade.php:87, 107` only read the `category` query parameter (`request('category')`).
-- Because the parameter name is `category_id` instead of `category`, clicking "Lihat Layanan" lands on `/owner/programs?category_id=X`, the controller ignores it, and all tenant services are displayed unfiltered.
+### 1. Broken category filter navigation
+Each category card has a "Lihat Layanan" link (`resources/views/owner/categories.blade.php:160`):
+`href="{{ route('owner.services', ['category_id' => $cat->id]) }}"`.
+`app/Http/Controllers/Owner/OwnerProgramController.php:42` reads only `category` (`$request->input('category', '')`), so the link opens `/owner/services?category_id=X`, the parameter is ignored and every service is listed unfiltered.
 
-### 2. Unsafe JS Interpolation and Raw String Concatenation
-- `resources/views/owner/programs.blade.php:240`: Blade interpolation `includes({{ $stf->id }})` injects raw values into Alpine attributes rather than using `@js()`.
-- `resources/views/owner/categories.blade.php:357`: Form action is constructed via string concatenation in Alpine:
-  `:action="'{{ url('/owner/categories') }}/' + (activeCategory ? activeCategory.id : '')"`
-  instead of leveraging a consistent route template or standard REST action binding.
-- Image size and format validations in `programs.blade.php` and `modal-add-program.blade.php` trigger browser-native `alert('Ukuran file maksimal 2MB')`, violating BQ-092 toast and notification consistency.
+### 2. Service card actions hidden without hover
+The edit/delete buttons on service cards use `opacity-100 sm:opacity-0 sm:group-hover:opacity-100` (`resources/views/owner/programs.blade.php:179`). They are visible on phones (< 640 px), but from 640 px up they appear only on mouse hover: invisible on touch tablets and when reached with the Tab key (WCAG 2.4.7).
 
-### 3. Inaccessible Hover-Only Action Controls (WCAG 2.4.7)
-- In `resources/views/owner/programs.blade.php:229-236`, the service card action buttons ("Ubah" and "Hapus") are styled with `opacity-0 group-hover:opacity-100 transition-opacity`.
-- On touch devices (tablets and mobile viewports 375px–768px without pointer hover) and for keyboard navigation using the Tab key, the buttons remain completely invisible even when focused, violating WCAG 2.4.7 (Focus Visible).
+### 3. Native alerts in service modals
+Image size validation uses the browser's `alert('Ukuran gambar maksimal adalah 10MB.')` in `components/owner/modal-add-program.blade.php:24` and `components/owner/modal-edit-program.blade.php:12`, instead of the shared toast (BQ-092).
+
+### 4. Edit-category form action built by string concatenation
+`categories.blade.php:357`: `:action="'{{ url('owner/categories') }}/' + activeCategory.id"`. It works, but the URL is assembled in JavaScript instead of from a named route template (same pattern as BQ-105 §2).
 
 ## Plan
 
-1. Align the category filter parameter name across `categories.blade.php`, `OwnerProgramController.php`, and `programs.blade.php` to consistently accept `category` (supporting both category ID and slug).
-2. Refactor raw Blade-to-JS interpolations to use `@js()` and remove client-side `alert()` dialogs in favor of BQ-092 toast notifications.
-3. Ensure service card actions have persistent visibility on mobile/touch viewports and include `focus:opacity-100` / `focus-within:opacity-100` for keyboard accessibility.
-4. Clean up form action URL construction in `categories.blade.php` edit modal using a clean data-bound route helper pattern.
+1. Use one parameter name: the category card links with `category` (or the controller accepts `category_id`); add the filter state to the services page header.
+2. Service card actions: visible at all widths on touch devices, and `focus-within:opacity-100` for keyboard users.
+3. Replace `alert()` in both service modals with the shared toast.
+4. Build the edit-category action from a named route template passed with `@js`.
 
 ## Invariants at risk
 
-None. Service ownership (`TenantScope`) and schedule deletion protection remain enforced server-side.
+None. Service ownership (`TenantScope`) stays enforced server-side.
 
 ## Tests
 
-- Feature test: visiting `route('owner.programs', ['category' => $category->id])` filters services strictly to that category.
-- Feature test: clicking "Lihat Layanan" URL from category card renders only matching services.
-- Accessibility / browser check: Tab focus reveals service card action buttons without requiring mouse hover.
+- Feature: the "Lihat Layanan" URL of a category card lists only that category's services.
+- Manual: at 768 px on a touch device and with Tab only, card actions are reachable.
 
 ## Docs to update
 

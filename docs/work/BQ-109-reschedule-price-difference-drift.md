@@ -10,7 +10,7 @@ requirements: [FR-BOOKING-011, FR-BOOKING-012, FR-PAYMENT-001, BR-CORE-008]
 invariants: [INV-BOOK-02, INV-PAY-01]
 lane: heavy
 approval: tech-lead
-decision:
+decision: D-006
 launch-blocker: false
 depends-on: []
 ---
@@ -18,6 +18,8 @@ depends-on: []
 # BQ-109: Price discrepancy and payment adjustment on booking reschedule
 
 Found during deep audit of reschedule flows (`RescheduleBooking.php` and `OwnerBookingController@reschedule`) on 2026-11-02.
+
+> **Waits for D-006** (`docs/product-decisions.md`): how a price difference on reschedule is handled (extra payment, partial refund, only equal-priced slots, or ignored) is a product decision. The detection and logging below can be built first; the customer-facing rule follows the answer. (Tech Lead review, 2026-11-02.)
 
 ## Problem
 
