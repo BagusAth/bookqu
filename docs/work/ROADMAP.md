@@ -9,7 +9,7 @@ From the current state to a production-ready, maintainable BookQu. Each phase en
 - **CI:** four jobs (quality, SQLite, MySQL 8, MariaDB 11.4) on every PR and before every production deploy; the deploy backs up the database first.
 - **Open before launch (Tech Lead, operations):** BQ-020 cron on HostData, BQ-021 SMTP and monitoring, BQ-022 production SingaPay credentials and webhook URL. Branch protection for `main` and `integration` needs a repository admin.
 - **Open before launch (code, found 2026-11-01/02):** BQ-086 expired trials keep Pro entitlement; BQ-087 owner actions during an open online payment and ignored double payments; BQ-089 stored XSS in the dashboard refresh; BQ-098 account changes without the current password; BQ-102 open redirect in notification mark-as-read.
-- **Owner UI rework (audit 2026-11-02):** BQ-092 foundations first, then BQ-090 shell performance, BQ-091 navigation, BQ-093 copy, BQ-094 dashboard, BQ-095 bookings, BQ-096 calendar and schedule, BQ-097 non-functional controls, BQ-099 services/categories, BQ-100 customers CRM, BQ-101 reviews, BQ-103 balance/payouts, BQ-104 subscription checkout, BQ-105 storefront link routing, BQ-106 dialog/drawer accessibility.
+- **Owner UI rework (audit 2026-11-02):** BQ-092 foundations first, then BQ-090 shell performance, BQ-091 navigation, BQ-093 copy, BQ-094 dashboard, BQ-095 bookings, BQ-096 calendar and schedule, BQ-097 non-functional controls, BQ-099 services/categories, BQ-100 customers CRM, BQ-101 reviews, BQ-103 balance/payouts, BQ-104 subscription checkout, BQ-105 storefront link routing, BQ-106 dialog/drawer accessibility, BQ-107 bulk schedule capping, BQ-108 blocked date conflict, BQ-109 reschedule price drift, BQ-110 slug change & custom domain, BQ-111 analytics query & CSV, BQ-112 atomic registration & CSRF 419.
 - **Waiting for a Product Lead decision** ([product decisions](../product-decisions.md)): D-001 optional refunds (blocks launch; its fallback is enough for launch), D-002 trial and subscription end, D-003 admin scope, D-004 payout bank account persistence.
 - **Deferred until after launch:** BQ-017 staging, BQ-019 scheduled backups and restore drill, Phase 6 refactors, BQ-082 polish.
 
@@ -25,7 +25,7 @@ From the current state to a production-ready, maintainable BookQu. Each phase en
 | **5 — Launch** | Release v1.0.0 and stabilize | Product Lead (go/no-go), Tech Lead (execution) | next |
 | **6 — Architecture alignment** | Structural refactor toward the ADRs | Tech Lead (PR audits) | after launch: BQ-016, BQ-029, BQ-030, BQ-031, BQ-033, BQ-034, BQ-035, BQ-075, BQ-077 |
 | **7 — Cleanup** | Dead code, old branches | Tech Lead | BQ-037 done; old branch clean-up per BQ-085 |
-| **8 — Continuous evolution** | New features and routine care | per decision table | BQ-082, BQ-088, BQ-090 to BQ-097, BQ-099 to BQ-101, BQ-103 to BQ-106, D-002, D-003, D-004 and future items |
+| **8 — Continuous evolution** | New features and routine care | per decision table | BQ-082, BQ-088, BQ-090 to BQ-097, BQ-099 to BQ-101, BQ-103 to BQ-112, D-002, D-003, D-004 and future items |
 
 ```text
 0 → 1 → 2 → 3 → 4 → 5 → 8
