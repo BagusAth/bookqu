@@ -47,5 +47,6 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Tar
 | Sidebar decides "Pro" with `str_contains(namapaket, 'pro')` and the `status` column (`AppServiceProvider.php:75-85`); expiry command updates status with raw queries | BQ-086 (badge), BQ-033 |
 | Quota also re-checked in `BookingController::selectDate` | BQ-029 |
 | Audit P1: "Change plan" button dead, sidebar subscription card wrong for paid plans | BQ-066 |
+| Checkout mobile layout order inverted, subscription invoice labels order as "Kode Booking", and unquoted Snap token | BQ-104 |
 
 Target decisions: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) (release gate separate from entitlement; both fail closed, BQ-006/BQ-033) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (subscription payments swept, BQ-071). Not implemented yet.

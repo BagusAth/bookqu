@@ -33,3 +33,4 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Nee
 | Login and registration have no rate limiting | BQ-007 |
 | Changing email or password needs no current password; email change keeps verification; other sessions stay logged in | BQ-098 |
 | Audit P0: dead "forgot password" link, redirect loop, logout without CSRF handling on verify notice (status unknown since `ab24193`) | BQ-040 … BQ-042 |
+| Owner registration not wrapped in DB transaction, and silent asynchronous CSRF 419 session expiration | BQ-112 |

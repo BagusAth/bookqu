@@ -51,5 +51,7 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 | Availability cache keys and invalidation are still built by callers (`ClearsBookingCache`, `ScheduleAvailabilityCache`), not owned by the Slot bookability module (ADR-0005 decision 9) | BQ-075 |
 | `AvailabilityRules` checks status `diblokir`, which the DB enum cannot store | BQ-016 |
 | Schedule page and calendar month view decide occupancy in Blade instead of `BookingRules` | BQ-096 |
+| Bulk schedule date range capping, past slot protection, and occupancy check on delete | BQ-107 |
+| Conflict detection and notification when blocking dates with existing active bookings | BQ-108 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012/BQ-069; cache ownership still open, BQ-075) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (hold derived from the payment deadline, BQ-071).

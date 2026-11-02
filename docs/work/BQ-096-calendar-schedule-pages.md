@@ -35,6 +35,11 @@ Found in the owner UI audit of 2026-11-02 on the demo tenant. Heavy lane because
 - Uppercase status micro-labels ("CONFIRMED", "TERSEDIA") and per-status colours that differ from the rest of the app (BQ-092).
 - Header "Calendar & Jadwal Operasional" with buttons "Kelola Schedule" / "Daftar Bookings" (mixed language, BQ-093); HTML 478 KB and the slowest owner page (1.4 s locally vs ~0.6 s for others).
 
+**4. Schedule modals and reschedule edge cases (Added 2026-11-02 deep audit)**
+- `components/owner/modal-add-bulk-slots.blade.php:117-130`: in "Date Range" mode, inputs `tanggalmulai` and `tanggalselesai` lack conditional `required` attributes, allowing empty range submission.
+- `components/owner/modal-reschedule-booking.blade.php:15`: `minDate` uses `new Date().toISOString().split('T')[0]`, which converts local time to UTC. For Indonesian time zones (WIB / UTC+7) between 00:00 and 06:59, this sets `minDate` to yesterday.
+- The schedule modals post to hand-written paths (`/owner/schedule/bulk-slots`, `/owner/schedule/availability`, `/owner/schedule/default-pricing`) instead of `route()` (`owner.schedule.bulk-store`, `owner.schedule.availability`, `owner.schedule.default-pricing`); tracked with the other hand-written URLs in BQ-105. The server also accepts an empty date range (`tanggalmulai`/`tanggalselesai` are `nullable` in `BulkCreateScheduleRequest`), see BQ-107. (Corrected by the Tech Lead review on 2026-11-02: the original quoted paths and route names did not exist.)
+
 ## Plan
 
 1. Views receive a prepared state per slot and per day (`booked`, `held`, `free`, `blocked`, counts) from an Action that uses `BookingRules`/`AvailabilityRules`; Blade only renders it (Tech Lead review for the rule usage).

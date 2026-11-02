@@ -4,7 +4,7 @@ Dokumen ini berisi keputusan yang perlu divalidasi Product Lead, dan catatan kep
 
 **Cara menjawab:** balas dengan nomor entri dan poinnya, misalnya "D-001 setuju semua" atau "D-001 setuju kecuali poin 3: …". Setelah disetujui, Tech Lead membuat pekerjaannya. Keputusan yang sudah diambil bisa dibuka lagi kapan saja dengan menyebut nomornya.
 
-Terakhir diperbarui: 1 November 2026
+Terakhir diperbarui: 2 November 2026
 
 ---
 
@@ -69,6 +69,61 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 *Usulan keputusan*
 1. Admin v1 bisa: memproses pencairan saldo (sudah ada), memproses refund (kalau D-001 poin 7 disetujui), dan melihat daftar bisnis beserta status langganannya.
 2. Menonaktifkan bisnis, masuk sebagai owner, dan mengubah langganan secara manual ditunda setelah rilis.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-004 · Rekening bank penarikan saldo disimpan atau diisi setiap pengajuan
+
+*Status:* Menunggu · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* tidak
+
+*Masalah*
+Setiap kali owner ingin mencairkan saldo hasil booking, owner harus mengetik ulang nama bank, nomor rekening, dan nama pemilik rekening dari awal. Jika terjadi salah ketik pada nomor rekening, ada risiko dana salah ditransfer oleh admin platform. Selain itu, owner merasa kerepotan karena tidak ada rekening tujuan yang tersimpan secara praktis.
+
+*Usulan keputusan*
+1. Owner dapat menyimpan satu rekening bank utama pada profil atau pengaturan bisnis.
+2. Saat membuka formulir penarikan saldo, kolom rekening otomatis terisi dengan data rekening utama tersebut, namun owner tetap bisa menyesuaikannya jika diperlukan.
+3. Nama pemilik rekening dianjurkan sesuai dengan nama pemilik akun untuk mempermudah verifikasi transfer oleh admin.
+4. Setiap pembaruan data rekening bank utama mengirimkan notifikasi konfirmasi ke email owner demi keamanan akun.
+
+*Kalau belum diputuskan:* sistem tetap menggunakan pengisian manual pada setiap pengajuan penarikan agar alur pencairan saldo tetap berjalan sederhana untuk rilis awal.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-005 · Domain sendiri (custom domain) untuk halaman booking bisnis
+
+*Status:* Menunggu · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* tidak
+
+*Masalah*
+Sistem sudah bisa menampilkan halaman booking lewat domain milik bisnis (misalnya booking.namabisnis.com), tetapi pengaturannya hanya ada di fitur landing page yang masih disembunyikan. Akibatnya owner di v1 tidak bisa memasang domain sendiri, padahal kebutuhan ini tercantum di spesifikasi.
+
+*Usulan keputusan*
+1. Domain sendiri tidak dirilis di v1; tetap disembunyikan bersama landing page.
+2. Setelah rilis, domain sendiri menjadi fitur paket Pro, diatur di halaman Pengaturan Bisnis, lengkap dengan panduan pengaturan DNS dan pengecekan otomatis apakah domain sudah tersambung.
+3. Selama belum dirilis, semua tautan halaman booking tetap memakai alamat BookQu (bookqu.my.id/nama-bisnis).
+
+*Kalau belum diputuskan:* domain sendiri tetap tersembunyi seperti sekarang.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-006 · Pindah jadwal ke slot dengan harga berbeda
+
+*Status:* Menunggu · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* tidak
+
+*Masalah*
+Harga slot bisa berbeda, misalnya slot akhir pekan lebih mahal atau owner memasang harga khusus. Saat booking dipindah ke slot lain, sistem tidak memperhitungkan selisih harga sama sekali. Pelanggan bisa pindah dari slot murah ke slot mahal tanpa membayar kekurangannya, dan sebaliknya tidak ada catatan apa pun.
+
+*Usulan keputusan*
+1. Pelanggan hanya bisa memindahkan jadwal sendiri ke slot dengan harga yang sama atau lebih murah. Untuk slot yang lebih mahal, yang muncul hanya "Hubungi pemilik".
+2. Pindah ke slot yang lebih murah tidak mengembalikan selisih secara otomatis.
+3. Owner boleh memindahkan booking ke slot mana pun. Sistem menampilkan selisih harganya dan mencatatnya, tanpa menagih atau mengembalikan uang secara otomatis; owner menyelesaikannya langsung dengan pelanggan.
+
+*Kalau belum diputuskan:* perilaku tetap seperti sekarang, tetapi owner diberi peringatan selisih harga saat memindahkan jadwal.
 
 *Jawaban Product Lead:* —
 

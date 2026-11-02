@@ -29,3 +29,5 @@ Functional: Implemented · Verification: Needs Verification (metric definitions 
 | Dashboard live refresh inserts customer names with `innerHTML` (stored XSS) | BQ-089 |
 | Dashboard figures truncated, unsigned or mislabelled; fake trend indicators | BQ-094 |
 | Audit P0/P1: deleting a slot from the calendar redirects out of it; week view hides free slots; empty AJAX error | BQ-046, BQ-062 |
+| Owner dialog and drawer accessibility gaps (missing role="dialog", focus trapping, and keyboard escape handling) | BQ-106 |
+| Analytics N+60 serial loop queries, multi-slot revenue multiplication, CSV formula injection, and exports still downloadable while the module is locked | BQ-111 |
