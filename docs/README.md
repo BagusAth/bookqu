@@ -7,6 +7,7 @@ Every question has one authoritative source. Start with `AGENTS.md` (always load
 | How must agents and contributors work? Non-negotiable rules, who approves what | `../AGENTS.md` | Authority |
 | What is BookQu, who uses it, which features are released? | `product.md` | Authority |
 | What must the system do? (`FR-`, `BR-`, `NFR-`, `AC-`) | `requirements.md` | Authority |
+| Which owner pages exist, what each page contains, where a feature belongs? | `owner-portal.md` | Authority (draft until D-007, D-008) |
 | How must the code be structured? | `architecture.md` | Authority (target) |
 | How does each domain work today, which invariants (`INV-`) hold, what proves them, what is its status? | `domains/` | Current state |
 | What do terms and legacy names mean? | `glossary.md` | Reference |

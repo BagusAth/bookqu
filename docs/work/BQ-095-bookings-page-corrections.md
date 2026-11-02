@@ -42,6 +42,14 @@ Found in the owner UI audit of 2026-11-02.
 5. Row actions follow BQ-087 (no settle while an online payment is open); every irreversible action goes through `confirm-modal`; no emoji; menu rendered outside the scroll container or as a popover that is never clipped.
 6. One booking view model shared by table, cards and modal.
 
+## Linked follow-up from the 2026-11-02 customer audit
+
+[BQ-121](BQ-121-customer-historical-invoice-amount.md) records the same live-price problem on **customer invoices**, with a separate heavy-lane plan. A single-slot payment of Rp150.000 still has that amount in the database after a catalog edit, but the individual invoice then prints Rp250.000 through `Booking::priceLabel`. Group invoice rows can also disagree with their recorded payment total. This trigger requires no reschedule and is distinct from BQ-109/D-006.
+
+Do not treat the existing `priceLabel` accessor or a fresh `BookingRules::calculateSlotPrices` call as an immutable record of a past charge: the underlying catalog/override can change. For this item's owner UI, a clearly labelled recorded payment/group total is an available source; exact historical per-slot allocation and any snapshot schema belong to the Tech Lead decision in BQ-121. The existing light-lane approval of BQ-095 does not approve that schema or payment work. Coordinate the eventual shared presentation source to avoid two implementations.
+
+Related duration drift after a service edit is tracked separately in [BQ-114](BQ-114-historical-booking-duration-drift.md). No change to this item's approval, status or existing owner scope is implied by these links.
+
 ## Invariants at risk
 
 None of the domain invariants; amounts must match what the customer was charged (FR-BOOKING-008).

@@ -17,6 +17,7 @@ This section is the BookQu part of this file. Everything after it is the Laravel
 | Question | Source |
 |---|---|
 | What is BookQu, which features are released (Tier 1/2/3)? | `docs/product.md` |
+| Which owner pages exist, what each contains, where a feature belongs? (draft until D-007) | `docs/owner-portal.md` |
 | What must the system do? (`FR-*`, `BR-*`, `NFR-*`) | `docs/requirements.md` |
 | How must code be structured? | `docs/architecture.md` |
 | How does a domain work today, which invariants (`INV-*`), which tests prove it? | `docs/domains/*.md` |

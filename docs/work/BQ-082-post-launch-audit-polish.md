@@ -107,7 +107,7 @@ After launch, pick items per area into small light-lane PRs. Verify each against
 
 ### From BQ-066 (full details in `done/BQ-066-audit-stage-6-p1-p3.md`)
 
-- [ ] **BUG-T6-10 [P2]**: Format tautan WhatsApp CRM tidak memenuhi standar API (`08...` alih-alih `628...`) ([customers/table.blade.php#L39](file:///c:/laragon/www/bookqu/resources/views/owner/partials/customers/table.blade.php#L39)).
+- [ ] **BUG-T6-10 [P2]**: Format tautan WhatsApp CRM tidak memenuhi standar API (`08...` alih-alih `628...`) ([customers/table.blade.php#L39](file:///c:/laragon/www/bookqu/resources/views/owner/partials/customers/table.blade.php#L39)). Cakupan terkonfirmasi juga meliputi bantuan storefront, kontak merchant pada portal kelola, dan kontak pelanggan pada kartu booking owner; lihat perluasan audit 2026-11-02 di bawah.
 - [ ] **BUG-T6-11 [P2]**: Dropdown notifikasi topbar terdorong keluar layar pada viewport ponsel < 400px ([topbar.blade.php#L210](file:///c:/laragon/www/bookqu/resources/views/components/owner/topbar.blade.php#L210)).
 - [ ] **BUG-T6-12 [P2]**: Tombol "Detail" pada halaman notifikasi tidak menandai notifikasi sebagai dibaca ([notifications.blade.php#L209](file:///c:/laragon/www/bookqu/resources/views/owner/notifications.blade.php#L209)).
 - [ ] **BUG-T6-13 [P2]**: Form pencarian ulasan me-reset filter rating bintang yang sedang aktif saat disubmit ([reviews.blade.php#L68](file:///c:/laragon/www/bookqu/resources/views/owner/reviews.blade.php#L68)).
@@ -125,5 +125,34 @@ After launch, pick items per area into small light-lane PRs. Verify each against
 - [ ] **BUG-T6-25 [P3]**: Badge "🔒 Terkunci" pada widget analitik dashboard di-hardcode permanen bahkan untuk tenant berbayar.
 - [ ] **BUG-T6-26 [P3]**: Overflow tab navigasi pada mobile drawer customer detail tanpa kemampuan horizontal scroll.
 - [ ] **BUG-T6-27 [P3]**: Ketiadaan paginasi database pada ulasan owner, memuat seluruh data ke memory PHP Collection.
+
+## Perluasan BUG-T6-10 — Kontak WhatsApp pelanggan dan merchant (2026-11-02)
+
+### Problem dan bukti
+
+Audit pada snapshot `f361cc2` membuktikan pola yang sama dengan CRM terdapat pada jalur yang langsung dipakai pelanggan dan owner:
+
+| Permukaan UI | Sumber |
+|---|---|
+| Tombol Bantuan pada shell storefront, termasuk checkout/pembayaran | `resources/views/customer/layouts/booking-shell.blade.php:113` |
+| Kontak merchant pada halaman kelola individual | `resources/views/customer/manage/show.blade.php:43-45` |
+| Kontak merchant pada portal grup pembayaran | `resources/views/customer/manage/payment-show.blade.php:90-92` |
+| Hubungi pelanggan dari kartu booking owner di ponsel | `resources/views/owner/partials/bookings/mobile-cards.blade.php:75` |
+
+Kode hanya menghapus karakter non-digit. Nomor yang sah dan lazim dimasukkan sebagai `081234567890` menjadi `https://wa.me/081234567890`, bukan bentuk internasional `6281234567890`. Browser pada checkout fixture mengonfirmasi href berawalan `08`; audit tidak mengirim pesan atau membuka percakapan WhatsApp eksternal. Dampaknya pengguna dapat gagal mencapai tujuan kontak dari tombol bantuan atau kartu booking.
+
+### Plan dan batas lingkup
+
+1. Gunakan satu formatter nomor WhatsApp untuk seluruh permukaan di atas dan CRM. Normalisasikan awalan lokal Indonesia `0` menjadi `62`, terima `+62`/`62`, bersihkan pemisah, dan jangan menggandakan kode negara atau mengubah nomor internasional yang sudah benar.
+2. Pisahkan nomor yang ditampilkan kepada manusia dari tujuan tautan; pertahankan teks pesan dan parameter yang di-encode dengan benar. Nomor kosong/tidak dapat digunakan tidak boleh menghasilkan tautan yang seolah valid.
+3. Perbaikan hanya format tujuan tautan, bukan perubahan identitas nomor yang disimpan atau aturan deduplikasi pelanggan. Bila implementasi membutuhkan perubahan kebijakan nomor tersimpan, pisahkan ke heavy lane dengan persetujuan Tech Lead.
+4. Pertahankan grant dan ketentuan berbagi BQ-052: teks WhatsApp tidak boleh mengekspor link kelola atau credential. Tidak ada pengiriman pesan otomatis.
+
+### Tests dan kriteria penerimaan
+
+- Tes formatter: `08...`, `+62...`, `62...`, spasi/tanda hubung, nomor internasional valid, dan kosong; tidak terjadi prefiks ganda.
+- Rendering route aktual dengan nomor fixture lokal: tombol Bantuan, portal individual/grup, kartu booking owner, dan CRM menghasilkan tujuan internasional yang konsisten.
+- Teks kontak tetap terbaca; `target="_blank"` tetap memiliki `rel="noopener noreferrer"`. Periksa klik bantuan pada browser mobile tanpa mengirim pesan nyata.
+- Requirement terkait: FR-PUBLIC-004, FR-BOOKING-008, FR-MANAGE-003, NFR-UX-002. Tambahkan bukti implementasi/PR di Evidence setelah selesai; bukti audit di atas bukan bukti perbaikan.
 
 ## Evidence (fill when done)

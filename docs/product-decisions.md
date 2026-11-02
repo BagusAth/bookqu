@@ -129,6 +129,66 @@ Harga slot bisa berbeda, misalnya slot akhir pekan lebih mahal atau owner memasa
 
 ---
 
+### D-007 · Peta halaman owner v1: halaman apa saja dan isinya apa
+
+*Status:* Menunggu · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* tidak
+
+*Masalah*
+Halaman owner dibangun dari daftar nama halaman tanpa penjelasan isinya, jadi isinya dikarang sendiri oleh yang membangun. Akibatnya detail booking ada di tiga tempat dengan tombol yang berbeda, grafik ada di dashboard dan di analitik sekaligus, ada panel dan pengaturan yang tidak berfungsi, dan pengaturan batas pembatalan malah ada di halaman jadwal. Rincian lengkap setiap halaman ada di `docs/owner-portal.md`.
+
+*Usulan keputusan*
+1. Menu owner menjadi 11 halaman (dari 15): Beranda, Kalender, Booking, Pelanggan, Ulasan; kelompok *Kelola*: Layanan, Jadwal; kelompok *Keuangan*: Saldo, Laporan; di bawah: Pengaturan, Langganan. Notifikasi cukup dari ikon lonceng.
+2. Setiap halaman punya satu tugas:
+   - *Beranda:* hanya hari ini dan hal yang perlu ditindaklanjuti, tanpa grafik.
+   - *Kalender:* operasional harian dan booking walk-in.
+   - *Booking:* mencari dan mengelola booking.
+   - *Jadwal:* hanya pengaturan slot, harga, dan hari libur.
+   - *Laporan:* grafik dan tren.
+3. Kategori menjadi tab di dalam Layanan. Analitik dan laporan jadwal digabung menjadi satu halaman Laporan untuk paket Medium ke atas.
+4. Logo, banner, dan warna halaman booking bisa diatur semua paket di *Pengaturan → Halaman Booking*. Saat ini fitur ini tersembunyi, jadi halaman booking bisnis tidak bisa diberi logo.
+5. Batas waktu pembatalan dan pindah jadwal pindah ke *Pengaturan → Kebijakan Booking* (tempat yang sama dengan pengaturan refund di D-001).
+6. Arti "staf" dipilih salah satu:
+   - (a) *anggota tim yang bisa login* ke dashboard dengan hak akses terbatas (usulan, dikerjakan setelah rilis); atau
+   - (b) *penyedia layanan yang dipilih pelanggan saat booking*, yang butuh perombakan besar pada jadwal.
+
+   Sampai dipilih, modul staf tetap tersembunyi.
+7. Dihapus, bukan disembunyikan:
+   - halaman Integrasi: isinya hanya kartu "segera hadir" dan status sistem platform; integrasi nanti ditaruh di halaman yang sesuai tugasnya;
+   - pengelola media (Assets);
+   - pengaturan payment gateway milik owner (BYOPG): bertentangan dengan model semua pembayaran lewat rekening platform.
+8. Promo/voucher dan item tambahan (add-on) tetap tersembunyi. Keduanya dirilis setelah perhitungan harga di checkout siap.
+9. Mulai sekarang, halaman atau fitur owner baru harus ditulis dulu isinya di `docs/owner-portal.md` dan disetujui, baru dibangun.
+
+*Kalau belum diputuskan:* halaman tetap seperti sekarang. Yang tetap dikerjakan sebelum rilis hanya menghapus hal yang palsu atau tidak berfungsi (panel harga massal, pengaturan notifikasi yang tidak tersimpan, menu Integrasi).
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-008 · Daftar fitur paket hanya berisi fitur yang benar-benar ada
+
+*Status:* Menunggu · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Daftar fitur paket di halaman harga dan halaman langganan menjanjikan banyak hal yang belum ada, tersembunyi, atau memang di luar lingkup BookQu. Contohnya staf dan role management, pengingat WhatsApp, promo & voucher, BYOPG, multi-lokasi, white-label, dan automation workflow. Pelanggan yang membayar Medium atau Pro hampir tidak mendapat apa pun selain batas booking yang lebih besar. Ini berisiko keluhan dan permintaan uang kembali.
+
+*Usulan keputusan*
+1. Daftar fitur hanya memuat fitur yang sudah dirilis untuk paket itu. Fitur yang sedang dikerjakan boleh tampil dengan label "Segera hadir", paling banyak dua per paket.
+2. *Small:* semua alur inti (halaman booking, kalender dan slot, booking, pelanggan, ulasan, saldo, notifikasi email, invoice), maksimal 5 layanan dan 300 booking per bulan.
+3. *Medium:* layanan tanpa batas, 500 booking per bulan, ditambah Laporan dan ekspor CSV (label "Segera hadir" sampai dirilis).
+4. *Pro:* booking tanpa batas. Halaman booking kustom dan domain sendiri tampil sebagai "Segera hadir" (D-005).
+5. Dihapus dari daftar: staf, role management, advanced permission, "Customer CRM" (data pelanggan sudah ada di semua paket), pengingat WhatsApp, promo & voucher, BYOPG, multi-lokasi, white-label, automation workflow, advanced analytics. "Priority support" dihapus kecuali ada komitmen layanan yang jelas.
+6. Harga tidak berubah. Karena nilai Pro saat rilis kecil, Product Lead memilih salah satu:
+   - (a) Pro tetap dijual dengan harga sekarang (usulan);
+   - (b) Pro diturunkan harganya sampai fitur Pro siap;
+   - (c) Pro tidak dijual dulu.
+
+*Kalau belum diputuskan:* poin 1 dan 5 tetap diterapkan sebelum rilis (dikerjakan di BQ-115), supaya tidak menjual fitur yang tidak ada.
+
+*Jawaban Product Lead:* —
+
+---
+
 ## Untuk diketahui (tidak perlu keputusan)
 
 Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
