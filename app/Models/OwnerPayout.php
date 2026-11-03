@@ -13,6 +13,8 @@ class OwnerPayout extends Model
     protected $fillable = [
         'idtenant',
         'request_key',
+        'payout_account_id',
+        'bank_kode',
         'jumlah',
         'status',
         'requested_at',
@@ -38,5 +40,11 @@ class OwnerPayout extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, 'idtenant');
+    }
+
+    public function payoutAccount(): BelongsTo
+    {
+        // scope-bypass: payout references its own snapshot account row regardless of current tenant context
+        return $this->belongsTo(TenantPayoutAccount::class, 'payout_account_id')->withoutGlobalScopes()->withTrashed();
     }
 }

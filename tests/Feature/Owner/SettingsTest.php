@@ -3,6 +3,7 @@
 namespace Tests\Feature\Owner;
 
 use App\Models\Tenant;
+use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -88,12 +89,20 @@ class SettingsTest extends TestCase
         // Staged module under test is released explicitly (ADR-0011)
         config(['modules.balance' => 'released']);
 
+        $account = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'Bank Central Asia (BCA)',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
+            'is_default' => true,
+            'changed_at' => now(),
+        ]);
+
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
             'jumlah' => 200000,
-            'bank_nama' => 'BCA',
-            'nomor_rekening' => '1234567890',
-            'nama_pemilik_rekening' => 'John Doe',
+            'payout_account_id' => $account->id,
         ]);
 
         $response->assertRedirect(route('owner.settings.balance'));
@@ -103,6 +112,8 @@ class SettingsTest extends TestCase
             'idtenant' => $this->tenant->id,
             'jumlah' => 200000,
             'status' => 'pending',
+            'payout_account_id' => $account->id,
+            'bank_kode' => 'BCA',
         ]);
 
         // Saldo deducted
@@ -117,12 +128,20 @@ class SettingsTest extends TestCase
         // Staged module under test is released explicitly (ADR-0011)
         config(['modules.balance' => 'released']);
 
+        $account = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'Bank Central Asia (BCA)',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
+            'is_default' => true,
+            'changed_at' => now(),
+        ]);
+
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
             'jumlah' => 600000,
-            'bank_nama' => 'BCA',
-            'nomor_rekening' => '1234567890',
-            'nama_pemilik_rekening' => 'John Doe',
+            'payout_account_id' => $account->id,
         ]);
 
         $response->assertSessionHasErrors('jumlah');
@@ -138,12 +157,20 @@ class SettingsTest extends TestCase
         // Staged module under test is released explicitly (ADR-0011)
         config(['modules.balance' => 'released']);
 
+        $account = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'Bank Central Asia (BCA)',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
+            'is_default' => true,
+            'changed_at' => now(),
+        ]);
+
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
             'jumlah' => 10000.001,
-            'bank_nama' => 'BCA',
-            'nomor_rekening' => '1234567890',
-            'nama_pemilik_rekening' => 'John Doe',
+            'payout_account_id' => $account->id,
         ]);
 
         $response->assertSessionHasErrors('jumlah');

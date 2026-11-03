@@ -52,7 +52,12 @@
                             <div class="space-y-1 text-sm">
                                 <p class="font-bold text-slate-900">{{ $payout->tenant?->namabisnis ?? 'Tenant #'.$payout->idtenant }}</p>
                                 <p class="text-xl font-extrabold text-[#4F46E5]">Rp {{ number_format((float) $payout->jumlah, 0, ',', '.') }}</p>
-                                <p class="text-slate-600">{{ $payout->bank_nama ?? '-' }} · {{ $payout->nomor_rekening ?? '-' }} · a.n. {{ $payout->nama_pemilik_rekening ?? '-' }}</p>
+                                <p class="text-slate-600">
+                                    {{ $payout->bank_nama ?? '-' }} · {{ $payout->nomor_rekening ?? '-' }} · a.n. {{ $payout->nama_pemilik_rekening ?? '-' }}
+                                    @if ($payout->payoutAccount?->changed_at && $payout->requested_at && $payout->payoutAccount->changed_at >= $payout->requested_at->copy()->subHours(24))
+                                        <span class="ml-1.5 inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200">Rekening baru (&lt; 24 jam)</span>
+                                    @endif
+                                </p>
                                 <p class="text-xs text-slate-400">Diajukan {{ optional($payout->requested_at)->format('d M Y, H:i') }}</p>
                                 @if ($payout->transfer_reference)
                                     <p class="text-xs text-slate-500">Ref transfer: {{ $payout->transfer_reference }}</p>

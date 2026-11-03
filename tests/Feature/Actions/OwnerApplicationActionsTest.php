@@ -19,6 +19,7 @@ use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -189,12 +190,22 @@ class OwnerApplicationActionsTest extends TestCase
 
     public function test_request_owner_payout_action(): void
     {
+        $account = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'Bank Central Asia (BCA)',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
+            'is_default' => true,
+            'changed_at' => now(),
+        ]);
+
         $action = app(RequestOwnerPayout::class);
 
         $payout = $action->execute(
             $this->tenant,
             200000,
-            ['bank_nama' => 'BCA', 'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'John Doe'],
+            $account,
             (string) Str::uuid()
         );
 
@@ -206,13 +217,23 @@ class OwnerApplicationActionsTest extends TestCase
 
     public function test_request_owner_payout_action_rejects_insufficient_balance(): void
     {
+        $account = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'Bank Central Asia (BCA)',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
+            'is_default' => true,
+            'changed_at' => now(),
+        ]);
+
         $action = app(RequestOwnerPayout::class);
 
         $this->expectException(ValidationException::class);
         $action->execute(
             $this->tenant,
             9999999,
-            ['bank_nama' => 'BCA', 'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'John Doe'],
+            $account,
             (string) Str::uuid()
         );
     }

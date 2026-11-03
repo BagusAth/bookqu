@@ -6,6 +6,7 @@ namespace App\Actions\Owner;
 
 use App\Models\OwnerPayout;
 use App\Models\Tenant;
+use App\Models\TenantPayoutAccount;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -15,11 +16,9 @@ class RequestOwnerPayout
      * Request payout withdrawal for tenant on platform mode. The amount is held (debited)
      * at request time; a rejected or failed payout returns it (BQ-015).
      *
-     * @param  array{bank_nama: string, nomor_rekening: string, nama_pemilik_rekening: string}  $bankAccount
-     *
      * @throws ValidationException
      */
-    public function execute(Tenant $tenant, float $amount, array $bankAccount, string $requestKey): OwnerPayout
+    public function execute(Tenant $tenant, float $amount, TenantPayoutAccount $account, string $requestKey): OwnerPayout
     {
         if (! is_finite($amount) || $amount < 10000 || abs($amount - round($amount, 2)) > 0.00001) {
             throw ValidationException::withMessages([
@@ -27,7 +26,7 @@ class RequestOwnerPayout
             ]);
         }
 
-        return DB::transaction(function () use ($tenant, $amount, $bankAccount, $requestKey): OwnerPayout {
+        return DB::transaction(function () use ($tenant, $amount, $account, $requestKey): OwnerPayout {
             // Serialize withdrawals for this tenant so parallel requests cannot
             // both spend the same previously-read balance.
             $lockedTenant = Tenant::query()->lockForUpdate()->find($tenant->id);
@@ -45,6 +44,11 @@ class RequestOwnerPayout
             if ($existing !== null) {
                 return $existing;
             }
+
+            // Reload scoped account under tenant lock
+            $lockedAccount = TenantPayoutAccount::where('idtenant', $lockedTenant->id)
+                ->whereNull('deleted_at')
+                ->findOrFail($account->id);
 
             if ($lockedTenant->payment_mode !== 'platform') {
                 throw ValidationException::withMessages([
@@ -66,12 +70,14 @@ class RequestOwnerPayout
             return OwnerPayout::create([
                 'idtenant' => $lockedTenant->id,
                 'request_key' => $requestKey,
+                'payout_account_id' => $lockedAccount->id,
+                'bank_kode' => $lockedAccount->bank_kode,
+                'bank_nama' => $lockedAccount->bank_nama,
+                'nomor_rekening' => $lockedAccount->nomor_rekening,
+                'nama_pemilik_rekening' => $lockedAccount->nama_pemilik_rekening,
                 'jumlah' => $amount,
                 'status' => 'pending',
                 'requested_at' => now(),
-                'bank_nama' => $bankAccount['bank_nama'],
-                'nomor_rekening' => $bankAccount['nomor_rekening'],
-                'nama_pemilik_rekening' => $bankAccount['nama_pemilik_rekening'],
             ]);
         });
     }

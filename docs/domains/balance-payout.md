@@ -8,22 +8,23 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 |---|---|
 | `owner.settings.balance` (released by BQ-015: balance, withdraw form, history) | `Owner/OwnerBalanceController` |
 | `owner.payouts.proof` (own tenant only) | `OwnerBalanceController::proof` |
+| `owner.payout-accounts.*` (CRUD saved payout accounts) | `Owner/OwnerPayoutAccountController` → `Actions/Owner/*TenantPayoutAccount` |
 | `admin.payouts*` (`role:admin`) | `Admin/AdminPayoutController` → `Actions/Admin/ProcessOwnerPayout` |
-| `owner.payouts.request` | `Owner/OwnerSettingController::requestPayout` → `Actions/Owner/RequestOwnerPayout` |
+| `owner.payouts.request` | `Owner/OwnerBalanceController::store` → `Actions/Owner/RequestOwnerPayout` |
 
-`RequestOwnerPayout` locks the tenant row, checks `saldo_platform`, holds (debits) the amount and creates an `owner_payouts` row with the bank account in one transaction. `TenantBalanceLedger` credits a booking payment's full amount on provider success (fee 0%, idempotent through `payments.balance_credited_at`, inside the lifecycle's tenant-locked transaction) and debits a refund of a credited payment. `ProcessOwnerPayout` applies `Domain/Payout/PayoutState` transitions under the tenant lock; `rejected` and `failed` return the amount; owners get a database notification.
+`RequestOwnerPayout` locks the tenant row, checks `saldo_platform`, holds (debits) the amount and creates an `owner_payouts` row with the chosen saved bank account snapshot in one transaction. `TenantBalanceLedger` credits a booking payment's full amount on provider success (fee 0%, idempotent through `payments.balance_credited_at`, inside the lifecycle's tenant-locked transaction) and debits a refund of a credited payment. `ProcessOwnerPayout` applies `Domain/Payout/PayoutState` transitions under the tenant lock; `rejected` and `failed` return the amount; owners get a database notification.
 
 ## Data
 
-`tenants.saldo_platform`; `payments.balance_credited_at`; `owner_payouts`: `idtenant`, `request_key` (UUID), amount, bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk), `processed_by`. `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
+`tenants.saldo_platform`; `tenant_payout_accounts`: `idtenant`, `bank_kode`, `bank_nama`, `nomor_rekening`, `nama_pemilik_rekening`, `is_default`, `changed_at` (max 3 accounts per tenant, BQ-123); `payments.balance_credited_at`; `owner_payouts`: `idtenant`, `request_key` (UUID), `payout_account_id`, `bank_kode`, amount, snapshot bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk), `processed_by`. `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
 
 ## Evidence
 
-`tests/Feature/Payout/OwnerPayoutFlowTest.php`, `tests/Feature/Actions/OwnerApplicationActionsTest.php`, `tests/Feature/Owner/SettingsTest.php`, `tests/Feature/Owner/DeleteAccountWithOpenFundsTest.php`.
+`tests/Feature/Payout/OwnerPayoutFlowTest.php`, `tests/Feature/Payout/TenantPayoutAccountTest.php`, `tests/Feature/Actions/OwnerApplicationActionsTest.php`, `tests/Feature/Owner/SettingsTest.php`, `tests/Feature/Owner/DeleteAccountWithOpenFundsTest.php`.
 
 ## Status
 
-Functional: Implemented (BQ-015, BQ-103, BQ-122) · Verification: Verified (`OwnerPayoutFlowTest`) · Architecture: Target
+Functional: Implemented (BQ-015, BQ-103, BQ-122, BQ-123) · Verification: Verified (`OwnerPayoutFlowTest`, `TenantPayoutAccountTest`) · Architecture: Target
 
 ## Known gaps
 

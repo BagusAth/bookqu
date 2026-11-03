@@ -25,6 +25,7 @@ use App\Http\Controllers\Owner\OwnerIntegrationController;
 use App\Http\Controllers\Owner\OwnerLandingPageController;
 use App\Http\Controllers\Owner\OwnerNotificationController;
 use App\Http\Controllers\Owner\OwnerPaymentSettingsController;
+use App\Http\Controllers\Owner\OwnerPayoutAccountController;
 use App\Http\Controllers\Owner\OwnerProgramController;
 use App\Http\Controllers\Owner\OwnerReviewController;
 use App\Http\Controllers\Owner\OwnerScheduleController;
@@ -102,7 +103,7 @@ Route::prefix('owner')
         Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
         Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');
         Route::post('/settings/payment', [OwnerSettingController::class, 'updatePaymentSettings'])->middleware('module:direct-payment')->name('owner.settings.payment');
-        Route::post('/payouts', [OwnerSettingController::class, 'requestPayout'])->middleware('module:balance')->name('owner.payouts.request');
+        Route::post('/payouts', [OwnerBalanceController::class, 'store'])->middleware('module:balance')->name('owner.payouts.request');
 
         // ── Checkout Routes (tanpa owner.profile middleware, karena ini billing) ──
         Route::get('/checkout/{plan}', [OwnerCheckoutController::class, 'showCheckout'])->name('owner.checkout');
@@ -200,6 +201,12 @@ Route::prefix('owner')
             Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->middleware('module:assets')->name('owner.settings.assets.destroy');
             Route::get('/settings/balance', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.settings.balance');
             Route::get('/payouts/{payout}/proof', [OwnerBalanceController::class, 'proof'])->whereNumber('payout')->middleware('module:balance')->name('owner.payouts.proof');
+            Route::prefix('payout-accounts')->middleware(['module:balance', 'throttle:3,10'])->group(function () {
+                Route::post('/', [OwnerPayoutAccountController::class, 'store'])->name('owner.payout-accounts.store');
+                Route::put('/{account}', [OwnerPayoutAccountController::class, 'update'])->whereNumber('account')->name('owner.payout-accounts.update');
+                Route::delete('/{account}', [OwnerPayoutAccountController::class, 'destroy'])->whereNumber('account')->name('owner.payout-accounts.destroy');
+                Route::post('/{account}/default', [OwnerPayoutAccountController::class, 'makeDefault'])->whereNumber('account')->name('owner.payout-accounts.default');
+            });
             Route::get('/settings/integrations', [OwnerIntegrationController::class, 'index'])->middleware('module:integrations')->name('owner.settings.integrations');
         });
     });

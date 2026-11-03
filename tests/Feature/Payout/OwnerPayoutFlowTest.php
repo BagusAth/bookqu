@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use App\Notifications\OwnerPayoutStatusChangedNotification;
 use Carbon\Carbon;
@@ -34,6 +35,8 @@ class OwnerPayoutFlowTest extends TestCase
 
     private User $admin;
 
+    private TenantPayoutAccount $payoutAccount;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,6 +47,16 @@ class OwnerPayoutFlowTest extends TestCase
         $this->owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $this->tenant = Tenant::factory()->create(['iduser' => $this->owner->id, 'saldo_platform' => 0, 'payment_mode' => 'platform']);
         $this->admin = User::factory()->create(['role' => 'admin', 'email_verified_at' => now()]);
+
+        $this->payoutAccount = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'BCA',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'Pemilik',
+            'is_default' => true,
+            'changed_at' => now(),
+        ]);
     }
 
     public function test_provider_success_credits_the_full_amount_once(): void
@@ -84,9 +97,7 @@ class OwnerPayoutFlowTest extends TestCase
         $this->actingAs($this->owner)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
             'jumlah' => 100000,
-            'bank_nama' => 'BCA',
-            'nomor_rekening' => '1234567890',
-            'nama_pemilik_rekening' => 'Pemilik',
+            'payout_account_id' => $this->payoutAccount->id,
         ])->assertRedirect(route('owner.settings.balance'));
 
         $this->assertDatabaseHas('owner_payouts', ['idtenant' => $this->tenant->id, 'status' => 'pending', 'nomor_rekening' => '1234567890']);
@@ -101,8 +112,8 @@ class OwnerPayoutFlowTest extends TestCase
         $this->actingAs($this->owner)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
             'jumlah' => 100000,
-            'nomor_rekening' => '12-AB',
-        ])->assertSessionHasErrors(['bank_nama', 'nomor_rekening', 'nama_pemilik_rekening']);
+            'payout_account_id' => 999999,
+        ])->assertSessionHasErrors(['payout_account_id']);
         $this->assertDatabaseCount('owner_payouts', 0);
     }
 
@@ -138,9 +149,7 @@ class OwnerPayoutFlowTest extends TestCase
         $payload = [
             'request_key' => $requestKey,
             'jumlah' => 100000,
-            'bank_nama' => 'BCA',
-            'nomor_rekening' => '1234567890',
-            'nama_pemilik_rekening' => 'Pemilik',
+            'payout_account_id' => $this->payoutAccount->id,
         ];
 
         $this->actingAs($this->owner)->post('/owner/payouts', $payload)->assertRedirect(route('owner.settings.balance'));
@@ -160,17 +169,13 @@ class OwnerPayoutFlowTest extends TestCase
         $this->actingAs($this->owner)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
             'jumlah' => 100000,
-            'bank_nama' => 'BCA',
-            'nomor_rekening' => '1234567890',
-            'nama_pemilik_rekening' => 'Pemilik',
+            'payout_account_id' => $this->payoutAccount->id,
         ])->assertRedirect(route('owner.settings.balance'));
 
         $this->actingAs($this->owner)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
             'jumlah' => 50000,
-            'bank_nama' => 'BCA',
-            'nomor_rekening' => '1234567890',
-            'nama_pemilik_rekening' => 'Pemilik',
+            'payout_account_id' => $this->payoutAccount->id,
         ])->assertRedirect(route('owner.settings.balance'));
 
         $this->assertEquals(150000, (float) $this->tenant->fresh()->saldo_platform);

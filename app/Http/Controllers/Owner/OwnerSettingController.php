@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Owner\DeleteOwnerAccount;
-use App\Actions\Owner\RequestOwnerPayout;
 use App\Actions\Owner\UpdateOwnerAccount;
 use App\Actions\Tenant\CreateInitialProfile;
 use App\Actions\Tenant\UpdateBusinessProfile;
 use App\Actions\Tenant\UpdatePaymentSettings;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Owner\RequestPayoutRequest;
 use App\Http\Requests\Owner\UpdateOwnerAccountRequest;
 use App\Http\Requests\Tenant\StoreInitialProfileRequest;
 use App\Http\Requests\Tenant\UpdateBusinessProfileRequest;
@@ -119,23 +117,6 @@ class OwnerSettingController extends Controller
         $updatePaymentSettings->execute($tenant, $request->validated());
 
         return redirect()->route('owner.settings')->with('sukses', 'Pengaturan pembayaran berhasil diperbarui.');
-    }
-
-    public function requestPayout(RequestPayoutRequest $request, RequestOwnerPayout $requestOwnerPayout): RedirectResponse
-    {
-        $tenant = $this->resolveTenant();
-        if (! $tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
-
-        $requestOwnerPayout->execute(
-            $tenant,
-            (float) $request->input('jumlah'),
-            $request->safe()->only(['bank_nama', 'nomor_rekening', 'nama_pemilik_rekening']),
-            (string) $request->input('request_key')
-        );
-
-        return redirect()->route('owner.settings.balance')->with('sukses', 'Permintaan withdraw berhasil dibuat dan menunggu review admin.');
     }
 
     /**

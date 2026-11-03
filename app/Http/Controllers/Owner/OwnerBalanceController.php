@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Owner\RequestOwnerPayout;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Owner\RequestPayoutRequest;
 use App\Models\OwnerPayout;
 use App\Models\Payment;
+use App\Models\TenantPayoutAccount;
 use App\Traits\ResolvesOwnerTenant;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -37,9 +41,35 @@ class OwnerBalanceController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+        $payoutAccounts = TenantPayoutAccount::where('idtenant', $tenant?->id)
+            ->orderByDesc('is_default')
+            ->latest()
+            ->get();
+
         $requestKey = (string) Str::uuid();
 
-        return view('owner.balance', compact('tenant', 'availableBalance', 'pendingSettlement', 'totalEarnings', 'payouts', 'requestKey'));
+        return view('owner.balance', compact('tenant', 'availableBalance', 'pendingSettlement', 'totalEarnings', 'payouts', 'payoutAccounts', 'requestKey'));
+    }
+
+    public function store(RequestPayoutRequest $request, RequestOwnerPayout $requestOwnerPayout): RedirectResponse
+    {
+        $tenant = $this->resolveTenant();
+        if (! $tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        $account = TenantPayoutAccount::where('idtenant', $tenant->id)
+            ->whereNull('deleted_at')
+            ->findOrFail((int) $request->input('payout_account_id'));
+
+        $requestOwnerPayout->execute(
+            $tenant,
+            (float) $request->input('jumlah'),
+            $account,
+            (string) $request->input('request_key')
+        );
+
+        return redirect()->route('owner.settings.balance')->with('sukses', 'Permintaan withdraw berhasil dibuat dan menunggu review admin.');
     }
 
     /**

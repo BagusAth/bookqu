@@ -18,7 +18,7 @@ class AdminPayoutController extends Controller
 
         // scope-bypass: platform admin (role:admin route) lists payouts of every tenant
         $payouts = OwnerPayout::withoutGlobalScopes()
-            ->with('tenant:id,namabisnis')
+            ->with(['tenant:id,namabisnis', 'payoutAccount'])
             ->when(is_string($status) && $status !== '', fn ($query) => $query->where('status', $status))
             ->orderByRaw("CASE WHEN status IN ('pending', 'approved') THEN 0 ELSE 1 END")
             ->orderByDesc('requested_at')
