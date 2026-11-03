@@ -251,6 +251,8 @@ class OwnerApplicationActionsTest extends TestCase
     {
         $action = app(DeleteOwnerAccount::class);
 
+        $this->tenant->update(['saldo_platform' => 0]);
+
         $action->execute($this->user, $this->tenant, 'owner@example.com');
 
         $this->assertDatabaseMissing('tenants', ['id' => $this->tenant->id]);
