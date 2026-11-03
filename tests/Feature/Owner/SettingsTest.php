@@ -163,6 +163,8 @@ class SettingsTest extends TestCase
 
     public function test_owner_can_delete_account_with_matching_email_confirmation(): void
     {
+        $this->tenant->update(['saldo_platform' => 0]);
+
         $userId = $this->user->id;
         $tenantId = $this->tenant->id;
 

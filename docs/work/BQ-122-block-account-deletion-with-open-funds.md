@@ -2,7 +2,7 @@
 id: BQ-122
 title: Block owner account deletion with open balance or in-flight payouts
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 8
 domain: balance-payout
@@ -56,4 +56,12 @@ If an owner deletes an account when:
 
 ## Evidence (fill when done)
 
-_Fill in when done._
+- Unit & feature test `tests/Feature/Owner/DeleteAccountWithOpenFundsTest.php` covers:
+  1. Rejection when `saldo_platform > 0` with message "Tarik saldo Anda terlebih dahulu sebelum menghapus akun."
+  2. Rejection when `saldo_platform < 0` with message "Akun tidak dapat dihapus karena saldo minus. Hubungi admin BookQu."
+  3. Rejection when in-flight payout is `pending` with message "Masih ada pengajuan withdraw yang sedang diproses."
+  4. Rejection when in-flight payout is `approved` with message "Masih ada pengajuan withdraw yang sedang diproses."
+  5. Permission to delete when `saldo_platform == 0` and all past payouts are in terminal states (`success`, `failed`, `rejected`).
+  6. Direct validation exception verification on `DeleteOwnerAccount::execute(...)`.
+- `tests/Feature/Actions/OwnerApplicationActionsTest.php` and `tests/Feature/Owner/SettingsTest.php` updated to align with balance precondition.
+- All test suites passing.
