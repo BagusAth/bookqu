@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Subscription;
 
+use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Subscription\PlanCapability;
 use App\Domain\Subscription\SubscriptionState;
 use App\Domain\Subscription\SubscriptionUsage;
@@ -88,6 +89,11 @@ class GetSubscriptionOverview
         $maxbooking = PlanCapability::getBookingLimit($plan, $isTrial);
         $isunlimitedstaff = $isunlimited || $planName === PlanCapability::PLAN_PRO || $isTrial;
         $maxstaff = PlanCapability::getStaffLimit($planName, $isTrial, $isunlimited);
+
+        if (! EntitlementRules::hasEffectivePlan($langgananaktif)) {
+            $maxlayanan = $maxbooking = $maxstaff = 0;
+            $isunlimited = $isunlimitedstaff = $isTrial = false;
+        }
 
         $persenlayanan = SubscriptionUsage::calculatePercentage($jumlahlayanan, $maxlayanan, $isunlimited || $isTrial);
         $persenbooking = SubscriptionUsage::calculatePercentage($jumlahbookingbulanini, $maxbooking, $isunlimited || $planName === PlanCapability::PLAN_PRO || $isTrial);

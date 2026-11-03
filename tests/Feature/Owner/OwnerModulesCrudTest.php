@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
@@ -51,6 +52,8 @@ class OwnerModulesCrudTest extends TestCase
             'nomorhp' => '0811111111',
             'saldo_platform' => 500000,
         ]);
+        app(CreateTrialSubscription::class)->execute($this->tenantA)->forceFill(['created_at' => now()->subMinute()])->save();
+
         $this->serviceA = Service::create([
             'idtenant' => $this->tenantA->id,
             'namalayanan' => 'Foto Wisuda A',

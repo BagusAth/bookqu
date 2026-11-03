@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
@@ -71,6 +72,8 @@ class ThreeStepBookingFlowTest extends TestCase
             'alamat' => 'Jl. Olahraga No. 10',
             'nomorhp' => '081234567890',
         ]);
+        // BQ-086: successful writes require a live subscription; assertions stay unchanged.
+        app(CreateTrialSubscription::class)->execute($this->tenant)->forceFill(['created_at' => now()->subMinute()])->save();
 
         $this->service = Service::create([
             'idtenant' => $this->tenant->id,

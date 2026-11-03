@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Dashboard;
 
+use App\Domain\Subscription\EntitlementRules;
+use App\Domain\Subscription\SubscriptionState;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Service;
@@ -11,7 +13,6 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Support\TenantContext;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -160,10 +161,10 @@ class GetOwnerDashboardOverview
             ->latest()
             ->first();
 
-        $sisahari = \App\Domain\Subscription\SubscriptionState::getRemainingTrialDays($langganan);
+        $sisahari = SubscriptionState::getRemainingTrialDays($langganan);
         $statustrial = ($langganan !== null
-            && $langganan->status === \App\Domain\Subscription\SubscriptionState::STATUS_TRIAL
-            && !\App\Domain\Subscription\SubscriptionState::isExpired($langganan)
+            && $langganan->status === SubscriptionState::STATUS_TRIAL
+            && ! SubscriptionState::isExpired($langganan)
             && $langganan->trial_berakhir !== null);
 
         $totalpelanggan = DB::table('bookings')
@@ -180,7 +181,7 @@ class GetOwnerDashboardOverview
             ->limit(5)
             ->get();
 
-        $showProfilePrompt = !$tenant->namabisnis || !$tenant->slug || !$tenant->jenisbisnis || !$tenant->nomorhp;
+        $showProfilePrompt = ! $tenant->namabisnis || ! $tenant->slug || ! $tenant->jenisbisnis || ! $tenant->nomorhp;
         $showPaymentPrompt = ($tenant->payment_mode ?? 'platform') === 'owner'
             && ($tenant->midtrans_status ?? 'pending') !== 'approved';
 
@@ -200,6 +201,7 @@ class GetOwnerDashboardOverview
             'aktivitasterbaru' => $aktivitasterbaru,
             'upcomingbookings' => $upcomingbookings,
             'statustrial' => $statustrial,
+            'subscriptionExpired' => ! EntitlementRules::hasEffectivePlan($langganan),
             'sisahari' => $sisahari,
             'showProfilePrompt' => $showProfilePrompt,
             'showPaymentPrompt' => $showPaymentPrompt,

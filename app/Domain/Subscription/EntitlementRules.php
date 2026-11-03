@@ -18,7 +18,7 @@ final class EntitlementRules
         if ($subscription === null) {
             return [
                 'allowed' => false,
-                'reason'  => 'no_subscription',
+                'reason' => 'no_subscription',
                 'message' => 'Silakan berlangganan untuk mengakses fitur ini.',
             ];
         }
@@ -26,16 +26,20 @@ final class EntitlementRules
         if (SubscriptionState::isExpired($subscription)) {
             return [
                 'allowed' => false,
-                'reason'  => 'expired',
+                'reason' => 'expired',
                 'message' => 'Langganan Anda telah habis, mohon perpanjang.',
             ];
+        }
+
+        if (! self::hasEffectivePlan($subscription)) {
+            return ['allowed' => false, 'reason' => 'no_subscription', 'message' => 'Silakan berlangganan untuk mengakses fitur ini.'];
         }
 
         // Active trial grants full access to all features
         if ($subscription->status === SubscriptionState::STATUS_TRIAL) {
             return [
                 'allowed' => true,
-                'reason'  => 'trial_active',
+                'reason' => 'trial_active',
                 'message' => '',
             ];
         }
@@ -43,25 +47,25 @@ final class EntitlementRules
         $planName = strtolower(trim((string) ($subscription->plan?->namapaket ?? PlanCapability::PLAN_SMALL)));
         $isAllowed = PlanCapability::isFeatureAllowed($planName, $feature, false);
 
-        if (!$isAllowed) {
+        if (! $isAllowed) {
             $requiredFeature = strtolower(trim($feature));
             $msg = match ($requiredFeature) {
-                'pro', PlanCapability::FEATURE_LANDING_PAGE       => 'Fitur ini membutuhkan paket Pro.',
+                'pro', PlanCapability::FEATURE_LANDING_PAGE => 'Fitur ini membutuhkan paket Pro.',
                 'medium', PlanCapability::FEATURE_ANALYTICS,
-                PlanCapability::FEATURE_ANALYTICS_EXPORT          => 'Fitur ini membutuhkan minimal paket Medium.',
-                default                                            => 'Fitur ini tidak tersedia untuk paket Anda.',
+                PlanCapability::FEATURE_ANALYTICS_EXPORT => 'Fitur ini membutuhkan minimal paket Medium.',
+                default => 'Fitur ini tidak tersedia untuk paket Anda.',
             };
 
             return [
                 'allowed' => false,
-                'reason'  => 'insufficient_plan',
+                'reason' => 'insufficient_plan',
                 'message' => $msg,
             ];
         }
 
         return [
             'allowed' => true,
-            'reason'  => 'entitled',
+            'reason' => 'entitled',
             'message' => '',
         ];
     }
@@ -73,35 +77,35 @@ final class EntitlementRules
      */
     public static function canCreateStaff(?Subscription $subscription, int $currentStaffCount): array
     {
-        if ($subscription === null || $subscription->plan === null) {
+        if (! self::hasEffectivePlan($subscription)) {
             return [
-                'allowed'     => true,
-                'maxStaff'    => 0,
-                'isUnlimited' => true,
-                'message'     => null,
+                'allowed' => false,
+                'maxStaff' => 0,
+                'isUnlimited' => false,
+                'message' => 'Bisnis ini belum menerima booking online saat ini.',
             ];
         }
 
-        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && !SubscriptionState::isExpired($subscription);
+        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && ! SubscriptionState::isExpired($subscription);
         $planName = strtolower(trim((string) ($subscription->plan->namapaket ?? PlanCapability::PLAN_SMALL)));
         $isUnlimited = (bool) ($subscription->plan->isunlimited ?? false) || $planName === PlanCapability::PLAN_PRO || $isTrial;
 
         $maxStaff = PlanCapability::getStaffLimit($planName, $isTrial, $isUnlimited);
 
-        if (!$isUnlimited && $maxStaff > 0 && $currentStaffCount >= $maxStaff) {
+        if (! $isUnlimited && $maxStaff > 0 && $currentStaffCount >= $maxStaff) {
             return [
-                'allowed'     => false,
-                'maxStaff'    => $maxStaff,
+                'allowed' => false,
+                'maxStaff' => $maxStaff,
                 'isUnlimited' => false,
-                'message'     => 'Batas maksimal staf untuk paket ' . ucfirst($planName) . ' (' . $maxStaff . ' staf) telah tercapai. Silakan upgrade paket Anda.',
+                'message' => 'Batas maksimal staf untuk paket '.ucfirst($planName).' ('.$maxStaff.' staf) telah tercapai. Silakan upgrade paket Anda.',
             ];
         }
 
         return [
-            'allowed'     => true,
-            'maxStaff'    => $maxStaff,
+            'allowed' => true,
+            'maxStaff' => $maxStaff,
             'isUnlimited' => $isUnlimited,
-            'message'     => null,
+            'message' => null,
         ];
     }
 
@@ -112,33 +116,33 @@ final class EntitlementRules
      */
     public static function canCreateService(?Subscription $subscription, int $currentServicesCount): array
     {
-        if ($subscription === null || $subscription->plan === null) {
+        if (! self::hasEffectivePlan($subscription)) {
             return [
-                'allowed'     => true,
+                'allowed' => false,
                 'maxServices' => 0,
-                'isUnlimited' => true,
-                'message'     => null,
+                'isUnlimited' => false,
+                'message' => 'Bisnis ini belum menerima booking online saat ini.',
             ];
         }
 
-        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && !SubscriptionState::isExpired($subscription);
+        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && ! SubscriptionState::isExpired($subscription);
         $maxServices = PlanCapability::getServiceLimit($subscription->plan, $isTrial);
         $isUnlimited = $maxServices <= 0;
 
-        if (!$isUnlimited && $currentServicesCount >= $maxServices) {
+        if (! $isUnlimited && $currentServicesCount >= $maxServices) {
             return [
-                'allowed'     => false,
+                'allowed' => false,
                 'maxServices' => $maxServices,
                 'isUnlimited' => false,
-                'message'     => 'Batas maksimum layanan (' . $maxServices . ') telah tercapai. Silakan upgrade paket Anda.',
+                'message' => 'Batas maksimum layanan ('.$maxServices.') telah tercapai. Silakan upgrade paket Anda.',
             ];
         }
 
         return [
-            'allowed'     => true,
+            'allowed' => true,
             'maxServices' => $maxServices,
             'isUnlimited' => $isUnlimited,
-            'message'     => null,
+            'message' => null,
         ];
     }
 
@@ -149,67 +153,68 @@ final class EntitlementRules
      */
     public static function canCreateBooking(?Subscription $subscription, int $totalMonthlyBookings, int $requestedSlots = 1): array
     {
-        if ($subscription === null || $subscription->plan === null) {
+        if (! self::hasEffectivePlan($subscription)) {
             return [
-                'allowed'     => true,
-                'maxBooking'  => 0,
-                'remaining'   => 999999,
-                'isUnlimited' => true,
-                'message'     => null,
+                'allowed' => false,
+                'maxBooking' => 0,
+                'remaining' => 0,
+                'isUnlimited' => false,
+                'message' => 'Bisnis ini belum menerima booking online saat ini.',
             ];
         }
 
-        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && !SubscriptionState::isExpired($subscription);
+        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && ! SubscriptionState::isExpired($subscription);
         $maxBooking = PlanCapability::getBookingLimit($subscription->plan, $isTrial);
         $isUnlimited = $maxBooking <= 0;
 
-        if (!$isUnlimited) {
+        if (! $isUnlimited) {
             $remaining = max(0, $maxBooking - $totalMonthlyBookings);
             if (($totalMonthlyBookings + $requestedSlots) > $maxBooking) {
                 return [
-                    'allowed'     => false,
-                    'maxBooking'  => $maxBooking,
-                    'remaining'   => $remaining,
+                    'allowed' => false,
+                    'maxBooking' => $maxBooking,
+                    'remaining' => $remaining,
                     'isUnlimited' => false,
-                    'message'     => 'Kapasitas kuota booking bulanan bisnis ini tidak mencukupi (tersisa ' . $remaining . ' dari ' . $maxBooking . '). Silakan kurangi jumlah slot atau hubungi pemilik bisnis.',
+                    'message' => 'Kapasitas kuota booking bulanan bisnis ini tidak mencukupi (tersisa '.$remaining.' dari '.$maxBooking.'). Silakan kurangi jumlah slot atau hubungi pemilik bisnis.',
                 ];
             }
 
             return [
-                'allowed'     => true,
-                'maxBooking'  => $maxBooking,
-                'remaining'   => $remaining,
+                'allowed' => true,
+                'maxBooking' => $maxBooking,
+                'remaining' => $remaining,
                 'isUnlimited' => false,
-                'message'     => null,
+                'message' => null,
             ];
         }
 
         return [
-            'allowed'     => true,
-            'maxBooking'  => 0,
-            'remaining'   => 999999,
+            'allowed' => true,
+            'maxBooking' => 0,
+            'remaining' => 999999,
             'isUnlimited' => true,
-            'message'     => null,
+            'message' => null,
         ];
     }
 
     public static function isUnlimitedBooking(?Subscription $subscription): bool
     {
-        if ($subscription === null || $subscription->plan === null) {
-            return true;
+        if (! self::hasEffectivePlan($subscription)) {
+            return false;
         }
 
-        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && !SubscriptionState::isExpired($subscription);
+        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && ! SubscriptionState::isExpired($subscription);
+
         return PlanCapability::getBookingLimit($subscription->plan, $isTrial) <= 0;
     }
 
     public static function isUnlimitedStaff(?Subscription $subscription): bool
     {
-        if ($subscription === null || $subscription->plan === null) {
-            return true;
+        if (! self::hasEffectivePlan($subscription)) {
+            return false;
         }
 
-        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && !SubscriptionState::isExpired($subscription);
+        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && ! SubscriptionState::isExpired($subscription);
         $planName = strtolower(trim((string) ($subscription->plan->namapaket ?? PlanCapability::PLAN_SMALL)));
         $isUnlimited = (bool) ($subscription->plan->isunlimited ?? false);
 
@@ -218,11 +223,25 @@ final class EntitlementRules
 
     public static function isUnlimitedServices(?Subscription $subscription): bool
     {
-        if ($subscription === null || $subscription->plan === null) {
-            return true;
+        if (! self::hasEffectivePlan($subscription)) {
+            return false;
         }
 
-        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && !SubscriptionState::isExpired($subscription);
+        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL && ! SubscriptionState::isExpired($subscription);
+
         return PlanCapability::getServiceLimit($subscription->plan, $isTrial) <= 0;
+    }
+
+    /** Whether dates, state and a plan provide an effective entitlement. */
+    public static function hasEffectivePlan(?Subscription $subscription): bool
+    {
+        return SubscriptionState::isActive($subscription) && $subscription?->plan !== null;
+    }
+
+    public static function isPro(?Subscription $subscription): bool
+    {
+        return self::hasEffectivePlan($subscription)
+            && ($subscription->status === SubscriptionState::STATUS_TRIAL
+                || strtolower(trim((string) $subscription->plan?->namapaket)) === PlanCapability::PLAN_PRO);
     }
 }

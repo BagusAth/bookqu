@@ -3,6 +3,7 @@
 namespace Tests\Feature\Customer;
 
 use App\Actions\Payment\PaymentLifecycle;
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Payment\PaymentTransitionOutcome;
 use App\Jobs\SendManagementAccess;
@@ -61,6 +62,8 @@ class PaymentGroupManagementTest extends TestCase
             'cancel_before_hours' => 24,
             'reschedule_before_hours' => 24,
         ]);
+        // BQ-086: successful writes require a live subscription; assertions stay unchanged.
+        app(CreateTrialSubscription::class)->execute($this->tenant)->forceFill(['created_at' => now()->subMinute()])->save();
 
         $this->service = Service::create([
             'idtenant' => $this->tenant->id,

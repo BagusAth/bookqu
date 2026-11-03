@@ -78,6 +78,9 @@ class CreateBooking
                     DB::table('tenants')->where('id', $tenant->id)->lockForUpdate()->first();
                 }
 
+                if (! EntitlementRules::hasEffectivePlan($subscription)) {
+                    return ['quota_error' => true, 'error' => 'Bisnis ini belum menerima booking online saat ini.'];
+                }
                 if (! EntitlementRules::isUnlimitedBooking($subscription)) {
                     $dateCarbon = Carbon::parse($selectedDate, $wib);
                     $totalMonthlyBookings = DB::table('bookings')

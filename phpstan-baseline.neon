@@ -223,30 +223,6 @@ parameters:
 			path: app/Actions/Schedule/UpdateScheduleAvailability.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$isunlimited\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
-			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getBookingLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
-			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getServiceLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>isunlimited" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -299,24 +275,6 @@ parameters:
 			identifier: instanceof.alwaysTrue
 			count: 1
 			path: app/Domain/Schedule/SlotCompatibilityRules.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domain/Subscription/EntitlementRules.php
-
-		-
-			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getBookingLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Domain/Subscription/EntitlementRules.php
-
-		-
-			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getServiceLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Domain/Subscription/EntitlementRules.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>namapaket" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -473,12 +431,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Owner/OwnerBookingController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/Owner/OwnerLandingPageController.php
 
 		-
 			message: '#^Cannot call method format\(\) on string\.$#'
@@ -665,9 +617,3 @@ parameters:
 			identifier: method.nonObject
 			count: 1
 			path: app/Notifications/TrialExpiringNotification.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Providers/AppServiceProvider.php

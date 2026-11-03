@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\Payments\PaymentGatewayInterface;
+use App\Domain\Subscription\EntitlementRules;
 use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -76,12 +77,11 @@ class AppServiceProvider extends ServiceProvider
             if ($tenant) {
                 $langganan = Subscription::where('idtenant', $tenant->id)
                     ->with('plan')
-                    ->where('status', '!=', 'expired')
                     ->latest()
                     ->first();
 
                 if ($langganan && $langganan->plan) {
-                    $adalahpro = str_contains(strtolower($langganan->plan->namapaket), 'pro');
+                    $adalahpro = EntitlementRules::isPro($langganan);
                 }
             }
 

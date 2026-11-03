@@ -24,7 +24,6 @@ return [
     // Removed by BQ-033.
     'plan-name-checks' => [
         'app/Http/Controllers/Owner/OwnerLandingPageController.php' => 2,
-        'app/Providers/AppServiceProvider.php' => 1,
         'resources/views/owner/landing-page.blade.php' => 1,
         'resources/views/owner/subscription.blade.php' => 1,
     ],

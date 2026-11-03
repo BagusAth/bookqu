@@ -29,6 +29,9 @@ final class ValidateBookingDate
             return $selected->toDateString();
         }
         $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+        if (! EntitlementRules::hasEffectivePlan($subscription)) {
+            throw ValidationException::withMessages(['tanggal' => 'Bisnis ini belum menerima booking online saat ini.']);
+        }
         if (! EntitlementRules::isUnlimitedBooking($subscription)) {
             $count = SubscriptionUsage::countMonthlyBookings((int) $tenant->id, $selected);
             $quota = EntitlementRules::canCreateBooking($subscription, $count, 1);

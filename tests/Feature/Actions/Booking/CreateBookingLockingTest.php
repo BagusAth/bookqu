@@ -3,9 +3,11 @@
 namespace Tests\Feature\Actions\Booking;
 
 use App\Actions\Booking\CreateBooking;
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +47,8 @@ class CreateBookingLockingTest extends TestCase
         $this->travelTo(now('Asia/Jakarta')->setTime(8, 0));
 
         $tenant = Tenant::factory()->create();
+        app(TenantContext::class)->setTenantId($tenant->id);
+        app(CreateTrialSubscription::class)->execute($tenant);
         $service = Service::factory()->for($tenant, 'tenant')->create(['harga' => 0]);
         $schedule = Schedule::factory()->create([
             'idtenant' => $tenant->id,

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\AdditionalItem;
 use App\Models\Booking;
 use App\Models\Category;
@@ -47,6 +48,7 @@ class ServicesDomainEndToEndTest extends TestCase
             'alamat' => 'Jl. Senopati No. 12',
             'nomorhp' => '081234567890',
         ]);
+        app(CreateTrialSubscription::class)->execute($this->tenantA)->forceFill(['created_at' => now()->subMinute()])->save();
 
         // Owner B
         $this->ownerB = User::factory()->create([

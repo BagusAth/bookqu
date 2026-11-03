@@ -68,3 +68,5 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 | Reschedule does not evaluate or record slot price differences (price drift across surge/override slots) | BQ-140 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). Not implemented yet: [ADR-0008](../adr/ADR-0008-booking-checkout-draft.md) (typed checkout draft, BQ-029); until then BQ-083's checkout fingerprint keeps the quote equal to the charge.
+
+BQ-086: storefront date selection and booking creation require an effective subscription through `EntitlementRules`, independent of scheduler status cleanup; existing payment outcomes and access grants are unaffected.
