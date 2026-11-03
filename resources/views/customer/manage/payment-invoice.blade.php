@@ -119,7 +119,7 @@
                                     {{ $bk->booking_code }}
                                 </td>
                                 <td class="py-2.5 align-top text-right font-bold text-slate-900 whitespace-nowrap">
-                                    {{ $bk->priceLabel }}
+                                    {{ $invoiceSlotAmount }}
                                 </td>
                             </tr>
                         @endforeach
@@ -128,6 +128,7 @@
             </div>
         </div>
 
+        <p class="text-xs text-slate-600">{{ $invoiceAmountNote }}</p>
         {{-- Totals --}}
         <div class="pt-6 space-y-2 text-xs">
             <div class="flex justify-between text-slate-600">

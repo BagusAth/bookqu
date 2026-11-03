@@ -485,7 +485,7 @@
         $waShareText = "Halo! Berikut invoice resmi reservasi *" . ($booking->layanan->namalayanan ?? 'Layanan') . "* di *" . $booking->tenant->namabisnis . "*\n"
             . "🔖 Kode Booking: *" . $booking->booking_code . "*\n"
             . "📅 Tanggal: " . $bookingDate->translatedFormat('l, d F Y') . " (" . $jamFormatted . " WIB)\n"
-            . "💰 Total: *" . $booking->priceLabel . "* (" . $currentStatus['badge'] . ")";
+            . "💰 Total: *" . $invoiceAmount . "* (" . $currentStatus['badge'] . ")";
         $waShareUrl = 'https://api.whatsapp.com/send?text=' . urlencode($waShareText);
     @endphp
 
@@ -709,19 +709,20 @@
                                     1
                                 </td>
                                 <td class="cell-total" style="text-align: right; font-weight: 800; color: #0F172A; font-size: 14px; white-space: nowrap;">
-                                    <span class="mobile-inline" style="font-weight: 600; color: #64748B;">Total: </span>{{ $booking->priceLabel }}
+                                    <span class="mobile-inline" style="font-weight: 600; color: #64748B;">Total: </span>{{ $invoiceSlotAmount }}
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
+                <p>{{ $invoiceAmountNote }}</p>
                 {{-- ── TOTALS & SUMMARY ── --}}
                 <div class="totals-section">
                     <div class="totals-box">
                         <div class="totals-row">
                             <span>Subtotal Layanan</span>
-                            <span style="font-weight: 600; color: #0F172A;">{{ $booking->priceLabel }}</span>
+                            <span style="font-weight: 600; color: #0F172A;">{{ $invoiceAmount }}</span>
                         </div>
                         <div class="totals-row">
                             <span>Pajak & Layanan</span>
@@ -733,7 +734,7 @@
                         </div>
                         <div class="totals-row grand-total">
                             <span>TOTAL BAYAR</span>
-                            <span class="amount font-mono" style="white-space: nowrap;">{{ $booking->priceLabel }}</span>
+                            <span class="amount font-mono" style="white-space: nowrap;">{{ $invoiceAmount }}</span>
                         </div>
                     </div>
                 </div>
