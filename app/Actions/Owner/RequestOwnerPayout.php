@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Actions\Owner;
 
+use App\Domain\Payout\PayoutEligibility;
 use App\Models\OwnerPayout;
 use App\Models\Tenant;
 use App\Models\TenantPayoutAccount;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -18,15 +20,22 @@ class RequestOwnerPayout
      *
      * @throws ValidationException
      */
-    public function execute(Tenant $tenant, float $amount, TenantPayoutAccount $account, string $requestKey): OwnerPayout
-    {
-        if (! is_finite($amount) || $amount < 10000 || abs($amount - round($amount, 2)) > 0.00001) {
+    public function execute(
+        Tenant $tenant,
+        int|float $amount,
+        TenantPayoutAccount $account,
+        string $requestKey,
+        ?User $user = null
+    ): OwnerPayout {
+        if (! is_finite($amount) || $amount < 10000 || floor((float) $amount) != $amount) {
             throw ValidationException::withMessages([
-                'jumlah' => 'Nominal withdraw minimal Rp 10.000 dan maksimal dua angka desimal.',
+                'jumlah' => 'Nominal withdraw harus berupa angka bulat dan minimal Rp 10.000.',
             ]);
         }
 
-        return DB::transaction(function () use ($tenant, $amount, $account, $requestKey): OwnerPayout {
+        $intAmount = (int) $amount;
+
+        return DB::transaction(function () use ($tenant, $intAmount, $account, $requestKey, $user): OwnerPayout {
             // Serialize withdrawals for this tenant so parallel requests cannot
             // both spend the same previously-read balance.
             $lockedTenant = Tenant::query()->lockForUpdate()->find($tenant->id);
@@ -45,26 +54,62 @@ class RequestOwnerPayout
                 return $existing;
             }
 
-            // Reload scoped account under tenant lock
-            $lockedAccount = TenantPayoutAccount::where('idtenant', $lockedTenant->id)
-                ->whereNull('deleted_at')
-                ->findOrFail($account->id);
-
-            if ($lockedTenant->payment_mode !== 'platform') {
+            // Verify eligibility reasons under lock
+            $owner = $user ?? ($lockedTenant->user instanceof User ? $lockedTenant->user : null);
+            $reasons = PayoutEligibility::reasons($lockedTenant, $owner);
+            if (! empty($reasons)) {
                 throw ValidationException::withMessages([
-                    'jumlah' => 'Withdraw hanya tersedia untuk mode pembayaran platform.',
+                    'jumlah' => $reasons[0],
+                ]);
+            }
+
+            // Check max amount per request
+            $maxAmount = config('payouts.max_amount_per_request');
+            if ($maxAmount !== null && is_numeric($maxAmount) && $intAmount > (int) $maxAmount) {
+                throw ValidationException::withMessages([
+                    'jumlah' => 'Nominal melebihi batas Rp '.number_format((float) $maxAmount, 0, ',', '.').' per pengajuan.',
+                ]);
+            }
+
+            // Check max requests per day (Asia/Jakarta)
+            $maxPerDay = config('payouts.max_requests_per_day');
+            if ($maxPerDay !== null && is_numeric($maxPerDay)) {
+                $todayStart = now('Asia/Jakarta')->startOfDay();
+                $todayEnd = now('Asia/Jakarta')->endOfDay();
+                // scope-bypass: count today's payouts for locked tenant
+                $requestsToday = OwnerPayout::withoutGlobalScopes()
+                    ->where('idtenant', $lockedTenant->id)
+                    ->whereBetween('requested_at', [$todayStart, $todayEnd])
+                    ->count();
+
+                if ($requestsToday >= (int) $maxPerDay) {
+                    throw ValidationException::withMessages([
+                        'jumlah' => 'Batas '.((int) $maxPerDay).' pengajuan withdraw per hari sudah tercapai.',
+                    ]);
+                }
+            }
+
+            // Reload scoped account under tenant lock
+            // scope-bypass: load payout account for locked tenant
+            $lockedAccount = TenantPayoutAccount::withoutGlobalScopes()
+                ->where('idtenant', $lockedTenant->id)
+                ->whereNull('deleted_at')
+                ->find($account->id);
+
+            if (! $lockedAccount) {
+                throw ValidationException::withMessages([
+                    'payout_account_id' => 'Rekening tujuan tidak valid.',
                 ]);
             }
 
             $balance = (float) $lockedTenant->saldo_platform;
-            $amount = round($amount, 2);
-            if ($balance < $amount) {
+            if ($balance < $intAmount) {
                 throw ValidationException::withMessages([
                     'jumlah' => 'Saldo tidak mencukupi.',
                 ]);
             }
 
-            $lockedTenant->saldo_platform = round($balance - $amount, 2);
+            $lockedTenant->saldo_platform = round($balance - $intAmount, 2);
             $lockedTenant->save();
 
             return OwnerPayout::create([
@@ -75,7 +120,7 @@ class RequestOwnerPayout
                 'bank_nama' => $lockedAccount->bank_nama,
                 'nomor_rekening' => $lockedAccount->nomor_rekening,
                 'nama_pemilik_rekening' => $lockedAccount->nama_pemilik_rekening,
-                'jumlah' => $amount,
+                'jumlah' => $intAmount,
                 'status' => 'pending',
                 'requested_at' => now(),
             ]);

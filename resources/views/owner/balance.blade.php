@@ -283,6 +283,21 @@
             @csrf
             <input type="hidden" name="request_key" value="{{ old('request_key', $requestKey) }}">
 
+            @if (! empty($eligibilityReasons))
+                <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-900 flex items-start gap-2.5">
+                    <svg class="h-5 w-5 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                        <p class="font-bold text-amber-900">Belum dapat mengajukan withdraw</p>
+                        <p class="mt-0.5 text-amber-800">{{ $eligibilityReasons[0] }}</p>
+                        @if ($eligibilityReasons[0] === 'Lengkapi profil bisnis terlebih dahulu.')
+                            <a href="{{ route('owner.settings.profile') }}" class="mt-1.5 inline-block font-bold text-indigo-600 hover:underline">Lengkapi profil bisnis &rarr;</a>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
             <div>
                 <label class="text-xs font-semibold text-bq-text">Nominal Penarikan (Rp)
                     <input type="number" name="jumlah" min="10000" step="1" required value="{{ old('jumlah') }}" placeholder="Minimal 10000" class="mt-1.5 w-full sm:max-w-md rounded-xl border border-bq-border px-3.5 py-2 text-sm">
@@ -312,7 +327,7 @@
             </div>
 
             <div>
-                <button type="submit" :disabled="submitting" @disabled($payoutAccounts->isEmpty()) class="inline-flex items-center gap-2 rounded-xl bg-bq-primary px-6 py-2.5 text-xs font-bold text-white hover:bg-bq-primary-hover shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed">
+                <button type="submit" :disabled="submitting" @disabled(! empty($eligibilityReasons)) class="inline-flex items-center gap-2 rounded-xl bg-bq-primary px-6 py-2.5 text-xs font-bold text-white hover:bg-bq-primary-hover shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed">
                     <span x-text="submitting ? 'Memproses…' : 'Ajukan Withdraw'">Ajukan Withdraw</span>
                 </button>
             </div>

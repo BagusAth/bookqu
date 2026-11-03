@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Owner\RequestOwnerPayout;
+use App\Domain\Payout\PayoutEligibility;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\RequestPayoutRequest;
 use App\Models\OwnerPayout;
@@ -12,6 +13,7 @@ use App\Models\Payment;
 use App\Models\TenantPayoutAccount;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -21,7 +23,7 @@ class OwnerBalanceController extends Controller
 {
     use ResolvesOwnerTenant;
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $tenant = $this->resolveTenant();
         $availableBalance = $tenant?->saldo_platform ?? 0;
@@ -48,7 +50,20 @@ class OwnerBalanceController extends Controller
 
         $requestKey = (string) Str::uuid();
 
-        return view('owner.balance', compact('tenant', 'availableBalance', 'pendingSettlement', 'totalEarnings', 'payouts', 'payoutAccounts', 'requestKey'));
+        $eligibilityReasons = $tenant ? PayoutEligibility::reasons($tenant, $request->user()) : [];
+        $isEligible = empty($eligibilityReasons);
+
+        return view('owner.balance', compact(
+            'tenant',
+            'availableBalance',
+            'pendingSettlement',
+            'totalEarnings',
+            'payouts',
+            'payoutAccounts',
+            'requestKey',
+            'eligibilityReasons',
+            'isEligible'
+        ));
     }
 
     public function store(RequestPayoutRequest $request, RequestOwnerPayout $requestOwnerPayout): RedirectResponse
@@ -64,9 +79,10 @@ class OwnerBalanceController extends Controller
 
         $requestOwnerPayout->execute(
             $tenant,
-            (float) $request->input('jumlah'),
+            (int) $request->input('jumlah'),
             $account,
-            (string) $request->input('request_key')
+            (string) $request->input('request_key'),
+            $request->user()
         );
 
         return redirect()->route('owner.settings.balance')->with('sukses', 'Permintaan withdraw berhasil dibuat dan menunggu review admin.');

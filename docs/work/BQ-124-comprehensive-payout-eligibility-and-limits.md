@@ -2,7 +2,7 @@
 id: BQ-124
 title: Comprehensive payout eligibility verification and withdrawal limits
 type: feature
-status: proposed
+status: done
 priority: P1
 phase: 8
 domain: balance-payout
@@ -68,4 +68,9 @@ Currently, `RequestOwnerPayout` only verifies basic numerical conditions and ava
 
 ## Evidence (fill when done)
 
-_Fill in when done._
+- `App\Domain\Payout\PayoutEligibility` implemented checking unverified email, business profile completeness (namabisnis, slug, jenisbisnis, nomorhp), platform payment mode, positive balance, max open payouts (`max_open`), and presence of saved payout accounts in strict priority order.
+- `RequestPayoutRequest` validates `jumlah` as `required|integer|min:10000` with Indonesian error messages.
+- `RequestOwnerPayout` checks eligibility, `max_amount_per_request`, `max_requests_per_day` (Asia/Jakarta), and available balance under tenant lock.
+- `OwnerBalanceController` computes and passes `$eligibilityReasons` and `$isEligible` to the balance view; view renders prominent eligibility rejection alert and disables submission button when ineligible.
+- Unit and Feature tests in `tests/Feature/Payout/PayoutEligibilityTest.php` (12 tests) and `tests/Feature/Payout/OwnerPayoutFlowTest.php` (14 tests) all passing.
+- PHPStan: 0 errors. Pint clean. Architecture rules passing.

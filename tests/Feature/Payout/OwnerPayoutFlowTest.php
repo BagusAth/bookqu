@@ -164,6 +164,7 @@ class OwnerPayoutFlowTest extends TestCase
 
     public function test_payout_requests_with_different_request_keys_create_distinct_payouts(): void
     {
+        config(['payouts.max_open' => null]);
         $this->tenant->update(['saldo_platform' => 300000]);
 
         $this->actingAs($this->owner)->post('/owner/payouts', [

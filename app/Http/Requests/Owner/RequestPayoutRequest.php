@@ -33,7 +33,7 @@ class RequestPayoutRequest extends FormRequest
                     ->where('idtenant', $tenantId)
                     ->whereNull('deleted_at'),
             ],
-            'jumlah' => ['required', 'numeric', 'min:10000', 'decimal:0,2'],
+            'jumlah' => ['required', 'integer', 'min:10000'],
         ];
     }
 
@@ -43,8 +43,13 @@ class RequestPayoutRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'request_key.required' => 'Kunci pengajuan tidak valid.',
+            'request_key.uuid' => 'Kunci pengajuan harus berupa UUID.',
             'payout_account_id.required' => 'Pilih rekening penarikan tujuan.',
             'payout_account_id.exists' => 'Rekening penarikan yang dipilih tidak valid.',
+            'jumlah.required' => 'Nominal withdraw wajib diisi.',
+            'jumlah.integer' => 'Nominal withdraw harus berupa angka bulat.',
+            'jumlah.min' => 'Nominal withdraw minimal Rp 10.000.',
         ];
     }
 }

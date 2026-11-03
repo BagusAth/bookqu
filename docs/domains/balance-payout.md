@@ -12,7 +12,7 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 | `admin.payouts*` (`role:admin`) | `Admin/AdminPayoutController` → `Actions/Admin/ProcessOwnerPayout` |
 | `owner.payouts.request` | `Owner/OwnerBalanceController::store` → `Actions/Owner/RequestOwnerPayout` |
 
-`RequestOwnerPayout` locks the tenant row, checks `saldo_platform`, holds (debits) the amount and creates an `owner_payouts` row with the chosen saved bank account snapshot in one transaction. `TenantBalanceLedger` credits a booking payment's full amount on provider success (fee 0%, idempotent through `payments.balance_credited_at`, inside the lifecycle's tenant-locked transaction) and debits a refund of a credited payment. `ProcessOwnerPayout` applies `Domain/Payout/PayoutState` transitions under the tenant lock; `rejected` and `failed` return the amount; owners get a database notification.
+`RequestOwnerPayout` locks the tenant row, verifies account standing and withdrawal limits via `Domain/Payout/PayoutEligibility` (email verification, complete business profile, platform payment mode, positive balance, `max_open`, saved accounts, and daily caps), holds (debits) the amount and creates an `owner_payouts` row with the chosen saved bank account snapshot in one transaction. `TenantBalanceLedger` credits a booking payment's full amount on provider success (fee 0%, idempotent through `payments.balance_credited_at`, inside the lifecycle's tenant-locked transaction) and debits a refund of a credited payment. `ProcessOwnerPayout` applies `Domain/Payout/PayoutState` transitions under the tenant lock; `rejected` and `failed` return the amount; owners get a database notification.
 
 ## Data
 
@@ -20,11 +20,11 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 
 ## Evidence
 
-`tests/Feature/Payout/OwnerPayoutFlowTest.php`, `tests/Feature/Payout/TenantPayoutAccountTest.php`, `tests/Feature/Actions/OwnerApplicationActionsTest.php`, `tests/Feature/Owner/SettingsTest.php`, `tests/Feature/Owner/DeleteAccountWithOpenFundsTest.php`.
+`tests/Feature/Payout/OwnerPayoutFlowTest.php`, `tests/Feature/Payout/TenantPayoutAccountTest.php`, `tests/Feature/Payout/PayoutEligibilityTest.php`, `tests/Feature/Actions/OwnerApplicationActionsTest.php`, `tests/Feature/Owner/SettingsTest.php`, `tests/Feature/Owner/DeleteAccountWithOpenFundsTest.php`.
 
 ## Status
 
-Functional: Implemented (BQ-015, BQ-103, BQ-122, BQ-123) · Verification: Verified (`OwnerPayoutFlowTest`, `TenantPayoutAccountTest`) · Architecture: Target
+Functional: Implemented (BQ-015, BQ-103, BQ-122, BQ-123, BQ-124) · Verification: Verified (`OwnerPayoutFlowTest`, `TenantPayoutAccountTest`, `PayoutEligibilityTest`) · Architecture: Target
 
 ## Known gaps
 
