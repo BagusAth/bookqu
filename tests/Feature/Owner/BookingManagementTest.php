@@ -298,4 +298,21 @@ class BookingManagementTest extends TestCase
             'namapelanggan' => 'Walkin Blocked Guest',
         ]);
     }
+
+    public function test_reschedule_rejects_a_slot_from_another_selected_date_without_mutation(): void
+    {
+        $booking = Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $this->schedule->id, 'status' => 'paid']);
+        $target = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'tanggal' => '2026-11-05', 'jam_mulai' => '10:00:00', 'jam_selesai' => '11:00:00']);
+        $this->actingAs($this->user)->postJson('/owner/bookings/'.$booking->id.'/reschedule', ['tanggal' => '2026-11-06', 'schedule_id' => $target->id])->assertUnprocessable();
+        $this->assertSame($this->schedule->id, $booking->fresh()->idschedule);
+    }
+
+    public function test_reschedule_accepts_a_slot_matching_the_selected_date(): void
+    {
+        $booking = Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $this->schedule->id, 'status' => 'paid']);
+        $target = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'tanggal' => '2026-11-05', 'jam_mulai' => '10:00:00', 'jam_selesai' => '11:00:00']);
+        $this->actingAs($this->user)->postJson('/owner/bookings/'.$booking->id.'/reschedule', ['tanggal' => '2026-11-05', 'schedule_id' => $target->id])->assertOk()->assertJsonPath('success', true);
+        $this->assertSame($target->id, $booking->fresh()->idschedule);
+        $this->assertSame('2026-11-05', $booking->fresh()->tanggalbooking->toDateString());
+    }
 }

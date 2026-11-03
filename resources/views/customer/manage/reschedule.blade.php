@@ -480,28 +480,32 @@
                     await this.fetchTimeSlots(dateStr);
                 },
 
+                slotRequest: 0,
                 async fetchTimeSlots(dateStr) {
+                    const request = ++this.slotRequest;
+                    const current = () => request === this.slotRequest && this.selectedDate === dateStr;
                     this.loadingSlots = true;
                     this.timeSlots    = [];
                     try {
                         const res = await fetch(`${SLOTS_URL}?tanggal=${dateStr}`);
                         const data = await res.json();
-                        this.timeSlots = data.slots || [];
+                        if (current()) this.timeSlots = data.slots || [];
                     } catch (e) {
-                        this.errorMsg = 'Gagal memuat slot waktu. Silakan coba lagi.';
+                        if (current()) this.errorMsg = 'Gagal memuat slot waktu. Silakan coba lagi.';
                     } finally {
-                        this.loadingSlots = false;
+                        if (current()) this.loadingSlots = false;
                     }
                 },
 
                 selectSlot(slot) {
+                    if (this.loadingSlots || !this.timeSlots.some(item => item.id === slot.id)) return;
                     this.selectedScheduleId = slot.id;
                     this.selectedSlotTime   = slot.jam_mulai;
                     this.errorMsg           = '';
                 },
 
                 submitReschedule() {
-                    if (!this.selectedDate || !this.selectedScheduleId) {
+                    if (this.loadingSlots || !this.selectedDate || !this.selectedScheduleId || !this.timeSlots.some(slot => slot.id === this.selectedScheduleId)) {
                         this.errorMsg = 'Silakan pilih tanggal dan jam terlebih dahulu.';
                         return;
                     }

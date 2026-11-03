@@ -72,3 +72,5 @@ Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (s
 BQ-086: storefront date selection and booking creation require an effective subscription through `EntitlementRules`, independent of scheduler status cleanup; existing payment outcomes and access grants are unaffected.
 
 BQ-121: `GetInvoiceAmounts` projects customer invoice and share totals from `payments.jumlah`. Legacy groups show no invented per-session amounts and explicitly identify the whole-transaction total. Catalog and schedule overrides are not historical charge evidence. HTTP regressions: `BookingManageTest`.
+
+BQ-113: owner reschedule forwards an optional expected date to `ClaimSlots` under the existing tenant-first transaction; direct callers omitting it retain compatibility. Owner/customer slot loaders ignore stale success/error/finally responses, and owner modal closure invalidates pending requests. `BookingManagementTest` covers matching and mismatched dates; Edge harness exercised reversed responses and reopening.
