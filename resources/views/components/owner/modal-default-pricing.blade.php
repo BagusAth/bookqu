@@ -28,9 +28,9 @@
         x-transition:leave="transition ease-in duration-200"
         x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
         x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-        class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[70] flex justify-center overflow-y-auto p-4"
     >
-        <div class="w-full max-w-lg rounded-2xl border border-bq-border bg-bq-surface shadow-2xl" @click.stop>
+        <div class="my-auto w-full max-w-lg rounded-2xl border border-bq-border bg-bq-surface shadow-2xl" @click.stop>
             <div class="flex items-center justify-between border-b border-bq-border px-6 py-4">
                 <div>
                     <h2 class="text-lg font-semibold text-bq-text">Set Default Pricing</h2>

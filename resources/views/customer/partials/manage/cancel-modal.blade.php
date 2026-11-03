@@ -1,6 +1,6 @@
     {{-- ── MODERN CANCEL CONFIRMATION MODAL ── --}}
     <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4"
         x-show="showCancelModal"
         x-cloak
         role="dialog"
@@ -21,7 +21,7 @@
 
         {{-- Modal Card --}}
         <div
-            class="relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-6 sm:p-7 shadow-2xl transition-all z-10"
+            class="my-auto relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-6 sm:p-7 shadow-2xl transition-all z-10"
             x-show="showCancelModal"
             x-transition:enter="ease-out duration-200"
             x-transition:enter-start="opacity-0 scale-95"

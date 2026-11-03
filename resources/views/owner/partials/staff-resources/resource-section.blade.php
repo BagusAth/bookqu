@@ -96,7 +96,7 @@
                                     <div class="flex items-center justify-end gap-1">
                                         <button
                                             type="button"
-                                            @click="openEditResource(@json($resPayload))"
+                                            @click="openEditResource(@js($resPayload))"
                                             class="craft-btn rounded-xl p-1.5 text-[#6e6584] hover:bg-[#f3effe] hover:text-[#382186] transition"
                                             title="Edit"
                                             id="btn-edit-resource-{{ $res->id }}"

@@ -100,7 +100,7 @@
             @endif
 
             {{-- Skeleton Cards (shown until Alpine mounts) --}}
-            <div x-show="!mounted" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div x-show="!mounted" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 @for ($i = 0; $i < min(3, max(1, count($services))); $i++)
                     <div class="animate-pulse rounded-2xl border border-[#E2E8F0] bg-white overflow-hidden shadow-xs">
                         <div class="h-44 sm:h-48 bg-gradient-to-br from-[#F1F5F9] to-[#E2E8F0]"></div>
@@ -117,7 +117,7 @@
                 @endfor
             </div>
 
-            <div x-show="mounted" x-cloak class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div x-show="mounted" x-cloak class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 @forelse ($services as $service)
                     @php
                         $priceUnit = $service->satuan_harga ?: 'sesi';

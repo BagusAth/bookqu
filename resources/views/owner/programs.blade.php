@@ -128,7 +128,7 @@
     </div>
 
     {{-- ── Program Cards Grid ── --}}
-    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" id="programs-grid">
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" id="programs-grid">
         @forelse ($daftarlayanan as $layanan)
             <div class="group rounded-2xl border border-bq-border bg-bq-surface transition-all duration-300 hover:border-[#b499ff] hover:shadow-md overflow-hidden flex flex-col justify-between">
                 {{-- Cover Image with Smart Ambient Backdrop --}}
@@ -240,12 +240,12 @@
                         </div>
                     </div>
 
-                    <div class="mt-4 flex items-center justify-between border-t border-bq-border pt-3">
-                        <div class="flex items-center gap-3">
+                    <div class="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-bq-border pt-3">
+                        <div class="flex items-center gap-3 whitespace-nowrap">
                             <span class="text-sm font-bold text-bq-primary">Rp {{ number_format($layanan->harga, 0, ',', '.') }}</span>
                             <span class="text-xs text-bq-text-subtle">{{ $layanan->durasi }} min</span>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 whitespace-nowrap">
                             <span class="inline-flex items-center gap-1 rounded-full bg-bq-background px-2 py-0.5 text-xs font-medium text-bq-text-muted">
                                 <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>

@@ -217,10 +217,10 @@
             } catch (e) {}
         }
     }"
-    :class="sidebaropen ? 'translate-x-0' : '-translate-x-full'"
-    class="fixed inset-y-0 left-0 z-50 flex h-screen max-h-screen w-64 flex-col border-r border-[#e7e2f7] bg-white transition-transform duration-300 ease-in-out lg:translate-x-0 select-none shadow-xs"
+    :class="sidebaropen ? 'translate-x-0!' : ''"
+    class="fixed inset-y-0 left-0 z-50 flex h-dvh max-h-dvh w-64 flex-col border-r border-[#e7e2f7] bg-white transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 select-none shadow-xs"
     id="sidebar-nav"
-    style="height: 100vh; max-height: 100vh; display: flex; flex-direction: column; overflow: hidden;"
+    style="height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; display: flex; flex-direction: column; overflow: hidden;"
 >
     <!-- Brand Header (Fixed at Top) -->
     <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#e7e2f7] shrink-0 bg-white/95 backdrop-blur-xs">

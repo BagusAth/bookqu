@@ -9,7 +9,7 @@
         'subjudul' => 'Kelola saldo dana yang diterima melalui platform payment dan lakukan penarikan (withdrawal).',
     ])
 
-    <div class="grid gap-4 sm:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div class="rounded-2xl border border-bq-border bg-bq-surface p-5 shadow-xs">
             <span class="text-xs font-semibold text-bq-text-muted uppercase tracking-wider">Available Balance</span>
             <p class="mt-2 text-2xl font-extrabold text-[#4F46E5]">Rp {{ number_format($availableBalance, 0, ',', '.') }}</p>
@@ -37,7 +37,7 @@
         @if ($errors->any())
             <div class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ $errors->first() }}</div>
         @endif
-        <form method="POST" action="{{ route('owner.payouts.request') }}" class="mt-5 grid gap-4 sm:grid-cols-2">
+        <form method="POST" action="{{ route('owner.payouts.request') }}" class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
             @csrf
             <label class="text-xs font-semibold text-bq-text">Nominal (Rp)
                 <input type="number" name="jumlah" min="10000" step="1" required value="{{ old('jumlah') }}" class="mt-1.5 w-full rounded-xl border border-bq-border px-3.5 py-2 text-sm">

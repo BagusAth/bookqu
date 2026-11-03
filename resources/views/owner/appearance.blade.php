@@ -50,11 +50,11 @@
                 <h3 class="text-base font-bold text-bq-text">Warna Primer &amp; Brand Palette</h3>
                 <p class="text-xs text-bq-text-muted">Warna ini diterapkan pada tombol utama, badge aktif, dan highlight halaman booking publik.</p>
 
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <input type="color" x-model="primaryColor" class="h-10 w-12 rounded-lg border border-bq-border cursor-pointer p-0.5">
                     <input type="text" x-model="primaryColor" class="w-28 uppercase font-mono text-xs rounded-xl border border-bq-border px-3 py-2 text-bq-text focus:outline-none">
-                    
-                    <div class="flex items-center gap-1.5 ml-2">
+
+                    <div class="flex flex-wrap items-center gap-1.5 sm:ml-2">
                         <template x-for="c in presetColors" :key="c">
                             <button type="button" @click="primaryColor = c"
                                 class="h-7 w-7 rounded-full border-2 transition transform hover:scale-110"

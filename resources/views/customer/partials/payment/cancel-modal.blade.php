@@ -2,7 +2,7 @@
 <div
     x-show="showCancelModal"
     x-cloak
-    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+    class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4"
     role="dialog"
     aria-modal="true"
 >
@@ -26,7 +26,7 @@
         x-transition:leave="ease-in duration-150"
         x-transition:leave-start="opacity-100 scale-100"
         x-transition:leave-end="opacity-0 scale-95"
-        class="relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 shadow-2xl transition-all z-10"
+        class="my-auto relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 shadow-2xl transition-all z-10"
     >
         <div class="flex items-start gap-4">
             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-600">

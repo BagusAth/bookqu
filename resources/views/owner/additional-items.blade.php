@@ -162,7 +162,7 @@
                                 <div class="flex items-center justify-end gap-1">
                                     <button
                                         type="button"
-                                        @click="openEdit(@json($itemPayload))"
+                                        @click="openEdit(@js($itemPayload))"
                                         class="craft-btn rounded-xl p-1.5 text-[#6e6584] hover:bg-[#f3effe] hover:text-[#382186] transition"
                                         title="Edit"
                                         id="btn-edit-addon-{{ $item->id }}"
@@ -220,7 +220,7 @@
     {{-- Add Item Modal --}}
     <div
         x-show="addModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#231a3d]/50 backdrop-blur-xs"
+        class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-[#231a3d]/50 backdrop-blur-xs"
         style="display: none;"
         x-cloak
         x-transition:enter="transition ease-out duration-200"
@@ -231,7 +231,7 @@
         x-transition:leave-end="opacity-0"
     >
         <div
-            class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
+            class="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
             @click.outside="addModalOpen = false"
             x-show="addModalOpen"
             x-transition:enter="transition ease-out duration-200"
@@ -337,7 +337,7 @@
     {{-- Edit Item Modal --}}
     <div
         x-show="editModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#231a3d]/50 backdrop-blur-xs"
+        class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-[#231a3d]/50 backdrop-blur-xs"
         style="display: none;"
         x-cloak
         x-transition:enter="transition ease-out duration-200"
@@ -348,7 +348,7 @@
         x-transition:leave-end="opacity-0"
     >
         <div
-            class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
+            class="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
             @click.outside="editModalOpen = false"
             x-show="editModalOpen"
             x-transition:enter="transition ease-out duration-200"

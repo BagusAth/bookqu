@@ -70,6 +70,12 @@
 }
 
 @media (max-width: 767px) {
+    /* Stacked cards size to their content; flex: 1 would stretch every
+       collapsed card to the height of the expanded one. */
+    .feature-card {
+        flex: none;
+    }
+
     .feature-card.is-expanded {
         box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
         border-color: #e0e7ff;

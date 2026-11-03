@@ -82,7 +82,7 @@
         @include('customer.partials.manage.ticket-card')
 
         {{-- ── TWO COLUMN DETAILS & ACTION CONTROL ── --}}
-        <div class="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
 
             {{-- ── LEFT COLUMN: BOOKING DETAILS & TIMELINE ── --}}
             <div class="space-y-6">
@@ -107,7 +107,7 @@
     <footer class="border-t border-slate-200/80 bg-white py-6 mt-12 text-center text-xs text-slate-500">
         <div class="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-3 px-4 sm:px-6">
             <p>&copy; {{ date('Y') }} {{ $booking->tenant->namabisnis }}. Hak cipta dilindungi.</p>
-            <div class="flex items-center gap-2 text-slate-400 text-xs">
+            <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-slate-400 text-xs whitespace-nowrap">
                 <span>Didukung oleh <strong class="text-slate-700">BookQu</strong></span>
                 <span>•</span>
                 <span class="text-emerald-600 font-medium">Koneksi Aman &amp; Terenkripsi</span>

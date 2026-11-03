@@ -27,14 +27,14 @@
     @endphp
 
     {{-- Top Floating Navigation --}}
-    <div class="max-w-2xl mx-auto mb-6 flex items-center justify-between no-print">
-        <a href="{{ $backManageUrl }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+    <div class="max-w-2xl mx-auto mb-6 flex items-center justify-between gap-3 no-print">
+        <a href="{{ $backManageUrl }}" class="inline-flex min-w-0 items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors">
+            <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
             </svg>
-            Kembali ke Manajemen Reservasi
+            <span class="truncate">Kembali<span class="hidden sm:inline"> ke Manajemen Reservasi</span></span>
         </a>
-        <button onclick="window.print()" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-700 transition-all">
+        <button onclick="window.print()" class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-700 transition-all whitespace-nowrap">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
             </svg>
@@ -76,7 +76,7 @@
             <div>
                 <span class="font-bold text-slate-400 uppercase tracking-wider block mb-1.5 text-[11px]">Dipesan Oleh</span>
                 <p class="font-bold text-slate-900 text-sm">{{ $firstBooking->namapelanggan }}</p>
-                <p class="text-slate-600 font-mono mt-0.5">{{ $firstBooking->email }}</p>
+                <p class="text-slate-600 font-mono mt-0.5 break-all">{{ $firstBooking->email }}</p>
                 <p class="text-slate-600 font-mono">{{ $firstBooking->nomorhp }}</p>
             </div>
             <div>
@@ -94,9 +94,9 @@
                 <table class="w-full text-left text-xs">
                     <thead>
                         <tr class="border-b border-slate-100 text-slate-400">
-                            <th class="py-2 font-bold">No</th>
-                            <th class="py-2 font-bold">Waktu Sesi</th>
-                            <th class="py-2 font-bold">Kode Slot</th>
+                            <th class="py-2 pr-3 font-bold">No</th>
+                            <th class="py-2 pr-3 font-bold">Waktu Sesi</th>
+                            <th class="hidden sm:table-cell py-2 pr-3 font-bold">Kode Slot</th>
                             <th class="py-2 text-right font-bold">Harga</th>
                         </tr>
                     </thead>
@@ -110,14 +110,15 @@
                                 $e = (clone $s)->addMinutes($durasiMenit);
                             @endphp
                             <tr>
-                                <td class="py-2.5 font-bold text-slate-500">{{ $idx + 1 }}</td>
-                                <td class="py-2.5 font-semibold text-slate-800 font-mono">
+                                <td class="py-2.5 pr-3 align-top font-bold text-slate-500">{{ $idx + 1 }}</td>
+                                <td class="py-2.5 pr-3 align-top font-semibold text-slate-800 font-mono whitespace-nowrap">
                                     {{ $s->format('H:i') }} – {{ $e->format('H:i') }} WIB
+                                    <span class="sm:hidden block mt-0.5 font-medium text-slate-500 text-[11px]">{{ $bk->booking_code }}</span>
                                 </td>
-                                <td class="py-2.5 text-slate-500 font-mono text-[11px]">
+                                <td class="hidden sm:table-cell py-2.5 pr-3 align-top text-slate-500 font-mono text-[11px]">
                                     {{ $bk->booking_code }}
                                 </td>
-                                <td class="py-2.5 text-right font-bold text-slate-900">
+                                <td class="py-2.5 align-top text-right font-bold text-slate-900 whitespace-nowrap">
                                     {{ $bk->priceLabel }}
                                 </td>
                             </tr>

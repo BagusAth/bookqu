@@ -343,7 +343,7 @@
                             <span class="text-xs font-bold uppercase tracking-wider text-bq-text">Total Pembayaran</span>
                             <p class="text-[11px] text-bq-text-subtle">Sudah termasuk pajak &amp; biaya sistem</p>
                         </div>
-                        <span class="text-xl font-extrabold text-bq-primary">
+                        <span class="text-xl font-extrabold text-bq-primary whitespace-nowrap">
                             Rp {{ number_format($plan->hargabulanan + ($biayaPlatform ?? 0), 0, ',', '.') }}
                         </span>
                     </div>
