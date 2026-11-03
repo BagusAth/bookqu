@@ -396,6 +396,7 @@ Per fase: PR, gerbang dan tanggal persetujuannya, perintah pemeriksaan yang dija
 |---|---|---|
 | G0 | 4 Nov 2026 | Tech Lead menyetujui rencana ini. Pertanyaan terbuka 1: sumber disimpan di `docs/work/BQ-126/`. Pertanyaan terbuka 2: cakupan rilis adalah Rancangan §6 ditambah D-001 sampai D-006; Rancangan §10 poin 16–20 dan pengingat WhatsApp di luar cakupan (D-021). |
 | G1 | 4 Nov 2026 | Product Lead menyetujui D-009 sampai D-021 sesuai usulan, termasuk rekomendasi D-014 (beberapa peserta per booking), D-019 (WhatsApp Business ditunda), dan D-020 (tanpa persetujuan manual). D-008 ditutup karena digantikan D-017. Dicatat Tech Lead. |
+| G2 | 4 Nov 2026 | Product Lead menyetujui D-007 Revisi 1. `docs/owner-portal.md` berstatus Approved dan menjadi acuan kerja owner UI. |
 | G3 | 4 Nov 2026 | Tech Lead menerima ADR-0016 sampai ADR-0022 dan perubahan `AGENTS.md`, `.ai/rules`, `architecture.md` (PR #36). Status ADR menjadi `Accepted`. |
 
 | Fase | Tanggal | Hasil |

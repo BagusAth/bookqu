@@ -27,61 +27,6 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 ---
 
-### D-007 · Peta halaman owner: halaman apa saja dan isinya apa
-
-*Status:* Menunggu (Revisi 1) · *Diajukan:* 2 Nov 2026 · *Revisi 1:* 4 Nov 2026 · *Menahan rilis:* ya
-
-*Revisi 1 (4 Nov 2026):* menggantikan usulan 2 Nov 2026. Disusun dari rancangan ulang portal owner yang sudah disetujui, ditambah pemeriksaan semua halaman dan fitur yang ada sekarang, supaya tidak ada fitur yang hilang. Rincian isi setiap halaman sudah ditulis untuk tim teknis. Entri ini ringkasannya.
-
-*Masalah*
-Halaman owner dibangun dari daftar nama halaman tanpa penjelasan isinya. Akibatnya isi halaman tumpang tindih, ada kontrol yang tidak berfungsi, dan beberapa pengaturan penting tidak punya tempat. Contohnya, batas jam pembatalan sudah dipakai sistem, tetapi owner tidak bisa mengubahnya.
-
-*Usulan keputusan*
-1. Menu owner menjadi 15 menu dalam lima kelompok:
-   - *tanpa kelompok:* Beranda, Kalender, Booking, Pelanggan;
-   - *Bisnis saya:* Layanan, Unit, Jam Buka & Harga;
-   - *Pemasaran:* Halaman Booking, Promo, Ulasan;
-   - *Keuangan:* Pembayaran, Laporan;
-   - *Lainnya:* Pengaturan, Paket & Tagihan, Bantuan.
-
-   Notifikasi dibuka dari lonceng di atas.
-2. Di bagian atas setiap halaman ada lonceng, tombol "+ Booking", dan pencarian (kode booking, nama, atau nomor HP). Di HP, menu diganti navigasi bawah: Beranda, Kalender, + Booking, Booking, Lainnya.
-3. Setiap halaman punya satu tugas:
-   - *Beranda:* hari ini dan yang perlu ditindaklanjuti, tanpa grafik. Ada panduan 4 langkah untuk owner baru.
-   - *Kalender:* siapa datang kapan, mencatat walk-in, menutup atau membuka slot.
-   - *Booking:* semua booking, dikelompokkan menurut tugas (perlu tindakan, mendatang, menunggu bayar, selesai, dibatalkan).
-   - *Pelanggan:* data, catatan, dan riwayat pelanggan.
-   - *Layanan:* layanan, kategori, dan add-on.
-   - *Unit:* lapangan, ruang, atau alat yang dipakai bersama (Pro).
-   - *Jam Buka & Harga:* jam buka, aturan harga, hari libur, dan slot.
-   - *Halaman Booking:* link, QR, materi promosi, tampilan, galeri gambar, landing page dan domain sendiri (Pro).
-   - *Promo:* kode promo dan hasilnya.
-   - *Ulasan:* membalas dan menyembunyikan ulasan.
-   - *Pembayaran:* transaksi, saldo, pencairan, dan rekening (hanya Pemilik).
-   - *Laporan:* grafik dan tren, ekspor.
-   - *Pengaturan:* profil bisnis, kebijakan booking, notifikasi, integrasi, akun, tim.
-   - *Paket & Tagihan:* paket, pemakaian, dan tagihan (hanya Pemilik).
-   - *Bantuan:* pertanyaan umum dan kontak BookQu.
-4. Detail booking selalu tampil di satu panel yang sama dari halaman mana pun. Tombolnya hanya yang sah untuk status booking itu: tandai selesai, tandai tidak datang, pindah jadwal (dengan selisih harga), batalkan (refund penuh untuk booking berbayar), dan putuskan pengajuan refund (100%, 50%, atau tolak).
-5. Batas jam pembatalan, batas jam pindah jadwal, dan pengaturan refund ada di Pengaturan → Kebijakan Booking.
-6. Semua fitur yang ada sekarang tetap ada, hanya pindah tempat. Contohnya: slot massal dengan jam dan interval, harga akhir pekan, gaya tampilan halaman booking, dan data pembayar saat membeli paket.
-
-   Yang dihapus hanya:
-   - pengaturan gateway pembayaran milik bisnis, termasuk kredensial yang tersimpan (D-016);
-   - staf sebagai penyedia layanan, karena digantikan akun tim (D-011);
-   - panel harga massal yang tidak berfungsi;
-   - formulir penarikan saldo lama;
-   - alamat halaman ganda.
-7. Alamat halaman lama tetap bisa dibuka dan otomatis diarahkan ke halaman barunya.
-8. Saat paket berakhir, owner tetap bisa mengurus booking dan saldo yang ada, tetapi tidak bisa membuat yang baru (D-002).
-9. Mulai sekarang, halaman atau fitur owner baru harus ditulis dulu isinya dan disetujui, baru dibangun.
-
-*Kalau belum diputuskan:* halaman tetap seperti sekarang, dan pembangunan portal baru belum dimulai.
-
-*Jawaban Product Lead:* —
-
----
-
 ## Untuk diketahui (tidak perlu keputusan)
 
 Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
@@ -116,6 +61,7 @@ Diambil Tech Lead sebelum peran Product Lead ditetapkan. Product Lead bisa membu
 - D-004 · Rekening penarikan saldo disimpan · Disetujui 4 Nov 2026: sampai 3 rekening dengan 1 rekening utama, konfirmasi password saat menyimpan, mengubah, atau menghapus, dan email setiap ada perubahan → BQ-123, BQ-124, BQ-125
 - D-005 · Domain sendiri untuk halaman booking · Disetujui 4 Nov 2026: fitur Pro, diatur di menu Halaman Booking dengan panduan DNS dan pengecekan otomatis → item menyusul (BQ-126)
 - D-006 · Pindah jadwal ke slot dengan harga berbeda · Disetujui 4 Nov 2026: pelanggan hanya bisa pindah ke slot yang sama atau lebih murah, tanpa pengembalian selisih; owner boleh ke slot mana pun, dan selisihnya ditampilkan serta dicatat → item menyusul (BQ-126)
+- D-007 · Peta halaman owner · Disetujui 4 Nov 2026 (Revisi 1): 15 menu dalam lima kelompok dengan satu tugas per halaman, satu panel booking yang sama di semua halaman, Kebijakan Booking di Pengaturan, semua fitur lama tetap ada kecuali yang dihapus oleh D-011 dan D-016, alamat lama dialihkan, halaman baru ditulis dulu sebelum dibangun → item menyusul (BQ-126)
 - D-008 · Daftar fitur paket hanya berisi fitur yang benar-benar ada · Ditutup 4 Nov 2026: digantikan D-017
 - D-009 · Logo, sampul, dan warna halaman booking untuk semua paket · Disetujui 4 Nov 2026: semua paket mengatur logo, sampul, warna, dan deskripsi di menu Halaman Booking dengan pratinjau HP; semua gambar dari satu galeri media; landing page lengkap tetap khusus Pro → item menyusul (BQ-126)
 - D-010 · Link, QR, dan materi promosi untuk semua paket · Disetujui 4 Nov 2026: salin, buka, dan bagikan link ke WhatsApp, QR, poster siap cetak, teks bio Instagram dan pesan WhatsApp siap pakai → item menyusul (BQ-126)
