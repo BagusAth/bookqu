@@ -57,7 +57,7 @@
     </div>
 
     <div class="mt-2.5 sm:mt-4">
-        <p class="text-[10px] sm:text-xs font-semibold tracking-wide text-bq-text-muted uppercase truncate">{{ $label }}</p>
-        <p class="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-extrabold text-bq-text tracking-tight truncate" {!! $idPrefix ? 'id="' . $idPrefix . '-value"' : '' !!}>{{ $nilai }}</p>
+        <p class="text-[10px] sm:text-xs font-semibold tracking-wide text-bq-text-muted uppercase leading-snug wrap-break-word">{{ $label }}</p>
+        <p class="mt-0.5 sm:mt-1 text-base min-[400px]:text-lg sm:text-2xl font-extrabold text-bq-text tracking-tight leading-tight wrap-break-word" {!! $idPrefix ? 'id="' . $idPrefix . '-value"' : '' !!}>{{ $nilai }}</p>
     </div>
 </div>

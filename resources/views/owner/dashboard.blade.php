@@ -90,8 +90,8 @@
                 </div>
             </div>
             <div class="mt-2.5 sm:mt-4">
-                <p class="text-[10px] sm:text-xs font-semibold tracking-wide text-bq-text-muted uppercase truncate">Total Customers</p>
-                <p class="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-extrabold text-bq-text tracking-tight truncate" id="stat-customers-value">{{ number_format($totalpelanggan ?? 0) }}</p>
+                <p class="text-[10px] sm:text-xs font-semibold tracking-wide text-bq-text-muted uppercase leading-snug wrap-break-word">Total Customers</p>
+                <p class="mt-0.5 sm:mt-1 text-base min-[400px]:text-lg sm:text-2xl font-extrabold text-bq-text tracking-tight leading-tight wrap-break-word" id="stat-customers-value">{{ number_format($totalpelanggan ?? 0) }}</p>
             </div>
         </div>
 

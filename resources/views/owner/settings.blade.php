@@ -50,13 +50,13 @@
 
     {{-- ── 1. Business Profile ── --}}
     <div class="rounded-2xl border border-bq-border bg-bq-surface shadow-2xs" id="business-profile">
-        <div class="border-b border-bq-border px-6 py-4 flex items-center justify-between">
+        <div class="border-b border-bq-border px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div>
                 <h2 class="text-base font-bold text-bq-text">Business Profile</h2>
                 <p class="text-xs text-bq-text-muted">Update your business information visible to customers.</p>
             </div>
             @if(!empty($tenant->slug))
-                <a href="/{{ $tenant->slug }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-bold text-[#4F46E5] hover:underline">
+                <a href="/{{ $tenant->slug }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 whitespace-nowrap py-1 text-xs font-bold text-[#4F46E5] hover:underline">
                     <span>Lihat Halaman Booking</span>
                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -64,7 +64,7 @@
                 </a>
             @endif
         </div>
-        <form class="space-y-5 p-6" method="POST" action="{{ route('owner.settings.profile') }}" enctype="multipart/form-data">
+        <form class="space-y-5 p-4 sm:p-6" method="POST" action="{{ route('owner.settings.profile') }}" enctype="multipart/form-data">
             @csrf
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
@@ -109,11 +109,11 @@
 
     {{-- ── 2. Account Settings ── --}}
     <div class="rounded-2xl border border-bq-border bg-bq-surface shadow-2xs" id="account-settings" x-data="{ showPass: false, showConfirm: false }">
-        <div class="border-b border-bq-border px-6 py-4">
+        <div class="border-b border-bq-border px-4 sm:px-6 py-4">
             <h2 class="text-base font-bold text-bq-text">Account Settings</h2>
             <p class="text-xs text-bq-text-muted">Manage your personal account credentials and security.</p>
         </div>
-        <form class="space-y-5 p-6" method="POST" action="{{ route('owner.settings.account') }}">
+        <form class="space-y-5 p-4 sm:p-6" method="POST" action="{{ route('owner.settings.account') }}">
             @csrf
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
@@ -183,7 +183,7 @@
              }
          }"
          id="notification-settings">
-        <div class="border-b border-bq-border px-6 py-4 flex items-center justify-between">
+        <div class="border-b border-bq-border px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div>
                 <h2 class="text-base font-bold text-bq-text">Notification Preferences</h2>
                 <p class="text-xs text-bq-text-muted">Atur notifikasi penting yang ingin Anda terima.</p>
@@ -222,11 +222,11 @@
 
     {{-- ── 6. Danger Zone ── --}}
     <div class="rounded-2xl border border-rose-200 bg-rose-50/40 shadow-2xs" id="danger-zone">
-        <div class="px-6 py-4">
+        <div class="px-4 sm:px-6 py-4">
             <h2 class="text-base font-bold text-rose-700">Danger Zone</h2>
             <p class="text-xs text-rose-600/80">Tindakan berisiko tinggi dan tidak dapat dikembalikan.</p>
         </div>
-        <div class="border-t border-rose-200/80 px-6 py-4">
+        <div class="border-t border-rose-200/80 px-4 sm:px-6 py-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p class="text-xs font-bold text-bq-text">Delete Business Account</p>
@@ -279,7 +279,7 @@
                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-rose-100"
             >
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 mb-4">
                         <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -59,13 +59,13 @@
         {{-- Topbar Header --}}
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <div class="flex items-center gap-2.5">
+                <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
                     <h1 class="text-2xl font-bold text-bq-text" id="page-title">Your Landing Page</h1>
-                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-600/20">
+                    <span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-600/20">
                         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                         Published Live
                     </span>
-                    <span class="rounded-full bg-violet-100 text-violet-700 px-2 py-0.5 text-[10px] font-bold uppercase">Pro Active</span>
+                    <span class="whitespace-nowrap rounded-full bg-violet-100 text-violet-700 px-2 py-0.5 text-[10px] font-bold uppercase">Pro Active</span>
                 </div>
                 <p class="mt-1 text-xs text-bq-text-muted">Template Aktif: <strong class="text-bq-text">Modern Business (Tenant Edition)</strong></p>
             </div>

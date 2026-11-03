@@ -61,10 +61,10 @@
                                     </div>
                                 </td>
                                 <td class="px-5 py-4 whitespace-nowrap text-[#231a3d] font-bold">{{ $item->role }}</td>
-                                <td class="px-5 py-4">
+                                <td class="px-5 py-4 min-w-72">
                                     <div class="flex flex-wrap items-center gap-1">
                                         @forelse($item->services->take(2) as $svc)
-                                            <span class="rounded-md bg-[#f3effe] text-[#382186] border border-[#b499ff]/40 px-2 py-0.5 text-[10px] font-bold">{{ $svc->namalayanan }}</span>
+                                            <span class="rounded-md bg-[#f3effe] text-[#382186] border border-[#b499ff]/40 px-2 py-0.5 text-[10px] font-bold whitespace-nowrap">{{ $svc->namalayanan }}</span>
                                         @empty
                                             <span class="text-[#6e6584] text-[11px] italic">Semua Layanan</span>
                                         @endforelse

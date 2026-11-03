@@ -83,7 +83,7 @@
                     <div class="flex items-start justify-between gap-2">
                         <div class="flex items-center gap-2">
                             <span class="rounded-lg bg-indigo-50 px-2.5 py-1 font-mono text-xs font-bold text-indigo-700 tracking-wider">{{ $v->code }}</span>
-                            <button type="button" @click="copyCode('{{ $v->code }}')" class="text-bq-text-muted hover:text-indigo-600 transition" title="Salin Kode">
+                            <button type="button" @click="copyCode('{{ $v->code }}')" class="-m-2 inline-flex items-center justify-center rounded-lg p-2 text-bq-text-muted hover:bg-indigo-50 hover:text-indigo-600 transition" title="Salin Kode" aria-label="Salin Kode">
                                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                             </button>
                         </div>

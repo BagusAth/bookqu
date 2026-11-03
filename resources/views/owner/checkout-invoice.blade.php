@@ -93,7 +93,7 @@
                     </div>
 
                     {{-- Item Table --}}
-                    <div class="rounded-lg border border-bq-border overflow-hidden">
+                    <div class="rounded-lg border border-bq-border overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="bg-bq-background">

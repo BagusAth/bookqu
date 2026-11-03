@@ -72,7 +72,7 @@
     }
 @endphp
 
-<header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[#e7e2f7] bg-white/85 px-4 sm:px-6 lg:px-8 backdrop-blur-md shadow-2xs">
+<header class="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b border-[#e7e2f7] bg-white/85 px-4 sm:px-6 lg:px-8 backdrop-blur-md shadow-2xs">
     {{-- Left: Mobile Toggle & Breadcrumb Navigation --}}
     <div class="flex min-w-0 items-center gap-2 sm:gap-3">
         <button

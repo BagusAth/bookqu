@@ -27,51 +27,51 @@
 
     {{-- ── Compact Metric Summary Bar ── --}}
     <div class="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-4">
-        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex items-center gap-3 shadow-2xs">
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex flex-col items-start gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:gap-3 shadow-2xs">
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#b499ff]/20">
                 <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                 </svg>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold text-bq-text-muted truncate">Total Layanan</p>
+                <p class="text-[11px] font-bold text-bq-text-muted leading-snug">Total Layanan</p>
                 <p class="text-base sm:text-lg font-black text-bq-text">{{ $totallayanan }}</p>
             </div>
         </div>
 
-        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex items-center gap-3 shadow-2xs">
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex flex-col items-start gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:gap-3 shadow-2xs">
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/50">
                 <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold text-bq-text-muted truncate">Rata-rata Tarif</p>
-                <p class="text-base sm:text-lg font-black text-bq-text truncate">Rp {{ number_format($ratarataharga, 0, ',', '.') }}</p>
+                <p class="text-[11px] font-bold text-bq-text-muted leading-snug">Rata-rata Tarif</p>
+                <p class="text-base sm:text-lg font-black text-bq-text leading-tight wrap-break-word">Rp {{ number_format($ratarataharga, 0, ',', '.') }}</p>
             </div>
         </div>
 
-        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex items-center gap-3 shadow-2xs">
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex flex-col items-start gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:gap-3 shadow-2xs">
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/50">
                 <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                 </svg>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold text-bq-text-muted truncate">Booking Bulan Ini</p>
+                <p class="text-[11px] font-bold text-bq-text-muted leading-snug">Booking Bulan Ini</p>
                 <p class="text-base sm:text-lg font-black text-bq-text">{{ number_format($totalbookinglayanan) }}</p>
             </div>
         </div>
 
-        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex items-center gap-3 shadow-2xs">
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3.5 sm:p-4 flex flex-col items-start gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:gap-3 shadow-2xs">
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600 border border-purple-200/50">
                 <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                 </svg>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold text-bq-text-muted truncate">Estimasi Omzet</p>
-                <p class="text-base sm:text-lg font-black text-bq-text truncate">Rp {{ number_format($pendapatanlayanan, 0, ',', '.') }}</p>
+                <p class="text-[11px] font-bold text-bq-text-muted leading-snug">Estimasi Omzet</p>
+                <p class="text-base sm:text-lg font-black text-bq-text leading-tight wrap-break-word">Rp {{ number_format($pendapatanlayanan, 0, ',', '.') }}</p>
             </div>
         </div>
     </div>
