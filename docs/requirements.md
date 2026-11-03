@@ -9,16 +9,22 @@ What BookQu must do. Product meaning is in `docs/product.md`; how the current co
 - Requirements describe behaviour, not classes. Implementation status lives in the domain files, not here.
 - Entries marked **Proposed** describe behaviour that exists in code or is needed but has not been formally accepted; the Product Lead accepts or rejects them.
 - A requirement is never marked verified because a screen or code path exists; verification needs evidence (`docs/workflow.md` §7).
+- Entries marked **Accepted 2026-11-04, D-NNN** come from the owner portal redesign (BQ-126). Which page offers each capability is in `docs/owner-portal.md`; the plan that unlocks it is in `docs/product.md` §7.
+- A requirement that no longer applies is marked **Withdrawn**, with the date, the decision and its replacement. It is never deleted, and its ID is never reused.
 
 ## Actors
 
-BookQu has three primary actors.
+BookQu has four primary actors.
 
 ### Owner
 
 The business owner who operates a tenant.
 
-The owner can manage business operations and access the Owner Portal.
+The owner can manage business operations and access the Owner Portal. In the Owner Portal the owner has the role **Pemilik**.
+
+### Team Member
+
+A person invited by the owner to sign in to the owner's business with a limited role (**Manajer** or **Kasir**, FR-TEAM-002). A team member acts only inside that one tenant and never holds money, plan or team management rights.
 
 ### Customer
 
@@ -40,28 +46,28 @@ The current requirement baseline covers:
 
 ```text
 Core Operations
-├── Authentication
-├── Tenant / Business Setup
-├── Public Business Page
-├── Service Management
-├── Schedule Management
-├── Booking
+├── Authentication and Team Accounts
+├── Tenant / Business Setup and Booking Policy
+├── Public Business Page, Booking Link and Promotion Materials
+├── Service Management (Categories, Add-ons)
+├── Units
+├── Opening Hours, Pricing and Slots
+├── Booking (No-show, Capacity)
+├── Refund Requests
 ├── Customer Management
-├── Booking Payment
+├── Booking Payment, Balance and Payouts
 ├── Dashboard
 └── Calendar
 
 Supporting Operations
-├── Categories
-├── Staff & Resources
-├── Additional Items
-├── Vouchers
+├── Promos
 ├── Reviews
-├── Analytics
-├── Schedule Reports
-├── Assets
-├── Appearance
-└── Notifications
+├── Reports (Analytics, Occupancy, Export)
+├── Appearance and Media Gallery
+├── Landing Page and Custom Domain
+├── Integrations and API
+├── Notifications and Preferences
+└── Help
 
 Platform Capabilities
 ├── Subscription
@@ -106,11 +112,12 @@ An account requiring verification shall not be treated as fully verified before 
 The system shall distinguish at least:
 
 ```text
-owner
-admin
+owner        (Pemilik of one tenant)
+team member  (Manajer or Kasir of one tenant, FR-TEAM)
+admin        (platform)
 ```
 
-A user must not access functionality outside the permissions associated with the user's role.
+A user must not access functionality outside the permissions associated with the user's role. Amended 2026-11-04 (D-011).
 
 ### FR-AUTH-006 — Password Security
 
@@ -160,6 +167,8 @@ Business information may include:
 * contact information;
 * operational information.
 
+Amended 2026-11-04 (D-007 Revisi 1): business information also includes a map link, a WhatsApp number, a business email and the time zone (WIB only for now).
+
 ### FR-TENANT-005 — Business Slug
 
 The system shall provide a unique public slug for each tenant where the slug is used as the default public identity.
@@ -179,6 +188,12 @@ The default public access pattern is:
 Where supported and configured, a tenant may expose its public page through a custom domain.
 
 The custom domain must resolve to the correct tenant.
+
+Amended 2026-11-04 (D-005): the custom domain is a Pro feature, set on the Halaman Booking page with DNS instructions and an automatic check that reports whether the domain is connected. A domain can belong to only one tenant. Until it is connected, every public link uses the BookQu address.
+
+### FR-TENANT-008 — Booking Policy (Accepted 2026-11-04, D-001, D-020)
+
+The tenant has one booking policy: refunds on or off (FR-REFUND-001), the cancellation and refund-request deadline, the reschedule deadline (both in hours before the session), and the booking window rules (FR-BOOKING-022). Customers see a summary of the policy before paying. The deadlines set here are the ones the booking rules enforce.
 
 ## Public Business Page Requirements
 
@@ -205,9 +220,23 @@ Branding may include:
 * banner;
 * business imagery.
 
+Amended 2026-11-04 (D-009): branding is available to every plan. It also covers button style, card style, font and description, with a live phone-sized preview. Images come from the tenant's media gallery (FR-ASSET-005).
+
 ### FR-PUBLIC-004 — Booking Entry Point
 
 The public page shall provide a clear entry point into the customer booking flow.
+
+### FR-PUBLIC-006 — Booking Link Sharing (Accepted 2026-11-04, D-010)
+
+Every tenant can copy, open and share its booking link (including a WhatsApp share), download a QR code that encodes the current link, print a poster with the QR code and business name, and copy ready-made text for an Instagram bio and a WhatsApp message. All plans.
+
+### FR-PUBLIC-007 — Landing Page (Accepted 2026-11-04, D-009, D-017)
+
+A Pro tenant can publish a landing page built from a template (Modern Business, Creative Studio, Minimalist Clinic), with selected sections, a headline and a banner from the media gallery, after a preview. Below Pro the feature is refused on the server.
+
+### FR-PUBLIC-008 — Ended Subscription Storefront (Accepted 2026-11-04, D-002)
+
+When the tenant's trial or subscription has ended, the public page stays visible but accepts no new booking and shows: "Bisnis ini belum menerima booking online saat ini." Paid bookings keep their customer access.
 
 ## Service Requirements
 
@@ -229,6 +258,8 @@ A service may contain:
 * status;
 * image;
 * category association where applicable.
+
+Amended 2026-11-04 (D-012, D-014, D-015): a service also has a price unit and a duration unit shown to customers, a capacity per slot (default 1, FR-BOOKING-021), a "popular" flag shown on the public page, the units it uses (Pro, FR-UNIT-002) and linked add-ons (FR-ADDON-004). Changing price or duration affects only new bookings (FR-BOOKING-023).
 
 ### FR-SERVICE-003 — Update Service
 
@@ -275,6 +306,10 @@ The system shall support the relevant category active/inactive state where appli
 A service may be associated with an appropriate category.
 
 Category management shall not change the fundamental identity of the service.
+
+### FR-CATEGORY-006 — Category Presentation (Accepted 2026-11-04, D-007 Revisi 1)
+
+A category has a colour label, an optional image and a display order that the public page respects.
 
 ## Schedule Requirements
 
@@ -332,6 +367,28 @@ Availability shall take relevant booking state and business rules into account.
 
 Schedules that are no longer valid for a new booking must not be presented as normally selectable customer booking slots.
 
+### FR-SCHEDULE-011 — Opening Hours (Accepted 2026-11-04, D-007 Revisi 1)
+
+The owner can set weekly opening hours per day with breaks, and how many days ahead slots may be opened. Opening hours are the default range for bulk slot creation and are shown on the public page. They do not open slots by themselves (automatic slot opening is out of scope, D-021).
+
+### FR-SCHEDULE-012 — Price Rules (Accepted 2026-11-04, D-007 Revisi 1)
+
+The price of a slot is the service's base price, changed by the tenant's price rules and an optional per-slot override:
+
+* weekend rule: `none`, `multiplier` or `fixed`, with a value;
+* peak-hour rules: days, start and end time, extra amount, services;
+* special-date prices: date, price, services.
+
+A price simulator shows the resulting price per hour for a service and date. "Apply base price" sets the base price on existing future free slots of a service only.
+
+### FR-SCHEDULE-013 — Closed Date Conflicts (Accepted 2026-11-04, D-007 Revisi 1)
+
+Adding a closed date that has active bookings lists those bookings and is refused until each is rescheduled or cancelled.
+
+### FR-SCHEDULE-014 — Bulk Creation Preview (Accepted 2026-11-04, D-007 Revisi 1)
+
+Bulk creation (one date or a capped date range, start and end time, interval of 5 to 480 minutes defaulting to the service duration) shows how many slots will be created and how many already exist before saving, and never creates a duplicate slot.
+
 ## Customer Booking Requirements
 
 ### FR-BOOKING-001 — Service Selection
@@ -376,9 +433,10 @@ pending
 paid
 cancelled
 completed
+no_show
 ```
 
-Future status additions require an explicit requirement change.
+`no_show` is added on 2026-11-04 by D-013 (FR-BOOKING-020). Future status additions require an explicit requirement change. There is no manual confirmation status: a booking is confirmed when its payment succeeds (D-020).
 
 ### FR-BOOKING-008 — Booking Detail
 
@@ -398,9 +456,13 @@ The owner shall be able to create a booking on behalf of a customer who books di
 
 Walk-in booking remains part of the same booking domain as online customer booking.
 
+Amended 2026-11-04 (D-011, D-014, D-015): any role of the tenant may record a walk-in. The walk-in records the customer's name, phone, optional email and note, the payment method (`cash`, `transfer`, `manual` or `qris`), the number of participants and, from Medium, add-ons.
+
 ### FR-BOOKING-011 — Owner Reschedule
 
 The owner shall be able to reschedule an eligible booking to another available schedule.
+
+Amended 2026-11-04 (D-006): the owner may move a booking to any available slot of the same service. The price difference between the old and the new slot is shown before confirming and recorded in the booking history; no money is charged or returned automatically.
 
 ### FR-BOOKING-012 — Customer Reschedule
 
@@ -408,13 +470,19 @@ The customer shall be able to reschedule an eligible booking through the secure 
 
 Eligibility is determined by the booking policy and current state.
 
+Amended 2026-11-04 (D-006): a customer may move only to a slot with the same or a lower price, before the reschedule deadline (FR-TENANT-008). A slot with a higher price is not offered; the customer sees "Hubungi pemilik". Moving to a cheaper slot returns no difference.
+
 ### FR-BOOKING-013 — Customer Cancellation
 
 The customer shall be able to cancel an eligible booking through the secure booking management mechanism.
 
+Amended 2026-11-04 (D-001): a booking that has been paid cannot be cancelled directly by the customer. When the tenant has refunds turned on, the customer submits a refund request (FR-REFUND-002). When refunds are off, the customer sees only "Hubungi pemilik".
+
 ### FR-BOOKING-014 — Owner Cancellation
 
 The owner shall be able to cancel an eligible booking through the supported operational flow.
+
+Amended 2026-11-04 (D-001, D-011): a reason is required. Cancelling a booking paid online always creates a full refund (FR-REFUND-006). A Kasir cannot cancel; the Kasir submits a cancellation request that a Pemilik or Manajer decides (FR-TEAM-006).
 
 ### FR-BOOKING-015 — Booking Security
 
@@ -437,6 +505,22 @@ The system shall prevent two incompatible booking operations from successfully o
 A booking must be associated with the correct tenant, service, and schedule.
 
 Cross-tenant references must be rejected.
+
+### FR-BOOKING-020 — No-show (Accepted 2026-11-04, D-013)
+
+A Pemilik, Manajer or Kasir can mark a `paid` booking whose session has ended as `no_show`. Nothing is refunded automatically, and the booking still counts as revenue. Reports show the no-show rate.
+
+### FR-BOOKING-021 — Capacity and Participants (Accepted 2026-11-04, D-014)
+
+Each service has a capacity per slot (default 1). A booking states its number of participants (default 1). A slot stays bookable until the participants of its active bookings reach the capacity; a booking is refused when its participants exceed the remaining capacity. The price is per participant. All plans.
+
+### FR-BOOKING-022 — Booking Window Rules (Accepted 2026-11-04, D-020)
+
+The tenant can set a minimum number of hours before a session for a new booking, a maximum number of days ahead, and a buffer between bookings. Slots outside these rules are not offered and are refused on the server. The customer sees a summary of the rules before paying. A booking is confirmed when its payment succeeds; there is no manual approval by the owner.
+
+### FR-BOOKING-023 — Frozen Booking Amount (Accepted 2026-11-04, D-015)
+
+The amount of a booking is fixed when it is created: base price per participant, price rules, add-ons and promo discount. Later changes to prices, add-ons or promos never change an existing booking, and every owner list, panel, invoice and report shows the amount that was paid.
 
 ## Multi-Slot Booking Requirements
 
@@ -506,8 +590,7 @@ The system supports a Unified Payment Gateway architecture with pluggable driver
 
 Switching between providers is governed centrally by configuration (`config/payment.php` and `PAYMENT_GATEWAY_DRIVER`) across both customer booking checkout and owner subscription checkout. Existing transactions maintain historical provider isolation.
 
-> **Operational Staging Note (Platform Escrow vs Direct Gateway):**  
-> BookQu currently operates on a centralized Platform Escrow model where payments are processed through platform-level SingaPay/Midtrans credentials. The direct payment gateway settings form (`/owner/settings/payments`), which allows individual tenants to configure their own custom gateway keys, is intentionally hidden from owner navigation pending multi-merchant onboarding and compliance verification in a future phase. (See [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md)).
+All customer payments go through BookQu's platform credentials (platform escrow, ADR-0001). A tenant cannot connect its own payment gateway: the option and every stored tenant gateway credential are removed, not hidden (D-016, 2026-11-04).
 
 ### FR-PAYMENT-003 — Payment Status
 
@@ -568,6 +651,38 @@ failed
 ```
 
 Refund state is separate from both booking state and payment state.
+
+Amended 2026-11-04 (D-001): a refund record holds the amount to return, which is the full paid amount or the share decided by the owner (FR-REFUND-004). It is created by an owner decision or an owner cancellation, and processed by the platform admin (FR-REFUND-007).
+
+## Refund Requirements
+
+### FR-REFUND-001 — Refund Policy (Accepted 2026-11-04, D-001)
+
+Refunds are optional per tenant and off by default. The tenant sets in its booking policy whether customers may request refunds, the cancellation and refund-request deadline in hours before the session (default 24) and the reschedule deadline in hours (FR-TENANT-008).
+
+### FR-REFUND-002 — Customer Refund Request (Accepted 2026-11-04, D-001)
+
+When refunds are on, a customer can request a refund for a paid booking before the deadline, giving a reason and the bank account to receive the money. One open request per booking.
+
+### FR-REFUND-003 — Slot Held During a Request (Accepted 2026-11-04, D-001)
+
+While a request is open, the booking stays valid and keeps its slot.
+
+### FR-REFUND-004 — Owner Decision (Accepted 2026-11-04, D-001)
+
+A Pemilik or Manajer decides an open request: accept 100%, accept 50% (half of the paid amount, rounded down to whole rupiah), or reject with a reason. Accepting cancels the booking and frees the slot; rejecting keeps the booking. The customer is notified of the decision.
+
+### FR-REFUND-005 — Undecided Requests (Accepted 2026-11-04, D-001)
+
+If a request is still open when the session starts, the system decides nothing about the money and keeps reminding the owner.
+
+### FR-REFUND-006 — Owner Cancellation Refund (Accepted 2026-11-04, D-001)
+
+When the business cancels a booking that was paid online, the customer always receives a full refund, and the owner must give a reason.
+
+### FR-REFUND-007 — Refund Processing (Accepted 2026-11-04, D-001)
+
+The platform admin transfers the refund to the customer and records the result. The refunded amount is debited from the tenant's platform balance (FR-PAYOUT-001). Refund processing must be idempotent: one decision creates one refund.
 
 ## Booking Management Without Account
 
@@ -637,8 +752,7 @@ An additional item may be associated with eligible services.
 
 Where enabled, a customer shall be able to select eligible additional items during checkout.
 
-> **Operational Staging & UI Gating Note:**  
-> Backend CRUD and service associations (`App\Models\AdditionalItem`, `service_additional_item`) are implemented. However, customer-facing selection during the 6-step booking journey is deferred to a future phase to maintain checkout speed and simplicity. The owner navigation entry point (`/owner/additional-items`) is intentionally hidden from the sidebar in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
+Amended 2026-11-04 (D-015): add-ons are a Medium and Pro feature. The customer chooses add-ons in the Data & Pembayaran step; each chosen add-on is a line item of the payment, the invoice and the frozen booking amount (FR-BOOKING-023). An add-on has a price, a stock or "unlimited", and linked services. Stock decreases only when the booking is paid; an add-on with no stock left cannot be chosen.
 
 ## Voucher Requirements
 
@@ -669,35 +783,85 @@ A voucher belonging to one tenant shall not be usable by another tenant.
 
 The system shall calculate the resulting booking price according to the accepted voucher rules.
 
-> **Operational Staging & UI Gating Note:**  
-> Backend voucher CRUD, rules, and tenant scoping (`App\Models\Voucher`) are implemented. However, the customer checkout validator endpoint (`validateVoucher`) is intentionally gated with HTTP 422 (`"Fitur voucher saat ini belum aktif."`) to prevent untested discount deductions on live transactions. The owner navigation entry point (`/owner/vouchers`) is intentionally hidden from the sidebar in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
+Amended 2026-11-04 (D-015): vouchers are offered to owners as **Promo**, for Medium and Pro. A promo has a code, a percentage or fixed discount, a minimum order, a maximum discount, a quota, a period and the services it applies to. The discount is computed on the server before payment and is part of the payment amount. The quota is never exceeded, also when customers pay at the same time. The owner sees how often each promo was used, the total discount and the revenue from bookings with a promo.
 
 ## Staff and Resource Requirements
 
-### FR-STAFF-001 — Staff Management
+### FR-STAFF-001 — Staff Management (Withdrawn 2026-11-04, D-011)
 
-The owner shall be able to create, update, deactivate, and delete eligible staff records.
+Replaced by FR-TEAM. "Staff" now means team members who sign in, not service providers.
 
-### FR-RESOURCE-001 — Resource Management
+### FR-RESOURCE-001 — Resource Management (Withdrawn 2026-11-04, D-012)
 
-The owner shall be able to create, update, deactivate, and delete eligible resource records.
+Replaced by FR-UNIT-001.
 
-### FR-STAFFRESOURCE-001 — Association
+### FR-STAFFRESOURCE-001 — Association (Withdrawn 2026-11-04, D-011, D-012)
 
-The system shall support association between services and eligible staff/resources where configured.
+Replaced by FR-UNIT-002 for units. Services are no longer linked to staff.
 
-### FR-STAFFRESOURCE-002 — Operational Constraint
+### FR-STAFFRESOURCE-002 — Operational Constraint (Withdrawn 2026-11-04, D-012)
 
-Inactive staff or resources must not be used by booking flows that require active operational resources.
+Replaced by FR-UNIT-003.
 
-### FR-STAFFRESOURCE-003 — Customer Selection Boundary
+### FR-STAFFRESOURCE-003 — Customer Selection Boundary (Withdrawn 2026-11-04, D-011)
 
-Staff/resource management does not automatically imply customer selection during booking.
+Customers never choose a staff member or a unit while booking.
 
-Customer-facing staff/resource selection requires an explicit product requirement.
+## Team Requirements
 
-> **Operational Staging & UI Gating Note:**  
-> Operational models (`Staff`, `Resource`) and service linkage are implemented in the backend. Customer-facing staff selection is intentionally omitted to focus on frictionless slot-capacity bookings. The owner navigation entry point (`/owner/staff-resources`) is intentionally hidden from the sidebar in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
+### FR-TEAM-001 — Team Members (Accepted 2026-11-04, D-011)
+
+The Pemilik can invite a person by email with a role (Manajer or Kasir), change the role, and revoke access at any time. A revoked member loses access at their next request. The number of team accounts is limited by plan (FR-SUB-010, `docs/product.md` §7).
+
+### FR-TEAM-002 — Role Permissions (Accepted 2026-11-04, D-011)
+
+| Capability | Pemilik | Manajer | Kasir |
+|---|---|---|---|
+| Today's bookings, calendar, bookings, customers | Yes | Yes | Yes, without revenue figures and spending totals |
+| Walk-in, mark complete, mark no-show, reschedule | Yes | Yes | Yes |
+| Cancel a booking, decide a refund request | Yes | Yes | Request cancellation only (FR-TEAM-006) |
+| Services, units, opening hours and prices | Yes | Yes | No |
+| Booking page, promos, reviews, reports | Yes | Yes | No |
+| Business profile, booking policy, notifications, integrations | Yes | Yes | No |
+| Payments, balance, payouts, payout accounts | Yes | No | No |
+| Plan and billing, team management, delete the business account | Yes | No | No |
+| Own account (name, email, phone, password) | Yes | Yes | Yes |
+
+Every permission is enforced on the server; hiding a menu is not authorization.
+
+### FR-TEAM-003 — Tenant Scope (Accepted 2026-11-04, D-011)
+
+A team member belongs to exactly one tenant and can never reach another tenant's data (INV-TEN-01).
+
+### FR-TEAM-004 — Activity Attribution (Accepted 2026-11-04, D-011)
+
+Every create, change and state action records the acting user and role. The booking history shows it, and the Pemilik can read the activity log of all members.
+
+### FR-TEAM-005 — Notifications by Role (Accepted 2026-11-04, D-011)
+
+A team member receives only notifications their role may act on; payout and plan notifications go to the Pemilik only.
+
+### FR-TEAM-006 — Cancellation Request (Accepted 2026-11-04, D-011)
+
+A Kasir can request the cancellation of a booking with a reason. A Pemilik or Manajer approves (the booking is cancelled under FR-BOOKING-014) or rejects it.
+
+## Unit Requirements
+
+### FR-UNIT-001 — Unit Management (Accepted 2026-11-04, D-012)
+
+A Pro tenant can create, edit, activate, deactivate and delete units (court, room or tool) with a name, type, capacity, location and image. A unit with future bookings cannot be deleted.
+
+### FR-UNIT-002 — Shared Use (Accepted 2026-11-04, D-012)
+
+A unit can be used by several services, and a service can use several units.
+
+### FR-UNIT-003 — No Double Booking on a Unit (Accepted 2026-11-04, D-012)
+
+Two active bookings that use the same unit cannot overlap in time, even for different services. The rule applies to customer checkout, walk-ins and reschedules, and is enforced in the same authoritative booking operation as slot occupancy (BR-CORE-007).
+
+### FR-UNIT-004 — Existing Conflicts (Accepted 2026-11-04, D-012)
+
+The Unit page lists existing bookings that already overlap on a unit, so the owner can resolve them.
 
 ## Review Requirements
 
@@ -761,6 +925,10 @@ Dashboard figures shall derive from authoritative operational data.
 
 Dashboard aggregation must not become an independent source of truth.
 
+### FR-DASH-008 — Today and Needs Action (Accepted 2026-11-04, D-007 Revisi 1)
+
+The dashboard (Beranda) shows today only: one status banner by priority, today's figures, items needing action (refund and cancellation requests, ended bookings without an outcome, low-rated reviews without a reply, payout changes), today's schedule, a summary of tomorrow, and a new-owner guide until its steps are done. Trends and charts belong to reports (FR-ANALYTICS).
+
 ## Calendar Requirements
 
 ### FR-CALENDAR-001 — Calendar View
@@ -782,6 +950,8 @@ The calendar shall show relevant schedule availability.
 ### FR-CALENDAR-005 — Calendar Filtering
 
 Where supported, the calendar shall allow filtering by relevant operational dimensions.
+
+Amended 2026-11-04 (D-012, D-014): filters are service, unit (Pro) and booking status, and each slot shows participants against capacity when the capacity is above 1.
 
 ### FR-CALENDAR-006 — Walk-In Operation
 
@@ -813,8 +983,9 @@ The system shall support schedule utilization analysis where sufficient data is 
 
 Analytics must derive from the same authoritative operational records used by the booking system.
 
-> **Operational Staging & UI Gating Note:**  
-> The Analytics Overview (`/owner/analytics`) is protected by `subscription:medium`. The interface currently renders a locked development hero card (*"Fitur Sedang Dikembangkan - Modul Analitik & Laporan Bisnis"*) with blurred metric mockups pending stabilization of advanced conversion funnel and revenue forecasting engines. (See [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md)).
+### FR-ANALYTICS-007 — Reports (Accepted 2026-11-04, D-013, D-017)
+
+Reports are a Medium and Pro feature; Small sees a blurred preview with the upgrade prompt. One period filter applies to every tab: summary, revenue (online and walk-in, per service, refunds, net), occupancy (rate, busy and quiet hours, per unit for Pro), services, customers (new and returning, promo use). Revenue comes from payments; a multi-slot booking counts once; the no-show rate is shown.
 
 ## Reporting Requirements
 
@@ -830,8 +1001,7 @@ Where supported, the owner shall be able to filter reports by relevant time peri
 
 The system shall support export of supported report data.
 
-> **Operational Staging & UI Gating Note:**  
-> Schedule Report & Utilization (`/owner/schedule-report`) has operational slot calculations and CSV export, but renders in the UI with a header notice (*"Fitur Sedang Dikembangkan - Laporan Okupansi & Utilisasi Jadwal"*) and a sidebar lock indicator (`🔒 Terkunci`) in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
+Amended 2026-11-04 (D-007 Revisi 1, D-017): the schedule report becomes the occupancy tab of the reports (FR-ANALYTICS-007). Exports exist per report tab and for the filtered booking list, are refused below Medium on the server, and neutralise cells that start with `=`, `+`, `-` or `@`.
 
 ## Appearance Requirements
 
@@ -851,8 +1021,7 @@ The owner shall be able to configure supported cover or banner imagery.
 
 Appearance configuration shall affect public presentation without modifying core booking behavior.
 
-> **Operational Staging & UI Gating Note:**  
-> Appearance configuration (`/owner/settings/appearance`) is implemented at the controller and action layer, but its navigation entry points are intentionally hidden from the owner sidebar and topbar. Public customer storefronts continue to use the standardized clean BookQu theme in accordance with [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md).
+Amended 2026-11-04 (D-009): appearance is available to every plan (FR-PUBLIC-003).
 
 ## Asset Requirements
 
@@ -864,9 +1033,6 @@ The system shall provide a mechanism for storing supported business media assets
 
 Assets shall belong to the correct tenant.
 
-> **Operational Staging & UI Gating Note:**  
-> Asset storage and upload (`/owner/settings/assets`) are implemented. Its navigation link is kept hidden from the sidebar until interactive storefront gallery integration is scheduled in a future release. (See [ADR-0002](adr/ADR-0002-modular-release-staging-and-ui-gating.md)).
-
 ### FR-ASSET-003 — Asset Management
 
 Authorized owners shall be able to add and remove supported assets.
@@ -874,6 +1040,10 @@ Authorized owners shall be able to add and remove supported assets.
 ### FR-ASSET-004 — Asset Usage
 
 Eligible assets may be used by the tenant's public-facing pages.
+
+### FR-ASSET-005 — Media Gallery (Accepted 2026-11-04, D-009)
+
+Every image of a tenant (logo, cover, service, unit, landing page) lives in one media gallery with a title and a category (`logo`, `cover`, `service`, `gallery`, `other`). Every image field picks from or uploads into the gallery. Deleting an image that is in use asks for confirmation and clears the reference.
 
 ## Notification Requirements
 
@@ -897,6 +1067,14 @@ The system shall support relevant subscription lifecycle notifications where app
 
 Owner notifications must only represent events belonging to the owner's tenant or authorized account.
 
+### FR-NOTIFICATION-006 — Notification Preferences (Accepted 2026-11-04, D-007 Revisi 1, D-021)
+
+Each user chooses per event (new booking, payment success, cancellation, reschedule, refund request, new review, payout status, plan status) whether to receive email; in-app notifications are always on. Preferences are stored on the server. WhatsApp is not a channel in this release (D-021).
+
+### FR-NOTIFICATION-007 — Subscription Reminders (Accepted 2026-11-04, D-002)
+
+The Pemilik is reminded 3 days and 1 day before the trial or subscription ends, and on the day it ends, in-app and by email.
+
 ## Subscription Requirements
 
 ### FR-SUB-001 — Subscription Plans
@@ -910,6 +1088,8 @@ A tenant shall have a subscription state associated with a plan.
 ### FR-SUB-003 — Trial
 
 The platform may provide a trial period for eligible new tenants according to the accepted subscription policy.
+
+Amended 2026-11-04 (D-002): one owner account receives at most one trial.
 
 ### FR-SUB-004 — Subscription Status
 
@@ -948,9 +1128,23 @@ The system shall handle supported subscription lifecycle transitions.
 
 Where a plan includes usage limits, the system shall prevent the tenant from exceeding the accepted limit.
 
+Amended 2026-11-04 (D-017): the limits are services, bookings per month and team accounts, with the values in `docs/product.md` §7.
+
 ### FR-SUB-011 — Usage Tracking
 
 The system shall maintain the information necessary to evaluate supported usage limits.
+
+### FR-SUB-012 — Ended Subscription (Accepted 2026-11-04, D-002)
+
+When the trial or subscription has ended, the owner and team can still sign in, manage existing bookings (complete, reschedule, cancel, refund), see payments and balance, and buy a plan. Creating services, slots, units, promos, team members and walk-ins is refused on the server. There is no grace period. Paid bookings are served as usual. The public page follows FR-PUBLIC-008.
+
+### FR-SUB-013 — Renewal and Plan Change (Accepted 2026-11-04, D-002)
+
+Buying a plan during the trial starts the paid period that day and ends the trial. Renewing the same plan extends from the current end date, so no paid day is lost. Changing to another plan starts on the payment date.
+
+### FR-SUB-014 — Plan Contents (Accepted 2026-11-04, D-017)
+
+What each plan contains is defined in `docs/product.md` §7. The plan comparison shown to owners and on the platform landing page lists only features that exist for that plan.
 
 ## Platform Administration Requirements
 
@@ -971,6 +1165,42 @@ The admin view must respect the platform security model.
 ### FR-ADMIN-004 — Platform Boundary
 
 Platform administration must remain separate from ordinary owner permissions.
+
+### FR-ADMIN-005 — Refund Processing (Accepted 2026-11-04, D-001)
+
+The platform admin sees refunds to transfer (amount, customer bank account, booking, tenant), records each as processed with a transfer reference or as failed with a reason, and the customer and the owner are notified. The admin dashboard shows how many refunds are waiting.
+
+## Integration and API Requirements
+
+### FR-INTEGRATION-001 — Owner Integrations (Accepted 2026-11-04, D-019)
+
+Every plan can connect Google Calendar (bookings are written to the owner's calendar), Google Analytics and Meta Pixel (on the public booking page). Each integration can be connected, tested and disconnected. Payment and email are shown as managed by BookQu and cannot be changed.
+
+### FR-INTEGRATION-002 — Integration Secrets (Accepted 2026-11-04, D-019)
+
+Integration credentials are stored encrypted, are never shown again after saving, and are never logged.
+
+### FR-API-001 — API Keys (Accepted 2026-11-04, D-019, D-017)
+
+A Pro tenant can create and revoke API keys that give access only to its own tenant's data.
+
+### FR-API-002 — Webhooks (Accepted 2026-11-04, D-019, D-017)
+
+A Pro tenant can register webhook URLs that receive signed booking and payment events, with retries and a delivery log.
+
+## Owner Portal Shell Requirements
+
+### FR-SHELL-001 — Navigation (Accepted 2026-11-04, D-007 Revisi 1)
+
+The owner portal shows only the menus the user's role may open, marks plan-gated menus with the upgrade prompt, and on phones replaces the sidebar with a bottom bar (Beranda, Kalender, + Booking, Booking, Lainnya).
+
+### FR-SHELL-002 — Global Actions (Accepted 2026-11-04, D-007 Revisi 1)
+
+Every owner page offers the notification bell, a "+ Booking" walk-in action and a search by booking code, customer name or phone that opens the booking or customer panel.
+
+### FR-HELP-001 — Help (Accepted 2026-11-04, D-007 Revisi 1)
+
+The owner portal has a help page with frequently asked questions and BookQu's contact details, taken from configuration.
 
 ## Data Integrity Requirements
 
@@ -1302,9 +1532,10 @@ pending
 paid
 cancelled
 completed
+no_show
 ```
 
-A booking state must not be changed arbitrarily through client-provided input.
+`no_show` is reached only from `paid` after the session has ended (FR-BOOKING-020). A booking state must not be changed arbitrarily through client-provided input.
 
 Supported transitions must be enforced by business rules.
 
@@ -1317,7 +1548,10 @@ The current occupied states are:
 ```text
 paid
 completed
+no_show
 ```
+
+Amended 2026-11-04 (D-012, D-014): a slot is full when the participants of its occupying bookings reach the service's capacity; a unit is occupied across services for the time of every occupying booking that uses it. Both are decided only by the authoritative occupancy rule (`AGENTS.md` rule 5).
 
 A `pending` booking occupies a schedule only while its payment is `pending` and the payment deadline plus the settlement margin has not passed (ADR-0009). The deadline is `payments.expired_at`, set at creation from `config/payment.php`:
 
@@ -1410,7 +1644,7 @@ Refund processing
 
 A duplicate refund record must not be created for the same cancellation event.
 
-Owner cancellation must follow the defined owner-cancellation policy and must not automatically imply a refund unless the accepted requirement explicitly requires one.
+Amended 2026-11-04 (D-001): a customer never cancels a paid booking directly; refunds come from an owner decision on a refund request (FR-REFUND-004) or from an owner cancellation of a booking paid online, which always creates a full refund (FR-REFUND-006). A refund is debited from the tenant balance and transferred by the platform admin (FR-REFUND-007).
 
 ## Access Grant Authorization Rules
 
@@ -1456,7 +1690,7 @@ Partial success must not leave an invalid reservation state.
 
 ## Walk-In Booking Rules
 
-Walk-in bookings are created by authorized owners on behalf of customers.
+Walk-in bookings are created by the owner or a team member on behalf of customers (FR-BOOKING-010).
 
 They use the same core booking rules as online bookings.
 
@@ -1504,22 +1738,26 @@ The requirement is behavioral:
 
 The baseline authorization model is:
 
-| Capability               | Owner |              Customer |                           Admin |
-| ------------------------ | ----: | --------------------: | ------------------------------: |
-| Manage own business      |   Yes |                    No | Platform-level where authorized |
-| Manage services          |   Yes |                    No | Platform-level where authorized |
-| Manage schedules         |   Yes |                    No | Platform-level where authorized |
-| View own tenant bookings |   Yes | Own eligible bookings | Platform-level where authorized |
-| Create walk-in booking   |   Yes |                    No | Not a normal customer operation |
-| Create public booking    |    No |                   Yes |                              No |
-| Manage own booking       |    No |      Yes, if eligible | Platform-level where authorized |
-| Manage customers         |   Yes |                    No | Platform-level where authorized |
-| Manage categories        |   Yes |                    No | Platform-level where authorized |
-| Manage staff/resources   |   Yes |                    No | Platform-level where authorized |
-| Manage vouchers          |   Yes |                    No | Platform-level where authorized |
-| Submit review            |    No |      Yes, if eligible |                              No |
-| Manage subscription      |   Yes |                    No | Platform-level where authorized |
-| Access admin dashboard   |    No |                    No |                             Yes |
+| Capability               | Owner | Team member |              Customer |                           Admin |
+| ------------------------ | ----: | ----------: | --------------------: | ------------------------------: |
+| Manage own business      |   Yes | Per FR-TEAM-002 |                No | Platform-level where authorized |
+| Manage services, units   |   Yes | Manajer |                    No | Platform-level where authorized |
+| Manage schedules, prices |   Yes | Manajer |                    No | Platform-level where authorized |
+| View own tenant bookings |   Yes | Yes | Own eligible bookings | Platform-level where authorized |
+| Create walk-in booking   |   Yes | Yes |                    No | Not a normal customer operation |
+| Create public booking    |    No | No |                   Yes |                              No |
+| Manage own booking       |    No | No |      Yes, if eligible | Platform-level where authorized |
+| Request a refund         |    No | No | Yes, if refunds are on |                           No |
+| Decide a refund request  |   Yes | Manajer |                    No |                              No |
+| Process a refund transfer|    No | No |                    No |                             Yes |
+| Manage customers         |   Yes | Yes |                    No | Platform-level where authorized |
+| Manage categories        |   Yes | Manajer |                    No | Platform-level where authorized |
+| Manage promos            |   Yes | Manajer |                    No | Platform-level where authorized |
+| Manage team              |   Yes | No |                    No | Platform-level where authorized |
+| Balance and payouts      |   Yes | No |                    No | Process payouts                 |
+| Submit review            |    No | No |      Yes, if eligible |                              No |
+| Manage subscription      |   Yes | No |                    No | Platform-level where authorized |
+| Access admin dashboard   |    No | No |                    No |                             Yes |
 
 This matrix is intentionally high-level.
 
@@ -1606,7 +1844,11 @@ AI-generated business decisions
 Unspecified external integrations
 Unspecified multi-location management
 Unspecified advanced payment automation
+Tenant-owned payment gateways (D-016)
+Customers choosing a staff member or unit
 ```
+
+Deferred until after the first production release (D-021): automatic slot opening from opening hours, automatic closing on national holidays, automatic suggestions in reports, down payments, WhatsApp reminders and the WhatsApp Business integration, and custom roles.
 
 A new capability must not be treated as accepted simply because it is technically possible.
 
@@ -1632,8 +1874,13 @@ Under the platform escrow model, each tenant has a platform balance. When a book
 
 ### FR-PAYOUT-002 — Payout Request (Accepted 2026-11-01)
 
-An owner can request a payout of at least Rp 10.000, up to the available balance, to a stated bank account (bank, account number, holder name). The request and the balance hold happen atomically.
+An owner can request a payout to one of the tenant's saved payout accounts. The amount is a whole number of rupiah, at least `payouts.min_amount` (Rp 10.000) and at most the available balance and any configured per-request cap. The request and the balance hold happen atomically, and a repeated request key creates no second payout.
+
+Amended 2026-11-04 (D-004), matching BQ-123 to BQ-125:
+* a tenant saves up to `payouts.max_accounts` (3) payout accounts, one of them primary; adding, changing and deleting an account require the current password and send an email to the owner; an account used by a payout in progress cannot be deleted;
+* a payout is refused unless the owner's email is verified, the business profile is complete, the tenant uses the platform payment mode, the balance is positive, open payouts are below `payouts.max_open` and a payout account exists; an optional daily request cap applies;
+* the payout keeps a snapshot of the destination account.
 
 ### FR-PAYOUT-003 — Payout Processing (Accepted 2026-11-01)
 
-A platform admin reviews payouts: `pending → approved → success | failed`, or `pending → rejected`. Reject and fail require a reason and return the held amount to the balance. Success requires a transfer reference and accepts an optional proof file that only the owning tenant can download. The owner is notified of every change.
+A platform admin reviews payouts: `pending → approved → success | failed`, or `pending → rejected`. Reject and fail require a reason and return the held amount to the balance. Success requires a transfer reference or a proof file; the proof file can be downloaded only by the owning tenant. The owner is notified of every change, by email for success, failure and rejection. The owner sees the states as Pending (pending, approved), Berhasil (success) and Gagal (failed, rejected). Platform admins are notified of every new request. Amended 2026-11-04 (D-004, BQ-125).

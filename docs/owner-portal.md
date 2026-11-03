@@ -2,7 +2,7 @@
 
 What each owner page is for, what it contains, who may use it, and which plan unlocks it. `product.md` says which capabilities BookQu offers; `requirements.md` says how they must behave; this document arranges them into pages so that no two pages do the same job. Each page contract (§8) is the acceptance criteria for the owner UI work that builds it.
 
-> **Status: Draft for approval (2026-11-04).** Written in BQ-126 phase 3 from the owner portal redesign approved by the Product Lead on 2026-11-04 (`docs/work/BQ-126/rancangan-ulang-portal-owner.md`), the feature inventory (`docs/work/BQ-126/inventaris-fitur.md`) and the decisions in `product-decisions.md`. It becomes authoritative when the Product Lead approves D-007 Revisi 1 (gate G2 of BQ-126). Parts that depend on a decision still waiting are marked **(pending D-NNN)**; until that decision is taken, the "Kalau belum diputuskan" line of the decision applies. Requirement IDs marked † are added in BQ-126 phase 4.
+> **Status: Draft for approval (2026-11-04).** Written in BQ-126 phase 3 from the owner portal redesign approved by the Product Lead on 2026-11-04 (`docs/work/BQ-126/rancangan-ulang-portal-owner.md`), the feature inventory (`docs/work/BQ-126/inventaris-fitur.md`) and the decisions in `product-decisions.md`. It becomes authoritative when the Product Lead approves D-007 Revisi 1 (gate G2 of BQ-126). Decisions D-001 to D-006 and D-009 to D-021 are approved; D-007 Revisi 1 (this page map) waits for the Product Lead.
 
 ## 1. How to use this document
 
@@ -67,7 +67,7 @@ These rules decide where anything new goes. Breaking one needs a Tech Lead decis
 | Lainnya | Bantuan | `/owner/help` (new) | — |
 
 - A menu the viewer's role may not open is not shown (§5).
-- A menu above the plan is shown with a lock and opens the upgrade prompt, except Unit, which is hidden below Pro (pending D-017).
+- A menu above the plan is shown with a lock and opens the upgrade prompt, except Unit, which is hidden below Pro.
 - Tabs keep their state in the URL (`?tab=…`), so links and reloads land on the same tab.
 - The old paths of merged pages redirect permanently (§10.2).
 
@@ -86,7 +86,7 @@ Below 768 px the sidebar is replaced by a bottom bar with **Beranda, Kalender, +
 
 ## 5. Roles and access
 
-Home of the rule: FR-TEAM† (D-011, pending). This section is the page view of that rule.
+Home of the rule: FR-TEAM (D-011). This section is the page view of that rule.
 
 ### 5.1 Roles
 
@@ -94,7 +94,7 @@ Home of the rule: FR-TEAM† (D-011, pending). This section is the page view of 
 - **Manajer:** a team member who runs operations and configuration, without money, plan or team management.
 - **Kasir:** a team member at the counter: today's bookings, walk-ins, customers, without revenue figures.
 
-The number of team accounts per plan follows D-017 (pending): Small 0, Medium 2, Pro 10.
+The number of team accounts per plan follows D-017: Small 0, Medium 2, Pro 10.
 
 ### 5.2 Matrix
 
@@ -125,21 +125,21 @@ Every create, change and state action records the user and role ("Walk-in dicata
 
 ## 6. Plans
 
-Home of the rule: `product.md` §7 after BQ-126 phase 5 (D-017, pending). Entitlement is decided only by `EntitlementRules` (INV-SUB-01). This table lists where each gate shows.
+Home of the rule: `product.md` §7 (D-017). Entitlement is decided only by `EntitlementRules` (INV-SUB-01). This table lists where each gate shows.
 
 | Feature | Small | Medium | Pro | Where |
 |---|---|---|---|---|
 | Core pages (Beranda, Kalender, Booking, Pelanggan, Ulasan, Jam Buka & Harga, Pembayaran, Pengaturan, Paket & Tagihan, Bantuan) | ✓ | ✓ | ✓ | — |
-| Booking page look, gallery, link, QR, promotion materials | ✓ | ✓ | ✓ | Halaman Booking (D-009, D-010 pending) |
+| Booking page look, gallery, link, QR, promotion materials | ✓ | ✓ | ✓ | Halaman Booking (D-009, D-010) |
 | Services | 5 | unlimited | unlimited | Layanan, usage meter |
 | Bookings per month | 300 | 500 | unlimited | Beranda banner, Paket & Tagihan |
 | Laporan and export (Laporan, Booking list export) | blurred preview | ✓ | ✓ | Laporan, Booking |
-| Promo and add-on | — | ✓ | ✓ | Promo, Layanan → Add-on, checkout (D-015 pending) |
-| Team accounts | 0 | 2 | 10 | Pengaturan → Tim (D-011 pending) |
-| Unit | — | — | ✓ | Unit, Layanan field, Kalender filter (D-012 pending) |
+| Promo and add-on | — | ✓ | ✓ | Promo, Layanan → Add-on, checkout (D-015) |
+| Team accounts | 0 | 2 | 10 | Pengaturan → Tim (D-011) |
+| Unit | — | — | ✓ | Unit, Layanan field, Kalender filter (D-012) |
 | Landing page and custom domain | — | — | ✓ | Halaman Booking (D-005) |
-| API and webhooks | — | — | ✓ | Pengaturan → Integrasi (D-019 pending) |
-| Other integrations | ✓ | ✓ | ✓ | Pengaturan → Integrasi (D-019 pending) |
+| API and webhooks | — | — | ✓ | Pengaturan → Integrasi (D-019) |
+| Other integrations | ✓ | ✓ | ✓ | Pengaturan → Integrasi (D-019) |
 
 ## 7. Entity homes
 
@@ -195,7 +195,7 @@ Home of the rule: `product.md` §7 after BQ-126 phase 5 (D-017, pending). Entitl
 | `paid` | Terkonfirmasi |
 | `completed` | Selesai |
 | `cancelled` | Dibatalkan |
-| `no_show` (pending D-013) | Tidak datang |
+| `no_show` | Tidak datang |
 
 ### 8.1 Beranda
 
@@ -215,7 +215,7 @@ Home of the rule: `product.md` §7 after BQ-126 phase 5 (D-017, pending). Entitl
      - slot occupancy today.
   3. **Perlu tindakan.** A list with counts. Each item links to its place:
      - refund requests waiting for a decision (D-001);
-     - cancellation requests from a Kasir (D-011, pending);
+     - cancellation requests from a Kasir (D-011);
      - paid bookings whose time has passed and that are not yet marked complete or no-show;
      - reviews of 3 stars or less without a reply;
      - payout status changes (Pemilik only).
@@ -253,7 +253,7 @@ Home of the rule: `product.md` §7 after BQ-126 phase 5 (D-017, pending). Entitl
   - **Week view and month view.**
   - **"Now" line,** a "Hari ini" button and date navigation. Month navigation never overflows (BQ-117).
   - **Filters:** service, unit (Pro), booking status.
-  - **Each slot shows** its state (free, booked, closed, past), price and, when capacity is above 1, the participant count against capacity ("3/10", D-014 pending).
+  - **Each slot shows** its state (free, booked, closed, past), price and, when capacity is above 1, the participant count against capacity ("3/10", D-014).
 - **Actions:**
   - **Click a booking:** opens the booking panel. All booking actions live there.
   - **Click a free future slot:** offers "Catat walk-in" (shared walk-in form, prefilled with the slot), "Tutup slot ini" and "Ubah harga slot ini". Price and closing go through the same server actions as Jam Buka & Harga → Slot.
@@ -262,13 +262,13 @@ Home of the rule: `product.md` §7 after BQ-126 phase 5 (D-017, pending). Entitl
 - **Not here:** bulk slot creation, price rules, opening hours, booking policy.
 - **Empty states:** no slots in the visible range shows "Belum ada slot di periode ini" with a button to Jam Buka & Harga.
 - **Source:** inventory §2.2.
-- **Requirements:** FR-CALENDAR-001 to FR-CALENDAR-006, FR-BOOKING-010, FR-UNIT† (filter).
+- **Requirements:** FR-CALENDAR-001 to FR-CALENDAR-006, FR-BOOKING-010, FR-UNIT (filter).
 - **Acceptance criteria:**
   - **AC-KAL-01:** Day, week and month views show the same bookings for the same date range.
   - **AC-KAL-02:** A walk-in from a slot is created through the shared walk-in action and appears without a page reload.
   - **AC-KAL-03:** A slot with an active booking cannot be closed (INV-BOOK-03).
   - **AC-KAL-04:** On a 375 px screen, the day view is a list, and every action is reachable without horizontal scrolling.
-  - **AC-KAL-05:** Capacity counts match the number of participants of active bookings (pending D-014).
+  - **AC-KAL-05:** Capacity counts match the number of participants of active bookings.
 
 ### 8.3 Booking
 
@@ -294,7 +294,7 @@ Home of the rule: `product.md` §7 after BQ-126 phase 5 (D-017, pending). Entitl
   - no bookings yet: explains that bookings arrive from the booking page, and shows the link;
   - an empty tab: a short sentence per tab.
 - **Source:** inventory §2.3 (list, filters `katakunci` and `status`, summary).
-- **Requirements:** FR-BOOKING-008 to FR-BOOKING-016, FR-MULTIBOOK-005, FR-MULTIBOOK-006, FR-REFUND†.
+- **Requirements:** FR-BOOKING-008 to FR-BOOKING-016, FR-MULTIBOOK-005, FR-MULTIBOOK-006, FR-REFUND.
 - **Acceptance criteria:**
   - **AC-BKG-01:** Each tab's count equals the number of rows it shows.
   - **AC-BKG-02:** The amount shown equals the paid amount on the payment record, even after the service or slot price changes.
@@ -308,11 +308,11 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 
 - **Contents:**
   - booking code, status and source;
-  - **session:** service, date, time; every slot of a multi-slot booking; participants (pending D-014); unit (Pro);
+  - **session:** service, date, time; every slot of a multi-slot booking; participants; unit (Pro);
   - **customer:** name, phone with a WhatsApp link, email, link to the customer panel;
   - **payment:**
     - status, method, amount paid;
-    - breakdown of base price, add-ons and promo discount (pending D-015);
+    - breakdown of base price, add-ons and promo discount;
     - paid at;
     - deadline while pending;
     - refund status and amount;
@@ -324,16 +324,16 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   | Action | Shown when | Behaviour |
   |---|---|---|
   | Tandai selesai | `paid` and the session has started | → `completed` |
-  | Tandai tidak datang (pending D-013) | `paid` and the session has ended | → `no_show`; no refund |
+  | Tandai tidak datang | `paid` and the session has ended | → `no_show`; no refund |
   | Pindah jadwal | `paid`, session in the future | Slot picker of the same service. Shows the price difference of the new slot and records it. Owner may pick any slot (D-006) |
   | Batalkan | `paid` or walk-in, by Pemilik or Manajer | Reason required. For a booking paid online, the panel states "Pelanggan mendapat refund penuh Rp …" and creates a full refund for the admin to transfer (D-001 point 8) |
-  | Ajukan pembatalan (pending D-011) | Kasir, same states as Batalkan | Reason required; creates a request for Pemilik or Manajer |
+  | Ajukan pembatalan | Kasir, same states as Batalkan | Reason required; creates a request for Pemilik or Manajer |
   | Putuskan refund | A customer refund request is open | Three choices: Terima 100%, Terima 50%, Tolak (reason required). Accepting cancels the booking and frees the slot; rejecting keeps the booking (D-001 points 4–5) |
   | Kirim ulang link | Booking has a customer email | Re-sends the customer access link (ADR-0006) |
 
 - **Not here:** editing customer data, editing prices, deleting a booking.
 - **Source:** inventory §2.3 (`owner.bookings.status`, `owner.bookings.available-slots`, `owner.bookings.reschedule`). The former "Konfirmasi Lunas" for online payments stays removed (decision of 2026-11-01).
-- **Requirements:** FR-BOOKING-008, FR-BOOKING-009, FR-BOOKING-011, FR-BOOKING-014, FR-PAYMENT-003, FR-PAYMENT-011, FR-REFUND†, FR-TEAM†.
+- **Requirements:** FR-BOOKING-008, FR-BOOKING-009, FR-BOOKING-011, FR-BOOKING-014, FR-PAYMENT-003, FR-PAYMENT-011, FR-REFUND, FR-TEAM.
 - **Acceptance criteria:**
   - **AC-PNL-01:** An action that is not allowed for the current state or role is neither shown nor accepted by the server.
   - **AC-PNL-02:** Cancelling a booking paid online always creates a full refund for that payment, and never lets the owner choose a smaller amount.
@@ -385,8 +385,8 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
     | Price unit | `satuan_harga`, shown to customers |
     | Duration | 5–480 |
     | Duration unit | `satuan_durasi`, default "menit" |
-    | Capacity per slot (pending D-014) | Default 1 |
-    | Units used (Pro, pending D-012) | — |
+    | Capacity per slot | Default 1 |
+    | Units used (Pro, D-012) | — |
     | Linked add-ons (Medium and up) | — |
     | Description | Up to 1000 characters |
     | Image | Picked from the gallery or uploaded into it |
@@ -398,7 +398,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 - **Tab Kategori:**
   - **List:** name, description, colour label, image, display order, service count, active.
   - **Actions:** create, edit, activate or deactivate, reorder, delete when empty. "Lihat layanan" filters the first tab.
-- **Tab Add-on (pending D-015):**
+- **Tab Add-on:**
   - **List:** name, description, price, stock (number or unlimited), linked services, active, sold count.
   - **Behaviour:** customers choose add-ons while booking. Stock decreases only when a booking is paid.
 - **Not here:** slots, slot prices and opening hours (Jam Buka & Harga); staff as service providers (removed, D-011).
@@ -409,7 +409,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - §2.6 categories, including YATIM-4 (colour).
   - §2.7 add-ons, including `is_unlimited`.
   - `staff_ids[]` is removed; `resource_ids[]` becomes Units.
-- **Requirements:** FR-SERVICE-001 to FR-SERVICE-007, FR-CATEGORY-001 to FR-CATEGORY-005, FR-ADDON-001 to FR-ADDON-005, FR-SUB-010, FR-UNIT†.
+- **Requirements:** FR-SERVICE-001 to FR-SERVICE-007, FR-CATEGORY-001 to FR-CATEGORY-005, FR-ADDON-001 to FR-ADDON-005, FR-SUB-010, FR-UNIT.
 - **Acceptance criteria:**
   - **AC-LYN-01:** Creating a service above the plan limit is refused on the server, and the upgrade prompt shows.
   - **AC-LYN-02:** A service with bookings cannot be deleted, only deactivated.
@@ -417,7 +417,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - **AC-LYN-04:** The Add-on tab and the add-on field are refused below Medium.
   - **AC-LYN-05:** An add-on with stock 0 cannot be chosen at checkout. An unlimited add-on never runs out.
 
-### 8.7 Unit (pending D-012)
+### 8.7 Unit
 
 - **Question:** "Which courts, rooms or tools do my services use?"
 - **Path:** `/owner/units`. **Access:** Pemilik, Manajer. **Plan:** Pro.
@@ -425,11 +425,11 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - **List:** name, type, capacity, location, services using it, share used today, active.
   - **Conflict list:** bookings that already overlap on the same unit, in existing data, with links to their booking panels.
 - **Actions:** create, edit, activate or deactivate, delete (only without future bookings). Fields: name (required, up to 100), type (required, up to 100), capacity (1–9999), location (up to 255), services, image from the gallery.
-- **Rule:** two active bookings that use the same unit cannot overlap in time, even for different services. The rule is defined once, in `BookingRules` (FR-UNIT†, ADR-0017†).
+- **Rule:** two active bookings that use the same unit cannot overlap in time, even for different services. The rule is defined once, in `BookingRules` (FR-UNIT, ADR-0017).
 - **Not here:** bookings (Kalender, Booking).
 - **Empty states:** explains units with the futsal example ("Paket Turnamen dan Sewa Lapangan A memakai lapangan yang sama").
 - **Source:** inventory §2.8 resources routes, including YATIM-5 (location). Existing `resources` rows become units (inventory §5).
-- **Requirements:** FR-UNIT†.
+- **Requirements:** FR-UNIT.
 - **Acceptance criteria:**
   - **AC-UNT-01:** A second booking on the same unit and time is refused at checkout, at walk-in and at reschedule.
   - **AC-UNT-02:** The conflict list shows every existing overlap.
@@ -479,12 +479,12 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 
 - **Question:** "How do customers find me, and what do they see?"
 - **Path:** `/owner/booking-page`. **Access:** Pemilik, Manajer. **Plan:** all; landing page and domain Pro.
-- **Section Link & QR (pending D-010):**
+- **Section Link & QR:**
   - the booking link with copy, open and "Bagikan ke WhatsApp";
   - a QR code to download;
   - a printable poster with the QR code and business name.
-- **Section Materi promosi (pending D-010):** ready text for an Instagram bio and a WhatsApp message, each with a copy button.
-- **Section Tampilan (pending D-009):**
+- **Section Materi promosi:** ready text for an Instagram bio and a WhatsApp message, each with a copy button.
+- **Section Tampilan:**
   - logo, cover image, theme colour;
   - button style (pill, rounded, square), card style (elevated, outline, soft), font;
   - description;
@@ -513,7 +513,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - **AC-HBK-04:** A domain is accepted only once across all businesses, and the check reports its real DNS state.
   - **AC-HBK-05:** Images are stored per business; no business can pick another business's image.
 
-### 8.10 Promo (pending D-015)
+### 8.10 Promo
 
 - **Question:** "How do I give a promotion, and does it work?"
 - **Path:** `/owner/promos` (`/owner/vouchers` redirects). **Access:** Pemilik, Manajer. **Plan:** Medium and up.
@@ -593,7 +593,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - inventory §2.18: the transaction history of the hidden payment settings page;
   - the gateway form and the old withdrawal form are removed;
   - BQ-127 corrections apply.
-- **Requirements:** FR-PAYOUT-001 to FR-PAYOUT-003, FR-PAYMENT-011, FR-REFUND†.
+- **Requirements:** FR-PAYOUT-001 to FR-PAYOUT-003, FR-PAYMENT-011, FR-REFUND.
 - **Acceptance criteria:**
   - **AC-PAY-01:** Every route of this page is refused for Manajer and Kasir.
   - **AC-PAY-02:** The ledger balance equals `saldo_platform`.
@@ -606,7 +606,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 - **Question:** "How is my business performing, and what can I improve?"
 - **Path:** `/owner/analytics`. `/owner/schedule-report` redirects to the Okupansi tab. **Access:** Pemilik, Manajer. **Plan:** Medium and up; Small sees a blurred preview with the upgrade prompt.
 - **One period filter** shared by all tabs: this month, last month, 3, 6 or 12 months, or custom.
-- **Tab Ringkasan:** revenue, bookings, new customers, cancellation rate, completion rate, no-show rate (pending D-013), average rating, top service, most used unit (Pro).
+- **Tab Ringkasan:** revenue, bookings, new customers, cancellation rate, completion rate, no-show rate, average rating, top service, most used unit (Pro).
 - **Tab Pendapatan:** revenue per period, online versus walk-in, per service, refunds, net. All from payments (rule 8).
 - **Tab Okupansi:**
   - occupancy rate, total, booked and free slots;
@@ -631,11 +631,11 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 | Tab | Question | Contents | Access, plan |
 |---|---|---|---|
 | **Profil Bisnis** | "How is my business described?" | Name, booking link (slug) with a warning that the old link, QR code and poster stop working when it changes (BQ-110), business type, address, map link, WhatsApp, email, time zone (WIB only for now), description | Pemilik, Manajer; all |
-| **Kebijakan Booking** | "What may customers do themselves?" | Refund on or off (D-001); cancellation and refund-request deadline in hours (`cancel_before_hours`, default 24); reschedule deadline in hours (`reschedule_before_hours`); minimum hours before a session for a new booking, maximum days ahead, buffer between bookings (pending D-020); a preview of the policy text customers see before paying | Pemilik, Manajer; all |
-| **Notifikasi** | "What am I told, and how?" | Per event (new booking, payment success, cancellation, reschedule, refund request, new review, payout status, plan status): in-app (always on) and email (on/off), plus the email address. Stored on the server. WhatsApp is not offered (D-021, pending) | every user for their own preferences; all |
-| **Integrasi** (pending D-019) | "Which of my tools are connected?" | Google Calendar (bookings into the owner's calendar), Google Analytics and Meta Pixel (booking page), each with connect, test, disconnect; API keys and webhooks (Pro); payments and email shown as "Dikelola BookQu" | Pemilik, Manajer; API Pro |
+| **Kebijakan Booking** | "What may customers do themselves?" | Refund on or off (D-001); cancellation and refund-request deadline in hours (`cancel_before_hours`, default 24); reschedule deadline in hours (`reschedule_before_hours`); minimum hours before a session for a new booking, maximum days ahead, buffer between bookings; a preview of the policy text customers see before paying | Pemilik, Manajer; all |
+| **Notifikasi** | "What am I told, and how?" | Per event (new booking, payment success, cancellation, reschedule, refund request, new review, payout status, plan status): in-app (always on) and email (on/off), plus the email address. Stored on the server. WhatsApp is not offered (D-021) | every user for their own preferences; all |
+| **Integrasi** | "Which of my tools are connected?" | Google Calendar (bookings into the owner's calendar), Google Analytics and Meta Pixel (booking page), each with connect, test, disconnect; API keys and webhooks (Pro); payments and email shown as "Dikelola BookQu" | Pemilik, Manajer; API Pro |
 | **Akun** | "How do I sign in?" | Name, email, phone, new password with confirmation; the current password is required for any change (BQ-098). Pemilik also sees "Hapus akun bisnis", which requires the account email and the current password and is refused while the balance is not zero or a payout is in progress (BQ-122) | every user for their own account; delete: Pemilik |
-| **Tim** (pending D-011) | "Who else may sign in?" | Members with role, status and last sign-in; invite by email with a role; change role; revoke access; seat usage against the plan; activity log of all members (§5.3) | Pemilik; Medium and up |
+| **Tim** | "Who else may sign in?" | Members with role, status and last sign-in; invite by email with a role; change role; revoke access; seat usage against the plan; activity log of all members (§5.3) | Pemilik; Medium and up |
 
 - **Not here:** subscription (Paket & Tagihan), balance and accounts (Pembayaran), booking page look (Halaman Booking), payment gateways (removed).
 - **Source:**
@@ -643,7 +643,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - the notification preferences that were not saved become real;
   - §2.20: the integrations route;
   - §2.8: the staff routes are replaced by Tim.
-- **Requirements:** FR-TENANT-004, FR-TENANT-005, FR-BOOKING-012, FR-BOOKING-013, FR-NOTIFICATION-001 to FR-NOTIFICATION-005, FR-AUTH-006, FR-INTEGRATION†, FR-API†, FR-TEAM†, FR-REFUND†.
+- **Requirements:** FR-TENANT-004, FR-TENANT-005, FR-TENANT-008, FR-BOOKING-012, FR-BOOKING-013, FR-BOOKING-022, FR-NOTIFICATION-001 to FR-NOTIFICATION-007, FR-AUTH-006, FR-INTEGRATION, FR-API, FR-TEAM, FR-REFUND.
 - **Acceptance criteria:**
   - **AC-SET-01:** The cancellation and reschedule deadlines saved here are the ones `BookingRules` and the customer access page enforce.
   - **AC-SET-02:** Notification preferences survive a reload and another device.
@@ -660,7 +660,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 - **Contents:**
   - current plan, status and end date;
   - **usage:** services, bookings this month, team accounts;
-  - an honest plan comparison generated from the plan list (§6, D-017 pending);
+  - an honest plan comparison generated from the plan list (§6, D-017);
   - billing history with invoices.
 - **Actions:**
   - choose a plan, then checkout (payer name, email, phone, note), payment with countdown, invoice;
@@ -699,7 +699,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - frequently asked questions, grouped by page;
   - BookQu's WhatsApp contact and support email;
   - a link to the new owner guide (§8.1).
-- **Requirements:** FR-HELP†.
+- **Requirements:** FR-HELP.
 - **Acceptance criteria:**
   - **AC-BNT-01:** Contact details come from configuration, not from hardcoded copy.
 
@@ -714,7 +714,7 @@ Built once (epic E1) and used by every page above.
 | Tabs | Layanan, Jam Buka & Harga, Pembayaran, Laporan, Pengaturan, Booking | State in the URL |
 | Booking panel (§8.4) | Beranda, Kalender, Booking, Pelanggan, search, notifications | Rule 3 |
 | Customer panel (§8.5) | Pelanggan, booking panel, search | Rule 3 |
-| Walk-in form | + Booking, Kalender, Pelanggan | One server action (FR-BOOKING-010). Fields: slot, name (required, up to 150), phone (required, up to 30), email, note (up to 500), payment method (`cash`, `transfer`, `manual`, `qris`), participants (pending D-014), add-ons (pending D-015) |
+| Walk-in form | + Booking, Kalender, Pelanggan | One server action (FR-BOOKING-010). Fields: slot, name (required, up to 150), phone (required, up to 30), email, note (up to 500), payment method (`cash`, `transfer`, `manual`, `qris`), participants, add-ons |
 | Status badges (booking, payment, payout, refund) | everywhere | One label and colour per state |
 | Upgrade prompt | every plan-gated feature (§6) | Rule 6 |
 | Gallery image picker | Layanan, Unit, Halaman Booking | One gallery per business |
@@ -807,8 +807,8 @@ The one feature deliberately dropped is "Salin URL" for assets, because images a
 
 | Removed | Reason |
 |---|---|
-| Payment gateway selection and stored Midtrans credentials | D-016 (pending). The credentials are deleted from storage, not only hidden (inventory §5) |
-| Staff as service providers: staff fields, shifts, `staff_ids[]` on services | D-011 (pending). Existing staff rows are archived, and owners invite team members again (inventory §5) |
+| Payment gateway selection and stored Midtrans credentials | D-016. The credentials are deleted from storage, not only hidden (inventory §5) |
+| Staff as service providers: staff fields, shifts, `staff_ids[]` on services | D-011. Existing staff rows are archived, and owners invite team members again (inventory §5) |
 | Bulk price adjustment panel on Schedule | No backend |
 | Old withdrawal form on the payment settings page | Replaced by BQ-123 to BQ-125 |
 | Duplicate routes (`owner.programs.*`, `owner.settings.payment-setting`) | One path per page (§10.2) |

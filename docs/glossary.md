@@ -12,13 +12,19 @@ Canonical BookQu terms and the legacy names that still appear in the code.
 | **Owner** | The authenticated user who runs a tenant. | `users.role = 'owner'`; `users.namalengkap`; `Tenant::user()` via `iduser` | Seller, Merchant |
 | **Customer** | Person who makes or receives a booking. Not a `User`; has no account. | `bookings.namapelanggan`, `bookings.nomorhp`, `bookings.email`; `payments.nama_pembayar`, `email_pembayar`, `hp_pembayar` | Customer-as-User, Member |
 | **Platform Admin** | BookQu staff with platform-wide oversight. | `users.role = 'admin'` | — |
+| **Team member** | A user invited by the owner to work in one tenant with a role (D-011, FR-TEAM). Not a service provider. | not implemented yet (BQ-126); the old `staff` table means something else and is archived | Staff (for a person who signs in), Employee, Agent |
+| **Role** (Pemilik, Manajer, Kasir) | What a user may do inside one tenant: Pemilik = the owner; Manajer = operations and configuration without money, plan or team; Kasir = the counter, without revenue figures (FR-TEAM-002). | not implemented yet | custom role names |
 | **Service** | Something a customer can book (what). | `services` table; `idlayanan` FK; `namalayanan`, `harga`, `durasi`, `kapasitas`, `satuan_harga`, `satuan_durasi`; `Booking::layanan()`; routes/controller `OwnerProgramController`, `/owner/programs`, `select-program`, `program-selection` | Program, Layanan (as a concept), Bookable Program |
 | **Category** | Grouping of services. | `categories`, `services.idcategory` | — |
 | **Schedule** | One bookable time slot of a service (when). | `schedules` table; `idschedule`; `tanggal`, `jam_mulai`, `jam_selesai`, `harga_override`; "slot" in UI and routes | Program slot |
 | **Availability** | Whether a schedule can be booked now. Derived, never stored. | `AvailabilityRules` statuses `AVAILABLE`, `BOOKED`, `BLOCKED`, `UNAVAILABLE` | a stored "availability" entity |
 | **Blocked date** | A date the owner closed for booking. | `owner_blocked_dates.tanggal` | — |
 | **Booking** | A reservation of one schedule. A multi-slot reservation is several bookings sharing one payment. | `bookings` table; `tanggalbooking`, `jam`, `catatan`, `booking_code` | Order, Reservation entity |
-| **Walk-in booking** | Booking created by the owner for an on-site customer. | `CreateWalkInBooking`, route `owner.bookings.walkin` | a separate walk-in domain |
+| **Walk-in booking** | Booking created by the owner or a team member for an on-site customer. | `CreateWalkInBooking`, route `owner.bookings.walkin` | a separate walk-in domain |
+| **No-show** | Final booking state for a paid booking whose customer did not come; UI "Tidak datang" (D-013). | target `bookings.status = 'no_show'` | Absent, Missed |
+| **Capacity** / **Participants** | Capacity: how many participants one slot of a service takes. Participants: how many people one booking covers (D-014, FR-BOOKING-021). | `services.kapasitas` (stored, not yet enforced) | Seats, Quota (for capacity) |
+| **Booking policy** | The tenant's rules for refunds, cancellation and reschedule deadlines and the booking window (FR-TENANT-008). | `tenants.cancel_before_hours`, `tenants.reschedule_before_hours` | separate policy entities per rule |
+| **Refund request** | A customer's request to cancel a paid booking and get money back, decided by the owner (100%, 50% or rejected) (D-001, FR-REFUND). | not implemented yet | Refund claim |
 | **Payment group** | All bookings paid by one payment (multi-slot). | `payments.id` ↔ `bookings.idpayment`; `payments.idbooking` = first booking (legacy, deprecated) | — |
 | **Payment** | A money transaction: booking payment or subscription payment. | `payments` table; `tipe` (`booking`, `subscription`), `jumlah`, `metode`, `provider`, `order_id`, `external_id` | generic Transaction |
 | **Refund** | Money owed back after an eligible cancellation or a late payment success. Recorded `pending`, returned manually. | `refunds` table; `jumlah` | — |
@@ -33,9 +39,12 @@ Canonical BookQu terms and the legacy names that still appear in the code.
 | **Plan** | A subscription package definition. | `plans` table; `namapaket` (`small`, `medium`, `pro`), `hargabulanan`, `maxlayanan`, `maxbooking`, `isunlimited` | Package (when ambiguous) |
 | **Subscription** | A tenant's relationship to a plan and its state. | `subscriptions` table; `trial_berakhir`, `langganan_mulai`, `langganan_berakhir`; view variable `$langganan` | Membership |
 | **Entitlement** | What a subscription allows (features, limits). | `EntitlementRules`, `PlanCapability`; middleware `subscription:<feature>` | ad-hoc plan-name checks |
-| **Staff** / **Resource** | People / physical assets linked to services (Tier 3, hidden). | `staff`, `resources`, `service_staff`, `service_resource` | — |
-| **Additional Item** | Optional extra sold with a service (Tier 3, hidden). | `additional_items`, `additional_item_service` | Add-on domain |
-| **Voucher** | Promotional discount (Tier 3, hidden; its routes answer 404 while hidden). | `vouchers` | Coupon domain |
+| **Unit** | A court, room or tool used by one or more services; never booked twice at the same time (D-012, FR-UNIT). Pro. | `resources`, `service_resource` (to be renamed); `/owner/staff-resources` today | Resource (in new code), Asset, Room |
+| **Staff** (legacy) | Former "service provider" records; withdrawn (FR-STAFF-001). | `staff`, `service_staff`; archived | — |
+| **Additional Item** | Optional extra sold with a service; UI label "Add-on". Counted in the payment amount (D-015). | `additional_items`, `additional_item_service` | Add-on domain |
+| **Voucher** | Promotional discount code; UI label "Promo". Counted in the payment amount (D-015). | `vouchers` | Coupon domain |
+| **Media gallery** | All images of one tenant, used by every image field (FR-ASSET-005). | `assets` table, `/owner/settings/assets` today | per-page image stores |
+| **Payout account** | One of up to three saved bank accounts a tenant withdraws to; one is primary (D-004). | `tenant_payout_accounts`; `owner_payouts.payout_account_id` | — |
 | **Review** | Customer feedback on an eligible booking. | `reviews`; `rating`, `komentar` (text), `balasan` (owner reply), `dibalas_pada`, `is_hidden` | Rating domain |
 | **Platform balance** | Money the platform holds for a tenant; source of payouts. | `tenants.saldo_platform`; `owner_payouts` | — |
 | **Public business page** | Tenant storefront at `/{slug}` or a custom domain. | `slug_usaha`, `custom_domain`, `customer.booking.*` routes | "subdomain" for `/{slug}` |
@@ -57,14 +66,36 @@ Canonical BookQu terms and the legacy names that still appear in the code.
 
 | Field | Values | Notes |
 |---|---|---|
-| `bookings.status` | `pending`, `paid`, `cancelled`, `completed` | Constants in `App\Domain\Booking\BookingState`. |
+| `bookings.status` | `pending`, `paid`, `cancelled`, `completed` | Constants in `App\Domain\Booking\BookingState`. `no_show` is added by D-013 (FR-BOOKING-020); not in code yet. |
 | `payments.status` | `pending`, `sukses` (success), `gagal` (failed) | Expiry is not a status; an expired payment becomes `gagal`. Constants in `PaymentState`. |
 | `refunds.status` | `pending`, `processed`, `failed` | |
 | `subscriptions.status` | `trial`, `active`, `expired`, `cancelled` | Constants in `SubscriptionState`. |
 | `schedules.status` | `tersedia` (open), `tidak_tersedia` (closed) | DB enum. `AvailabilityRules` also checks `diblokir`, which the enum cannot store. |
 | `owner_payouts.status` | `pending`, `approved`, `success`, `failed`, `rejected` | Transitions in `App\Domain\Payout\PayoutState`: pending → approved/rejected, approved → success/failed. |
-| `users.role` | `owner`, `admin` | Migrations also allow `superadmin`/`customer`; neither is used. |
-| `tenants.payment_mode` | `platform` (default), `owner` | `owner` = tenant's own Midtrans keys (Tier 3, hidden); forced to `platform` for v1 (BQ-079). |
+| `users.role` | `owner`, `admin` | Migrations also allow `superadmin`/`customer`; neither is used. Team roles (Manajer, Kasir) are added by D-011; their storage is decided in ADR-0016. |
+| `tenants.payment_mode` | `platform` (default), `owner` | `owner` = tenant's own Midtrans keys; withdrawn by D-016 together with the stored `midtrans_*` credentials. |
+
+## Owner menu names
+
+The owner portal redesign (`owner-portal.md` §10) renames menus. Old names still appear in code and older documents.
+
+| Old name | New menu |
+|---|---|
+| Dashboard | Beranda |
+| Calendar | Kalender |
+| Bookings | Booking |
+| Customers | Pelanggan |
+| Services, Programs, Categories, Additional Items | Layanan (tabs Layanan, Kategori, Add-on) |
+| Staff & Resources | Unit (resources); Pengaturan → Tim (team members) |
+| Schedule | Jam Buka & Harga |
+| Appearance, Assets, Landing Page | Halaman Booking |
+| Vouchers | Promo |
+| Reviews | Ulasan |
+| Saldo & Withdraw, Payments | Pembayaran |
+| Analytics, Schedule Report | Laporan |
+| Settings, Integrations | Pengaturan |
+| Subscription | Paket & Tagihan |
+| Notifications | Bell (Notifikasi) |
 
 ## Indonesian words you will meet
 
