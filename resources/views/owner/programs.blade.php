@@ -179,7 +179,7 @@
                     <div class="absolute top-2 right-2 z-20 flex items-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
                         <button
                             class="rounded-xl p-2 sm:p-1.5 bg-white/95 backdrop-blur-xs shadow-md text-bq-text-subtle transition-all hover:bg-white hover:text-bq-primary active:scale-95 cursor-pointer"
-                            @click='$dispatch("open-edit-program", @json($editPayload))'
+                            @click="$dispatch('open-edit-program', @js($editPayload))"
                             aria-label="Edit program"
                             id="btn-edit-program-{{ $layanan->id }}"
                         >
@@ -252,11 +252,11 @@
                                 </svg>
                                 {{ $layanan->bookings_count }} bookings
                             </span>
-                            <form method="POST" action="{{ $baseRoute }}/{{ $layanan->id }}/toggle">
+                            <form method="POST" action="{{ $baseRoute }}/{{ $layanan->id }}/toggle" x-data="{ toggling: false }" @submit="toggling = true">
                                 @csrf
                                 @method('PATCH')
-                                <button type="submit" class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold transition {{ ($layanan->is_active ?? true) ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200' }}" title="Klik untuk ubah status">
-                                    {{ ($layanan->is_active ?? true) ? 'Active' : 'Non-Active' }}
+                                <button type="submit" :disabled="toggling" :aria-busy="toggling" class="disabled:opacity-50 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold transition {{ ($layanan->is_active ?? true) ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200' }}" title="Klik untuk ubah status">
+                                    <span x-show="!toggling">{{ ($layanan->is_active ?? true) ? 'Active' : 'Non-Active' }}</span><span x-show="toggling" x-cloak>Menyimpan...</span>
                                 </button>
                             </form>
                         </div>

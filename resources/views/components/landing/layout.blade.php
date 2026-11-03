@@ -29,8 +29,10 @@
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased overflow-x-clip" style="font-family: 'Plus Jakarta Sans', sans-serif;">
     <div class="relative">
-        <div class="pointer-events-none absolute -top-24 right-0 h-80 w-80 rounded-full bg-indigo-200/40 blur-3xl"></div>
-        <div class="pointer-events-none absolute top-64 -left-16 h-72 w-72 rounded-full bg-indigo-100/40 blur-3xl"></div>
+        <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            <div class="absolute -top-24 right-0 h-80 w-80 rounded-full bg-indigo-200/40 blur-3xl"></div>
+            <div class="absolute top-64 -left-16 h-72 w-72 rounded-full bg-indigo-100/40 blur-3xl"></div>
+        </div>
 
         {{ $slot }}
     </div>

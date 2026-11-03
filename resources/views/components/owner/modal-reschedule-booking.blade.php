@@ -153,8 +153,7 @@
                     <label class="block text-xs font-bold text-bq-text">
                         Pilih Tanggal Baru <span class="text-rose-500">*</span>
                     </label>
-                    <input
-                        type="date"
+                    <input type="date" name="tanggal"
                         x-model="selectedDate"
                         :min="minDate"
                         @change="muatSlot()"

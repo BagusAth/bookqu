@@ -2,7 +2,7 @@
     <div class="mx-auto max-w-6xl">
         <div class="mx-auto max-w-3xl text-center">
 
-            <h1 class="mt-5 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+            <h1 class="mt-5 text-3xl font-semibold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
                 Kelola Booking Bisnis Anda Lebih Mudah
             </h1>
             <p class="mt-4 text-base text-slate-600 sm:text-lg">
@@ -13,29 +13,29 @@
                 @auth
                     @if (auth()->user()->isOwner())
                         @if (auth()->user()->hasVerifiedEmail())
-                            <a href="{{ route('owner.dashboard') }}" class="rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
+                            <a href="{{ route('owner.dashboard') }}" class="w-full sm:w-auto text-center inline-flex items-center justify-center rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
                                 Buka Dashboard
                             </a>
                         @else
-                            <a href="{{ route('verification.notice') }}" class="rounded-xl bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-amber-500/20 transition hover:bg-amber-600">
+                            <a href="{{ route('verification.notice') }}" class="w-full sm:w-auto text-center inline-flex items-center justify-center rounded-xl bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-amber-500/20 transition hover:bg-amber-600">
                                 Verifikasi Email Anda
                             </a>
                         @endif
                     @elseif (auth()->user()->isAdmin())
-                        <a href="{{ route('admin.dashboard') }}" class="rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
+                        <a href="{{ route('admin.dashboard') }}" class="w-full sm:w-auto text-center inline-flex items-center justify-center rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
                             Buka Dashboard
                         </a>
                     @else
-                        <a href="{{ route('register') }}" class="rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
+                        <a href="{{ route('register') }}" class="w-full sm:w-auto text-center inline-flex items-center justify-center rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
                             Mulai Gratis 7 Hari
                         </a>
                     @endif
                 @else
-                    <a href="{{ route('register') }}" class="rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
+                    <a href="{{ route('register') }}" class="w-full sm:w-auto text-center inline-flex items-center justify-center rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]">
                         Mulai Gratis 7 Hari
                     </a>
                 @endauth
-                <a href="#features" class="rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300">
+                <a href="#features" class="w-full sm:w-auto text-center inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300">
                     Lihat Demo
                 </a>
             </div>
@@ -46,7 +46,7 @@
                 <img
                     src="{{ asset('images/dashboard.png') }}"
                     alt="Dashboard preview"
-                    class="animate-[float-slow_8s_ease-in-out_infinite] rounded-xl border border-slate-200 bg-white shadow-xl"
+                    class="sm:animate-[float-slow_8s_ease-in-out_infinite] rounded-xl border border-slate-200 bg-white shadow-xl"
                 >
             </div>
         </div>

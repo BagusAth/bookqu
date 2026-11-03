@@ -1,0 +1,42 @@
+<?php
+
+return [
+    'small' => ['features' => [
+        ':bookings',
+        '1 bisnis / 1 lokasi',
+        ':services',
+        '1 admin + 2 staff',
+        'Customer booking page',
+        'Calendar & automatic slots',
+        'Email notification',
+        'Basic dashboard',
+        'Automatic invoice',
+        'Pembayaran via BookQu',
+    ]],
+    'medium' => ['features' => [
+        ':bookings',
+        'Semua fitur Small',
+        ':services',
+        'Hingga 15 staff',
+        'Role management',
+        'Customer CRM',
+        'WhatsApp & email reminders',
+        'Promo & voucher',
+        'Complete analytics',
+        'Export Excel / CSV',
+        'BYOPG + platform payment',
+    ]],
+    'pro' => ['features' => [
+        ':bookings',
+        'Semua fitur Medium',
+        'Unlimited staff',
+        'Multi-location',
+        'Custom domain',
+        'Landing page builder',
+        'Advanced permission',
+        'White-label',
+        'Advanced analytics',
+        'Automation workflow',
+        'Priority support',
+    ]],
+];

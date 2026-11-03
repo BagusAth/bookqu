@@ -5,15 +5,15 @@
 
 @php
     $currentStep = $step ? intval($step) : intval($current);
-    // Simplified 3-step booking flow: Program -> Schedule -> Confirm
+    // Simplified 3-step booking flow: Layanan -> Jadwal -> Data & Pembayaran
     $steps = [
-        1 => 'Program',
-        2 => 'Schedule',
-        3 => 'Confirm',
+        1 => 'Layanan',
+        2 => 'Jadwal',
+        3 => 'Data & Pembayaran',
     ];
 @endphp
 
-<nav aria-label="Progress Booking" class="w-full">
+<nav aria-label="Progres Pemesanan" class="w-full">
     {{-- Centered 3-Step Stepper (Desktop & Mobile) --}}
     <ol class="flex items-center justify-center max-w-2xl mx-auto w-full px-2 sm:px-4">
         @foreach ($steps as $stepNum => $stepName)
@@ -30,19 +30,19 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
                         </span>
-                        <span class="text-xs sm:text-sm font-semibold text-[#0F172A] whitespace-nowrap">{{ $stepName }}</span>
+                        <span class="text-[10px] sm:text-sm font-semibold text-[#0F172A] whitespace-nowrap">{{ $stepName }}</span>
                     @elseif ($isCurrent)
                         {{-- Current Step: Solid Blue/Indigo with Step Number --}}
-                        <span class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white font-bold text-xs sm:text-sm shadow-xs ring-4 ring-[#EEF2FF]">
+                        <span class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white font-bold text-[10px] sm:text-sm shadow-xs ring-4 ring-[#EEF2FF]">
                             {{ $stepNum }}
                         </span>
-                        <span class="text-xs sm:text-sm font-bold text-[#4F46E5] whitespace-nowrap">{{ $stepName }}</span>
+                        <span class="text-[10px] sm:text-sm font-bold text-[#4F46E5] whitespace-nowrap">{{ $stepName }}</span>
                     @else
                         {{-- Inactive Upcoming Step: Subtle Gray Circle with Number --}}
-                        <span class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full border border-[#CBD5E1] bg-[#F8FAFC] text-[#94A3B8] font-medium text-xs sm:text-sm">
+                        <span class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full border border-[#CBD5E1] bg-[#F8FAFC] text-[#94A3B8] font-medium text-[10px] sm:text-sm">
                             {{ $stepNum }}
                         </span>
-                        <span class="text-xs sm:text-sm font-medium text-[#94A3B8] whitespace-nowrap">{{ $stepName }}</span>
+                        <span class="text-[10px] sm:text-sm font-medium text-[#94A3B8] whitespace-nowrap">{{ $stepName }}</span>
                     @endif
                 </div>
 

@@ -1,8 +1,8 @@
 @extends('customer.layouts.booking-shell')
 
 @section('title', 'Selesaikan Pembayaran')
-@section('current_step', 5)
-@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug))
+@section('current_step', 3)
+@section('back_url', \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug))
 @section('back_label', 'Pilih Layanan Lain')
 
 @section('head')

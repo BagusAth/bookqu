@@ -4,6 +4,19 @@
         buka: false,
         sedangkirim: false,
         preview: null,
+        trapFocus(event) {
+            const elements = [...this.$refs.dialog.querySelectorAll('button, input, select, textarea, a[href], [tabindex]')]
+                .filter(el => !el.disabled && el.tabIndex >= 0 && el.offsetParent !== null);
+            const first = elements[0];
+            const last = elements[elements.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last?.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first?.focus();
+            }
+        },
         handleFile(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -21,7 +34,7 @@
             this.$refs.fileInput.value = '';
         }
     }"
-    @open-add-program.window="buka = true; reset()"
+    @open-add-program.window="buka = true; reset(); $nextTick(() => $refs.dialog.querySelector('button, input, select')?.focus())"
     x-cloak
 >
     {{-- Overlay --}}
@@ -48,7 +61,7 @@
         x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
         class="fixed inset-0 z-[70] flex items-center justify-center p-4"
     >
-        <div class="w-full max-w-lg rounded-2xl border border-bq-border bg-bq-surface shadow-2xl" @click.stop>
+        <div class="w-full max-w-lg rounded-2xl border border-bq-border bg-bq-surface shadow-2xl" @click.stop x-ref="dialog" role="dialog" aria-modal="true" aria-label="Tambah layanan" @keydown.tab="trapFocus($event)">
             {{-- Header --}}
             <div class="flex items-center justify-between border-b border-bq-border px-6 py-4">
                 <div>

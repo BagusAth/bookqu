@@ -4,10 +4,11 @@ namespace App\Notifications;
 
 use App\Models\Subscription;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class TrialExpiringNotification extends Notification
+class TrialExpiringNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -16,6 +17,7 @@ class TrialExpiringNotification extends Notification
     public function __construct(Subscription $subscription)
     {
         $this->subscription = $subscription;
+        $this->afterCommit();
     }
 
     /**
@@ -36,7 +38,7 @@ class TrialExpiringNotification extends Notification
 
         return (new MailMessage)
             ->subject('Masa Trial BookQu Anda Akan Berakhir Besok!')
-            ->greeting('Halo ' . ($notifiable->namalengkap ?? 'Owner') . ',')
+            ->greeting('Halo '.($notifiable->namalengkap ?? 'Owner').',')
             ->line("Masa **Free Trial 7 Hari** untuk **{$namaBisnis}** akan berakhir pada **{$tanggalBerakhir}**.")
             ->line('Setelah masa trial habis, akses ke fitur premium akan dinonaktifkan secara otomatis.')
             ->action('Upgrade Sekarang', url('/owner/subscription'))
@@ -53,7 +55,7 @@ class TrialExpiringNotification extends Notification
     {
         return [
             'subscription_id' => $this->subscription->id,
-            'trial_berakhir'  => $this->subscription->trial_berakhir,
+            'trial_berakhir' => $this->subscription->trial_berakhir,
         ];
     }
 }

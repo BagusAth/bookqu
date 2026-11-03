@@ -22,6 +22,7 @@
                  class="w-screen max-w-lg bg-white shadow-2xl flex flex-col">
 
                 {{-- Drawer Header --}}
+                <p x-show="detailError" x-text="detailError" role="alert" class="m-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700" x-cloak></p>
                 <div class="p-6 border-b border-bq-border bg-slate-50/70 flex items-center justify-between shrink-0">
                     <template x-if="loading">
                         <div class="flex items-center gap-3">

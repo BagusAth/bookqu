@@ -7,6 +7,12 @@
                 $resourceName = $booking->layanan?->resources?->pluck('name')->join(', ');
                 $staffResourceDisplay = $staffName ?: ($resourceName ?: 'General Staff');
                 $bookingData = [
+                    'booking_code' => $booking->booking_code,
+                    'namapelanggan' => $booking->namapelanggan,
+                    'jam' => $booking->jam,
+                    'idschedule' => $booking->idschedule,
+                    'tanggalbooking' => $booking->tanggalbooking?->toDateString(),
+                    'layanan' => $booking->layanan ? ['namalayanan' => $booking->layanan->namalayanan] : null,
                     'id' => $booking->id,
                     'code' => $booking->booking_code ?? ('BKQ-' . $booking->id),
                     'name' => $booking->namapelanggan,
@@ -26,11 +32,7 @@
                     'snap_token' => $booking->payment?->snap_token ?? null,
                     'rescheduled_from_date' => $booking->rescheduled_from_date ? $booking->rescheduled_from_date->format('d M Y') : null,
                     'rescheduled_from_time' => $booking->rescheduled_from_time ?? null,
-                    'manage_url' => $booking->booking_code
-                        ? (($booking->isMultiSlot() && $booking->payment && $booking->payment->manage_token)
-                            ? $booking->payment->getManageUrl()
-                            : $booking->getManageUrl())
-                        : null,
+                    'manage_url' => null,
                 ];
 
                 $warnastatus = match($booking->status) {
@@ -96,7 +98,7 @@
                 {{-- Bottom Row: Direct Actions --}}
                 <div class="flex items-center justify-between pt-2.5 border-t border-bq-border/60 gap-2">
                     <button type="button"
-                        @click="viewBooking({{ json_encode($bookingData) }})"
+                        @click="viewBooking(@js($bookingData))"
                         class="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-bq-border bg-bq-background/60 py-2 px-3 text-xs font-bold text-bq-text active:bg-slate-200 transition">
                         <svg class="h-3.5 w-3.5 text-bq-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>

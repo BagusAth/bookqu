@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Domain\Payment\PaymentRules;
+use App\Models\Scopes\TenantScope;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +12,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Payment extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use BelongsToTenant, HasFactory;
+
+    protected $hidden = ['manage_token'];
 
     protected $fillable = [
         'idtenant',
@@ -38,6 +42,8 @@ class Payment extends Model
         return [
             'jumlah' => 'decimal:2',
             'expired_at' => 'datetime',
+            'balance_credited_at' => 'datetime',
+            'customer_access_version' => 'integer',
         ];
     }
 
@@ -61,6 +67,7 @@ class Payment extends Model
 
     /**
      * Backward-compatibility relasi single booking.
+     *
      * @deprecated Use bookings() for booking payments.
      */
     public function booking(): BelongsTo
@@ -69,37 +76,11 @@ class Payment extends Model
     }
 
     /**
-     * Dapatkan URL manajemen reservasi customer level payment.
-     */
-    public function getManageUrl(): string
-    {
-        if (!$this->order_id) {
-            return '#';
-        }
-
-        return route('booking.manage.payment', ['order_id' => $this->order_id])
-            . ($this->manage_token ? '?token=' . $this->manage_token : '');
-    }
-
-    /**
-     * Dapatkan URL invoice reservasi customer level payment.
-     */
-    public function getInvoiceUrl(): string
-    {
-        if (!$this->order_id) {
-            return '#';
-        }
-
-        return route('booking.manage.payment.invoice', ['order_id' => $this->order_id])
-            . ($this->manage_token ? '?token=' . $this->manage_token : '');
-    }
-
-    /**
      * Cek apakah pembayaran sudah kedaluwarsa.
      */
     public function isExpired(): bool
     {
-        return $this->expired_at && $this->expired_at->isPast();
+        return PaymentRules::isExpired($this);
     }
 
     /**
@@ -107,7 +88,7 @@ class Payment extends Model
      */
     public function isPending(): bool
     {
-        return $this->status === 'pending' && !$this->isExpired();
+        return PaymentRules::canProcess($this);
     }
 
     /**
@@ -117,7 +98,8 @@ class Payment extends Model
      */
     public function resolveRouteBinding($value, $field = null)
     {
-        return static::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+        // scope-bypass: route binding resolves a public reference; customer middleware and controllers verify grant and tenant ownership.
+        return static::withoutGlobalScope(TenantScope::class)
             ->where($field ?? $this->getRouteKeyName(), $value)
             ->first();
     }

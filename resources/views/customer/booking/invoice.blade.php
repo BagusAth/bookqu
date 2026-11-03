@@ -1,8 +1,8 @@
 @extends('customer.layouts.booking-shell')
 
 @section('title', 'Bukti Reservasi & Pembayaran')
-@section('current_step', 6)
-@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug))
+@section('current_step', 3)
+@section('back_url', \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug))
 @section('back_label', 'Beranda')
 
 @php
@@ -17,13 +17,6 @@
 
     $eventTitle = 'Booking ' . ($firstSlot->layanan->namalayanan ?? 'Layanan') . ' - ' . $tenant->namabisnis;
     $eventLocation = ($tenant->alamat ? $tenant->alamat . ', ' : '') . $tenant->namabisnis;
-
-    // Single Management URL per Payment Group (Problem2.md Section 1, 3, 8)
-    $manageUrl = $payment->manage_token 
-        ? $payment->getManageUrl() 
-        : (!empty($booking->booking_code)
-            ? route('booking.manage', ['booking_code' => $booking->booking_code]) . ($booking->cancellation_token ? '?token=' . $booking->cancellation_token : '')
-            : '#');
 
     $eventDetails = 'Reservasi resmi di ' . $tenant->namabisnis . "\nOrder ID: " . $payment->order_id;
 
@@ -58,7 +51,7 @@
     {{-- Success Hero Banner with Celebration Confetti (S6.1) --}}
     <div class="text-center mb-8 relative overflow-hidden py-3">
         {{-- Decorative Confetti Particles --}}
-        <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div class="no-print absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
             <span class="confetti-dot bg-[#4F46E5]" style="left: 12%; top: 5px; animation-delay: 0.1s;"></span>
             <span class="confetti-dot bg-emerald-500" style="left: 26%; top: 15px; animation-delay: 0.35s;"></span>
             <span class="confetti-dot bg-amber-400" style="left: 45%; top: 0px; animation-delay: 0.2s;"></span>
@@ -224,36 +217,6 @@
                     </div>
                 </div>
             </div>
-
-            {{-- Self-Service Manage Booking Box --}}
-            @if ($manageUrl !== '#')
-                <div class="rounded-xl border border-[#C7D2FE] bg-[#EEF2FF]/60 p-4 text-xs">
-                    <div class="flex items-start gap-2.5">
-                        <svg class="h-4 w-4 text-[#4F46E5] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <div class="flex-1">
-                            <p class="font-bold text-[#4F46E5]">Kelola Reservasi Mandiri (Tanpa Perlu Login)</p>
-                            <p class="text-[#64748B] mt-0.5 leading-relaxed">
-                                @if ($allBookings->count() > 1)
-                                    Pemesanan Anda terdiri dari {{ $allBookings->count() }} slot waktu (multi-slot). Seluruh slot dikelola dalam satu grup reservasi:
-                                @else
-                                    Anda dapat melihat rincian booking ini kapan saja melalui tautan berikut:
-                                @endif
-                            </p>
-                            <a
-                                href="{{ $manageUrl }}"
-                                class="mt-2 inline-flex items-center gap-1 font-bold text-[#4F46E5] hover:underline break-all"
-                            >
-                                <span>{{ $payment->manage_token ? url('/manage/payment/' . $payment->order_id) : url('/manage/' . $booking->booking_code) }}</span>
-                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            @endif
         </div>
     </div>
 
@@ -332,7 +295,7 @@
         </button>
 
         <a
-                            href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
+                            href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] px-6 py-3 text-sm font-bold text-white shadow-md shadow-[#4F46E5]/20 transition active:scale-98"
         >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -342,7 +305,7 @@
         </a>
 
         <a
-            href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}"
+            href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] hover:bg-[#F1F5F9] hover:border-[#94A3B8] px-5 py-3 text-sm font-bold text-[#1E293B] shadow-2xs transition active:scale-98 cursor-pointer"
         >
             <svg class="h-4 w-4 text-[#475569]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
@@ -356,5 +319,5 @@
 @endsection
 
 @section('scripts')
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 @endsection

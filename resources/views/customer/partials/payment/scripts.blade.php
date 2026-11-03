@@ -1,9 +1,9 @@
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 <script>
     const snapToken = @json($payment->snap_token ?? null);
     const paymentUrl = @json($payment->payment_url ?? null);
-    const callbackUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.callback"), [$tenant->slug, $payment]) }}';
-    const checkStatusUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.check-status"), [$tenant->slug, $payment]) }}';
+    const callbackUrl = '{{ \App\Support\CustomerBookingRoutes::url("customer.booking.callback", [$tenant->slug, $payment]) }}';
+    const checkStatusUrl = '{{ \App\Support\CustomerBookingRoutes::url("customer.booking.check-status", [$tenant->slug, $payment]) }}';
     const csrfToken = '{{ csrf_token() }}';
 
     function showInlineFeedback(message, type = 'error') {
@@ -94,6 +94,11 @@
     let isProcessingSuccess = false;
     let pollInterval = null;
     let isChecking = false;
+    // Polling stops after 5 minutes or 3 consecutive failures (BQ-051)
+    const MAX_POLL_ATTEMPTS = 120;
+    const MAX_POLL_FAILURES = 3;
+    let pollAttempts = 0;
+    let pollFailures = 0;
 
     async function sendPaymentCallback(result) {
         if (isProcessingSuccess) return;
@@ -199,7 +204,21 @@
                 }
             });
 
+            // 419: this page's form token expired; 404: the access session ended. Retrying cannot help.
+            if (response.status === 419 || response.status === 404) {
+                stopAutoPolling();
+                showInlineFeedback(response.status === 419
+                    ? 'Sesi halaman ini telah berakhir. Muat ulang halaman untuk melihat status terbaru.'
+                    : 'Akses ke halaman pembayaran ini telah berakhir. Muat ulang halaman atau buka kembali tautan dari email konfirmasi.', 'error');
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+
             const data = await response.json();
+            pollFailures = 0;
 
             if (data.status === 'sukses' && data.redirect) {
                 showSuccessRedirect(data.redirect);
@@ -227,6 +246,10 @@
             }
         } catch (error) {
             console.error('Status check error:', error);
+            pollFailures++;
+            if (pollFailures >= MAX_POLL_FAILURES) {
+                stopAutoPolling();
+            }
             if (!isSilent) {
                 showInlineFeedback('Gagal memeriksa status pembayaran. Periksa koneksi internet Anda.', 'error');
             }
@@ -246,7 +269,13 @@
 
     function startAutoPolling() {
         if (pollInterval) clearInterval(pollInterval);
+        pollAttempts = 0;
+        pollFailures = 0;
         pollInterval = setInterval(() => {
+            if (++pollAttempts > MAX_POLL_ATTEMPTS) {
+                stopAutoPolling();
+                return;
+            }
             if (!document.hidden) {
                 checkPaymentStatus(true);
             }
@@ -273,11 +302,18 @@
 
         // Expiry countdown: synchronized with server remaining seconds
         let remainingSeconds = {{ max(0, $payment->expired_at ? (int) now()->diffInSeconds($payment->expired_at, false) : 900) }};
+        // Count against a fixed deadline: background tabs (e.g. while paying in an e-wallet app) throttle timers
+        const deadlineAt = Date.now() + remainingSeconds * 1000;
+
+        // Declared before updateCountdown() runs: an expired page must not hit the TDZ (BQ-048)
+        let timer = null;
 
         function updateCountdown() {
             if (remainingSeconds <= 0) {
                 if (timer) clearInterval(timer);
                 stopAutoPolling();
+                // Let the server reconcile at the deadline; a late success still redirects (BQ-064 T4-08)
+                checkPaymentStatus(true);
                 if (countdownCard) {
                     countdownCard.className = "mt-4 mx-auto max-w-sm rounded-2xl border border-red-200 bg-red-50 p-3 sm:p-4 text-center";
                 }
@@ -316,10 +352,12 @@
         }
 
         updateCountdown();
-        const timer = setInterval(function() {
-            remainingSeconds--;
-            updateCountdown();
-        }, 1000);
+        if (remainingSeconds > 0) {
+            timer = setInterval(function() {
+                remainingSeconds = Math.max(0, Math.round((deadlineAt - Date.now()) / 1000));
+                updateCountdown();
+            }, 1000);
+        }
 
         if (payButton) {
             payButton.addEventListener('click', openSnapPayment);

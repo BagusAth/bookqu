@@ -84,7 +84,7 @@
                 </button>
                 <form
                     method="POST"
-                    action="{{ route('booking.manage.cancel', ['booking_code' => $booking->booking_code, 'token' => $booking->cancellation_token ?: $token]) }}"
+                    action="{{ route('booking.manage.cancel', ['booking_code' => $booking->booking_code]) }}"
                     class="inline"
                     @submit="isCancelling = true"
                 >

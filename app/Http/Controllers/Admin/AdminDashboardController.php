@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -15,17 +14,21 @@ class AdminDashboardController extends Controller
     public function index()
     {
         // ── Statistik Global ──
-        $totalTenant      = Tenant::count();
-        $totalUser        = User::where('role', 'owner')->count();
-        $tenantTrial      = Subscription::withoutGlobalScopes()->where('status', 'trial')->count();
-        $tenantAktif      = Subscription::withoutGlobalScopes()->where('status', 'active')->count();
-        $tenantExpired    = Subscription::withoutGlobalScopes()->where('status', 'expired')->count();
+        $totalTenant = Tenant::count();
+        $totalUser = User::where('role', 'owner')->count();
+        // scope-bypass: platform admin aggregates (role:admin route)
+        $tenantTrial = Subscription::withoutGlobalScopes()->where('status', 'trial')->count();
+        $tenantAktif = Subscription::withoutGlobalScopes()->where('status', 'active')->count();
+        // scope-bypass: platform admin aggregates (role:admin route)
+        $tenantExpired = Subscription::withoutGlobalScopes()->where('status', 'expired')->count();
 
         // ── Revenue platform dari langganan ──
+        // scope-bypass: platform admin aggregates (role:admin route)
         $totalRevenuePlatform = Payment::withoutGlobalScopes()->where('tipe', 'subscription')
             ->where('status', 'sukses')
             ->sum('jumlah');
 
+        // scope-bypass: platform admin aggregates (role:admin route)
         $revenuebulanini = Payment::withoutGlobalScopes()->where('tipe', 'subscription')
             ->where('status', 'sukses')
             ->whereMonth('created_at', Carbon::now()->month)
@@ -34,6 +37,7 @@ class AdminDashboardController extends Controller
 
         // ── Daftar tenant terbaru ──
         $tenantTerbaru = Tenant::with(['user', 'subscriptions' => function ($q) {
+            // scope-bypass: platform admin aggregates (role:admin route)
             $q->withoutGlobalScopes()->latest()->limit(1);
         }])
             ->orderByDesc('created_at')
@@ -44,9 +48,10 @@ class AdminDashboardController extends Controller
         $labelBulan = [];
         $revenuePerBulan = [];
         for ($i = 5; $i >= 0; $i--) {
-            $awal  = Carbon::now()->subMonths($i)->startOfMonth();
+            $awal = Carbon::now()->subMonths($i)->startOfMonth();
             $akhir = Carbon::now()->subMonths($i)->endOfMonth();
-            $labelBulan[]      = $awal->format('M Y');
+            $labelBulan[] = $awal->format('M Y');
+            // scope-bypass: platform admin aggregates (role:admin route)
             $revenuePerBulan[] = round(Payment::withoutGlobalScopes()->where('tipe', 'subscription')
                 ->where('status', 'sukses')
                 ->whereBetween('created_at', [$awal, $akhir])

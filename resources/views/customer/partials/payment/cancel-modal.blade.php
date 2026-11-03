@@ -63,7 +63,7 @@
             >
                 Kembali ke Pembayaran
             </button>
-            <form method="POST" action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.cancel'), [$tenant->slug, $payment]) }}" class="inline">
+            <form method="POST" action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.cancel', [$tenant->slug, $payment]) }}" class="inline">
                 @csrf
                 <button
                     type="submit"

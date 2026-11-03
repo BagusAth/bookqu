@@ -3,7 +3,6 @@
 namespace Tests\Feature\Owner;
 
 use App\Models\Booking;
-use App\Models\CustomerNote;
 use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -18,10 +17,15 @@ class CustomerManagementTest extends TestCase
     use RefreshDatabase;
 
     protected User $ownerA;
+
     protected Tenant $tenantA;
+
     protected User $ownerB;
+
     protected Tenant $tenantB;
+
     protected Service $serviceA;
+
     protected Schedule $scheduleA;
 
     protected function setUp(): void
@@ -30,41 +34,41 @@ class CustomerManagementTest extends TestCase
 
         // Owner A — full profile so owner.profile middleware passes
         $this->ownerA = User::factory()->create([
-            'role'              => 'owner',
+            'role' => 'owner',
             'email_verified_at' => now(),
         ]);
         $this->tenantA = Tenant::create([
-            'iduser'      => $this->ownerA->id,
-            'namabisnis'  => 'Yoga Studio A',
+            'iduser' => $this->ownerA->id,
+            'namabisnis' => 'Yoga Studio A',
             'jenisbisnis' => 'Kebugaran',
-            'slug'        => 'yoga-studio-a',
-            'alamat'      => 'Jl. Senopati No. 1',
-            'nomorhp'     => '081111111111',
+            'slug' => 'yoga-studio-a',
+            'alamat' => 'Jl. Senopati No. 1',
+            'nomorhp' => '081111111111',
         ]);
         $this->serviceA = Service::create([
-            'idtenant'    => $this->tenantA->id,
+            'idtenant' => $this->tenantA->id,
             'namalayanan' => 'Yoga Class',
-            'harga'       => 150000,
-            'durasi'      => 60,
-            'is_active'   => true,
+            'harga' => 150000,
+            'durasi' => 60,
+            'is_active' => true,
         ]);
         $this->scheduleA = Schedule::factory()->create([
-            'idtenant'  => $this->tenantA->id,
+            'idtenant' => $this->tenantA->id,
             'idlayanan' => $this->serviceA->id,
         ]);
 
         // Owner B
         $this->ownerB = User::factory()->create([
-            'role'              => 'owner',
+            'role' => 'owner',
             'email_verified_at' => now(),
         ]);
         $this->tenantB = Tenant::create([
-            'iduser'      => $this->ownerB->id,
-            'namabisnis'  => 'Barbershop B',
+            'iduser' => $this->ownerB->id,
+            'namabisnis' => 'Barbershop B',
             'jenisbisnis' => 'Barbershop',
-            'slug'        => 'barbershop-b',
-            'alamat'      => 'Jl. Wijaya No. 5',
-            'nomorhp'     => '082222222222',
+            'slug' => 'barbershop-b',
+            'alamat' => 'Jl. Wijaya No. 5',
+            'nomorhp' => '082222222222',
         ]);
     }
 
@@ -74,15 +78,15 @@ class CustomerManagementTest extends TestCase
     {
         // If no explicit schedule provided, create a fresh one to avoid active_idschedule unique constraint
         return Booking::factory()->create(array_merge([
-            'idtenant'       => $tenant->id,
-            'idlayanan'      => $service->id,
-            'idschedule'     => $schedule->id,
-            'namapelanggan'  => 'Budi Santoso',
-            'email'          => 'budi@example.com',
-            'nomorhp'        => '081111111111',
+            'idtenant' => $tenant->id,
+            'idlayanan' => $service->id,
+            'idschedule' => $schedule->id,
+            'namapelanggan' => 'Budi Santoso',
+            'email' => 'budi@example.com',
+            'nomorhp' => '081111111111',
             'tanggalbooking' => now()->toDateString(),
-            'jam'            => '10:00:00',
-            'status'         => 'paid',
+            'jam' => '10:00:00',
+            'status' => 'paid',
         ], $override));
     }
 
@@ -93,43 +97,45 @@ class CustomerManagementTest extends TestCase
     private function makeBookingFreshSchedule(Tenant $tenant, Service $service, array $override = []): Booking
     {
         $sched = Schedule::factory()->create([
-            'idtenant'  => $tenant->id,
+            'idtenant' => $tenant->id,
             'idlayanan' => $service->id,
         ]);
+
         return $this->makeBooking($tenant, $service, $sched, $override);
     }
 
     private function makePayment(Tenant $tenant, Booking $booking, string $status = 'sukses', float $jumlah = 150000): Payment
     {
         return Payment::create([
-            'idtenant'  => $tenant->id,
+            'idtenant' => $tenant->id,
             'idbooking' => $booking->id,
-            'tipe'      => 'booking',
-            'jumlah'    => $jumlah,
-            'status'    => $status,
-            'metode'    => 'midtrans',
-            'order_id'  => 'ORD-' . $booking->id . '-' . uniqid(),
+            'tipe' => 'booking',
+            'jumlah' => $jumlah,
+            'status' => $status,
+            'metode' => 'midtrans',
+            'order_id' => 'ORD-'.$booking->id.'-'.uniqid(),
         ]);
     }
 
     private function makeTenantBBooking(array $override = []): Booking
     {
-        $svcB  = Service::create([
-            'idtenant'    => $this->tenantB->id,
+        $svcB = Service::create([
+            'idtenant' => $this->tenantB->id,
             'namalayanan' => 'Barber B',
-            'harga'       => 50000,
-            'durasi'      => 30,
-            'is_active'   => true,
+            'harga' => 50000,
+            'durasi' => 30,
+            'is_active' => true,
         ]);
         $schedB = Schedule::factory()->create([
-            'idtenant'  => $this->tenantB->id,
+            'idtenant' => $this->tenantB->id,
             'idlayanan' => $svcB->id,
         ]);
+
         return Booking::factory()->create(array_merge([
-            'idtenant'   => $this->tenantB->id,
-            'idlayanan'  => $svcB->id,
+            'idtenant' => $this->tenantB->id,
+            'idlayanan' => $svcB->id,
             'idschedule' => $schedB->id,
-            'status'     => 'paid',
+            'status' => 'paid',
         ], $override));
     }
 
@@ -140,7 +146,7 @@ class CustomerManagementTest extends TestCase
     {
         $this->makeBooking($this->tenantA, $this->serviceA, $this->scheduleA, [
             'namapelanggan' => 'Budi Santoso',
-            'email'         => 'budi@example.com',
+            'email' => 'budi@example.com',
         ]);
 
         $response = $this->actingAs($this->ownerA)->get(route('owner.customers'));
@@ -153,11 +159,11 @@ class CustomerManagementTest extends TestCase
     public function test_customer_list_is_tenant_scoped(): void
     {
         $this->makeBooking($this->tenantA, $this->serviceA, $this->scheduleA, [
-            'email'         => 'alice@example.com',
+            'email' => 'alice@example.com',
             'namapelanggan' => 'Alice Owner A',
         ]);
         $this->makeTenantBBooking([
-            'email'         => 'bob@example.com',
+            'email' => 'bob@example.com',
             'namapelanggan' => 'Bob Owner B',
         ]);
 
@@ -183,7 +189,7 @@ class CustomerManagementTest extends TestCase
     public function test_customer_detail_returns_correct_data(): void
     {
         $booking = $this->makeBooking($this->tenantA, $this->serviceA, $this->scheduleA, [
-            'email'         => 'detail@example.com',
+            'email' => 'detail@example.com',
             'namapelanggan' => 'Detail User',
         ]);
         $this->makePayment($this->tenantA, $booking);
@@ -246,14 +252,14 @@ class CustomerManagementTest extends TestCase
     public function test_total_spending_uses_payment_state_machine(): void
     {
         $b1 = $this->makeBookingFreshSchedule($this->tenantA, $this->serviceA, [
-            'email'  => 'pay@example.com',
+            'email' => 'pay@example.com',
             'status' => 'paid',
         ]);
         $this->makePayment($this->tenantA, $b1, 'sukses', 120000);
 
         // Booking 2: gagal payment — must NOT be counted
         $b2 = $this->makeBookingFreshSchedule($this->tenantA, $this->serviceA, [
-            'email'  => 'pay@example.com',
+            'email' => 'pay@example.com',
             'status' => 'cancelled',
         ]);
         $this->makePayment($this->tenantA, $b2, 'gagal', 150000);
@@ -270,7 +276,7 @@ class CustomerManagementTest extends TestCase
     public function test_booking_history_is_correct(): void
     {
         $booking = $this->makeBooking($this->tenantA, $this->serviceA, $this->scheduleA, [
-            'email'  => 'hist@example.com',
+            'email' => 'hist@example.com',
             'status' => 'completed',
         ]);
 
@@ -307,21 +313,21 @@ class CustomerManagementTest extends TestCase
     public function test_customer_note_can_be_saved(): void
     {
         $this->makeBooking($this->tenantA, $this->serviceA, $this->scheduleA, [
-            'email'         => 'note@example.com',
+            'email' => 'note@example.com',
             'namapelanggan' => 'Note User',
         ]);
 
         $response = $this->actingAs($this->ownerA)
             ->postJson(route('owner.customers.note'), [
                 'customer_identifier' => 'note@example.com',
-                'notes'               => 'VIP customer, prefers morning slots.',
+                'notes' => 'VIP customer, prefers morning slots.',
             ]);
 
         $response->assertOk()->assertJsonFragment(['success' => true]);
         $this->assertDatabaseHas('customer_notes', [
-            'idtenant'            => $this->tenantA->id,
+            'idtenant' => $this->tenantA->id,
             'customer_identifier' => 'note@example.com',
-            'notes'               => 'VIP customer, prefers morning slots.',
+            'notes' => 'VIP customer, prefers morning slots.',
         ]);
     }
 
@@ -333,13 +339,13 @@ class CustomerManagementTest extends TestCase
         $response = $this->actingAs($this->ownerA)
             ->postJson(route('owner.customers.note'), [
                 'customer_identifier' => 'victim@example.com',
-                'notes'               => 'Malicious note',
+                'notes' => 'Malicious note',
             ]);
 
         $response->assertStatus(403);
         $this->assertDatabaseMissing('customer_notes', [
             'customer_identifier' => 'victim@example.com',
-            'notes'               => 'Malicious note',
+            'notes' => 'Malicious note',
         ]);
     }
 
@@ -347,7 +353,7 @@ class CustomerManagementTest extends TestCase
     public function test_customer_without_booking_code_is_handled(): void
     {
         $b = $this->makeBooking($this->tenantA, $this->serviceA, $this->scheduleA, [
-            'email'        => 'nocode@example.com',
+            'email' => 'nocode@example.com',
             'booking_code' => null,
         ]);
 
@@ -373,7 +379,7 @@ class CustomerManagementTest extends TestCase
     {
         for ($i = 1; $i <= 25; $i++) {
             $this->makeBookingFreshSchedule($this->tenantA, $this->serviceA, [
-                'email'         => "customer{$i}@example.com",
+                'email' => "customer{$i}@example.com",
                 'namapelanggan' => "Customer {$i}",
             ]);
         }
@@ -409,5 +415,29 @@ class CustomerManagementTest extends TestCase
         $response->assertOk();
         // Total spending = 300.000
         $response->assertSee('300.000');
+    }
+
+    /** 19. Upcoming booking shows the customer's earliest future booking with its own time */
+    public function test_upcoming_booking_is_the_earliest_future_booking(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-02 08:00:00'));
+
+        $this->makeBookingFreshSchedule($this->tenantA, $this->serviceA, [
+            'tanggalbooking' => '2026-11-10',
+            'jam' => '09:00:00',
+        ]);
+        $this->makeBookingFreshSchedule($this->tenantA, $this->serviceA, [
+            'tanggalbooking' => '2026-11-05',
+            'jam' => '14:00:00',
+        ]);
+        $this->makeBookingFreshSchedule($this->tenantA, $this->serviceA, [
+            'tanggalbooking' => '2026-10-20',
+            'jam' => '08:00:00',
+        ]);
+
+        $response = $this->actingAs($this->ownerA)->get(route('owner.customers'));
+
+        $response->assertOk();
+        $response->assertViewHas('customers', fn ($customers) => $customers->first()->upcoming_booking === '05 Nov 2026 14:00');
     }
 }

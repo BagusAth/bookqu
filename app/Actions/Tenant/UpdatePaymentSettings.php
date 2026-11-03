@@ -13,7 +13,7 @@ class UpdatePaymentSettings
     /**
      * Update Midtrans payment gateway settings for tenant.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function execute(Tenant $tenant, array $data): Tenant
     {
@@ -49,6 +49,8 @@ class UpdatePaymentSettings
         $tenant->save();
 
         Cache::forget("tenant:slug:{$tenant->slug}");
+
+        app(GetStorefrontTenant::class)->forget((int) $tenant->id);
 
         return $tenant;
     }

@@ -12,6 +12,7 @@ class SettingsTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Tenant $tenant;
 
     protected function setUp(): void
@@ -59,6 +60,9 @@ class SettingsTest extends TestCase
 
     public function test_owner_can_update_payment_settings(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.direct-payment' => 'released']);
+
         $response = $this->actingAs($this->user)->post('/owner/settings/payment', [
             'payment_mode' => 'owner',
             'midtrans_environment' => 'sandbox',
@@ -80,6 +84,9 @@ class SettingsTest extends TestCase
 
     public function test_owner_can_request_payout(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.balance' => 'released']);
+
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
             'jumlah' => 200000,
             'bank_nama' => 'BCA',
@@ -87,7 +94,7 @@ class SettingsTest extends TestCase
             'nama_pemilik_rekening' => 'John Doe',
         ]);
 
-        $response->assertRedirect('/owner/settings');
+        $response->assertRedirect(route('owner.settings.balance'));
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('owner_payouts', [
@@ -105,8 +112,14 @@ class SettingsTest extends TestCase
 
     public function test_owner_cannot_request_payout_above_available_balance(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.balance' => 'released']);
+
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
             'jumlah' => 600000,
+            'bank_nama' => 'BCA',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
         ]);
 
         $response->assertSessionHasErrors('jumlah');
@@ -119,8 +132,14 @@ class SettingsTest extends TestCase
 
     public function test_owner_cannot_request_payout_with_more_than_two_decimal_places(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.balance' => 'released']);
+
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
             'jumlah' => 10000.001,
+            'bank_nama' => 'BCA',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
         ]);
 
         $response->assertSessionHasErrors('jumlah');
@@ -162,24 +181,24 @@ class SettingsTest extends TestCase
     public function test_owner_can_complete_profile_with_normalized_phone(): void
     {
         $newOwner = User::factory()->create([
-            'role'              => 'owner',
+            'role' => 'owner',
             'email_verified_at' => now(),
         ]);
 
         $response = $this->actingAs($newOwner)->post('/owner/profile/complete', [
-            'namabisnis'  => 'Studio Cantik Alami',
+            'namabisnis' => 'Studio Cantik Alami',
             'jenisbisnis' => 'Kecantikan',
-            'nomorhp'     => '+62 812 3456 7890',
-            'alamat'      => 'Jl. Flamboyan No. 10',
+            'nomorhp' => '+62 812 3456 7890',
+            'alamat' => 'Jl. Flamboyan No. 10',
         ]);
 
         $response->assertRedirect(route('owner.dashboard'));
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('tenants', [
-            'iduser'     => $newOwner->id,
+            'iduser' => $newOwner->id,
             'namabisnis' => 'Studio Cantik Alami',
-            'nomorhp'    => '081234567890',
+            'nomorhp' => '081234567890',
         ]);
     }
 
@@ -187,26 +206,26 @@ class SettingsTest extends TestCase
     {
         $formats = [
             '+62081234567891' => '081234567891',
-            '6281234567892'   => '081234567892',
-            '81234567893'     => '081234567893',
-            '0812-3456-7894'  => '081234567894',
+            '6281234567892' => '081234567892',
+            '81234567893' => '081234567893',
+            '0812-3456-7894' => '081234567894',
         ];
 
         foreach ($formats as $inputPhone => $expectedPhone) {
             $user = User::factory()->create([
-                'role'              => 'owner',
+                'role' => 'owner',
                 'email_verified_at' => now(),
             ]);
 
             $this->actingAs($user)->post('/owner/profile/complete', [
-                'namabisnis'  => 'Bisnis ' . uniqid(),
+                'namabisnis' => 'Bisnis '.uniqid(),
                 'jenisbisnis' => 'Jasa',
-                'nomorhp'     => $inputPhone,
-                'alamat'      => 'Jl. Contoh No. 1',
+                'nomorhp' => $inputPhone,
+                'alamat' => 'Jl. Contoh No. 1',
             ])->assertRedirect(route('owner.dashboard'));
 
             $this->assertDatabaseHas('tenants', [
-                'iduser'  => $user->id,
+                'iduser' => $user->id,
                 'nomorhp' => $expectedPhone,
             ]);
         }
@@ -215,15 +234,15 @@ class SettingsTest extends TestCase
     public function test_owner_profile_completion_validation_failure_preserves_old_input(): void
     {
         $newOwner = User::factory()->create([
-            'role'              => 'owner',
+            'role' => 'owner',
             'email_verified_at' => now(),
         ]);
 
         $response = $this->actingAs($newOwner)->from('/owner/dashboard')->post('/owner/profile/complete', [
-            'namabisnis'  => '',
+            'namabisnis' => '',
             'jenisbisnis' => 'Kecantikan',
-            'nomorhp'     => '081234567890',
-            'alamat'      => 'Jl. Flamboyan No. 10',
+            'nomorhp' => '081234567890',
+            'alamat' => 'Jl. Flamboyan No. 10',
         ]);
 
         $response->assertRedirect('/owner/dashboard');

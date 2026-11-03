@@ -11,6 +11,8 @@ use App\Models\Staff;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\CustomerBookingRoutes;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -20,7 +22,9 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
     use RefreshDatabase;
 
     protected Plan $planSmall;
+
     protected Plan $planMedium;
+
     protected Plan $planPro;
 
     protected function setUp(): void
@@ -31,9 +35,9 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
             ['namapaket' => 'small'],
             [
                 'hargabulanan' => 149000,
-                'maxlayanan'   => 5,
-                'maxbooking'   => 300,
-                'isunlimited'  => false,
+                'maxlayanan' => 5,
+                'maxbooking' => 300,
+                'isunlimited' => false,
             ]
         );
 
@@ -41,9 +45,9 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
             ['namapaket' => 'medium'],
             [
                 'hargabulanan' => 299000,
-                'maxlayanan'   => 0,
-                'maxbooking'   => 500,
-                'isunlimited'  => false,
+                'maxlayanan' => 0,
+                'maxbooking' => 500,
+                'isunlimited' => false,
             ]
         );
 
@@ -51,9 +55,9 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
             ['namapaket' => 'pro'],
             [
                 'hargabulanan' => 499000,
-                'maxlayanan'   => 0,
-                'maxbooking'   => 0,
-                'isunlimited'  => true,
+                'maxlayanan' => 0,
+                'maxbooking' => 0,
+                'isunlimited' => true,
             ]
         );
     }
@@ -65,52 +69,52 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
     {
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
-            'iduser'      => $owner->id,
-            'namabisnis'  => 'Pro Studio',
+            'iduser' => $owner->id,
+            'namabisnis' => 'Pro Studio',
             'jenisbisnis' => 'Photography',
-            'slug'        => 'pro-studio',
-            'alamat'      => 'Jl. Pro No. 1',
-            'nomorhp'     => '08123456789',
+            'slug' => 'pro-studio',
+            'alamat' => 'Jl. Pro No. 1',
+            'nomorhp' => '08123456789',
         ]);
 
         Subscription::create([
             'idtenant' => $tenant->id,
-            'idplan'   => $this->planPro->id,
-            'status'   => 'active',
+            'idplan' => $this->planPro->id,
+            'status' => 'active',
         ]);
 
         $service = Service::create([
-            'idtenant'    => $tenant->id,
+            'idtenant' => $tenant->id,
             'namalayanan' => 'Pro Portrait',
-            'harga'       => 150000,
-            'durasi'      => 60,
-            'is_active'   => true,
+            'harga' => 150000,
+            'durasi' => 60,
+            'is_active' => true,
         ]);
 
         $bookingDate = Carbon::tomorrow()->toDateString();
 
         // Create an available schedule slot
         $schedule = Schedule::create([
-            'idtenant'    => $tenant->id,
-            'idlayanan'   => $service->id,
-            'tanggal'     => $bookingDate,
-            'jam_mulai'   => '10:00:00',
+            'idtenant' => $tenant->id,
+            'idlayanan' => $service->id,
+            'tanggal' => $bookingDate,
+            'jam_mulai' => '10:00:00',
             'jam_selesai' => '11:00:00',
-            'status'      => 'tersedia',
+            'status' => 'tersedia',
         ]);
 
         // Customer selects date
         $response = $this->withSession([
             'booking' => [
-                'tenant_id'  => $tenant->id,
+                'tenant_id' => $tenant->id,
                 'service_id' => $service->id,
             ],
-        ])->post('/' . $tenant->slug . '/booking/select-date', [
+        ])->post('/'.$tenant->slug.'/booking/select-date', [
             'tanggal' => $bookingDate,
         ]);
 
         $response->assertSessionHasNoErrors();
-        $response->assertRedirect(route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug));
+        $response->assertRedirect(route(CustomerBookingRoutes::name('customer.booking.time'), $tenant->slug));
     }
 
     /**
@@ -120,58 +124,58 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
     {
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
-            'iduser'      => $owner->id,
-            'namabisnis'  => 'Small Barber',
+            'iduser' => $owner->id,
+            'namabisnis' => 'Small Barber',
             'jenisbisnis' => 'Barbershop',
-            'slug'        => 'small-barber',
-            'alamat'      => 'Jl. Small No. 2',
-            'nomorhp'     => '08234567890',
+            'slug' => 'small-barber',
+            'alamat' => 'Jl. Small No. 2',
+            'nomorhp' => '08234567890',
         ]);
 
         Subscription::create([
             'idtenant' => $tenant->id,
-            'idplan'   => $this->planSmall->id,
-            'status'   => 'active',
+            'idplan' => $this->planSmall->id,
+            'status' => 'active',
         ]);
 
         $service = Service::create([
-            'idtenant'    => $tenant->id,
+            'idtenant' => $tenant->id,
             'namalayanan' => 'Haircut',
-            'harga'       => 50000,
-            'durasi'      => 30,
-            'is_active'   => true,
+            'harga' => 50000,
+            'durasi' => 30,
+            'is_active' => true,
         ]);
 
         $bookingDate = Carbon::tomorrow()->toDateString();
 
         Schedule::create([
-            'idtenant'    => $tenant->id,
-            'idlayanan'   => $service->id,
-            'tanggal'     => $bookingDate,
-            'jam_mulai'   => '10:00:00',
+            'idtenant' => $tenant->id,
+            'idlayanan' => $service->id,
+            'tanggal' => $bookingDate,
+            'jam_mulai' => '10:00:00',
             'jam_selesai' => '10:30:00',
-            'status'      => 'tersedia',
+            'status' => 'tersedia',
         ]);
 
         // Simulate 300 existing bookings in this month for this tenant
         Booking::factory()->count(300)->create([
-            'idtenant'       => $tenant->id,
-            'idlayanan'      => $service->id,
+            'idtenant' => $tenant->id,
+            'idlayanan' => $service->id,
             'tanggalbooking' => $bookingDate,
-            'status'         => 'paid',
+            'status' => 'paid',
         ]);
 
         $response = $this->withSession([
             'booking' => [
-                'tenant_id'  => $tenant->id,
+                'tenant_id' => $tenant->id,
                 'service_id' => $service->id,
             ],
-        ])->post('/' . $tenant->slug . '/booking/select-date', [
+        ])->post('/'.$tenant->slug.'/booking/select-date', [
             'tanggal' => $bookingDate,
         ]);
 
         $response->assertSessionHasErrors('tanggal');
-        $response->assertRedirect(route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug));
+        $response->assertRedirect(route(CustomerBookingRoutes::name('customer.booking.schedule'), $tenant->slug));
     }
 
     /**
@@ -179,20 +183,23 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
      */
     public function test_small_plan_enforces_staff_limit_of_two(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.staff-resources' => 'released']);
+
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
-            'iduser'      => $owner->id,
-            'namabisnis'  => 'Salon Small',
+            'iduser' => $owner->id,
+            'namabisnis' => 'Salon Small',
             'jenisbisnis' => 'Salon',
-            'slug'        => 'salon-small',
-            'alamat'      => 'Jl. Salon 1',
-            'nomorhp'     => '08345678901',
+            'slug' => 'salon-small',
+            'alamat' => 'Jl. Salon 1',
+            'nomorhp' => '08345678901',
         ]);
 
         Subscription::create([
             'idtenant' => $tenant->id,
-            'idplan'   => $this->planSmall->id,
-            'status'   => 'active',
+            'idplan' => $this->planSmall->id,
+            'status' => 'active',
         ]);
 
         $this->actingAs($owner);
@@ -228,20 +235,23 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
      */
     public function test_medium_plan_features_and_limits(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.staff-resources' => 'released', 'modules.analytics' => 'released', 'modules.landing-page' => 'released']);
+
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
-            'iduser'      => $owner->id,
-            'namabisnis'  => 'Medium Clinic',
+            'iduser' => $owner->id,
+            'namabisnis' => 'Medium Clinic',
             'jenisbisnis' => 'Klinik',
-            'slug'        => 'medium-clinic',
-            'alamat'      => 'Jl. Medium 15',
-            'nomorhp'     => '08456789012',
+            'slug' => 'medium-clinic',
+            'alamat' => 'Jl. Medium 15',
+            'nomorhp' => '08456789012',
         ]);
 
         Subscription::create([
             'idtenant' => $tenant->id,
-            'idplan'   => $this->planMedium->id,
-            'status'   => 'active',
+            'idplan' => $this->planMedium->id,
+            'status' => 'active',
         ]);
 
         $this->actingAs($owner);
@@ -261,13 +271,13 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
 
         // Create 6 services (more than Small's 5)
         $category = Category::create(['idtenant' => $tenant->id, 'name' => 'Care']);
-        app(\App\Support\TenantContext::class)->setTenantId($tenant->id);
+        app(TenantContext::class)->setTenantId($tenant->id);
         for ($i = 1; $i <= 6; $i++) {
             $resService = $this->post('/owner/programs', [
                 'namalayanan' => "Service $i",
-                'harga'       => 100000,
-                'durasi'      => 45,
-                'idcategory'  => $category->id,
+                'harga' => 100000,
+                'durasi' => 45,
+                'idcategory' => $category->id,
             ]);
             $resService->assertSessionHasNoErrors();
             $resService->assertRedirect(route('owner.programs'));
@@ -278,8 +288,8 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
         for ($s = 1; $s <= 15; $s++) {
             Staff::create([
                 'idtenant' => $tenant->id,
-                'name'     => "Staff $s",
-                'role'     => 'Specialist',
+                'name' => "Staff $s",
+                'role' => 'Specialist',
             ]);
         }
 
@@ -299,18 +309,18 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
     {
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
-            'iduser'      => $owner->id,
-            'namabisnis'  => 'Small Cafe',
+            'iduser' => $owner->id,
+            'namabisnis' => 'Small Cafe',
             'jenisbisnis' => 'F&B',
-            'slug'        => 'small-cafe',
-            'alamat'      => 'Jl. Cafe 1',
-            'nomorhp'     => '08567890123',
+            'slug' => 'small-cafe',
+            'alamat' => 'Jl. Cafe 1',
+            'nomorhp' => '08567890123',
         ]);
 
         Subscription::create([
             'idtenant' => $tenant->id,
-            'idplan'   => $this->planSmall->id,
-            'status'   => 'active',
+            'idplan' => $this->planSmall->id,
+            'status' => 'active',
         ]);
 
         $this->actingAs($owner);

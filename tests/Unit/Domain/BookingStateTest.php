@@ -3,7 +3,6 @@
 namespace Tests\Unit\Domain;
 
 use App\Domain\Booking\BookingState;
-use Carbon\Carbon;
 use Tests\TestCase;
 
 class BookingStateTest extends TestCase
@@ -30,21 +29,6 @@ class BookingStateTest extends TestCase
 
         $this->assertFalse(BookingState::canTransition(BookingState::STATUS_CANCELLED, BookingState::STATUS_PAID));
         $this->assertFalse(BookingState::canTransition(BookingState::STATUS_COMPLETED, BookingState::STATUS_PAID));
-    }
-
-    public function test_occupies_slot_evaluates_correctly(): void
-    {
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PAID));
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_COMPLETED));
-        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_CANCELLED));
-
-        // Pending within 15 min grace window
-        $recent = Carbon::now()->subMinutes(5);
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $recent, 15));
-
-        // Pending expired > 15 min
-        $expired = Carbon::now()->subMinutes(20);
-        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $expired, 15));
     }
 
     public function test_format_label_provides_indonesian_description(): void

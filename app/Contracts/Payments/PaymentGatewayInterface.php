@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Contracts\Payments;
 
+use App\Domain\Payment\ProviderOutcome;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Service;
@@ -19,10 +20,7 @@ interface PaymentGatewayInterface
     /**
      * Create payment link or token for a customer booking.
      *
-     * @param Payment $payment
-     * @param Service $service
-     * @param array<string, mixed> $customerData
-     * @param int $slotCount
+     * @param  array<string, mixed>  $customerData
      * @return array{payment_url?: ?string, snap_token?: ?string, external_id?: ?string}
      */
     public function createBookingPayment(
@@ -35,10 +33,7 @@ interface PaymentGatewayInterface
     /**
      * Create payment link or token for an owner subscription plan checkout.
      *
-     * @param Payment $payment
-     * @param Plan $plan
-     * @param array<string, mixed> $payerData
-     * @param float $biayaPlatform
+     * @param  array<string, mixed>  $payerData
      * @return array{payment_url?: ?string, snap_token?: ?string, external_id?: ?string}
      */
     public function createSubscriptionPayment(
@@ -49,10 +44,17 @@ interface PaymentGatewayInterface
     ): array;
 
     /**
-     * Check transaction status with the payment gateway.
-     *
-     * @param Payment $payment
-     * @return array<string, mixed>
+     * Ask the provider for the payment's current status (ADR-0007 decision 4). Never
+     * answers from the local database; an unreachable provider or a provider without
+     * a status API yields an `unknown` outcome, never `gagal`.
      */
-    public function checkTransactionStatus(Payment $payment): array;
+    public function queryOutcome(Payment $payment): ProviderOutcome;
+
+    /**
+     * Best-effort cancellation of the payment's open checkout at the provider, called
+     * after the Payment lifecycle committed a payer cancel, expiry or owner settlement
+     * (ADR-0007 decision 6). Unsupported providers do nothing; failures may throw and
+     * are logged by the caller.
+     */
+    public function cancel(Payment $payment): void;
 }

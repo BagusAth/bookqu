@@ -1,0 +1,47 @@
+---
+id: BQ-049
+title: [BUG-T4-01] Pembatalan Booking Tanpa Membatalkan Transaksi Gateway (Zombie Debits)
+type: bug-fix
+status: proposed
+priority: P0
+phase: 4
+domain: payment
+requirements: []
+invariants: []
+launch-blocker: false
+needs-lead-approval: false
+depends-on: [BQ-039]
+source: docs/audit-bug/TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md at a68ffe8
+---
+
+# BQ-049: [BUG-T4-01] Pembatalan Booking Tanpa Membatalkan Transaksi Gateway (Zombie Debits)
+
+> **2026-11-01:** the remaining scope is absorbed by BQ-087 (owner cancellation leaves the payment open) and product decision D-001 in `docs/product-decisions.md` (refunds are recorded but never processed). Close this item together with BQ-087.
+
+Covered by [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) decision 6 (best-effort gateway cancel after commit); verify with BQ-032.
+
+Migrated verbatim from the 2026-10 audit (TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md, stage 4: Payment Gateway, Webhooks, Halaman Pembayaran & Expiry Engine). Status in the current code is unverified — check it first (BQ-039).
+
+> Overlaps BQ-002 (gateway cancellation) and BQ-003 (late success).
+
+## Audit finding
+
+- **Lokasi Berkas**: 
+  - [`app/Http/Controllers/Customer/BookingController.php:803-838`](file:///c:/laragon/www/bookqu/app/Http/Controllers/Customer/BookingController.php#L803-L838)
+  - [`app/Actions/Payment/SynchronizePaymentStatus.php:115-127`](file:///c:/laragon/www/bookqu/app/Actions/Payment/SynchronizePaymentStatus.php#L115-L127)
+- **Deskripsi & Dampak**:
+  Ketika pelanggan menekan tombol *"Batalkan & Ganti Jadwal"*, sistem mengupdate status pembayaran di database lokal menjadi `'gagal'` dan membatalkan reservasi. Namun sistem **tidak pernah memanggil API cancel** ke Midtrans (`/v2/{order_id}/cancel`) atau menonaktifkan link SingaPay. Jika pelanggan kemudian membayar QRIS/VA yang sudah terlanjur dibuka melalui aplikasi perbankan mereka, webhook BookQu menolaknya sebagai transaksi gagal. **Uang pelanggan terpotong tetapi tidak ada booking yang tercipta dan tidak ada refund otomatis yang dipicu**.
+- **Rekomendasi Perbaikan**:
+  Panggil gateway cancel sebelum mengubah status lokal menjadi gagal:
+  ```php
+  $gateway = $this->gatewayManager->forPayment($payment);
+  $gateway->cancelTransaction($payment);
+  ```
+
+## Evidence
+
+Partial verification, BQ-002 (2026-10-31): payer cancellation now requires an exact grant, cancels the whole group through the lifecycle and requests the payment's own provider only after commit. Gateway failure cannot reverse local state; duplicate late success creates one refund owed without reviving bookings. Tests: CancelCheckoutPaymentTest and CancelCheckoutPaymentTransactionTest.
+
+Still open: SingaPay cancellation is unsupported and intentionally a no-op under ADR-0007; owner cancellation of a pending booking remains a separate path for triage. This audit item is not closed by the payer-only acceptance. The historical recommendation to call the provider before local state is superseded by ADR-0007: external calls follow commit.
+
+Session 5 triage (2026-11-01): taken off the launch blockers. An owner cancelling a pending booking leaves the payment open, but a later payment becomes a refund owed through the lifecycle and the owner is notified (ADR-0007), so no money is lost silently. SingaPay links cannot be cancelled at the gateway. Closing the payment on owner cancellation needs a new payment transition; that is post-launch work.

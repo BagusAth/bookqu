@@ -20,6 +20,7 @@ class AvailabilityRulesTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected Service $service;
 
     protected function setUp(): void
@@ -34,20 +35,6 @@ class AvailabilityRulesTest extends TestCase
             'durasi' => 60,
             'harga' => 100000,
         ]);
-    }
-
-    public function test_pending_booking_grace_window(): void
-    {
-        Carbon::setTestNow('2026-10-01 12:00:00');
-
-        $recent = Carbon::parse('2026-10-01 11:50:00'); // 10 minutes ago
-        $expired = Carbon::parse('2026-10-01 11:40:00'); // 20 minutes ago
-
-        $this->assertTrue(AvailabilityRules::isPendingBookingHoldingSlot($recent, 15));
-        $this->assertFalse(AvailabilityRules::isPendingBookingHoldingSlot($expired, 15));
-        $this->assertFalse(AvailabilityRules::isPendingBookingHoldingSlot(null, 15));
-
-        Carbon::setTestNow();
     }
 
     public function test_is_slot_past(): void

@@ -1,12 +1,11 @@
 @extends('customer.layouts.booking-shell')
 
-@section('title', 'Confirm Reservasi')
+@section('title', 'Data Pemesan')
 @section('current_step', 3)
-@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.schedule'), $tenant->slug))
-@section('back_label', 'Kembali ke Schedule')
+@section('back_url', \App\Support\CustomerBookingRoutes::url('customer.booking.schedule', $tenant->slug))
+@section('back_label', 'Kembali ke Jadwal')
 
 @section('content')
-<span class="sr-only">Kembali ke Pilih Waktu</span>
 <div id="booking-checkout-root"
      data-tenant-slug="{{ $tenant->slug }}"
      x-data="{
@@ -22,8 +21,8 @@
             const val = (this.name || '').trim();
             if (!val) {
                 this.nameError = 'Nama lengkap wajib diisi.';
-            } else if (val.length < 3) {
-                this.nameError = 'Nama lengkap minimal 3 karakter.';
+            } else if (val.length < 2) {
+                this.nameError = 'Nama lengkap minimal 2 karakter.';
             } else {
                 this.nameError = '';
             }
@@ -43,11 +42,10 @@
         validatePhone() {
             if (!this.touched.phone) return;
             const val = (this.phone || '').trim();
-            const digits = val.replace(/\D/g, '');
             if (!val) {
                 this.phoneError = 'Nomor WhatsApp / HP wajib diisi.';
-            } else if (digits.length < 10 || digits.length > 15) {
-                this.phoneError = 'Nomor HP harus antara 10 - 15 digit.';
+            } else if (!/^\+?(?:\d[\s\-]?){9,14}\d$/.test(val)) {
+                this.phoneError = 'Nomor WhatsApp / HP harus berisi 10–15 digit angka (boleh diawali +62).';
             } else {
                 this.phoneError = '';
             }
@@ -57,9 +55,10 @@
         id="booking-checkout-form"
         class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
         method="POST"
-        action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.process-checkout'), $tenant->slug) }}"
+        action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.process-checkout', $tenant->slug) }}"
     >
         @csrf
+        <input type="hidden" name="checkout_fingerprint" value="{{ $checkoutFingerprint }}">
 
         {{-- Left Column: Form Fields, Mobile Review & Policies --}}
         @include('customer.partials.booking.checkout-form')
@@ -74,7 +73,7 @@
 @endsection
 
 @section('scripts')
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const inputName = document.getElementById('namapelanggan');
@@ -114,7 +113,22 @@
 
         // Save or remove customer data upon submit & prevent double submission
         if (checkoutForm) {
-            checkoutForm.addEventListener('submit', function () {
+            checkoutForm.addEventListener('submit', function (event) {
+                // Field errors shown on screen must also stop the submit; the server re-validates.
+                const form = window.Alpine ? window.Alpine.$data(document.getElementById('booking-checkout-root')) : null;
+                if (form) {
+                    form.touched = { name: true, email: true, phone: true };
+                    form.validateName();
+                    form.validateEmail();
+                    form.validatePhone();
+                    if (form.nameError || form.emailError || form.phoneError) {
+                        event.preventDefault();
+                        const invalid = form.nameError ? inputName : (form.emailError ? inputEmail : inputPhone);
+                        if (invalid) invalid.focus();
+                        return;
+                    }
+                }
+
                 if (chkRemember && chkRemember.checked) {
                     const dataToSave = {
                         name: inputName ? inputName.value.trim() : '',
@@ -136,6 +150,19 @@
                 }
             });
         }
+
+        // A page restored from the back-forward cache must be submittable again (BQ-063 T3-06)
+        window.addEventListener('pageshow', function (event) {
+            if (!event.persisted) {
+                return;
+            }
+            [submitBtn, mobileSubmitBtn].forEach(function (button) {
+                if (button) {
+                    button.disabled = false;
+                    button.classList.remove('opacity-75', 'cursor-not-allowed');
+                }
+            });
+        });
     });
 </script>
 @endsection

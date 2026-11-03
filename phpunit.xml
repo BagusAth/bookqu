@@ -11,7 +11,15 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="Guardrails">
+            <directory>tests/Guardrails</directory>
+        </testsuite>
     </testsuites>
+    <groups>
+        <exclude>
+            <group>mysql</group>
+        </exclude>
+    </groups>
     <source>
         <include>
             <directory>app</directory>

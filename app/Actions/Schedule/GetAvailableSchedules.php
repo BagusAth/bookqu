@@ -25,10 +25,6 @@ class GetAvailableSchedules
     /**
      * Get 30-day availability payload for date selection.
      *
-     * @param Tenant $tenant
-     * @param Service $service
-     * @param Carbon|null $minDate
-     * @param Carbon|null $maxDate
      * @return array<int, array{date: string, total_slots: int, available_slots: int, is_blocked: bool}>
      */
     public function getDateAvailability(
@@ -90,10 +86,7 @@ class GetAvailableSchedules
     /**
      * Count available slots on a specific date for a service.
      *
-     * @param Tenant $tenant
-     * @param Service $service
-     * @param string $date (Y-m-d)
-     * @return int
+     * @param  string  $date  (Y-m-d)
      */
     public function countAvailableSlotsOnDate(Tenant $tenant, Service $service, string $date): int
     {
@@ -114,7 +107,7 @@ class GetAvailableSchedules
 
         if ($isToday) {
             $nowTimeStr = $nowWib->format('H:i');
-            $query->whereRaw("substr(schedules.jam_mulai, 1, 5) > ?", [$nowTimeStr]);
+            $query->whereRaw('substr(schedules.jam_mulai, 1, 5) > ?', [$nowTimeStr]);
         }
 
         return $query->count();
@@ -123,10 +116,7 @@ class GetAvailableSchedules
     /**
      * Get time slots payload for customer time selection on a specific date.
      *
-     * @param Tenant $tenant
-     * @param Service $service
-     * @param string $date (Y-m-d)
-     * @return array
+     * @param  string  $date  (Y-m-d)
      */
     public function getTimeSlots(Tenant $tenant, Service $service, string $date): array
     {
@@ -174,7 +164,7 @@ class GetAvailableSchedules
         $isPastDate = $selectedDateCarbon->lt($nowWib->copy()->startOfDay());
 
         return collect($scheduleRows)->map(function (array $row) use ($isToday, $isPastDate, $nowWib, $dateStr, $wib, $service) {
-            $slotDateTime = Carbon::parse($dateStr . ' ' . $row['jam_mulai'], $wib);
+            $slotDateTime = Carbon::parse($dateStr.' '.$row['jam_mulai'], $wib);
             $hour = (int) $slotDateTime->format('H');
             $session = 'evening';
 
@@ -186,11 +176,11 @@ class GetAvailableSchedules
 
             $isPast = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
             $isBooked = $row['booking_count'] > 0;
-            $isAvailable = !$isPast && !$isBooked;
+            $isAvailable = ! $isPast && ! $isBooked;
             $slotPrice = $row['harga_override'] !== null ? (float) $row['harga_override'] : (float) $service->harga;
             $durasiMenit = (int) ($service->durasi ?: 60);
             $slotEndDateTime = (clone $slotDateTime)->addMinutes($durasiMenit);
-            $timeRangeLabel = $slotDateTime->format('H:i') . ' – ' . $slotEndDateTime->format('H:i');
+            $timeRangeLabel = $slotDateTime->format('H:i').' – '.$slotEndDateTime->format('H:i');
 
             return [
                 'id' => $row['id'],
@@ -203,9 +193,9 @@ class GetAvailableSchedules
                 'period' => 'WIB',
                 'session' => $session,
                 'price' => $slotPrice,
-                'price_label' => 'Rp ' . number_format($slotPrice, 0, ',', '.'),
+                'price_label' => 'Rp '.number_format($slotPrice, 0, ',', '.'),
                 'is_available' => $isAvailable,
-                'is_disabled' => !$isAvailable,
+                'is_disabled' => ! $isAvailable,
                 'is_booked' => $isBooked,
                 'is_past' => $isPast,
             ];
@@ -215,11 +205,7 @@ class GetAvailableSchedules
     /**
      * Get available slots for reschedule / owner booking.
      *
-     * @param Tenant $tenant
-     * @param int $serviceId
-     * @param string $date (Y-m-d)
-     * @param int|null $excludeBookingId
-     * @return Collection
+     * @param  string  $date  (Y-m-d)
      */
     public function getSlotsForReschedule(
         Tenant $tenant,
@@ -227,6 +213,7 @@ class GetAvailableSchedules
         string $date,
         ?int $excludeBookingId = null
     ): Collection {
+        // scope-bypass: filtered by the resolved storefront tenant
         $slots = Schedule::withoutGlobalScopes()
             ->where('idtenant', $tenant->id)
             ->where('idlayanan', $serviceId)
@@ -235,17 +222,20 @@ class GetAvailableSchedules
             ->orderBy('jam_mulai')
             ->get();
 
+        // scope-bypass: filtered by the resolved storefront tenant
         $takenSlotIds = Booking::withoutGlobalScopes()
             ->where('idtenant', $tenant->id)
             ->whereDate('tanggalbooking', $date)
-            ->when($excludeBookingId !== null, fn($q) => $q->where('id', '!=', $excludeBookingId))
-            ->tap(fn($q) => BookingRules::applyOccupiesSlotCondition($q, ''))
+            ->when($excludeBookingId !== null, fn ($q) => $q->where('id', '!=', $excludeBookingId))
+            ->tap(fn ($q) => BookingRules::applyOccupiesSlotCondition($q, ''))
             ->pluck('idschedule')
             ->filter()
             ->toArray();
 
-        return $slots->map(function ($slot) use ($takenSlotIds, $excludeBookingId) {
-            $isOccupied = in_array($slot->id, $takenSlotIds, true);
+        return $slots->map(function ($slot) use ($takenSlotIds, $excludeBookingId, $date) {
+            // A started slot cannot be claimed (SlotRefusal::Past), so it is never offered (BQ-065 T5-07)
+            $isOccupied = in_array($slot->id, $takenSlotIds, true)
+                || AvailabilityRules::isSlotPast(Carbon::parse($date)->toDateString(), substr($slot->jam_mulai, 0, 5));
             $isCurrentSlot = ($excludeBookingId !== null && $slot->bookings()->where('id', $excludeBookingId)->exists());
 
             return [
@@ -253,7 +243,7 @@ class GetAvailableSchedules
                 'schedule' => $slot,
                 'jam_mulai' => substr($slot->jam_mulai, 0, 5),
                 'jam_selesai' => substr($slot->jam_selesai, 0, 5),
-                'is_available' => !$isOccupied,
+                'is_available' => ! $isOccupied,
                 'is_current' => $isCurrentSlot,
             ];
         });
@@ -262,10 +252,7 @@ class GetAvailableSchedules
     /**
      * Get available time slots for customer reschedule flow (AJAX).
      *
-     * @param Tenant $tenant
-     * @param Service $service
-     * @param string $selectedDate (Y-m-d)
-     * @param int $excludeBookingId
+     * @param  string  $selectedDate  (Y-m-d)
      * @return array<int, array{id: int, jam_mulai: string, jam_selesai: string, is_available: bool, is_booked: bool, is_past: bool}>
      */
     public function getCustomerRescheduleSlots(
@@ -302,22 +289,21 @@ class GetAvailableSchedules
                     $selectedDateCarbon = Carbon::parse($selectedDate, $wib);
                     $isToday = $selectedDateCarbon->isSameDay($nowWib);
                     $isPastDate = $selectedDateCarbon->lt($nowWib->copy()->startOfDay());
-                    $slotDateTime = Carbon::parse($selectedDate . ' ' . $row->jam_mulai, $wib);
-                    $isBooked    = $row->booking_count > 0;
-                    $isPast      = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
-                    $isAvailable = !$isBooked && !$isPast;
+                    $slotDateTime = Carbon::parse($selectedDate.' '.$row->jam_mulai, $wib);
+                    $isBooked = $row->booking_count > 0;
+                    $isPast = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
+                    $isAvailable = ! $isBooked && ! $isPast;
 
                     return [
-                        'id'           => (int) $row->id,
-                        'jam_mulai'    => $slotDateTime->format('H:i'),
-                        'jam_selesai'  => Carbon::parse($selectedDate . ' ' . $row->jam_selesai, $wib)->format('H:i'),
+                        'id' => (int) $row->id,
+                        'jam_mulai' => $slotDateTime->format('H:i'),
+                        'jam_selesai' => Carbon::parse($selectedDate.' '.$row->jam_selesai, $wib)->format('H:i'),
                         'is_available' => $isAvailable,
-                        'is_booked'    => $isBooked,
-                        'is_past'      => $isPast,
+                        'is_booked' => $isBooked,
+                        'is_past' => $isPast,
                     ];
                 })
                 ->all();
         });
     }
 }
-

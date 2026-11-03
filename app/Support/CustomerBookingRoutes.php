@@ -4,10 +4,19 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Actions\CustomerAccess\CustomerAccessLinks;
 use Illuminate\Http\RedirectResponse;
 
 final class CustomerBookingRoutes
 {
+    /** Private storefront URLs always use the configured platform origin. */
+    public static function canonical(string $routeName, array $parameters): string
+    {
+        $name = 'customer.booking.slug.'.str_replace('customer.booking.', '', $routeName);
+
+        return app(CustomerAccessLinks::class)->canonical(route($name, $parameters, false));
+    }
+
     /**
      * Determine whether the current request is coming from a custom tenant domain
      * (i.e. NOT the main BookQu platform domain).
@@ -20,7 +29,7 @@ final class CustomerBookingRoutes
         return $host !== $mainHost
             && $host !== '127.0.0.1'
             && $host !== 'localhost'
-            && !str_contains($host, 'bookqu.test');
+            && ! str_contains($host, 'bookqu.test');
     }
 
     /**
@@ -32,7 +41,7 @@ final class CustomerBookingRoutes
     {
         return self::isCustomDomain()
             ? $routeName
-            : 'customer.booking.slug.' . str_replace('customer.booking.', '', $routeName);
+            : 'customer.booking.slug.'.str_replace('customer.booking.', '', $routeName);
     }
 
     /**
@@ -76,11 +85,13 @@ final class CustomerBookingRoutes
                 if (array_is_list($parameters)) {
                     // First element may be the slug — remove it; domain replaces it.
                     $rest = array_slice($parameters, 1);
+
                     return array_merge(['custom_domain' => $host], $rest);
                 }
 
                 // Associative array: remove slug_usaha key, inject custom_domain.
                 unset($parameters['slug_usaha']);
+
                 return array_merge(['custom_domain' => $host], $parameters);
             }
 

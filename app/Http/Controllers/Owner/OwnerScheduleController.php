@@ -33,7 +33,7 @@ class OwnerScheduleController extends Controller
     public function index(Request $request): View
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -68,7 +68,7 @@ class OwnerScheduleController extends Controller
 
         $slotterboking = Schedule::where('schedules.idtenant', $idtenant)
             ->whereBetween('tanggal', [$awalminggu->format('Y-m-d'), $akhirminggu->format('Y-m-d')])
-            ->whereHas('bookings', fn($q) => $q->whereIn('status', ['paid', 'completed']))
+            ->whereHas('bookings', fn ($q) => $q->whereIn('status', ['paid', 'completed']))
             ->count();
 
         $rasioterboking = $totalslot > 0 ? round(($slotterboking / $totalslot) * 100) : 0;
@@ -78,7 +78,7 @@ class OwnerScheduleController extends Controller
             ->whereIn('status', ['paid', 'completed'])
             ->with('layanan')
             ->get()
-            ->sum(fn($b) => $b->layanan->harga ?? 0);
+            ->sum(fn ($b) => $b->layanan->harga ?? 0);
 
         $bookingberikutnya = Booking::where('idtenant', $idtenant)
             ->where('tanggalbooking', '>=', Carbon::today()->format('Y-m-d'))
@@ -125,13 +125,13 @@ class OwnerScheduleController extends Controller
     public function bulkStore(BulkCreateScheduleRequest $request, BulkCreateSchedules $bulkCreateSchedules): RedirectResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $result = $bulkCreateSchedules->execute($tenant, $request->validated());
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return redirect('/owner/schedule')->withErrors([
                 $result['error_field'] ?? 'idlayanan' => $result['error'],
             ]);
@@ -139,27 +139,29 @@ class OwnerScheduleController extends Controller
 
         return redirect('/owner/schedule')->with(
             'sukses',
-            $result['created_count'] . ' slot jadwal berhasil dibuat untuk ' . $result['days_count'] . ' hari!'
+            $result['created_count'].' slot jadwal berhasil dibuat untuk '.$result['days_count'].' hari!'
         );
     }
 
     /**
      * Hapus slot jadwal.
      */
-    public function destroy($id, DeleteSchedule $deleteSchedule): RedirectResponse
+    public function destroy(Request $request, $id, DeleteSchedule $deleteSchedule): RedirectResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $result = $deleteSchedule->execute($tenant, $id);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             abort($result['code'] ?? 403, $result['error'] ?? 'Tidak dapat menghapus slot.');
         }
 
-        return redirect('/owner/schedule')->with('sukses', 'Slot berhasil dihapus.');
+        $destination = $request->input('return_to') === 'calendar' ? '/owner/calendar' : '/owner/schedule';
+
+        return redirect($destination)->with('sukses', 'Slot berhasil dihapus.');
     }
 
     /**
@@ -168,7 +170,7 @@ class OwnerScheduleController extends Controller
     public function updateDefaultPricing(Request $request, ScheduleAvailabilityCache $cacheService): RedirectResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -197,7 +199,7 @@ class OwnerScheduleController extends Controller
         UpdateScheduleAvailability $updateScheduleAvailability
     ): RedirectResponse {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -212,13 +214,13 @@ class OwnerScheduleController extends Controller
     public function deleteBlockedDate($blockedDate, DeleteBlockedDate $deleteBlockedDate): RedirectResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $result = $deleteBlockedDate->execute($tenant, $blockedDate);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             abort($result['code'] ?? 404, $result['error'] ?? 'Tanggal blokir tidak ditemukan.');
         }
 

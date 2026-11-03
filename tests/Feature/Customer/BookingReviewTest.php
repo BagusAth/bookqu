@@ -3,7 +3,6 @@
 namespace Tests\Feature\Customer;
 
 use App\Models\Booking;
-use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Models\Review;
 use App\Models\Schedule;
@@ -13,21 +12,28 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
 class BookingReviewTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesCustomerAccess;
 
     protected Tenant $tenant;
+
     protected Service $service;
+
     protected Schedule $schedule;
+
     protected Payment $payment;
+
     protected Booking $booking;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
         Mail::fake();
 
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
@@ -75,7 +81,7 @@ class BookingReviewTest extends TestCase
 
     public function test_customer_can_see_review_form_when_booking_is_completed(): void
     {
-        $response = $this->get('/manage/' . $this->booking->booking_code . '?token=' . $this->booking->cancellation_token);
+        $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'?token='.$this->booking->cancellation_token);
 
         $response->assertStatus(200);
         $response->assertSee('Berikan Ulasan Layanan');
@@ -86,7 +92,7 @@ class BookingReviewTest extends TestCase
     {
         $this->booking->update(['status' => 'paid']);
 
-        $response = $this->get('/manage/' . $this->booking->booking_code . '?token=' . $this->booking->cancellation_token);
+        $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'?token='.$this->booking->cancellation_token);
 
         $response->assertStatus(200);
         $response->assertDontSee('Berikan Ulasan Layanan');
@@ -94,13 +100,13 @@ class BookingReviewTest extends TestCase
 
     public function test_customer_can_submit_review_for_completed_booking(): void
     {
-        $response = $this->post('/manage/' . $this->booking->booking_code . '/review', [
+        $response = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/review', [
             'token' => $this->booking->cancellation_token,
             'rating' => 5,
             'komentar' => 'Pelayanan sangat ramah dan tempatnya bersih!',
         ]);
 
-        $response->assertRedirect('/manage/' . $this->booking->booking_code . '?token=' . $this->booking->cancellation_token);
+        $response->assertRedirect('/manage/'.$this->booking->booking_code);
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('reviews', [
@@ -121,7 +127,7 @@ class BookingReviewTest extends TestCase
     {
         $this->booking->update(['status' => 'paid']);
 
-        $response = $this->post('/manage/' . $this->booking->booking_code . '/review', [
+        $response = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/review', [
             'token' => $this->booking->cancellation_token,
             'rating' => 5,
             'komentar' => 'Bagus',
@@ -133,13 +139,13 @@ class BookingReviewTest extends TestCase
 
     public function test_customer_cannot_submit_review_with_invalid_token(): void
     {
-        $response = $this->post('/manage/' . $this->booking->booking_code . '/review', [
+        $response = $this->post('/manage/'.$this->booking->booking_code.'/review', [
             'token' => 'invalid-token-xyz',
             'rating' => 5,
             'komentar' => 'Bagus',
         ]);
 
-        $response->assertStatus(403);
+        $response->assertNotFound();
         $this->assertDatabaseMissing('reviews', ['idbooking' => $this->booking->id]);
     }
 
@@ -152,7 +158,7 @@ class BookingReviewTest extends TestCase
             'komentar' => 'Sudah direview',
         ]);
 
-        $response = $this->post('/manage/' . $this->booking->booking_code . '/review', [
+        $response = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/review', [
             'token' => $this->booking->cancellation_token,
             'rating' => 5,
             'komentar' => 'Mau review lagi',
@@ -164,19 +170,19 @@ class BookingReviewTest extends TestCase
 
     public function test_rating_must_be_between_1_and_5(): void
     {
-        $responseZero = $this->post('/manage/' . $this->booking->booking_code . '/review', [
+        $responseZero = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/review', [
             'token' => $this->booking->cancellation_token,
             'rating' => 0,
         ]);
         $responseZero->assertSessionHasErrors('rating');
 
-        $responseSix = $this->post('/manage/' . $this->booking->booking_code . '/review', [
+        $responseSix = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/review', [
             'token' => $this->booking->cancellation_token,
             'rating' => 6,
         ]);
         $responseSix->assertSessionHasErrors('rating');
 
-        $responseEmpty = $this->post('/manage/' . $this->booking->booking_code . '/review', [
+        $responseEmpty = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/review', [
             'token' => $this->booking->cancellation_token,
             'rating' => '',
         ]);
@@ -194,12 +200,12 @@ class BookingReviewTest extends TestCase
             'dibalas_pada' => now(),
         ]);
 
-        $response = $this->get('/manage/' . $this->booking->booking_code . '?token=' . $this->booking->cancellation_token);
+        $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'?token='.$this->booking->cancellation_token);
 
         $response->assertStatus(200);
         $response->assertSee('Ulasan Anda');
         $response->assertSee('Pengalaman luar biasa!');
-        $response->assertSee('Tanggapan dari ' . $this->tenant->namabisnis);
+        $response->assertSee('Tanggapan dari '.$this->tenant->namabisnis);
         $response->assertSee('Terima kasih banyak kak atas kepercayaannya!');
         $response->assertDontSee('Berikan Ulasan Layanan');
     }

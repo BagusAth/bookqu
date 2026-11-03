@@ -7,6 +7,7 @@ namespace App\Actions\Tenant;
 use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\ReservedTenantSlugs;
 use App\Support\TenantContext;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -22,7 +23,8 @@ class CreateInitialProfile
     /**
      * Store initial business profile and setup free trial subscription.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
+     *
      * @throws ValidationException
      */
     public function execute(User $user, array $data, ?Tenant $existingTenant = null): Tenant
@@ -33,9 +35,7 @@ class CreateInitialProfile
         if ($slug === '') {
             throw ValidationException::withMessages(['namabisnis' => 'Nama bisnis tidak valid untuk dijadikan URL.']);
         }
-
-        $reserved = ['owner', 'admin', 'login', 'register'];
-        if (in_array($slug, $reserved, true)) {
+        if (ReservedTenantSlugs::contains($slug)) {
             throw ValidationException::withMessages(['namabisnis' => 'Nama bisnis ini tidak bisa dipakai sebagai URL.']);
         }
 
@@ -48,16 +48,16 @@ class CreateInitialProfile
             throw ValidationException::withMessages(['namabisnis' => 'Slug sudah dipakai. Coba variasi nama bisnis lain.']);
         }
 
-        $isNewTenant = !Tenant::where('iduser', $user->id)->exists();
+        $isNewTenant = ! Tenant::where('iduser', $user->id)->exists();
 
         $tenant = Tenant::updateOrCreate(
             ['iduser' => $user->id],
             [
-                'namabisnis'  => $namabisnis,
-                'slug'        => $slug,
+                'namabisnis' => $namabisnis,
+                'slug' => $slug,
                 'jenisbisnis' => $data['jenisbisnis'],
-                'alamat'      => $data['alamat'],
-                'nomorhp'     => $data['nomorhp'],
+                'alamat' => $data['alamat'],
+                'nomorhp' => $data['nomorhp'],
             ]
         );
 
@@ -66,6 +66,8 @@ class CreateInitialProfile
         }
 
         app(TenantContext::class)->setTenantId($tenant->id);
+
+        app(GetStorefrontTenant::class)->forget((int) $tenant->id);
 
         return $tenant;
     }

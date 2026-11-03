@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\Log;
+use App\Models\Tenant;
 
 class TenantContext
 {
@@ -30,12 +30,13 @@ class TenantContext
         $this->tenantId = null;
     }
 
-    public function tenant(): ?\App\Models\Tenant
+    public function tenant(): ?Tenant
     {
         if ($this->tenantId === null) {
             return null;
         }
 
-        return \App\Models\Tenant::withoutGlobalScopes()->find($this->tenantId);
+        // scope-bypass: resolves the context tenant itself by id
+        return Tenant::withoutGlobalScopes()->find($this->tenantId);
     }
 }

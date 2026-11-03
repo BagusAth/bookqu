@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6" x-data="{
-    search: '{{ addslashes($search ?? '') }}',
+    search: @js($search ?? ''),
     addModalOpen: false,
     editModalOpen: false,
     newCategoryColor: 'purple',
@@ -163,7 +163,7 @@
                     <div class="flex items-center gap-1">
                         <button
                             type="button"
-                            @click='openEdit(@json($catPayload))'
+                            @click="openEdit(@js($catPayload))"
                             class="craft-btn rounded-xl p-1.5 text-[#6e6584] hover:bg-[#f3effe] hover:text-[#382186] transition cursor-pointer"
                             title="Edit"
                             id="btn-edit-category-{{ $cat->id }}"
@@ -177,7 +177,7 @@
                             @method('DELETE')
                             <button
                                 type="button"
-                                @click="$dispatch('open-confirm', { title: 'Hapus Kategori?', message: 'Kategori {{ addslashes($cat->name) }} akan dihapus dan melepaskan relasi dari layanannya. Yakin ingin menghapus?', formId: 'form-delete-cat-{{ $cat->id }}', confirmText: 'Ya, Hapus Kategori' })"
+                                @click="$dispatch('open-confirm', { title: 'Hapus Kategori?', message: 'Kategori ' + @js($cat->name) + ' akan dihapus dan melepaskan relasi dari layanannya. Yakin ingin menghapus?', formId: 'form-delete-cat-{{ $cat->id }}', confirmText: 'Ya, Hapus Kategori' })"
                                 class="craft-btn rounded-xl p-1.5 text-[#6e6584] hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
                                 title="Hapus"
                                 id="btn-delete-category-{{ $cat->id }}"

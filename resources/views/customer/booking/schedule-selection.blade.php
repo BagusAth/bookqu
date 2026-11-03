@@ -1,29 +1,27 @@
 @extends('customer.layouts.booking-shell')
 
-@section('title', 'Pilih Schedule')
+@section('title', 'Pilih Jadwal')
 @section('current_step', 2)
-@section('back_url', route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug))
-@section('back_label', 'Kembali ke Program')
+@section('back_url', \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug))
+@section('back_label', 'Kembali ke Layanan')
 
 @section('content')
-<div id="booking-schedule-root"
-     data-tenant-slug="{{ $tenant->slug }}"
-     x-data="schedulePicker({
-         tenantSlug: '{{ $tenant->slug }}',
-         slotsUrl: '{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.schedule-slots'), $tenant->slug) }}',
-         initialDate: '{{ $selectedDate }}',
-         initialDateFormatted: '{{ $selectedDateFormatted }}',
-         initialDateLabel: '{{ $selectedDateLabel }}',
-         dates: {{ \Illuminate\Support\Js::from($dates) }},
-         service: {{ \Illuminate\Support\Js::from($servicePayload) }},
-         initialMorningSlots: {{ \Illuminate\Support\Js::from($morningSlots) }},
-         initialAfternoonSlots: {{ \Illuminate\Support\Js::from($afternoonSlots) }},
-         initialEveningSlots: {{ \Illuminate\Support\Js::from($eveningSlots) }},
-         selectedTimes: {{ \Illuminate\Support\Js::from($selectedTimes) }},
-         selectedScheduleIds: {{ \Illuminate\Support\Js::from($selectedScheduleIds) }},
-     })"
-     x-init="init()"
-     class="w-full">
+@php
+    $scheduleConfig = [
+        'tenantSlug' => $tenant->slug,
+        'slotsUrl' => \App\Support\CustomerBookingRoutes::url('customer.booking.schedule-slots', $tenant->slug),
+        'initialDate' => $selectedDate,
+        'initialDateLabel' => $selectedDateLabel,
+        'dates' => $dates,
+        'service' => $servicePayload,
+        'initialMorningSlots' => $morningSlots,
+        'initialAfternoonSlots' => $afternoonSlots,
+        'initialEveningSlots' => $eveningSlots,
+        'selectedTimes' => $selectedTimes,
+        'selectedScheduleIds' => $selectedScheduleIds,
+    ];
+@endphp
+<div id="booking-schedule-root" x-data="schedulePicker(@js($scheduleConfig))" class="w-full">
 
     {{-- Error Notice --}}
     @if ($errors->any())
@@ -37,21 +35,22 @@
         </div>
     @endif
 
+    <p x-show="errorMessage" x-cloak role="alert" aria-live="polite" class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700" x-text="errorMessage"></p>
+
     {{-- Canonical Spec Anchors & Screen Reader Headings --}}
     <div class="sr-only">
-        <h1>Schedule</h1>
+        <h1>Pilih Jadwal</h1>
         <h2>Pilih Tanggal</h2>
         <p>Pilih tanggal yang tersedia untuk reservasi Anda.</p>
         <h2>Pilih Waktu</h2>
-        <a href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) }}">Kembali ke Pilih Layanan</a>
-        <a href="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $tenant->slug) }}">Kembali ke Pilih Tanggal</a>
+        <a href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}">Kembali ke Pilih Layanan</a>
     </div>
 
     {{-- Unified Booking Form --}}
     <form id="booking-schedule-form"
           method="POST"
-          action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.select-schedule'), $tenant->slug) }}"
-          @submit="isSubmitting = true">
+          action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.select-schedule', $tenant->slug) }}"
+          @submit="submit($event)">
         @csrf
         <input type="hidden" name="tanggal" :value="selectedDate" value="{{ $selectedDate }}" />
         <div class="hidden">
@@ -61,20 +60,14 @@
                     <input type="hidden" name="schedule_ids[]" :value="slot.id" />
                 </div>
             </template>
-            <template x-if="sortedSelectedSlots.length > 0">
-                <input type="hidden" name="schedule_id" :value="sortedSelectedSlots[0].id" />
-            </template>
-            @if(isset($simulate) && $simulate)
-                <input type="hidden" name="simulate" value="1" />
-            @endif
         </div>
 
-        <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px] items-start">
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px] items-start">
 
             {{-- ════════════════════════════════════════════════════════════
                  LEFT COLUMN: Horizontal Date Strip & Session Grids
                  ════════════════════════════════════════════════════════════ --}}
-            <section class="space-y-6">
+            <section class="min-w-0 space-y-6">
 
                 {{-- Horizontal Date Picker Carousel --}}
                 <div class="relative bg-white rounded-2xl border border-slate-200/80 p-2 sm:p-3 shadow-2xs">
@@ -93,29 +86,29 @@
                          class="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar scroll-smooth px-6 py-1 select-none">
                         @foreach($dates as $d)
                             <button type="button"
-                                    @click="selectDate('{{ $d['date'] }}')"
+                                    @click="selectDate(@js($d['date']))"
                                     {{ !$d['is_available'] ? 'disabled' : '' }}
                                     :class="{
-                                        'border-2 border-[#4F46E5] bg-[#EEF2FF] text-[#4F46E5] shadow-xs font-bold scale-[1.03]': selectedDate === '{{ $d['date'] }}',
-                                        'border border-slate-200/70 bg-white text-slate-700 hover:border-[#4F46E5]/40 hover:bg-slate-50': selectedDate !== '{{ $d['date'] }}' && {{ $d['is_available'] ? 'true' : 'false' }},
-                                        'border border-transparent bg-slate-50/60 text-slate-300 cursor-not-allowed opacity-40': {{ !$d['is_available'] ? 'true' : 'false' }}
+                                        'border-2 border-[#4F46E5] bg-[#EEF2FF] text-[#4F46E5] shadow-xs font-bold scale-[1.03]': selectedDate === @js($d['date']),
+                                        'border border-slate-200/70 bg-white text-slate-700 hover:border-[#4F46E5]/40 hover:bg-slate-50': selectedDate !== @js($d['date']) && @js($d['is_available']),
+                                        'border border-transparent bg-slate-50/60 text-slate-300 cursor-not-allowed opacity-40': @js(!$d['is_available'])
                                     }"
-                                    class="flex flex-col items-center justify-center rounded-2xl w-14 sm:w-16 h-18 sm:h-20 shrink-0 transition-all duration-150 cursor-pointer text-center relative focus:outline-none {{ $selectedDate === $d['date'] ? 'border-2 border-[#4F46E5] bg-[#EEF2FF] text-[#4F46E5] shadow-xs font-bold' : ($d['is_available'] ? 'border border-slate-200/70 bg-white text-slate-700' : 'border border-transparent bg-slate-50/60 text-slate-300 opacity-40 cursor-not-allowed') }}">
+                                    class="flex flex-col items-center justify-center rounded-2xl w-14 sm:w-16 h-18 sm:h-20 shrink-0 transition-all duration-150 cursor-pointer text-center relative focus:outline-none">
 
                                 {{-- Day Name (Mon, Tue, Wed...) --}}
-                                <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider {{ $selectedDate === $d['date'] ? 'text-[#4F46E5]' : ($d['is_available'] ? 'text-slate-500' : 'text-slate-300') }}"
-                                      :class="selectedDate === '{{ $d['date'] }}' ? 'text-[#4F46E5]' : ({{ $d['is_available'] ? 'true' : 'false' }} ? 'text-slate-500' : 'text-slate-300')">
-                                    {{ $d['day_name'] }}
+                                <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider"
+                                      :class="selectedDate === @js($d['date']) ? 'text-[#4F46E5]' : (@js($d['is_available']) ? 'text-slate-500' : 'text-slate-300')">
+                                    {{ $d['day_label'] }}
                                 </span>
 
                                 {{-- Day Number (13, 14, 15...) --}}
-                                <span class="text-lg sm:text-xl font-extrabold mt-0.5 leading-none {{ $selectedDate === $d['date'] ? 'text-[#4F46E5]' : ($d['is_available'] ? 'text-[#0F172A]' : 'text-slate-300') }}"
-                                      :class="selectedDate === '{{ $d['date'] }}' ? 'text-[#4F46E5]' : ({{ $d['is_available'] ? 'true' : 'false' }} ? 'text-[#0F172A]' : 'text-slate-300')">
+                                <span class="text-lg sm:text-xl font-extrabold mt-0.5 leading-none"
+                                      :class="selectedDate === @js($d['date']) ? 'text-[#4F46E5]' : (@js($d['is_available']) ? 'text-[#0F172A]' : 'text-slate-300')">
                                     {{ $d['day_number'] }}
                                 </span>
 
                                 {{-- Active Indicator Dot --}}
-                                <span x-show="selectedDate === '{{ $d['date'] }}'" class="w-1.5 h-1.5 rounded-full bg-[#4F46E5] mt-1.5 {{ $selectedDate === $d['date'] ? '' : 'hidden' }}"></span>
+                                <span x-show="selectedDate === @js($d['date'])" class="w-1.5 h-1.5 rounded-full bg-[#4F46E5] mt-1.5"></span>
                             </button>
                         @endforeach
                     </div>
@@ -171,7 +164,7 @@
                                 <circle cx="12" cy="12" r="4" />
                                 <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
                             </svg>
-                            <span>Morning Sessions</span>
+                            <span>Sesi Pagi</span>
                         </div>
 
                         {{-- Grid of Morning Time Slots --}}
@@ -196,7 +189,7 @@
                                     {{-- Period (AM/PM) --}}
                                     <span class="text-[11px] font-bold uppercase tracking-wider mt-0.5"
                                           :class="isSlotSelected(slot) ? 'text-white/80' : 'text-slate-400'"
-                                          x-text="slot.period || 'AM'">
+                                          x-text="slot.period || 'WIB'">
                                     </span>
 
                                     {{-- Multi-Session Sequence Badge when > 1 session selected --}}
@@ -219,7 +212,7 @@
                                         {{ $slot['time_range'] ?? ($slot['time'] . ' – ' . $slot['end_time']) }}
                                     </span>
                                     <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
-                                        {{ $slot['period'] ?? 'AM' }}
+                                        {{ $slot['period'] ?? 'WIB' }}
                                     </span>
                                 </div>
                             @endforeach
@@ -234,7 +227,7 @@
                                 <circle cx="12" cy="12" r="4" />
                                 <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2" />
                             </svg>
-                            <span>Afternoon Sessions</span>
+                            <span>Sesi Siang &amp; Sore</span>
                         </div>
 
                         {{-- Grid of Afternoon Time Slots --}}
@@ -255,7 +248,7 @@
                                     </span>
                                     <span class="text-[11px] font-bold uppercase tracking-wider mt-0.5"
                                           :class="isSlotSelected(slot) ? 'text-white/80' : 'text-slate-400'"
-                                          x-text="slot.period || 'PM'">
+                                          x-text="slot.period || 'WIB'">
                                     </span>
                                     <template x-if="selectedSlots.length > 1 && isSlotSelected(slot)">
                                         <span class="mt-1.5 inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-white/20 text-white">
@@ -276,7 +269,7 @@
                                         {{ $slot['time_range'] ?? ($slot['time'] . ' – ' . $slot['end_time']) }}
                                     </span>
                                     <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
-                                        {{ $slot['period'] ?? 'PM' }}
+                                        {{ $slot['period'] ?? 'WIB' }}
                                     </span>
                                 </div>
                             @endforeach
@@ -290,7 +283,7 @@
                             <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                             </svg>
-                            <span>Evening Sessions</span>
+                            <span>Sesi Malam</span>
                         </div>
 
                         {{-- Grid of Evening Time Slots --}}
@@ -311,7 +304,7 @@
                                     </span>
                                     <span class="text-[11px] font-bold uppercase tracking-wider mt-0.5"
                                           :class="isSlotSelected(slot) ? 'text-white/80' : 'text-slate-400'"
-                                          x-text="slot.period || 'PM'">
+                                          x-text="slot.period || 'WIB'">
                                     </span>
                                     <template x-if="selectedSlots.length > 1 && isSlotSelected(slot)">
                                         <span class="mt-1.5 inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-white/20 text-white">
@@ -328,7 +321,7 @@
 
                     {{-- Empty State when no slots on this date --}}
                     <div x-show="morningSlots.length === 0 && afternoonSlots.length === 0 && eveningSlots.length === 0"
-                         class="{{ (count($morningSlots) === 0 && count($afternoonSlots) === 0 && count($eveningSlots) === 0) ? '' : 'hidden' }}">
+                         class="">
                         <div class="rounded-3xl border border-dashed border-slate-200 bg-white p-8 sm:p-12 text-center">
                             <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 mb-3.5">
                                 <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -380,7 +373,7 @@
                     <div class="space-y-3 text-xs sm:text-sm">
                         {{-- Date --}}
                         <div class="flex items-center justify-between">
-                            <span class="text-[#64748B] font-medium">Date</span>
+                            <span class="text-[#64748B] font-medium">Tanggal</span>
                             <span class="font-bold text-[#0F172A]" x-text="selectedDateFormatted">
                                 {{ $selectedDateFormatted }}
                             </span>
@@ -388,17 +381,17 @@
 
                         {{-- Time (Shows Range + Total Sessions) --}}
                         <div class="flex items-start justify-between gap-2">
-                            <span class="text-[#64748B] font-medium shrink-0">Time</span>
+                            <span class="text-[#64748B] font-medium shrink-0">Waktu</span>
                             <span class="font-bold text-[#0F172A] text-right" x-text="selectedTimeFormatted">
-                                {{ count($selectedTimes) > 0 ? implode(', ', $selectedTimes) : '-' }}
+
                             </span>
                         </div>
 
                         {{-- Duration (Calculates 2 Hours, 3 Hours, etc.) --}}
                         <div class="flex items-center justify-between">
-                            <span class="text-[#64748B] font-medium">Duration</span>
+                            <span class="text-[#64748B] font-medium">Durasi</span>
                             <span class="font-bold text-[#0F172A]" x-text="selectedDurationFormatted">
-                                {{ $servicePayload['duration_label'] }}
+                                {{ $servicePayload['duration'] }} menit
                             </span>
                         </div>
                     </div>
@@ -439,7 +432,7 @@
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <span class="text-[#64748B] font-medium">Service Fee</span>
+                            <span class="text-[#64748B] font-medium">Biaya Layanan</span>
                             <span class="font-bold text-[#0F172A]" x-text="serviceFee > 0 ? formatRupiah(serviceFee) : 'Rp0'">
                                 Rp0
                             </span>
@@ -454,16 +447,16 @@
                         </div>
                     </div>
 
-                    {{-- Checkout CTA Button --}}
+                    {{-- Lanjutkan CTA Button --}}
                     <div class="pt-2">
                         <button type="submit"
                                 id="schedule-checkout-btn"
-                                :disabled="selectedSlots.length === 0 || isSubmitting"
+                                :disabled="selectedSlots.length === 0 || isSubmitting || loadingSlots || !!errorMessage"
                                 :class="{
                                     'bg-[#4F46E5] hover:bg-[#4338CA] text-white shadow-lg shadow-indigo-200/70 active:scale-[0.98] cursor-pointer': selectedSlots.length > 0 && !isSubmitting,
                                     'bg-slate-300 text-white cursor-not-allowed opacity-60': selectedSlots.length === 0 || isSubmitting
                                 }"
-                                class="w-full py-3.5 px-6 rounded-2xl font-bold text-sm sm:text-base transition-all duration-150 flex items-center justify-center gap-2 {{ count($selectedTimes) > 0 ? 'bg-[#4F46E5] text-white shadow-lg cursor-pointer' : 'bg-slate-300 text-white opacity-60 cursor-not-allowed' }}">
+                                class="w-full py-3.5 px-6 rounded-2xl font-bold text-sm sm:text-base transition-all duration-150 flex items-center justify-center gap-2">
                             <template x-if="isSubmitting">
                                 <span class="inline-flex items-center gap-2">
                                     <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -474,9 +467,9 @@
                                 </span>
                             </template>
                             <template x-if="!isSubmitting">
-                                <span x-text="selectedSlots.length > 1 ? ('Checkout ' + selectedSlots.length + ' Sesi') : (selectedSlots.length === 1 ? 'Checkout' : 'Pilih Jam Terlebih Dahulu')"></span>
+                                <span x-text="selectedSlots.length > 1 ? ('Lanjutkan ' + selectedSlots.length + ' Sesi') : (selectedSlots.length === 1 ? 'Lanjutkan' : 'Pilih Jam Terlebih Dahulu')"></span>
                             </template>
-                            <span x-show="!mounted" class="{{ count($selectedTimes) > 0 ? '' : 'hidden' }}">Checkout</span>
+                            <span x-show="!mounted" class="{{ count($selectedTimes) > 0 ? '' : 'hidden' }}">Lanjutkan</span>
                         </button>
                     </div>
 
@@ -485,7 +478,7 @@
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
                         </svg>
-                        <span>Secure payment powered by BookQu</span>
+                        <span>Pembayaran aman melalui BookQu</span>
                     </div>
                 </div>
             </aside>
@@ -499,13 +492,13 @@
                 <span class="text-base font-extrabold text-[#4F46E5]" x-text="formatRupiah(total)">{{ $servicePayload['price_label'] }}</span>
             </div>
             <button type="submit"
-                    :disabled="selectedSlots.length === 0 || isSubmitting"
+                    :disabled="selectedSlots.length === 0 || isSubmitting || loadingSlots || !!errorMessage"
                     :class="{
                         'bg-[#4F46E5] text-white cursor-pointer': selectedSlots.length > 0 && !isSubmitting,
                         'bg-slate-300 text-white cursor-not-allowed opacity-60': selectedSlots.length === 0 || isSubmitting
                     }"
                     class="py-2.5 px-6 rounded-xl font-bold text-xs sm:text-sm shrink-0">
-                <span x-text="selectedSlots.length > 1 ? ('Checkout (' + selectedSlots.length + ')') : 'Checkout'"></span>
+                <span x-text="selectedSlots.length > 1 ? ('Lanjutkan (' + selectedSlots.length + ')') : 'Lanjutkan'"></span>
             </button>
         </div>
     </form>
@@ -513,255 +506,6 @@
 @endsection
 
 @section('scripts')
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-<script>
-    function schedulePicker(config) {
-        return {
-            tenantSlug: config.tenantSlug,
-            slotsUrl: config.slotsUrl,
-            selectedDate: config.initialDate,
-            selectedDateFormatted: config.initialDateFormatted,
-            selectedDateLabel: config.initialDateLabel,
-            dates: config.dates || [],
-            service: config.service || {},
-            morningSlots: config.initialMorningSlots || [],
-            afternoonSlots: config.initialAfternoonSlots || [],
-            eveningSlots: config.initialEveningSlots || [],
-            selectedSlots: [],
-            slotsCache: {},
-            loadingSlots: false,
-            isSubmitting: false,
-            mounted: false,
-            serviceFee: 0,
-
-            init() {
-                this.mounted = true;
-                // Prime the local cache with initial slots
-                this.slotsCache[this.selectedDate] = {
-                    date: this.selectedDate,
-                    date_header: this.selectedDateFormatted,
-                    date_label: this.selectedDateLabel,
-                    morning: this.morningSlots,
-                    afternoon: this.afternoonSlots,
-                    evening: this.eveningSlots,
-                };
-
-                // Auto-select initial slots if passed from session
-                const allInitial = this.allCurrentSlots;
-                if (config.selectedScheduleIds && config.selectedScheduleIds.length > 0) {
-                    const ids = config.selectedScheduleIds.map(Number);
-                    this.selectedSlots = allInitial.filter(s => ids.includes(Number(s.id)) && s.is_available);
-                } else if (config.selectedTimes && config.selectedTimes.length > 0) {
-                    this.selectedSlots = allInitial.filter(s => config.selectedTimes.includes(s.time) && s.is_available);
-                }
-
-                // If no slots selected yet, auto-select first available slot
-                if (this.selectedSlots.length === 0 && allInitial.length > 0) {
-                    const firstAvail = allInitial.find(s => s.is_available);
-                    if (firstAvail) {
-                        this.selectedSlots = [firstAvail];
-                    }
-                }
-            },
-
-            get allCurrentSlots() {
-                return [...this.morningSlots, ...this.afternoonSlots, ...this.eveningSlots]
-                    .sort((a, b) => a.time.localeCompare(b.time));
-            },
-
-            get sortedSelectedSlots() {
-                return [...this.selectedSlots].sort((a, b) => a.time.localeCompare(b.time));
-            },
-
-            async selectDate(dateStr) {
-                if (this.selectedDate === dateStr) return;
-                this.selectedDate = dateStr;
-                this.selectedSlots = [];
-
-                // Find date metadata from dates array
-                const dObj = this.dates.find(d => d.date === dateStr);
-                if (dObj) {
-                    this.selectedDateFormatted = `${dObj.month_name} ${dObj.day_number}, 2026`;
-                    this.selectedDateLabel = `${dObj.day_name_id}, ${dObj.day_number} ${dObj.month_name} 2026`;
-                }
-
-                // Check Alpine client-side cache
-                if (this.slotsCache[dateStr]) {
-                    const cached = this.slotsCache[dateStr];
-                    this.morningSlots = cached.morning || [];
-                    this.afternoonSlots = cached.afternoon || [];
-                    this.eveningSlots = cached.evening || [];
-                    if (cached.date_header) this.selectedDateFormatted = cached.date_header;
-                    if (cached.date_label) this.selectedDateLabel = cached.date_label;
-                    return;
-                }
-
-                // Fetch slots from backend endpoint
-                this.loadingSlots = true;
-                try {
-                    const url = `${this.slotsUrl}?tanggal=${encodeURIComponent(dateStr)}&service_id=${encodeURIComponent(this.service.id)}`;
-                    const res = await fetch(url, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-                    const data = await res.json();
-                    if (data && data.success) {
-                        this.morningSlots = data.morning || [];
-                        this.afternoonSlots = data.afternoon || [];
-                        this.eveningSlots = data.evening || [];
-                        if (data.date_header) this.selectedDateFormatted = data.date_header;
-                        if (data.date_label) this.selectedDateLabel = data.date_label;
-
-                        // Save to cache
-                        this.slotsCache[dateStr] = data;
-
-                        // Auto-select first available slot
-                        const allSlots = this.allCurrentSlots;
-                        const firstAvail = allSlots.find(s => s.is_available);
-                        if (firstAvail) {
-                            this.selectedSlots = [firstAvail];
-                        }
-                    }
-                } catch (e) {
-                    console.error('Gagal mengambil jadwal:', e);
-                } finally {
-                    this.loadingSlots = false;
-                }
-            },
-
-            isSlotSelected(slot) {
-                return this.selectedSlots.some(s => s.id === slot.id);
-            },
-
-            getSlotOrder(slot) {
-                const sorted = this.sortedSelectedSlots;
-                const idx = sorted.findIndex(s => s.id === slot.id);
-                return idx > -1 ? (idx + 1) : 0;
-            },
-
-            /**
-             * Smart Multi-Slot Selection:
-             * Supports picking multiple contiguous sessions (e.g. 2 hours or more).
-             */
-            toggleSlot(slot) {
-                if (!slot.is_available) return;
-
-                const allSlots = this.allCurrentSlots;
-                const existingIndex = this.selectedSlots.findIndex(s => s.id === slot.id);
-
-                // If already selected, deselect or shrink selection
-                if (existingIndex > -1) {
-                    if (this.selectedSlots.length === 1) {
-                        this.selectedSlots = [];
-                        return;
-                    }
-                    const sorted = this.sortedSelectedSlots;
-                    // If clicking the first slot of the range, remove first
-                    if (slot.id === sorted[0].id) {
-                        this.selectedSlots = sorted.slice(1);
-                        return;
-                    }
-                    // If clicking the last slot of the range, remove last
-                    if (slot.id === sorted[sorted.length - 1].id) {
-                        this.selectedSlots = sorted.slice(0, -1);
-                        return;
-                    }
-                    // If clicking in the middle, reset selection to just this slot
-                    this.selectedSlots = [slot];
-                    return;
-                }
-
-                // If nothing is selected, select this slot
-                if (this.selectedSlots.length === 0) {
-                    this.selectedSlots = [slot];
-                    return;
-                }
-
-                const sorted = this.sortedSelectedSlots;
-                const firstSelected = sorted[0];
-                const lastSelected = sorted[sorted.length - 1];
-
-                const slotIdx = allSlots.findIndex(s => s.id === slot.id);
-                const firstIdx = allSlots.findIndex(s => s.id === firstSelected.id);
-                const lastIdx = allSlots.findIndex(s => s.id === lastSelected.id);
-
-                // If immediately adjacent after the last selected slot -> extend range
-                if (slotIdx === lastIdx + 1) {
-                    this.selectedSlots.push(slot);
-                    return;
-                }
-
-                // If immediately adjacent before the first selected slot -> extend range backwards
-                if (slotIdx === firstIdx - 1) {
-                    this.selectedSlots.unshift(slot);
-                    return;
-                }
-
-                // If clicking a range (e.g. clicking 2 hours ahead) and all intermediate slots are available:
-                const minIdx = Math.min(firstIdx, slotIdx);
-                const maxIdx = Math.max(lastIdx, slotIdx);
-                const candidateRange = allSlots.slice(minIdx, maxIdx + 1);
-                const allAvailable = candidateRange.every(s => s.is_available);
-
-                if (allAvailable && candidateRange.length <= 8) {
-                    this.selectedSlots = candidateRange;
-                    return;
-                }
-
-                // Non-contiguous slot clicked -> start new single selection at this slot
-                this.selectedSlots = [slot];
-            },
-
-            scrollDates(direction) {
-                const el = this.$refs.dateStrip;
-                if (!el) return;
-                const scrollAmount = direction === 'left' ? -220 : 220;
-                el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-            },
-
-            get selectedTimeFormatted() {
-                if (this.selectedSlots.length === 0) return '-';
-                const sorted = this.sortedSelectedSlots;
-                if (sorted.length === 1) {
-                    const s = sorted[0];
-                    return (s.time_range || s.label || s.time) + (s.period ? ' ' + s.period : '');
-                }
-                const first = sorted[0];
-                const last = sorted[sorted.length - 1];
-                const firstTime = first.time + (first.period ? ' ' + first.period : '');
-                const lastTime = (last.end_time || last.time) + (last.period ? ' ' + last.period : '');
-                return `${firstTime} – ${lastTime} (${sorted.length} Sesi)`;
-            },
-
-            get selectedDurationFormatted() {
-                if (this.selectedSlots.length === 0) return this.service.duration_label || '1 Hour';
-                const count = this.selectedSlots.length;
-                const slotMinutes = (parseInt(this.service.duration) || 60);
-                const totalMinutes = count * slotMinutes;
-                if (totalMinutes >= 60 && totalMinutes % 60 === 0) {
-                    const hours = totalMinutes / 60;
-                    return hours === 1 ? '1 Hour (60 Menit)' : `${hours} Hours (${totalMinutes} Menit)`;
-                }
-                return `${totalMinutes} Menit (${count} Sesi)`;
-            },
-
-            get subtotal() {
-                if (this.selectedSlots.length === 0) {
-                    return this.service.price || 0;
-                }
-                return this.selectedSlots.reduce((sum, s) => sum + (parseFloat(s.price) || parseFloat(this.service.price) || 0), 0);
-            },
-
-            get total() {
-                return this.subtotal + this.serviceFee;
-            },
-
-            formatRupiah(amount) {
-                return 'Rp ' + Math.round(amount || 0).toLocaleString('id-ID');
-            }
-        };
-    }
-</script>
+<script defer src="{{ asset('js/booking-schedule.js') }}"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 @endsection

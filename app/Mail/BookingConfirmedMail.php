@@ -13,19 +13,17 @@ class BookingConfirmedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public string $manageUrl;
     public string $priceLabel;
 
-    public function __construct(public Booking $booking)
+    public function __construct(public Booking $booking, public string $manageUrl)
     {
-        $this->manageUrl  = $booking->getManageUrl();
         $this->priceLabel = $booking->priceLabel;
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '✅ Booking Dikonfirmasi — ' . $this->booking->booking_code,
+            subject: '✅ Booking Dikonfirmasi — '.$this->booking->booking_code,
         );
     }
 

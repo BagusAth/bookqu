@@ -3,7 +3,7 @@
 > **Status:** Accepted  
 > **Date:** 2026-10-18  
 > **Deciders:** Engineering Team / Antigravity Agent  
-> **Consulted:** Technical Audit 2026-10-17, Documentation Map (`docs/1-README.md`), Architecture (`docs/4-ARCHITECTURE.md`)  
+> **Consulted:** Technical Audit 2026-10-17, Documentation Map (`docs/README.md`), Architecture (`docs/architecture.md`)  
 > **Informed:** Core Developers, Operations Team  
 
 ---
@@ -113,4 +113,4 @@ We decided on **Option 2: Unified Payment Gateway Manager with Driver Pattern**.
 ### Operational Guidelines for Developers & Teams
 * **Local Development:** Default to `PAYMENT_GATEWAY_DRIVER=singapay` with sandbox credentials.
 * **Running Tests:** All payment tests can be verified via `php artisan test tests/Feature/Payment/`. Tests mocking Midtrans (e.g. `CheckoutMidtransTest`) explicitly override `config(['payment.default' => 'midtrans'])` in `setUp()`.
-* **Webhooks:** Webhook endpoints are distinct (`/webhook/singapay` and `/webhook/midtrans`), both validating incoming signatures and ensuring cross-provider rejection.
+* **Webhooks:** Webhook endpoints are distinct (`/api/webhooks/singapay/transaction` and `/midtrans/webhook`; corrected 2026-10-30 to match `routes/web.php`), both validating incoming signatures and ensuring cross-provider rejection.

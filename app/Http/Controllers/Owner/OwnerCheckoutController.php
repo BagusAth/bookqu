@@ -3,15 +3,16 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Payment\CreateSubscriptionPayment;
+use App\Actions\Payment\OutcomeIntakeResult;
+use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Subscription\ProcessSubscriptionCheckoutRequest;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
-use App\Services\MidtransPaymentService;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Traits\ResolvesOwnerTenant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 class OwnerCheckoutController extends Controller
@@ -19,8 +20,7 @@ class OwnerCheckoutController extends Controller
     /**
      * Resolve tenant dari session / auth user.
      */
-    use \App\Traits\ResolvesOwnerTenant;
-
+    use ResolvesOwnerTenant;
 
     /**
      * Halaman 1: Review Pesanan & Data Kontak.
@@ -30,7 +30,7 @@ class OwnerCheckoutController extends Controller
         $tenant = $this->resolveTenant();
         $user = auth()->user();
 
-        if (!$tenant) {
+        if (! $tenant) {
             return redirect()->route('owner.subscription')
                 ->with('pesan', 'Silakan lengkapi profil bisnis terlebih dahulu.');
         }
@@ -54,10 +54,10 @@ class OwnerCheckoutController extends Controller
     /**
      * Proses checkout: buat Payment record & generate Snap token via CreateSubscriptionPayment action.
      */
-    public function processCheckout(\App\Http\Requests\Subscription\ProcessSubscriptionCheckoutRequest $request, CreateSubscriptionPayment $createSubscriptionPayment)
+    public function processCheckout(ProcessSubscriptionCheckoutRequest $request, CreateSubscriptionPayment $createSubscriptionPayment)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             return redirect()->route('owner.subscription')
                 ->with('pesan', 'Tenant tidak ditemukan.');
         }
@@ -69,17 +69,20 @@ class OwnerCheckoutController extends Controller
                 $tenant,
                 $plan,
                 [
-                    'nama_pembayar'  => $request->nama_pembayar,
+                    'nama_pembayar' => $request->nama_pembayar,
                     'email_pembayar' => $request->email_pembayar,
-                    'hp_pembayar'    => $request->hp_pembayar,
-                    'catatan'        => $request->catatan,
+                    'hp_pembayar' => $request->hp_pembayar,
+                    'catatan' => $request->catatan,
                 ]
             );
         } catch (\Throwable $e) {
-            Log::error('Owner checkout error: ' . $e->getMessage());
+            Log::error('Owner checkout error', [
+                'exception_type' => $e::class, 'exception_file' => $e->getFile(), 'exception_line' => $e->getLine(),
+                'tenant_id' => $tenant->id, 'plan_id' => $plan->id,
+            ]);
 
             return redirect()->route('owner.subscription')
-                ->with('pesan', 'Gagal memproses pembayaran. Silakan coba lagi. Error: ' . $e->getMessage());
+                ->with('pesan', 'Gagal memproses pembayaran. Silakan coba lagi.');
         }
 
         return redirect()->route('owner.checkout.payment', $payment);
@@ -93,7 +96,7 @@ class OwnerCheckoutController extends Controller
         $tenant = $this->resolveTenant();
 
         // Security: pastikan payment milik tenant yang sedang login
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             abort(403, 'Unauthorized');
         }
 
@@ -104,7 +107,11 @@ class OwnerCheckoutController extends Controller
 
         // Jika expired, kembali ke subscription
         if ($payment->isExpired() && $payment->status === 'pending') {
-            $payment->update(['status' => 'gagal']);
+            // Reclaiming asks the provider first; a success in flight still activates the plan
+            if (app(PaymentOutcomeIntake::class)->check($payment)->status() === 'sukses') {
+                return redirect()->route('owner.checkout.invoice', $payment);
+            }
+
             return redirect()->route('owner.subscription')
                 ->with('pesan', 'Waktu pembayaran telah habis. Silakan buat pesanan baru.');
         }
@@ -120,70 +127,23 @@ class OwnerCheckoutController extends Controller
             'provider' => $provider,
             'paymentUrl' => $payment->payment_url,
             'snapToken' => $payment->snap_token,
-            'clientKey' => ($provider === 'midtrans') ? config('midtrans.client_key') : null,
-            'snapUrl' => ($provider === 'midtrans') ? config('midtrans.snap_url') : null,
+            'clientKey' => ($provider === 'midtrans') ? config('payment.drivers.midtrans.client_key') : null,
+            'snapUrl' => ($provider === 'midtrans') ? config('payment.drivers.midtrans.snap_url') : null,
         ]);
     }
 
     /**
      * Cek status pembayaran ke gateway provider aktif.
      */
-    public function checkPaymentStatus(Payment $payment, MidtransPaymentService $paymentService)
+    public function checkPaymentStatus(Payment $payment, PaymentOutcomeIntake $intake)
     {
         $tenant = $this->resolveTenant();
 
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Fast-path: jika database sudah sukses
-        if ($payment->status === 'sukses') {
-            return response()->json([
-                'status' => 'sukses',
-                'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => route('owner.checkout.invoice', $payment),
-            ]);
-        }
-
-        $syncResult = $paymentService
-            ? $paymentService->verifyAndSync($payment)
-            : app(\App\Actions\Payment\CheckPaymentStatus::class)->execute($payment);
-
-        if ($syncResult['status'] === 'sukses') {
-            return response()->json([
-                'status' => 'sukses',
-                'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => route('owner.checkout.invoice', $payment),
-            ]);
-        }
-
-        if ($syncResult['status'] === 'gagal') {
-            return response()->json([
-                'status' => 'gagal',
-                'message' => $syncResult['message'] ?? 'Pembayaran gagal atau dibatalkan.',
-            ]);
-        }
-
-        if ($syncResult['status'] === 'error') {
-            $payment->refresh();
-            if ($payment->status === 'sukses') {
-                return response()->json([
-                    'status' => 'sukses',
-                    'message' => 'Pembayaran berhasil dikonfirmasi!',
-                    'redirect' => route('owner.checkout.invoice', $payment),
-                ]);
-            }
-
-            return response()->json([
-                'status' => 'pending',
-                'message' => 'Sedang memverifikasi dengan payment gateway...',
-            ]);
-        }
-
-        return response()->json([
-            'status' => 'pending',
-            'message' => $syncResult['message'] ?? 'Menunggu pembayaran diselesaikan...',
-        ]);
+        return $this->statusResponse($intake->check($payment), $payment);
     }
 
     /**
@@ -193,7 +153,7 @@ class OwnerCheckoutController extends Controller
     {
         $tenant = $this->resolveTenant();
 
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             abort(403, 'Unauthorized');
         }
 
@@ -216,55 +176,36 @@ class OwnerCheckoutController extends Controller
     }
 
     /**
-     * Handle callback dari gateway (client-side).
+     * Callback dari gateway (client-side). The browser's payload is never trusted:
+     * the callback only triggers a server-side status query (BQ-070).
      */
-    public function handleCallback(Payment $payment, Request $request, ?MidtransPaymentService $paymentService = null)
+    public function handleCallback(Payment $payment, PaymentOutcomeIntake $intake)
     {
         $tenant = $this->resolveTenant();
 
-        if (!$tenant || $payment->idtenant !== $tenant->id) {
+        if (! $tenant || $payment->idtenant !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Fast-path: jika database sudah sukses
-        if ($payment->status === 'sukses') {
-            return response()->json([
+        return $this->statusResponse($intake->check($payment), $payment);
+    }
+
+    private function statusResponse(OutcomeIntakeResult $result, Payment $payment): JsonResponse
+    {
+        return match ($result->status()) {
+            'sukses' => response()->json([
                 'status' => 'sukses',
                 'message' => 'Pembayaran berhasil dikonfirmasi!',
                 'redirect' => route('owner.checkout.invoice', $payment),
-            ]);
-        }
-
-        /** @var \App\Actions\Payment\CheckPaymentStatus $checkAction */
-        $checkAction = app(\App\Actions\Payment\CheckPaymentStatus::class);
-        $syncResult = $checkAction->execute($payment);
-
-        if ($syncResult['status'] === 'error') {
-            $result = $request->input('result');
-            if ($result && $paymentService) {
-                $syncResult = $paymentService->syncStatus($payment, $result);
-            }
-        }
-
-        if ($syncResult['status'] === 'sukses') {
-            return response()->json([
-                'status' => 'sukses',
-                'message' => 'Pembayaran berhasil dikonfirmasi!',
-                'redirect' => route('owner.checkout.invoice', $payment),
-            ]);
-        }
-
-        if ($syncResult['status'] === 'pending') {
-            return response()->json([
+            ]),
+            'gagal' => response()->json([
+                'status' => 'gagal',
+                'message' => 'Pembayaran gagal, dibatalkan, atau waktu pembayaran telah habis.',
+            ]),
+            default => response()->json([
                 'status' => 'pending',
-                'message' => $syncResult['message'] ?? 'Pembayaran pending. Silakan selesaikan pembayaran.',
-            ]);
-        }
-
-        return response()->json([
-            'status' => 'gagal',
-            'message' => $syncResult['message'] ?? 'Pembayaran gagal.',
-        ]);
+                'message' => 'Menunggu pembayaran diselesaikan...',
+            ]),
+        };
     }
 }
-

@@ -1,0 +1,5 @@
+# AI agent tooling, not application code
+.agents/
+.claude/
+.codex/
+AGENTS.md

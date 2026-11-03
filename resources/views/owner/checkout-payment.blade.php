@@ -62,29 +62,28 @@
                 <div class="space-y-3">
                     @if(($provider ?? '') === 'singapay' || !empty($paymentUrl))
                         {{-- Open SingaPay Payment URL --}}
-                        <a href="{{ $paymentUrl ?? $payment->payment_url }}" id="btn-pay-now" target="_blank" rel="noopener noreferrer"
+                        <a href="{{ $paymentUrl ?? $payment->payment_url }}" id="btn-pay-now" x-show="!paymentOpened" @click="paymentOpened = true" target="_blank" rel="noopener noreferrer"
                             class="w-full rounded-xl bg-bq-primary py-4 text-sm font-bold text-white shadow-lg shadow-bq-primary/30 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                            Bayar Sekarang via SingaPay
+
+                            Bayar Sekarang
                         </a>
 
                         {{-- Reopen Payment --}}
-                        <a href="{{ $paymentUrl ?? $payment->payment_url }}" id="btn-reopen-payment" target="_blank" rel="noopener noreferrer"
+                        <a href="{{ $paymentUrl ?? $payment->payment_url }}" id="btn-reopen-payment" x-show="paymentOpened" x-cloak target="_blank" rel="noopener noreferrer"
                             class="w-full rounded-xl border border-bq-border bg-bq-background py-3.5 text-sm font-semibold text-bq-text transition-all hover:bg-bq-surface hover:border-bq-primary hover:text-bq-primary flex items-center justify-center gap-2">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                             Buka Ulang Halaman Pembayaran SingaPay
                         </a>
                     @else
                         {{-- Open Midtrans Snap --}}
-                        <button type="button" id="btn-pay-now"
+                        <button type="button" id="btn-pay-now" x-show="!paymentOpened"
                             @click="openPayment()"
                             class="w-full rounded-xl bg-bq-primary py-4 text-sm font-bold text-white shadow-lg shadow-bq-primary/30 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                             Bayar Sekarang
                         </button>
 
                         {{-- Reopen Payment --}}
-                        <button type="button" id="btn-reopen-payment"
+                        <button type="button" id="btn-reopen-payment" x-show="paymentOpened" x-cloak
                             @click="openPayment()"
                             class="w-full rounded-xl border border-bq-border bg-bq-background py-3.5 text-sm font-semibold text-bq-text transition-all hover:bg-bq-surface hover:border-bq-primary hover:text-bq-primary flex items-center justify-center gap-2">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -215,7 +214,8 @@ function paymentPage() {
         isChecking: false,
         statusMessage: '',
         statusType: '',
-        countdown: {{ max(0, $payment->expired_at ? $payment->expired_at->diffInSeconds(now(), false) * -1 : 3600) }},
+        countdown: {{ $payment->expired_at ? (int) max(0, now()->diffInSeconds($payment->expired_at, false)) : 0 }},
+        paymentOpened: false,
         countdownDisplay: '--:--',
         timer: null,
         pollTimer: null,
@@ -300,6 +300,7 @@ function paymentPage() {
 
             const self = this;
 
+            this.paymentOpened = true;
             window.snap.pay('{{ $snapToken }}', {
                 onSuccess: function(result) {
                     self.statusMessage = 'Pembayaran berhasil! Mengarahkan ke halaman invoice...';

@@ -4,35 +4,40 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payment;
 
-use App\Contracts\Payments\PaymentGatewayInterface;
-use App\Domain\Payment\PaymentState;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Infrastructure\Payments\SingaPay\SingaPayClient;
 use App\Infrastructure\Payments\SingaPay\SingaPayPaymentGateway;
-use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use Mockery;
+use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
 class PaymentGatewayDriverTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesCustomerAccess;
 
     protected User $user;
+
     protected Tenant $tenant;
+
     protected Service $layanan;
+
     protected Plan $plan;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
 
         $this->user = User::factory()->create([
             'role' => 'owner',
@@ -138,7 +143,7 @@ class PaymentGatewayDriverTest extends TestCase
 
         $targetDate = now()->addDays(2)->format('Y-m-d');
 
-        $schedule = \App\Models\Schedule::create([
+        $schedule = Schedule::create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->layanan->id,
             'tanggal' => $targetDate,
@@ -169,7 +174,7 @@ class PaymentGatewayDriverTest extends TestCase
                 'tanggal' => $targetDate,
                 'jam' => ['10:00'],
                 'schedule_ids' => [$schedule->id],
-            ]
+            ],
         ]);
 
         $response = $this->post("/{$this->tenant->slug}/booking/checkout", [
@@ -185,7 +190,7 @@ class PaymentGatewayDriverTest extends TestCase
         $this->assertSame('sng-ext-12345', $payment->external_id);
         $this->assertNull($payment->snap_token);
 
-        $response->assertRedirect("/{$this->tenant->slug}/booking/payment/{$payment->order_id}");
+        $this->assertCheckoutHandoff($response, $payment);
     }
 
     public function test_owner_subscription_checkout_initializes_singapay_payment(): void

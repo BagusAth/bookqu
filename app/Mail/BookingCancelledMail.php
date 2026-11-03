@@ -4,12 +4,13 @@ namespace App\Mail;
 
 use App\Models\Booking;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class BookingCancelledMail extends Mailable
+class BookingCancelledMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -18,12 +19,13 @@ class BookingCancelledMail extends Mailable
     public function __construct(public Booking $booking)
     {
         $this->priceLabel = $booking->priceLabel;
+        $this->afterCommit();
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '❌ Booking Dibatalkan — ' . $this->booking->booking_code,
+            subject: '❌ Booking Dibatalkan — '.$this->booking->booking_code,
         );
     }
 

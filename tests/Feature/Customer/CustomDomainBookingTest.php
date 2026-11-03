@@ -7,6 +7,8 @@ use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,16 +17,20 @@ class CustomDomainBookingTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Tenant $tenant;
+
     protected Service $service;
+
     protected Schedule $schedule;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-11-02 08:00:00', 'Asia/Jakarta'));
         $this->withoutMiddleware([
-            \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
-            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            PreventRequestForgery::class,
+            ValidateCsrfToken::class,
         ]);
 
         $this->user = User::factory()->create(['role' => 'owner']);
@@ -73,8 +79,28 @@ class CustomDomainBookingTest extends TestCase
                 'service_id' => $this->service->id,
             ]);
 
-        $response->assertRedirect('http://studiobrama.com/booking/date');
+        $response->assertRedirect('http://studiobrama.com/booking/schedule');
         $this->assertEquals($this->service->id, session('booking.service_id'));
+    }
+
+    public function test_booking_forms_and_navigation_keep_the_custom_domain_through_checkout(): void
+    {
+        $this->withServerVariables(['HTTP_HOST' => 'studiobrama.com'])->withSession(['booking' => [
+            'tenant_id' => $this->tenant->id, 'service_id' => $this->service->id,
+            'tanggal' => $this->schedule->tanggal->toDateString(), 'jam' => ['10:00'],
+            'schedule_ids' => [$this->schedule->id],
+        ]]);
+
+        foreach ([
+            '/' => '/booking/select-program',
+            '/booking/schedule' => '/booking/select-schedule',
+            '/booking/checkout' => '/booking/checkout',
+        ] as $page => $action) {
+            $this->get('http://studiobrama.com'.$page)->assertOk()
+                ->assertSee('action="http://studiobrama.com'.$action.'"', false)
+                ->assertSee('href="http://studiobrama.com"', false)
+                ->assertDontSee('http://studio-brama/', false);
+        }
     }
 
     public function test_unknown_custom_domain_returns_404(): void

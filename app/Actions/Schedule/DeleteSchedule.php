@@ -9,6 +9,7 @@ use App\Models\Schedule;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DeleteSchedule
 {
@@ -19,14 +20,13 @@ class DeleteSchedule
     /**
      * Delete a schedule slot for a tenant.
      *
-     * @param Tenant $tenant
-     * @param Schedule|int|string $schedule
      * @return array{success: bool, error?: string, code?: int}
      */
     public function execute(Tenant $tenant, Schedule|int|string $schedule): array
     {
         $slot = $schedule instanceof Schedule
             ? $schedule
+            // scope-bypass: filtered by the authenticated tenant and re-checked below
             : Schedule::withoutGlobalScopes()->where('idtenant', $tenant->id)->findOrFail((int) $schedule);
 
         if ((int) $slot->idtenant !== (int) $tenant->id) {
@@ -37,20 +37,29 @@ class DeleteSchedule
             ];
         }
 
-        if (!ScheduleConflictRules::canDeleteSchedule($slot)) {
+        $idlayanan = (int) $slot->idlayanan;
+        $tanggal = $slot->tanggal instanceof Carbon
+            ? $slot->tanggal->format('Y-m-d')
+            : Carbon::parse($slot->tanggal)->format('Y-m-d');
+
+        // Check and delete under the tenant lock so a concurrent claim cannot slip in between
+        $deleted = DB::transaction(function () use ($tenant, $slot) {
+            ClaimSlots::lockTenant((int) $tenant->id);
+            if (! ScheduleConflictRules::canDeleteSchedule($slot)) {
+                return false;
+            }
+            $slot->delete();
+
+            return true;
+        });
+
+        if (! $deleted) {
             return [
                 'success' => false,
                 'error' => 'Slot memiliki booking aktif.',
                 'code' => 403,
             ];
         }
-
-        $idlayanan = (int) $slot->idlayanan;
-        $tanggal = $slot->tanggal instanceof Carbon
-            ? $slot->tanggal->format('Y-m-d')
-            : Carbon::parse($slot->tanggal)->format('Y-m-d');
-
-        $slot->delete();
 
         $this->availabilityCache->clearScheduleCache((int) $tenant->id, $idlayanan, [$tanggal]);
 

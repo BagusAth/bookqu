@@ -92,7 +92,7 @@
             ? 'https://wa.me/' . $cleanMerchantPhone . '?text=' . urlencode("Halo {$tenant->namabisnis}, saya ingin bertanya mengenai reservasi saya ({$payment->order_id}).")
             : null;
 
-        $invoiceUrl = route('booking.manage.payment.invoice', ['order_id' => $payment->order_id]) . ($token ? '?token=' . $token : '');
+        $invoiceUrl = route('booking.manage.payment.invoice', ['order_id' => $payment->order_id]);
 
         $canReschedule = !$isMultiSlot && $firstBooking && $firstBooking->canBeRescheduled();
         $canCancel = !$isMultiSlot && $firstBooking && $firstBooking->canBeCancelled();
@@ -104,7 +104,7 @@
     <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
         <div class="mx-auto flex w-full max-w-4xl items-center justify-between px-4 sm:px-6 py-3.5">
             <div class="flex items-center gap-3">
-                <a href="{{ $tenant->slug ? route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) : '/' }}" class="flex items-center gap-2.5 group">
+                <a href="{{ $tenant->slug ? \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) : '/' }}" class="flex items-center gap-2.5 group">
                     @if($tenant->logo_path)
                         <img src="{{ \Illuminate\Support\Facades\Storage::url($tenant->logo_path) }}" alt="{{ $tenant->namabisnis }}" class="h-9 w-9 rounded-xl object-cover border border-[#E2E8F0] shadow-xs group-hover:scale-105 transition-transform" />
                     @else
@@ -197,6 +197,13 @@
                             <span class="h-2 w-2 rounded-full bg-amber-500"></span>
                             Menunggu Pembayaran
                         </span>
+                        {{-- The provider's hosted link lets the payer resume (BQ-064 T4-09) --}}
+                        @if(! empty($payment->payment_url))
+                            <a href="{{ $payment->payment_url }}" target="_blank" rel="noopener noreferrer"
+                               class="ml-2 inline-flex items-center gap-1.5 rounded-xl btn-theme px-3.5 py-1.5 text-xs font-bold text-white shadow-xs">
+                                Lanjutkan Pembayaran
+                            </a>
+                        @endif
                     @else
                         <span class="inline-flex items-center gap-1.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-1.5 text-xs font-bold text-red-700 shadow-xs">
                             <span class="h-2 w-2 rounded-full bg-red-500"></span>
@@ -292,7 +299,7 @@
                     <div class="flex flex-wrap items-center gap-3">
                         @if($canReschedule)
                             <a
-                                href="{{ route('booking.manage.reschedule.show', ['booking_code' => $firstBooking->booking_code, 'token' => $firstBooking->reschedule_token ?: $token]) }}"
+                                href="{{ route('booking.manage.reschedule.show', ['booking_code' => $firstBooking->booking_code]) }}"
                                 class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl btn-theme px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
                             >
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -431,7 +438,7 @@
                     >
                         Kembali
                     </button>
-                    <form method="POST" action="{{ route('booking.manage.cancel', ['booking_code' => $firstBooking->booking_code, 'token' => $firstBooking->cancellation_token ?: $token]) }}" class="inline">
+                    <form method="POST" action="{{ route('booking.manage.cancel', ['booking_code' => $firstBooking->booking_code]) }}" class="inline">
                         @csrf
                         <button
                             type="submit"
@@ -450,6 +457,6 @@
         <p>&copy; {{ date('Y') }} {{ $tenant->namabisnis }} — Didukung oleh BookQu Platform.</p>
     </footer>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 </body>
 </html>

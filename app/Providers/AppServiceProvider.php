@@ -2,8 +2,16 @@
 
 namespace App\Providers;
 
+use App\Contracts\Payments\PaymentGatewayInterface;
+use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Support\TenantContext;
+use Carbon\Carbon;
+use Illuminate\Foundation\Events\DiagnosingHealth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,16 +22,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->scoped(\App\Support\TenantContext::class, function () {
-            return new \App\Support\TenantContext();
+        $this->app->scoped(TenantContext::class, function () {
+            return new TenantContext;
         });
 
-        $this->app->singleton(\App\Infrastructure\Payments\PaymentGatewayManager::class, function () {
-            return new \App\Infrastructure\Payments\PaymentGatewayManager();
+        $this->app->singleton(PaymentGatewayManager::class, function () {
+            return new PaymentGatewayManager;
         });
 
-        $this->app->bind(\App\Contracts\Payments\PaymentGatewayInterface::class, function ($app) {
-            return $app->make(\App\Infrastructure\Payments\PaymentGatewayManager::class)->driver();
+        $this->app->bind(PaymentGatewayInterface::class, function ($app) {
+            return $app->make(PaymentGatewayManager::class)->driver();
         });
     }
 
@@ -32,16 +40,24 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Carbon\Carbon::setLocale(config('app.locale', 'id'));
+        Event::listen(DiagnosingHealth::class, function (DiagnosingHealth $event): void {
+            $heartbeat = Cache::get('ops:scheduler-heartbeat');
+
+            if ($heartbeat !== null && now()->timestamp - (int) $heartbeat > 300) {
+                throw new \RuntimeException('Scheduler heartbeat is stale.');
+            }
+        });
+
+        Carbon::setLocale(config('app.locale', 'id'));
 
         if (! $this->app->runningInConsole() && request()->getHost()) {
-            \Illuminate\Support\Facades\URL::forceRootUrl(request()->getSchemeAndHttpHost());
+            URL::forceRootUrl(request()->getSchemeAndHttpHost());
         }
 
         // Share Pro subscription status with the sidebar
         View::composer('components.owner.sidebar', function ($view) {
             $userId = auth()->id();
-            $tenantId = app(\App\Support\TenantContext::class)->getTenantId();
+            $tenantId = app(TenantContext::class)->getTenantId();
             $tenant = null;
 
             if (is_numeric($tenantId)) {
@@ -51,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
 
-            if (!$tenant && $userId) {
+            if (! $tenant && $userId) {
                 $tenant = Tenant::where('iduser', $userId)->first();
             }
 

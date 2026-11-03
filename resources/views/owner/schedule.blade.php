@@ -224,7 +224,7 @@
                                     <button
                                         type="button"
                                         class="rounded-xl p-2 text-bq-primary bg-indigo-50 border border-indigo-200 active:scale-95 transition"
-                                        @click="$dispatch('open-view-booking', { booking: {{ json_encode($bookingnya) }} })"
+                                        @click="$dispatch('open-view-booking', { booking: @js($bookingnya) })"
                                         title="View Details"
                                     >
                                         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -322,7 +322,7 @@
                                         <button 
                                             type="button" 
                                             class="rounded-md p-1 text-bq-primary opacity-0 transition-all group-hover:opacity-100 hover:bg-bq-primary/10" 
-                                            @click="$dispatch('open-view-booking', { booking: {{ json_encode($bookingnya) }} })"
+                                            @click="$dispatch('open-view-booking', { booking: @js($bookingnya) })"
                                             title="View Details"
                                         >
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

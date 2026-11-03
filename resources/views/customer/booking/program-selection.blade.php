@@ -10,7 +10,7 @@
         id="booking-program-form"
         class="max-w-5xl mx-auto w-full"
         method="POST"
-        action="{{ route(\App\Support\CustomerBookingRoutes::name('customer.booking.select-program'), $tenant->slug) }}"
+        action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.select-program', $tenant->slug) }}"
         x-ref="confirmForm"
     >
         @csrf
@@ -88,6 +88,10 @@
                     @endif
                 </div>
             </div>
+
+            @if (! empty($pendingCheckout))
+                <x-customer.pending-checkout-banner :pending="$pendingCheckout" class="mb-6" />
+            @endif
 
             @if ($errors->any())
                 <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-700">
@@ -259,5 +263,5 @@
 
 @section('scripts')
 <script defer src="{{ asset('js/booking-program.js') }}"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 @endsection

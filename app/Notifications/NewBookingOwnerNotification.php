@@ -3,11 +3,13 @@
 namespace App\Notifications;
 
 use App\Models\Booking;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewBookingOwnerNotification extends Notification
+class NewBookingOwnerNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -16,6 +18,7 @@ class NewBookingOwnerNotification extends Notification
     public function __construct(Booking $booking)
     {
         $this->booking = $booking;
+        $this->afterCommit();
     }
 
     /**
@@ -31,26 +34,26 @@ class NewBookingOwnerNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $booking  = $this->booking;
-        $layanan  = $booking->layanan;
-        $tenant   = $booking->tenant;
-        $payment  = $booking->payment;
+        $booking = $this->booking;
+        $layanan = $booking->layanan;
+        $tenant = $booking->tenant;
+        $payment = $booking->payment;
 
-        $namaLayanan  = $layanan?->namalayanan ?? 'Layanan';
-        $tanggal      = $booking->tanggalbooking instanceof \Carbon\Carbon
+        $namaLayanan = $layanan?->namalayanan ?? 'Layanan';
+        $tanggal = $booking->tanggalbooking instanceof Carbon
             ? $booking->tanggalbooking->translatedFormat('l, d F Y')
-            : ($booking->tanggalbooking ? \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') : '-');
-        $jam          = $booking->jam ?? '-';
-        $nominal      = $payment?->jumlah ?? ($layanan?->harga ?? 0);
-        $harga        = $nominal > 0 ? 'Rp ' . number_format($nominal, 0, ',', '.') : 'Gratis (Free)';
+            : ($booking->tanggalbooking ? Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') : '-');
+        $jam = $booking->jam ?? '-';
+        $nominal = $payment?->jumlah ?? ($layanan?->harga ?? 0);
+        $harga = $nominal > 0 ? 'Rp '.number_format($nominal, 0, ',', '.') : 'Gratis (Free)';
 
-        $dashboardUrl = url('/owner/bookings?katakunci=' . urlencode($booking->booking_code ?? $booking->namapelanggan));
+        $dashboardUrl = url('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan));
 
         $mail = (new MailMessage)
-            ->subject('📅 Booking Baru Masuk — ' . ($tenant->namabisnis ?? 'BookQu'))
-            ->greeting('Halo ' . ($notifiable->namalengkap ?? 'Owner') . ',')
+            ->subject('📅 Booking Baru Masuk — '.($tenant->namabisnis ?? 'BookQu'))
+            ->greeting('Halo '.($notifiable->namalengkap ?? 'Owner').',')
             ->line('Ada booking baru yang telah **terkonfirmasi**. Berikut detail booking:')
-            ->line("**Kode Booking:** " . ($booking->booking_code ?? '-'))
+            ->line('**Kode Booking:** '.($booking->booking_code ?? '-'))
             ->line("**Pelanggan   :** {$booking->namapelanggan}")
             ->line("**Layanan     :** {$namaLayanan}")
             ->line("**Tanggal     :** {$tanggal} pukul {$jam}")
@@ -74,29 +77,29 @@ class NewBookingOwnerNotification extends Notification
         $payment = $booking->payment;
 
         $namaLayanan = $layanan?->namalayanan ?? 'Layanan';
-        $tanggal = $booking->tanggalbooking instanceof \Carbon\Carbon
+        $tanggal = $booking->tanggalbooking instanceof Carbon
             ? $booking->tanggalbooking->translatedFormat('d M Y')
-            : ($booking->tanggalbooking ? \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('d M Y') : '-');
+            : ($booking->tanggalbooking ? Carbon::parse($booking->tanggalbooking)->translatedFormat('d M Y') : '-');
         $nominal = $payment?->jumlah ?? ($layanan?->harga ?? 0);
-        $harga = $nominal > 0 ? 'Rp ' . number_format($nominal, 0, ',', '.') : 'Gratis';
+        $harga = $nominal > 0 ? 'Rp '.number_format($nominal, 0, ',', '.') : 'Gratis';
 
         return [
-            'event_type'     => 'new_booking',
-            'title'          => 'Booking Baru Masuk',
-            'message'        => "{$booking->namapelanggan} memesan {$namaLayanan} untuk {$tanggal} pukul {$booking->jam}",
-            'booking_id'     => $booking->id,
-            'booking_code'   => $booking->booking_code,
-            'customer_name'  => $booking->namapelanggan,
+            'event_type' => 'new_booking',
+            'title' => 'Booking Baru Masuk',
+            'message' => "{$booking->namapelanggan} memesan {$namaLayanan} untuk {$tanggal} pukul {$booking->jam}",
+            'booking_id' => $booking->id,
+            'booking_code' => $booking->booking_code,
+            'customer_name' => $booking->namapelanggan,
             'customer_email' => $booking->email,
             'customer_phone' => $booking->nomorhp,
-            'service_name'   => $namaLayanan,
-            'tanggal'        => $tanggal,
-            'jam'            => $booking->jam,
-            'amount'         => $harga,
-            'status'         => $booking->status,
-            'badge_color'    => 'emerald',
-            'icon'           => 'calendar-plus',
-            'url'            => url('/owner/bookings?katakunci=' . urlencode($booking->booking_code ?? $booking->namapelanggan)),
+            'service_name' => $namaLayanan,
+            'tanggal' => $tanggal,
+            'jam' => $booking->jam,
+            'amount' => $harga,
+            'status' => $booking->status,
+            'badge_color' => 'emerald',
+            'icon' => 'calendar-plus',
+            'url' => url('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan)),
         ];
     }
 }

@@ -29,6 +29,7 @@ final class SubscriptionUsage
      */
     public static function countServices(int $tenantId): int
     {
+        // scope-bypass: filtered by the given tenant id
         return Service::withoutGlobalScopes()->where('idtenant', $tenantId)->count();
     }
 
@@ -37,6 +38,7 @@ final class SubscriptionUsage
      */
     public static function countStaff(int $tenantId): int
     {
+        // scope-bypass: filtered by the given tenant id
         return Staff::withoutGlobalScopes()->where('idtenant', $tenantId)->count();
     }
 
@@ -47,6 +49,7 @@ final class SubscriptionUsage
     {
         $date = $date ?? Carbon::now();
 
+        // scope-bypass: filtered by the given tenant id
         return Booking::withoutGlobalScopes()
             ->where('idtenant', $tenantId)
             ->whereYear('tanggalbooking', $date->year)

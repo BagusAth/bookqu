@@ -23,6 +23,12 @@
                             $resourceName = $booking->layanan?->resources?->pluck('name')->join(', ');
                             $staffResourceDisplay = $staffName ?: ($resourceName ?: 'General Staff / Spot');
                             $bookingData = [
+                                'booking_code' => $booking->booking_code,
+                                'namapelanggan' => $booking->namapelanggan,
+                                'jam' => $booking->jam,
+                                'idschedule' => $booking->idschedule,
+                                'tanggalbooking' => $booking->tanggalbooking?->toDateString(),
+                                'layanan' => $booking->layanan ? ['namalayanan' => $booking->layanan->namalayanan] : null,
                                 'id' => $booking->id,
                                 'code' => $booking->booking_code ?? ('BKQ-' . $booking->id),
                                 'name' => $booking->namapelanggan,
@@ -42,11 +48,7 @@
                                 'snap_token' => $booking->payment?->snap_token ?? null,
                                 'rescheduled_from_date' => $booking->rescheduled_from_date ? $booking->rescheduled_from_date->format('d M Y') : null,
                                 'rescheduled_from_time' => $booking->rescheduled_from_time ?? null,
-                                'manage_url' => $booking->booking_code
-                                    ? (($booking->isMultiSlot() && $booking->payment && $booking->payment->manage_token)
-                                        ? $booking->payment->getManageUrl()
-                                        : $booking->getManageUrl())
-                                    : null,
+                                'manage_url' => null,
                             ];
                         @endphp
                         <tr class="transition-colors hover:bg-bq-background/40">
@@ -144,7 +146,7 @@
                                 <div class="flex items-center justify-end gap-2">
                                     {{-- View Detail button --}}
                                     <button type="button"
-                                        @click="viewBooking({{ json_encode($bookingData) }})"
+                                        @click="viewBooking(@js($bookingData))"
                                         class="inline-flex items-center gap-1 rounded-lg border border-bq-border bg-bq-surface px-2.5 py-1.5 text-xs font-medium text-bq-text hover:bg-bq-background transition">
                                         <svg class="h-3.5 w-3.5 text-bq-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -192,7 +194,7 @@
                                                     </form>
                                                 @endif
                                                 <button type="button"
-                                                    @click="open = false; $dispatch('open-owner-reschedule', { booking: {{ json_encode($bookingData) }} })"
+                                                    @click="open = false; $dispatch('open-owner-reschedule', { booking: @js($bookingData) })"
                                                     class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium text-indigo-700 hover:bg-indigo-50 border-t border-slate-100 cursor-pointer">
                                                     <svg class="h-3.5 w-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
