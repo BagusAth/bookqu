@@ -1,6 +1,9 @@
 ---
 paths:
   - app/Http/Middleware/**
+  - app/Domain/Team/**
+  - app/Actions/Team/**
+  - app/Infrastructure/Integrations/**
   - app/Support/**
   - app/Traits/**
   - app/Models/Scopes/**
@@ -30,6 +33,12 @@ Owner routes with `{id}` must load the record through the tenant scope or an exp
 
 ## Fail closed
 Middleware that gates by tenant or subscription denies when the context is missing. Commands that touch customer data refuse to run outside `local`/`testing` unless they are production jobs.
+
+## Roles through one permission map
+Team roles (Pemilik, Manajer, Kasir) are checked only through `TenantPermission` abilities in Policies or `can:` middleware (ADR-0016); never compare role names in controllers, views or middleware. A member's tenant comes from the accepted, non-revoked membership, re-read on every request.
+
+## Integrations stay outside transactions
+Outbound calls (Google Calendar, webhooks) run in queued jobs after commit inside the tenant-context runner; webhook targets must be HTTPS public hosts, checked at save and at delivery (ADR-0022).
 
 ## No secrets or internals to users
 Return generic messages to users; log technical details without passwords, tokens or credentials. Third-party credentials stored in the database must use encrypted casts.

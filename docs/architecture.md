@@ -63,6 +63,7 @@ Validation is layered and every layer stays: client hints → Form Request → d
 - Every new tenant-scoped feature answers: who owns the record, how the context is set, how authorization is checked, what happens with a foreign id, and which test proves isolation.
 - Authorization follows [ADR-0010](adr/ADR-0010-authorization-and-tenant-scoping.md): owners through Laravel Policies (foreign ids resolve to 404), admins through the `admin` gate, customers through ADR-0006 grants; `TenantScope` stays as fail-closed defence in depth.
 - Code without a request (jobs, webhooks, commands) runs inside a tenant-context runner for a trusted tenant, one tenant per transaction. Scope bypasses are allowed only in the four places ADR-0010 lists, each with an explicit filter, a `scope-bypass:` reason and a test.
+- **Team accounts (target, ADR-0016):** a user reaches a tenant through an accepted, non-revoked `tenant_members` row with role `pemilik`, `manajer` or `kasir`; `TenantMiddleware` resolves the tenant from it on every request. Policies check tenant ownership **and** an ability from `App\Domain\Team\TenantPermission`, the only home of the role matrix (FR-TEAM-002). Every mutating Action records its actor.
 
 ## 5. Booking and availability
 
@@ -72,6 +73,7 @@ Validation is layered and every layer stays: client hints → Form Request → d
 - A booking write is one transaction: lock tenant first → lock and validate owned schedules → request stale-pending group expiry through Payment lifecycle → re-check availability → write → commit → side effects. A rejected operation rolls back its mutations. The `unique_active_booking_slot` index is the final guard.
 - Cancellation and rescheduling are operations (`CancelBooking`, `RescheduleBooking`), never raw status updates; state changes go through `BookingState`.
 - Multi-slot reservations are validated and persisted as one unit with one payment.
+- **Target (ADR-0017, ADR-0018, ADR-0019):** capacity per service and participants per booking are guarded by `booking_seats` and its unique seat index; unit conflicts across services are checked by `BookingRules` inside the tenant-locked claim; `no_show` is a terminal state reached from `paid` after the session; one pricing rule (`BookingPricing`) produces quote and charge, and the booking group stores a frozen price breakdown. Promo quota and add-on stock are reserved at placement and committed or released by the Payment lifecycle.
 
 ## 6. Payments
 
@@ -81,6 +83,7 @@ Validation is layered and every layer stays: client hints → Form Request → d
 - Each payment has one deadline (`expired_at`, ADR-0009); slot hold, sweep, links and countdowns derive from it. Reclaim asks the provider first, then expires through the lifecycle and requests gateway cancel after commit.
 - Payment, booking and refund states are separate lifecycles. A success that arrives after `gagal` creates a refund owed and an owner alert (BR-PAY-001).
 - Adding a provider means implementing the interface and registering it in the manager; no business code changes.
+- **Refunds (target, ADR-0020):** a customer refund is a `refund_requests` row decided by the owner (100%, 50% or reject); accepting cancels the group and asks the Payment lifecycle for one refund of the decided amount; a business cancellation of a booking paid online always asks for a full refund. The admin records the transfer. Tenant gateways do not exist (D-016).
 
 ## 7. Customer access
 
@@ -92,12 +95,14 @@ Public identifiers never authorize access (FR-MANAGE-008). Finite expiry, revoca
 
 - Feature access and limits come only from `EntitlementRules`; routes use the `subscription:<feature>` middleware, which fails closed.
 - Release tiers (`docs/product.md` §8) are enforced server-side through the module registry `config/modules.php` and the `module:<name>` middleware (ADR-0011): `hidden` → 404, `locked` → lock page only; navigation reads the same registry (BQ-008).
+- **Target (ADR-0021):** three gates in order — module (`module:<name>`), entitlement (`subscription:<feature>`), permission (`TenantPermission`) — all server-side and fail closed. Plan capabilities and their text come from `config/plans.php`; owner navigation is one definition filtered by the three gates.
 
 ## 9. Side effects, async work and the scheduler
 
 - Mail, notifications and cache invalidation run after commit; their failure never undoes the main operation.
 - Mail and notifications are queued (`ShouldQueue`, after commit) and jobs carry ids, never credentials (BQ-013).
 - On shared hosting (ADR-0013): cron runs `schedule:run` and a short `queue:work --stop-when-empty --max-time=50` every minute; scheduled work runs in-process (`Schedule::call()`/`job()`), because `proc_open` is disabled. Jobs and sweeps are idempotent and process one tenant per transaction.
+- **Owner integrations (target, ADR-0022):** domain events after commit queue one delivery job per connected integration (Google Calendar, signed webhooks); adapters live in `app/Infrastructure/Integrations/` behind `App\Contracts\Integrations\OwnerIntegration`; secrets use encrypted casts; webhook targets are checked against private addresses at save and delivery.
 - Scheduled work finds records and delegates to Actions/domain rules; it never re-implements a rule.
 
 ## 10. Data, transactions and cache
