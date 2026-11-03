@@ -21,22 +21,22 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 1. Admin v1 bisa: memproses pencairan saldo (sudah ada), memproses refund (kalau D-001 poin 7 disetujui), dan melihat daftar bisnis beserta status langganannya.
 2. Menonaktifkan bisnis, masuk sebagai owner, dan mengubah langganan secara manual ditunda setelah rilis.
 
-*Catatan 4 Nov 2026:* D-001 poin 7 sudah disetujui, jadi pemrosesan refund oleh admin ikut dikerjakan sebagai bagian dari D-001. Yang masih menunggu keputusan di sini hanya fitur admin di luar pencairan saldo dan refund.
+*Catatan 4 Nov 2026:* D-001 sudah disetujui, jadi pemrosesan refund oleh admin ikut dikerjakan sebagai bagian dari D-001. Yang masih menunggu di sini hanya fitur admin di luar pencairan saldo dan refund. Product Lead sengaja menunda entri ini.
 
-*Jawaban Product Lead:* — (sengaja ditunda, 4 Nov 2026)
+*Jawaban Product Lead:* —
 
 ---
 
 ### D-007 · Peta halaman owner: halaman apa saja dan isinya apa
 
-*Status:* Sedang direvisi · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* tidak
+*Status:* Menunggu (Revisi 1 sedang disusun) · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* ya
 
-*Catatan revisi (4 Nov 2026):* Usulan di bawah ditulis sebelum prototype portal owner dan dokumen rancangan ulangnya dibuat. Product Lead menyetujui arah rancangan ulang itu, sehingga beberapa poin di bawah tidak relevan lagi, misalnya jumlah menu, arti "staf", serta nasib promo dan add-on. Entri ini akan ditulis ulang menjadi lebih spesifik, bersamaan dengan spesifikasi baru di `docs/owner-portal.md`, lalu diajukan lagi ke Product Lead. Sampai saat itu, usulan di bawah hanya menjadi catatan sejarah.
+*Catatan 4 Nov 2026:* Product Lead menyetujui arah rancangan ulang portal owner dan prototype-nya. Usulan di bawah ditulis sebelum rancangan itu ada, jadi sebagian sudah tidak relevan (jumlah menu, arti "staf", promo dan add-on). Revisi 1 akan menggantikan usulan ini dengan peta 15 menu yang lebih rinci, setelah spesifikasi halaman selesai.
 
 *Masalah*
-Halaman owner dibangun dari daftar nama halaman tanpa penjelasan isinya, jadi isinya dikarang sendiri oleh yang membangun. Akibatnya detail booking ada di tiga tempat dengan tombol yang berbeda, grafik ada di dashboard dan di analitik sekaligus, ada panel dan pengaturan yang tidak berfungsi, dan pengaturan batas pembatalan malah ada di halaman jadwal. Rincian lengkap setiap halaman ada di `docs/owner-portal.md`.
+Halaman owner dibangun dari daftar nama halaman tanpa penjelasan isinya, jadi isinya dikarang sendiri oleh yang membangun. Akibatnya detail booking ada di tiga tempat dengan tombol yang berbeda, grafik ada di dashboard dan di analitik sekaligus, ada panel dan pengaturan yang tidak berfungsi, dan pengaturan batas pembatalan malah ada di halaman jadwal.
 
-*Usulan keputusan (versi 2 Nov 2026, akan diganti)*
+*Usulan keputusan (versi 2 Nov 2026, akan diganti Revisi 1)*
 1. Menu owner menjadi 11 halaman (dari 15): Beranda, Kalender, Booking, Pelanggan, Ulasan; kelompok *Kelola*: Layanan, Jadwal; kelompok *Keuangan*: Saldo, Laporan; di bawah: Pengaturan, Langganan. Notifikasi cukup dari ikon lonceng.
 2. Setiap halaman punya satu tugas:
    - *Beranda:* hanya hari ini dan hal yang perlu ditindaklanjuti, tanpa grafik.
@@ -45,45 +45,299 @@ Halaman owner dibangun dari daftar nama halaman tanpa penjelasan isinya, jadi is
    - *Jadwal:* hanya pengaturan slot, harga, dan hari libur.
    - *Laporan:* grafik dan tren.
 3. Kategori menjadi tab di dalam Layanan. Analitik dan laporan jadwal digabung menjadi satu halaman Laporan untuk paket Medium ke atas.
-4. Logo, banner, dan warna halaman booking bisa diatur semua paket di *Pengaturan → Halaman Booking*. Saat ini fitur ini tersembunyi, jadi halaman booking bisnis tidak bisa diberi logo.
-5. Batas waktu pembatalan dan pindah jadwal pindah ke *Pengaturan → Kebijakan Booking* (tempat yang sama dengan pengaturan refund di D-001).
-6. Arti "staf" dipilih salah satu:
-   - (a) *anggota tim yang bisa login* ke dashboard dengan hak akses terbatas (usulan, dikerjakan setelah rilis); atau
-   - (b) *penyedia layanan yang dipilih pelanggan saat booking*, yang butuh perombakan besar pada jadwal.
+4. Logo, banner, dan warna halaman booking bisa diatur semua paket di *Pengaturan → Halaman Booking*.
+5. Batas waktu pembatalan dan pindah jadwal pindah ke *Pengaturan → Kebijakan Booking*.
+6. Arti "staf" dipilih salah satu: (a) anggota tim yang bisa login ke dashboard dengan hak akses terbatas; atau (b) penyedia layanan yang dipilih pelanggan saat booking.
+7. Dihapus, bukan disembunyikan: halaman Integrasi, pengelola media, dan pengaturan payment gateway milik owner.
+8. Promo/voucher dan item tambahan (add-on) tetap tersembunyi sampai perhitungan harga di checkout siap.
+9. Mulai sekarang, halaman atau fitur owner baru harus ditulis dulu isinya dan disetujui, baru dibangun.
 
-   Sampai dipilih, modul staf tetap tersembunyi.
-7. Dihapus, bukan disembunyikan:
-   - halaman Integrasi: isinya hanya kartu "segera hadir" dan status sistem platform; integrasi nanti ditaruh di halaman yang sesuai tugasnya;
-   - pengelola media (Assets);
-   - pengaturan payment gateway milik owner (BYOPG): bertentangan dengan model semua pembayaran lewat rekening platform.
-8. Promo/voucher dan item tambahan (add-on) tetap tersembunyi. Keduanya dirilis setelah perhitungan harga di checkout siap.
-9. Mulai sekarang, halaman atau fitur owner baru harus ditulis dulu isinya di `docs/owner-portal.md` dan disetujui, baru dibangun.
+*Kalau belum diputuskan:* halaman tetap seperti sekarang.
 
-*Jawaban Product Lead:* Menyetujui arah rancangan ulang portal owner (4 Nov 2026). Entri ini ditulis ulang mengikuti rancangan tersebut sebelum diputuskan.
+*Jawaban Product Lead:* —
 
 ---
 
 ### D-008 · Daftar fitur paket hanya berisi fitur yang benar-benar ada
 
-*Status:* Ditunda · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* tidak
+*Status:* Menunggu (ditunda) · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* tidak
 
-*Catatan (4 Nov 2026):* Rilis produksi baru dilakukan setelah semua fitur dalam rancangan ulang selesai dibangun. Jadi tidak akan ada masa ketika paket dijual dengan fitur yang belum ada, dan entri ini tidak perlu diputuskan sekarang. Daftar fitur per paket nanti ditentukan bersama spesifikasi paket yang baru.
+*Catatan 4 Nov 2026:* Ditunda. Produksi baru dirilis setelah semua fitur rancangan ulang selesai (D-018), jadi tidak akan ada masa ketika paket dijual dengan fitur yang belum ada. Pembagian fitur per paket diajukan di D-017; kalau D-017 disetujui, entri ini ditutup.
 
 *Masalah*
-Daftar fitur paket di halaman harga dan halaman langganan menjanjikan banyak hal yang belum ada, tersembunyi, atau memang di luar lingkup BookQu. Contohnya staf dan role management, pengingat WhatsApp, promo & voucher, BYOPG, multi-lokasi, white-label, dan automation workflow. Pelanggan yang membayar Medium atau Pro hampir tidak mendapat apa pun selain batas booking yang lebih besar. Ini berisiko keluhan dan permintaan uang kembali.
+Daftar fitur paket di halaman harga dan halaman langganan menjanjikan banyak hal yang belum ada, tersembunyi, atau memang di luar lingkup BookQu. Pelanggan yang membayar Medium atau Pro hampir tidak mendapat apa pun selain batas booking yang lebih besar.
 
 *Usulan keputusan (versi 2 Nov 2026)*
 1. Daftar fitur hanya memuat fitur yang sudah dirilis untuk paket itu. Fitur yang sedang dikerjakan boleh tampil dengan label "Segera hadir", paling banyak dua per paket.
-2. *Small:* semua alur inti (halaman booking, kalender dan slot, booking, pelanggan, ulasan, saldo, notifikasi email, invoice), maksimal 5 layanan dan 300 booking per bulan.
-3. *Medium:* layanan tanpa batas, 500 booking per bulan, ditambah Laporan dan ekspor CSV (label "Segera hadir" sampai dirilis).
-4. *Pro:* booking tanpa batas. Halaman booking kustom dan domain sendiri tampil sebagai "Segera hadir" (D-005).
-5. Dihapus dari daftar: staf, role management, advanced permission, "Customer CRM" (data pelanggan sudah ada di semua paket), pengingat WhatsApp, promo & voucher, BYOPG, multi-lokasi, white-label, automation workflow, advanced analytics. "Priority support" dihapus kecuali ada komitmen layanan yang jelas.
-6. Harga tidak berubah. Karena nilai Pro saat rilis kecil, Product Lead memilih salah satu:
-   - (a) Pro tetap dijual dengan harga sekarang (usulan);
-   - (b) Pro diturunkan harganya sampai fitur Pro siap;
-   - (c) Pro tidak dijual dulu.
+2. Fitur yang tidak ada dihapus dari daftar: staf, role management, pengingat WhatsApp, promo & voucher, gateway milik bisnis, multi-lokasi, white-label, automation workflow.
+3. Harga tidak berubah.
 
-*Jawaban Product Lead:* — (ditunda, 4 Nov 2026)
+*Jawaban Product Lead:* —
+
+---
+
+### D-009 · Logo, sampul, dan warna halaman booking untuk semua paket
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Pengaturan tampilan halaman booking saat ini disembunyikan, jadi halaman booking bisnis tidak bisa diberi logo sama sekali. Tampilan yang mencerminkan bisnis adalah kebutuhan dasar semua owner, bukan fitur tambahan.
+
+*Usulan keputusan*
+1. Semua paket bisa mengatur logo, gambar sampul, warna utama, dan deskripsi halaman booking.
+2. Pengaturannya ada di menu Halaman Booking, dengan pratinjau tampilan di HP.
+3. Semua gambar diambil dari satu galeri media milik bisnis, yang juga dipakai untuk foto layanan dan unit.
+4. Landing page lengkap (template dan bagian halaman) tetap khusus paket Pro.
+
+*Kalau belum diputuskan:* halaman booking tetap memakai tampilan standar BookQu tanpa logo.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-010 · Link, QR, dan materi promosi untuk semua paket
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Owner baru kesulitan mendapat pelanggan pertama karena tidak ada cara mudah untuk membagikan halaman booking. Saat ini owner hanya bisa menyalin alamat halaman.
+
+*Usulan keputusan*
+1. Di menu Halaman Booking, owner bisa menyalin link, membukanya, membagikannya langsung ke WhatsApp, dan mengunduh QR.
+2. Tersedia poster siap cetak untuk meja kasir, berisi QR dan nama bisnis.
+3. Tersedia teks siap pakai untuk bio Instagram dan pesan WhatsApp.
+4. Berlaku untuk semua paket.
+
+*Kalau belum diputuskan:* owner tetap hanya bisa menyalin link.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-011 · Staf adalah akun tim dengan peran Pemilik, Manajer, dan Kasir
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Spesifikasi lama menyebut "staf" tanpa menjelaskan artinya, dan modul staf saat ini disembunyikan. Pemilik bisnis perlu mengajak kasir atau manajer masuk ke dashboard tanpa memberi semua akses, termasuk akses ke saldo.
+
+*Usulan keputusan*
+1. Staf adalah anggota tim yang login ke dashboard bisnis, bukan penyedia layanan yang dipilih pelanggan saat booking.
+2. Ada tiga peran:
+   - *Pemilik:* semua akses.
+   - *Manajer:* operasional, layanan, jadwal, pemasaran, laporan, dan pengaturan; tanpa pembayaran dan saldo, paket dan tagihan, pengelolaan tim, dan hapus akun.
+   - *Kasir:* beranda, kalender, booking, dan pelanggan; mencatat walk-in, menandai selesai, dan memindah jadwal; tanpa angka pendapatan.
+3. Kasir tidak bisa membatalkan booking. Kasir hanya mengajukan pembatalan, lalu Pemilik atau Manajer yang memutuskan. Pembatalan booking berbayar oleh bisnis tetap selalu refund penuh (D-001).
+4. Menu yang tidak diizinkan disembunyikan, dan sistem tetap menolak aksesnya walaupun alamat halaman diketik langsung.
+5. Pemilik mengundang anggota lewat email dan bisa mencabut aksesnya kapan saja.
+6. Setiap aksi dicatat dengan nama pelakunya, misalnya "Walk-in dicatat oleh Siska (Kasir)". Pemilik bisa melihat catatan aktivitas tim.
+7. Jumlah akun tim per paket mengikuti D-017.
+
+*Kalau belum diputuskan:* modul staf tetap disembunyikan dan hanya pemilik yang bisa login.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-012 · Unit: lapangan, ruang, atau alat yang dipakai beberapa layanan
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Beberapa layanan bisa memakai tempat yang sama. Misalnya, paket turnamen futsal dan sewa lapangan futsal A memakai lapangan yang sama. Saat ini keduanya bisa terpesan di jam yang sama, karena sistem hanya mencegah bentrok di dalam satu layanan.
+
+*Usulan keputusan*
+1. Owner bisa mencatat unit (lapangan, ruang, atau alat) dan menentukan layanan mana yang memakainya.
+2. Sistem menolak dua booking yang memakai unit yang sama di jam yang sama, walaupun layanannya berbeda.
+3. Halaman Unit menunjukkan unit yang terpakai hari ini, dan bentrok yang sudah terlanjur ada di data supaya owner bisa membereskannya.
+4. Fitur ini untuk paket Pro.
+
+*Kalau belum diputuskan:* bentrok antarlayanan tetap mungkin terjadi, dan owner harus mengaturnya sendiri.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-013 · Status booking "Tidak datang"
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Saat ini booking yang sudah dibayar hanya bisa berakhir "Selesai" atau "Dibatalkan". Kalau pelanggan tidak datang, owner tidak punya cara yang jujur untuk mencatatnya, sehingga angka kehadiran di laporan tidak akurat.
+
+*Usulan keputusan*
+1. Ada status akhir baru "Tidak datang", selain "Selesai".
+2. Pemilik, Manajer, atau Kasir bisa menandai "Tidak datang" setelah jadwal booking lewat.
+3. Uang tidak dikembalikan otomatis. Booking yang tidak datang tetap dihitung sebagai pendapatan.
+4. Laporan menampilkan tingkat tidak datang.
+
+*Kalau belum diputuskan:* owner mencatat pelanggan yang tidak datang sebagai "Selesai".
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-014 · Lebih dari satu peserta per slot
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Saat ini setiap slot hanya bisa dipesan satu kali. Bisnis seperti kelas yoga atau workshop menerima banyak peserta di jam yang sama, sehingga owner harus membuat banyak layanan atau slot tiruan.
+
+*Usulan keputusan*
+1. Setiap layanan punya kapasitas per slot, awalnya 1.
+2. Slot tetap bisa dipesan sampai kapasitasnya penuh. Setelah itu slot tampil penuh.
+3. Satu booking boleh untuk beberapa peserta selama sisa kapasitas cukup, dan harga dihitung per peserta.
+4. Berlaku untuk semua paket.
+
+*Alternatif poin 3:* satu booking selalu untuk satu peserta. Lebih sederhana, tetapi pelanggan yang datang berdua harus memesan dua kali.
+
+*Kalau belum diputuskan:* setiap slot tetap hanya untuk satu booking.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-015 · Promo dan add-on masuk ke total pembayaran
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Menu voucher dan item tambahan sudah ada, tetapi disembunyikan karena keduanya tidak pernah masuk ke total yang dibayar pelanggan. Promo yang tidak bisa dipakai dan add-on yang tidak dibayar membingungkan owner maupun pelanggan.
+
+*Usulan keputusan*
+1. Saat booking, pelanggan bisa memilih add-on dan memasukkan kode promo. Total yang dibayar sudah termasuk keduanya.
+2. Promo berisi: diskon persen atau potongan rupiah, minimal transaksi, maksimal diskon, kuota, periode, dan layanan yang berlaku.
+3. Add-on berisi: harga, stok, dan layanan terkait. Stok hanya berkurang untuk booking yang dibayar.
+4. Nominal yang dibayar dicatat tetap di booking. Perubahan harga, promo, atau add-on sesudahnya tidak mengubah booking yang sudah ada.
+5. Refund dihitung dari nominal yang benar-benar dibayar.
+6. Fitur ini untuk paket Medium ke atas.
+
+*Kalau belum diputuskan:* promo dan add-on tetap disembunyikan.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-016 · Gateway pembayaran milik bisnis tidak ditawarkan
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Pengaturan untuk memakai akun payment gateway milik bisnis sendiri masih ada di aplikasi dan tercantum di daftar fitur paket. Ini bertentangan dengan keputusan bahwa semua pembayaran lewat rekening BookQu, lalu menjadi saldo owner.
+
+*Usulan keputusan*
+1. Pilihan gateway milik bisnis dihapus dari aplikasi dan dari daftar fitur paket.
+2. Semua pembayaran pelanggan tetap lewat BookQu, lalu masuk ke saldo owner tanpa potongan.
+3. Halaman Pembayaran menjelaskan metode pembayaran yang tersedia, biaya platform, batas waktu bayar, dan aturan refund.
+
+*Kalau belum diputuskan:* pengaturan itu tetap tersembunyi dan tidak berfungsi.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-017 · Pembagian fitur per paket
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Daftar fitur paket saat ini menjanjikan fitur yang tidak ada, dan pembeda antarpaket hampir hanya batas booking. Setelah rancangan ulang, setiap paket perlu pembagian fitur yang jelas, termasuk jumlah akun tim.
+
+*Usulan keputusan*
+1. *Semua paket:* halaman booking, kalender dan slot, booking dan walk-in, pelanggan, ulasan, pembayaran, saldo dan pencairan, notifikasi email, invoice, logo dan tampilan, serta link, QR, dan materi promosi.
+2. *Small:* maksimal 5 layanan dan 300 booking per bulan. Hanya pemilik yang login.
+3. *Medium:* layanan tanpa batas, 500 booking per bulan, Laporan dan ekspor, promo dan add-on, serta 2 akun tim tambahan. Paket Small melihat Laporan sebagai pratinjau buram dengan ajakan naik paket.
+4. *Pro:* semua fitur Medium, booking tanpa batas, 10 akun tim tambahan, Unit, landing page dan domain sendiri, serta API dan webhook.
+5. Harga tidak berubah: Small Rp149.000, Medium Rp299.000, Pro Rp499.000 per bulan.
+6. Daftar fitur yang tampil ke calon pelanggan hanya berisi fitur di atas. Keputusan ini menggantikan D-008.
+
+*Kalau belum diputuskan:* daftar fitur paket tidak diubah, dan rilis produksi menunggu keputusan ini.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-018 · Produksi dirilis setelah semua fitur rancangan ulang selesai
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Rencana sebelumnya adalah merilis dulu, lalu memperbaiki portal owner sedikit demi sedikit. Dengan rancangan ulang yang sudah disetujui, merilis versi lama berarti owner harus belajar portal dua kali, dan daftar paket menjanjikan fitur yang belum ada.
+
+*Usulan keputusan*
+1. Produksi baru dirilis setelah semua fitur dalam cakupan selesai dan teruji.
+2. Cakupannya: portal owner baru, D-001 sampai D-006, dan D-009 sampai D-020 yang disetujui. Yang di luar cakupan dicatat di D-021.
+3. Sampai saat itu, produksi tetap menjalankan versi yang sekarang.
+4. Perbaikan keamanan yang mendesak tetap boleh dirilis lebih dulu.
+
+*Kalau belum diputuskan:* berlaku seperti usulan ini, sesuai arahan 4 Nov 2026.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-019 · Integrasi yang bisa dihubungkan owner
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Halaman integrasi saat ini hanya berisi kartu "segera hadir" dan status sistem BookQu, tanpa koneksi yang bisa dipakai. Owner butuh menghubungkan alat yang mereka pakai sendiri.
+
+*Usulan keputusan*
+1. Di Pengaturan → Integrasi, owner bisa menghubungkan Google Calendar (booking masuk ke kalender owner), serta Google Analytics dan Meta Pixel untuk halaman booking. Untuk semua paket.
+2. Setiap integrasi punya tombol hubungkan, tes, dan putuskan.
+3. API dan webhook, untuk sistem milik bisnis, hanya untuk paket Pro.
+4. Pembayaran dan email ditandai "dikelola BookQu", dan tidak bisa diubah owner.
+5. WhatsApp Business belum termasuk. Integrasi ini diputuskan bersama pengingat WhatsApp (D-021).
+
+*Alternatif poin 5:* WhatsApp Business ikut dihubungkan sekarang, sesuai rancangan ulang. Pilihan ini membutuhkan akun WhatsApp Business API dan biaya pesan yang belum dihitung.
+
+*Kalau belum diputuskan:* halaman integrasi disembunyikan.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-020 · Aturan pemesanan tambahan di Kebijakan Booking
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Owner belum bisa mengatur seberapa cepat dan seberapa jauh pelanggan boleh memesan, atau memberi jeda antar booking. Rancangan ulang juga menyebut "konfirmasi otomatis", yang berarti ada booking yang harus disetujui owner lebih dulu.
+
+*Usulan keputusan*
+1. Owner bisa mengatur: paling lambat berapa jam sebelum sesi pelanggan boleh memesan, paling jauh berapa hari ke depan, dan jeda antar booking.
+2. Booking langsung berlaku setelah dibayar. Tidak ada persetujuan manual dari owner.
+3. Pelanggan melihat ringkasan aturan ini sebelum membayar.
+
+*Alternatif poin 2:* owner bisa memilih menyetujui setiap booking secara manual. Ini menambah status booking baru "menunggu konfirmasi", membuat pelanggan menunggu setelah membayar, dan memerlukan aturan refund bila owner menolak.
+
+*Kalau belum diputuskan:* aturan tetap seperti sekarang. Tidak ada batas tambahan, dan booking langsung berlaku.
+
+*Jawaban Product Lead:* —
+
+---
+
+### D-021 · Yang tidak termasuk rilis ini
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* tidak
+
+*Masalah*
+Rancangan ulang juga mencatat beberapa ide jangka panjang. Supaya jelas kapan rilis dianggap selesai, perlu ditetapkan mana yang tidak termasuk.
+
+*Usulan keputusan*
+Hal berikut tidak termasuk rilis ini, dan diajukan lagi setelah rilis:
+1. Slot dibuka otomatis dari jam buka mingguan.
+2. Tutup otomatis di hari libur nasional.
+3. Saran otomatis di Laporan.
+4. Uang muka (DP).
+5. Pengingat dan notifikasi lewat WhatsApp, termasuk integrasi WhatsApp Business dan paket mana yang mendapatkannya.
+6. Peran buatan sendiri, ketika owner memilih hak akses satu per satu.
+
+*Kalau belum diputuskan:* semuanya dianggap di luar rilis ini.
+
+*Jawaban Product Lead:* —
 
 ---
 
@@ -116,96 +370,8 @@ Diambil Tech Lead sebelum peran Product Lead ditetapkan. Product Lead bisa membu
 
 ### Keputusan lewat dokumen ini
 
-### D-001 · Refund booking dibuat opsional dan diputuskan owner
-
-*Status:* Diputuskan · *Diajukan:* 1 Nov 2026 · *Diputuskan:* 4 Nov 2026
-
-*Masalah*
-Saat ini, kalau pelanggan membatalkan booking yang sudah dibayar, sistem langsung mencatat refund dan memotong saldo owner. Halaman pelanggan juga menjanjikan uang akan dikembalikan. Padahal tidak ada yang memproses refund itu: admin tidak punya halaman refund, rekening pelanggan tidak pernah diminta, dan pelanggan tidak diberi kabar. Sebaliknya, kalau owner yang membatalkan booking yang sudah dibayar, pelanggan tidak mendapat refund sama sekali.
-
-*Keputusan*
-1. Refund adalah fitur opsional. Owner yang menentukan apakah pelanggan boleh mengajukan refund, lewat pengaturan. Awalnya nonaktif.
-2. Kalau refund nonaktif, pelanggan tidak bisa membatalkan booking berbayar sendiri. Yang muncul hanya tombol "Hubungi pemilik".
-3. Kalau refund aktif, pelanggan hanya bisa *mengajukan* refund dengan alasan dan nomor rekening, paling lambat sesuai batas jam yang diatur owner (awalnya 24 jam sebelum jadwal).
-4. Selama pengajuan belum diputuskan, booking tetap berlaku dan slot tetap dipegang.
-5. Owner memutuskan: terima penuh (100%), terima setengah (50%), atau tolak dengan alasan. Kalau ditolak, booking tetap berjalan.
-6. Kalau owner belum memutuskan sampai jadwal tiba, sistem tidak memutuskan apa pun soal uang. Owner terus diingatkan.
-7. Uang dikembalikan oleh admin platform, karena uang pelanggan memang masuk ke rekening platform. Saldo owner dipotong sebesar refund yang disetujui.
-8. Kalau owner sendiri yang membatalkan booking yang sudah dibayar, pelanggan selalu mendapat refund penuh, dan owner wajib menulis alasannya.
-9. Owner mendapat halaman "Kebijakan Booking" untuk mengatur: refund aktif atau tidak, batas jam pembatalan, dan batas jam reschedule.
-
-*Jawaban Product Lead:* Setuju dengan usulan keputusan (4 Nov 2026). Pengaturan refund tetap menjadi wewenang owner; kalau aktif, pilihannya 100%, 50%, atau tolak. Pembatalan oleh owner selalu refund penuh.
-
----
-
-### D-002 · Apa yang terjadi saat trial atau langganan berakhir
-
-*Status:* Diputuskan · *Diajukan:* 1 Nov 2026 · *Diputuskan:* 4 Nov 2026
-
-*Masalah*
-Bisnis baru mendapat trial 7 hari dengan akses setara paket Pro. Belum pernah diputuskan apa yang terjadi setelah trial habis, dan BookQu tidak punya paket gratis. Saat ini trial yang sudah habis tetap mendapat semua manfaat Pro; ini sedang diperbaiki sebagai bug. Selain itu, memperpanjang paket yang masih aktif saat ini menghilangkan sisa hari yang sudah dibayar.
-
-*Keputusan*
-1. Setelah trial atau langganan habis, owner tetap bisa masuk dashboard, mengelola booking yang sudah ada, melihat saldo, dan membeli paket. Owner tidak bisa menambah layanan, jadwal, staf, atau booking walk-in baru.
-2. Halaman booking bisnis tetap tampil, tetapi tidak menerima booking baru. Pesannya netral: "Bisnis ini belum menerima booking online saat ini."
-3. Booking yang sudah dibayar tetap dilayani seperti biasa.
-4. Tidak ada masa tenggang setelah habis.
-5. Membeli paket saat trial masih berjalan: masa berbayar mulai hari itu, sisa trial hangus.
-6. Memperpanjang paket yang sama: ditambahkan setelah tanggal berakhir yang sekarang, jadi sisa hari tidak hilang. Ganti paket berlaku mulai hari pembayaran.
-7. Pengingat dikirim 3 hari dan 1 hari sebelum habis, serta saat sudah habis.
-8. Satu akun owner hanya mendapat satu kali trial.
-
-*Jawaban Product Lead:* Setuju dengan usulan keputusan (4 Nov 2026).
-
----
-
-### D-004 · Rekening bank penarikan saldo disimpan
-
-*Status:* Diputuskan · *Diajukan:* 2 Nov 2026 · *Diputuskan:* 4 Nov 2026
-
-*Masalah*
-Setiap kali owner ingin mencairkan saldo hasil booking, owner harus mengetik ulang nama bank, nomor rekening, dan nama pemilik rekening dari awal. Jika terjadi salah ketik pada nomor rekening, ada risiko dana salah ditransfer oleh admin platform. Selain itu, owner merasa kerepotan karena tidak ada rekening tujuan yang tersimpan secara praktis.
-
-*Keputusan*
-Mengikuti langkah 3 dokumen "Revisian BookQu — Alur Withdraw Balance Owner Bisnis" (19/10/2026):
-1. Owner dapat menyimpan paling banyak 3 rekening penarikan, dan salah satunya menjadi rekening utama.
-2. Saat mengajukan penarikan, owner memilih rekening tujuan dari rekening tersimpan. Rekening utama terpilih lebih dulu.
-3. Menyimpan, mengubah, dan menghapus rekening memerlukan konfirmasi password.
-4. Setiap perubahan rekening mengirim email pemberitahuan ke owner.
-5. Rekening yang sedang dipakai pengajuan penarikan yang masih berjalan tidak bisa dihapus.
-
-Sudah dibangun di BQ-123, BQ-124, dan BQ-125.
-
-*Jawaban Product Lead:* Setuju dengan versi 3 rekening dan 1 rekening utama (4 Nov 2026). Versi ini menggantikan usulan awal yang hanya menyimpan satu rekening utama.
-
----
-
-### D-005 · Domain sendiri (custom domain) untuk halaman booking bisnis
-
-*Status:* Diputuskan · *Diajukan:* 2 Nov 2026 · *Diputuskan:* 4 Nov 2026
-
-*Masalah*
-Sistem sudah bisa menampilkan halaman booking lewat domain milik bisnis (misalnya booking.namabisnis.com), tetapi pengaturannya hanya ada di fitur landing page yang masih disembunyikan. Akibatnya owner tidak bisa memasang domain sendiri, padahal kebutuhan ini tercantum di spesifikasi.
-
-*Keputusan*
-1. Domain sendiri menjadi fitur paket Pro.
-2. Pengaturannya ada di halaman **Halaman Booking** (mengikuti rancangan ulang portal owner), bukan di Pengaturan Bisnis. Halaman itu dilengkapi panduan pengaturan DNS dan pengecekan otomatis apakah domain sudah tersambung.
-3. Selama fitur ini belum selesai, semua tautan halaman booking tetap memakai alamat BookQu (bookqu.my.id/nama-bisnis).
-
-*Jawaban Product Lead:* Setuju, dengan letak pengaturan di halaman Halaman Booking sesuai rancangan ulang portal owner (4 Nov 2026).
-
----
-
-### D-006 · Pindah jadwal ke slot dengan harga berbeda
-
-*Status:* Diputuskan · *Diajukan:* 2 Nov 2026 · *Diputuskan:* 4 Nov 2026
-
-*Masalah*
-Harga slot bisa berbeda, misalnya slot akhir pekan lebih mahal atau owner memasang harga khusus. Saat booking dipindah ke slot lain, sistem tidak memperhitungkan selisih harga sama sekali. Pelanggan bisa pindah dari slot murah ke slot mahal tanpa membayar kekurangannya, dan sebaliknya tidak ada catatan apa pun.
-
-*Keputusan*
-1. Pelanggan hanya bisa memindahkan jadwal sendiri ke slot dengan harga yang sama atau lebih murah. Untuk slot yang lebih mahal, yang muncul hanya "Hubungi pemilik".
-2. Pindah ke slot yang lebih murah tidak mengembalikan selisih secara otomatis.
-3. Owner boleh memindahkan booking ke slot mana pun. Sistem menampilkan selisih harganya dan mencatatnya, tanpa menagih atau mengembalikan uang secara otomatis; owner menyelesaikannya langsung dengan pelanggan.
-
-*Jawaban Product Lead:* Setuju dengan usulan keputusan (4 Nov 2026).
+- D-001 · Refund booking opsional dan diputuskan owner · Disetujui 4 Nov 2026: owner menentukan apakah pelanggan boleh mengajukan refund; pengajuan diputuskan 100%, 50%, atau tolak; uang dikembalikan admin; pembatalan booking berbayar oleh bisnis selalu refund penuh; aturannya diatur di Kebijakan Booking → item menyusul (BQ-126)
+- D-002 · Saat trial atau langganan berakhir · Disetujui 4 Nov 2026: owner tetap bisa masuk dan mengurus booking yang ada tetapi tidak bisa membuat yang baru; halaman booking tidak menerima booking baru; tanpa masa tenggang; perpanjangan menyambung tanggal berakhir; pengingat 3 hari, 1 hari, dan saat habis; satu kali trial per akun → item menyusul (BQ-126)
+- D-004 · Rekening penarikan saldo disimpan · Disetujui 4 Nov 2026: sampai 3 rekening dengan 1 rekening utama, konfirmasi password saat menyimpan, mengubah, atau menghapus, dan email setiap ada perubahan → BQ-123, BQ-124, BQ-125
+- D-005 · Domain sendiri untuk halaman booking · Disetujui 4 Nov 2026: fitur Pro, diatur di menu Halaman Booking dengan panduan DNS dan pengecekan otomatis → item menyusul (BQ-126)
+- D-006 · Pindah jadwal ke slot dengan harga berbeda · Disetujui 4 Nov 2026: pelanggan hanya bisa pindah ke slot yang sama atau lebih murah, tanpa pengembalian selisih; owner boleh ke slot mana pun, dan selisihnya ditampilkan serta dicatat → item menyusul (BQ-126)
