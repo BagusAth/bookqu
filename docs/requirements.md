@@ -125,6 +125,14 @@ Passwords shall never be stored as plaintext.
 
 Passwords shall use a secure password hashing mechanism.
 
+### FR-AUTH-007 — Password Reset (Accepted 2026-11-04, D-022)
+
+An owner who forgot the password can request a reset link by e-mail and set a new password with a valid, expiring token. Implemented in commit `ab24193`.
+
+### FR-AUTH-008 — Authentication Rate Limiting (Accepted 2026-11-04, D-022)
+
+Login, registration, password-reset requests and other public state-changing endpoints are rate limited per account and per IP. Tracked in BQ-007.
+
 ## Tenant and Business Requirements
 
 ### FR-TENANT-001 — Tenant Association
@@ -225,6 +233,10 @@ Amended 2026-11-04 (D-009): branding is available to every plan. It also covers 
 ### FR-PUBLIC-004 — Booking Entry Point
 
 The public page shall provide a clear entry point into the customer booking flow.
+
+### FR-PUBLIC-005 — Platform Landing Page and Pricing (Accepted 2026-11-04, D-022)
+
+BookQu's own landing page presents the product and the subscription plans with their prices, and links to registration. Implemented in commit `fbe1539`.
 
 ### FR-PUBLIC-006 — Booking Link Sharing (Accepted 2026-11-04, D-010)
 
@@ -1870,19 +1882,3 @@ Customers choosing a staff member or unit
 Deferred until after the first production release (D-021): automatic slot opening from opening hours, automatic closing on national holidays, automatic suggestions in reports, down payments, WhatsApp reminders and the WhatsApp Business integration, and custom roles.
 
 A new capability must not be treated as accepted simply because it is technically possible.
-
-## Proposed requirements
-
-Added 2026-10-30 from the Phase 1 review. Status: **Proposed** until the Product Lead accepts them (D-022).
-
-### FR-AUTH-007 — Password Reset (Proposed)
-
-An owner who forgot the password can request a reset link by e-mail and set a new password with a valid, expiring token. Implemented in commit `ab24193`.
-
-### FR-AUTH-008 — Authentication Rate Limiting (Proposed)
-
-Login, registration, password-reset requests and other public state-changing endpoints are rate limited per account and per IP. Tracked in BQ-007.
-
-### FR-PUBLIC-005 — Platform Landing Page and Pricing (Proposed)
-
-BookQu's own landing page presents the product and the subscription plans with their prices, and links to registration. Implemented in commit `fbe1539`.

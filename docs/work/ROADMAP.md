@@ -10,7 +10,7 @@ From the current state to a production-ready, maintainable BookQu. Each phase en
   - requirements, product and glossary updated for D-001 to D-021;
   - ADR-0016 to ADR-0022 accepted.
 
-  Plan and evidence: [BQ-126](BQ-126-owner-portal-redesign-specification.md). D-003 (admin scope beyond payouts and refunds) is deliberately left open; D-022 (formal acceptance of password reset, rate limiting and the platform landing page, which already exist) waits for the Product Lead.
+  Plan and evidence: [BQ-126](BQ-126-owner-portal-redesign-specification.md). D-003 (admin scope beyond payouts and refunds) is deliberately left open; D-022 accepted password reset, rate limiting and the platform landing page.
 - **CI:** four jobs (quality, SQLite, MySQL 8, MariaDB 11.4) on every PR and before every production deploy; the deploy backs up the database first.
 - **Work is organised in eight epics.** Every acceptance criterion of `owner-portal.md` and every requirement accepted on 2026-11-04 belongs to exactly one item.
 

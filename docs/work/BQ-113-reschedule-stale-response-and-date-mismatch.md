@@ -2,7 +2,7 @@
 id: BQ-113
 title: Prevent stale reschedule responses and reject a slot from another selected date
 type: bug-fix
-status: proposed
+status: approved
 priority: P2
 phase: 4
 domain: booking

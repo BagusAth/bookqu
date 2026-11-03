@@ -2,7 +2,7 @@
 id: BQ-098
 title: Changing the owner's email or password does not ask for the current password
 type: bug-fix
-status: proposed
+status: approved
 priority: P1
 phase: 4
 domain: auth

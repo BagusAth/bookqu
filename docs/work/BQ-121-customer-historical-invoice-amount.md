@@ -2,7 +2,7 @@
 id: BQ-121
 title: Keep customer invoices tied to the recorded charge after catalog price changes
 type: bug-fix
-status: proposed
+status: approved
 priority: P1
 phase: 4
 domain: booking

@@ -2,7 +2,7 @@
 id: BQ-089
 title: Dashboard live refresh renders customer names as HTML
 type: bug-fix
-status: proposed
+status: approved
 priority: P0
 phase: 4
 domain: insights

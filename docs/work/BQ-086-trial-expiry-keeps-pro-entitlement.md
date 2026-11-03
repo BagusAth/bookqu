@@ -2,7 +2,7 @@
 id: BQ-086
 title: An expired trial or subscription keeps Pro limits and the Pro badge
 type: bug-fix
-status: proposed
+status: approved
 priority: P1
 phase: 4
 domain: subscription

@@ -2,7 +2,7 @@
 id: BQ-049
 title: [BUG-T4-01] Pembatalan Booking Tanpa Membatalkan Transaksi Gateway (Zombie Debits)
 type: bug-fix
-status: proposed
+status: approved
 priority: P0
 phase: 4
 domain: payment

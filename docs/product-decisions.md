@@ -27,24 +27,6 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 ---
 
-### D-022 · Tiga fitur yang sudah ada tetapi belum diterima resmi
-
-*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
-
-*Masalah*
-Tiga fitur sudah dibangun dan dipakai, tetapi belum pernah disetujui resmi sebagai bagian dari BookQu: lupa password, pembatasan percobaan login, dan halaman utama BookQu dengan daftar harga paket. Tanpa persetujuan, perilakunya bisa diubah siapa saja tanpa acuan.
-
-*Usulan keputusan*
-1. Owner yang lupa password bisa meminta link reset lewat email. Link itu hanya berlaku sekali dan punya masa berlaku.
-2. Login, pendaftaran, permintaan reset password, dan formulir publik lain dibatasi jumlah percobaannya per akun dan per alamat internet, untuk mencegah penyalahgunaan.
-3. Halaman utama BookQu menjelaskan produk dan menampilkan paket beserta harganya, dengan tautan ke pendaftaran. Isi paketnya mengikuti D-017.
-
-*Kalau belum diputuskan:* ketiganya tetap berjalan seperti sekarang.
-
-*Jawaban Product Lead:* —
-
----
-
 ## Untuk diketahui (tidak perlu keputusan)
 
 Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
@@ -94,3 +76,4 @@ Diambil Tech Lead sebelum peran Product Lead ditetapkan. Product Lead bisa membu
 - D-019 · Integrasi yang bisa dihubungkan owner · Disetujui 4 Nov 2026: Google Calendar, Google Analytics, dan Meta Pixel untuk semua paket; API dan webhook untuk Pro; WhatsApp Business ditunda (D-021) → BQ-155, BQ-156
 - D-020 · Aturan pemesanan tambahan di Kebijakan Booking · Disetujui 4 Nov 2026: batas paling lambat memesan, paling jauh hari ke depan, dan jeda antar booking; booking langsung berlaku setelah dibayar, tanpa persetujuan manual → BQ-144
 - D-021 · Yang tidak termasuk rilis ini · Disetujui 4 Nov 2026: slot otomatis dari jam buka, tutup otomatis di libur nasional, saran otomatis di Laporan, uang muka, pengingat dan integrasi WhatsApp, serta peran buatan sendiri diajukan lagi setelah rilis
+- D-022 · Tiga fitur yang sudah ada tetapi belum diterima resmi · Disetujui 4 Nov 2026: reset password lewat link email sekali pakai yang punya masa berlaku; pembatasan percobaan login, pendaftaran, reset password, dan formulir publik per akun dan per alamat internet; halaman utama BookQu dengan paket dan harga mengikuti D-017 → sudah ada di kode (FR-AUTH-007, FR-AUTH-008, FR-PUBLIC-005)
