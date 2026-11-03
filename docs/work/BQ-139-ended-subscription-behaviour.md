@@ -4,7 +4,7 @@ title: Ended trial or subscription: what keeps working, renewal rules and remind
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: subscription
 requirements: [FR-SUB-012, FR-SUB-013, FR-PUBLIC-008, FR-NOTIFICATION-007]
 invariants: [INV-SUB-01]

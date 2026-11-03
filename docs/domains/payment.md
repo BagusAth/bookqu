@@ -92,8 +92,8 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Par
 | SingaPay payment links are not cancelled at the gateway (unsupported: ADR-0007 no-op; late success is refunded) | BQ-049 |
 | An owner cancelling a pending booking leaves its payment `pending` with an open link; a later payment becomes a refund owed | BQ-087 (absorbs the BQ-049 follow-up) |
 | An owner can mark a booking paid while its online payment is open; a later provider success is ignored as `already-final`, so a double payment is never recorded | BQ-087 |
-| An owner cancelling a `paid` booking records no refund and leaves the balance credited | BQ-087, D-001 |
-| Refunds are recorded `pending` but no actor processes them (no owner decision, no admin queue, no customer bank details); customer cancellation refunds automatically, contrary to the intended optional, owner-approved policy | D-001 |
+| An owner cancelling a `paid` booking records no refund and leaves the balance credited | BQ-087, BQ-138 |
+| Refunds are recorded `pending` but no actor processes them (no owner decision, no admin queue, no customer bank details); customer cancellation refunds automatically, contrary to the intended optional, owner-approved policy | BQ-138 |
 | Webhook mail sent synchronously | BQ-013, BQ-050 |
 | Production credentials and webhook URLs not yet verified | BQ-022 |
 

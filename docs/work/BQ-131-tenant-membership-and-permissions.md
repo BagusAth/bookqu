@@ -4,7 +4,7 @@ title: Tenant membership, role permission map and owner policies
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: tenancy
 requirements: [FR-TEAM-002, FR-TEAM-003, FR-TEAM-005]
 invariants: [INV-TEN-01, INV-TEN-02]

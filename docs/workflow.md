@@ -53,7 +53,7 @@ instruction ─► lane ─► (heavy: work item + decision) ─► own branch �
 4. **Verify.** Per lane (§3). Record manual checks (UI, payment sandbox, custom domain) in the PR or item.
 5. **Document.** Update only the sources whose content changed (§9).
 6. **Review.** PR into `integration` with `.github/pull_request_template.md`. The Tech Lead audits and merges after the four CI jobs pass.
-7. **Close.** Heavy lane: set `status: done`, add evidence, move the item to `docs/work/done/`.
+7. **Close.** Heavy lane: set `status: done`, add evidence, move the item to `docs/work/done/`. A `rejected` item (including one merged into another item, with a pointer to it) is moved there too, so `docs/work/` holds only open items.
 
 Ask for clarification only when two materially different product behaviours are plausible and the repository cannot decide between them. Difficulty is not a reason to stop; record the decision you made.
 

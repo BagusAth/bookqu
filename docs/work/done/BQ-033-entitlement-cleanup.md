@@ -15,10 +15,10 @@ depends-on: []
 
 # BQ-033: Route all entitlement checks through EntitlementRules
 
-> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-130](BQ-130-release-plan-and-role-gates.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-130.
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-130](../BQ-130-release-plan-and-role-gates.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-130.
 
 
-Plan approved via [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) (entitlement only in `EntitlementRules`, separate from the release gate), 2026-10-30.
+Plan approved via [ADR-0011](../../adr/ADR-0011-server-side-release-gating.md) (entitlement only in `EntitlementRules`, separate from the release gate), 2026-10-30.
 
 ## Problem
 

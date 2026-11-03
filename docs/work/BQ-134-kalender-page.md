@@ -4,7 +4,7 @@ title: Kalender: day, week and month views with walk-in and slot actions
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: schedule
 requirements: []
 invariants: [INV-BOOK-03]

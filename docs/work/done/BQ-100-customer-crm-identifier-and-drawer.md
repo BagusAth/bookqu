@@ -17,7 +17,7 @@ depends-on: [BQ-092]
 
 # BQ-100: Customer CRM identifier in Alpine, unescaped search, mobile card view, and drawer form state
 
-> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-137](BQ-137-pelanggan-page.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-137.
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-137](../BQ-137-pelanggan-page.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-137.
 
 
 Found during the owner UI deep audit on 2026-11-02 in `/owner/customers`.

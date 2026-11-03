@@ -4,7 +4,7 @@ title: Booking seats and capacity per slot
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: booking
 requirements: [FR-BOOKING-021]
 invariants: [INV-BOOK-03]

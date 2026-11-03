@@ -125,6 +125,14 @@ Passwords shall never be stored as plaintext.
 
 Passwords shall use a secure password hashing mechanism.
 
+### FR-AUTH-007 — Password Reset (Accepted 2026-11-04, D-022)
+
+An owner who forgot the password can request a reset link by e-mail and set a new password with a valid, expiring token. Implemented in commit `ab24193`.
+
+### FR-AUTH-008 — Authentication Rate Limiting (Accepted 2026-11-04, D-022)
+
+Login, registration, password-reset requests and other public state-changing endpoints are rate limited per account and per IP. Tracked in BQ-007.
+
 ## Tenant and Business Requirements
 
 ### FR-TENANT-001 — Tenant Association
@@ -225,6 +233,10 @@ Amended 2026-11-04 (D-009): branding is available to every plan. It also covers 
 ### FR-PUBLIC-004 — Booking Entry Point
 
 The public page shall provide a clear entry point into the customer booking flow.
+
+### FR-PUBLIC-005 — Platform Landing Page and Pricing (Accepted 2026-11-04, D-022)
+
+BookQu's own landing page presents the product and the subscription plans with their prices, and links to registration. Implemented in commit `fbe1539`.
 
 ### FR-PUBLIC-006 — Booking Link Sharing (Accepted 2026-11-04, D-010)
 
@@ -653,6 +665,25 @@ failed
 Refund state is separate from both booking state and payment state.
 
 Amended 2026-11-04 (D-001): a refund record holds the amount to return, which is the full paid amount or the share decided by the owner (FR-REFUND-004). It is created by an owner decision or an owner cancellation, and processed by the platform admin (FR-REFUND-007).
+
+## Balance and Payout Requirements
+
+### FR-PAYOUT-001 — Platform Balance (Accepted 2026-11-01)
+
+Under the platform escrow model, each tenant has a platform balance. When a booking payment succeeds through the provider, the full amount is credited exactly once (fee 0% for v1). Owner-settled, free and walk-in payments credit nothing. A refund owed on a credited payment debits the balance (BQ-015).
+
+### FR-PAYOUT-002 — Payout Request (Accepted 2026-11-01)
+
+An owner can request a payout to one of the tenant's saved payout accounts. The amount is a whole number of rupiah, at least `payouts.min_amount` (Rp 10.000) and at most the available balance and any configured per-request cap. The request and the balance hold happen atomically, and a repeated request key creates no second payout.
+
+Amended 2026-11-04 (D-004), matching BQ-123 to BQ-125:
+* a tenant saves up to `payouts.max_accounts` (3) payout accounts, one of them primary; adding, changing and deleting an account require the current password and send an email to the owner; an account used by a payout in progress cannot be deleted;
+* a payout is refused unless the owner's email is verified, the business profile is complete, the tenant uses the platform payment mode, the balance is positive, open payouts are below `payouts.max_open` and a payout account exists; an optional daily request cap applies;
+* the payout keeps a snapshot of the destination account.
+
+### FR-PAYOUT-003 — Payout Processing (Accepted 2026-11-01)
+
+A platform admin reviews payouts: `pending → approved → success | failed`, or `pending → rejected`. Reject and fail require a reason and return the held amount to the balance. Success requires a transfer reference or a proof file; the proof file can be downloaded only by the owning tenant. The owner is notified of every change, by email for success, failure and rejection. The owner sees the states as Pending (pending, approved), Berhasil (success) and Gagal (failed, rejected). Platform admins are notified of every new request. Amended 2026-11-04 (D-004, BQ-125).
 
 ## Refund Requirements
 
@@ -1851,36 +1882,3 @@ Customers choosing a staff member or unit
 Deferred until after the first production release (D-021): automatic slot opening from opening hours, automatic closing on national holidays, automatic suggestions in reports, down payments, WhatsApp reminders and the WhatsApp Business integration, and custom roles.
 
 A new capability must not be treated as accepted simply because it is technically possible.
-
-## Proposed requirements
-
-Added 2026-10-30 from the Phase 1 review. Status: **Proposed** until the Product Lead accepts them (tracked in `docs/work/`).
-
-### FR-AUTH-007 — Password Reset (Proposed)
-
-An owner who forgot the password can request a reset link by e-mail and set a new password with a valid, expiring token. Implemented in commit `ab24193`.
-
-### FR-AUTH-008 — Authentication Rate Limiting (Proposed)
-
-Login, registration, password-reset requests and other public state-changing endpoints are rate limited per account and per IP. Tracked in BQ-007.
-
-### FR-PUBLIC-005 — Platform Landing Page and Pricing (Proposed)
-
-BookQu's own landing page presents the product and the subscription plans with their prices, and links to registration. Implemented in commit `fbe1539`.
-
-### FR-PAYOUT-001 — Platform Balance (Accepted 2026-11-01)
-
-Under the platform escrow model, each tenant has a platform balance. When a booking payment succeeds through the provider, the full amount is credited exactly once (fee 0% for v1). Owner-settled, free and walk-in payments credit nothing. A refund owed on a credited payment debits the balance (BQ-015).
-
-### FR-PAYOUT-002 — Payout Request (Accepted 2026-11-01)
-
-An owner can request a payout to one of the tenant's saved payout accounts. The amount is a whole number of rupiah, at least `payouts.min_amount` (Rp 10.000) and at most the available balance and any configured per-request cap. The request and the balance hold happen atomically, and a repeated request key creates no second payout.
-
-Amended 2026-11-04 (D-004), matching BQ-123 to BQ-125:
-* a tenant saves up to `payouts.max_accounts` (3) payout accounts, one of them primary; adding, changing and deleting an account require the current password and send an email to the owner; an account used by a payout in progress cannot be deleted;
-* a payout is refused unless the owner's email is verified, the business profile is complete, the tenant uses the platform payment mode, the balance is positive, open payouts are below `payouts.max_open` and a payout account exists; an optional daily request cap applies;
-* the payout keeps a snapshot of the destination account.
-
-### FR-PAYOUT-003 — Payout Processing (Accepted 2026-11-01)
-
-A platform admin reviews payouts: `pending → approved → success | failed`, or `pending → rejected`. Reject and fail require a reason and return the held amount to the balance. Success requires a transfer reference or a proof file; the proof file can be downloaded only by the owning tenant. The owner is notified of every change, by email for success, failure and rejection. The owner sees the states as Pending (pending, approved), Berhasil (success) and Gagal (failed, rejected). Platform admins are notified of every new request. Amended 2026-11-04 (D-004, BQ-125).

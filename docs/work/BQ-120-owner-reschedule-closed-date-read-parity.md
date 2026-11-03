@@ -2,16 +2,16 @@
 id: BQ-120
 title: Stop offering owner reschedule slots that the availability claim will refuse
 type: bug-fix
-status: proposed
+status: approved
 priority: P1
-phase: 8
+phase: 4
 domain: schedule
 requirements: [FR-SCHEDULE-005, FR-SCHEDULE-009, FR-BOOKING-011, NFR-UX-005]
 invariants: [INV-SCH-01, INV-BOOK-03, INV-BOOK-04, INV-TEN-01]
 lane: heavy
 approval: tech-lead
 decision:
-launch-blocker: false
+launch-blocker: true
 depends-on: [BQ-012, BQ-069]
 ---
 

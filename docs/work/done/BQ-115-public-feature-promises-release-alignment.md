@@ -28,7 +28,7 @@ Audit 2026-11-02 pada `f361cc2`: calon owner membaca janji fitur yang belum diri
 
 Buka landing sebagai guest, pilih Medium/Pro, lalu baca daftar fitur. Janji BYOPG dan Multi-location muncul pada HTML dan browser mobile. Owner yang memilih paket dapat membayar berdasarkan kemampuan yang tidak dapat digunakan. Ini perluasan audit ke **janji publik**, bukan pengulangan BQ-097 tentang kontrol owner dan sisa modul tersembunyi.
 
-Daftar mana yang dijanjikan per paket diputuskan Product Lead di [D-008](../product-decisions.md); usulannya ada di `docs/owner-portal.md` §9. Fallback D-008 menjadikan item ini **launch blocker**: kalau D-008 belum dijawab, klaim yang belum tersedia tetap dihapus sebelum rilis (poin 1 dan 5).
+Daftar mana yang dijanjikan per paket diputuskan Product Lead di [D-008](../../product-decisions.md); usulannya ada di `docs/owner-portal.md` §9. Fallback D-008 menjadikan item ini **launch blocker**: kalau D-008 belum dijawab, klaim yang belum tersedia tetap dihapus sebelum rilis (poin 1 dan 5).
 
 ## Plan
 

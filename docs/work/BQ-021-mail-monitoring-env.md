@@ -4,7 +4,7 @@ title: Production mail, error alerting and environment checklist
 type: ops
 status: in-progress
 priority: P1
-phase: 4
+phase: 5
 domain: —
 requirements: [NFR-OBS-004, NFR-OBS-005]
 invariants: []

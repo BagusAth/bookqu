@@ -4,7 +4,7 @@ title: Promo page and promo codes in checkout
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: booking
 requirements: []
 invariants: [INV-PAY-03]

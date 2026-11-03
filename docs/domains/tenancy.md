@@ -55,8 +55,8 @@ Functional: Implemented · Verification: Needs Verification · Architecture: Tar
 | Main-domain detection defined twice (`TenantMiddleware::$isCustomDomain` vs `routes/web.php` exclusion list) | BQ-035 |
 | Slugs can collide with app routes (`login`, `owner`, `manage`, `admin`, …) | BQ-011 |
 | Custom-domain storefront behaviour only partly tested | BQ-039 |
-| Owner views write `/owner/...` URLs by hand; storefront links bypass `CustomerBookingRoutes` | BQ-105 |
-| Renaming the business changes the slug and breaks old links (no redirect); old slug cache not cleared | BQ-110 |
-| Custom domains can be set only in the hidden landing-page module | D-005 |
+| Owner views write `/owner/...` URLs by hand; storefront links bypass `CustomerBookingRoutes` | BQ-128 |
+| Renaming the business changes the slug and breaks old links (no redirect); old slug cache not cleared | BQ-144 |
+| Custom domains can be set only in the hidden landing-page module | BQ-154 |
 
 Target decision: [ADR-0010](../adr/ADR-0010-authorization-and-tenant-scoping.md) — owner Policies with foreign-id 404s, a tenant-context runner for jobs/webhooks/commands, and scope bypasses only in four named places (BQ-009, BQ-031). Not implemented yet.

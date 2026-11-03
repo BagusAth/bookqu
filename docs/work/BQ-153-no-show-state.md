@@ -4,7 +4,7 @@ title: No-show booking state
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: booking
 requirements: [FR-BOOKING-020]
 invariants: [INV-BOOK-01]

@@ -4,7 +4,7 @@ title: One booking pricing rule with a frozen price breakdown
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: booking
 requirements: [FR-BOOKING-023]
 invariants: [INV-PAY-04]

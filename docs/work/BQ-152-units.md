@@ -4,7 +4,7 @@ title: Unit page and unit conflicts across services
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: booking
 requirements: [FR-UNIT-001, FR-UNIT-002, FR-UNIT-003, FR-UNIT-004]
 invariants: [INV-BOOK-03]

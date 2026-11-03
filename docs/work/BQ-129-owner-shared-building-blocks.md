@@ -4,7 +4,7 @@ title: Owner shared building blocks: page header, tabs, panels, walk-in form, di
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: insights
 requirements: []
 invariants: []

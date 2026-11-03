@@ -4,7 +4,7 @@ title: Laporan: summary, revenue, occupancy, services and customers
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: insights
 requirements: [FR-ANALYTICS-007]
 invariants: [INV-SUB-01]

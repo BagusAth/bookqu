@@ -2,16 +2,16 @@
 id: BQ-114
 title: Keep existing booking times stable when the service duration changes
 type: bug-fix
-status: proposed
+status: approved
 priority: P1
-phase: 8
+phase: 4
 domain: booking
 requirements: [FR-SERVICE-003, FR-SERVICE-005, FR-BOOKING-008, FR-MANAGE-003, FR-CALENDAR-003]
 invariants: [INV-SCH-01, INV-BOOK-04, INV-BOOK-06]
 lane: heavy
 approval: tech-lead
 decision:
-launch-blocker: false
+launch-blocker: true
 depends-on: []
 ---
 

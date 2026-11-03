@@ -4,7 +4,7 @@ title: Refund requests, owner decisions, business cancellation refunds and admin
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: payment
 requirements: [FR-REFUND-001, FR-REFUND-002, FR-REFUND-003, FR-REFUND-004, FR-REFUND-005, FR-REFUND-006, FR-REFUND-007, FR-ADMIN-005]
 invariants: [INV-PAY-03, INV-PAY-06, INV-TEN-01]

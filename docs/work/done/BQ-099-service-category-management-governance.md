@@ -17,7 +17,7 @@ depends-on: [BQ-092]
 
 # BQ-099: Broken category filter link, hidden service card actions, and native alerts in service modals
 
-> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-132](BQ-132-layanan-page.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-132.
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-132](../BQ-132-layanan-page.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-132.
 
 
 Found during the owner UI deep audit on 2026-11-02 across `/owner/categories` and `/owner/services`. Corrected by the Tech Lead review on 2026-11-02 (quotes and line numbers re-checked against the code).

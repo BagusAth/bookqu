@@ -4,7 +4,7 @@ title: Layanan page with tabs Layanan and Kategori
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: catalog
 requirements: [FR-CATEGORY-006]
 invariants: [INV-SUB-01]

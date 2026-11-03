@@ -2,7 +2,7 @@
 id: BQ-087
 title: Lock owner booking actions while an online payment is open, and never ignore a double payment
 type: bug-fix
-status: proposed
+status: approved
 priority: P1
 phase: 4
 domain: payment

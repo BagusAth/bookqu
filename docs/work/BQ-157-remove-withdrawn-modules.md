@@ -4,7 +4,7 @@ title: Remove withdrawn modules, stored gateway credentials and duplicate paths
 type: refactor
 status: proposed
 priority: P1
-phase: 8
+phase: 5
 domain: staged-modules
 requirements: []
 invariants: []
