@@ -2,7 +2,7 @@
 id: BQ-116
 title: Show the actual cancellation and reschedule policy before checkout
 type: bug-fix
-status: proposed
+status: rejected
 priority: P1
 phase: 8
 domain: booking

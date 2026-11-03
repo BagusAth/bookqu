@@ -2,7 +2,7 @@
 id: BQ-110
 title: Renaming the business silently changes the slug and breaks old storefront links
 type: improvement
-status: proposed
+status: rejected
 priority: P1
 phase: 8
 domain: tenancy
@@ -16,6 +16,9 @@ depends-on: []
 ---
 
 # BQ-110: Renaming the business silently changes the slug and breaks old storefront links
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-144](BQ-144-pengaturan-profile-policy-notifications-account.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-144.
+
 
 Found during deep audit of business profile updates and custom domain routing on 2026-11-02. Corrected by the Tech Lead review on 2026-11-02: the missing custom-domain settings UI is a product question (custom domains live in the hidden landing-page module) and moved to D-005 in `docs/product-decisions.md`.
 

@@ -2,7 +2,7 @@
 id: BQ-057
 title: [BUG-T5-06] Ketiadaan Total Komponen Walk-in Modal pada Halaman Bookings Management
 type: bug-fix
-status: proposed
+status: rejected
 priority: P0
 phase: 4
 domain: booking
@@ -15,6 +15,9 @@ source: docs/audit-bug/TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OPS.md at a68ffe8
 ---
 
 # BQ-057: [BUG-T5-06] Ketiadaan Total Komponen Walk-in Modal pada Halaman Bookings Management
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-135](BQ-135-booking-page-and-panel.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-135.
+
 
 Migrated verbatim from the 2026-10 audit (TAHAP-5-CUSTOMER-SELF-SERVICE-OWNER-OPS.md, stage 5: Customer Self-Service (Tanpa Akun) & Owner Booking Operations). Status in the current code is unverified — check it first (BQ-039).
 

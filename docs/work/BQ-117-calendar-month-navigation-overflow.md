@@ -2,7 +2,7 @@
 id: BQ-117
 title: Prevent month navigation from skipping or repeating a calendar month
 type: bug-fix
-status: proposed
+status: rejected
 priority: P2
 phase: 8
 domain: schedule

@@ -2,7 +2,7 @@
 id: BQ-090
 title: Make the owner sidebar, topbar and layout light
 type: improvement
-status: approved
+status: rejected
 priority: P1
 phase: 8
 domain: notifications
@@ -16,6 +16,9 @@ depends-on: []
 ---
 
 # BQ-090: Make the owner sidebar, topbar and layout light
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-128](BQ-128-owner-app-shell-and-navigation.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-128.
+
 
 Found in the owner UI audit of 2026-11-02 (browser measurements on the local demo tenant).
 

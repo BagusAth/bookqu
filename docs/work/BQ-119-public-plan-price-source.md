@@ -2,7 +2,7 @@
 id: BQ-119
 title: Render landing plan prices from the same source as subscription checkout
 type: bug-fix
-status: proposed
+status: rejected
 priority: P2
 phase: 8
 domain: public-site

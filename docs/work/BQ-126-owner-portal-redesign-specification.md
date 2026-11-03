@@ -408,3 +408,69 @@ Per fase: PR, gerbang dan tanggal persetujuannya, perintah pemeriksaan yang dija
 | 4 | 4 Nov 2026 | `docs/requirements.md`: aktor Team Member; area baru FR-REFUND, FR-TEAM, FR-UNIT, FR-INTEGRATION, FR-API, FR-SHELL, FR-HELP; FR baru FR-TENANT-008, FR-PUBLIC-006 sampai 008, FR-SCHEDULE-011 sampai 014, FR-BOOKING-020 sampai 023, FR-CATEGORY-006, FR-DASH-008, FR-ANALYTICS-007, FR-ASSET-005, FR-NOTIFICATION-006/007, FR-SUB-012 sampai 014, FR-ADMIN-005; requirement lama diberi catatan perubahan per keputusan; FR-STAFF/FR-RESOURCE/FR-STAFFRESOURCE ditarik; FR-PAYOUT-002/003 disesuaikan dengan kode; aturan status booking, occupancy, refund, walk-in, matriks otorisasi, dan di luar cakupan diperbarui; delapan catatan staging lama dihapus. Diperiksa: tidak ada ID ganda, dan setiap FR yang dirujuk `owner-portal.md`, `product.md`, `glossary.md` ada. |
 | 5 | 4 Nov 2026 | `docs/product.md`: anggota tim, 15 menu, portal pelanggan, admin, model pembayaran dengan refund, tabel isi paket (rumah D-017), target rilis D-018, cakupan D-021. `docs/glossary.md`: Team member, Role, No-show, Capacity, Booking policy, Refund request, Unit, Media gallery, Payout account, nama menu lama ke baru. `owner-portal.md`: tanda pending untuk D-009 sampai D-021 dihapus. |
 | 6 | 4 Nov 2026 | ADR-0016 sampai ADR-0022 ditulis dengan status `Proposed` dan dimasukkan ke indeks ADR. `AGENTS.md` aturan no. 3, 4, 5, 6, 13 dan tabel "Where things are" diubah; `php artisan boost:update` dijalankan dan bagian BookQu tidak berubah. `.ai/rules` diubah: tenancy-security (glob baru untuk Team dan Integrations), booking-availability, payment, frontend, subscription; `.ai/rules/index.md` diregenerasi. `docs/architecture.md` diberi catatan target per ADR. Diperiksa: setiap FR dan ADR yang dirujuk ADR baru memang ada. G3 disetujui. |
+| 8 | 4 Nov 2026 | ROADMAP ditulis ulang (status, epic E0–E7, fase 4 = membangun rancangan ulang, fase 5 = rilis sesuai D-018). 31 work item baru BQ-128 sampai BQ-158. Dicek otomatis: 76 dari 76 kriteria terima `AC-*` dan 46 dari 46 requirement baru dimiliki tepat satu item; setiap item yang dirujuk ada. |
+| 9 | 4 Nov 2026 | Audit backlog: 54 item terbuka diklasifikasi (tabel di bawah). 24 dilebur (status `rejected` dengan penunjuk ke item pengganti), 29 tetap, 1 diubah (BQ-082); BQ-103 dan BQ-122 sampai BQ-125 dipindah ke `done/`. Menunggu G4. |
+
+### Backlog audit (Fase 9)
+
+| Item | Kelas | Tujuan atau alasan | Judul |
+|---|---|---|---|
+| BQ-016 | Tetap | Phase 6 refactor | Align schedule status values with the database enum |
+| BQ-017 | Tetap | E7 (BQ-158) | Create a staging environment |
+| BQ-019 | Tetap | E7 (BQ-158) | Automate backups and prove a restore |
+| BQ-020 | Tetap | E7 (BQ-158) | Verify scheduler and queue execution on HostData |
+| BQ-021 | Tetap | E7 (BQ-158) | Production mail, error alerting and environment checklist |
+| BQ-022 | Tetap | E7 (BQ-158) | Production payment credentials and webhook registration |
+| BQ-029 | Tetap | Phase 6 refactor; prerequisite of BQ-148 checkout work | Decompose Customer/BookingController |
+| BQ-030 | Tetap | Phase 6 refactor | Decompose Customer/BookingManageController |
+| BQ-031 | Dilebur | BQ-131 | Introduce Laravel Policies for owner resources |
+| BQ-033 | Dilebur | BQ-130 | Route all entitlement checks through EntitlementRules |
+| BQ-034 | Tetap | Phase 6 refactor; page items remove Blade queries as they rebuild | Remove queries from Blade and decompose large views |
+| BQ-035 | Tetap | Phase 6 refactor; aligns with the redirects of BQ-157 | Clean up duplicate routes and main-domain detection |
+| BQ-049 | Tetap | E0 (payment integrity), prerequisite of BQ-138 | [BUG-T4-01] Pembatalan Booking Tanpa Membatalkan Transaksi Gateway (Zombie Debits) |
+| BQ-057 | Dilebur | BQ-135 | [BUG-T5-06] Ketiadaan Total Komponen Walk-in Modal pada Halaman Bookings Management |
+| BQ-074 | Tetap | E0 (payment) | Confirm a SingaPay status query and make payments.provider NOT NULL |
+| BQ-075 | Tetap | Phase 6 refactor | Slot bookability owns availability cache keys and invalidation |
+| BQ-077 | Tetap | E0 (no internal errors to users) | Redact raw exception diagnostics outside booking checkout |
+| BQ-082 | Diubah | Owner UI parts are absorbed by the E2–E4 page items; WhatsApp parts are deferred by D-021. Only storefront and customer polish remains in scope. | Post-launch polish from the 2026-10 audit (P2/P3) |
+| BQ-086 | Tetap | E0, prerequisite of BQ-139 | An expired trial or subscription keeps Pro limits and the Pro badge |
+| BQ-087 | Tetap | E0, prerequisite of BQ-135 | Lock owner booking actions while an online payment is open, and never ignore a double payment |
+| BQ-088 | Tetap | E0, prerequisite of BQ-148 | Make storefront checkout idempotent on the server |
+| BQ-089 | Tetap | E0 (security), prerequisite of BQ-136 | Dashboard live refresh renders customer names as HTML |
+| BQ-090 | Dilebur | BQ-128 | Make the owner sidebar, topbar and layout light |
+| BQ-091 | Dilebur | BQ-128 | One navigation model for the owner sidebar, breadcrumb and topbar |
+| BQ-092 | Dilebur | BQ-129 | Owner UI foundations - one palette, shared components, no decorative noise |
+| BQ-093 | Dilebur | BQ-128 | Owner UI copy in Indonesian with one vocabulary and no redundant text |
+| BQ-094 | Dilebur | BQ-136 | Owner dashboard shows truncated, unsigned and misleading figures |
+| BQ-095 | Dilebur | BQ-135 | Owner bookings page shows the wrong amount and payment state |
+| BQ-096 | Dilebur | BQ-133 | Calendar and schedule pages - cramped grids, fake pricing panel, occupancy decided in Blade |
+| BQ-097 | Dilebur | BQ-157 | Remove non-functional controls and hidden-module remnants from released owner pages |
+| BQ-098 | Tetap | E0 (security), prerequisite of BQ-144 | Changing the owner's email or password does not ask for the current password |
+| BQ-099 | Dilebur | BQ-132 | Broken category filter link, hidden service card actions, and native alerts in service modals |
+| BQ-100 | Dilebur | BQ-137 | Customer CRM identifier in Alpine, unescaped search, mobile card view, and drawer form state |
+| BQ-101 | Dilebur | BQ-143 | Reviews uncapped memory load, unescaped search interpolation, and reply modal governance |
+| BQ-102 | Dilebur | BQ-145 | Validate the redirect target of notification mark-as-read, and use the shared confirm dialog |
+| BQ-103 | Selesai | dipindah ke `docs/work/done/` |  |
+| BQ-104 | Dilebur | BQ-145 | Subscription checkout mobile layout order, invoice terminology, and Snap token interpolation |
+| BQ-105 | Dilebur | BQ-128 | Hard-coded owner URLs and storefront links built outside CustomerBookingRoutes |
+| BQ-106 | Dilebur | BQ-129 | Owner dialog and drawer accessibility - role dialog, focus trapping, and keyboard dismissal |
+| BQ-107 | Tetap | E0 (schedule integrity), prerequisite of BQ-133 | Bulk schedule date range capping, past slot protection, and occupancy check on delete |
+| BQ-108 | Tetap | E0 (schedule integrity), prerequisite of BQ-133 | Conflict detection and notification when blocking dates with existing bookings |
+| BQ-109 | Dilebur | BQ-140 | Price discrepancy and payment adjustment on booking reschedule |
+| BQ-110 | Dilebur | BQ-144 | Renaming the business silently changes the slug and breaks old storefront links |
+| BQ-111 | Tetap | E0 (CSV injection, double count), prerequisite of BQ-147 | Analytics query aggregation optimization and CSV formula injection protection |
+| BQ-112 | Tetap | E0 (security) | Atomic owner registration transaction and asynchronous CSRF expiration handling |
+| BQ-113 | Tetap | E0 (booking integrity), prerequisite of BQ-140 | Prevent stale reschedule responses and reject a slot from another selected date |
+| BQ-114 | Tetap | E0 (booking integrity), prerequisite of BQ-132 | Keep existing booking times stable when the service duration changes |
+| BQ-115 | Dilebur | BQ-130 | Align public and subscription feature promises with the released product |
+| BQ-116 | Dilebur | BQ-144 | Show the actual cancellation and reschedule policy before checkout |
+| BQ-117 | Dilebur | BQ-134 | Prevent month navigation from skipping or repeating a calendar month |
+| BQ-118 | Tetap | E0 (storefront) | Keep Enter in storefront service search from submitting an empty booking form |
+| BQ-119 | Dilebur | BQ-130 | Render landing plan prices from the same source as subscription checkout |
+| BQ-120 | Tetap | E0 (booking integrity), prerequisite of BQ-140 | Stop offering owner reschedule slots that the availability claim will refuse |
+| BQ-121 | Tetap | E0 (invoice integrity), prerequisite of BQ-135 | Keep customer invoices tied to the recorded charge after catalog price changes |
+| BQ-122 | Selesai | dipindah ke `docs/work/done/` |  |
+| BQ-123 | Selesai | dipindah ke `docs/work/done/` |  |
+| BQ-124 | Selesai | dipindah ke `docs/work/done/` |  |
+| BQ-125 | Selesai | dipindah ke `docs/work/done/` |  |
+| BQ-127 | Tetap | E0 (payout), prerequisite of BQ-141 | Fix payout account follow-ups found in the PR #31 audit |

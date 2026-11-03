@@ -2,7 +2,7 @@
 id: BQ-115
 title: Align public and subscription feature promises with the released product
 type: bug-fix
-status: proposed
+status: rejected
 priority: P1
 phase: 8
 domain: public-site
