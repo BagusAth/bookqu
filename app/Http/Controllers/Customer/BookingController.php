@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\CreateBooking;
 use App\Actions\Booking\GetScheduleSelection;
+use App\Actions\Booking\ResumeCheckout;
 use App\Actions\Booking\StorefrontCheckoutState;
 use App\Actions\Booking\ValidateBookingDate;
 use App\Actions\CustomerAccess\CancelCheckoutPayment;
@@ -406,6 +407,11 @@ class BookingController extends Controller
             abort(404);
         }
 
+        $resume = app(ResumeCheckout::class)->execute($tenant, $request->input('checkout_fingerprint'));
+        if ($resume !== null) {
+            return redirect()->away($resume);
+        }
+
         $booking = session('booking', []);
         $serviceId = $booking['service_id'] ?? null;
         $selectedDate = $booking['tanggal'] ?? null;
@@ -503,7 +509,7 @@ class BookingController extends Controller
 
         session()->forget('booking');
         if (empty($result['free']) && ($result['payment'] ?? null) instanceof Payment) {
-            $checkoutState->remember($result['payment']);
+            $checkoutState->remember($result['payment'], is_string($fingerprint) ? $fingerprint : null);
         }
 
         return redirect()->away(app(CustomerAccessLinks::class)->entry($result['access']));

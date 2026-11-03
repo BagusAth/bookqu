@@ -2,7 +2,7 @@
 id: BQ-088
 title: Make storefront checkout idempotent on the server
 type: improvement
-status: proposed
+status: in-progress
 priority: P2
 phase: 4
 domain: booking
@@ -53,3 +53,8 @@ INV-BOOK-04 and INV-BOOK-05 keep protecting the slots; the lock only removes the
 ## Evidence (fill when done)
 
 _Fill in when done._
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+
+Implementation evidence (2026-11-04): Laravel 13 session blocking serializes checkout before reading the session and keeps the lock through persistence, with framework finally-release. `ResumeCheckout` matches the server-stored quote fingerprint and pending tenant payment before issuing a fresh Checkout handoff (no raw credential in session). Different slot selections are never overwritten by a replay. Three regressions prove same-payment replay (initially redirected home), distinct selections, and lock held during creation/released on exception. Framework docs checked through Boost search-docs.
+Verification: full SQLite 681 passed / 3594 assertions; Pint fixed changed PHP; PHPStan no errors; MySQL group 11 passed / 43 assertions. No dependency or schema change.

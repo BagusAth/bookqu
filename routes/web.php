@@ -290,7 +290,7 @@ $bookingSubRoutes = function (string $namePrefix) {
     Route::get('/booking/checkout', [BookingController::class, 'showCheckout'])
         ->name($namePrefix.'checkout');
 
-    Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])
+    Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])->block(120, 120)
         ->middleware('throttle:10,1,storefront-checkout:')
         ->name($namePrefix.'process-checkout');
 
