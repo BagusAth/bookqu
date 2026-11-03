@@ -29,30 +29,54 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 ### D-007 · Peta halaman owner: halaman apa saja dan isinya apa
 
-*Status:* Menunggu (Revisi 1 sedang disusun) · *Diajukan:* 2 Nov 2026 · *Menahan rilis:* ya
+*Status:* Menunggu (Revisi 1) · *Diajukan:* 2 Nov 2026 · *Revisi 1:* 4 Nov 2026 · *Menahan rilis:* ya
 
-*Catatan 4 Nov 2026:* Product Lead menyetujui arah rancangan ulang portal owner dan prototype-nya. Usulan di bawah ditulis sebelum rancangan itu ada, jadi sebagian sudah tidak relevan (jumlah menu, arti "staf", promo dan add-on). Revisi 1 akan menggantikan usulan ini dengan peta 15 menu yang lebih rinci, setelah spesifikasi halaman selesai.
+*Revisi 1 (4 Nov 2026):* menggantikan usulan 2 Nov 2026. Disusun dari rancangan ulang portal owner yang sudah disetujui, ditambah pemeriksaan semua halaman dan fitur yang ada sekarang, supaya tidak ada fitur yang hilang. Rincian isi setiap halaman sudah ditulis untuk tim teknis. Entri ini ringkasannya.
 
 *Masalah*
-Halaman owner dibangun dari daftar nama halaman tanpa penjelasan isinya, jadi isinya dikarang sendiri oleh yang membangun. Akibatnya detail booking ada di tiga tempat dengan tombol yang berbeda, grafik ada di dashboard dan di analitik sekaligus, ada panel dan pengaturan yang tidak berfungsi, dan pengaturan batas pembatalan malah ada di halaman jadwal.
+Halaman owner dibangun dari daftar nama halaman tanpa penjelasan isinya. Akibatnya isi halaman tumpang tindih, ada kontrol yang tidak berfungsi, dan beberapa pengaturan penting tidak punya tempat. Contohnya, batas jam pembatalan sudah dipakai sistem, tetapi owner tidak bisa mengubahnya.
 
-*Usulan keputusan (versi 2 Nov 2026, akan diganti Revisi 1)*
-1. Menu owner menjadi 11 halaman (dari 15): Beranda, Kalender, Booking, Pelanggan, Ulasan; kelompok *Kelola*: Layanan, Jadwal; kelompok *Keuangan*: Saldo, Laporan; di bawah: Pengaturan, Langganan. Notifikasi cukup dari ikon lonceng.
-2. Setiap halaman punya satu tugas:
-   - *Beranda:* hanya hari ini dan hal yang perlu ditindaklanjuti, tanpa grafik.
-   - *Kalender:* operasional harian dan booking walk-in.
-   - *Booking:* mencari dan mengelola booking.
-   - *Jadwal:* hanya pengaturan slot, harga, dan hari libur.
-   - *Laporan:* grafik dan tren.
-3. Kategori menjadi tab di dalam Layanan. Analitik dan laporan jadwal digabung menjadi satu halaman Laporan untuk paket Medium ke atas.
-4. Logo, banner, dan warna halaman booking bisa diatur semua paket di *Pengaturan → Halaman Booking*.
-5. Batas waktu pembatalan dan pindah jadwal pindah ke *Pengaturan → Kebijakan Booking*.
-6. Arti "staf" dipilih salah satu: (a) anggota tim yang bisa login ke dashboard dengan hak akses terbatas; atau (b) penyedia layanan yang dipilih pelanggan saat booking.
-7. Dihapus, bukan disembunyikan: halaman Integrasi, pengelola media, dan pengaturan payment gateway milik owner.
-8. Promo/voucher dan item tambahan (add-on) tetap tersembunyi sampai perhitungan harga di checkout siap.
+*Usulan keputusan*
+1. Menu owner menjadi 15 menu dalam lima kelompok:
+   - *tanpa kelompok:* Beranda, Kalender, Booking, Pelanggan;
+   - *Bisnis saya:* Layanan, Unit, Jam Buka & Harga;
+   - *Pemasaran:* Halaman Booking, Promo, Ulasan;
+   - *Keuangan:* Pembayaran, Laporan;
+   - *Lainnya:* Pengaturan, Paket & Tagihan, Bantuan.
+
+   Notifikasi dibuka dari lonceng di atas.
+2. Di bagian atas setiap halaman ada lonceng, tombol "+ Booking", dan pencarian (kode booking, nama, atau nomor HP). Di HP, menu diganti navigasi bawah: Beranda, Kalender, + Booking, Booking, Lainnya.
+3. Setiap halaman punya satu tugas:
+   - *Beranda:* hari ini dan yang perlu ditindaklanjuti, tanpa grafik. Ada panduan 4 langkah untuk owner baru.
+   - *Kalender:* siapa datang kapan, mencatat walk-in, menutup atau membuka slot.
+   - *Booking:* semua booking, dikelompokkan menurut tugas (perlu tindakan, mendatang, menunggu bayar, selesai, dibatalkan).
+   - *Pelanggan:* data, catatan, dan riwayat pelanggan.
+   - *Layanan:* layanan, kategori, dan add-on.
+   - *Unit:* lapangan, ruang, atau alat yang dipakai bersama (Pro).
+   - *Jam Buka & Harga:* jam buka, aturan harga, hari libur, dan slot.
+   - *Halaman Booking:* link, QR, materi promosi, tampilan, galeri gambar, landing page dan domain sendiri (Pro).
+   - *Promo:* kode promo dan hasilnya.
+   - *Ulasan:* membalas dan menyembunyikan ulasan.
+   - *Pembayaran:* transaksi, saldo, pencairan, dan rekening (hanya Pemilik).
+   - *Laporan:* grafik dan tren, ekspor.
+   - *Pengaturan:* profil bisnis, kebijakan booking, notifikasi, integrasi, akun, tim.
+   - *Paket & Tagihan:* paket, pemakaian, dan tagihan (hanya Pemilik).
+   - *Bantuan:* pertanyaan umum dan kontak BookQu.
+4. Detail booking selalu tampil di satu panel yang sama dari halaman mana pun. Tombolnya hanya yang sah untuk status booking itu: tandai selesai, tandai tidak datang, pindah jadwal (dengan selisih harga), batalkan (refund penuh untuk booking berbayar), dan putuskan pengajuan refund (100%, 50%, atau tolak).
+5. Batas jam pembatalan, batas jam pindah jadwal, dan pengaturan refund ada di Pengaturan → Kebijakan Booking.
+6. Semua fitur yang ada sekarang tetap ada, hanya pindah tempat. Contohnya: slot massal dengan jam dan interval, harga akhir pekan, gaya tampilan halaman booking, dan data pembayar saat membeli paket.
+
+   Yang dihapus hanya:
+   - pengaturan gateway pembayaran milik bisnis, termasuk kredensial yang tersimpan (D-016);
+   - staf sebagai penyedia layanan, karena digantikan akun tim (D-011);
+   - panel harga massal yang tidak berfungsi;
+   - formulir penarikan saldo lama;
+   - alamat halaman ganda.
+7. Alamat halaman lama tetap bisa dibuka dan otomatis diarahkan ke halaman barunya.
+8. Saat paket berakhir, owner tetap bisa mengurus booking dan saldo yang ada, tetapi tidak bisa membuat yang baru (D-002).
 9. Mulai sekarang, halaman atau fitur owner baru harus ditulis dulu isinya dan disetujui, baru dibangun.
 
-*Kalau belum diputuskan:* halaman tetap seperti sekarang.
+*Kalau belum diputuskan:* halaman tetap seperti sekarang, dan pembangunan portal baru belum dimulai.
 
 *Jawaban Product Lead:* —
 
