@@ -1,8 +1,8 @@
 # ADR-0018: No-show booking state
 
-> **Status:** Proposed
+> **Status:** Accepted
 > **Date:** 2026-11-04
-> **Decider:** Tech Lead — Product Lead for the product scope (D-013)
+> **Decider:** Tech Lead (accepted 2026-11-04) — Product Lead for the product scope (D-013)
 > **Work item:** BQ-126 (specification); implementation item follows in epic E6
 
 ## Context

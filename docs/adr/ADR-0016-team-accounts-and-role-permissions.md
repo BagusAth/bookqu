@@ -1,8 +1,8 @@
 # ADR-0016: Team accounts and role permissions
 
-> **Status:** Proposed
+> **Status:** Accepted
 > **Date:** 2026-11-04
-> **Decider:** Tech Lead — Product Lead for the product scope (D-011, D-017)
+> **Decider:** Tech Lead (accepted 2026-11-04) — Product Lead for the product scope (D-011, D-017)
 > **Work item:** BQ-126 (specification); implementation items follow in epic E5
 
 ## Context

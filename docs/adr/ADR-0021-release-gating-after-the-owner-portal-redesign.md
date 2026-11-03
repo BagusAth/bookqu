@@ -1,8 +1,8 @@
 # ADR-0021: Release, plan and role gating after the owner portal redesign
 
-> **Status:** Proposed
+> **Status:** Accepted
 > **Date:** 2026-11-04
-> **Decider:** Tech Lead — Product Lead for the release policy and plan contents (D-017, D-018)
+> **Decider:** Tech Lead (accepted 2026-11-04) — Product Lead for the release policy and plan contents (D-017, D-018)
 > **Work item:** BQ-126 (specification); implementation items follow in epic E7
 
 ## Context

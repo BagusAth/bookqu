@@ -1,8 +1,8 @@
 # ADR-0019: Checkout pricing with promos, add-ons and a frozen amount
 
-> **Status:** Proposed
+> **Status:** Accepted
 > **Date:** 2026-11-04
-> **Decider:** Tech Lead — Product Lead for the product scope (D-014, D-015)
+> **Decider:** Tech Lead (accepted 2026-11-04) — Product Lead for the product scope (D-014, D-015)
 > **Work item:** BQ-126 (specification); implementation items follow in epic E5
 
 ## Context

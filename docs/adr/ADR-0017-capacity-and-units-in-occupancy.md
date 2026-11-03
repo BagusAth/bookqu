@@ -1,8 +1,8 @@
 # ADR-0017: Capacity and units in slot occupancy
 
-> **Status:** Proposed
+> **Status:** Accepted
 > **Date:** 2026-11-04
-> **Decider:** Tech Lead — Product Lead for the product scope (D-012, D-014)
+> **Decider:** Tech Lead (accepted 2026-11-04) — Product Lead for the product scope (D-012, D-014)
 > **Work item:** BQ-126 (specification); implementation items follow in epic E6
 
 ## Context
