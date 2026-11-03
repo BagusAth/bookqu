@@ -17,7 +17,7 @@ depends-on: [BQ-103]
 
 # BQ-123: Saved tenant payout bank accounts and destination selection
 
-Referenced product requirement: [Revisian BookQu — Alur Withdraw Balance Owner Bisnis (19/10/2026)](https://docs.google.com/document/d/1JfagfHkv2O0O0pboh6Zi05V6VF3EkU7fZqHZSrm36Xo/edit?tab=t.ufh8olyxuj8o) (Langkah 3) and Product Decision [D-004](../product-decisions.md).
+Referenced product requirement: [Revisian BookQu — Alur Withdraw Balance Owner Bisnis (19/10/2026)](https://docs.google.com/document/d/1JfagfHkv2O0O0pboh6Zi05V6VF3EkU7fZqHZSrm36Xo/edit?tab=t.ufh8olyxuj8o) (Langkah 3) and Product Decision [D-004](../../product-decisions.md).
 
 ## Problem
 

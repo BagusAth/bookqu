@@ -398,6 +398,7 @@ Per fase: PR, gerbang dan tanggal persetujuannya, perintah pemeriksaan yang dija
 | G1 | 4 Nov 2026 | Product Lead menyetujui D-009 sampai D-021 sesuai usulan, termasuk rekomendasi D-014 (beberapa peserta per booking), D-019 (WhatsApp Business ditunda), dan D-020 (tanpa persetujuan manual). D-008 ditutup karena digantikan D-017. Dicatat Tech Lead. |
 | G2 | 4 Nov 2026 | Product Lead menyetujui D-007 Revisi 1. `docs/owner-portal.md` berstatus Approved dan menjadi acuan kerja owner UI. |
 | G3 | 4 Nov 2026 | Tech Lead menerima ADR-0016 sampai ADR-0022 dan perubahan `AGENTS.md`, `.ai/rules`, `architecture.md` (PR #36). Status ADR menjadi `Accepted`. |
+| G4 | 4 Nov 2026 | Tech Lead menyetujui ROADMAP baru, work item BQ-128 sampai BQ-158, dan hasil audit backlog (PR #37). |
 
 | Fase | Tanggal | Hasil |
 |---|---|---|
@@ -409,7 +410,7 @@ Per fase: PR, gerbang dan tanggal persetujuannya, perintah pemeriksaan yang dija
 | 5 | 4 Nov 2026 | `docs/product.md`: anggota tim, 15 menu, portal pelanggan, admin, model pembayaran dengan refund, tabel isi paket (rumah D-017), target rilis D-018, cakupan D-021. `docs/glossary.md`: Team member, Role, No-show, Capacity, Booking policy, Refund request, Unit, Media gallery, Payout account, nama menu lama ke baru. `owner-portal.md`: tanda pending untuk D-009 sampai D-021 dihapus. |
 | 6 | 4 Nov 2026 | ADR-0016 sampai ADR-0022 ditulis dengan status `Proposed` dan dimasukkan ke indeks ADR. `AGENTS.md` aturan no. 3, 4, 5, 6, 13 dan tabel "Where things are" diubah; `php artisan boost:update` dijalankan dan bagian BookQu tidak berubah. `.ai/rules` diubah: tenancy-security (glob baru untuk Team dan Integrations), booking-availability, payment, frontend, subscription; `.ai/rules/index.md` diregenerasi. `docs/architecture.md` diberi catatan target per ADR. Diperiksa: setiap FR dan ADR yang dirujuk ADR baru memang ada. G3 disetujui. |
 | 8 | 4 Nov 2026 | ROADMAP ditulis ulang (status, epic E0–E7, fase 4 = membangun rancangan ulang, fase 5 = rilis sesuai D-018). 31 work item baru BQ-128 sampai BQ-158. Dicek otomatis: 76 dari 76 kriteria terima `AC-*` dan 46 dari 46 requirement baru dimiliki tepat satu item; setiap item yang dirujuk ada. |
-| 9 | 4 Nov 2026 | Audit backlog: 54 item terbuka diklasifikasi (tabel di bawah). 24 dilebur (status `rejected` dengan penunjuk ke item pengganti), 29 tetap, 1 diubah (BQ-082); BQ-103 dan BQ-122 sampai BQ-125 dipindah ke `done/`. Menunggu G4. |
+| 9 | 4 Nov 2026 | Audit backlog: 54 item terbuka diklasifikasi (tabel di bawah). 24 dilebur (status `rejected` dengan penunjuk ke item pengganti), 29 tetap, 1 diubah (BQ-082); BQ-103 dan BQ-122 sampai BQ-125 dipindah ke `done/`. G4 disetujui. Fase 7 (prototype) masih terbuka. |
 
 ### Backlog audit (Fase 9)
 
