@@ -25,9 +25,9 @@ Functional: Implemented, gated in the UI only · Verification: Needs Verificatio
 
 | Gap | Item |
 |---|---|
-| Sidebar visibility still uses its own list instead of `config/modules.php` | BQ-033 |
+| Sidebar visibility still uses its own list instead of `config/modules.php` | BQ-130 |
 | Direct-gateway keys stored unencrypted | BQ-004 |
 | Audit P0: staff/resource relations never detached when unchecked | BQ-045 |
-| Staff, resource and add-on UI still shown in released owner pages (services, service modals, bookings) | BQ-097 |
+| Staff, resource and add-on UI still shown in released owner pages (services, service modals, bookings) | BQ-157 |
 
 Target decision: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) — module registry `config/modules.php` with `module:<name>` middleware (`hidden` → 404, `locked` → lock page only), implemented by BQ-008 (2026-11-01): Tier 3 routes answer 404, Tier 2 routes refuse writes with 403.

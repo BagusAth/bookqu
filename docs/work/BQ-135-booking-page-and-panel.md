@@ -4,7 +4,7 @@ title: Booking page with task tabs and the shared booking panel actions
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: booking
 requirements: []
 invariants: [INV-BOOK-01]

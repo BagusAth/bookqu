@@ -4,7 +4,7 @@ title: Pembayaran page: summary, transactions, balance and payouts, accounts, ex
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: balance-payout
 requirements: []
 invariants: []

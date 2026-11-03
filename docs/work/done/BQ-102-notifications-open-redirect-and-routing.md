@@ -17,7 +17,7 @@ depends-on: [BQ-092]
 
 # BQ-102: Validate the redirect target of notification mark-as-read, and use the shared confirm dialog
 
-> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-145](BQ-145-paket-tagihan-notifikasi-bantuan.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-145.
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-145](../BQ-145-paket-tagihan-notifikasi-bantuan.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-145.
 
 
 Found during the owner UI deep audit on 2026-11-02. Corrected by the Tech Lead review on 2026-11-02: severity lowered from P1 launch blocker to P2 hardening, and the "missing deep link" claim removed because it was wrong.

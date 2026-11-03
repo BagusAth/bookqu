@@ -4,7 +4,7 @@ title: Beranda: today, needs action and the new owner guide
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: insights
 requirements: [FR-DASH-008]
 invariants: []

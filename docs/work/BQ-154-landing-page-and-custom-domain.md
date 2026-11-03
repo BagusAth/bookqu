@@ -4,7 +4,7 @@ title: Landing page and custom domain for Pro
 type: feature
 status: proposed
 priority: P2
-phase: 8
+phase: 4
 domain: public-site
 requirements: [FR-PUBLIC-007]
 invariants: [INV-TEN-01]

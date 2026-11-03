@@ -4,7 +4,7 @@ title: Pengaturan → Integrasi: Google Calendar, Google Analytics, Meta Pixel
 type: feature
 status: proposed
 priority: P2
-phase: 8
+phase: 4
 domain: tenancy
 requirements: [FR-INTEGRATION-001, FR-INTEGRATION-002]
 invariants: []

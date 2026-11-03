@@ -4,7 +4,7 @@ title: Three server gates (module, plan, role) and one plan capability list
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: staged-modules
 requirements: [FR-SUB-014]
 invariants: [INV-SUB-01]

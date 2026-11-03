@@ -4,7 +4,7 @@ title: API keys and signed webhooks for Pro
 type: feature
 status: proposed
 priority: P2
-phase: 8
+phase: 4
 domain: tenancy
 requirements: [FR-API-001, FR-API-002]
 invariants: [INV-TEN-01]

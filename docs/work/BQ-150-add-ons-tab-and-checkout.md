@@ -4,7 +4,7 @@ title: Layanan → Add-on tab and add-ons in checkout
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: catalog
 requirements: []
 invariants: [INV-PAY-04]

@@ -4,14 +4,14 @@ title: Atomic owner registration transaction and asynchronous CSRF expiration ha
 type: bug-fix
 status: approved
 priority: P2
-phase: 8
+phase: 4
 domain: auth
 requirements: [FR-AUTH-001, FR-TENANT-001, NFR-REL-001, NFR-UX-005]
 invariants: []
 lane: light
 approval: none
 decision:
-launch-blocker: false
+launch-blocker: true
 depends-on: []
 ---
 

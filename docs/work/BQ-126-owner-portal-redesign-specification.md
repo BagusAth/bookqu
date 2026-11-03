@@ -4,7 +4,7 @@ title: Write the specification and reference documents for the owner portal rede
 type: docs
 status: in-progress
 priority: P1
-phase: 8
+phase: 4
 domain: staged-modules
 requirements: []
 invariants: [INV-BOOK-01, INV-BOOK-02, INV-BOOK-03, INV-BOOK-04, INV-BOOK-05, INV-PAY-01, INV-SUB-01, INV-TEN-01]

@@ -4,7 +4,7 @@ title: Paket & Tagihan, notification centre and Bantuan
 type: feature
 status: proposed
 priority: P2
-phase: 8
+phase: 4
 domain: subscription
 requirements: [FR-HELP-001]
 invariants: []

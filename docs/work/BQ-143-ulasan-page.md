@@ -4,7 +4,7 @@ title: Ulasan page with tabs and suggested replies
 type: feature
 status: proposed
 priority: P2
-phase: 8
+phase: 4
 domain: customers-reviews
 requirements: []
 invariants: [INV-TEN-01]

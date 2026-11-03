@@ -4,14 +4,14 @@ title: Conflict detection and notification when blocking dates with existing boo
 type: bug-fix
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: schedule
 requirements: [FR-SCHEDULE-004, FR-SCHEDULE-005, FR-NOTIFICATION-002, NFR-UX-005]
 invariants: [INV-SCH-01]
 lane: heavy
 approval: tech-lead
 decision:
-launch-blocker: false
+launch-blocker: true
 depends-on: []
 ---
 

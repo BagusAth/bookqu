@@ -4,14 +4,14 @@ title: Prevent stale reschedule responses and reject a slot from another selecte
 type: bug-fix
 status: proposed
 priority: P2
-phase: 8
+phase: 4
 domain: booking
 requirements: [FR-BOOKING-011, FR-BOOKING-012, FR-SCHEDULE-009, NFR-UX-005]
 invariants: [INV-SCH-01, INV-BOOK-04, INV-BOOK-06, INV-TEN-01, INV-TOK-01]
 lane: heavy
 approval: tech-lead
 decision:
-launch-blocker: false
+launch-blocker: true
 depends-on: []
 ---
 

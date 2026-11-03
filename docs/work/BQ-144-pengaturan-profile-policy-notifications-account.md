@@ -4,7 +4,7 @@ title: Pengaturan: Profil Bisnis, Kebijakan Booking, Notifikasi and Akun
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: tenancy
 requirements: [FR-TENANT-008, FR-BOOKING-022, FR-NOTIFICATION-006]
 invariants: [INV-BOOK-03]

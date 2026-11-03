@@ -8,7 +8,7 @@ phase: 4
 domain: payment
 requirements: [NFR-EXT-001]
 invariants: [INV-PAY-04, INV-PAY-05]
-launch-blocker: false
+launch-blocker: true
 needs-lead-approval: true
 depends-on: [BQ-032]
 ---

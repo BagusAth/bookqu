@@ -4,7 +4,7 @@ title: Verify scheduler and queue execution on HostData
 type: ops
 status: in-progress
 priority: P0
-phase: 4
+phase: 5
 domain: —
 requirements: [NFR-REL-003]
 invariants: []

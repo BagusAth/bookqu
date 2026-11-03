@@ -4,7 +4,7 @@ title: Automate backups and prove a restore
 type: ops
 status: proposed
 priority: P0
-phase: 4
+phase: 5
 domain: —
 requirements: [NFR-REL-004, NFR-REL-005]
 invariants: []

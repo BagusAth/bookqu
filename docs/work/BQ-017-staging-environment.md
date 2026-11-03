@@ -4,7 +4,7 @@ title: Create a staging environment
 type: ops
 status: approved
 priority: P0
-phase: 4
+phase: 5
 domain: —
 requirements: []
 invariants: []

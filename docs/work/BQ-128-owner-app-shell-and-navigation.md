@@ -4,7 +4,7 @@ title: Owner app shell: sidebar, top bar, bottom navigation and global search
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: staged-modules
 requirements: [FR-SHELL-001, FR-SHELL-002]
 invariants: [INV-TEN-01]

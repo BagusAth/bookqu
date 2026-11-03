@@ -4,7 +4,7 @@ title: First production release of the redesigned BookQu
 type: ops
 status: proposed
 priority: P0
-phase: 8
+phase: 5
 domain: staged-modules
 requirements: []
 invariants: []

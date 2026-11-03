@@ -38,4 +38,4 @@ Functional: Implemented · Verification: Verified · Architecture: Target
 |---|---|
 | Legacy "program" names in routes, controller and views | BQ-035, BQ-036 |
 | Audit P0: quote characters break `@click` on cards; staff/resource relations not detached | BQ-044, BQ-045 |
-| Category "Lihat Layanan" link uses the wrong filter parameter; service card actions hidden without hover from 640 px; native alerts in service modals | BQ-099 |
+| Category "Lihat Layanan" link uses the wrong filter parameter; service card actions hidden without hover from 640 px; native alerts in service modals | BQ-132 |

@@ -4,7 +4,7 @@ title: Pengaturan → Tim: invitations, roles, revocation and the activity log
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: tenancy
 requirements: [FR-TEAM-001, FR-TEAM-004, FR-TEAM-006]
 invariants: [INV-SUB-01, INV-TEN-01]

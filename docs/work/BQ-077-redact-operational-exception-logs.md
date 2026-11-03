@@ -4,11 +4,11 @@ title: Redact raw exception diagnostics outside booking checkout
 type: bug-fix
 status: proposed
 priority: P2
-phase: 6
+phase: 4
 domain: notifications
 requirements: [NFR-SEC-010]
 invariants: []
-launch-blocker: false
+launch-blocker: true
 needs-lead-approval: false
 depends-on: [BQ-005]
 ---

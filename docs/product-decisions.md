@@ -27,6 +27,24 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 ---
 
+### D-022 · Tiga fitur yang sudah ada tetapi belum diterima resmi
+
+*Status:* Menunggu · *Diajukan:* 4 Nov 2026 · *Menahan rilis:* ya
+
+*Masalah*
+Tiga fitur sudah dibangun dan dipakai, tetapi belum pernah disetujui resmi sebagai bagian dari BookQu: lupa password, pembatasan percobaan login, dan halaman utama BookQu dengan daftar harga paket. Tanpa persetujuan, perilakunya bisa diubah siapa saja tanpa acuan.
+
+*Usulan keputusan*
+1. Owner yang lupa password bisa meminta link reset lewat email. Link itu hanya berlaku sekali dan punya masa berlaku.
+2. Login, pendaftaran, permintaan reset password, dan formulir publik lain dibatasi jumlah percobaannya per akun dan per alamat internet, untuk mencegah penyalahgunaan.
+3. Halaman utama BookQu menjelaskan produk dan menampilkan paket beserta harganya, dengan tautan ke pendaftaran. Isi paketnya mengikuti D-017.
+
+*Kalau belum diputuskan:* ketiganya tetap berjalan seperti sekarang.
+
+*Jawaban Product Lead:* —
+
+---
+
 ## Untuk diketahui (tidak perlu keputusan)
 
 Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:

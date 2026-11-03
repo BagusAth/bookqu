@@ -4,7 +4,7 @@ title: Jam Buka & Harga: opening hours, price rules, closed dates and slots
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: schedule
 requirements: [FR-SCHEDULE-011, FR-SCHEDULE-012, FR-SCHEDULE-013, FR-SCHEDULE-014]
 invariants: [INV-BOOK-03, INV-SCH-01]

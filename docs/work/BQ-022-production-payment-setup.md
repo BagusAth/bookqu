@@ -4,7 +4,7 @@ title: Production payment credentials and webhook registration
 type: ops
 status: proposed
 priority: P0
-phase: 4
+phase: 5
 domain: payment
 requirements: [FR-PAYMENT-002, FR-PAYMENT-006]
 invariants: [INV-PAY-04]

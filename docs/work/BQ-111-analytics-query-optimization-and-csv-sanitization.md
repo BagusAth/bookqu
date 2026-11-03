@@ -4,14 +4,14 @@ title: Analytics query aggregation optimization and CSV formula injection protec
 type: improvement
 status: approved
 priority: P2
-phase: 8
+phase: 4
 domain: insights
 requirements: [FR-ANALYTICS-001, FR-REPORT-003, NFR-PERF-004, NFR-SEC-004]
 invariants: []
 lane: light
 approval: none
 decision:
-launch-blocker: false
+launch-blocker: true
 depends-on: []
 ---
 

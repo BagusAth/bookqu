@@ -4,7 +4,7 @@ title: Fix payout account follow-ups found in the PR #31 audit
 type: bug-fix
 status: proposed
 priority: P2
-phase: 8
+phase: 4
 domain: balance-payout
 requirements: [FR-PAYOUT-002, NFR-UX-005]
 invariants: [INV-TEN-01]

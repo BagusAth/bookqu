@@ -4,13 +4,13 @@ title: Make storefront checkout idempotent on the server
 type: improvement
 status: proposed
 priority: P2
-phase: 8
+phase: 4
 domain: booking
 requirements: [FR-BOOKING-005, FR-BOOKING-018]
 invariants: [INV-BOOK-04]
 lane: heavy
 approval: tech-lead
-launch-blocker: false
+launch-blocker: true
 depends-on: []
 ---
 

@@ -4,14 +4,14 @@ title: Bulk schedule date range capping, past slot protection, and occupancy che
 type: bug-fix
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: schedule
 requirements: [FR-SCHEDULE-002, FR-SCHEDULE-006, FR-SCHEDULE-010, NFR-PERF-002]
 invariants: [INV-BOOK-03]
 lane: heavy
 approval: tech-lead
 decision:
-launch-blocker: false
+launch-blocker: true
 depends-on: []
 ---
 

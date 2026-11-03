@@ -4,14 +4,14 @@ title: Keep customer invoices tied to the recorded charge after catalog price ch
 type: bug-fix
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: booking
 requirements: [FR-BOOKING-008, FR-MANAGE-004, FR-PAYMENT-001, NFR-UX-005]
 invariants: [INV-PAY-01, INV-BOOK-06, INV-TOK-01]
 lane: heavy
 approval: tech-lead
 decision:
-launch-blocker: false
+launch-blocker: true
 depends-on: []
 ---
 

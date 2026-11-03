@@ -22,5 +22,5 @@ Functional: Partial (read-only dashboard; no tenant management, payout approval 
 
 | Gap | Item |
 |---|---|
-| No admin workflow for refunds (`refunds.status` stays `pending`); payouts have one at `/admin/payouts` since BQ-015 | D-001, D-003 |
+| No admin workflow for refunds (`refunds.status` stays `pending`); payouts have one at `/admin/payouts` since BQ-015 | BQ-138, D-003 |
 | Admin scope is not defined in requirements beyond FR-ADMIN-001…004 | D-003 |

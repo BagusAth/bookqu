@@ -50,7 +50,7 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 |---|---|
 | Availability cache keys and invalidation are still built by callers (`ClearsBookingCache`, `ScheduleAvailabilityCache`), not owned by the Slot bookability module (ADR-0005 decision 9) | BQ-075 |
 | `AvailabilityRules` checks status `diblokir`, which the DB enum cannot store | BQ-016 |
-| Schedule page and calendar month view decide occupancy in Blade instead of `BookingRules` | BQ-096 |
+| Schedule page and calendar month view decide occupancy in Blade instead of `BookingRules` | BQ-133 |
 | Bulk schedule date range capping, past slot protection, and occupancy check on delete | BQ-107 |
 | Conflict detection and notification when blocking dates with existing active bookings | BQ-108 |
 

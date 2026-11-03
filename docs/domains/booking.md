@@ -63,8 +63,8 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 |---|---|
 | `Customer/BookingController` (≈850 lines) still holds the storefront session handling and repeats contiguity checks before checkout (the claim itself goes through `ClaimSlots`; date checks live in `ValidateBookingDate`) | BQ-029 |
 | Checkout has only a browser double-submit guard; two concurrent POSTs show the customer "slot sudah terisi" for their own hold | BQ-088 |
-| Owner bookings list shows the service's current price instead of the charged amount, and maps payment states that do not exist | BQ-095 |
+| Owner bookings list shows the service's current price instead of the charged amount, and maps payment states that do not exist | BQ-135 |
 | Owner can mark paid or cancel while the customer's online payment is open | BQ-087 |
-| Reschedule does not evaluate or record slot price differences (price drift across surge/override slots) | BQ-109, D-006 |
+| Reschedule does not evaluate or record slot price differences (price drift across surge/override slots) | BQ-140 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). Not implemented yet: [ADR-0008](../adr/ADR-0008-booking-checkout-draft.md) (typed checkout draft, BQ-029); until then BQ-083's checkout fingerprint keeps the quote equal to the charge.

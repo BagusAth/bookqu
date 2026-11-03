@@ -4,7 +4,7 @@ title: Halaman Booking: link, QR, promotion materials, appearance and media gall
 type: feature
 status: proposed
 priority: P1
-phase: 8
+phase: 4
 domain: public-site
 requirements: [FR-PUBLIC-006, FR-ASSET-005]
 invariants: [INV-TEN-01]
