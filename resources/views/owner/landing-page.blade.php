@@ -4,7 +4,6 @@
 @section('content')
 @php
     $subscription = $tenant->subscription ?? \App\Models\Subscription::where('idtenant', $tenant->id)->with('plan')->latest()->first();
-    $isPro = ($subscription?->plan?->namapaket === 'pro') || ($subscription?->status === 'trial');
 @endphp
 
 <div class="mx-auto max-w-7xl space-y-6" x-data="{

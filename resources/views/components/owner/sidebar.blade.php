@@ -31,139 +31,7 @@
         return str_starts_with($halamanaktif, $trimmed);
     };
 
-    $sections = [
-        [
-            'title' => null, // Standalone top items
-            'items' => [
-                [
-                    'label' => 'Dashboard',
-                    'href'  => '/owner/dashboard',
-                    'route' => ['owner.dashboard'],
-                    'icon'  => 'dashboard',
-                ],
-                [
-                    'label' => 'Notifications',
-                    'href'  => '/owner/notifications',
-                    'route' => ['owner.notifications'],
-                    'icon'  => 'notifications',
-                    'badge' => $unreadNotifCount > 0 ? ($unreadNotifCount > 99 ? '99+' : (string)$unreadNotifCount) : null,
-                    'badge_type' => 'counter',
-                ],
-            ],
-        ],
-        [
-            'title' => 'BOOKING',
-            'items' => [
-                [
-                    'label' => 'Calendar',
-                    'href'  => '/owner/calendar',
-                    'route' => ['owner.calendar'],
-                    'icon'  => 'calendar',
-                ],
-                [
-                    'label' => 'Schedule',
-                    'href'  => '/owner/schedule',
-                    'route' => ['owner.schedule'],
-                    'icon'  => 'schedule',
-                ],
-                [
-                    'label' => 'Bookings',
-                    'href'  => '/owner/bookings',
-                    'route' => ['owner.bookings', 'owner.bookings.status'],
-                    'icon'  => 'bookings',
-                ],
-            ],
-        ],
-        [
-            'title' => 'BUSINESS',
-            'items' => [
-                [
-                    'label' => 'Services',
-                    'href'  => '/owner/services',
-                    'route' => ['owner.services', 'owner.programs'],
-                    'icon'  => 'services',
-                ],
-                [
-                    'label' => 'Categories',
-                    'href'  => '/owner/categories',
-                    'route' => ['owner.categories'],
-                    'icon'  => 'categories',
-                ],
-            ],
-        ],
-        [
-            'title' => 'CUSTOMERS',
-            'items' => [
-                [
-                    'label' => 'Customers',
-                    'href'  => '/owner/customers',
-                    'route' => ['owner.customers'],
-                    'icon'  => 'customers',
-                ],
-            ],
-        ],
-        [
-            'title' => 'MARKETING',
-            'items' => [
-                [
-                    'label' => 'Reviews',
-                    'href'  => '/owner/reviews',
-                    'route' => ['owner.reviews'],
-                    'icon'  => 'reviews',
-                ],
-            ],
-        ],
-        [
-            'title' => 'ANALYTICS',
-            'items' => [
-                [
-                    'label' => 'Overview',
-                    'href'  => '/owner/analytics',
-                    'route' => ['owner.analytics', 'owner.analytics.export'],
-                    'icon'  => 'analytics',
-                    'badge' => 'Terkunci',
-                    'badge_type' => 'lock',
-                ],
-                [
-                    'label' => 'Schedule Report',
-                    'href'  => '/owner/schedule-report',
-                    'route' => ['owner.schedule-report'],
-                    'icon'  => 'schedule-report',
-                    'badge' => 'Terkunci',
-                    'badge_type' => 'lock',
-                ],
-            ],
-        ],
-        [
-            'title' => 'SETTINGS',
-            'items' => [
-                [
-                    'label' => 'Business',
-                    'href'  => '/owner/settings/business',
-                    'route' => ['owner.settings.business', 'owner.settings', 'owner.settings.profile', 'owner.settings.account'],
-                    'icon'  => 'business-setting',
-                ],
-                [
-                    'label' => 'Integrations',
-                    'href'  => '/owner/settings/integrations',
-                    'route' => ['owner.settings.integrations'],
-                    'icon'  => 'integrations',
-                ],
-                [
-                    'label' => 'Saldo & Withdraw',
-                    'href'  => '/owner/settings/balance',
-                    'route' => ['owner.settings.balance'],
-                    'icon'  => 'balance',
-                ],
-                [
-                    'label' => 'Subscription',
-                    'href'  => '/owner/subscription',
-                    'route' => ['owner.subscription'],
-                    'icon'  => 'subscription',
-                ],
-            ],
-        ],
-    ];
+    $sections = $navigationSections;
 
     // Detect which category contains the active page
     $activeSectionTitle = null;
@@ -500,6 +368,7 @@
 
     <!-- Bottom Section: Upgrade Card & Account Actions (Fixed at Bottom) -->
     <div class="p-3 border-t border-[#e7e2f7] space-y-2.5 shrink-0 bg-white">
+        @if ($canManageSubscription)
         {{-- Subscription Status Card --}}
         <div class="rounded-2xl border border-[#e7e2f7] bg-gradient-to-br from-[#f7f7fa] to-[#f3effe]/60 p-3.5 shadow-2xs">
             <div class="flex items-center gap-2.5">
@@ -539,6 +408,7 @@
             </a>
         </div>
 
+        @endif
         {{-- Logout --}}
         <form method="POST" action="{{ route('logout') }}">
             @csrf

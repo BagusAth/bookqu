@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Tenant\GetStorefrontTenant;
+use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -29,18 +30,17 @@ class OwnerLandingPageController extends Controller
         // Cek apakah tenant berlangganan paket Pro
         $langganan = Subscription::where('idtenant', $tenant->id)
             ->with('plan')
-            ->where('status', '!=', 'expired')
             ->latest()
             ->first();
 
-        $adalahpro = $langganan?->plan?->namapaket === 'pro';
+        $adalahpro = EntitlementRules::canAccessFeature($langganan, 'landing-page')['allowed'];
 
         if (! $adalahpro) {
             return redirect('/owner/subscription')
                 ->with('pesan', 'Fitur Landing Page hanya tersedia untuk paket Pro. Silakan upgrade paket Anda.');
         }
 
-        return view('owner.landing-page', compact('tenant'));
+        return view('owner.landing-page', ['tenant' => $tenant, 'isPro' => $adalahpro]);
     }
 
     public function store(Request $request)
@@ -54,11 +54,10 @@ class OwnerLandingPageController extends Controller
         // Cek apakah tenant berlangganan paket Pro
         $langganan = Subscription::where('idtenant', $tenant->id)
             ->with('plan')
-            ->where('status', '!=', 'expired')
             ->latest()
             ->first();
 
-        $adalahpro = $langganan?->plan?->namapaket === 'pro';
+        $adalahpro = EntitlementRules::canAccessFeature($langganan, 'landing-page')['allowed'];
 
         if (! $adalahpro) {
             return redirect('/owner/subscription')->with('pesan', 'Fitur Landing Page hanya tersedia untuk paket Pro.');

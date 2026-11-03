@@ -2,6 +2,7 @@
 
 namespace App\View\Components;
 
+use App\Domain\Subscription\EntitlementRules;
 use App\Models\Plan;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
@@ -20,9 +21,8 @@ class PlanFeatures extends Component
             ? 'Unlimited booking' : 'Hingga '.number_format((int) $plan->maxbooking).' booking/bulan');
         $services = ! $plan ? 'Layanan sesuai paket' : ($plan->maxlayanan <= 0
             ? 'Unlimited layanan' : 'Hingga '.number_format((int) $plan->maxlayanan).' layanan');
-        $this->features = array_map(fn (string $feature): string => strtr($feature, [
-            ':bookings' => $bookings, ':services' => $services,
-        ]), config('plans.'.$this->key.'.features', []));
+        $labels = EntitlementRules::advertisedFeatures($this->key);
+        $this->features = array_values(array_map(fn (string $feature): string => strtr($feature, [':bookings' => $bookings, ':services' => $services]), $labels));
     }
 
     /**

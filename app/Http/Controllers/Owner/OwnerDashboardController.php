@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Dashboard\GetOwnerDashboardOverview;
+use App\Actions\Owner\GetOwnerNavigation;
 use App\Actions\Team\FilterRevenueFigures;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
@@ -73,6 +74,9 @@ class OwnerDashboardController extends Controller
             $overviewData = app(FilterRevenueFigures::class)->execute($overviewData);
         }
         $overviewData['canViewRevenue'] = $canViewRevenue;
+        $report = collect(app(GetOwnerNavigation::class)->execute($user))->firstWhere('id', 'reports');
+        $overviewData['showFullReportLink'] = $report !== null;
+        $overviewData['fullReportLocked'] = $report['locked'] ?? false;
 
         return view('owner.dashboard', $overviewData);
     }

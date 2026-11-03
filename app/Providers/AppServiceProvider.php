@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Actions\Owner\GetOwnerNavigation;
+use App\Actions\Subscription\GetPublicPlanCards;
 use App\Actions\Team\GetVisibleNotifications;
 use App\Actions\Team\TeamNotificationAccess;
 use App\Contracts\Payments\PaymentGatewayInterface;
@@ -76,6 +78,8 @@ class AppServiceProvider extends ServiceProvider
             Gate::policy($resource, 'App\\Policies\\'.class_basename($resource).'Policy');
         }
 
+        View::composer('components.landing.pricing', fn ($view) => $view->with(app(GetPublicPlanCards::class)->execute(auth()->user())));
+
         Carbon::setLocale(config('app.locale', 'id'));
 
         if (! $this->app->runningInConsole() && request()->getHost()) {
@@ -86,6 +90,8 @@ class AppServiceProvider extends ServiceProvider
             $user = auth()->user();
             $count = $user ? app(GetVisibleNotifications::class)->execute($user)->whereNull('read_at')->count() : 0;
             $view->with('visibleUnreadCount', $count);
+            $view->with('navigationSections', $user ? app(GetOwnerNavigation::class)->sections($user) : []);
+            $view->with('canManageSubscription', $user && app(TenantResourcePolicy::class)->ability($user, 'subscription.manage'));
         });
 
         // Share Pro subscription status with the sidebar

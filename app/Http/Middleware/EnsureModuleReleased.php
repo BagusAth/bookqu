@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Domain\Modules\ModuleRelease;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,7 +19,7 @@ class EnsureModuleReleased
      */
     public function handle(Request $request, Closure $next, string $module): Response
     {
-        $state = config('modules.'.$module, 'hidden');
+        $state = ModuleRelease::state($module);
 
         if ($state === 'released') {
             return $next($request);

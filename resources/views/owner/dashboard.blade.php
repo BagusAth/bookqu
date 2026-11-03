@@ -193,10 +193,12 @@
                 @endforelse
             </div>
             <div class="mt-5 border-t border-bq-border pt-4">
+                @if ($showFullReportLink ?? false)
                 <a href="{{ route('owner.analytics') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-full-report">
                     <span>View Full Report</span>
-                    <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 uppercase">🔒 Terkunci</span>
+                    @if ($fullReportLocked ?? false)<span class="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 uppercase">🔒 Terkunci</span>@endif
                 </a>
+                @endif
             </div>
         </div>
     </div>

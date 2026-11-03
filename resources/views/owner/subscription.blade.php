@@ -87,7 +87,7 @@
                 };
             @endphp
             <div class="relative rounded-xl border bg-bq-surface p-6 transition-all hover:shadow-md {{ $warnapaket }}">
-                @if ($paket->namapaket === 'medium')
+                @if ($paket->id === $recommendedPlanId)
                     <span class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-bq-primary px-3 py-0.5 text-xs font-bold text-white shadow-sm">Popular</span>
                 @endif
                 <h3 class="text-lg font-bold text-bq-text capitalize">{{ $paket->namapaket }}</h3>

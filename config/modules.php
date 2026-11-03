@@ -7,6 +7,19 @@
 */
 
 return [
+    // Redesign capabilities stay hidden until their implementation is audited (ADR-0021).
+    'units' => 'hidden',
+    'promos' => 'hidden',
+    'add-ons' => 'hidden',
+    'team' => 'hidden',
+    'booking-page' => 'hidden',
+    'api' => 'hidden',
+    'reports' => 'hidden',
+    'refunds' => 'hidden',
+    'help' => 'hidden',
+    'capacity' => 'hidden',
+    'no-show' => 'hidden',
+
     // Tier 3
     'vouchers' => env('MODULE_VOUCHERS', 'hidden'),
     'additional-items' => env('MODULE_ADDITIONAL_ITEMS', 'hidden'),
@@ -17,9 +30,9 @@ return [
     'landing-page' => env('MODULE_LANDING_PAGE', 'hidden'),
 
     // Tier 2
-    'integrations' => env('MODULE_INTEGRATIONS', 'locked'),
-    'analytics' => env('MODULE_ANALYTICS', 'locked'),
-    'schedule-report' => env('MODULE_SCHEDULE_REPORT', 'locked'),
+    'integrations' => env('MODULE_INTEGRATIONS', 'hidden'),
+    'analytics' => env('MODULE_ANALYTICS', 'hidden'),
+    'schedule-report' => env('MODULE_SCHEDULE_REPORT', 'hidden'),
     // Released by BQ-015 (lead decision 2026-11-01: withdraw in v1, fee 0%)
     'balance' => env('MODULE_BALANCE', 'released'),
 ];

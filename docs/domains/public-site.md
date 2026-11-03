@@ -26,6 +26,8 @@ Functional: Implemented · Verification: Verified · Architecture: Target
 
 | Gap | Item |
 |---|---|
-| `components/landing/pricing.blade.php` queries `Tenant` directly | BQ-034 |
+
 | Requirement FR-PUBLIC-005 (landing & pricing) is `Proposed` | — |
 | Audit P0/P1: redirect loop on "Masuk ke Dashboard"; no mobile navigation; reverse tabnabbing on external links | BQ-041, BQ-061 |
+
+BQ-130: landing pricing is prepared by `GetPublicPlanCards`; the Blade contains no model queries or tenant selection from session input. Prices match the plans table used at checkout, and feature labels share the owner comparison with unreleased capabilities omitted. Google Calendar sync and down-payment claims were removed until supported. Ambiguous memberships fail closed rather than choosing a session tenant.

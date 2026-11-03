@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Subscription;
 
+use App\Domain\Modules\ModuleRelease;
 use App\Models\Subscription;
 
 final class EntitlementRules
@@ -35,17 +36,16 @@ final class EntitlementRules
             return ['allowed' => false, 'reason' => 'no_subscription', 'message' => 'Silakan berlangganan untuk mengakses fitur ini.'];
         }
 
-        // Active trial grants full access to all features
-        if ($subscription->status === SubscriptionState::STATUS_TRIAL) {
-            return [
-                'allowed' => true,
-                'reason' => 'trial_active',
-                'message' => '',
-            ];
+        $feature = match (strtolower(trim($feature))) {
+            'medium' => 'analytics', 'pro' => 'landing-page', default => strtolower(trim($feature)),
+        };
+        $isTrial = $subscription->status === SubscriptionState::STATUS_TRIAL;
+        $planName = $isTrial ? PlanCapability::PLAN_PRO : strtolower(trim((string) $subscription->plan?->namapaket));
+        $capabilities = config('plans.'.$planName.'.capabilities', []);
+        $isAllowed = ($capabilities[$feature] ?? false) === true;
+        if ($isTrial && $isAllowed) {
+            return ['allowed' => true, 'reason' => 'trial_active', 'message' => ''];
         }
-
-        $planName = strtolower(trim((string) ($subscription->plan?->namapaket ?? PlanCapability::PLAN_SMALL)));
-        $isAllowed = PlanCapability::isFeatureAllowed($planName, $feature, false);
 
         if (! $isAllowed) {
             $requiredFeature = strtolower(trim($feature));
@@ -243,5 +243,21 @@ final class EntitlementRules
         return self::hasEffectivePlan($subscription)
             && ($subscription->status === SubscriptionState::STATUS_TRIAL
                 || strtolower(trim((string) $subscription->plan?->namapaket)) === PlanCapability::PLAN_PRO);
+    }
+
+    public static function activePaidPlanName(?Subscription $subscription): ?string
+    {
+        return self::hasEffectivePlan($subscription) && $subscription->status === SubscriptionState::STATUS_ACTIVE
+            ? strtolower(trim((string) $subscription->plan?->namapaket)) : null;
+    }
+
+    /** @return array<int|string, string> */
+    public static function advertisedFeatures(string $key): array
+    {
+        $labels = config('plans.'.$key.'.features', []);
+        $modules = config('plans.'.$key.'.feature_modules', []);
+
+        return array_filter($labels, fn ($feature) => ! isset($modules[$feature])
+            || ModuleRelease::state($modules[$feature]) === 'released', ARRAY_FILTER_USE_KEY);
     }
 }

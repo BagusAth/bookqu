@@ -21,6 +21,7 @@ class GetSubscriptionOverview
      *
      * @return array{
      *     langgananaktif: ?Subscription,
+     *     recommendedPlanId: mixed,
      *     semuapaket: Collection<int, Plan>,
      *     jumlahlayanan: int,
      *     jumlahbookingbulanini: int,
@@ -43,6 +44,7 @@ class GetSubscriptionOverview
         if ($tenant === null) {
             return [
                 'langgananaktif' => null,
+                'recommendedPlanId' => Plan::where('namapaket', PlanCapability::PLAN_MEDIUM)->value('id'),
                 'semuapaket' => Plan::all(),
                 'jumlahlayanan' => 0,
                 'jumlahbookingbulanini' => 0,
@@ -81,22 +83,17 @@ class GetSubscriptionOverview
             && $langgananaktif->status === SubscriptionState::STATUS_TRIAL
             && ! SubscriptionState::isExpired($langgananaktif);
 
-        $plan = $langgananaktif?->plan;
-        $planName = strtolower(trim((string) ($plan?->namapaket ?? PlanCapability::PLAN_SMALL)));
-        $isunlimited = (bool) ($plan?->isunlimited ?? false);
+        $serviceQuota = EntitlementRules::canCreateService($langgananaktif, 0);
+        $bookingQuota = EntitlementRules::canCreateBooking($langgananaktif, 0);
+        $staffQuota = EntitlementRules::canCreateStaff($langgananaktif, 0);
+        $maxlayanan = $serviceQuota['maxServices'];
+        $maxbooking = $bookingQuota['maxBooking'];
+        $maxstaff = $staffQuota['maxStaff'];
+        $isunlimited = $bookingQuota['isUnlimited'];
+        $isunlimitedstaff = $staffQuota['isUnlimited'];
 
-        $maxlayanan = PlanCapability::getServiceLimit($plan, $isTrial);
-        $maxbooking = PlanCapability::getBookingLimit($plan, $isTrial);
-        $isunlimitedstaff = $isunlimited || $planName === PlanCapability::PLAN_PRO || $isTrial;
-        $maxstaff = PlanCapability::getStaffLimit($planName, $isTrial, $isunlimited);
-
-        if (! EntitlementRules::hasEffectivePlan($langgananaktif)) {
-            $maxlayanan = $maxbooking = $maxstaff = 0;
-            $isunlimited = $isunlimitedstaff = $isTrial = false;
-        }
-
-        $persenlayanan = SubscriptionUsage::calculatePercentage($jumlahlayanan, $maxlayanan, $isunlimited || $isTrial);
-        $persenbooking = SubscriptionUsage::calculatePercentage($jumlahbookingbulanini, $maxbooking, $isunlimited || $planName === PlanCapability::PLAN_PRO || $isTrial);
+        $persenlayanan = SubscriptionUsage::calculatePercentage($jumlahlayanan, $maxlayanan, $serviceQuota['isUnlimited']);
+        $persenbooking = SubscriptionUsage::calculatePercentage($jumlahbookingbulanini, $maxbooking, $bookingQuota['isUnlimited']);
         $persenstaff = SubscriptionUsage::calculatePercentage($jumlahstaff, $maxstaff, $isunlimitedstaff);
 
         $sisahari = SubscriptionState::getRemainingTrialDays($langgananaktif);
@@ -112,6 +109,7 @@ class GetSubscriptionOverview
 
         return [
             'langgananaktif' => $langgananaktif,
+            'recommendedPlanId' => $semuapaket->firstWhere('namapaket', PlanCapability::PLAN_MEDIUM)?->id,
             'semuapaket' => $semuapaket,
             'jumlahlayanan' => $jumlahlayanan,
             'jumlahbookingbulanini' => $jumlahbookingbulanini,

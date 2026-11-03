@@ -67,6 +67,9 @@ final class TenantPermission
                 'settings.balance','settings.payments','settings.payment','settings.payment-setting' => 'payouts.manage',
                 'settings.integrations' => 'integrations.manage', default => 'settings.manage',
             },
+            'units' => 'units.manage', 'promos' => 'promos.manage', 'booking-page' => 'booking-page.manage',
+            'payments' => 'payouts.manage', 'reports' => 'reports.view', 'api' => 'integrations.manage',
+            'integrations' => 'integrations.manage', 'refunds' => 'refunds.decide',
             'profile' => 'settings.manage',default => null,
         };
     }

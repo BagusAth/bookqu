@@ -239,6 +239,8 @@ class FiveModulesFullIntegrationTest extends TestCase
 
     public function test_schedule_report_renders_with_period_filters(): void
     {
+        // BQ-130: isolate this behavior behind an explicitly enabled development module.
+        config(['modules.schedule-report' => 'released']);
         $this->actingAs($this->owner);
         session(['current_tenant_id' => $this->tenant->id]);
         app(TenantContext::class)->setTenantId($this->tenant->id);
@@ -255,6 +257,8 @@ class FiveModulesFullIntegrationTest extends TestCase
 
     public function test_schedule_report_export_csv(): void
     {
+        // BQ-130: isolate this behavior behind an explicitly enabled development module.
+        config(['modules.schedule-report' => 'released']);
         $this->actingAs($this->owner);
         session(['current_tenant_id' => $this->tenant->id]);
         app(TenantContext::class)->setTenantId($this->tenant->id);

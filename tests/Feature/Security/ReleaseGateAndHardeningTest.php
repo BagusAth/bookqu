@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Security;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,6 +40,8 @@ class ReleaseGateAndHardeningTest extends TestCase
 
     public function test_locked_module_serves_reads_but_refuses_writes(): void
     {
+        // BQ-130: isolate this behavior behind an explicitly enabled development module.
+        config(['modules.integrations' => 'locked']);
         Route::middleware(['web', 'module:integrations'])->match(['get', 'post'], '/_test/locked-module', fn () => 'ok');
 
         $this->get('/_test/locked-module')->assertOk();
@@ -47,6 +50,8 @@ class ReleaseGateAndHardeningTest extends TestCase
 
     public function test_released_module_is_served(): void
     {
+        // BQ-130: isolate this behavior behind an explicitly enabled development module.
+        app(CreateTrialSubscription::class)->execute($this->tenant);
         config(['modules.vouchers' => 'released']);
 
         $this->actingAs($this->owner)->get('/owner/vouchers')->assertOk();

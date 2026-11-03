@@ -494,6 +494,8 @@ class CoreFlowIntegrationTest extends TestCase
      */
     public function test_schedule_report_shows_no_data_when_empty(): void
     {
+        // BQ-130: isolate this behavior behind an explicitly enabled development module.
+        config(['modules.schedule-report' => 'released']);
         $this->actingAs($this->ownerA);
         session(['current_tenant_id' => $this->tenantA->id]);
 
@@ -815,6 +817,8 @@ class CoreFlowIntegrationTest extends TestCase
      */
     public function test_schedule_report_calculates_utilization_correctly(): void
     {
+        // BQ-130: isolate this behavior behind an explicitly enabled development module.
+        config(['modules.schedule-report' => 'released']);
         // Tenant A currently has 1 schedule (scheduleA). Let's create a second schedule
         $scheduleA2 = Schedule::create([
             'idtenant' => $this->tenantA->id,

@@ -127,6 +127,8 @@ class SubscriptionActionTest extends TestCase
 
     public function test_trial_expiration_is_blocked_by_middleware(): void
     {
+        // BQ-130: isolate this behavior behind an explicitly enabled development module.
+        config(['modules.analytics' => 'released']);
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
             'iduser' => $owner->id,

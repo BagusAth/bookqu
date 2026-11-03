@@ -307,6 +307,8 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
      */
     public function test_small_plan_cannot_access_analytics(): void
     {
+        // BQ-130: isolate this behavior behind an explicitly enabled development module.
+        config(['modules.analytics' => 'released']);
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
             'iduser' => $owner->id,
