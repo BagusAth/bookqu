@@ -2,11 +2,11 @@
 id: BQ-125
 title: Multi-step withdraw dialog, unified owner statuses, admin completion, and notifications
 type: feature
-status: proposed
+status: done
 priority: P1
 phase: 8
 domain: balance-payout
-requirements: [FR-PAYOUT-002, FR-PAYOUT-003, FR-NOTIFICATION-001, NFR-UX-005, NFR-ACC-001]
+requirements: [FR-PAYOUT-002, FR-PAYOUT-003, FR-NOTIFICATION-001, NFR-UX-001, NFR-UX-005]
 invariants: [INV-TEN-01]
 lane: heavy
 approval: tech-lead
@@ -95,4 +95,13 @@ The current withdrawal experience has several operational and UX deficits:
 
 ## Evidence (fill when done)
 
-_Fill in when done._
+- Migration `add_approval_tracking_to_owner_payouts_table` executed and tested (`approved_at`, `approved_by`).
+- `PayoutState` updated with `ownerLabel`, `ownerNote`, and `ownerTone`.
+- `ProcessOwnerPayout` sets `approved_at`/`approved_by` on approve, and handles proof file cleanup on failure.
+- `AdminPayoutController@complete` validates either `transfer_reference` or `proof` is present.
+- `OwnerPayoutStatusChangedNotification` queued with `ShouldQueue`, `afterCommit()`, delivering `database` on all transitions and `mail` on terminal outcomes (`success`, `failed`, `rejected`).
+- `NewPayoutRequestNotification` created and dispatched to admins on new payout creation.
+- `resources/views/owner/balance.blade.php` redesigned with accessible multi-step Alpine modal dialog, Indonesian labels, metric cards ("Saldo Tersedia", "Sedang Diproses", "Total Pendapatan"), and responsive history table/cards.
+- Admin views updated with pending review banner, owner email, tenant balance, and relaxed proof/ref requirements.
+- Feature tests in `tests/Feature/Payout/PayoutDialogAndNotificationTest.php` (8 tests) and all Payout tests (44 tests) passing.
+- PHPStan: 0 errors. Pint clean. Architecture rules passing. Frontend assets built.

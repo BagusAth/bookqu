@@ -43,7 +43,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </a>
-                    <span class="px-2 sm:px-3.5 py-1.5 text-xs font-bold text-[#231a3d] min-w-[110px] sm:min-w-[150px] text-center tracking-wide truncate">
+                    <span class="min-w-0 flex-1 sm:flex-none px-2 sm:px-3.5 py-1.5 text-xs font-bold text-[#231a3d] sm:min-w-[150px] text-center leading-tight sm:tracking-wide">
                         {{ $dateLabel }}
                     </span>
                     <a
@@ -86,8 +86,8 @@
         </div>
     </div>
 
-    {{-- Legend Indicators (Horizontal scroll on mobile) --}}
-    <div class="flex items-center gap-3 overflow-x-auto pb-1 sm:pb-0 pt-3.5 border-t border-[#e7e2f7] text-xs text-[#6e6584] no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+    {{-- Legend Indicators (wraps so every status stays visible on mobile) --}}
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-2 pt-3.5 border-t border-[#e7e2f7] text-xs text-[#6e6584]">
         <span class="font-extrabold text-[#231a3d] shrink-0">Indikator:</span>
         <div class="flex items-center gap-1.5 shrink-0">
             <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-2xs"></span>

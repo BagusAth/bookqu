@@ -213,7 +213,7 @@
         .table-container {
             border: 1px solid #E2E8F0;
             border-radius: 14px;
-            overflow: hidden;
+            overflow-x: auto;
             margin-bottom: 28px;
         }
 
@@ -252,7 +252,8 @@
         }
 
         .totals-box {
-            width: 320px;
+            width: 100%;
+            max-width: 320px;
             background: #F8FAFC;
             border: 1px solid #E2E8F0;
             border-radius: 14px;
@@ -298,9 +299,67 @@
             margin-top: 12px;
         }
 
+        .mobile-only,
+        .mobile-inline {
+            display: none;
+        }
+
         @media (max-width: 640px) {
             .payment-grid {
                 grid-template-columns: 1fr 1fr;
+            }
+
+            /* Phones: compact toolbar, and the item table drops the duration/qty columns
+               (duration moves under the schedule; qty is always 1). Print keeps all columns. */
+            .action-bar {
+                padding: 10px 16px;
+            }
+            .btn-action {
+                padding: 8px 12px;
+            }
+            .btn-label-long,
+            .col-optional {
+                display: none;
+            }
+            .mobile-only {
+                display: block;
+            }
+            .mobile-inline {
+                display: inline;
+            }
+            .invoice-header {
+                padding: 20px;
+            }
+            .invoice-content {
+                padding: 16px;
+            }
+
+            /* The item table stacks: one cell per line, no column header. */
+            .invoice-table thead {
+                display: none;
+            }
+            .invoice-table,
+            .invoice-table tbody,
+            .invoice-table tr,
+            .invoice-table td {
+                display: block;
+                width: 100% !important;
+            }
+            .invoice-table td {
+                padding: 6px 14px;
+                border-bottom: none;
+            }
+            .invoice-table td:first-child {
+                padding-top: 14px;
+            }
+            .invoice-table td.cell-total {
+                text-align: left !important;
+                padding-bottom: 14px;
+            }
+
+            .totals-row.grand-total {
+                flex-wrap: wrap;
+                gap: 2px 12px;
             }
         }
 
@@ -449,11 +508,11 @@
 
         <div class="flex items-center gap-2">
             {{-- WhatsApp Share --}}
-            <a href="{{ $waShareUrl }}" target="_blank" rel="noopener noreferrer" class="btn-action btn-wa hidden sm:inline-flex" title="Bagikan Invoice ke WhatsApp">
+            <a href="{{ $waShareUrl }}" target="_blank" rel="noopener noreferrer" class="btn-action btn-wa" title="Bagikan Invoice ke WhatsApp">
                 <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.969.54 1.761.817 2.796.817 3.182 0 5.768-2.587 5.768-5.766.001-3.181-2.585-5.766-5.768-5.766zm0 10.42c-.93 0-1.636-.26-2.527-.79l-.18-.108-1.58.414.421-1.54-.118-.188c-.604-.962-.976-1.745-.976-2.61 0-2.678 2.181-4.857 4.86-4.857 2.677 0 4.857 2.18 4.857 4.858 0 2.677-2.18 4.857-4.857 4.857z"/>
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
-                <span>Bagikan WA</span>
+                <span><span class="btn-label-long">Bagikan </span>WA</span>
             </a>
 
             {{-- Print / Save PDF --}}
@@ -461,7 +520,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                 </svg>
-                <span>Cetak / Unduh PDF</span>
+                <span>Cetak<span class="btn-label-long"> / Unduh PDF</span></span>
             </button>
         </div>
     </header>
@@ -511,11 +570,11 @@
                 </div>
 
                 {{-- Invoice Meta (Code, Date, Status) --}}
-                <div style="text-align: right; min-width: 220px;">
+                <div style="text-align: right; min-width: min(220px, 100%);">
                     <div style="display: inline-block; padding: 4px 10px; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;">
                         INVOICE RESMI
                     </div>
-                    <div class="font-mono" style="font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: 0.04em;">
+                    <div class="font-mono" style="font-size: clamp(16px, 5vw, 20px); font-weight: 800; color: #FFFFFF; letter-spacing: 0.04em; overflow-wrap: anywhere;">
                         {{ $booking->booking_code }}
                     </div>
                     <p style="font-size: 12px; color: rgba(255, 255, 255, 0.8); margin: 4px 0 0 0;">
@@ -610,8 +669,8 @@
                             <tr>
                                 <th style="width: 44%;">Layanan & Rincian</th>
                                 <th style="width: 26%;">Jadwal Sesi</th>
-                                <th style="width: 12%; text-align: center;">Durasi</th>
-                                <th style="width: 8%; text-align: center;">Qty</th>
+                                <th class="col-optional" style="width: 12%; text-align: center;">Durasi</th>
+                                <th class="col-optional" style="width: 8%; text-align: center;">Qty</th>
                                 <th style="width: 10%; text-align: right;">Total</th>
                             </tr>
                         </thead>
@@ -634,20 +693,23 @@
                                     <p style="font-size: 12px; color: #4F46E5; font-weight: 600; margin: 2px 0 0 0;">
                                         {{ $jamFormatted }} WIB
                                     </p>
+                                    <p class="mobile-only" style="font-size: 12px; color: #475569; margin: 2px 0 0 0;">
+                                        {{ $booking->layanan->durasi ?? 60 }} {{ $booking->layanan->satuan_durasi ?? 'menit' }}
+                                    </p>
                                     @if($booking->rescheduled_from_date)
                                         <span style="display: inline-block; font-size: 10px; font-weight: 700; color: #D97706; background: #FEF3C7; padding: 2px 6px; border-radius: 4px; margin-top: 4px;">
                                             Jadwal Reschedule
                                         </span>
                                     @endif
                                 </td>
-                                <td style="text-align: center; color: #475569; font-size: 13px;">
+                                <td class="col-optional" style="text-align: center; color: #475569; font-size: 13px;">
                                     {{ $booking->layanan->durasi ?? 60 }} {{ $booking->layanan->satuan_durasi ?? 'menit' }}
                                 </td>
-                                <td style="text-align: center; font-weight: 600; color: #0F172A;">
+                                <td class="col-optional" style="text-align: center; font-weight: 600; color: #0F172A;">
                                     1
                                 </td>
-                                <td style="text-align: right; font-weight: 800; color: #0F172A; font-size: 14px;">
-                                    {{ $booking->priceLabel }}
+                                <td class="cell-total" style="text-align: right; font-weight: 800; color: #0F172A; font-size: 14px; white-space: nowrap;">
+                                    <span class="mobile-inline" style="font-weight: 600; color: #64748B;">Total: </span>{{ $booking->priceLabel }}
                                 </td>
                             </tr>
                         </tbody>
@@ -671,7 +733,7 @@
                         </div>
                         <div class="totals-row grand-total">
                             <span>TOTAL BAYAR</span>
-                            <span class="amount font-mono">{{ $booking->priceLabel }}</span>
+                            <span class="amount font-mono" style="white-space: nowrap;">{{ $booking->priceLabel }}</span>
                         </div>
                     </div>
                 </div>
@@ -679,7 +741,7 @@
                 {{-- ── PAYMENT VERIFICATION DETAILS (IF PAYMENT RECORD EXISTS) ── --}}
                 @if($booking->payment)
                 <div class="payment-info-box">
-                    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
                         <div class="party-title" style="margin-bottom: 0;">
                             <svg class="w-3.5 h-3.5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
@@ -722,7 +784,7 @@
 
                 {{-- ── FOOTER SEAL & VALIDATION ── --}}
                 <div class="footer-seal">
-                    <div style="flex: 1; min-width: 260px;">
+                    <div style="flex: 1; min-width: min(260px, 100%);">
                         <p style="font-size: 12px; color: #64748B; line-height: 1.6; margin: 0;">
                             Dokumen invoice ini diterbitkan secara resmi oleh sistem <strong>BookQu</strong> atas nama <strong>{{ $booking->tenant->namabisnis }}</strong>.<br/>
                             Kode booking <strong class="font-mono text-indigo-700 font-bold">{{ $booking->booking_code }}</strong> adalah bukti sah reservasi dan transaksi Anda. Tunjukkan dokumen ini saat kedatangan.
@@ -732,10 +794,10 @@
                         </p>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 100%;">
                         {{-- Barcode / Verification Badge --}}
-                        <div style="background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 8px; padding: 6px 14px; text-align: center;">
-                            <div class="font-mono" style="font-size: 13px; font-weight: 800; letter-spacing: 0.15em; color: #334155;">
+                        <div style="background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 8px; padding: 6px 14px; text-align: center; max-width: 100%;">
+                            <div class="font-mono" style="font-size: 13px; font-weight: 800; letter-spacing: 0.15em; color: #334155; overflow-wrap: anywhere;">
                                 * {{ $booking->booking_code }} *
                             </div>
                             <span style="font-size: 10px; color: #64748B; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">

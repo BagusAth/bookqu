@@ -25,9 +25,25 @@
         <main class="mx-auto max-w-6xl px-6 py-10 space-y-8">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">Dashboard Superadmin</h1>
-                <a href="{{ route('admin.payouts') }}" class="mt-2 inline-flex text-sm font-semibold text-[#4F46E5] hover:underline">Review withdraw owner →</a>
                 <p class="mt-1 text-sm text-slate-500">Ringkasan seluruh tenant dan aktivitas platform BookQu.</p>
             </div>
+
+            @if ($pendingPayoutCount > 0)
+                <div class="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
+                    <div class="flex items-center gap-3.5">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white font-extrabold text-base shadow-xs">
+                            {{ $pendingPayoutCount }}
+                        </span>
+                        <div>
+                            <p class="font-bold text-indigo-950 text-sm">Ada {{ $pendingPayoutCount }} pengajuan withdraw menunggu review</p>
+                            <p class="text-xs text-indigo-700 mt-0.5">Tinjau rekening tujuan dan proses transfer dana owner.</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('admin.payouts', ['status' => 'pending']) }}" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 shadow-xs transition">
+                        Review Withdraw &rarr;
+                    </a>
+                </div>
+            @endif
 
             {{-- ── Statistik Utama ── --}}
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">

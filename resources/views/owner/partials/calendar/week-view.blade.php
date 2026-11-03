@@ -333,7 +333,7 @@
                                                 >
                                                     <div class="flex items-center justify-between gap-1">
                                                         <span class="truncate leading-tight font-extrabold">{{ $matchedBooking->layanan->namalayanan ?? 'Layanan' }}</span>
-                                                        <span class="text-[9px] uppercase px-1.5 py-0.2 rounded-md bg-white/80 font-bold shadow-2xs">{{ $badgeStatus }}</span>
+                                                        <span class="shrink-0 text-[9px] uppercase px-1.5 py-0.2 rounded-md bg-white/80 font-bold shadow-2xs">{{ $badgeStatus }}</span>
                                                     </div>
                                                     <p class="text-[10px] font-medium opacity-90 truncate mt-1">{{ $matchedBooking->namapelanggan }} ({{ substr($matchedBooking->jam, 0, 5) }})</p>
                                                 </div>
@@ -364,12 +364,12 @@
                                                         })"
                                                         class="craft-card h-full rounded-xl border border-dashed border-[#b499ff] bg-[#f3effe]/60 hover:bg-[#f3effe] p-2 text-[10px] text-[#231a3d] font-semibold cursor-pointer shadow-2xs"
                                                     >
-                                                        <div class="flex items-center justify-between">
-                                                            <span class="truncate font-extrabold text-[#382186]">{{ $sched->layanan->namalayanan ?? 'Layanan' }}</span>
-                                                            <span class="rounded-md bg-[#e7e2f7] px-1.5 py-0.2 text-[8px] font-extrabold uppercase text-[#382186]">Tersedia</span>
+                                                        <div class="flex flex-wrap items-center justify-between gap-1">
+                                                            <span class="min-w-0 truncate font-extrabold text-[#382186]">{{ $sched->layanan->namalayanan ?? 'Layanan' }}</span>
+                                                            <span class="shrink-0 rounded-md bg-[#e7e2f7] px-1.5 py-0.2 text-[8px] font-extrabold uppercase text-[#382186]">Tersedia</span>
                                                         </div>
-                                                        <div class="mt-1.5 flex items-center justify-between">
-                                                            <span class="text-[9px] text-[#6e6584] font-semibold">{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}</span>
+                                                        <div class="mt-1.5 flex flex-wrap items-center justify-between gap-1">
+                                                            <span class="whitespace-nowrap text-[9px] text-[#6e6584] font-semibold">{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}</span>
                                                             <button
                                                                 type="button"
                                                                 @click.stop="openDetail({
@@ -389,7 +389,7 @@
                                                                     amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
                                                                     notes: 'Slot aktif ini terbuka untuk reservasi pelanggan.'
                                                                 }); walkinMode = true"
-                                                                class="rounded-md bg-[#382186] hover:bg-[#2d1a6d] px-1.5 py-0.5 text-[8px] font-extrabold text-white transition shadow-2xs"
+                                                                class="whitespace-nowrap rounded-md bg-[#382186] hover:bg-[#2d1a6d] px-1.5 py-0.5 text-[8px] font-extrabold text-white transition shadow-2xs"
                                                                 title="Catat Reservasi Walk-in Tamu"
                                                             >
                                                                 + Walk-in

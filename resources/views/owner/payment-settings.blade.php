@@ -85,13 +85,13 @@
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {{-- Mode 1: Platform Payment --}}
-                <label class="relative flex cursor-pointer rounded-2xl border p-5 transition"
+                <label class="relative flex cursor-pointer rounded-2xl border p-4 sm:p-5 transition"
                        :class="paymentMode === 'platform' ? 'border-bq-primary bg-indigo-50/40 ring-2 ring-bq-primary/20' : 'border-bq-border hover:bg-slate-50'">
                     <input type="radio" name="payment_mode" value="platform" x-model="paymentMode" class="sr-only">
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
+                    <div class="w-full min-w-0 space-y-2">
+                        <div class="flex items-start justify-between gap-2">
                             <span class="font-bold text-sm text-bq-text">BookQu Platform Gateway</span>
-                            <span class="rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5">Praktis (Default)</span>
+                            <span class="shrink-0 whitespace-nowrap rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5">Praktis (Default)</span>
                         </div>
                         <p class="text-xs text-bq-text-muted leading-relaxed">
                             Tidak perlu daftar akun Midtrans sendiri. Dana langsung tertampung di saldo BookQu dan dapat dicairkan kapan saja ke rekening bank Anda.
@@ -100,13 +100,13 @@
                 </label>
 
                 {{-- Mode 2: BYOPG --}}
-                <label class="relative flex cursor-pointer rounded-2xl border p-5 transition"
+                <label class="relative flex cursor-pointer rounded-2xl border p-4 sm:p-5 transition"
                        :class="paymentMode === 'owner' ? 'border-bq-primary bg-indigo-50/40 ring-2 ring-bq-primary/20' : 'border-bq-border hover:bg-slate-50'">
                     <input type="radio" name="payment_mode" value="owner" x-model="paymentMode" class="sr-only">
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
+                    <div class="w-full min-w-0 space-y-2">
+                        <div class="flex items-start justify-between gap-2">
                             <span class="font-bold text-sm text-bq-text">Midtrans Gateway Sendiri (BYOPG)</span>
-                            <span class="rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5">Custom API</span>
+                            <span class="shrink-0 whitespace-nowrap rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5">Custom API</span>
                         </div>
                         <p class="text-xs text-bq-text-muted leading-relaxed">
                             Hubungkan akun Midtrans Anda sendiri. Pembayaran dari customer langsung masuk ke merchant dashboard dan rekening Midtrans bisnis Anda.

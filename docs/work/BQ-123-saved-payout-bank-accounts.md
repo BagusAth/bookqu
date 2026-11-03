@@ -2,7 +2,7 @@
 id: BQ-123
 title: Saved tenant payout bank accounts and destination selection
 type: feature
-status: proposed
+status: done
 priority: P1
 phase: 8
 domain: balance-payout
@@ -85,4 +85,11 @@ Currently, an owner must manually enter their bank name, account number, and acc
 
 ## Evidence (fill when done)
 
-_Fill in when done._
+- Migrations `create_tenant_payout_accounts_table` and `add_payout_account_to_owner_payouts_table` executed and verified.
+- Model `TenantPayoutAccount` implemented with `BelongsToTenant`, `SoftDeletes`, and `masked_number`.
+- Actions `SaveTenantPayoutAccount`, `DeleteTenantPayoutAccount`, and `MakeDefaultPayoutAccount` enforce limits (max 3), tenant locking, in-flight check, and atomic default switching.
+- Mail notification `PayoutAccountChangedNotification` queued and sent on account create/update/delete.
+- Controller `OwnerPayoutAccountController` with rate-limiting (`throttle:3,10`) and password confirmation.
+- Admin view displays "Rekening baru (< 24 jam)" badge.
+- Tests passing: `tests/Feature/Payout/TenantPayoutAccountTest.php` (10 tests), `OwnerPayoutFlowTest.php` (14 tests), `OwnerApplicationActionsTest.php` (11 tests), `SettingsTest.php` (11 tests).
+- PHPStan: 0 errors. Pint clean. Architecture rules passing.

@@ -1,7 +1,7 @@
     {{-- Add Staff Modal --}}
     <div
         x-show="addStaffModal"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#231a3d]/50 backdrop-blur-xs"
+        class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-[#231a3d]/50 backdrop-blur-xs"
         style="display: none;"
         x-cloak
         x-transition:enter="transition ease-out duration-200"
@@ -12,7 +12,7 @@
         x-transition:leave-end="opacity-0"
     >
         <div
-            class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
+            class="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
             @click.outside="addStaffModal = false"
             x-show="addStaffModal"
             x-transition:enter="transition ease-out duration-200"
@@ -51,7 +51,7 @@
                         class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     >
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <label class="text-xs font-bold text-[#231a3d]">No. Telepon</label>
                         <input
@@ -119,7 +119,7 @@
     {{-- Edit Staff Modal --}}
     <div
         x-show="editStaffModal"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#231a3d]/50 backdrop-blur-xs"
+        class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-[#231a3d]/50 backdrop-blur-xs"
         style="display: none;"
         x-cloak
         x-transition:enter="transition ease-out duration-200"
@@ -130,7 +130,7 @@
         x-transition:leave-end="opacity-0"
     >
         <div
-            class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
+            class="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
             @click.outside="editStaffModal = false"
             x-show="editStaffModal"
             x-transition:enter="transition ease-out duration-200"
@@ -170,7 +170,7 @@
                         class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     >
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <label class="text-xs font-bold text-[#231a3d]">No. Telepon</label>
                         <input

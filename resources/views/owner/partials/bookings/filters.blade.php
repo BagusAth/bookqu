@@ -9,7 +9,7 @@
             class="w-full rounded-xl border border-bq-border bg-bq-surface py-2.5 pl-10 pr-4 text-xs sm:text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
             id="input-search-bookings">
     </form>
-    <div class="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 sm:pb-0 sm:flex-wrap no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 sm:pb-0 sm:flex-wrap no-scrollbar -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
         @foreach (['semua' => 'All', 'today' => 'Today', 'pending' => 'Pending', 'paid' => 'Confirmed', 'completed' => 'Completed', 'cancelled' => 'Cancelled'] as $kunci => $label)
             <a href="/owner/bookings?status={{ $kunci }}&katakunci={{ $katakunci }}"
                class="whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-semibold transition-all shrink-0

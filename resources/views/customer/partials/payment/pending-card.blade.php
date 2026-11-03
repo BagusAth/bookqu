@@ -128,10 +128,10 @@
 
         {{-- 4. Secondary Metadata: Order ID & Status --}}
         <div class="pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-            <div>
+            <div class="min-w-0">
                 <span class="text-xs font-semibold uppercase tracking-wider text-[#64748B] block mb-1">Order ID</span>
-                <div class="flex items-center gap-2">
-                    <span class="font-mono text-sm font-bold text-[#0F172A]">{{ $payment->order_id }}</span>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-mono text-sm font-bold text-[#0F172A] break-all">{{ $payment->order_id }}</span>
                     <button
                         type="button"
                         @click="navigator.clipboard.writeText('{{ $payment->order_id }}'); copied = true; setTimeout(() => copied = false, 2000)"

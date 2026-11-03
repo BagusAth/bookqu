@@ -222,7 +222,7 @@
     {{-- Add Category Modal --}}
     <div
         x-show="addModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#231a3d]/50 backdrop-blur-xs"
+        class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-[#231a3d]/50 backdrop-blur-xs"
         style="display: none;"
         x-cloak
         x-transition:enter="transition ease-out duration-200"
@@ -234,7 +234,7 @@
         @keydown.escape.window="addModalOpen = false"
     >
         <div
-            class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
+            class="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
             @click.outside="addModalOpen = false"
             x-show="addModalOpen"
             x-transition:enter="transition ease-out duration-200"
@@ -325,7 +325,7 @@
     {{-- Edit Category Modal --}}
     <div
         x-show="editModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#231a3d]/50 backdrop-blur-xs"
+        class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-[#231a3d]/50 backdrop-blur-xs"
         style="display: none;"
         x-cloak
         x-transition:enter="transition ease-out duration-200"
@@ -337,7 +337,7 @@
         @keydown.escape.window="editModalOpen = false"
     >
         <div
-            class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
+            class="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
             @click.outside="editModalOpen = false"
             x-show="editModalOpen"
             x-transition:enter="transition ease-out duration-200"

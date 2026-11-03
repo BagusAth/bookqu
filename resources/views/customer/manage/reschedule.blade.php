@@ -15,24 +15,24 @@
 
     {{-- ── Elevated Header ── --}}
     <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
-        <div class="mx-auto flex w-full max-w-5xl items-center justify-between px-4 sm:px-6 py-3.5">
-            <a href="{{ $booking->tenant?->slug ? \App\Support\CustomerBookingRoutes::url('customer.booking.program', $booking->tenant->slug) : '/' }}" class="flex items-center gap-2.5 group">
-                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-xs group-hover:scale-105 transition-transform">
+        <div class="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 sm:px-6 py-3.5">
+            <a href="{{ $booking->tenant?->slug ? \App\Support\CustomerBookingRoutes::url('customer.booking.program', $booking->tenant->slug) : '/' }}" class="flex min-w-0 items-center gap-2.5 group">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-xs group-hover:scale-105 transition-transform">
                     {{ strtoupper(substr($booking->tenant?->namabisnis ?? 'B', 0, 1)) }}
                 </div>
-                <div>
-                    <span class="block text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{{ $booking->tenant?->namabisnis ?? 'Merchant' }}</span>
-                    <span class="block text-[11px] font-medium text-slate-500">Ubah Jadwal Booking</span>
+                <div class="min-w-0">
+                    <span class="block truncate text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{{ $booking->tenant?->namabisnis ?? 'Merchant' }}</span>
+                    <span class="block truncate text-[11px] font-medium text-slate-500">Ubah Jadwal Booking</span>
                 </div>
             </a>
             <a
                 href="{{ route('booking.manage', ['booking_code' => $booking->booking_code]) }}"
-                class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
+                class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 sm:px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer whitespace-nowrap"
             >
                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                 </svg>
-                <span>Kembali ke Detail</span>
+                <span>Kembali<span class="hidden sm:inline"> ke Detail</span></span>
             </a>
         </div>
     </header>
@@ -72,7 +72,7 @@
 
         {{-- ── VISUAL SCHEDULE COMPARISON BANNER (SEBELUM VS SESUDAH) ── --}}
         <div class="rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm">
-            <div class="grid gap-4 sm:grid-cols-2 items-center">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 items-center">
                 {{-- Jadwal Lama --}}
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/90 p-4">
                     <div class="flex items-center gap-2 mb-1.5">
@@ -146,7 +146,7 @@
         </div>
 
         {{-- ── TWO COLUMN: PICKER & CONFIRMATION SIDEBAR ── --}}
-        <div class="grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
 
             {{-- ── LEFT: DATE & TIME SELECTOR ── --}}
             <div class="space-y-6">

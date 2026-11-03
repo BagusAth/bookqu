@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use App\Notifications\OwnerPayoutStatusChangedNotification;
 use Carbon\Carbon;
@@ -18,6 +19,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -33,6 +35,8 @@ class OwnerPayoutFlowTest extends TestCase
 
     private User $admin;
 
+    private TenantPayoutAccount $payoutAccount;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +47,16 @@ class OwnerPayoutFlowTest extends TestCase
         $this->owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $this->tenant = Tenant::factory()->create(['iduser' => $this->owner->id, 'saldo_platform' => 0, 'payment_mode' => 'platform']);
         $this->admin = User::factory()->create(['role' => 'admin', 'email_verified_at' => now()]);
+
+        $this->payoutAccount = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'BCA',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'Pemilik',
+            'is_default' => true,
+            'changed_at' => now(),
+        ]);
     }
 
     public function test_provider_success_credits_the_full_amount_once(): void
@@ -81,7 +95,9 @@ class OwnerPayoutFlowTest extends TestCase
         $this->tenant->update(['saldo_platform' => 300000]);
 
         $this->actingAs($this->owner)->post('/owner/payouts', [
-            'jumlah' => 100000, 'bank_nama' => 'BCA', 'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'Pemilik',
+            'request_key' => (string) Str::uuid(),
+            'jumlah' => 100000,
+            'payout_account_id' => $this->payoutAccount->id,
         ])->assertRedirect(route('owner.settings.balance'));
 
         $this->assertDatabaseHas('owner_payouts', ['idtenant' => $this->tenant->id, 'status' => 'pending', 'nomor_rekening' => '1234567890']);
@@ -93,9 +109,90 @@ class OwnerPayoutFlowTest extends TestCase
     {
         $this->tenant->update(['saldo_platform' => 300000]);
 
-        $this->actingAs($this->owner)->post('/owner/payouts', ['jumlah' => 100000, 'nomor_rekening' => '12-AB'])
-            ->assertSessionHasErrors(['bank_nama', 'nomor_rekening', 'nama_pemilik_rekening']);
+        $this->actingAs($this->owner)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
+            'jumlah' => 100000,
+            'payout_account_id' => 999999,
+        ])->assertSessionHasErrors(['payout_account_id']);
         $this->assertDatabaseCount('owner_payouts', 0);
+    }
+
+    public function test_payout_history_is_paginated_to_15_records_per_page(): void
+    {
+        for ($i = 1; $i <= 16; $i++) {
+            OwnerPayout::create([
+                'idtenant' => $this->tenant->id,
+                'request_key' => (string) Str::uuid(),
+                'jumlah' => 10000 + ($i * 1000),
+                'status' => 'pending',
+                'requested_at' => now()->subMinutes(20 - $i),
+                'bank_nama' => 'BCA',
+                'nomor_rekening' => '1234567890',
+                'nama_pemilik_rekening' => 'Owner',
+            ]);
+        }
+
+        $responsePage1 = $this->actingAs($this->owner)->get('/owner/settings/balance');
+        $responsePage1->assertOk();
+        $this->assertCount(15, $responsePage1->viewData('payouts'));
+
+        $responsePage2 = $this->actingAs($this->owner)->get('/owner/settings/balance?page=2');
+        $responsePage2->assertOk();
+        $this->assertCount(1, $responsePage2->viewData('payouts'));
+    }
+
+    public function test_payout_request_is_idempotent_with_same_request_key(): void
+    {
+        $this->tenant->update(['saldo_platform' => 300000]);
+        $requestKey = (string) Str::uuid();
+
+        $payload = [
+            'request_key' => $requestKey,
+            'jumlah' => 100000,
+            'payout_account_id' => $this->payoutAccount->id,
+        ];
+
+        $this->actingAs($this->owner)->post('/owner/payouts', $payload)->assertRedirect(route('owner.settings.balance'));
+        $this->assertEquals(200000, (float) $this->tenant->fresh()->saldo_platform);
+        $this->assertDatabaseCount('owner_payouts', 1);
+
+        // Second POST with same request_key
+        $this->actingAs($this->owner)->post('/owner/payouts', $payload)->assertRedirect(route('owner.settings.balance'));
+        $this->assertEquals(200000, (float) $this->tenant->fresh()->saldo_platform);
+        $this->assertDatabaseCount('owner_payouts', 1);
+    }
+
+    public function test_payout_requests_with_different_request_keys_create_distinct_payouts(): void
+    {
+        config(['payouts.max_open' => null]);
+        $this->tenant->update(['saldo_platform' => 300000]);
+
+        $this->actingAs($this->owner)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
+            'jumlah' => 100000,
+            'payout_account_id' => $this->payoutAccount->id,
+        ])->assertRedirect(route('owner.settings.balance'));
+
+        $this->actingAs($this->owner)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
+            'jumlah' => 50000,
+            'payout_account_id' => $this->payoutAccount->id,
+        ])->assertRedirect(route('owner.settings.balance'));
+
+        $this->assertEquals(150000, (float) $this->tenant->fresh()->saldo_platform);
+        $this->assertDatabaseCount('owner_payouts', 2);
+    }
+
+    public function test_balance_view_renders_request_key_and_alpine_double_submit_protection(): void
+    {
+        $response = $this->actingAs($this->owner)->get('/owner/settings/balance');
+        $response->assertOk();
+        $response->assertSee('name="request_key"', false);
+        $response->assertSee('x-data="{ submitting: false }"', false);
+        $response->assertSee(':disabled="submitting"', false);
+        $response->assertSee('Memproses…');
+        $response->assertSee('Riwayat Withdraw');
+        $response->assertDontSee('Riwayat Penarikan Dana Terbaru');
     }
 
     public function test_admin_approves_then_records_the_transfer_with_proof(): void

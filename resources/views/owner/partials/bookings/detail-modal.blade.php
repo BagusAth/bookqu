@@ -24,16 +24,16 @@
 
             {{-- Modal Header --}}
             <div class="p-4 sm:p-5 border-b border-[#e7e2f7] flex items-center justify-between bg-[#fbfaff]">
-                <div class="flex items-center gap-2.5">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#b499ff]/30 shadow-2xs">
+                <div class="flex min-w-0 items-center gap-2.5">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#b499ff]/30 shadow-2xs">
                         <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                         </svg>
                     </span>
-                    <div>
-                        <div class="flex items-center gap-2">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <h3 class="text-base font-extrabold text-[#231a3d]">Detail Reservasi</h3>
-                            <span class="font-mono text-xs px-2 py-0.5 rounded-lg bg-[#f3effe] text-[#382186] font-bold border border-[#b499ff]/30" x-text="'#' + (activeBooking ? activeBooking.code : '')"></span>
+                            <span class="whitespace-nowrap font-mono text-xs px-2 py-0.5 rounded-lg bg-[#f3effe] text-[#382186] font-bold border border-[#b499ff]/30" x-text="'#' + (activeBooking ? activeBooking.code : '')"></span>
                         </div>
                         <p class="text-[11px] text-[#6e6584]">Informasi lengkap pesanan dan aksi reservasi pelanggan.</p>
                     </div>
@@ -73,25 +73,25 @@
                                 <svg class="h-3.5 w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                 Data Pelanggan
                             </h4>
-                            <div class="space-y-1.5 text-xs">
-                                <div class="flex justify-between">
+                            <div class="space-y-1.5 text-xs [&>div>span:first-child]:shrink-0 [&>div>:last-child]:min-w-0 [&>div>:last-child]:text-right [&>div>:last-child]:wrap-break-word">
+                                <div class="flex justify-between gap-3">
                                     <span class="text-[#6e6584]">Nama Pelanggan:</span>
                                     <span class="font-bold text-[#231a3d]" x-text="activeBooking.name"></span>
                                 </div>
-                                <div class="flex justify-between items-center">
+                                <div class="flex justify-between items-center gap-3">
                                     <span class="text-[#6e6584]">Nomor WhatsApp:</span>
                                     <a :href="'https://wa.me/' + (activeBooking.phone ? activeBooking.phone.replace(/[^0-9]/g, '') : '')" target="_blank" rel="noopener noreferrer" class="font-mono font-bold text-emerald-700 hover:underline flex items-center gap-1">
                                         <span x-text="activeBooking.phone || '-'"></span>
                                         <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-bold">Chat WA</span>
                                     </a>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex justify-between gap-3">
                                     <span class="text-[#6e6584]">Email:</span>
                                     <span class="text-[#231a3d] font-medium" x-text="activeBooking.email || '-'"></span>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex justify-between gap-3">
                                     <span class="text-[#6e6584]">Catatan Pelanggan:</span>
-                                    <span class="text-[#231a3d] italic text-right max-w-[200px]" x-text="activeBooking.notes || 'Tidak ada catatan'"></span>
+                                    <span class="text-[#231a3d] italic" x-text="activeBooking.notes || 'Tidak ada catatan'"></span>
                                 </div>
                             </div>
                         </div>
@@ -102,24 +102,24 @@
                                 <svg class="h-3.5 w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 Layanan &amp; Jadwal
                             </h4>
-                            <div class="space-y-1.5 text-xs">
-                                <div class="flex justify-between">
+                            <div class="space-y-1.5 text-xs [&>div>span:first-child]:shrink-0 [&>div>:last-child]:min-w-0 [&>div>:last-child]:text-right [&>div>:last-child]:wrap-break-word">
+                                <div class="flex justify-between gap-3">
                                     <span class="text-[#6e6584]">Layanan:</span>
                                     <span class="font-bold text-[#231a3d]" x-text="activeBooking.service"></span>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex justify-between gap-3">
                                     <span class="text-[#6e6584]">Tanggal:</span>
                                     <span class="font-bold text-[#231a3d]" x-text="activeBooking.date"></span>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex justify-between gap-3">
                                     <span class="text-[#6e6584]">Waktu / Jam:</span>
                                     <span class="font-mono font-bold text-[#231a3d]" x-text="activeBooking.time"></span>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex justify-between gap-3">
                                     <span class="text-[#6e6584]">Staff Ditugaskan:</span>
                                     <span class="font-medium text-[#231a3d]" x-text="activeBooking.staff || 'General Staff'"></span>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex justify-between gap-3">
                                     <span class="text-[#6e6584]">Fasilitas / Resource:</span>
                                     <span class="font-medium text-[#231a3d]" x-text="activeBooking.resource || 'General Facility'"></span>
                                 </div>
@@ -137,12 +137,12 @@
                                 <svg class="h-3.5 w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 Rincian Biaya &amp; Order
                             </h4>
-                            <div class="space-y-1.5 text-xs">
-                                <div class="flex justify-between items-center">
+                            <div class="space-y-1.5 text-xs [&>div>span:first-child]:shrink-0 [&>div>:last-child]:min-w-0 [&>div>:last-child]:text-right [&>div>:last-child]:wrap-break-word">
+                                <div class="flex justify-between items-center gap-3">
                                     <span class="text-[#6e6584]">Total Biaya:</span>
                                     <span class="font-black text-[#382186] text-base" x-text="activeBooking.formatted_price"></span>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex justify-between gap-3">
                                     <span class="text-[#6e6584]">Order ID:</span>
                                     <span class="font-mono text-xs text-[#6e6584]" x-text="activeBooking.order_id"></span>
                                 </div>

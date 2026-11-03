@@ -1,7 +1,7 @@
     {{-- Add Resource Modal --}}
     <div
         x-show="addResourceModal"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#231a3d]/50 backdrop-blur-xs"
+        class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-[#231a3d]/50 backdrop-blur-xs"
         style="display: none;"
         x-cloak
         x-transition:enter="transition ease-out duration-200"
@@ -12,7 +12,7 @@
         x-transition:leave-end="opacity-0"
     >
         <div
-            class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
+            class="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
             @click.outside="addResourceModal = false"
             x-show="addResourceModal"
             x-transition:enter="transition ease-out duration-200"
@@ -104,7 +104,7 @@
     {{-- Edit Resource Modal --}}
     <div
         x-show="editResourceModal"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#231a3d]/50 backdrop-blur-xs"
+        class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-[#231a3d]/50 backdrop-blur-xs"
         style="display: none;"
         x-cloak
         x-transition:enter="transition ease-out duration-200"
@@ -115,7 +115,7 @@
         x-transition:leave-end="opacity-0"
     >
         <div
-            class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
+            class="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#e7e2f7]"
             @click.outside="editResourceModal = false"
             x-show="editResourceModal"
             x-transition:enter="transition ease-out duration-200"

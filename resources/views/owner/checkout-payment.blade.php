@@ -36,17 +36,17 @@
             </div>
 
             {{-- Payment Card --}}
-            <div class="rounded-xl border border-bq-border bg-bq-surface p-6 space-y-5">
+            <div class="rounded-xl border border-bq-border bg-bq-surface p-4 sm:p-6 space-y-5">
 
                 {{-- Status Indicator --}}
-                <div class="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/80 p-4">
-                    <div class="flex items-center gap-3">
+                <div class="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-4">
+                    <div class="flex min-w-0 items-center gap-3">
                         <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 shrink-0">
                             <svg class="h-5 w-5 text-amber-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <p class="text-sm font-semibold text-amber-800">Menunggu Pembayaran</p>
-                            <p class="text-xs text-amber-700">Order ID: <span class="font-mono font-bold">{{ $payment->order_id }}</span></p>
+                            <p class="text-xs text-amber-700 break-all">Order ID: <span class="font-mono font-bold">{{ $payment->order_id }}</span></p>
                         </div>
                     </div>
                     <div class="hidden sm:flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
@@ -175,9 +175,9 @@
                 </div>
 
                 <div class="space-y-3">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-bq-text-muted">Order ID</span>
-                        <span class="font-mono text-xs font-bold text-bq-text">{{ $payment->order_id }}</span>
+                    <div class="flex justify-between gap-3 text-sm">
+                        <span class="shrink-0 text-bq-text-muted">Order ID</span>
+                        <span class="min-w-0 break-all text-right font-mono text-xs font-bold text-bq-text">{{ $payment->order_id }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-bq-text-muted">Paket</span>

@@ -97,7 +97,7 @@
                             <p class="text-xs text-bq-text-subtle">Langganan akan langsung ditautkan ke akun bisnis ini</p>
                         </div>
                     </div>
-                    <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    <span class="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                         Mitra Terdaftar
                     </span>
@@ -343,7 +343,7 @@
                             <span class="text-xs font-bold uppercase tracking-wider text-bq-text">Total Pembayaran</span>
                             <p class="text-[11px] text-bq-text-subtle">Sudah termasuk pajak &amp; biaya sistem</p>
                         </div>
-                        <span class="text-xl font-extrabold text-bq-primary">
+                        <span class="text-xl font-extrabold text-bq-primary whitespace-nowrap">
                             Rp {{ number_format($plan->hargabulanan + ($biayaPlatform ?? 0), 0, ',', '.') }}
                         </span>
                     </div>

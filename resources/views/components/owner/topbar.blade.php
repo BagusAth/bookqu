@@ -72,9 +72,9 @@
     }
 @endphp
 
-<header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[#e7e2f7] bg-white/85 px-4 sm:px-6 lg:px-8 backdrop-blur-md shadow-2xs">
+<header class="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b border-[#e7e2f7] bg-white/85 px-4 sm:px-6 lg:px-8 backdrop-blur-md shadow-2xs">
     {{-- Left: Mobile Toggle & Breadcrumb Navigation --}}
-    <div class="flex items-center gap-3">
+    <div class="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
             type="button"
             @click="sidebaropen = true"
@@ -89,7 +89,7 @@
 
         {{-- Dynamic Breadcrumb --}}
         <nav class="flex items-center gap-1 sm:gap-1.5 text-xs font-semibold text-[#6e6584] min-w-0" aria-label="Breadcrumb">
-            <a href="{{ route('owner.dashboard') }}" class="inline-flex items-center justify-center h-8 w-8 rounded-lg text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#382186] transition shrink-0" title="Dashboard">
+            <a href="{{ route('owner.dashboard') }}" class="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-lg text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#382186] transition shrink-0" title="Dashboard">
                 <svg class="h-3.5 w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
@@ -98,15 +98,15 @@
                 <span class="text-[#cbd5e1] hidden sm:inline">/</span>
                 <span class="hidden sm:inline-block text-[#6e6584] truncate">{{ $parentSection }}</span>
             @endif
-            <span class="text-[#cbd5e1]">/</span>
-            <span class="inline-flex items-center rounded-lg bg-[#f3effe] px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-bold text-[#382186] border border-[#b499ff]/30 shadow-2xs truncate">
+            <span class="text-[#cbd5e1] hidden sm:inline">/</span>
+            <span class="block min-w-0 rounded-lg bg-[#f3effe] px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-bold text-[#382186] border border-[#b499ff]/30 shadow-2xs truncate">
                 {{ $currentBreadcrumbLabel }}
             </span>
         </nav>
     </div>
 
     {{-- Right: Quick Action, View/Copy Public Link, Profile Dropdown --}}
-    <div class="flex items-center gap-1.5 sm:gap-3">
+    <div class="flex shrink-0 items-center gap-1.5 sm:gap-3">
         @if ($tenant && $tenant->slug)
             {{-- Unified Public Booking Page Action Group --}}
             <div class="inline-flex items-stretch rounded-xl border border-[#b499ff]/40 bg-[#f3effe] p-0.5 shadow-2xs">
@@ -143,7 +143,7 @@
                     <svg x-show="copied" x-cloak class="h-4 w-4 sm:h-3.5 sm:w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
-                    <span class="hidden lg:inline text-[11px]" x-text="copied ? 'Tersalin!' : 'Salin'"></span>
+                    <span class="hidden xl:inline text-[11px]" x-text="copied ? 'Tersalin!' : 'Salin'"></span>
                 </button>
             </div>
         @endif
@@ -151,7 +151,7 @@
         {{-- Business Status Chip --}}
         <a
             href="{{ route('owner.settings.business') }}"
-            class="hidden lg:inline-flex items-center gap-2 rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] px-3 py-1.5 hover:bg-[#e7e2f7]/60 hover:border-[#b499ff] transition-colors"
+            class="hidden xl:inline-flex items-center gap-2 rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] px-3 py-1.5 hover:bg-[#e7e2f7]/60 hover:border-[#b499ff] transition-colors"
             title="Kelola Pengaturan Bisnis"
         >
             <span class="relative flex h-2 w-2">
@@ -166,7 +166,7 @@
             <button
                 type="button"
                 @click="toggleDropdown()"
-                class="craft-btn group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-[#e7e2f7] bg-white text-[#6e6584] hover:border-[#b499ff] hover:bg-[#f8f6ff] hover:text-[#382186] hover:shadow-[0_4px_16px_rgba(56,33,134,0.08)] transition-all cursor-pointer active:scale-95"
+                class="craft-btn group relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl border border-[#e7e2f7] bg-white text-[#6e6584] hover:border-[#b499ff] hover:bg-[#f8f6ff] hover:text-[#382186] hover:shadow-[0_4px_16px_rgba(56,33,134,0.08)] transition-all cursor-pointer active:scale-95"
                 id="btn-owner-notifications"
                 aria-label="Lihat Notifikasi"
                 :aria-expanded="isOpen"
@@ -207,7 +207,7 @@
                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                 x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
                 x-cloak
-                class="absolute right-0 mt-2.5 w-[calc(100vw-2rem)] sm:w-[390px] max-w-sm origin-top-right rounded-3xl border border-[#e7e2f7] bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_-12px_rgba(35,26,61,0.18)] z-50 overflow-hidden divide-y divide-[#f2eefc]"
+                class="fixed inset-x-4 top-[4.5rem] sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2.5 sm:w-[390px] sm:max-w-sm origin-top-right rounded-3xl border border-[#e7e2f7] bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_-12px_rgba(35,26,61,0.18)] z-50 overflow-hidden divide-y divide-[#f2eefc]"
                 style="display: none;"
                 id="owner-notifications-dropdown"
             >
@@ -243,7 +243,7 @@
                 </div>
 
                 {{-- List of Notifications --}}
-                <div class="max-h-96 overflow-y-auto divide-y divide-[#f7f7fa]">
+                <div class="max-h-[min(24rem,calc(100dvh-15rem))] overflow-y-auto divide-y divide-[#f7f7fa]">
                     <template x-if="loading && notifications.length === 0">
                         <div class="p-8 text-center text-xs text-[#6e6584]">
                             <svg class="inline-block h-6 w-6 animate-spin text-[#382186] mb-2" fill="none" viewBox="0 0 24 24">
@@ -341,7 +341,7 @@
         </div>
 
         {{-- Interactive User Profile Dropdown --}}
-        <div class="relative pl-2 border-l border-[#e7e2f7]" x-data="{ userMenuOpen: false }">
+        <div class="relative pl-1.5 sm:pl-2 border-l border-[#e7e2f7]" x-data="{ userMenuOpen: false }">
             <button
                 type="button"
                 @click="userMenuOpen = !userMenuOpen"
@@ -353,7 +353,7 @@
                 <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#382186] to-[#231a3d] text-xs font-bold text-white shadow-2xs border border-[#b499ff]/30">
                     {{ strtoupper(substr(auth()->user()->namalengkap ?? 'O', 0, 1)) }}
                 </div>
-                <div class="hidden lg:block text-left leading-tight pr-1">
+                <div class="hidden xl:block text-left leading-tight pr-1">
                     <p class="text-xs font-extrabold text-[#231a3d] truncate max-w-[110px]">{{ auth()->user()->namalengkap ?? 'Owner' }}</p>
                     <p class="text-[10px] font-semibold text-[#6e6584]">Owner</p>
                 </div>

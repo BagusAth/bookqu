@@ -69,7 +69,7 @@
             <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari ulasan atau nama customer..." class="w-full rounded-xl border border-bq-border bg-bq-surface py-2.5 pl-10 pr-4 text-xs text-bq-text placeholder-bq-text-subtle transition focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
         </form>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             @foreach(['all' => 'Semua Rating', '5' => '5 Bintang', '4' => '4 Bintang', '3' => '3 Bintang', '2' => '2 Bintang', '1' => '1 Bintang'] as $val => $label)
                 <a href="{{ route('owner.reviews', ['rating' => $val, 'search' => $search]) }}"
                     class="rounded-xl px-3 py-1.5 text-xs font-semibold transition {{ $ratingFilter === $val ? 'bg-bq-primary text-white shadow-xs' : 'border border-bq-border bg-bq-surface text-bq-text-muted hover:bg-slate-50' }}">
@@ -95,12 +95,12 @@
                 
                 {{-- Card Top Row --}}
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-50 font-bold text-indigo-700 text-xs">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 font-bold text-indigo-700 text-xs">
                             <span>{{ strtoupper(substr($customerName, 0, 1)) }}</span>
                         </div>
-                        <div>
-                            <div class="flex items-center gap-2">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <h4 class="font-bold text-sm text-bq-text">{{ $customerName }}</h4>
                                 <span class="rounded bg-slate-100 text-slate-700 px-2 py-0.5 text-[10px] font-medium">{{ $serviceName }}</span>
                             </div>
@@ -126,7 +126,7 @@
                                 <span>{{ $rev->is_hidden ? 'Sembunyi' : 'Tampil Publik' }}</span>
                             </button>
                         </form>
-                        <button type="button" @click="openReply(@json($revPayload))" class="inline-flex items-center gap-1 rounded-xl bg-indigo-50 text-indigo-700 px-3 py-1 text-xs font-semibold hover:bg-indigo-100 transition" id="btn-reply-review-{{ $rev->id }}">
+                        <button type="button" @click="openReply(@js($revPayload))" class="inline-flex items-center gap-1 rounded-xl bg-indigo-50 text-indigo-700 px-3 py-1 text-xs font-semibold hover:bg-indigo-100 transition" id="btn-reply-review-{{ $rev->id }}">
                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                             <span>{{ $rev->balasan ? 'Edit Balasan' : 'Balas Ulasan' }}</span>
                         </button>
@@ -134,11 +134,11 @@
                 </div>
 
                 {{-- Review Text --}}
-                <p class="text-xs text-bq-text leading-relaxed pl-12">{{ $rev->komentar }}</p>
+                <p class="text-xs text-bq-text leading-relaxed break-words sm:pl-12">{{ $rev->komentar }}</p>
 
                 {{-- Owner Reply Box --}}
                 @if($rev->balasan)
-                    <div class="ml-12 rounded-xl bg-slate-50 border border-bq-border p-3.5 text-xs space-y-1">
+                    <div class="sm:ml-12 rounded-xl bg-slate-50 border border-bq-border p-3.5 text-xs space-y-1">
                         <div class="flex items-center gap-1.5 font-bold text-bq-primary text-[11px]">
                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                             <span>Balasan Anda:</span>
@@ -159,8 +159,8 @@
     </div>
 
     {{-- Reply Modal --}}
-    <div x-show="replyModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs" style="display: none;" x-cloak>
-        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-bq-border" @click.outside="replyModalOpen = false">
+    <div x-show="replyModalOpen" class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-slate-900/40 backdrop-blur-xs" style="display: none;" x-cloak>
+        <div class="my-auto w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-bq-border" @click.outside="replyModalOpen = false">
             <h3 class="text-base font-bold text-bq-text">Balas Ulasan Customer</h3>
             <p class="text-xs text-bq-text-muted mt-1" x-text="'Memberi tanggapan kepada ' + activeReview.customer"></p>
             <form method="POST" :action="`/owner/reviews/${activeReview.id}/reply`" class="mt-4 space-y-4" id="form-reply-review">

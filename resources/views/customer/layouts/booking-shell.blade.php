@@ -80,26 +80,26 @@
     <body class="booking-page min-h-screen flex flex-col bg-[#F8FAFC]">
         {{-- Clean, Focused Booking Header --}}
         <header class="no-print sticky top-0 z-40 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md shadow-xs">
-            <div class="booking-shell mx-auto flex w-full max-w-[1280px] items-center justify-between px-4 sm:px-6 py-3.5">
+            <div class="booking-shell mx-auto flex w-full max-w-[1280px] items-center justify-between gap-3 px-4 sm:px-6 py-3.5">
                 {{-- Business & Platform Identity --}}
-                <div class="flex items-center gap-3">
-                    <a href="{{ isset($tenant) && $tenant ? \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) : url('/') }}" class="flex items-center gap-2.5 transition hover:opacity-90">
+                <div class="flex min-w-0 items-center gap-3">
+                    <a href="{{ isset($tenant) && $tenant ? \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) : url('/') }}" class="flex min-w-0 items-center gap-2.5 transition hover:opacity-90">
                         @if(isset($tenant) && $tenant->logo_path)
-                            <img src="{{ Storage::url($tenant->logo_path) }}" alt="{{ $tenant->namabisnis }}" class="h-9 w-9 rounded-xl object-cover border border-[#E2E8F0] shadow-xs" />
+                            <img src="{{ Storage::url($tenant->logo_path) }}" alt="{{ $tenant->namabisnis }}" class="h-9 w-9 shrink-0 rounded-xl object-cover border border-[#E2E8F0] shadow-xs" />
                         @else
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4F46E5] text-white font-bold text-sm shadow-xs">
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#4F46E5] text-white font-bold text-sm shadow-xs">
                                 {{ strtoupper(substr($tenant->namabisnis ?? 'BQ', 0, 2)) }}
                             </div>
                         @endif
-                        <div class="flex flex-col">
-                            <span class="text-sm font-bold text-[#0F172A] leading-tight">{{ $tenant->namabisnis ?? 'BookQu' }}</span>
-                            <span class="text-[11px] font-medium text-[#64748B]">Reservasi Online Resmi</span>
+                        <div class="flex min-w-0 flex-col">
+                            <span class="truncate text-sm font-bold text-[#0F172A] leading-tight">{{ $tenant->namabisnis ?? 'BookQu' }}</span>
+                            <span class="truncate text-[11px] font-medium text-[#64748B]">Reservasi Online Resmi</span>
                         </div>
                     </a>
                 </div>
 
                 {{-- Contextual Back & Support Actions --}}
-                <div class="flex items-center gap-2 sm:gap-4">
+                <div class="flex shrink-0 items-center gap-2 sm:gap-4">
                     @hasSection('back_url')
                         <a href="@yield('back_url')" class="inline-flex items-center gap-1.5 rounded-xl border border-[#E2E8F0] bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-[#475569] shadow-2xs transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] hover:text-[#0F172A]">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
@@ -116,7 +116,7 @@
                            class="inline-flex items-center gap-1.5 rounded-xl border border-transparent px-3 py-1.5 text-xs sm:text-sm font-medium text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#0F172A]"
                            title="Butuh bantuan? Chat WhatsApp">
                             <svg class="h-4 w-4 text-[#10B981]" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.969.54 1.761.817 2.796.817 3.182 0 5.768-2.587 5.768-5.766.001-3.181-2.585-5.766-5.768-5.766zm0 10.42c-.93 0-1.636-.26-2.527-.79l-.18-.108-1.58.414.421-1.54-.118-.188c-.604-.962-.976-1.745-.976-2.61 0-2.678 2.181-4.857 4.86-4.857 2.677 0 4.857 2.18 4.857 4.858 0 2.677-2.18 4.857-4.857 4.857z"/>
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                             </svg>
                             <span class="hidden sm:inline">Bantuan</span>
                         </a>
@@ -177,7 +177,7 @@
         <footer class="mt-auto border-t border-[#E2E8F0] bg-white py-6 text-center text-xs text-[#64748B]">
             <div class="booking-shell mx-auto flex w-full max-w-[1280px] flex-col items-center justify-between gap-3 px-4 sm:flex-row sm:px-6">
                 <p>&copy; {{ date('Y') }} {{ $tenant->namabisnis ?? 'BookQu' }}. Hak cipta dilindungi.</p>
-                <div class="flex items-center gap-4 text-[#64748B]">
+                <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[#64748B] whitespace-nowrap">
                     <span class="inline-flex items-center gap-1.5 text-emerald-600 font-medium">
                         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />

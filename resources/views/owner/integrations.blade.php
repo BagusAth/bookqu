@@ -12,7 +12,7 @@
     ])
 
     {{-- ── Integration Cards Grid ── --}}
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         @foreach($integrations as $item)
             <div class="rounded-2xl border border-bq-border bg-bq-surface p-6 shadow-xs flex flex-col justify-between hover:border-bq-border-strong hover:shadow-md transition">
                 <div>

@@ -96,6 +96,11 @@ class Tenant extends Model
         return $this->hasMany(OwnerPayout::class, 'idtenant');
     }
 
+    public function payoutAccounts(): HasMany
+    {
+        return $this->hasMany(TenantPayoutAccount::class, 'idtenant');
+    }
+
     public function getLogoUrlAttribute(): ?string
     {
         if (empty($this->logo_path)) {

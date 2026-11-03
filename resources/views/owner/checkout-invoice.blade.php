@@ -52,31 +52,31 @@
             {{-- Invoice Card --}}
             <div class="rounded-xl border border-bq-border bg-bq-surface overflow-hidden" id="invoice-card">
                 {{-- Invoice Header --}}
-                <div class="bg-gradient-to-r from-bq-primary to-violet-600 px-6 py-5 text-white">
-                    <div class="flex items-center justify-between">
+                <div class="bg-gradient-to-r from-bq-primary to-violet-600 px-4 sm:px-6 py-5 text-white">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <p class="text-xs font-medium text-white/70 uppercase tracking-wider">Invoice</p>
                             <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-6 w-auto mt-1" />
                         </div>
-                        <div class="text-right">
+                        <div class="min-w-0 sm:text-right">
                             <p class="text-xs font-medium text-white/70 uppercase tracking-wider">Kode Booking</p>
-                            <p class="text-lg font-bold font-mono">{{ $payment->order_id }}</p>
+                            <p class="text-base sm:text-lg font-bold font-mono break-all">{{ $payment->order_id }}</p>
                         </div>
                     </div>
                 </div>
 
                 {{-- Invoice Body --}}
-                <div class="p-6 space-y-5">
+                <div class="p-4 sm:p-6 space-y-5">
 
                     {{-- Billing Info --}}
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="min-w-0">
                             <p class="text-xs font-medium text-bq-text-muted uppercase tracking-wider mb-1">Ditagihkan Kepada</p>
-                            <p class="text-sm font-semibold text-bq-text">{{ $payment->nama_pembayar }}</p>
-                            <p class="text-xs text-bq-text-muted">{{ $payment->email_pembayar }}</p>
+                            <p class="text-sm font-semibold text-bq-text break-words">{{ $payment->nama_pembayar }}</p>
+                            <p class="text-xs text-bq-text-muted break-all">{{ $payment->email_pembayar }}</p>
                             <p class="text-xs text-bq-text-muted">{{ $payment->hp_pembayar }}</p>
                         </div>
-                        <div class="text-right">
+                        <div class="sm:text-right">
                             <p class="text-xs font-medium text-bq-text-muted uppercase tracking-wider mb-1">Tanggal Pembayaran</p>
                             <p class="text-sm font-semibold text-bq-text">{{ $payment->updated_at->format('d M Y') }}</p>
                             <p class="text-xs text-bq-text-muted">{{ $payment->updated_at->format('H:i') }} WIB</p>
@@ -93,7 +93,7 @@
                     </div>
 
                     {{-- Item Table --}}
-                    <div class="rounded-lg border border-bq-border overflow-hidden">
+                    <div class="rounded-lg border border-bq-border overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="bg-bq-background">
@@ -107,19 +107,19 @@
                                         <p class="font-medium text-bq-text">Subscription Plan {{ ucfirst($plan->namapaket) }}</p>
                                         <p class="text-xs text-bq-text-muted">Durasi 1 bulan</p>
                                     </td>
-                                    <td class="px-4 py-3 text-right font-medium text-bq-text">Rp {{ number_format($plan->hargabulanan, 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-right font-medium text-bq-text whitespace-nowrap">Rp {{ number_format($plan->hargabulanan, 0, ',', '.') }}</td>
                                 </tr>
                                 @if($payment->jumlah > $plan->hargabulanan)
                                     <tr>
                                         <td class="px-4 py-3 text-bq-text-muted">Biaya Layanan Platform</td>
-                                        <td class="px-4 py-3 text-right text-bq-text-muted">Rp {{ number_format($payment->jumlah - $plan->hargabulanan, 0, ',', '.') }}</td>
+                                        <td class="px-4 py-3 text-right text-bq-text-muted whitespace-nowrap">Rp {{ number_format($payment->jumlah - $plan->hargabulanan, 0, ',', '.') }}</td>
                                     </tr>
                                 @endif
                             </tbody>
                             <tfoot>
                                 <tr class="bg-bq-background">
                                     <td class="px-4 py-3 font-bold text-bq-text">Total Pembayaran</td>
-                                    <td class="px-4 py-3 text-right text-lg font-bold text-bq-primary">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-right text-lg font-bold text-bq-primary whitespace-nowrap">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</td>
                                 </tr>
                             </tfoot>
                         </table>

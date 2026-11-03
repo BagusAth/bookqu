@@ -46,4 +46,32 @@ final class PayoutState
             default => ucfirst($status),
         };
     }
+
+    public static function ownerLabel(string $status): string
+    {
+        return match ($status) {
+            self::PENDING, self::APPROVED => 'Pending',
+            self::SUCCESS => 'Berhasil',
+            self::FAILED, self::REJECTED => 'Gagal',
+            default => ucfirst($status),
+        };
+    }
+
+    public static function ownerNote(string $status): ?string
+    {
+        return match ($status) {
+            self::APPROVED => 'Disetujui, transfer diproses',
+            default => null,
+        };
+    }
+
+    public static function ownerTone(string $status): string
+    {
+        return match ($status) {
+            self::PENDING, self::APPROVED => 'warning',
+            self::SUCCESS => 'success',
+            self::FAILED, self::REJECTED => 'danger',
+            default => 'neutral',
+        };
+    }
 }

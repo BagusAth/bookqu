@@ -2,7 +2,7 @@
 id: BQ-103
 title: Uncapped balance payout history and missing payout request double-submit protection
 type: bug-fix
-status: proposed
+status: done
 priority: P1
 phase: 8
 domain: balance-payout
@@ -78,4 +78,14 @@ Balance deduction and ledger integrity (`INV-TEN-01`, `FR-PAYOUT-001`, `FR-PAYOU
 
 ## Evidence (fill when done)
 
-_Fill in when done._
+- Migration `2026_11_03_000001_add_request_key_to_owner_payouts_table` applied with unique index `(idtenant, request_key)`.
+- `RequestOwnerPayout::execute(...)` checks for existing payout with the same `(idtenant, request_key)` under tenant row lock, returning it without re-deducting balance.
+- `RequestPayoutRequest` validates `request_key` as `required|uuid`.
+- `OwnerBalanceController@index` paginates history to 15 rows using `latest('requested_at')->paginate(15)->withQueryString()` and supplies fresh UUID `$requestKey`.
+- `resources/views/owner/balance.blade.php` embeds hidden `request_key` input, disables button on submit with Alpine `submitting` flag, displays "Riwayat Withdraw" header, and renders pagination links.
+- Feature tests in `tests/Feature/Payout/OwnerPayoutFlowTest.php`:
+  - `test_payout_history_is_paginated_to_15_records_per_page`: 16 records split across page 1 (15 rows) and page 2 (1 row).
+  - `test_payout_request_is_idempotent_with_same_request_key`: repeat POST with same UUID returns existing payout and debits balance once.
+  - `test_payout_requests_with_different_request_keys_create_distinct_payouts`: distinct UUIDs create distinct records and debit balance accordingly.
+  - `test_balance_view_renders_request_key_and_alpine_double_submit_protection`: verifies view elements.
+- All related test suites passing.

@@ -42,14 +42,14 @@
 
     {{-- ── Compact Metric Summary Bar (2 cols on mobile, 4 on desktop) ── --}}
     <div class="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-4">
-        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 shadow-2xs">
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3 sm:p-4 flex flex-col items-start gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:gap-2.5 sm:gap-3 shadow-2xs">
             <div class="flex h-8.5 w-8.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#b499ff]/20">
                 <svg class="h-4 sm:h-4.5 w-4 sm:w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-[10px] sm:text-[11px] font-bold text-bq-text-muted truncate">Total Slots</p>
+                <p class="text-[10px] sm:text-[11px] font-bold text-bq-text-muted leading-snug">Total Slots</p>
                 <div class="flex items-baseline gap-1 mt-0.5">
                     <span class="text-base sm:text-lg font-black text-bq-text">{{ $totalslot }}</span>
                     <span class="text-[9px] sm:text-[10px] font-semibold text-emerald-600 hidden xs:inline">Minggu ini</span>
@@ -57,14 +57,14 @@
             </div>
         </div>
 
-        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 shadow-2xs">
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3 sm:p-4 flex flex-col items-start gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:gap-2.5 sm:gap-3 shadow-2xs">
             <div class="flex h-8.5 w-8.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/50">
                 <svg class="h-4 sm:h-4.5 w-4 sm:w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-[10px] sm:text-[11px] font-bold text-bq-text-muted truncate">Rasio Terbooking</p>
+                <p class="text-[10px] sm:text-[11px] font-bold text-bq-text-muted leading-snug">Rasio Terbooking</p>
                 <div class="flex items-baseline gap-1 mt-0.5">
                     <span class="text-base sm:text-lg font-black text-bq-text">{{ $rasioterboking }}%</span>
                 </div>
@@ -74,19 +74,19 @@
             </div>
         </div>
 
-        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 shadow-2xs">
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3 sm:p-4 flex flex-col items-start gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:gap-2.5 sm:gap-3 shadow-2xs">
             <div class="flex h-8.5 w-8.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/50">
                 <svg class="h-4 sm:h-4.5 w-4 sm:w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-[10px] sm:text-[11px] font-bold text-bq-text-muted truncate">Est. Omzet</p>
-                <p class="text-xs sm:text-lg font-black text-bq-text truncate mt-0.5">Rp {{ number_format($estimasirevenue, 0, ',', '.') }}</p>
+                <p class="text-[10px] sm:text-[11px] font-bold text-bq-text-muted leading-snug">Est. Omzet</p>
+                <p class="text-sm sm:text-lg font-black text-bq-text leading-tight wrap-break-word mt-0.5">Rp {{ number_format($estimasirevenue, 0, ',', '.') }}</p>
             </div>
         </div>
 
-        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 shadow-2xs">
+        <div class="rounded-2xl border border-bq-border bg-bq-surface p-3 sm:p-4 flex flex-col items-start gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:gap-2.5 sm:gap-3 shadow-2xs">
             <div class="flex h-8.5 w-8.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600 border border-purple-200/50">
                 <span class="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -94,8 +94,8 @@
                 </span>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-[10px] sm:text-[11px] font-bold text-bq-text-muted truncate">Status Live</p>
-                <p class="text-[11px] sm:text-xs font-bold text-bq-text truncate mt-0.5">
+                <p class="text-[10px] sm:text-[11px] font-bold text-bq-text-muted leading-snug">Status Live</p>
+                <p class="text-[11px] sm:text-xs font-bold text-bq-text leading-snug mt-0.5">
                     @if ($bookingberikutnya)
                         {{ $bookingberikutnya->tanggalbooking->format('d M') }} &bull; {{ substr($bookingberikutnya->jam, 0, 5) }}
                     @else

@@ -53,7 +53,7 @@
      }">
     <form
         id="booking-checkout-form"
-        class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
+        class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_340px]"
         method="POST"
         action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.process-checkout', $tenant->slug) }}"
     >

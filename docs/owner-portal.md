@@ -228,7 +228,7 @@ Each contract is the acceptance criteria for its page. Fields: **Question** (the
 - **Actions:** request a payout (bank account per D-004), view proof.
 - **Not here:** gateway credentials or payment-method settings (removed), revenue charts (Laporan).
 - **Requirements:** FR-PAYOUT-001 to FR-PAYOUT-003, FR-PAYMENT-011.
-- **Open:** D-004, BQ-103.
+- **Open:** none (BQ-103, BQ-122, BQ-123, BQ-124, BQ-125 complete; ledger deferred).
 
 ### 6.10 Laporan (`/owner/analytics`)
 
