@@ -15,11 +15,11 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 
 ## Data
 
-`tenants.saldo_platform`; `payments.balance_credited_at`; `owner_payouts`: `idtenant`, amount, bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk), `processed_by`.
+`tenants.saldo_platform`; `payments.balance_credited_at`; `owner_payouts`: `idtenant`, amount, bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk), `processed_by`. `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
 
 ## Evidence
 
-`tests/Feature/Payout/OwnerPayoutFlowTest.php`, `tests/Feature/Actions/OwnerApplicationActionsTest.php`, `Owner/SettingsTest.php`.
+`tests/Feature/Payout/OwnerPayoutFlowTest.php`, `tests/Feature/Actions/OwnerApplicationActionsTest.php`, `tests/Feature/Owner/SettingsTest.php`, `tests/Feature/Owner/DeleteAccountWithOpenFundsTest.php`.
 
 ## Status
 

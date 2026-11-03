@@ -89,7 +89,7 @@ Setiap kali owner ingin mencairkan saldo hasil booking, owner harus mengetik ula
 
 *Kalau belum diputuskan:* sistem tetap menggunakan pengisian manual pada setiap pengajuan penarikan agar alur pencairan saldo tetap berjalan sederhana untuk rilis awal.
 
-*Jawaban Product Lead:* —
+*Jawaban Product Lead:* Draf: Disetujui berdasarkan langkah 3 dokumen Revisian ("Revisian BookQu — Alur Withdraw Balance Owner Bisnis", 19/10/2026: rekening tersimpan maksimal 3 per tenant, 1 rekening utama, konfirmasi password saat simpan/ubah/hapus, notifikasi email perubahan rekening). [Menunggu konfirmasi final Developer / Product Lead]
 
 ---
 

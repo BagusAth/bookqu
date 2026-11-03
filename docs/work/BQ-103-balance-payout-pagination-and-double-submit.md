@@ -18,6 +18,7 @@ depends-on: []
 # BQ-103: Uncapped balance payout history and missing payout request double-submit protection
 
 Found during the owner UI deep audit on 2026-11-02 in `OwnerBalanceController` and `/owner/balance`.
+Referenced product requirement: [Revisian BookQu — Alur Withdraw Balance Owner Bisnis (19/10/2026)](https://docs.google.com/document/d/1JfagfHkv2O0O0pboh6Zi05V6VF3EkU7fZqHZSrm36Xo/edit?tab=t.ufh8olyxuj8o).
 
 ## Problem
 
@@ -31,29 +32,44 @@ $payoutRequests = $tenant->payoutRequests()
 ```
 The view `resources/views/owner/balance.blade.php` displays "Riwayat Penarikan Saldo". Because the query is hard-capped at 10 rows with no pagination links, once an active business makes more than 10 payout requests, older payout records become permanently inaccessible in the UI. The owner cannot review historical settlements, disbursement references, or past audit trails.
 
-### 2. Missing Double-Submit Prevention on Payout Form (Money Operation)
+### 2. Missing Double-Submit Prevention and Server-Side Idempotency on Payout Form (Money Operation)
 In `resources/views/owner/balance.blade.php:40-57`:
 - The withdrawal form submits via standard POST to `route('owner.balance.payout')`.
 - The submission button ("Ajukan Penarikan") lacks Alpine `x-data` disabled state (`:disabled="submitting"`) or a loading spinner.
 - An owner on a mobile connection or slow network clicking the button multiple times can issue duplicate requests in rapid succession. Even with database transaction locking in `RequestOwnerPayout.php`, simultaneous submissions can trigger unhandled concurrency exceptions or multiple pending payout entries if validation passes before balance deduction.
+- Payout requests lack an idempotent request key. Network retries can cause double debiting if the server processes the same intent twice.
 
 ### 3. Bank Account Information Re-entry Burden (Product Decision D-004)
-Every single payout submission requires the owner to retype bank name, account number, and account holder name from scratch. There is no option to save or prefill default payout details from the tenant's profile, increasing operational friction and risk of typographical errors in payout destinations.
+Every single payout submission requires the owner to retype bank name, account number, and account holder name from scratch. There is no option to save or prefill default payout details from the tenant's profile, increasing operational friction and risk of typographical errors in payout destinations (handled comprehensively in follow-up BQ-123).
 
 ## Plan
 
-1. Paginate payout requests in `OwnerBalanceController.php` (e.g. `paginate(10)->withQueryString()`) and add pagination links in `balance.blade.php`.
-2. Add double-submit prevention to the payout request form (Alpine submit handler disabling the button and showing a processing indicator).
-3. Connect with Product Decision `D-004` regarding tenant payout bank account persistence.
+1. **Database Schema:**
+   - Migration `add_request_key_to_owner_payouts`: add `uuid('request_key')->nullable()` and unique composite index `(idtenant, request_key)` to `owner_payouts`.
+2. **Server-Side Idempotency in Action:**
+   - Update `RequestOwnerPayout::execute(...)` to accept `string $requestKey`.
+   - Inside the transaction under the tenant row lock: if an `OwnerPayout` with the same `(idtenant, request_key)` already exists, return that existing payout immediately without deducting balance again.
+   - Attach `$requestKey` to any newly created `OwnerPayout`.
+3. **Form Request Validation:**
+   - Update `RequestPayoutRequest` to require `request_key` with rules `required|uuid`.
+4. **Controller & Pagination:**
+   - In `OwnerBalanceController@index`: query `OwnerPayout::where('idtenant', $tenant->id)->latest('requested_at')->paginate(15)->withQueryString()`.
+   - Pass a fresh UUID `requestKey = (string) Str::uuid()` to the view.
+5. **Frontend Form & Table Polish (`resources/views/owner/balance.blade.php`):**
+   - Add hidden input `request_key` with value `old('request_key', $requestKey)`.
+   - Equip form with Alpine `x-data="{ submitting: false }"` and `@submit="submitting = true"`; bind button `:disabled="submitting"` with text indicator "Memproses…".
+   - Render pagination links below the history table.
+   - Update table title to "Riwayat Withdraw" (removing "Terbaru").
 
 ## Invariants at risk
 
-Balance deduction and ledger integrity (`INV-TEN-01`, `FR-PAYOUT-001`, `FR-PAYOUT-002`): payouts must never overdraft tenant balance or produce duplicate debits.
+Balance deduction and ledger integrity (`INV-TEN-01`, `FR-PAYOUT-001`, `FR-PAYOUT-002`): payouts must never overdraft tenant balance or produce duplicate debits upon concurrent or repeated submissions.
 
 ## Tests
 
-- Feature test: payout history is paginated and displays pagination navigation when more than 10 records exist.
-- Feature test: concurrent or rapid duplicate payout requests are cleanly rejected or handled idempotently without duplicate balance deductions.
+- Feature test: 16 payout requests result in page 2 containing exactly 1 row with working pagination links.
+- Feature test: two identical POST requests with the same `request_key` return the same payout record, and tenant balance is debited only once.
+- Feature test: POST requests with different `request_key` values produce distinct payout records (prior to BQ-124 `max_open` constraint).
 - UI check: submit button disables immediately on form submit.
 
 ## Docs to update
