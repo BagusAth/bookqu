@@ -27,7 +27,7 @@ Process provider events inside a transaction with the payment row locked; repeat
 `pending → sukses | gagal` only; expiry sets `gagal`, never a new status (INV-PAY-02). A late success for a `gagal` payment must be reconciled, not ignored (BQ-003).
 
 ## Refunds
-Create at most one `Refund` per payment and keep its status separate from payment and booking status (INV-PAY-06).
+Create at most one `Refund` per payment, only through the Payment lifecycle, and keep its status separate from payment and booking status (INV-PAY-06). A customer request is a `refund_requests` row decided by the owner (100%, 50%, reject); a business cancellation of a booking paid online is always a full refund (ADR-0020). Bank account details use encrypted casts and are never logged.
 
 ## Providers are unreliable
 Handle timeouts, retries, duplicate and partial responses explicitly. A provider failure must never leave payment or booking state ambiguous; log it with payment context and keep the state recoverable.

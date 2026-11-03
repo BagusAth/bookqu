@@ -15,6 +15,9 @@ Context: `docs/domains/subscription.md`.
 ## Entitlement in one place
 Decide feature access and limits only with `EntitlementRules` (backed by `PlanCapability`, `SubscriptionState`, `SubscriptionUsage`). Never compare plan names (`str_contains($plan->namapaket, 'pro')`) in controllers, views or providers (INV-SUB-01).
 
+## One plan capability list
+Plan features, limits and their user-facing text come from `config/plans.php` keyed by `EntitlementRules` feature names (ADR-0021); plan comparisons and the landing page render from it.
+
 ## Gate routes with the middleware
 Feature-gated routes use `subscription:<feature>`; the middleware must deny when no tenant or subscription is found.
 

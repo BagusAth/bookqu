@@ -17,7 +17,7 @@ This section is the BookQu part of this file. Everything after it is the Laravel
 | Question | Source |
 |---|---|
 | What is BookQu, which features are released (Tier 1/2/3)? | `docs/product.md` |
-| Which owner pages exist, what each contains, where a feature belongs? (draft until D-007) | `docs/owner-portal.md` |
+| Which owner pages exist, what each contains, who may use them, where a feature belongs? (approved, D-007) | `docs/owner-portal.md` |
 | What must the system do? (`FR-*`, `BR-*`, `NFR-*`) | `docs/requirements.md` |
 | How must code be structured? | `docs/architecture.md` |
 | How does a domain work today, which invariants (`INV-*`), which tests prove it? | `docs/domains/*.md` |
@@ -32,17 +32,17 @@ This section is the BookQu part of this file. Everything after it is the Laravel
 
 1. **Tenant isolation.** No tenant may read or change another tenant's data (INV-TEN-01). Tenant context comes only from `TenantMiddleware`/`TenantContext`; never trust a tenant id from the request.
 2. **User-supplied identifiers are untrusted.** Check existence, ownership, tenant and eligibility for every id, `order_id` and `booking_code`. A public identifier alone never grants access — require a customer access grant (ADR-0006).
-3. **Authorization is server-side.** A hidden menu, disabled button or Alpine state is not authorization.
-4. **Booking states** are `pending`, `paid`, `cancelled`, `completed`; change them only through `BookingState::canTransition` (INV-BOOK-01/02).
-5. **One occupancy rule.** "Slot occupied" and the pending hold (payment deadline + settlement margin, ADR-0009) live only in `App\Domain\Booking\BookingRules`; never re-implement them (INV-BOOK-03).
-6. **No double booking.** Booking writes lock schedules in a transaction, evict stale pending first, and rely on the `unique_active_booking_slot` index (INV-BOOK-04/05).
+3. **Authorization is server-side.** A hidden menu, disabled button or Alpine state is not authorization. Team roles (Pemilik, Manajer, Kasir) are decided only by `TenantPermission` (ADR-0016, once implemented); never compare role names elsewhere.
+4. **Booking states** are `pending`, `paid`, `cancelled`, `completed`, plus `no_show` once ADR-0018 is implemented; change them only through `BookingState::canTransition` (INV-BOOK-01/02).
+5. **One occupancy rule.** "Slot occupied", "slot full" (capacity), unit conflicts (ADR-0017) and the pending hold (payment deadline + settlement margin, ADR-0009) live only in `App\Domain\Booking\BookingRules`; never re-implement them (INV-BOOK-03).
+6. **No double booking.** Booking writes lock the tenant and schedules in a transaction, evict stale pending first, and rely on the `unique_active_booking_slot` index, which ADR-0017 replaces with the seat index on `booking_seats` (INV-BOOK-04/05).
 7. **Payment is separate from booking.** Payment states are `pending`, `sukses`, `gagal`. Success comes only from a verified webhook or a server-side status query; repeated events must be idempotent (INV-PAY-*).
 8. **Provider code stays behind** `PaymentGatewayInterface` / `PaymentGatewayManager`.
 9. **Entitlement** (features, limits) is decided only by `EntitlementRules` (INV-SUB-01).
 10. **Thin controllers.** Validate → call an Action → respond. Business rules live in `app/Domain`, operations in `app/Actions`.
 11. **Blade and JavaScript are presentation only** — no queries, no business decisions.
 12. **Never show internal errors** to users; never log passwords, secrets or tokens.
-13. **Release tiers.** Do not unhide Tier 3 modules or remove Tier 2 locks without Product Lead and Tech Lead approval (ADR-0002, ADR-0011, `config/modules.php`, `OwnerSidebarNavigationTest`).
+13. **Release tiers.** Do not unhide Tier 3 modules or remove Tier 2 locks without Product Lead and Tech Lead approval (ADR-0002, ADR-0011, `config/modules.php`, `OwnerSidebarNavigationTest`). Production is released only after the owner portal redesign is complete (D-018); its module, plan and role gates follow ADR-0021.
 14. **A failing test is evidence.** Never edit a test just to make it pass.
 15. **Smallest coherent change; no scope creep.** Record unrelated findings as a new work item. Security and data integrity beat a small diff.
 16. **Existing code is evidence, not the standard.** Follow `docs/architecture.md`; do not copy known anti-patterns (see each domain's "Known gaps").

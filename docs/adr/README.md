@@ -21,5 +21,12 @@ Why significant architectural decisions were made. Write one with `_TEMPLATE.md`
 | [ADR-0013](ADR-0013-background-work-on-shared-hosting.md) | Background work on shared hosting | Accepted | 2026-10-30 |
 | [ADR-0014](ADR-0014-testing-strategy.md) | Testing strategy | Accepted | 2026-10-30 |
 | [ADR-0015](ADR-0015-environments-and-release.md) | Environments, deployment and release | Accepted | 2026-10-30 |
+| [ADR-0016](ADR-0016-team-accounts-and-role-permissions.md) | Team accounts and role permissions | Accepted | 2026-11-04 |
+| [ADR-0017](ADR-0017-capacity-and-units-in-occupancy.md) | Capacity and units in slot occupancy | Accepted | 2026-11-04 |
+| [ADR-0018](ADR-0018-no-show-booking-state.md) | No-show booking state | Accepted | 2026-11-04 |
+| [ADR-0019](ADR-0019-checkout-pricing-promos-and-add-ons.md) | Checkout pricing with promos, add-ons and a frozen amount | Accepted | 2026-11-04 |
+| [ADR-0020](ADR-0020-refund-requests-and-processing.md) | Refund requests, owner decisions and admin processing | Accepted | 2026-11-04 |
+| [ADR-0021](ADR-0021-release-gating-after-the-owner-portal-redesign.md) | Release, plan and role gating after the owner portal redesign | Accepted | 2026-11-04 |
+| [ADR-0022](ADR-0022-owner-integrations-api-and-webhooks.md) | Owner integrations, public API and outbound webhooks | Accepted | 2026-11-04 |
 
-Phase 2 package (BQ-028) complete at ADR-0015; new records are numbered from ADR-0016.
+Phase 2 package (BQ-028) complete at ADR-0015. ADR-0016 to ADR-0022 come from the owner portal redesign (BQ-126 phase 6), accepted by the Tech Lead on 2026-11-04 (gate G3).

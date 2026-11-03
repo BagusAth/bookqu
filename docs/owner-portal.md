@@ -2,7 +2,7 @@
 
 What each owner page is for, what it contains, who may use it, and which plan unlocks it. `product.md` says which capabilities BookQu offers; `requirements.md` says how they must behave; this document arranges them into pages so that no two pages do the same job. Each page contract (§8) is the acceptance criteria for the owner UI work that builds it.
 
-> **Status: Draft for approval (2026-11-04).** Written in BQ-126 phase 3 from the owner portal redesign approved by the Product Lead on 2026-11-04 (`docs/work/BQ-126/rancangan-ulang-portal-owner.md`), the feature inventory (`docs/work/BQ-126/inventaris-fitur.md`) and the decisions in `product-decisions.md`. It becomes authoritative when the Product Lead approves D-007 Revisi 1 (gate G2 of BQ-126). Decisions D-001 to D-006 and D-009 to D-021 are approved; D-007 Revisi 1 (this page map) waits for the Product Lead.
+> **Status: Approved (2026-11-04).** Written in BQ-126 phase 3 from the owner portal redesign approved by the Product Lead (`docs/work/BQ-126/rancangan-ulang-portal-owner.md`), the feature inventory (`docs/work/BQ-126/inventaris-fitur.md`) and the decisions in `product-decisions.md`; the page map was approved as D-007 Revisi 1. The page contracts in §8 are the acceptance criteria for owner UI work, and `.ai/rules/frontend.md` points owner views here.
 
 ## 1. How to use this document
 
