@@ -16,6 +16,7 @@ use App\Http\Requests\Tenant\UpdateBusinessProfileRequest;
 use App\Http\Requests\Tenant\UpdatePaymentSettingsRequest;
 use App\Models\OwnerPayout;
 use App\Models\Tenant;
+use App\Policies\TenantResourcePolicy;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,15 +42,20 @@ class OwnerSettingController extends Controller
             }
         }
 
+        $policy = app(TenantResourcePolicy::class);
+        $canManageBusiness = $user !== null && $policy->ability($user, 'settings.manage');
+        $canManagePayments = $user !== null && $policy->ability($user, 'payouts.manage');
+        $canDeleteBusiness = $user !== null && $policy->ability($user, 'business.delete');
+        $accountUser = $user;
         $payouts = collect();
-        if ($tenant->id) {
+        if ($tenant->id && $canManagePayments) {
             $payouts = OwnerPayout::where('idtenant', $tenant->id)
                 ->orderByDesc('requested_at')
                 ->limit(10)
                 ->get();
         }
 
-        return view('owner.settings', compact('tenant', 'payouts'));
+        return view('owner.settings', compact('tenant', 'payouts', 'accountUser', 'canManageBusiness', 'canDeleteBusiness'));
     }
 
     /**

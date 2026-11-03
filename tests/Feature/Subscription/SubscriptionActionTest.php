@@ -26,15 +26,15 @@ class SubscriptionActionTest extends TestCase
     {
         $owner = User::factory()->create(['role' => 'owner']);
         $tenant = Tenant::create([
-            'iduser'      => $owner->id,
-            'namabisnis'  => 'New Trial Spa',
-            'slug'        => 'new-trial-spa',
+            'iduser' => $owner->id,
+            'namabisnis' => 'New Trial Spa',
+            'slug' => 'new-trial-spa',
             'jenisbisnis' => 'Spa',
-            'alamat'      => 'Jl. Spa No. 1',
-            'nomorhp'     => '0811111111',
+            'alamat' => 'Jl. Spa No. 1',
+            'nomorhp' => '0811111111',
         ]);
 
-        $action = new CreateTrialSubscription();
+        $action = new CreateTrialSubscription;
         $subscription = $action->execute($tenant, 7);
 
         $this->assertEquals(SubscriptionState::STATUS_TRIAL, $subscription->status);
@@ -47,34 +47,34 @@ class SubscriptionActionTest extends TestCase
     {
         $owner = User::factory()->create(['role' => 'owner']);
         $tenant = Tenant::create([
-            'iduser'      => $owner->id,
-            'namabisnis'  => 'Salon Pro',
-            'slug'        => 'salon-pro',
+            'iduser' => $owner->id,
+            'namabisnis' => 'Salon Pro',
+            'slug' => 'salon-pro',
             'jenisbisnis' => 'Salon',
-            'alamat'      => 'Jl. Salon 2',
-            'nomorhp'     => '0822222222',
+            'alamat' => 'Jl. Salon 2',
+            'nomorhp' => '0822222222',
         ]);
 
         $plan = Plan::create([
-            'namapaket'    => 'pro',
+            'namapaket' => 'pro',
             'hargabulanan' => 499000,
-            'maxlayanan'   => 0,
-            'maxbooking'   => 0,
-            'isunlimited'  => true,
+            'maxlayanan' => 0,
+            'maxbooking' => 0,
+            'isunlimited' => true,
         ]);
 
         $payment = Payment::create([
-            'idtenant'   => $tenant->id,
-            'idplan'     => $plan->id,
-            'tipe'       => 'subscription',
-            'jumlah'     => 499000,
-            'status'     => 'sukses',
-            'metode'     => 'bank_transfer',
-            'order_id'   => 'BQ-20260926-9999',
+            'idtenant' => $tenant->id,
+            'idplan' => $plan->id,
+            'tipe' => 'subscription',
+            'jumlah' => 499000,
+            'status' => 'sukses',
+            'metode' => 'bank_transfer',
+            'order_id' => 'BQ-20260926-9999',
             'expired_at' => now()->addHour(),
         ]);
 
-        $action = new ActivateSubscription();
+        $action = new ActivateSubscription;
 
         // First execution
         $sub1 = $action->execute($payment);
@@ -93,29 +93,29 @@ class SubscriptionActionTest extends TestCase
     {
         $owner = User::factory()->create(['role' => 'owner']);
         $tenant = Tenant::create([
-            'iduser'      => $owner->id,
-            'namabisnis'  => 'Barber Small',
-            'slug'        => 'barber-small',
+            'iduser' => $owner->id,
+            'namabisnis' => 'Barber Small',
+            'slug' => 'barber-small',
             'jenisbisnis' => 'Barbershop',
-            'alamat'      => 'Jl. Barber 3',
-            'nomorhp'     => '0833333333',
+            'alamat' => 'Jl. Barber 3',
+            'nomorhp' => '0833333333',
         ]);
 
         $plan = Plan::create([
-            'namapaket'    => 'small',
+            'namapaket' => 'small',
             'hargabulanan' => 149000,
-            'maxlayanan'   => 5,
-            'maxbooking'   => 300,
-            'isunlimited'  => false,
+            'maxlayanan' => 5,
+            'maxbooking' => 300,
+            'isunlimited' => false,
         ]);
 
         Subscription::create([
             'idtenant' => $tenant->id,
-            'idplan'   => $plan->id,
-            'status'   => 'active',
+            'idplan' => $plan->id,
+            'status' => 'active',
         ]);
 
-        $action = new GetSubscriptionOverview();
+        $action = new GetSubscriptionOverview;
         $overview = $action->execute($tenant);
 
         $this->assertNotNull($overview['langgananaktif']);
@@ -129,27 +129,27 @@ class SubscriptionActionTest extends TestCase
     {
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
-            'iduser'      => $owner->id,
-            'namabisnis'  => 'Expired Trial Clinic',
-            'slug'        => 'expired-trial-clinic',
+            'iduser' => $owner->id,
+            'namabisnis' => 'Expired Trial Clinic',
+            'slug' => 'expired-trial-clinic',
             'jenisbisnis' => 'Clinic',
-            'alamat'      => 'Jl. Sehat 4',
-            'nomorhp'     => '0844444444',
+            'alamat' => 'Jl. Sehat 4',
+            'nomorhp' => '0844444444',
         ]);
 
         $plan = Plan::create([
-            'namapaket'    => 'pro',
+            'namapaket' => 'pro',
             'hargabulanan' => 499000,
-            'maxlayanan'   => 0,
-            'maxbooking'   => 0,
-            'isunlimited'  => true,
+            'maxlayanan' => 0,
+            'maxbooking' => 0,
+            'isunlimited' => true,
         ]);
 
         // Trial whose end date is in the past, even if status still says 'trial'
         Subscription::create([
-            'idtenant'       => $tenant->id,
-            'idplan'         => $plan->id,
-            'status'         => 'trial',
+            'idtenant' => $tenant->id,
+            'idplan' => $plan->id,
+            'status' => 'trial',
             'trial_berakhir' => Carbon::now()->subHour(),
         ]);
 
@@ -165,48 +165,48 @@ class SubscriptionActionTest extends TestCase
     {
         $ownerA = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenantA = Tenant::create([
-            'iduser'      => $ownerA->id,
-            'namabisnis'  => 'Tenant A',
-            'slug'        => 'tenant-a',
+            'iduser' => $ownerA->id,
+            'namabisnis' => 'Tenant A',
+            'slug' => 'tenant-a',
             'jenisbisnis' => 'Business A',
-            'alamat'      => 'Jl. A',
-            'nomorhp'     => '0855555555',
+            'alamat' => 'Jl. A',
+            'nomorhp' => '0855555555',
         ]);
 
         $ownerB = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenantB = Tenant::create([
-            'iduser'      => $ownerB->id,
-            'namabisnis'  => 'Tenant B',
-            'slug'        => 'tenant-b',
+            'iduser' => $ownerB->id,
+            'namabisnis' => 'Tenant B',
+            'slug' => 'tenant-b',
             'jenisbisnis' => 'Business B',
-            'alamat'      => 'Jl. B',
-            'nomorhp'     => '0866666666',
+            'alamat' => 'Jl. B',
+            'nomorhp' => '0866666666',
         ]);
 
         $plan = Plan::create([
-            'namapaket'    => 'pro',
+            'namapaket' => 'pro',
             'hargabulanan' => 499000,
-            'maxlayanan'   => 0,
-            'maxbooking'   => 0,
-            'isunlimited'  => true,
+            'maxlayanan' => 0,
+            'maxbooking' => 0,
+            'isunlimited' => true,
         ]);
 
         $paymentB = Payment::create([
-            'idtenant'   => $tenantB->id,
-            'idplan'     => $plan->id,
-            'tipe'       => 'subscription',
-            'jumlah'     => 499000,
-            'status'     => 'pending',
-            'metode'     => 'midtrans',
-            'order_id'   => 'BQ-20260926-0002',
+            'idtenant' => $tenantB->id,
+            'idplan' => $plan->id,
+            'tipe' => 'subscription',
+            'jumlah' => 499000,
+            'status' => 'pending',
+            'metode' => 'midtrans',
+            'order_id' => 'BQ-20260926-0002',
             'expired_at' => now()->addHour(),
         ]);
 
-        // Owner A tries to access Owner B's payment
+        // ADR-0010/0016: a foreign payment is hidden as 404 rather than confirming existence with 403.
         $response = $this->actingAs($ownerA)
             ->withSession(['current_tenant_id' => $tenantA->id])
             ->get(route('owner.checkout.payment', $paymentB));
 
-        $response->assertStatus(403);
+        $response->assertStatus(404);
     }
 }

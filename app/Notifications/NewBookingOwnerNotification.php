@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Actions\Team\FilterRevenueFigures;
+use App\Actions\Team\TeamNotificationAccess;
 use App\Models\Booking;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
@@ -47,6 +49,10 @@ class NewBookingOwnerNotification extends Notification implements ShouldQueue
         $nominal = $payment?->jumlah ?? ($layanan?->harga ?? 0);
         $harga = $nominal > 0 ? 'Rp '.number_format($nominal, 0, ',', '.') : 'Gratis (Free)';
 
+        if (! app(TeamNotificationAccess::class)->maySeeRevenue($notifiable)) {
+            $harga = 'Tidak ditampilkan';
+        }
+
         $dashboardUrl = url('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan));
 
         $mail = (new MailMessage)
@@ -83,7 +89,7 @@ class NewBookingOwnerNotification extends Notification implements ShouldQueue
         $nominal = $payment?->jumlah ?? ($layanan?->harga ?? 0);
         $harga = $nominal > 0 ? 'Rp '.number_format($nominal, 0, ',', '.') : 'Gratis';
 
-        return [
+        $data = [
             'event_type' => 'new_booking',
             'title' => 'Booking Baru Masuk',
             'message' => "{$booking->namapelanggan} memesan {$namaLayanan} untuk {$tanggal} pukul {$booking->jam}",
@@ -101,5 +107,7 @@ class NewBookingOwnerNotification extends Notification implements ShouldQueue
             'icon' => 'calendar-plus',
             'url' => url('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan)),
         ];
+
+        return app(TeamNotificationAccess::class)->maySeeRevenue($notifiable) ? $data : app(FilterRevenueFigures::class)->execute($data);
     }
 }

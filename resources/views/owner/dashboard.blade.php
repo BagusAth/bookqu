@@ -72,6 +72,7 @@
             'idPrefix' => 'stat-booking',
         ])
 
+        @if ($canViewRevenue ?? true)
         @include('components.owner.stat-card', [
             'ikon' => 'revenue',
             'label' => 'Total Revenue',
@@ -80,6 +81,7 @@
             'tipeperubahan' => $persenperubahanrevenue > 0 ? 'naik' : ($persenperubahanrevenue < 0 ? 'turun' : 'stabil'),
             'idPrefix' => 'stat-revenue',
         ])
+        @endif
 
         {{-- Customers Card --}}
         <div class="group rounded-xl border border-bq-border bg-bq-surface p-3.5 sm:p-5 shadow-xs transition-all duration-300 hover:border-bq-border-strong hover:shadow-md" id="stat-customers">
@@ -112,6 +114,7 @@
         ])
     </div>
 
+    @if ($canViewRevenue ?? true)
     {{-- ── Revenue Chart & Daily Trends ── --}}
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {{-- Revenue Growth Chart --}}
@@ -198,6 +201,7 @@
         </div>
     </div>
 
+    @endif
     {{-- ── Recent Activity & Upcoming Bookings Grid ── --}}
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {{-- Recent Bookings --}}
@@ -354,12 +358,12 @@
     window.revenueChartData = {
         monthly: {
             labels: @json($labelbulan),
-            data: @json($datarevenueperbulan),
+            data: @json($datarevenueperbulan ?? []),
             subtitle: 'Monthly earnings overview'
         },
         weekly: {
             labels: @json($labelminggu),
-            data: @json($datarevenueperminggu),
+            data: @json($datarevenueperminggu ?? []),
             subtitle: 'Last 7 days daily earnings'
         }
     };

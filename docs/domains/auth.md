@@ -34,3 +34,5 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Nee
 | Changing email or password needs no current password; email change keeps verification; other sessions stay logged in | BQ-098 |
 | Audit P0: dead "forgot password" link, redirect loop, logout without CSRF handling on verify notice (status unknown since `ab24193`) | BQ-040 … BQ-042 |
 | Owner registration not wrapped in DB transaction, and silent asynchronous CSRF 419 session expiration | BQ-112 |
+
+BQ-131: platform owner role is distinct from the tenant role. TenantPermission owns the Pemilik/Manajer/Kasir map; permission middleware and policies enforce it server-side. Own account fields refer to the signed-in member, not the business owner. Cashier dashboard/customer responses omit revenue/spending, and notification delivery/feed/counts are role-filtered. Existing admin/customer authorization mechanisms are unchanged.

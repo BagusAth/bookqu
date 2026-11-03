@@ -9,7 +9,7 @@
     $endsAt = $isTrial ? $subscription?->trial_berakhir : $subscription?->langganan_berakhir;
     $daysLeft = $endsAt ? max(0, (int) now()->diffInDays($endsAt, false)) : 0;
 
-    $unreadNotifCount = auth()->user()?->unreadNotifications()->count() ?? 0;
+    $unreadNotifCount = $visibleUnreadCount ?? 0;
 
     $isActive = function ($href, $routeNames = []) use ($halamanaktif, $currentRoute) {
         if ($currentRoute && in_array($currentRoute, (array)$routeNames, true)) {

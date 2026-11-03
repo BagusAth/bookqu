@@ -6,7 +6,7 @@
 <div class="mx-auto max-w-4xl space-y-6" x-data="{
     deleteModalOpen: {{ $errors->has('confirm_account') ? 'true' : 'false' }},
     confirmInput: '',
-    targetAccount: @js(strtolower(trim($tenant?->user?->email ?? auth()->user()?->email ?? ''))),
+    targetAccount: @js(strtolower(trim($accountUser?->email ?? ''))),
     targetBusiness: @js(strtolower(trim($tenant?->namabisnis ?? '')))
 }">
 
@@ -48,6 +48,7 @@
         'subjudul' => 'Manage your business profile, account credentials, and preferences.',
     ])
 
+    @if ($canManageBusiness)
     {{-- ── 1. Business Profile ── --}}
     <div class="rounded-2xl border border-bq-border bg-bq-surface shadow-2xs" id="business-profile">
         <div class="border-b border-bq-border px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
@@ -107,6 +108,7 @@
         </form>
     </div>
 
+    @endif
     {{-- ── 2. Account Settings ── --}}
     <div class="rounded-2xl border border-bq-border bg-bq-surface shadow-2xs" id="account-settings" x-data="{ showPass: false, showConfirm: false }">
         <div class="border-b border-bq-border px-4 sm:px-6 py-4">
@@ -118,23 +120,23 @@
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
                     <label class="mb-1.5 block text-xs font-bold text-bq-text">Full Name <span class="text-rose-500">*</span></label>
-                    <input type="text" name="namalengkap" required value="{{ old('namalengkap', $tenant->user->namalengkap ?? '') }}" class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-namalengkap">
+                    <input type="text" name="namalengkap" required value="{{ old('namalengkap', $accountUser?->namalengkap ?? '') }}" class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-namalengkap">
                 </div>
                 <div>
                     <label class="mb-1.5 block text-xs font-bold text-bq-text">Email <span class="text-rose-500">*</span></label>
-                    <input type="email" name="email" required value="{{ old('email', $tenant->user->email ?? '') }}" class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-email">
+                    <input type="email" name="email" required value="{{ old('email', $accountUser?->email ?? '') }}" class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-email">
                 </div>
             </div>
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
                     <label class="mb-1.5 block text-xs font-bold text-bq-text">Phone Number <span class="text-rose-500">*</span></label>
-                    <input type="text" name="nomorhp" required value="{{ old('nomorhp', $tenant->user->nomorhp ?? '') }}" class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-account-nomorhp">
+                    <input type="text" name="nomorhp" required value="{{ old('nomorhp', $accountUser?->nomorhp ?? '') }}" class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-account-nomorhp">
                 </div>
                 <div>
                     <label class="mb-1.5 block text-xs font-bold text-bq-text">Role</label>
                     <div class="flex items-center rounded-xl border border-bq-border bg-slate-50 px-4 py-2.5">
                         <span class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-bold text-[#4F46E5] uppercase">
-                            {{ $tenant->user->role ?? 'owner' }}
+                            {{ $accountUser?->role ?? 'owner' }}
                         </span>
                         <span class="ml-2 text-[11px] text-bq-text-muted">(Akun Pemilik Bisnis)</span>
                     </div>
@@ -167,6 +169,7 @@
             </div>
         </form>
     </div>
+    @if ($canManageBusiness)
     {{-- ── 3. Notification Preferences ── --}}
     <div class="rounded-2xl border border-bq-border bg-bq-surface shadow-2xs"
          x-data="{
@@ -220,6 +223,8 @@
         </div>
     </div>
 
+    @endif
+    @if ($canDeleteBusiness)
     {{-- ── 6. Danger Zone ── --}}
     <div class="rounded-2xl border border-rose-200 bg-rose-50/40 shadow-2xs" id="danger-zone">
         <div class="px-4 sm:px-6 py-4">
@@ -299,7 +304,7 @@
                             Ketikkan email akun Anda untuk konfirmasi:
                         </label>
                         <div class="select-all font-mono text-xs font-bold text-rose-700 bg-white border border-rose-200 px-3 py-1.5 rounded-lg text-center mb-2.5">
-                            {{ $tenant?->user?->email ?? auth()->user()?->email }}
+                            {{ $accountUser?->email }}
                         </div>
                         <input
                             type="text"
@@ -344,6 +349,7 @@
             </div>
         </div>
     </div>
+    @endif
 
 </div>
 @endsection

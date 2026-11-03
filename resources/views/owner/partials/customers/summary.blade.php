@@ -12,7 +12,7 @@
     <div class="rounded-2xl border border-bq-border bg-bq-surface p-5 shadow-xs flex items-center justify-between">
         <div>
             <p class="text-xs font-semibold text-bq-text-muted">Total Customer Spending</p>
-            <p class="text-2xl font-bold text-emerald-600 mt-1">Rp {{ number_format($totalSpentAll, 0, ',', '.') }}</p>
+            <p class="text-2xl font-bold text-emerald-600 mt-1">@if ($canViewRevenue ?? true) Rp {{ number_format($totalSpentAll, 0, ',', '.') }} @else — @endif</p>
             <p class="text-[10px] text-bq-text-muted mt-0.5">Dari pembayaran sukses</p>
         </div>
         <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
