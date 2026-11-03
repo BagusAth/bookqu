@@ -9,7 +9,10 @@ use App\Models\OwnerPayout;
 use App\Models\Tenant;
 use App\Models\TenantPayoutAccount;
 use App\Models\User;
+use App\Notifications\NewPayoutRequestNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 class RequestOwnerPayout
@@ -112,7 +115,7 @@ class RequestOwnerPayout
             $lockedTenant->saldo_platform = round($balance - $intAmount, 2);
             $lockedTenant->save();
 
-            return OwnerPayout::create([
+            $payout = OwnerPayout::create([
                 'idtenant' => $lockedTenant->id,
                 'request_key' => $requestKey,
                 'payout_account_id' => $lockedAccount->id,
@@ -124,6 +127,20 @@ class RequestOwnerPayout
                 'status' => 'pending',
                 'requested_at' => now(),
             ]);
+
+            DB::afterCommit(function () use ($payout, $lockedTenant): void {
+                try {
+                    $admins = User::where('role', 'admin')->get();
+                    Notification::send($admins, new NewPayoutRequestNotification($payout, $lockedTenant->namabisnis));
+                } catch (\Throwable $e) {
+                    Log::warning('RequestOwnerPayout: admin notification failed', [
+                        'exception_type' => $e::class,
+                        'payout_id' => $payout->id,
+                    ]);
+                }
+            });
+
+            return $payout;
         });
     }
 }

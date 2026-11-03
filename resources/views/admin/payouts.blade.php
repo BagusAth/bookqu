@@ -50,8 +50,14 @@
                     <div class="rounded-xl bg-white border border-slate-200 p-5 shadow-sm">
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div class="space-y-1 text-sm">
-                                <p class="font-bold text-slate-900">{{ $payout->tenant?->namabisnis ?? 'Tenant #'.$payout->idtenant }}</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="font-bold text-slate-900">{{ $payout->tenant?->namabisnis ?? 'Tenant #'.$payout->idtenant }}</p>
+                                    @if ($payout->tenant?->user?->email)
+                                        <span class="text-xs text-slate-500 font-normal">({{ $payout->tenant->user->email }})</span>
+                                    @endif
+                                </div>
                                 <p class="text-xl font-extrabold text-[#4F46E5]">Rp {{ number_format((float) $payout->jumlah, 0, ',', '.') }}</p>
+                                <p class="text-xs text-slate-500">Saldo tenant saat ini: <span class="font-semibold text-slate-700">Rp {{ number_format((float) ($payout->tenant?->saldo_platform ?? 0), 0, ',', '.') }}</span></p>
                                 <p class="text-slate-600">
                                     {{ $payout->bank_nama ?? '-' }} · {{ $payout->nomor_rekening ?? '-' }} · a.n. {{ $payout->nama_pemilik_rekening ?? '-' }}
                                     @if ($payout->payoutAccount?->changed_at && $payout->requested_at && $payout->payoutAccount->changed_at >= $payout->requested_at->copy()->subHours(24))
@@ -59,6 +65,9 @@
                                     @endif
                                 </p>
                                 <p class="text-xs text-slate-400">Diajukan {{ optional($payout->requested_at)->format('d M Y, H:i') }}</p>
+                                @if ($payout->approved_at)
+                                    <p class="text-xs text-indigo-600">Disetujui {{ optional($payout->approved_at)->format('d M Y, H:i') }}</p>
+                                @endif
                                 @if ($payout->transfer_reference)
                                     <p class="text-xs text-slate-500">Ref transfer: {{ $payout->transfer_reference }}</p>
                                 @endif
@@ -82,16 +91,17 @@
                                 </form>
                             </div>
                         @elseif ($payout->status === 'approved')
-                            <div class="mt-4 flex flex-wrap gap-3 border-t border-slate-100 pt-4">
-                                <form method="POST" action="{{ route('admin.payouts.complete', $payout->id) }}" enctype="multipart/form-data" class="flex flex-wrap gap-2">
+                            <div class="mt-4 border-t border-slate-100 pt-4 space-y-3">
+                                <form method="POST" action="{{ route('admin.payouts.complete', $payout->id) }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2">
                                     @csrf
-                                    <input name="transfer_reference" required maxlength="150" placeholder="No. referensi transfer" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                                    <input name="transfer_reference" maxlength="150" placeholder="No. referensi transfer (opsional jika ada bukti)" class="rounded-lg border border-slate-300 px-3 py-2 text-sm flex-1 min-w-[200px]">
                                     <input type="file" name="proof" accept=".jpg,.jpeg,.png,.pdf" class="text-sm">
                                     <button class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Tandai Berhasil</button>
+                                    <p class="w-full text-xs text-slate-500">Wajib diisi minimal salah satu: referensi transfer atau unggah file bukti.</p>
                                 </form>
-                                <form method="POST" action="{{ route('admin.payouts.fail', $payout->id) }}" class="flex flex-wrap gap-2">
+                                <form method="POST" action="{{ route('admin.payouts.fail', $payout->id) }}" class="flex flex-wrap gap-2 pt-1 border-t border-slate-50">
                                     @csrf
-                                    <input name="rejection_reason" required maxlength="500" placeholder="Alasan gagal" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                                    <input name="rejection_reason" required maxlength="500" placeholder="Alasan transfer gagal" class="rounded-lg border border-slate-300 px-3 py-2 text-sm flex-1 min-w-[200px]">
                                     <button class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white">Transfer Gagal</button>
                                 </form>
                             </div>

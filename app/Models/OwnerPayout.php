@@ -18,6 +18,8 @@ class OwnerPayout extends Model
         'jumlah',
         'status',
         'requested_at',
+        'approved_at',
+        'approved_by',
         'processed_at',
         'bank_nama',
         'nomor_rekening',
@@ -33,6 +35,7 @@ class OwnerPayout extends Model
         return [
             'jumlah' => 'decimal:2',
             'requested_at' => 'datetime',
+            'approved_at' => 'datetime',
             'processed_at' => 'datetime',
         ];
     }

@@ -12,9 +12,10 @@ use App\Notifications\OwnerPayoutStatusChangedNotification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
- * Admin review of an owner payout (BQ-015). Transitions follow PayoutState; rejected and
+ * Admin review of an owner payout (BQ-015, BQ-125). Transitions follow PayoutState; rejected and
  * failed payouts return their held amount to the tenant balance under the tenant lock.
  */
 class ProcessOwnerPayout
@@ -25,42 +26,67 @@ class ProcessOwnerPayout
      */
     public function execute(int $payoutId, string $to, User $admin, array $data = [], ?UploadedFile $proof = null): bool
     {
-        $payout = DB::transaction(function () use ($payoutId, $to, $admin, $data, $proof): ?OwnerPayout {
-            // scope-bypass: platform admin (role:admin route) reviews payouts of every tenant
-            $tenantId = OwnerPayout::withoutGlobalScopes()->whereKey($payoutId)->value('idtenant');
-            if ($tenantId === null) {
-                return null;
+        $storedPath = null;
+        if ($proof !== null) {
+            $storedPath = $proof->store('payout-proofs', 'local');
+        }
+
+        try {
+            $payout = DB::transaction(function () use ($payoutId, $to, $admin, $data, $storedPath): ?OwnerPayout {
+                // scope-bypass: platform admin (role:admin route) reviews payouts of every tenant
+                $tenantId = OwnerPayout::withoutGlobalScopes()->whereKey($payoutId)->value('idtenant');
+                if ($tenantId === null) {
+                    return null;
+                }
+
+                // Tenant first, then the payout: the same order RequestOwnerPayout uses
+                Tenant::query()->whereKey($tenantId)->lockForUpdate()->first();
+                // scope-bypass: platform admin, payout re-read under the tenant lock
+                $payout = OwnerPayout::withoutGlobalScopes()->whereKey($payoutId)->lockForUpdate()->first();
+
+                if ($payout === null || ! PayoutState::canTransition((string) $payout->status, $to)) {
+                    return null;
+                }
+
+                if ($to === PayoutState::APPROVED) {
+                    $payout->fill([
+                        'status' => $to,
+                        'approved_at' => now(),
+                        'approved_by' => $admin->id,
+                    ]);
+                } else {
+                    $payout->fill([
+                        'status' => $to,
+                        'processed_at' => now(),
+                        'processed_by' => $admin->id,
+                        'rejection_reason' => $data['rejection_reason'] ?? $payout->rejection_reason,
+                        'transfer_reference' => $data['transfer_reference'] ?? $payout->transfer_reference,
+                    ]);
+                }
+
+                if ($storedPath !== null) {
+                    $payout->proof_path = $storedPath;
+                }
+                $payout->save();
+
+                if (PayoutState::returnsFunds($to)) {
+                    Tenant::query()->whereKey($tenantId)->increment('saldo_platform', (float) $payout->jumlah);
+                }
+
+                return $payout;
+            });
+        } catch (\Throwable $e) {
+            if ($storedPath !== null) {
+                Storage::disk('local')->delete($storedPath);
             }
-
-            // Tenant first, then the payout: the same order RequestOwnerPayout uses
-            Tenant::query()->whereKey($tenantId)->lockForUpdate()->first();
-            // scope-bypass: platform admin, payout re-read under the tenant lock
-            $payout = OwnerPayout::withoutGlobalScopes()->whereKey($payoutId)->lockForUpdate()->first();
-
-            if ($payout === null || ! PayoutState::canTransition((string) $payout->status, $to)) {
-                return null;
-            }
-
-            $payout->fill([
-                'status' => $to,
-                'processed_at' => now(),
-                'processed_by' => $admin->id,
-                'rejection_reason' => $data['rejection_reason'] ?? $payout->rejection_reason,
-                'transfer_reference' => $data['transfer_reference'] ?? $payout->transfer_reference,
-            ]);
-            if ($proof !== null) {
-                $payout->proof_path = $proof->store('payout-proofs', 'local');
-            }
-            $payout->save();
-
-            if (PayoutState::returnsFunds($to)) {
-                Tenant::query()->whereKey($tenantId)->increment('saldo_platform', (float) $payout->jumlah);
-            }
-
-            return $payout;
-        });
+            throw $e;
+        }
 
         if ($payout === null) {
+            if ($storedPath !== null) {
+                Storage::disk('local')->delete($storedPath);
+            }
+
             return false;
         }
 

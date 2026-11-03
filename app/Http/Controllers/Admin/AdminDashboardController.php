@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\OwnerPayout;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -21,6 +22,9 @@ class AdminDashboardController extends Controller
         $tenantAktif = Subscription::withoutGlobalScopes()->where('status', 'active')->count();
         // scope-bypass: platform admin aggregates (role:admin route)
         $tenantExpired = Subscription::withoutGlobalScopes()->where('status', 'expired')->count();
+
+        // scope-bypass: platform admin aggregates pending payouts count
+        $pendingPayoutCount = OwnerPayout::withoutGlobalScopes()->where('status', 'pending')->count();
 
         // ── Revenue platform dari langganan ──
         // scope-bypass: platform admin aggregates (role:admin route)
@@ -64,6 +68,7 @@ class AdminDashboardController extends Controller
             'tenantTrial',
             'tenantAktif',
             'tenantExpired',
+            'pendingPayoutCount',
             'totalRevenuePlatform',
             'revenuebulanini',
             'tenantTerbaru',

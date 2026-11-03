@@ -21,10 +21,11 @@ Owns owner in-app notifications, dashboard polling, and e-mails to customers and
 | `BookingCancelledMail` | queued mail | `CancelBooking` |
 | `BookingRescheduledMail` | mail inside ID-only job | `DeliverManagementAccess`, requested after reschedule |
 | `BookingConfirmedMail` | mail | `DeliverManagementAccess` (management link for a booking without payment) |
-| `OwnerPayoutStatusChangedNotification` | database | `ProcessOwnerPayout` (admin payout review, BQ-015) |
+| `OwnerPayoutStatusChangedNotification` | database + mail (on success/failed/rejected) | `ProcessOwnerPayout` (admin payout review, BQ-015, BQ-125) |
+| `NewPayoutRequestNotification` | database | `RequestOwnerPayout` (BQ-125) |
 | `PayoutAccountChangedNotification` | mail | `SaveTenantPayoutAccount`, `DeleteTenantPayoutAccount` (BQ-123) |
 
-Sends happen after the main transaction and dispatch failures are wrapped in `try/catch`, so mail failure does not undo the booking or payment. The four owner/trial mail notifications implement `ShouldQueue` with `afterCommit()` (database channels on those notifications are queued too); database-only payout notifications stay synchronous. `BookingCancelledMail` is queued after commit.
+Sends happen after the main transaction and dispatch failures are wrapped in `try/catch`, so mail failure does not undo the booking or payment. The owner/trial mail notifications and `OwnerPayoutStatusChangedNotification` implement `ShouldQueue` with `afterCommit()` (database channels on those notifications are queued too); database-only notifications like `NewPayoutRequestNotification` stay synchronous. `BookingCancelledMail` is queued after commit.
 
 Customer confirmation/invoice/reschedule flows persist delivery intent, then queue `SendManagementAccess` with only the delivery ID after commit. The worker validates the family, mints a fresh link and sends `BookingConfirmedMail`, `BookingGroupInvoiceMail` or `BookingRescheduledMail` synchronously inside the job; these credential-bearing mailables must not implement `ShouldQueue`. SMTP delivery therefore runs outside checkout and webhook requests when `QUEUE_CONNECTION=database` (§4 of operations).
 

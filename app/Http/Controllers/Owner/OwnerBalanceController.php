@@ -28,10 +28,11 @@ class OwnerBalanceController extends Controller
         $tenant = $this->resolveTenant();
         $availableBalance = $tenant?->saldo_platform ?? 0;
 
-        $pendingSettlement = Payment::where('idtenant', $tenant?->id)
-            ->where('status', 'pending')
-            ->where('tipe', 'booking')
+        $inFlightPayouts = OwnerPayout::where('idtenant', $tenant?->id)
+            ->whereIn('status', ['pending', 'approved'])
             ->sum('jumlah');
+
+        $pendingSettlement = $inFlightPayouts;
 
         $totalEarnings = Payment::where('idtenant', $tenant?->id)
             ->where('status', 'sukses')
@@ -56,6 +57,7 @@ class OwnerBalanceController extends Controller
         return view('owner.balance', compact(
             'tenant',
             'availableBalance',
+            'inFlightPayouts',
             'pendingSettlement',
             'totalEarnings',
             'payouts',

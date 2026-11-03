@@ -16,15 +16,15 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 
 ## Data
 
-`tenants.saldo_platform`; `tenant_payout_accounts`: `idtenant`, `bank_kode`, `bank_nama`, `nomor_rekening`, `nama_pemilik_rekening`, `is_default`, `changed_at` (max 3 accounts per tenant, BQ-123); `payments.balance_credited_at`; `owner_payouts`: `idtenant`, `request_key` (UUID), `payout_account_id`, `bank_kode`, amount, snapshot bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk), `processed_by`. `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
+`tenants.saldo_platform`; `tenant_payout_accounts`: `idtenant`, `bank_kode`, `bank_nama`, `nomor_rekening`, `nama_pemilik_rekening`, `is_default`, `changed_at` (max 3 accounts per tenant, BQ-123); `payments.balance_credited_at`; `owner_payouts`: `idtenant`, `request_key` (UUID), `payout_account_id`, `bank_kode`, amount, snapshot bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `approved_at`, `approved_by`, `processed_at`, `processed_by`, `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk). `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
 
 ## Evidence
 
-`tests/Feature/Payout/OwnerPayoutFlowTest.php`, `tests/Feature/Payout/TenantPayoutAccountTest.php`, `tests/Feature/Payout/PayoutEligibilityTest.php`, `tests/Feature/Actions/OwnerApplicationActionsTest.php`, `tests/Feature/Owner/SettingsTest.php`, `tests/Feature/Owner/DeleteAccountWithOpenFundsTest.php`.
+`tests/Feature/Payout/OwnerPayoutFlowTest.php`, `tests/Feature/Payout/TenantPayoutAccountTest.php`, `tests/Feature/Payout/PayoutEligibilityTest.php`, `tests/Feature/Payout/PayoutDialogAndNotificationTest.php`, `tests/Feature/Actions/OwnerApplicationActionsTest.php`, `tests/Feature/Owner/SettingsTest.php`, `tests/Feature/Owner/DeleteAccountWithOpenFundsTest.php`.
 
 ## Status
 
-Functional: Implemented (BQ-015, BQ-103, BQ-122, BQ-123, BQ-124) · Verification: Verified (`OwnerPayoutFlowTest`, `TenantPayoutAccountTest`, `PayoutEligibilityTest`) · Architecture: Target
+Functional: Implemented (BQ-015, BQ-103, BQ-122, BQ-123, BQ-124, BQ-125) · Verification: Verified (`OwnerPayoutFlowTest`, `TenantPayoutAccountTest`, `PayoutEligibilityTest`, `PayoutDialogAndNotificationTest`) · Architecture: Target
 
 ## Known gaps
 
