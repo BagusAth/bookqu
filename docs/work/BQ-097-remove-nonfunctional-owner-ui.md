@@ -2,7 +2,7 @@
 id: BQ-097
 title: Remove non-functional controls and hidden-module remnants from released owner pages
 type: bug-fix
-status: approved
+status: rejected
 priority: P1
 phase: 8
 domain: staged-modules
@@ -16,6 +16,9 @@ depends-on: []
 ---
 
 # BQ-097: Remove non-functional controls and hidden-module remnants from released owner pages
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-157](BQ-157-remove-withdrawn-modules.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-157.
+
 
 Found in the owner UI audit of 2026-11-02. A control that looks like a setting but does nothing misleads the owner; hidden Tier 3 modules must not leak into released pages (ADR-0002, ADR-0011).
 

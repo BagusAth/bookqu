@@ -2,7 +2,7 @@
 id: BQ-109
 title: Price discrepancy and payment adjustment on booking reschedule
 type: bug-fix
-status: proposed
+status: rejected
 priority: P1
 phase: 8
 domain: booking
@@ -16,6 +16,9 @@ depends-on: []
 ---
 
 # BQ-109: Price discrepancy and payment adjustment on booking reschedule
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-140](BQ-140-reschedule-price-rules.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-140.
+
 
 Found during deep audit of reschedule flows (`RescheduleBooking.php` and `OwnerBookingController@reschedule`) on 2026-11-02.
 

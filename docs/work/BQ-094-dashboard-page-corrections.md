@@ -2,7 +2,7 @@
 id: BQ-094
 title: Owner dashboard shows truncated, unsigned and misleading figures
 type: bug-fix
-status: approved
+status: rejected
 priority: P1
 phase: 8
 domain: insights
@@ -16,6 +16,9 @@ depends-on: [BQ-089, BQ-092]
 ---
 
 # BQ-094: Owner dashboard shows truncated, unsigned and misleading figures
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-136](BQ-136-beranda-page.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-136.
+
 
 Found in the owner UI audit of 2026-11-02 on the demo tenant (271 bookings).
 

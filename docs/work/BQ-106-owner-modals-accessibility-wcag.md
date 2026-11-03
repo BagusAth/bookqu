@@ -2,7 +2,7 @@
 id: BQ-106
 title: Owner dialog and drawer accessibility - role dialog, focus trapping, and keyboard dismissal
 type: improvement
-status: approved
+status: rejected
 priority: P2
 phase: 8
 domain: insights
@@ -16,6 +16,9 @@ depends-on: [BQ-092]
 ---
 
 # BQ-106: Owner dialog and drawer accessibility - role dialog, focus trapping, and keyboard dismissal
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-129](BQ-129-owner-shared-building-blocks.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-129.
+
 
 Found during the owner UI deep audit on 2026-11-02 across owner modal dialogs and slide-over drawers.
 

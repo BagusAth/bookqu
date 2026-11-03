@@ -2,7 +2,7 @@
 id: BQ-095
 title: Owner bookings page shows the wrong amount and payment state
 type: bug-fix
-status: approved
+status: rejected
 priority: P1
 phase: 8
 domain: booking
@@ -16,6 +16,9 @@ depends-on: [BQ-087, BQ-092]
 ---
 
 # BQ-095: Owner bookings page shows the wrong amount and payment state
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-135](BQ-135-booking-page-and-panel.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-135.
+
 
 Found in the owner UI audit of 2026-11-02.
 

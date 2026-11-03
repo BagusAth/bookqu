@@ -2,7 +2,7 @@
 id: BQ-093
 title: Owner UI copy in Indonesian with one vocabulary and no redundant text
 type: improvement
-status: approved
+status: rejected
 priority: P2
 phase: 8
 domain: insights
@@ -16,6 +16,9 @@ depends-on: [BQ-092]
 ---
 
 # BQ-093: Owner UI copy in Indonesian with one vocabulary and no redundant text
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-128](BQ-128-owner-app-shell-and-navigation.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-128.
+
 
 Found in the owner UI audit of 2026-11-02. UI copy must be Indonesian (`.ai/rules/frontend.md`, `docs/workflow.md` §11).
 

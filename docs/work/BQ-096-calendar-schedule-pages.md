@@ -2,7 +2,7 @@
 id: BQ-096
 title: Calendar and schedule pages - cramped grids, fake pricing panel, occupancy decided in Blade
 type: bug-fix
-status: proposed
+status: rejected
 priority: P2
 phase: 8
 domain: schedule
@@ -16,6 +16,9 @@ depends-on: [BQ-092]
 ---
 
 # BQ-096: Calendar and schedule pages - cramped grids, fake pricing panel, occupancy decided in Blade
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-133](BQ-133-jam-buka-dan-harga-page.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-133.
+
 
 Found in the owner UI audit of 2026-11-02 on the demo tenant. Heavy lane because of item 1 (occupancy rule); the rest is light work inside the same pages.
 

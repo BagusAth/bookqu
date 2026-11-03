@@ -2,7 +2,7 @@
 id: BQ-092
 title: Owner UI foundations - one palette, shared components, no decorative noise
 type: improvement
-status: approved
+status: rejected
 priority: P1
 phase: 8
 domain: insights
@@ -16,6 +16,9 @@ depends-on: []
 ---
 
 # BQ-092: Owner UI foundations - one palette, shared components, no decorative noise
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-129](BQ-129-owner-shared-building-blocks.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-129.
+
 
 Found in the owner UI audit of 2026-11-02. This item is the base for the page items (BQ-091, BQ-094 to BQ-097); do it first, in several small PRs.
 

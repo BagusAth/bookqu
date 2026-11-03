@@ -2,7 +2,7 @@
 id: BQ-104
 title: Subscription checkout mobile layout order, invoice terminology, and Snap token interpolation
 type: improvement
-status: approved
+status: rejected
 priority: P2
 phase: 8
 domain: subscription
@@ -16,6 +16,9 @@ depends-on: [BQ-092]
 ---
 
 # BQ-104: Subscription checkout mobile layout order, invoice terminology, and Snap token interpolation
+
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-145](BQ-145-paket-tagihan-notifikasi-bantuan.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-145.
+
 
 Found during the owner UI deep audit on 2026-11-02 across `/owner/checkout`, `/owner/checkout/payment`, and `/owner/checkout/invoice/{id}`.
 
