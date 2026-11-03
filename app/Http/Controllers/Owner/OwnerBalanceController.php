@@ -9,6 +9,7 @@ use App\Models\OwnerPayout;
 use App\Models\Payment;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -32,11 +33,13 @@ class OwnerBalanceController extends Controller
             ->sum('jumlah');
 
         $payouts = OwnerPayout::where('idtenant', $tenant?->id)
-            ->orderByDesc('created_at')
-            ->limit(10)
-            ->get();
+            ->latest('requested_at')
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('owner.balance', compact('tenant', 'availableBalance', 'pendingSettlement', 'totalEarnings', 'payouts'));
+        $requestKey = (string) Str::uuid();
+
+        return view('owner.balance', compact('tenant', 'availableBalance', 'pendingSettlement', 'totalEarnings', 'payouts', 'requestKey'));
     }
 
     /**

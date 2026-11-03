@@ -15,7 +15,7 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 
 ## Data
 
-`tenants.saldo_platform`; `payments.balance_credited_at`; `owner_payouts`: `idtenant`, amount, bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk), `processed_by`. `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
+`tenants.saldo_platform`; `payments.balance_credited_at`; `owner_payouts`: `idtenant`, `request_key` (UUID), amount, bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk), `processed_by`. `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
 
 ## Evidence
 
@@ -23,7 +23,7 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 
 ## Status
 
-Functional: Implemented (BQ-015) · Verification: Verified (`OwnerPayoutFlowTest`) · Architecture: Target
+Functional: Implemented (BQ-015, BQ-103, BQ-122) · Verification: Verified (`OwnerPayoutFlowTest`) · Architecture: Target
 
 ## Known gaps
 
@@ -31,4 +31,3 @@ Functional: Implemented (BQ-015) · Verification: Verified (`OwnerPayoutFlowTest
 |---|---|
 | Transfers are manual (no disbursement API); the admin records the reference and proof | — (v1 decision) |
 | A refund can drive the balance below zero when the owner has already withdrawn; the admin settles it outside the app | — (v1 decision) |
-| Payout history capped to 10 rows without pagination, and missing payout form double-submit guard | BQ-103 |

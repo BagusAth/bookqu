@@ -12,6 +12,7 @@ class OwnerPayout extends Model
 
     protected $fillable = [
         'idtenant',
+        'request_key',
         'jumlah',
         'status',
         'requested_at',

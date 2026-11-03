@@ -5,6 +5,7 @@ namespace Tests\Feature\Owner;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class SettingsTest extends TestCase
@@ -88,6 +89,7 @@ class SettingsTest extends TestCase
         config(['modules.balance' => 'released']);
 
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
             'jumlah' => 200000,
             'bank_nama' => 'BCA',
             'nomor_rekening' => '1234567890',
@@ -116,6 +118,7 @@ class SettingsTest extends TestCase
         config(['modules.balance' => 'released']);
 
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
             'jumlah' => 600000,
             'bank_nama' => 'BCA',
             'nomor_rekening' => '1234567890',
@@ -136,6 +139,7 @@ class SettingsTest extends TestCase
         config(['modules.balance' => 'released']);
 
         $response = $this->actingAs($this->user)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
             'jumlah' => 10000.001,
             'bank_nama' => 'BCA',
             'nomor_rekening' => '1234567890',

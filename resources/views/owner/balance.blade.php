@@ -37,8 +37,9 @@
         @if ($errors->any())
             <div class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ $errors->first() }}</div>
         @endif
-        <form method="POST" action="{{ route('owner.payouts.request') }}" class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <form method="POST" action="{{ route('owner.payouts.request') }}" x-data="{ submitting: false }" @submit="submitting = true" class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
             @csrf
+            <input type="hidden" name="request_key" value="{{ old('request_key', $requestKey) }}">
             <label class="text-xs font-semibold text-bq-text">Nominal (Rp)
                 <input type="number" name="jumlah" min="10000" step="1" required value="{{ old('jumlah') }}" class="mt-1.5 w-full rounded-xl border border-bq-border px-3.5 py-2 text-sm">
             </label>
@@ -52,7 +53,9 @@
                 <input type="text" name="nama_pemilik_rekening" maxlength="150" required value="{{ old('nama_pemilik_rekening') }}" class="mt-1.5 w-full rounded-xl border border-bq-border px-3.5 py-2 text-sm">
             </label>
             <div class="sm:col-span-2">
-                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-bq-primary px-6 py-2.5 text-xs font-bold text-white hover:bg-bq-primary-hover shadow-sm transition">Ajukan Withdraw</button>
+                <button type="submit" :disabled="submitting" class="inline-flex items-center gap-2 rounded-xl bg-bq-primary px-6 py-2.5 text-xs font-bold text-white hover:bg-bq-primary-hover shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed">
+                    <span x-text="submitting ? 'Memproses…' : 'Ajukan Withdraw'">Ajukan Withdraw</span>
+                </button>
             </div>
         </form>
     </div>
@@ -61,7 +64,7 @@
     <div class="rounded-2xl border border-bq-border bg-bq-surface shadow-xs overflow-hidden">
         <div class="p-5 border-b border-bq-border flex items-center justify-between">
             <div>
-                <h3 class="font-bold text-sm text-bq-text">Riwayat Penarikan Dana Terbaru</h3>
+                <h3 class="font-bold text-sm text-bq-text">Riwayat Withdraw</h3>
                 <p class="text-xs text-bq-text-muted mt-0.5">Catatan transfer saldo platform ke rekening Anda</p>
             </div>
         </div>
@@ -116,6 +119,12 @@
                 </tbody>
             </table>
         </div>
+
+        @if ($payouts->hasPages())
+            <div class="p-4 border-t border-bq-border">
+                {{ $payouts->links() }}
+            </div>
+        @endif
     </div>
 </div>
 @endsection

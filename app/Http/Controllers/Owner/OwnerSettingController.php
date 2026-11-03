@@ -128,7 +128,12 @@ class OwnerSettingController extends Controller
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $requestOwnerPayout->execute($tenant, (float) $request->input('jumlah'), $request->safe()->only(['bank_nama', 'nomor_rekening', 'nama_pemilik_rekening']));
+        $requestOwnerPayout->execute(
+            $tenant,
+            (float) $request->input('jumlah'),
+            $request->safe()->only(['bank_nama', 'nomor_rekening', 'nama_pemilik_rekening']),
+            (string) $request->input('request_key')
+        );
 
         return redirect()->route('owner.settings.balance')->with('sukses', 'Permintaan withdraw berhasil dibuat dan menunggu review admin.');
     }

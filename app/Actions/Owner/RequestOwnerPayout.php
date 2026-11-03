@@ -19,7 +19,7 @@ class RequestOwnerPayout
      *
      * @throws ValidationException
      */
-    public function execute(Tenant $tenant, float $amount, array $bankAccount): OwnerPayout
+    public function execute(Tenant $tenant, float $amount, array $bankAccount, string $requestKey): OwnerPayout
     {
         if (! is_finite($amount) || $amount < 10000 || abs($amount - round($amount, 2)) > 0.00001) {
             throw ValidationException::withMessages([
@@ -27,7 +27,7 @@ class RequestOwnerPayout
             ]);
         }
 
-        return DB::transaction(function () use ($tenant, $amount, $bankAccount): OwnerPayout {
+        return DB::transaction(function () use ($tenant, $amount, $bankAccount, $requestKey): OwnerPayout {
             // Serialize withdrawals for this tenant so parallel requests cannot
             // both spend the same previously-read balance.
             $lockedTenant = Tenant::query()->lockForUpdate()->find($tenant->id);
@@ -35,6 +35,15 @@ class RequestOwnerPayout
                 throw ValidationException::withMessages([
                     'jumlah' => 'Tenant tidak ditemukan.',
                 ]);
+            }
+
+            // Return existing payout if duplicate request_key is submitted (idempotency)
+            $existing = OwnerPayout::where('idtenant', $lockedTenant->id)
+                ->where('request_key', $requestKey)
+                ->first();
+
+            if ($existing !== null) {
+                return $existing;
             }
 
             if ($lockedTenant->payment_mode !== 'platform') {
@@ -56,6 +65,7 @@ class RequestOwnerPayout
 
             return OwnerPayout::create([
                 'idtenant' => $lockedTenant->id,
+                'request_key' => $requestKey,
                 'jumlah' => $amount,
                 'status' => 'pending',
                 'requested_at' => now(),

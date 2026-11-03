@@ -23,6 +23,7 @@ use App\Models\User;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -190,7 +191,12 @@ class OwnerApplicationActionsTest extends TestCase
     {
         $action = app(RequestOwnerPayout::class);
 
-        $payout = $action->execute($this->tenant, 200000, ['bank_nama' => 'BCA', 'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'John Doe']);
+        $payout = $action->execute(
+            $this->tenant,
+            200000,
+            ['bank_nama' => 'BCA', 'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'John Doe'],
+            (string) Str::uuid()
+        );
 
         $this->assertEquals(200000, $payout->jumlah);
         $this->assertEquals('pending', $payout->status);
@@ -203,7 +209,12 @@ class OwnerApplicationActionsTest extends TestCase
         $action = app(RequestOwnerPayout::class);
 
         $this->expectException(ValidationException::class);
-        $action->execute($this->tenant, 9999999, ['bank_nama' => 'BCA', 'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'John Doe']);
+        $action->execute(
+            $this->tenant,
+            9999999,
+            ['bank_nama' => 'BCA', 'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'John Doe'],
+            (string) Str::uuid()
+        );
     }
 
     public function test_update_appearance_settings_action(): void

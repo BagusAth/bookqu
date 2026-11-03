@@ -6,7 +6,7 @@ status: proposed
 priority: P1
 phase: 8
 domain: balance-payout
-requirements: [FR-PAYOUT-002, FR-PAYOUT-003, FR-NOTIFICATION-001, NFR-UX-005, NFR-ACC-001]
+requirements: [FR-PAYOUT-002, FR-PAYOUT-003, FR-NOTIFICATION-001, NFR-UX-001, NFR-UX-005]
 invariants: [INV-TEN-01]
 lane: heavy
 approval: tech-lead
