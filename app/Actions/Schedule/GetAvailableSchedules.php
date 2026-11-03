@@ -214,7 +214,7 @@ class GetAvailableSchedules
         ?int $excludeBookingId = null
     ): Collection {
         // scope-bypass: filtered by the resolved storefront tenant
-        $slots = Schedule::withoutGlobalScopes()
+        $slots = Schedule::withoutGlobalScopes()->with('layanan')
             ->where('idtenant', $tenant->id)
             ->where('idlayanan', $serviceId)
             ->whereDate('tanggal', $date)
@@ -222,20 +222,8 @@ class GetAvailableSchedules
             ->orderBy('jam_mulai')
             ->get();
 
-        // scope-bypass: filtered by the resolved storefront tenant
-        $takenSlotIds = Booking::withoutGlobalScopes()
-            ->where('idtenant', $tenant->id)
-            ->whereDate('tanggalbooking', $date)
-            ->when($excludeBookingId !== null, fn ($q) => $q->where('id', '!=', $excludeBookingId))
-            ->tap(fn ($q) => BookingRules::applyOccupiesSlotCondition($q, ''))
-            ->pluck('idschedule')
-            ->filter()
-            ->toArray();
-
-        return $slots->map(function ($slot) use ($takenSlotIds, $excludeBookingId, $date) {
-            // A started slot cannot be claimed (SlotRefusal::Past), so it is never offered (BQ-065 T5-07)
-            $isOccupied = in_array($slot->id, $takenSlotIds, true)
-                || AvailabilityRules::isSlotPast(Carbon::parse($date)->toDateString(), substr($slot->jam_mulai, 0, 5));
+        return $slots->map(function ($slot) use ($excludeBookingId) {
+            $isAvailable = AvailabilityRules::isSlotAvailable($slot, excludeBookingId: $excludeBookingId);
             $isCurrentSlot = ($excludeBookingId !== null && $slot->bookings()->where('id', $excludeBookingId)->exists());
 
             return [
@@ -243,7 +231,7 @@ class GetAvailableSchedules
                 'schedule' => $slot,
                 'jam_mulai' => substr($slot->jam_mulai, 0, 5),
                 'jam_selesai' => substr($slot->jam_selesai, 0, 5),
-                'is_available' => ! $isOccupied,
+                'is_available' => $isAvailable,
                 'is_current' => $isCurrentSlot,
             ];
         });

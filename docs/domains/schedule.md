@@ -55,3 +55,5 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 | Conflict detection and notification when blocking dates with existing active bookings | BQ-108 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012/BQ-069; cache ownership still open, BQ-075) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (hold derived from the payment deadline, BQ-071).
+
+BQ-120: reschedule slot selectability now delegates to `AvailabilityRules::isSlotAvailable`, including closed dates, service fulfillment, time and occupancy, with current-booking exclusion. `BookingManagementTest` verifies blocked GET/POST refusal, reopening and successful claim.
