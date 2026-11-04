@@ -64,7 +64,6 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 | `Customer/BookingController` (≈850 lines) still holds the storefront session handling and repeats contiguity checks before checkout (the claim itself goes through `ClaimSlots`; date checks live in `ValidateBookingDate`) | BQ-029 |
 
 | Owner bookings list shows the service's current price instead of the charged amount, and maps payment states that do not exist | BQ-135 |
-| Owner can mark paid or cancel while the customer's online payment is open | BQ-087 |
 | Reschedule does not evaluate or record slot price differences (price drift across surge/override slots) | BQ-140 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). Not implemented yet: [ADR-0008](../adr/ADR-0008-booking-checkout-draft.md) (typed checkout draft, BQ-029); until then BQ-083's checkout fingerprint keeps the quote equal to the charge.
@@ -78,3 +77,5 @@ BQ-113: owner reschedule forwards an optional expected date to `ClaimSlots` unde
 BQ-088: storefront checkout POSTs use the framework session lock (120 seconds, released in finally after session persistence). The session stores only its own pending payment ID and quote fingerprint. Matching retries resume that payment through a newly issued Checkout grant; different selections proceed normally. `BookingFlowHardeningTest` covers replay/no duplicate rows, different selection, held lock and exception release. No credential is cached in the session.
 
 BQ-146: a Kasir can record one pending cancellation request per payment group, with a reason. A Pemilik or Manajer may reject it without changing the booking or approve it under the tenant lock. Approval closes a pending payment through PaymentLifecycle. A settled online payment produces one full business-cancellation refund. Booking history snapshots the authenticated member ID and role for team actions.
+
+BQ-087 (ADR-0023): owner status changes wait for the existing online hold. Owner settlement is limited to unlinked payments, and cancellation after the hold expires the payment in the same transaction. A verified provider success after a historical cash settlement records one double-payment refund and alerts the owner.

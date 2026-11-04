@@ -13,6 +13,9 @@
                     'tanggalbooking' => $booking->tanggalbooking?->toDateString(),
                     'layanan' => $booking->layanan ? ['namalayanan' => $booking->layanan->namalayanan] : null,
                     'id' => $booking->id,
+                    'onlineWaiting' => $onlinePayment[$booking->id]['waiting'] ?? null,
+                    'onlineHoldUntil' => $onlinePayment[$booking->id]['holdUntil'] ?? null,
+                    'providerLinked' => $onlinePayment[$booking->id]['linked'] ?? false,
                     'history' => $booking->logs->map(fn ($log) => [
                         'id' => $log->id,
                         'label' => $log->event_label,
@@ -71,7 +74,7 @@
                         </span>
                     </div>
                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ring-inset {{ $warnastatus }}">
-                        {{ $statusLabel }}
+                        {{ $onlinePayment[$booking->id]['waiting'] ?? $statusLabel }}
                     </span>
                 </div>
 
@@ -115,7 +118,7 @@
                         <span>Detail</span>
                     </button>
 
-                    @if ($booking->status === 'pending')
+                    @if ($booking->status === 'pending' && ! ($onlinePayment[$booking->id]['linked'] ?? false))
                         <form method="POST" action="{{ route('owner.bookings.status', $booking->id) }}" class="flex-1">
                             @csrf
                             @method('PATCH')
@@ -125,7 +128,7 @@
                                 <span>✓ Lunas</span>
                             </button>
                         </form>
-                    @elseif ($booking->status === 'paid')
+                    @elseif ($booking->status === 'paid' && empty($onlinePayment[$booking->id]['waiting']))
                         <form method="POST" action="{{ route('owner.bookings.status', $booking->id) }}" class="flex-1">
                             @csrf
                             @method('PATCH')

@@ -2,21 +2,17 @@
 
 namespace App\Actions\Booking;
 
-use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Schedule\ClaimSlots;
 use App\Domain\Booking\BookingState;
-use App\Domain\Payment\PaymentState;
-use App\Domain\Payment\PaymentTransition;
 use App\Models\Booking;
 use App\Models\BookingLog;
-use App\Models\Payment;
 use App\Models\TenantMember;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 
 final class DecideBookingCancellation
 {
-    public function __construct(private CancelBooking $cancel, private PaymentLifecycle $payments) {}
+    public function __construct(private CancelBooking $cancel) {}
 
     public function request(Booking $booking, TenantMember $actor, string $reason): void
     {
@@ -51,14 +47,8 @@ final class DecideBookingCancellation
 
             if ($approve) {
                 $this->assertCancellable($booking);
-                $payment = $booking->payment;
-                abort_if($booking->idpayment && (! $payment instanceof Payment || (int) $payment->idtenant !== $tenantId), 409);
-                if ($payment instanceof Payment && $payment->status === PaymentState::STATUS_PENDING) {
-                    abort_unless($this->payments->transition($payment, PaymentTransition::CancelledByBusiness)->status() === PaymentState::STATUS_GAGAL, 409);
-                    $booking->refresh();
-                }
                 $result = $this->cancel->execute($booking, 'owner', (string) $request->reason, teamDecision: true);
-                abort_unless($result['success'], 409);
+                abort_unless($result['success'], 409, $result['error'] ?? 'Pembatalan tidak dapat disetujui.');
             }
 
             DB::table('booking_cancellation_requests')->where('id', $id)->update([

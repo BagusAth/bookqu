@@ -118,6 +118,38 @@ class BookingManagementTest extends TestCase
         ]);
     }
 
+    public function test_online_payment_blocks_owner_actions_until_the_settlement_margin_ends(): void
+    {
+        $payment = Payment::factory()->create([
+            'idtenant' => $this->tenant->id, 'provider' => 'singapay',
+            'payment_url' => 'https://provider.example/checkout', 'expired_at' => now()->subMinute(),
+        ]);
+        $bookings = collect([$this->schedule, Schedule::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+        ])])->map(fn (Schedule $schedule) => Booking::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+            'idschedule' => $schedule->id, 'idpayment' => $payment->id, 'status' => 'pending',
+        ]));
+        $booking = $bookings->first();
+        $url = "/owner/bookings/{$booking->id}/status";
+        $this->actingAs($this->user)->get('/owner/bookings')->assertOk()
+            ->assertSee('Menunggu pembayaran online')->assertSee('08:01 WIB')
+            ->assertDontSee('id="cancel-booking-'.$booking->id.'"', false);
+        foreach (['paid', 'completed', 'cancelled'] as $status) {
+            $this->patch($url, ['status' => $status])->assertSessionHasErrors('error');
+        }
+        $this->assertSame('pending', $payment->fresh()->status);
+        $this->assertSame('pending', $booking->fresh()->status);
+
+        $this->travelTo(now()->addMinute());
+        $this->patch($url, ['status' => 'paid'])->assertSessionHasErrors('error');
+        $this->patch($url, ['status' => 'cancelled'])->assertSessionHas('sukses');
+        $this->assertSame('gagal', $payment->fresh()->status);
+        foreach ($bookings as $member) {
+            $this->assertSame('cancelled', $member->fresh()->status);
+        }
+    }
+
     public function test_owner_can_cancel_multi_slot_booking_group(): void
     {
         $payment = Payment::create([

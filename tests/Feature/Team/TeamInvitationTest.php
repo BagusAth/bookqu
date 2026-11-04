@@ -171,7 +171,10 @@ class TeamInvitationTest extends TestCase
         $this->actingAs($cashier)->post($url, ['reason' => 'Lokasi ditutup'])->assertRedirect();
         $this->post($url, ['reason' => 'Duplikat'])->assertConflict();
         $id = DB::table('booking_cancellation_requests')->value('id');
-        $this->actingAs($tenant->user)->patch('/owner/bookings/cancellation-requests/'.$id, ['decision' => 'approve'])->assertRedirect();
+        $this->actingAs($tenant->user)->patch('/owner/bookings/cancellation-requests/'.$id, ['decision' => 'approve'])->assertConflict();
+        $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'pending']);
+        $this->travelTo($payment->expired_at->copy()->addMinutes(2));
+        $this->patch('/owner/bookings/cancellation-requests/'.$id, ['decision' => 'approve'])->assertRedirect();
         $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'gagal']);
         $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'cancelled']);
         $this->assertDatabaseCount('refunds', 0);

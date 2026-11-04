@@ -90,11 +90,11 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Par
 | The SingaPay status query uses endpoints confirmed against the sandbox API and a community SDK, not official vendor documentation. Its history list ignores filters, so a payment older than the newest 500 link payments of the merchant stays `unknown` | BQ-074 |
 | `payments.provider` is backfilled but still nullable | BQ-074 |
 | SingaPay payment links are not cancelled at the gateway (unsupported: ADR-0007 no-op; late success is refunded) | BQ-049 |
-| An owner cancelling a pending booking leaves its payment `pending` with an open link; a later payment becomes a refund owed | BQ-087 (absorbs the BQ-049 follow-up) |
-| An owner can mark a booking paid while its online payment is open; a later provider success is ignored as `already-final`, so a double payment is never recorded | BQ-087 |
-| An owner cancelling a `paid` booking records no refund and leaves the balance credited | BQ-087, BQ-138 |
+| An owner cancelling a `paid` booking records no refund and leaves the balance credited | BQ-138 |
 | Refunds are recorded `pending` but no actor processes them (no owner decision, no admin queue, no customer bank details); customer cancellation refunds automatically, contrary to the intended optional, owner-approved policy | BQ-138 |
 | Webhook mail sent synchronously | BQ-013, BQ-050 |
 | Production credentials and webhook URLs not yet verified | BQ-022 |
 
 Target decisions: [ADR-0004](../adr/ADR-0004-payment-lifecycle-module.md) (one lifecycle module, implemented by BQ-067), [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) (provider outcomes through one intake, BQ-032; late success BQ-003; owner callback BQ-070; gateway cancel BQ-002/BQ-049) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (one payment deadline, provider-first sweep for booking and subscription payments, BQ-071). ADR-0004, ADR-0007 and ADR-0009 are implemented (BQ-067, BQ-032, BQ-071).
+
+BQ-087 (ADR-0023): owner status changes wait for the existing online hold. Owner settlement is limited to unlinked payments, and cancellation after the hold expires the payment in the same transaction. A verified provider success after a historical cash settlement records one double-payment refund and alerts the owner.

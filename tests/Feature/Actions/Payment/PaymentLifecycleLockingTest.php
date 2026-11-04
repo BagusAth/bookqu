@@ -2,13 +2,17 @@
 
 namespace Tests\Feature\Actions\Payment;
 
+use App\Actions\Booking\UpdateBookingStatus;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Domain\Payment\PaymentTransition;
+use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Tenant;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
@@ -51,6 +55,38 @@ class PaymentLifecycleLockingTest extends TestCase
         $this->holdLock('payments', $payment->id);
 
         $this->assertTransitionWaitsOn('payments', $payment);
+    }
+
+    public function test_owner_action_waits_for_webhook_tenant_lock_and_reloads_after_success(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        Notification::fake();
+        Queue::fake();
+        $payment = Payment::factory()->create(['provider' => 'singapay']);
+        $booking = Booking::factory()->create(['idtenant' => $payment->idtenant, 'idpayment' => $payment->id, 'status' => 'pending']);
+        $this->holdLock('tenants', $payment->idtenant);
+
+        // The competing transaction follows the same lifecycle as a verified webhook.
+        $default = DB::getDefaultConnection();
+        DB::setDefaultConnection(self::SECOND_CONNECTION);
+        try {
+            app(PaymentLifecycle::class)->transition($payment, PaymentTransition::ProviderSucceeded, 'qris');
+        } finally {
+            DB::setDefaultConnection($default);
+        }
+        DB::statement('SET SESSION innodb_lock_wait_timeout = 1');
+        try {
+            app(UpdateBookingStatus::class)->execute($booking, 'completed');
+            $this->fail('The owner action bypassed the tenant lock.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Lock wait timeout exceeded', $exception->getMessage());
+            $this->assertMatchesRegularExpression('/^select .* from `tenants` .* for update$/', $exception->getSql());
+        }
+
+        DB::connection(self::SECOND_CONNECTION)->commit();
+        $this->assertTrue(app(UpdateBookingStatus::class)->execute($booking, 'completed')['success']);
+        $this->assertSame('completed', $booking->fresh()->status);
+        $this->assertSame('qris', $payment->fresh()->metode);
     }
 
     private function holdLock(string $table, int $id): void

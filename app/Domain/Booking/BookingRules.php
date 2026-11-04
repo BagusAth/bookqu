@@ -5,6 +5,7 @@ namespace App\Domain\Booking;
 use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Models\Booking;
+use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
 use Carbon\Carbon;
@@ -76,8 +77,8 @@ class BookingRules
     public static function applyOccupiesSlotCondition(mixed $query, string $prefix = 'bookings.'): mixed
     {
         $prefix = $prefix !== '' ? rtrim($prefix, '.').'.' : '';
-        $holdCutoff = now()->subMinutes(PaymentRules::settlementMarginMinutes());
-        $legacyCutoff = now()->subMinutes(PaymentRules::deadlineMinutes(PaymentState::TIPE_BOOKING) + PaymentRules::settlementMarginMinutes());
+        $holdCutoff = PaymentRules::settlementCutoff();
+        $legacyCutoff = self::legacyHoldCutoff();
         $paymentOfBooking = $prefix === '' ? 'bookings.idpayment' : $prefix.'idpayment';
 
         return $query->where(function ($q) use ($prefix, $holdCutoff, $legacyCutoff, $paymentOfBooking) {
@@ -106,6 +107,30 @@ class BookingRules
                         });
                 });
         });
+    }
+
+    public static function onlinePaymentHoldEnd(Booking $booking, Payment $payment): ?Carbon
+    {
+        if ((int) $payment->idtenant !== (int) $booking->idtenant
+            || ! PaymentRules::hasProviderLink($payment) || $payment->status !== PaymentState::STATUS_PENDING) {
+            return null;
+        }
+
+        $deadline = $payment->expired_at;
+        if ($deadline !== null) {
+            return Carbon::parse($deadline)->gt(PaymentRules::settlementCutoff())
+                ? Carbon::parse($deadline)->addMinutes(PaymentRules::settlementMarginMinutes()) : null;
+        }
+        if ($booking->created_at === null || $booking->created_at->lt(self::legacyHoldCutoff())) {
+            return null;
+        }
+
+        return $booking->created_at->copy()->addMinutes(PaymentRules::deadlineMinutes(PaymentState::TIPE_BOOKING) + PaymentRules::settlementMarginMinutes());
+    }
+
+    private static function legacyHoldCutoff(): Carbon
+    {
+        return PaymentRules::settlementCutoff()->subMinutes(PaymentRules::deadlineMinutes(PaymentState::TIPE_BOOKING));
     }
 
     /**

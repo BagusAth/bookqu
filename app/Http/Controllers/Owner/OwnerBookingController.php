@@ -6,11 +6,14 @@ use App\Actions\Booking\CreateWalkInBooking;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\Booking\UpdateBookingStatus;
 use App\Actions\Schedule\GetAvailableSchedules;
+use App\Domain\Booking\BookingRules;
+use App\Domain\Payment\PaymentRules;
 use App\Domain\Team\TenantPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\RescheduleBookingRequest;
 use App\Http\Requests\Booking\UpdateBookingStatusRequest;
 use App\Models\Booking;
+use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Traits\ClearsBookingCache;
@@ -101,11 +104,24 @@ class OwnerBookingController extends Controller
             ? DB::table('booking_cancellation_requests')->where('idtenant', $idtenant)->where('status', 'pending')->orderBy('id')->paginate(10, pageName: 'permintaan')
             : null;
 
+        $onlinePayment = $daftarbooking->getCollection()->mapWithKeys(function (Booking $booking): array {
+            $payment = $booking->payment;
+            $linked = $payment instanceof Payment && PaymentRules::hasProviderLink($payment);
+            $holdEnd = $linked ? BookingRules::onlinePaymentHoldEnd($booking, $payment) : null;
+
+            return [$booking->id => [
+                'linked' => $linked,
+                'holdUntil' => $holdEnd?->timestamp,
+                'waiting' => $holdEnd === null ? null : 'Menunggu pembayaran online, berakhir '.$holdEnd->setTimezone('Asia/Jakarta')->format('H:i').' WIB',
+            ]];
+        });
+
         return view('owner.bookings', compact(
             'tenant',
             'canRequestCancellation',
             'canDecideCancellation',
             'cancellationRequests',
+            'onlinePayment',
             'daftarbooking',
             'totalbooking',
             'bookingpending',

@@ -65,6 +65,17 @@ class PaymentRules
             && Carbon::parse($payment->expired_at)->addMinutes(self::settlementMarginMinutes())->isPast();
     }
 
+    public static function settlementCutoff(): Carbon
+    {
+        return now()->subMinutes(self::settlementMarginMinutes());
+    }
+
+    public static function hasProviderLink(Payment $payment): bool
+    {
+        return in_array($payment->provider, [PaymentState::METODE_SINGAPAY, PaymentState::METODE_MIDTRANS], true)
+            || filled($payment->payment_url) || filled($payment->snap_token) || filled($payment->external_id);
+    }
+
     /**
      * The provider that owns a payment: the only ownership rule (ADR-0007 decision 2).
      * Legacy rows without `provider` are inferred from `metode`; the migration
@@ -82,7 +93,9 @@ class PaymentRules
 
         return match (strtolower(trim((string) $payment->metode))) {
             PaymentState::METODE_SINGAPAY => PaymentState::METODE_SINGAPAY,
-            PaymentState::METODE_GRATIS, PaymentState::METODE_CASH => 'manual',
+            PaymentState::METODE_GRATIS => 'manual',
+            PaymentState::METODE_CASH => filled($payment->payment_url) ? PaymentState::METODE_SINGAPAY
+                : (self::hasProviderLink($payment) ? PaymentState::METODE_MIDTRANS : 'manual'),
             // Only SingaPay stores a hosted link; legacy `metode` may hold a payment type instead
             default => ! empty($payment->payment_url) ? PaymentState::METODE_SINGAPAY : PaymentState::METODE_MIDTRANS,
         };

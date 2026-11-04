@@ -68,9 +68,18 @@ class PaymentLifecycle
                 return new PaymentTransitionResult(PaymentTransitionOutcome::Rejected, $locked, 'transition-not-applicable');
             }
 
+            if ($transition === PaymentTransition::SettledByOwner && PaymentRules::hasProviderLink($locked)) {
+                return new PaymentTransitionResult(PaymentTransitionOutcome::Rejected, $locked, 'provider-linked-payment');
+            }
+
             $target = $transition->targetStatus();
 
             if ($locked->status === $target) {
+                if ($transition === PaymentTransition::ProviderSucceeded && $locked->metode === PaymentState::METODE_CASH
+                    && PaymentRules::hasProviderLink($locked)) {
+                    return $this->refundOwed($locked, $consequences, 'double-payment');
+                }
+
                 return new PaymentTransitionResult(PaymentTransitionOutcome::AlreadyFinal, $locked);
             }
 
@@ -99,7 +108,8 @@ class PaymentLifecycle
             if ($target === PaymentState::STATUS_SUKSES) {
                 $locked->update([
                     'status' => PaymentState::STATUS_SUKSES,
-                    'metode' => $method ?? $locked->metode ?? PaymentState::METODE_MIDTRANS,
+                    'metode' => $transition === PaymentTransition::SettledByOwner
+                        ? PaymentState::METODE_CASH : ($method ?? $locked->metode ?? PaymentState::METODE_MIDTRANS),
                 ]);
                 $consequences->deliver($locked, $transition);
             } else {
@@ -194,11 +204,13 @@ class PaymentLifecycle
             'payment_id' => $payment->id,
             'jumlah' => $payment->jumlah,
             'status' => 'pending',
-            'catatan' => 'Pembayaran diterima setelah pesanan dibatalkan atau kedaluwarsa.',
+            'cause' => $reason === 'double-payment' ? $reason : 'late_success',
+            'catatan' => $reason === 'double-payment' ? 'Pembayaran online diterima setelah pelunasan tunai.'
+                : 'Pembayaran diterima setelah pesanan dibatalkan atau kedaluwarsa.',
         ]);
 
         DB::afterCommit(function () use ($payment, $refund, $reason) {
-            Log::critical('PaymentLifecycle: payment succeeded after its purchase was withdrawn; refund owed', [
+            Log::critical('PaymentLifecycle: provider payment needs a refund', [
                 'payment_id' => $payment->id,
                 'order_id' => $payment->order_id,
                 'refund_id' => $refund->id,
