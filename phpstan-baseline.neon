@@ -259,20 +259,8 @@ parameters:
 			path: app/Domain/Schedule/SlotCompatibilityRules.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 5
-			path: app/Http/Controllers/Customer/BookingManageController.php
-
-		-
 			message: '#^Cannot call method toDateString\(\) on string\.$#'
 			identifier: method.nonObject
-			count: 1
-			path: app/Http/Controllers/Customer/BookingManageController.php
-
-		-
-			message: '#^Method App\\Http\\Controllers\\Customer\\BookingManageController\:\:clearBookingCaches\(\) is unused\.$#'
-			identifier: method.unused
 			count: 1
 			path: app/Http/Controllers/Customer/BookingManageController.php
 

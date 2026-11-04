@@ -2,7 +2,7 @@
 id: BQ-030
 title: Decompose Customer/BookingManageController
 type: refactor
-status: proposed
+status: in-progress
 priority: P2
 phase: 6
 domain: customer-access
@@ -26,3 +26,5 @@ Extract token authorization into a dedicated class (per the ADR), use the shared
 ## Evidence
 
 _Fill in when done._
+
+The management controller delegates grant-bound subject resolution to ResolveManagementTarget and the calendar payload to GetAvailableSchedules. Existing access operations, cache keys, SQL semantics and response shapes are retained. SQLite 713 passed with existing tests; Pint and PHPStan pass, two obsolete baseline blocks removed.

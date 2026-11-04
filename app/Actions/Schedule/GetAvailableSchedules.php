@@ -294,4 +294,69 @@ class GetAvailableSchedules
                 ->all();
         });
     }
+
+    /** @return array{availabilityPayload: list<array{date: string, total_slots: int, available_slots: int}>, minDate: string, maxDate: string} */
+    public function getCustomerRescheduleCalendar(Booking $booking): array
+    {
+        $wib = 'Asia/Jakarta';
+        $nowWib = Carbon::now($wib);
+        $minDate = Carbon::today($wib);
+        $maxDate = Carbon::today($wib)->addDays(30);
+        $tenantId = $booking->idtenant;
+        $serviceId = $booking->idlayanan;
+
+        $todayStr = $minDate->toDateString();
+        $nowTimeStr = $nowWib->format('H:i');
+
+        $availabilityKey = sprintf(
+            'tenant:%s:service:%s:availability:%s:%s:reschedule:%s',
+            $tenantId,
+            $serviceId,
+            $minDate->toDateString(),
+            $maxDate->toDateString(),
+            $booking->id
+        );
+
+        $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(60), function () use ($tenantId, $serviceId, $minDate, $maxDate, $booking, $todayStr, $nowTimeStr) {
+            $rows = DB::table('schedules')
+                ->leftJoin('bookings', function ($join) use ($booking) {
+                    $join->on('schedules.id', '=', 'bookings.idschedule')
+                        ->where('bookings.id', '!=', $booking->id); // Exclude current booking's slot
+                    BookingRules::applyOccupiesSlotCondition($join, 'bookings.');
+                })
+                ->where('schedules.idtenant', $tenantId)
+                ->where('schedules.idlayanan', $serviceId)
+                ->where('schedules.status', 'tersedia')
+                // Dates closed by the owner are not offered (BUG-T5-08); the claim refuses them too
+                ->whereNotExists(function ($closed) use ($booking) {
+                    $closed->selectRaw('1')
+                        ->from('owner_blocked_dates')
+                        ->where('owner_blocked_dates.idtenant', $booking->idtenant)
+                        ->whereRaw('substr(owner_blocked_dates.tanggal, 1, 10) = substr(schedules.tanggal, 1, 10)');
+                })
+                ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()])
+                ->groupBy('schedules.tanggal')
+                ->orderBy('schedules.tanggal')
+                ->select([
+                    'schedules.tanggal',
+                    DB::raw('count(distinct schedules.id) as total_slots'),
+                ])
+                ->selectRaw('count(distinct case when bookings.id is null and (substr(schedules.tanggal, 1, 10) > ? or (substr(schedules.tanggal, 1, 10) = ? and substr(schedules.jam_mulai, 1, 5) > ?)) then schedules.id end) as available_slots', [$todayStr, $todayStr, $nowTimeStr])
+                ->get();
+
+            return $rows->map(function ($row) {
+                return [
+                    'date' => Carbon::parse($row->tanggal)->toDateString(),
+                    'total_slots' => (int) $row->total_slots,
+                    'available_slots' => (int) $row->available_slots,
+                ];
+            })->values()->all();
+        });
+
+        return [
+            'availabilityPayload' => $availabilityPayload,
+            'minDate' => $minDate->toDateString(),
+            'maxDate' => $maxDate->toDateString(),
+        ];
+    }
 }
