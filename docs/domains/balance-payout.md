@@ -14,9 +14,11 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 
 `RequestOwnerPayout` locks the tenant row, verifies account standing and withdrawal limits via `Domain/Payout/PayoutEligibility` (email verification, complete business profile, platform payment mode, positive balance, `max_open`, saved accounts, and daily caps), holds (debits) the amount and creates an `owner_payouts` row with the chosen saved bank account snapshot in one transaction. `TenantBalanceLedger` credits a booking payment's full amount on provider success (fee 0%, idempotent through `payments.balance_credited_at`, inside the lifecycle's tenant-locked transaction) and debits a refund of a credited payment. `ProcessOwnerPayout` applies `Domain/Payout/PayoutState` transitions under the tenant lock; `rejected` and `failed` return the amount; owners get a database notification.
 
+The minimum payout is `payouts.min_amount` (request rule, `RequestOwnerPayout` and the balance form). Adding, editing and deleting a payout account share `throttle:3,10,payout-account-changes`; switching the primary account has its own `throttle:20,10,payout-account-default` (BQ-127).
+
 ## Data
 
-`tenants.saldo_platform`; `tenant_payout_accounts`: `idtenant`, `bank_kode`, `bank_nama`, `nomor_rekening`, `nama_pemilik_rekening`, `is_default`, `changed_at` (max 3 accounts per tenant, BQ-123); `payments.balance_credited_at`; `owner_payouts`: `idtenant`, `request_key` (UUID), `payout_account_id`, `bank_kode`, amount, snapshot bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `approved_at`, `approved_by`, `processed_at`, `processed_by`, `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk). `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
+`tenants.saldo_platform`; `tenant_payout_accounts`: `idtenant`, `bank_kode`, `bank_nama`, `nomor_rekening`, `nama_pemilik_rekening`, `is_default`, `changed_at` (at most `payouts.max_accounts` live accounts per tenant, default 3, BQ-123; the unique `idtenant`+`bank_kode`+`nomor_rekening` index includes soft-deleted rows, so re-adding a deleted account restores its row and a live duplicate is refused, BQ-127); `payments.balance_credited_at`; `owner_payouts`: `idtenant`, `request_key` (UUID), `payout_account_id`, `bank_kode`, amount, snapshot bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `approved_at`, `approved_by` (foreign key to `users.id`, `nullOnDelete`, BQ-127), `processed_at`, `processed_by` (no foreign key yet), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk). `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
 
 ## Evidence
 
@@ -31,4 +33,5 @@ Functional: Implemented (BQ-015, BQ-103, BQ-122, BQ-123, BQ-124, BQ-125) · Veri
 | Gap | Item |
 |---|---|
 | Transfers are manual (no disbursement API); the admin records the reference and proof | — (v1 decision) |
+| `owner_payouts.processed_by` has no foreign key to `users.id` (found during BQ-127) | — (not yet an item) |
 | A refund can drive the balance below zero when the owner has already withdrawn; the admin settles it outside the app | — (v1 decision) |

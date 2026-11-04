@@ -55,7 +55,7 @@
         },
         canProceed() {
             const n = parseInt(this.amount, 10);
-            return !isNaN(n) && n >= 10000 && n <= this.availableBalance && this.accountId;
+            return !isNaN(n) && n >= @js($minPayoutAmount) && n <= this.availableBalance && this.accountId;
         }
     }"
     class="mx-auto max-w-7xl space-y-6"
@@ -385,13 +385,13 @@
                         <input
                             type="number"
                             x-model="amount"
-                            min="10000"
+                            min="{{ $minPayoutAmount }}"
                             step="1"
-                            placeholder="Minimal Rp 10.000"
+                            placeholder="Minimal Rp {{ number_format($minPayoutAmount, 0, ',', '.') }}"
                             class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                         >
                         <p class="mt-1 text-[11px] text-slate-500">
-                            Saldo tersedia: <span class="font-bold text-slate-700">Rp {{ number_format($availableBalance, 0, ',', '.') }}</span> · Minimal Rp 10.000
+                            Saldo tersedia: <span class="font-bold text-slate-700">Rp {{ number_format($availableBalance, 0, ',', '.') }}</span> · Minimal Rp {{ number_format($minPayoutAmount, 0, ',', '.') }}
                         </p>
                         @error('jumlah')
                             <p class="mt-1 text-xs text-rose-600 font-semibold">{{ $message }}</p>

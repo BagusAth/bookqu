@@ -216,11 +216,14 @@ Route::prefix('owner')
             Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets.destroy');
             Route::get('/settings/balance', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.settings.balance');
             Route::get('/payouts/{payout}/proof', [OwnerBalanceController::class, 'proof'])->whereNumber('payout')->middleware('module:balance')->name('owner.payouts.proof');
-            Route::prefix('payout-accounts')->middleware(['module:balance', 'throttle:3,10'])->group(function () {
-                Route::post('/', [OwnerPayoutAccountController::class, 'store'])->name('owner.payout-accounts.store');
-                Route::put('/{account}', [OwnerPayoutAccountController::class, 'update'])->whereNumber('account')->name('owner.payout-accounts.update');
-                Route::delete('/{account}', [OwnerPayoutAccountController::class, 'destroy'])->whereNumber('account')->name('owner.payout-accounts.destroy');
-                Route::post('/{account}/default', [OwnerPayoutAccountController::class, 'makeDefault'])->whereNumber('account')->name('owner.payout-accounts.default');
+            Route::prefix('payout-accounts')->middleware('module:balance')->group(function () {
+                // BQ-127: the strict limit guards account changes only; switching the primary account has its own.
+                Route::middleware('throttle:3,10,payout-account-changes')->group(function () {
+                    Route::post('/', [OwnerPayoutAccountController::class, 'store'])->name('owner.payout-accounts.store');
+                    Route::put('/{account}', [OwnerPayoutAccountController::class, 'update'])->whereNumber('account')->name('owner.payout-accounts.update');
+                    Route::delete('/{account}', [OwnerPayoutAccountController::class, 'destroy'])->whereNumber('account')->name('owner.payout-accounts.destroy');
+                });
+                Route::post('/{account}/default', [OwnerPayoutAccountController::class, 'makeDefault'])->whereNumber('account')->middleware('throttle:20,10,payout-account-default')->name('owner.payout-accounts.default');
             });
             Route::get('/settings/integrations', [OwnerIntegrationController::class, 'index'])->middleware(['module:integrations', 'subscription:integrations'])->name('owner.settings.integrations');
         });
