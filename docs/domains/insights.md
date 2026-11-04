@@ -15,6 +15,8 @@ Read-only views that aggregate booking, payment and schedule data for the owner.
 
 `tests/Feature/Owner/OwnerDashboardPollingTest.php`, `Owner/AnalyticsAndSubscriptionTest.php`, `Owner/FiveModulesFullIntegrationTest.php`, `Owner/OwnerSidebarNavigationTest.php` (locked banners).
 
+BQ-089: the dashboard live refresh clones `<template>` rows and fills them with `textContent`; the polling JSON stays raw data (`OwnerDashboardPollingTest`). `ArchitectureRulesTest::test_views_never_build_inner_html_from_data` (rule `inner-html-data`) fails on any view that assigns non-literal markup to `innerHTML`.
+
 ## Status
 
 Functional: Implemented · Verification: Needs Verification (metric definitions not specified) · Architecture: Needs Refactor
@@ -26,7 +28,6 @@ Functional: Implemented · Verification: Needs Verification (metric definitions 
 | Calendar and schedule report count every `pending` booking as occupied, ignoring the 15-minute grace; analytics and schedule controller use their own "booked" status lists | BQ-012 |
 | `OwnerAnalyticsController` holds aggregation queries directly | BQ-029 (pattern), BQ-012 |
 | Dashboard view is 597 lines | BQ-034 |
-| Dashboard live refresh inserts customer names with `innerHTML` (stored XSS) | BQ-089 |
 | Dashboard figures truncated, unsigned or mislabelled; fake trend indicators | BQ-136 |
 | Audit P0/P1: deleting a slot from the calendar redirects out of it; week view hides free slots; empty AJAX error | BQ-046, BQ-062 |
 | Owner dialog and drawer accessibility gaps (missing role="dialog", focus trapping, and keyboard escape handling) | BQ-129 |

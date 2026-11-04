@@ -288,6 +288,7 @@ class GetOwnerDashboardOverview
                         'program_name' => $aktivitas->layanan->namalayanan ?? '-',
                         'customer_name' => $aktivitas->namapelanggan,
                         'date' => $tanggalFormatted,
+                        'time' => substr((string) ($aktivitas->jam ?? ''), 0, 5),
                         'status' => $aktivitas->status,
                     ];
                 });
