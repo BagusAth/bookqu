@@ -35,10 +35,14 @@ class SubscriptionActivationLockingTest extends TestCase
         } catch (QueryException $exception) {
             $this->assertStringContainsString('Lock wait timeout exceeded', $exception->getMessage());
             $this->assertMatchesRegularExpression('/^select .* from `tenants` .* for update$/', $exception->getSql());
+            $this->assertDatabaseCount('subscriptions', 0);
         } finally {
             $other->rollBack();
             DB::purge('subscription_concurrent');
+            $payment->delete();
+            $tenant->delete();
+            $plan->delete();
+            DB::table('users')->where('id', $tenant->iduser)->delete();
         }
-        $this->assertDatabaseCount('subscriptions', 0);
     }
 }
