@@ -18,6 +18,7 @@ enum SlotRefusal: string
     case NotOpen = 'not-open';
     case DateClosed = 'date-closed';
     case Past = 'past';
+    case BookingPolicy = 'booking-policy';
     case ServiceUnavailable = 'service-unavailable';
     case Occupied = 'occupied';
     case InconsistentGroup = 'inconsistent-group';
@@ -47,6 +48,7 @@ enum SlotRefusal: string
             self::Blocked, self::NotOpen => "Jadwal untuk jam {$time} tidak tersedia.",
             self::DateClosed => 'Tanggal ini ditutup oleh pengelola. Silakan pilih tanggal lain.',
             self::Past => "Waktu sesi {$time} sudah terlewat (WIB). Silakan pilih waktu lain.",
+            self::BookingPolicy => 'Jadwal tidak memenuhi kebijakan pemesanan bisnis.',
             self::ServiceUnavailable => 'Layanan ini sedang tidak tersedia. Silakan hubungi pengelola.',
             self::Occupied => "Slot waktu {$time} sudah dibooking oleh pelanggan lain. Silakan pilih waktu lain.",
             self::InconsistentGroup => "Slot waktu {$time} sedang diperiksa oleh sistem. Silakan pilih waktu lain.",

@@ -46,6 +46,9 @@ class Tenant extends Model
         'weekend_price_value',
         'cancel_before_hours',
         'refunds_enabled',
+        'booking_min_lead_hours',
+        'booking_max_days_ahead',
+        'booking_buffer_minutes',
         'reschedule_before_hours',
         'theme_color',
         'button_style',
@@ -56,6 +59,10 @@ class Tenant extends Model
     protected function casts(): array
     {
         return [
+            'refunds_enabled' => 'boolean',
+            'booking_min_lead_hours' => 'integer',
+            'booking_max_days_ahead' => 'integer',
+            'booking_buffer_minutes' => 'integer',
             'midtrans_sandbox_client_key' => 'encrypted',
             'midtrans_sandbox_server_key' => 'encrypted',
             'midtrans_prod_client_key' => 'encrypted',

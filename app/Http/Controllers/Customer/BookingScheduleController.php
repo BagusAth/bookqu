@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Actions\Booking\GetScheduleSelection;
 use App\Actions\Booking\ValidateBookingDate;
 use App\Actions\Booking\ValidateCheckoutSlots;
+use App\Domain\Booking\BookingRules;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Support\CustomerBookingRoutes;
@@ -55,7 +56,7 @@ final class BookingScheduleController extends StorefrontBookingController
         if (! $service || ! $service->hasActiveFulfillment()) {
             return response()->json(['error' => 'Silakan pilih layanan yang tersedia terlebih dahulu.'], 400);
         }
-        $validator = Validator::make($request->only('tanggal'), ['tanggal' => ['required', 'date_format:Y-m-d', 'after_or_equal:'.now('Asia/Jakarta')->toDateString(), 'before_or_equal:'.now('Asia/Jakarta')->addDays(30)->toDateString()]]);
+        $validator = Validator::make($request->only('tanggal'), ['tanggal' => ['required', 'date_format:Y-m-d', 'after_or_equal:'.now('Asia/Jakarta')->toDateString(), 'before_or_equal:'.now('Asia/Jakarta')->addDays(BookingRules::maximumAdvanceDays($tenant))->toDateString()]]);
         if ($validator->fails()) {
             return response()->json(['message' => 'Periksa kembali tanggal yang dipilih.', 'errors' => $validator->errors()], 422);
         }

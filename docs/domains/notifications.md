@@ -46,3 +46,5 @@ Functional: Implemented · Verification: Verified (partial; production worker/SM
 | Mark-as-read follows any `redirect` URL (POST, CSRF-protected; hardening) and notification delete uses native `confirm()` | BQ-145 |
 
 Implemented decision: [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosting.md) — queued after-commit mail with id-only customer-access jobs, run by a cron-driven short-lived worker. Hosting setup remains a Tech Lead action (BQ-020/021), documented in [operations §4](../operations.md#4-scheduler-and-queue).
+
+BQ-144: users store their own email preferences by event. Mail dispatch checks the preference after role filtering. In-app delivery still follows role eligibility and is independent of email preferences.

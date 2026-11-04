@@ -46,7 +46,7 @@ final class TenantPermission
         if ($route === 'settings.account.delete') {
             return 'business.delete';
         }
-        if ($route === 'settings.account') {
+        if (in_array($route, ['settings.account', 'settings.notification-preferences'], true)) {
             return 'account.manage';
         }
         if ($route === 'settings' && $method === 'GET') {

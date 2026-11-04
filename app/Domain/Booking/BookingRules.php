@@ -146,6 +146,65 @@ class BookingRules
         return self::applyOccupiesSlotCondition($query, '')->exists();
     }
 
+    public static function maximumAdvanceDays(Tenant $tenant): int
+    {
+        return $tenant->booking_max_days_ahead ?? 30;
+    }
+
+    public static function hasSlotPolicy(Tenant $tenant): bool
+    {
+        return $tenant->booking_min_lead_hours > 0 || $tenant->booking_max_days_ahead !== null || $tenant->booking_buffer_minutes > 0;
+    }
+
+    /** @param array<string, list<array{Carbon, Carbon}>> $occupied */
+    public static function slotAllowedByPolicy(Tenant $tenant, string $date, string $start, string $end, Carbon $now, array $occupied): bool
+    {
+        $slotStart = Carbon::parse($date.' '.$start, 'Asia/Jakarta');
+        if (($tenant->booking_min_lead_hours > 0 && $slotStart->lt($now->copy()->addHours($tenant->booking_min_lead_hours)))
+            || ($tenant->booking_max_days_ahead !== null && $slotStart->toDateString() > $now->copy()->addDays($tenant->booking_max_days_ahead)->toDateString())) {
+            return false;
+        }
+
+        $buffer = $tenant->booking_buffer_minutes;
+        $slotEnd = Carbon::parse($date.' '.$end, 'Asia/Jakarta')->addMinute();
+        $nearby = array_merge(
+            $occupied[$slotStart->copy()->subDay()->toDateString()] ?? [],
+            $occupied[$date] ?? [],
+            $occupied[$slotStart->copy()->addDay()->toDateString()] ?? [],
+        );
+        foreach ($nearby as [$busyStart, $busyEnd]) {
+            if ($slotStart->lt($busyEnd->copy()->addMinutes($buffer))
+                && $slotEnd->gt($busyStart->copy()->subMinutes($buffer))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @return array<string, list<array{Carbon, Carbon}>> */
+    public static function occupiedRanges(Tenant $tenant, int $serviceId, string $firstDate, string $lastDate): array
+    {
+        // The configured buffer is at most 24 hours, so include adjacent calendar dates.
+        $query = DB::table('bookings')->join('schedules', 'schedules.id', '=', 'bookings.idschedule')
+            ->where('bookings.idtenant', $tenant->id)->where('bookings.idlayanan', $serviceId)
+            ->where('schedules.idtenant', $tenant->id)
+            ->whereBetween('bookings.tanggalbooking', [
+                Carbon::parse($firstDate)->subDay()->toDateString(),
+                Carbon::parse($lastDate)->addDay()->toDateString(),
+            ]);
+
+        return self::applyOccupiesSlotCondition($query)->get(['bookings.tanggalbooking', 'schedules.jam_mulai', 'schedules.jam_selesai'])
+            ->map(function ($slot): array {
+                $date = Carbon::parse($slot->tanggalbooking)->toDateString();
+
+                return [
+                    Carbon::parse($date.' '.$slot->jam_mulai, 'Asia/Jakarta'),
+                    Carbon::parse($date.' '.$slot->jam_selesai, 'Asia/Jakarta')->addMinute(),
+                ];
+            })->groupBy(fn (array $range) => $range[0]->toDateString())->map(fn ($ranges) => $ranges->values()->all())->all();
+    }
+
     public static function canRequestRefund(Booking $booking): bool
     {
         $tenant = $booking->tenant;

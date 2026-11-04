@@ -23,6 +23,8 @@ final class ValidateCheckoutSlots
         $nowWib = Carbon::now($wib);
 
         $validatedSchedules = [];
+        $occupied = $tenant->booking_buffer_minutes > 0
+            ? BookingRules::occupiedRanges($tenant, $service->id, $selectedDate, $selectedDate) : [];
 
         foreach ($jamArray as $index => $jamValue) {
             $scheduleId = (int) $scheduleIdArray[$index];
@@ -61,6 +63,10 @@ final class ValidateCheckoutSlots
                 throw ValidationException::withMessages(['jam' => "Waktu {$jamValue} sudah terlewat (WIB). Silakan pilih jam lain."]);
             }
 
+            if (BookingRules::hasSlotPolicy($tenant)
+                && ! BookingRules::slotAllowedByPolicy($tenant, $selectedDate, $schedule->jam_mulai, $schedule->jam_selesai, $nowWib, $occupied)) {
+                throw ValidationException::withMessages(['jam' => 'Jadwal tidak memenuhi kebijakan pemesanan bisnis.']);
+            }
             $validatedSchedules[] = $schedule;
         }
 

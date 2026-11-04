@@ -3,6 +3,7 @@
 namespace App\Actions\Booking;
 
 use App\Actions\Schedule\GetAvailableSchedules;
+use App\Domain\Booking\BookingRules;
 use App\Models\Service;
 use App\Models\Tenant;
 use Carbon\Carbon;
@@ -15,7 +16,7 @@ final class GetScheduleSelection
     public function execute(Tenant $tenant, Service $service, ?string $date = null): array
     {
         $min = Carbon::today('Asia/Jakarta');
-        $max = $min->copy()->addDays(30);
+        $max = $min->copy()->addDays(BookingRules::maximumAdvanceDays($tenant));
         $availability = collect($this->availability->getDateAvailability($tenant, $service, $min, $max))->keyBy('date');
         $dates = [];
         for ($day = $min->copy(); $day->lte($max); $day->addDay()) {

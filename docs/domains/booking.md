@@ -80,3 +80,5 @@ BQ-146: a Kasir can record one pending cancellation request per payment group, w
 BQ-087 (ADR-0023): owner status changes wait for the existing online hold. Owner settlement is limited to unlinked payments, and cancellation after the hold expires the payment in the same transaction. A verified provider success after a historical cash settlement records one double-payment refund and alerts the owner.
 
 BQ-138 backend: the management cancellation endpoint submits a request without changing booking state. Owner acceptance or a business cancellation requires a valid transition for the group, then cancels and records the appropriate refund in one tenant-locked transaction.
+
+BQ-144 backend: storefront reads and tenant-locked new booking claims use the same booking policy. Lead time and horizon are measured in WIB. The buffer applies between occupied intervals of the same service; adjacent slots in one checkout are still one booking group for this rule. A tenant without explicit limits retains the existing checkout behaviour and 30-day browsing window.

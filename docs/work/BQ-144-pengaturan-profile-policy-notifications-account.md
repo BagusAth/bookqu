@@ -2,7 +2,7 @@
 id: BQ-144
 title: Pengaturan: Profil Bisnis, Kebijakan Booking, Notifikasi and Akun
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: tenancy
@@ -53,3 +53,8 @@ INV-BOOK-03: booking window rules live in `BookingRules`.
 - `docs/domains/booking.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+
+Backend persists tenant booking policy and per-user email preferences. The storefront read paths and the tenant-locked slot claim share the policy. Buffer is per service and only between booking groups. BookingPolicyTest covers stale policy reloading, visible availability, persistence and in-app delivery. SQLite 715, MySQL group 15, Pint and PHPStan passed.
+Remaining: settings tabs, checkout policy rendering, slug warning flow and password/account UI. Status remains in-progress.

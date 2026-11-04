@@ -36,14 +36,14 @@ class GetAvailableSchedules
         $wib = 'Asia/Jakarta';
         $nowWib = Carbon::now($wib);
         $minDate = $minDate ? $minDate->copy()->setTimezone($wib) : Carbon::today($wib);
-        $maxDate = $maxDate ? $maxDate->copy()->setTimezone($wib) : Carbon::today($wib)->addDays(30);
+        $maxDate = $maxDate ? $maxDate->copy()->setTimezone($wib) : Carbon::today($wib)->addDays(BookingRules::maximumAdvanceDays($tenant));
 
         $todayStr = $minDate->toDateString();
         $nowTimeStr = $nowWib->format('H:i');
 
         $cacheKey = $this->availabilityCache->getAvailabilityCacheKey((int) $tenant->id, (int) $service->id);
 
-        return Cache::remember($cacheKey, now()->addSeconds(60), function () use ($tenant, $service, $minDate, $maxDate, $todayStr, $nowTimeStr) {
+        $loadDates = function () use ($tenant, $service, $minDate, $maxDate, $todayStr, $nowTimeStr): array {
             $rows = DB::table('schedules')
                 ->leftJoin('bookings', function ($join) {
                     $join->on('schedules.id', '=', 'bookings.idschedule');
@@ -80,7 +80,31 @@ class GetAvailableSchedules
                     'is_blocked' => $isBlocked,
                 ];
             })->values()->all();
-        });
+        };
+
+        if (! BookingRules::hasSlotPolicy($tenant)) {
+            return Cache::remember($cacheKey, now()->addSeconds(60), $loadDates);
+        }
+
+        $dates = $loadDates();
+        $counts = [];
+        $occupied = BookingRules::occupiedRanges($tenant, $service->id, $minDate->toDateString(), $maxDate->toDateString());
+        $slots = DB::table('schedules')->where('idtenant', $tenant->id)->where('idlayanan', $service->id)
+            ->where('status', 'tersedia')->whereBetween('tanggal', [$minDate->toDateString(), $maxDate->toDateString()])
+            ->get(['tanggal', 'jam_mulai', 'jam_selesai']);
+        foreach ($slots as $slot) {
+            $date = Carbon::parse($slot->tanggal)->toDateString();
+            if (Carbon::parse($date.' '.$slot->jam_mulai, $wib)->gt($nowWib)
+                && BookingRules::slotAllowedByPolicy($tenant, $date, $slot->jam_mulai, $slot->jam_selesai, $nowWib, $occupied)) {
+                $counts[$date] = ($counts[$date] ?? 0) + 1;
+            }
+        }
+
+        return array_map(static function (array $day) use ($counts): array {
+            $day['available_slots'] = $day['is_blocked'] ? 0 : ($counts[$day['date']] ?? 0);
+
+            return $day;
+        }, $dates);
     }
 
     /**
@@ -90,6 +114,10 @@ class GetAvailableSchedules
      */
     public function countAvailableSlotsOnDate(Tenant $tenant, Service $service, string $date): int
     {
+        if (BookingRules::hasSlotPolicy($tenant)) {
+            return count(array_filter($this->getTimeSlots($tenant, $service, $date), fn (array $slot) => $slot['is_available']));
+        }
+
         $wib = 'Asia/Jakarta';
         $nowWib = Carbon::now($wib);
         $isToday = Carbon::parse($date, $wib)->isSameDay($nowWib);
@@ -163,7 +191,10 @@ class GetAvailableSchedules
         $isToday = $selectedDateCarbon->isSameDay($nowWib);
         $isPastDate = $selectedDateCarbon->lt($nowWib->copy()->startOfDay());
 
-        return collect($scheduleRows)->map(function (array $row) use ($isToday, $isPastDate, $nowWib, $dateStr, $wib, $service) {
+        $occupied = $tenant->booking_buffer_minutes > 0
+            ? BookingRules::occupiedRanges($tenant, $service->id, $dateStr, $dateStr) : [];
+
+        return collect($scheduleRows)->map(function (array $row) use ($isToday, $isPastDate, $nowWib, $dateStr, $wib, $service, $tenant, $occupied) {
             $slotDateTime = Carbon::parse($dateStr.' '.$row['jam_mulai'], $wib);
             $hour = (int) $slotDateTime->format('H');
             $session = 'evening';
@@ -176,7 +207,9 @@ class GetAvailableSchedules
 
             $isPast = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
             $isBooked = $row['booking_count'] > 0;
-            $isAvailable = ! $isPast && ! $isBooked;
+            $isAvailable = ! $isPast && ! $isBooked
+                && (! BookingRules::hasSlotPolicy($tenant)
+                    || BookingRules::slotAllowedByPolicy($tenant, $dateStr, $row['jam_mulai'], $row['jam_selesai'], $nowWib, $occupied));
             $slotPrice = $row['harga_override'] !== null ? (float) $row['harga_override'] : (float) $service->harga;
             $durasiMenit = (int) ($service->durasi ?: 60);
             $slotEndDateTime = (clone $slotDateTime)->addMinutes($durasiMenit);

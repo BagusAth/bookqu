@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Actions\Schedule;
 
 use App\Actions\Booking\EvictStalePendingBookings;
+use App\Domain\Booking\BookingRules;
 use App\Domain\Schedule\AvailabilityRules;
 use App\Domain\Schedule\SlotRefusal;
 use App\Models\Schedule;
 use App\Models\Tenant;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use LogicException;
@@ -49,7 +51,7 @@ class ClaimSlots
 
         $scheduleIds = array_values(array_unique(array_map('intval', $scheduleIds)));
 
-        self::lockTenant((int) $tenant->id);
+        $tenant->refreshForUpdate();
 
         // scope-bypass: ownership of every requested schedule is verified below, before any cleanup.
         $schedules = Schedule::withoutGlobalScopes()
@@ -78,6 +80,12 @@ class ClaimSlots
 
         $ordered = collect($scheduleIds)->map(fn (int $id) => $schedules->get($id));
 
+        $applyPolicy = $excludeBookingId === null && BookingRules::hasSlotPolicy($tenant);
+        $now = Carbon::now('Asia/Jakarta');
+        $dates = $ordered->map(fn (Schedule $slot) => Carbon::parse($slot->tanggal)->toDateString());
+        $occupied = $applyPolicy && $tenant->booking_buffer_minutes > 0
+            ? BookingRules::occupiedRanges($tenant, $serviceId, $dates->min(), $dates->max()) : [];
+
         foreach ($ordered as $schedule) {
             $refusal = AvailabilityRules::refusal(
                 $schedule,
@@ -86,6 +94,11 @@ class ClaimSlots
                 serviceId: $serviceId,
                 date: $date,
             );
+
+            if ($refusal === null && $applyPolicy
+                && ! BookingRules::slotAllowedByPolicy($tenant, Carbon::parse($schedule->tanggal)->toDateString(), $schedule->jam_mulai, $schedule->jam_selesai, $now, $occupied)) {
+                $refusal = SlotRefusal::BookingPolicy;
+            }
 
             if ($refusal !== null) {
                 throw new SlotClaimRefused($refusal, (int) $schedule->id, substr((string) $schedule->jam_mulai, 0, 5));

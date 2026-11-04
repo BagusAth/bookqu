@@ -22,6 +22,7 @@ use App\Http\Controllers\Owner\OwnerAppearanceController;
 use App\Http\Controllers\Owner\OwnerAssetController;
 use App\Http\Controllers\Owner\OwnerBalanceController;
 use App\Http\Controllers\Owner\OwnerBookingController;
+use App\Http\Controllers\Owner\OwnerBookingPolicyController;
 use App\Http\Controllers\Owner\OwnerCalendarController;
 use App\Http\Controllers\Owner\OwnerCategoryController;
 use App\Http\Controllers\Owner\OwnerCheckoutController;
@@ -112,6 +113,8 @@ Route::prefix('owner')
         Route::post('/notifications/read-all', [OwnerNotificationController::class, 'markAllAsRead'])->name('owner.notifications.read-all');
         Route::post('/notifications/{id}/read', [OwnerNotificationController::class, 'markAsRead'])->name('owner.notifications.read');
         Route::delete('/notifications/{id}', [OwnerNotificationController::class, 'destroy'])->name('owner.notifications.destroy');
+        Route::patch('/settings/booking-policy', [OwnerBookingPolicyController::class, 'update'])->name('owner.settings.booking-policy');
+        Route::patch('/settings/notification-preferences', [OwnerBookingPolicyController::class, 'notifications'])->name('owner.settings.notification-preferences');
         Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
         Route::prefix('settings/team')->middleware('module:team')->group(function () {
             Route::get('/', [OwnerTeamController::class, 'index'])->name('owner.team.index');

@@ -93,7 +93,10 @@ final class BookingCheckoutController extends StorefrontBookingController
             'schedules',
             'checkoutFingerprint',
             'pendingCheckout'
-        ));
+        ) + ['bookingPolicy' => $tenant->only([
+            'refunds_enabled', 'cancel_before_hours', 'reschedule_before_hours',
+            'booking_min_lead_hours', 'booking_max_days_ahead', 'booking_buffer_minutes',
+        ])]);
     }
 
     /**
