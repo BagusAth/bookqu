@@ -38,7 +38,7 @@ Owns bookable time slots, blocked dates, slot pricing, and the definition of "av
 
 ## Evidence
 
-`tests/Unit/Domain/AvailabilityRulesTest.php`, `ScheduleConflictRulesTest.php`, `SlotCompatibilityRulesTest.php`, `tests/Feature/Schedule/ScheduleActionTest.php`, `BulkScheduleLimitsAndDeleteOccupancyTest.php`, `Owner/ScheduleManagementTest.php`.
+`tests/Unit/Domain/AvailabilityRulesTest.php`, `ScheduleConflictRulesTest.php`, `SlotCompatibilityRulesTest.php`, `tests/Feature/Schedule/ScheduleActionTest.php`, `BulkScheduleLimitsAndDeleteOccupancyTest.php`, `BlockedDateActiveBookingConflictTest.php`, `Owner/ScheduleManagementTest.php`.
 
 ## Status
 
@@ -51,10 +51,11 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 | Availability cache keys and invalidation are still built by callers (`ClearsBookingCache`, `ScheduleAvailabilityCache`), not owned by the Slot bookability module (ADR-0005 decision 9) | BQ-075 |
 | `AvailabilityRules` checks status `diblokir`, which the DB enum cannot store | BQ-016 |
 | Schedule page and calendar month view decide occupancy in Blade instead of `BookingRules` | BQ-133 |
-| Conflict detection and notification when blocking dates with existing active bookings | BQ-108 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012/BQ-069; cache ownership still open, BQ-075) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (hold derived from the payment deadline, BQ-071).
 
 BQ-107: bulk creation refuses past dates and caps a `rentang` at `BulkCreateSchedules::MAX_RANGE_DAYS` (90) after the start date; slots are inserted in one batch per day after one read of that day's existing slots. Deleting a slot is refused only while `BookingRules::isSlotOccupied` holds; stale pending bookings on it expire through the Payment lifecycle (`EvictStalePendingBookings`) before the slot is deleted.
+
+BQ-108 (AC-JBH-03): `UpdateScheduleAvailability` refuses to close a date, and saves nothing, while `ScheduleConflictRules::activeBookingsOnDate` (the occupancy rule applied to the tenant's bookings on that date) returns any booking; the owner sees the count and the affected bookings until each is rescheduled or cancelled.
 
 BQ-120: reschedule slot selectability now delegates to `AvailabilityRules::isSlotAvailable`, including closed dates, service fulfillment, time and occupancy, with current-booking exclusion. `BookingManagementTest` verifies blocked GET/POST refusal, reopening and successful claim.

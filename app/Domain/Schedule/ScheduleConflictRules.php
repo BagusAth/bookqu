@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Domain\Schedule;
 
 use App\Domain\Booking\BookingRules;
+use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Service;
+use Illuminate\Database\Eloquent\Collection;
 
 class ScheduleConflictRules
 {
@@ -77,6 +79,25 @@ class ScheduleConflictRules
         }
 
         return false;
+    }
+
+    /**
+     * Bookings of the tenant on a date that still occupy their slot under the single
+     * occupancy rule (INV-BOOK-03). A date with any of them cannot be closed (BQ-108).
+     *
+     * @return Collection<int, Booking>
+     */
+    public static function activeBookingsOnDate(int $tenantId, string $date): Collection
+    {
+        // scope-bypass: filtered by the given, server-resolved tenant id
+        return Booking::withoutGlobalScopes()
+            ->with(['layanan' => fn ($query) => $query->withoutGlobalScopes()])
+            ->where('bookings.idtenant', $tenantId)
+            ->whereDate('bookings.tanggalbooking', $date)
+            ->where(fn ($query) => BookingRules::applyOccupiesSlotCondition($query, 'bookings.'))
+            ->orderBy('bookings.jam')
+            ->orderBy('bookings.id')
+            ->get();
     }
 
     /**
