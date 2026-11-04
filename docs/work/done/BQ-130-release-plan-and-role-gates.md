@@ -2,7 +2,7 @@
 id: BQ-130
 title: Three server gates (module, plan, role) and one plan capability list
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: staged-modules
@@ -17,7 +17,7 @@ depends-on: [BQ-131]
 
 # BQ-130: Three server gates (module, plan, role) and one plan capability list
 
-Epic **E1 · Foundations** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E1 · Foundations** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -61,3 +61,5 @@ Implementation evidence (2026-11-04): new capabilities and former development-te
 
 Tests: `ReleasePlanGatesTest` (5 tests, AC-PKT-01, eleven module/feature/role probe groups, role-filtered navigation, unknown capabilities and price source); original commercial-feature parity test retained. Existing report-behavior tests now explicitly enable their development module without changing their assertions. Navigation tests intentionally require hidden unbuilt routes rather than old locked teaser pages; ambiguous-multiple-membership pricing test now denies session tenant selection per ADR-0016.
 Verification: full SQLite 695 passed / 3971 assertions; Pint fixed changed PHP; PHPStan no errors, three obsolete baseline entries removed; plan-name architecture allowlist emptied and three Blade-query allowances removed. No new locks or transactional writes; MySQL group not rerun for this read/config/gate item (last result BQ-131: 12/45).
+
+Merged into `integration` through PR #39 (merge commit `0f92e68`, 2026-11-04); four CI jobs green on `f03cb61`.

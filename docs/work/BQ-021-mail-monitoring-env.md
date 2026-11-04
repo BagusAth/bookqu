@@ -21,6 +21,8 @@ depends-on: []
 
 ## Plan
 
+> **Added 2026-11-04 (BQ-146):** team invitations refuse the `log`, `failover` and `roundrobin` mail transports, because the mail carries a one-time credential. Production must use a direct SMTP transport, or invitations fail.
+
 Configure a transactional mail provider and an alert channel (for example mail on `critical` logs, or a monitoring service — a new dependency needs approval); verify the production `.env` against `docs/operations.md` §2.
 
 ## Evidence

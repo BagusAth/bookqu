@@ -1,6 +1,6 @@
 # ADR-0004: Payment lifecycle module
 
-> **Status:** Accepted
+> **Status:** Accepted; decision 6 amended by [ADR-0023](ADR-0023-owner-settlement-limited-to-unlinked-payments.md)
 > **Date:** 2026-10-30
 > **Decider:** agathan (architecture lead)
 > **Work item:** BQ-067 (implementation), BQ-028 (Phase 2 package)

@@ -2,7 +2,7 @@
 id: BQ-131
 title: Tenant membership, role permission map and owner policies
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: tenancy
@@ -17,7 +17,7 @@ depends-on: []
 
 # BQ-131: Tenant membership, role permission map and owner policies
 
-Epic **E1 · Foundations** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E1 · Foundations** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -62,3 +62,5 @@ Tests: 9 new feature tests (matrix, every route/gate, revocation, forged cancell
 Verification: full SQLite 690 passed / 3988 assertions; MySQL group 12 passed / 45 assertions; Pint fixed changed PHP; PHPStan no errors, baseline unchanged. Status remains in-progress until merge.
 
 Out-of-scope finding: the legacy payments token-removal down migration fails on SQLite because a unique index still references manage_token when dropping the column. Discovered by an initial DatabaseMigrations teardown; the backfill test uses the existing MySQL DatabaseTruncation pattern and verifies this migration without exercising unrelated historical rollbacks. Legacy onboarding atomicity remains BQ-112.
+
+Merged into `integration` through PR #39 (merge commit `0f92e68`, 2026-11-04); four CI jobs green on `f03cb61`.

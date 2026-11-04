@@ -2,7 +2,7 @@
 id: BQ-113
 title: Prevent stale reschedule responses and reject a slot from another selected date
 type: bug-fix
-status: in-progress
+status: done
 priority: P2
 phase: 4
 domain: booking
@@ -67,3 +67,5 @@ Disetujui Tech Lead 2026-11-04 untuk sesi agen.
 
 Implementation evidence (2026-11-04): two owner HTTP regressions prove mismatched date refused without mutation (red: 200, green: 422) and matching date succeeds. Owner forwards nullable expected date; omitted-date direct callers retain compatibility. Both loaders bind responses/errors/finally to a monotonically increasing request and selected date; owner also binds booking ID and invalidates on close. Selections clear while loading. Edge/Playwright executed actual loader functions with deferred responses: old success after new success, old error/finally during newer load, modal close/reopen for another booking, all passed. No price/refund changes.
 Verification: full SQLite 677 passed / 3562 assertions; MySQL group 11 passed / 43 assertions; Pint fixed changed PHP; PHPStan no errors, one obsolete unused-closure allowance removed.
+
+Merged into `integration` through PR #39 (merge commit `0f92e68`, 2026-11-04); four CI jobs green on `f03cb61`.

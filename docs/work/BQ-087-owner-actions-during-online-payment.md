@@ -84,4 +84,4 @@ _Fill in when done._
 
 Disetujui Tech Lead 2026-11-04 untuk sesi agen.
 
-Blocked in this session: Plan 2 removes provider-linked owner settlement, directly contradicting Accepted ADR-0004 decision 6. No application change made; BQ-049 remains open with BQ-087 until the accepted contract is amended.
+Unblocked 2026-11-04: ADR-0023 amends ADR-0004 decision 6, so Plan 2 is the accepted contract. Case 3 (owner cancels a paid booking) stays with BQ-138.

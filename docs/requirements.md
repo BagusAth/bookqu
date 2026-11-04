@@ -139,6 +139,8 @@ Login, registration, password-reset requests and other public state-changing end
 
 The system shall associate an owner with the correct tenant/business.
 
+Amended 2026-11-04 (ADR-0016): one account belongs to exactly one business in this release. An owner who wants a second business registers a separate account.
+
 ### FR-TENANT-002 — Tenant Isolation
 
 The system shall isolate tenant-owned operational data.

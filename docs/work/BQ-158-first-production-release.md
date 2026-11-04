@@ -26,8 +26,9 @@ Production still runs the 2026-10-05 code; D-018 releases only when everything i
 ## Plan
 
 1. Confirm every epic item is done and every launch blocker is closed.
-2. Set every redesign module to `released`; run the release steps of ADR-0015 with backup and smoke tests.
-3. Product Lead go/no-go (D-018).
+2. Before migrating production, run this read-only check. Any row is an account with several businesses, which ADR-0016 locks out, so the Tech Lead resolves it first: `SELECT iduser, COUNT(*) FROM tenants GROUP BY iduser HAVING COUNT(*) > 1;`
+3. Set every redesign module to `released`; run the release steps of ADR-0015 with backup and smoke tests.
+4. Product Lead go/no-go (D-018).
 
 ## Scope
 

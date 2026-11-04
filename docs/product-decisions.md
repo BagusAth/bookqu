@@ -35,6 +35,7 @@ Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
 - *1 Nov 2026:* tombol "Tandai Lunas" untuk booking yang dibayar online dihapus. Kalau pelanggan membayar tunai di tempat, owner mencatatnya sebagai booking walk-in.
 - *1 Nov 2026:* kalau pelanggan sampai membayar dua kali, sistem mencatat refund dan memberi tahu owner, tidak lagi diam saja.
 - *1 Nov 2026:* trial atau langganan yang sudah habis tidak lagi mendapat manfaat Pro. Perilaku setelah habis mengikuti D-002.
+- *4 Nov 2026:* satu akun hanya untuk satu bisnis. Owner yang ingin membuka bisnis lain mendaftar dengan akun terpisah.
 
 ---
 
