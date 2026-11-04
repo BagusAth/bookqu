@@ -2,7 +2,7 @@
 id: BQ-086
 title: An expired trial or subscription keeps Pro limits and the Pro badge
 type: bug-fix
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: subscription
@@ -73,3 +73,5 @@ Disetujui Tech Lead 2026-11-04 untuk sesi agen.
 Implementation evidence (2026-11-04): effective date/state/plan resolution now gates creation, unlimited limits, feature middleware and the Pro badge; inactive storefront writes return neutral copy, owner dashboard offers renewal. Four new tests in `ExpiredEntitlementTest`; original happy-path assertions retained with explicit live-trial prerequisites. `Subscription::plan` now has its real generic relationship type; nine obsolete PHPStan baseline entries removed, and the sidebar architecture allowance reduced.
 
 Verification: `php artisan test --compact`: 673 passed / 3541 assertions; Pint fixed changed PHP; PHPStan: no errors (baseline only reduced); MySQL group: 11 passed / 43 assertions, including the schedule-row wait assertion. No scheduler required, no migration or dependency. Status stays in-progress until merge.
+
+Merged into `integration` through PR #39 (merge commit `0f92e68`, 2026-11-04); four CI jobs green on `f03cb61`.

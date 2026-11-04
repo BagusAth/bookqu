@@ -2,7 +2,7 @@
 id: BQ-139
 title: Ended trial or subscription: what keeps working, renewal rules and reminders
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: subscription
@@ -17,7 +17,7 @@ depends-on: [BQ-086, BQ-130]
 
 # BQ-139: Ended trial or subscription: what keeps working, renewal rules and reminders
 
-Epic **E3 · Approved decisions D-001, D-002, D-006** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E3 · Approved decisions D-001, D-002, D-006** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -55,3 +55,5 @@ Disetujui Tech Lead 2026-11-04 untuk sesi agen.
 
 AC-END-01, AC-END-02 and AC-PKT-02 covered by EndedSubscriptionTest. SubscriptionActivationLockingTest verifies the tenant lock with a separate MySQL connection.
 SQLite: 703 passed (4023 assertions). MySQL: 13 passed (48 assertions). Pint and PHPStan passed; three obsolete baseline entries removed.
+
+Merged into `integration` through PR #39 (merge commit `0f92e68`, 2026-11-04); four CI jobs green on `f03cb61`.

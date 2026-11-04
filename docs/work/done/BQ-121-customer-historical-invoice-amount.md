@@ -2,7 +2,7 @@
 id: BQ-121
 title: Keep customer invoices tied to the recorded charge after catalog price changes
 type: bug-fix
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: booking
@@ -60,3 +60,5 @@ Disetujui Tech Lead 2026-11-04 untuk sesi agen.
 
 Implementation evidence (2026-11-04): shared `GetInvoiceAmounts` reads the stored payment total for invoice HTML and WhatsApp text. Legacy groups show an explicit whole-transaction total and unavailable per-session detail; no equal allocation, catalog recalculation, schema, balance or refund writes. Two HTTP regressions added to `BookingManageTest` (catalog/override mutation and unequal legacy group); existing grant isolation tests retained.
 Verification: full SQLite suite 675 passed / 3556 assertions; related suites 25 passed / 99 assertions; Pint fixed changed PHP; PHPStan no errors, two obsolete baseline entries removed. MySQL not rerun: this item changes read-only projections, no locks or booking/payment/tenant transactions. Status stays in-progress until merge.
+
+Merged into `integration` through PR #39 (merge commit `0f92e68`, 2026-11-04); four CI jobs green on `f03cb61`.

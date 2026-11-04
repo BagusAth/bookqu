@@ -95,6 +95,8 @@ An agent can take an item end to end. Give it the item file as the prompt; the i
 
 **After the release:** BQ-016, BQ-030, BQ-034, BQ-035, BQ-075 (phase 6) and BQ-082.
 
+**Progress (2026-11-04):** PR #39 delivered BQ-086, BQ-088, BQ-113, BQ-120, BQ-121, BQ-130, BQ-131, BQ-139 and BQ-146. Next for Developer A: BQ-087 with BQ-049 (ADR-0023); after that, BQ-133 and BQ-135 wait for BQ-107, BQ-108 and BQ-129 of Developer B.
+
 ### Rules for the waves
 
 - **An item may move forward a wave** when all its `depends-on` are done and it touches no file of the other developer's open item.
