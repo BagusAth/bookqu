@@ -43,7 +43,6 @@ class DeleteService
 
         DB::transaction(function () use ($tenant, $layanan) {
             ClaimSlots::lockTenant((int) $tenant->id);
-            $layanan->staff()->detach();
             $layanan->resources()->detach();
             $layanan->additionalItems()->detach();
             $layanan->delete();

@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Support\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TenantMiddleware
 {
@@ -64,6 +65,9 @@ class TenantMiddleware
                         $request->attributes->set('tenant_member', $member);
                     } elseif (Tenant::where('iduser', $user->id)->exists()
                         || app(ResolveTenantMembership::class)->hasMembership($user)) {
+                        Auth::logout();
+                        $request->session()->invalidate();
+                        $request->session()->regenerateToken();
                         abort(403);
                     }
                 }

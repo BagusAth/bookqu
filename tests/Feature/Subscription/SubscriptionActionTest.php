@@ -121,7 +121,6 @@ class SubscriptionActionTest extends TestCase
         $this->assertNotNull($overview['langgananaktif']);
         $this->assertEquals(5, $overview['maxlayanan']);
         $this->assertEquals(300, $overview['maxbooking']);
-        $this->assertEquals(2, $overview['maxstaff']);
         $this->assertFalse($overview['statustrial']);
     }
 

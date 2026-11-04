@@ -10,7 +10,6 @@ use App\Models\Plan;
 use App\Models\Resource;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -336,7 +335,7 @@ class FiveModulesFullIntegrationTest extends TestCase
     // 4. STAFF & RESOURCES MODULE TESTS
     // =========================================================================
 
-    public function test_staff_and_resources_crud_and_pivot_relationships(): void
+    public function test_resource_crud_and_pivot_relationship(): void
     {
         // Staged module under test is released explicitly (ADR-0011)
         config(['modules.staff-resources' => 'released']);
@@ -344,29 +343,6 @@ class FiveModulesFullIntegrationTest extends TestCase
         $this->actingAs($this->owner);
         session(['current_tenant_id' => $this->tenant->id]);
         app(TenantContext::class)->setTenantId($this->tenant->id);
-
-        // Create Staff with preset working hours
-        $resStaff = $this->post(route('owner.staff.store'), [
-            'name' => 'Rian Barber Pro',
-            'role' => 'Senior Barber',
-            'phone' => '08555444333',
-            'availability_schedule' => 'Senin - Jumat (09:00 - 17:00)',
-            'service_ids' => [$this->service->id],
-        ]);
-        $resStaff->assertRedirect();
-
-        $this->assertDatabaseHas('staff', [
-            'idtenant' => $this->tenant->id,
-            'name' => 'Rian Barber Pro',
-            'availability_schedule' => 'Senin - Jumat (09:00 - 17:00)',
-        ]);
-
-        $staff = Staff::withoutGlobalScopes()->where('name', 'Rian Barber Pro')->first();
-        $this->assertNotNull($staff);
-        $this->assertDatabaseHas('service_staff', [
-            'idstaff' => $staff->id,
-            'idservice' => $this->service->id,
-        ]);
 
         // Create Resource
         $resResource = $this->post(route('owner.resources.store'), [
@@ -389,10 +365,6 @@ class FiveModulesFullIntegrationTest extends TestCase
             'idservice' => $this->service->id,
         ]);
 
-        // Toggle staff active state
-        $resToggle = $this->post(route('owner.staff.toggle', $staff->id));
-        $resToggle->assertRedirect();
-        $this->assertDatabaseHas('staff', ['id' => $staff->id, 'is_active' => false]);
     }
 
     // =========================================================================
@@ -431,16 +403,6 @@ class FiveModulesFullIntegrationTest extends TestCase
             'idadditional_item' => $addon->id,
             'idservice' => $this->service->id,
         ]);
-
-        // Also create a staff for checkout testing
-        $staff = Staff::create([
-            'idtenant' => $this->tenant->id,
-            'name' => 'Bima Stylist',
-            'role' => 'Expert Barber',
-            'availability_schedule' => 'Shift Pagi (08:00 - 15:00)',
-            'is_active' => true,
-        ]);
-        $this->service->staff()->attach($staff->id);
 
         // 2. Customer visits checkout page (staff & addon are shut down on customer checkout per Section 17 & 18)
         $bookingDate = Carbon::tomorrow()->toDateString();

@@ -69,7 +69,7 @@ class ReleaseGateAndHardeningTest extends TestCase
         $staged = [
             'owner.vouchers' => 'vouchers',
             'owner.additional-items' => 'additional-items',
-            'owner.staff' => 'staff-resources',
+            'owner.team' => 'team',
             'owner.resources' => 'staff-resources',
             'owner.settings.appearance' => 'appearance',
             'owner.settings.payment' => 'direct-payment',

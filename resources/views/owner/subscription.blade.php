@@ -40,7 +40,7 @@
     </div>
 
     {{-- Usage Stats --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div class="rounded-xl border border-bq-border bg-bq-surface p-5">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-bq-text">Services Used</p>
@@ -60,16 +60,6 @@
                 <div class="h-full rounded-full transition-all duration-500 {{ $persenbooking > 80 ? 'bg-rose-500' : ($persenbooking > 60 ? 'bg-amber-500' : 'bg-emerald-500') }}" style="width: {{ ($isunlimited || $maxbooking <= 0) ? 20 : $persenbooking }}%"></div>
             </div>
             <p class="mt-2 text-xs text-bq-text-muted">{{ ($isunlimited || $maxbooking <= 0) ? 'Unlimited bookings' : $persenbooking . '% of your plan limit' }}</p>
-        </div>
-        <div class="rounded-xl border border-bq-border bg-bq-surface p-5">
-            <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-bq-text">Staff Members</p>
-                <span class="text-sm font-bold text-bq-text">{{ $jumlahstaff }} / {{ ($isunlimitedstaff || $maxstaff <= 0) ? '∞' : $maxstaff }}</span>
-            </div>
-            <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-bq-background">
-                <div class="h-full rounded-full transition-all duration-500 {{ $persenstaff > 80 ? 'bg-rose-500' : ($persenstaff > 60 ? 'bg-amber-500' : 'bg-indigo-500') }}" style="width: {{ ($isunlimitedstaff || $maxstaff <= 0) ? 20 : $persenstaff }}%"></div>
-            </div>
-            <p class="mt-2 text-xs text-bq-text-muted">{{ ($isunlimitedstaff || $maxstaff <= 0) ? 'Unlimited staff' : $persenstaff . '% of your plan limit' }}</p>
         </div>
     </div>
 

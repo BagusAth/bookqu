@@ -20,6 +20,8 @@ enum PaymentTransition: string
     case Expired = 'expired';
 
     /** The payer abandoned the checkout. */
+    case CancelledByBusiness = 'cancelled-by-business';
+
     case CancelledByPayer = 'cancelled-by-payer';
 
     /** The gateway could not create the payment link or token. */
@@ -41,6 +43,6 @@ enum PaymentTransition: string
      */
     public function cancelsGatewayLink(): bool
     {
-        return in_array($this, [self::Expired, self::CancelledByPayer, self::SettledByOwner], true);
+        return in_array($this, [self::Expired, self::CancelledByBusiness, self::CancelledByPayer, self::SettledByOwner], true);
     }
 }

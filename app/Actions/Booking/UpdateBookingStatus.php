@@ -7,6 +7,7 @@ use App\Domain\Booking\BookingState;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Payment\PaymentTransition;
 use App\Models\Booking;
+use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Notifications\BookingStatusChangedOwnerNotification;
 use App\Traits\ClearsBookingCache;
@@ -67,7 +68,10 @@ class UpdateBookingStatus
             $booking->refresh();
         }
 
-        $booking->update(['status' => $newStatus]);
+        if ($booking->status !== $newStatus) {
+            $booking->update(['status' => $newStatus]);
+            BookingLog::record($booking->id, $newStatus, 'Status booking diperbarui.');
+        }
 
         if (in_array($newStatus, [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED], true) && ! $booking->booking_code) {
             $booking->assignBookingCode();

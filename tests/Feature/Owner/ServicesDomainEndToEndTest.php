@@ -184,7 +184,7 @@ class ServicesDomainEndToEndTest extends TestCase
         $this->assertNotNull($service);
 
         // Verify pivot tables
-        $this->assertDatabaseHas('service_staff', [
+        $this->assertDatabaseMissing('service_staff', [
             'idservice' => $service->id,
             'idstaff' => $staff->id,
         ]);
@@ -201,8 +201,6 @@ class ServicesDomainEndToEndTest extends TestCase
         app(TenantContext::class)->setTenantId($this->tenantA->id);
         $serviceModel = Service::find($service->id);
         $this->assertEquals($cat->name, $serviceModel->category->name);
-        $this->assertEquals(1, $serviceModel->staff->count());
-        $this->assertEquals('Maya Pratama', $serviceModel->staff->first()->name);
         $this->assertEquals(1, $serviceModel->resources->count());
         $this->assertEquals('Studio Lotus', $serviceModel->resources->first()->name);
         $this->assertEquals(1, $serviceModel->additionalItems->count());
@@ -340,15 +338,7 @@ class ServicesDomainEndToEndTest extends TestCase
             'is_active' => true,
         ]);
 
-        // 3. Owner creates & assigns Staff & Resource
-        $staff = Staff::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Dewi Sartika',
-            'role' => 'Senior Reflexologist',
-            'is_active' => true,
-        ]);
-        $service->staff()->attach($staff->id);
-
+        // 3. Owner creates & assigns a resource
         $resource = Resource::create([
             'idtenant' => $this->tenantA->id,
             'name' => 'Reflexology Pod 1',

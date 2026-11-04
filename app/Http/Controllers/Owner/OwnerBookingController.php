@@ -6,15 +6,18 @@ use App\Actions\Booking\CreateWalkInBooking;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\Booking\UpdateBookingStatus;
 use App\Actions\Schedule\GetAvailableSchedules;
+use App\Domain\Team\TenantPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\RescheduleBookingRequest;
 use App\Http\Requests\Booking\UpdateBookingStatusRequest;
 use App\Models\Booking;
 use App\Models\Tenant;
+use App\Models\TenantMember;
 use App\Traits\ClearsBookingCache;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -59,7 +62,7 @@ class OwnerBookingController extends Controller
         $katakunci = $request->input('katakunci', '');
 
         $daftarbooking = Booking::where('bookings.idtenant', $idtenant)
-            ->with(['layanan.staff', 'layanan.resources', 'payment'])
+            ->with(['layanan.resources', 'payment', 'logs'])
             ->when($filterstatus !== 'semua', function ($query) use ($filterstatus) {
                 if ($filterstatus === 'today') {
                     $query->whereDate('tanggalbooking', Carbon::today());
@@ -91,8 +94,18 @@ class OwnerBookingController extends Controller
             ->whereDate('tanggalbooking', Carbon::today())
             ->count();
 
+        $member = $request->attributes->get('tenant_member');
+        $canRequestCancellation = $member instanceof TenantMember && TenantPermission::allowsRole($member->role, 'bookings.request-cancel');
+        $canDecideCancellation = $member instanceof TenantMember && TenantPermission::allowsRole($member->role, 'bookings.cancel');
+        $cancellationRequests = $canDecideCancellation
+            ? DB::table('booking_cancellation_requests')->where('idtenant', $idtenant)->where('status', 'pending')->orderBy('id')->paginate(10, pageName: 'permintaan')
+            : null;
+
         return view('owner.bookings', compact(
             'tenant',
+            'canRequestCancellation',
+            'canDecideCancellation',
+            'cancellationRequests',
             'daftarbooking',
             'totalbooking',
             'bookingpending',

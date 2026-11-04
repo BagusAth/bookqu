@@ -11,7 +11,7 @@ use App\Notifications\TrialExpiringNotification;
 
 final class TenantPermission
 {
-    private const COUNTER = ['dashboard.view', 'calendar.view', 'bookings.view', 'bookings.walkin', 'bookings.complete', 'bookings.no_show', 'bookings.reschedule', 'bookings.request-cancel', 'customers.view', 'customers.manage', 'account.manage', 'notifications.view', 'help.view'];
+    private const COUNTER = ['dashboard.view', 'calendar.view', 'bookings.view', 'bookings.walkin', 'bookings.complete', 'bookings.no_show', 'bookings.reschedule', 'customers.view', 'customers.manage', 'account.manage', 'notifications.view', 'help.view'];
 
     private const MANAGEMENT = ['bookings.cancel', 'refunds.decide', 'services.manage', 'schedule.manage', 'booking-page.manage', 'promos.manage', 'reviews.manage', 'reports.view', 'settings.manage', 'integrations.manage', 'revenue.view', 'units.manage'];
 
@@ -27,7 +27,7 @@ final class TenantPermission
         $abilities = match ($role) {
             'pemilik' => [...self::COUNTER, ...self::MANAGEMENT, ...self::OWNER],
             'manajer' => [...self::COUNTER, ...self::MANAGEMENT],
-            'kasir' => self::COUNTER,
+            'kasir' => [...self::COUNTER, 'bookings.request-cancel'],
             default => [],
         };
 
@@ -56,10 +56,12 @@ final class TenantPermission
         return match ($prefix) {
             'dashboard' => 'dashboard.view', 'calendar' => 'calendar.view',
             'bookings' => match ($route) {
+                'bookings.cancellation-requests.store' => 'bookings.request-cancel',
+                'bookings.cancellation-requests.decide' => 'bookings.cancel',
                 'bookings.walkin' => 'bookings.walkin','bookings.reschedule' => 'bookings.reschedule',default => 'bookings.view'
             },
             'customers' => $method === 'GET' ? 'customers.view' : 'customers.manage',
-            'programs','services','categories','staff','staff-resources','resources','additional-items' => 'services.manage',
+            'programs','services','categories','resources','additional-items' => 'services.manage',
             'schedule' => 'schedule.manage','schedule-report','analytics' => 'reports.view',
             'vouchers' => 'promos.manage','reviews' => 'reviews.manage','landing-page' => 'booking-page.manage',
             'payouts','payout-accounts' => 'payouts.manage','checkout','subscription' => 'subscription.manage',

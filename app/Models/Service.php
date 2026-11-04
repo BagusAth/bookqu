@@ -59,11 +59,6 @@ class Service extends Model
         return $this->hasMany(Schedule::class, 'idlayanan');
     }
 
-    public function staff(): BelongsToMany
-    {
-        return $this->belongsToMany(Staff::class, 'service_staff', 'idservice', 'idstaff')->withTimestamps();
-    }
-
     public function resources(): BelongsToMany
     {
         return $this->belongsToMany(Resource::class, 'service_resource', 'idservice', 'idresource')->withTimestamps();
@@ -75,19 +70,12 @@ class Service extends Model
     }
 
     /**
-     * Checks if this service has active staff and resource fulfillment.
-     * If staff are assigned to this service, at least one must be active.
+     * Checks if this service has active resource fulfillment.
      * If resources are assigned to this service, at least one must be active.
      */
     public function hasActiveFulfillment(): bool
     {
-        // scope-bypass: pivot rows of this service only; staff/resource ids are tenant-validated on write
-        $staffQuery = $this->staff()->withoutGlobalScopes();
-        if ($staffQuery->exists() && ! $this->staff()->withoutGlobalScopes()->where('staff.is_active', true)->exists()) {
-            return false;
-        }
-
-        // scope-bypass: pivot rows of this service only; staff/resource ids are tenant-validated on write
+        // scope-bypass: pivot rows of this service only; resource ids are tenant-validated on write
         $resourceQuery = $this->resources()->withoutGlobalScopes();
         if ($resourceQuery->exists() && ! $this->resources()->withoutGlobalScopes()->where('resources.is_active', true)->exists()) {
             return false;

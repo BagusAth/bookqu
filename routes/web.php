@@ -7,9 +7,11 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\TeamInvitationController;
 use App\Http\Controllers\Customer\BookingController;
 use App\Http\Controllers\Customer\BookingManageController;
 use App\Http\Controllers\Customer\CustomerAccessController;
+use App\Http\Controllers\Owner\BookingCancellationController;
 use App\Http\Controllers\Owner\OwnerAdditionalItemController;
 use App\Http\Controllers\Owner\OwnerAnalyticsController;
 use App\Http\Controllers\Owner\OwnerAppearanceController;
@@ -27,12 +29,13 @@ use App\Http\Controllers\Owner\OwnerNotificationController;
 use App\Http\Controllers\Owner\OwnerPaymentSettingsController;
 use App\Http\Controllers\Owner\OwnerPayoutAccountController;
 use App\Http\Controllers\Owner\OwnerProgramController;
+use App\Http\Controllers\Owner\OwnerResourceController;
 use App\Http\Controllers\Owner\OwnerReviewController;
 use App\Http\Controllers\Owner\OwnerScheduleController;
 use App\Http\Controllers\Owner\OwnerScheduleReportController;
 use App\Http\Controllers\Owner\OwnerSettingController;
-use App\Http\Controllers\Owner\OwnerStaffResourceController;
 use App\Http\Controllers\Owner\OwnerSubscriptionController;
+use App\Http\Controllers\Owner\OwnerTeamController;
 use App\Http\Controllers\Owner\OwnerVoucherController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
@@ -87,6 +90,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
+Route::prefix('auth/undangan-tim')->middleware(['module:team', 'throttle:10,1,team-invite:'])->group(function () {
+    Route::get('/', [TeamInvitationController::class, 'show'])->name('team-invitation.show');
+    Route::post('/buka', [TeamInvitationController::class, 'exchange'])->name('team-invitation.exchange');
+    Route::post('/terima', [TeamInvitationController::class, 'accept'])->name('team-invitation.accept');
+    Route::post('/masuk', [TeamInvitationController::class, 'login'])->middleware('guest')->name('team-invitation.login');
+});
+
 // ── Owner Dashboard Routes ──
 Route::prefix('owner')
     ->middleware(['auth', 'verified', 'role:owner', 'tenant', 'tenant.permission', 'subscription.create'])
@@ -98,6 +108,13 @@ Route::prefix('owner')
         Route::post('/notifications/{id}/read', [OwnerNotificationController::class, 'markAsRead'])->name('owner.notifications.read');
         Route::delete('/notifications/{id}', [OwnerNotificationController::class, 'destroy'])->name('owner.notifications.destroy');
         Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
+        Route::prefix('settings/team')->middleware('module:team')->group(function () {
+            Route::get('/', [OwnerTeamController::class, 'index'])->name('owner.team.index');
+            Route::post('/invitations', [OwnerTeamController::class, 'invite'])->name('owner.team.invite');
+            Route::delete('/invitations/{invitationId}', [OwnerTeamController::class, 'revokeInvitation'])->whereNumber('invitationId')->name('owner.team.invitation-revoke');
+            Route::patch('/members/{memberId}', [OwnerTeamController::class, 'change'])->whereNumber('memberId')->name('owner.team.change');
+            Route::delete('/members/{memberId}', [OwnerTeamController::class, 'revoke'])->whereNumber('memberId')->name('owner.team.revoke');
+        });
         Route::post('/profile/complete', [OwnerSettingController::class, 'storeProfile'])->name('owner.profile.complete');
         Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');
         Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
@@ -125,6 +142,8 @@ Route::prefix('owner')
             Route::post('/schedule/availability', [OwnerScheduleController::class, 'updateAvailability'])->name('owner.schedule.availability');
             Route::delete('/schedule/blocked-dates/{blockedDate}', [OwnerScheduleController::class, 'deleteBlockedDate'])->name('owner.schedule.blocked-dates.delete');
             Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
+            Route::post('/bookings/{booking}/cancellation-requests', [BookingCancellationController::class, 'store'])->name('owner.bookings.cancellation-requests.store');
+            Route::patch('/bookings/cancellation-requests/{cancellationId}', [BookingCancellationController::class, 'decide'])->whereNumber('cancellationId')->name('owner.bookings.cancellation-requests.decide');
             Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
             Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
             Route::get('/bookings/{booking}/available-slots', [OwnerBookingController::class, 'getAvailableSlots'])->name('owner.bookings.available-slots');
@@ -156,15 +175,11 @@ Route::prefix('owner')
             Route::match(['post', 'patch'], '/categories/{id}/toggle', [OwnerCategoryController::class, 'toggleStatus'])->name('owner.categories.toggle');
 
             // Staff & Resources
-            Route::get('/staff-resources', [OwnerStaffResourceController::class, 'index'])->middleware('module:staff-resources')->name('owner.staff-resources');
-            Route::post('/staff', [OwnerStaffResourceController::class, 'storeStaff'])->middleware('module:staff-resources')->name('owner.staff.store');
-            Route::put('/staff/{id}', [OwnerStaffResourceController::class, 'updateStaff'])->middleware('module:staff-resources')->name('owner.staff.update');
-            Route::delete('/staff/{id}', [OwnerStaffResourceController::class, 'destroyStaff'])->middleware('module:staff-resources')->name('owner.staff.destroy');
-            Route::match(['post', 'patch'], '/staff/{id}/toggle', [OwnerStaffResourceController::class, 'toggleStaffStatus'])->middleware('module:staff-resources')->name('owner.staff.toggle');
-            Route::post('/resources', [OwnerStaffResourceController::class, 'storeResource'])->middleware('module:staff-resources')->name('owner.resources.store');
-            Route::put('/resources/{id}', [OwnerStaffResourceController::class, 'updateResource'])->middleware('module:staff-resources')->name('owner.resources.update');
-            Route::delete('/resources/{id}', [OwnerStaffResourceController::class, 'destroyResource'])->middleware('module:staff-resources')->name('owner.resources.destroy');
-            Route::match(['post', 'patch'], '/resources/{id}/toggle', [OwnerStaffResourceController::class, 'toggleResourceStatus'])->middleware('module:staff-resources')->name('owner.resources.toggle');
+            Route::get('/resources', [OwnerResourceController::class, 'index'])->middleware('module:staff-resources')->name('owner.resources.index');
+            Route::post('/resources', [OwnerResourceController::class, 'storeResource'])->middleware('module:staff-resources')->name('owner.resources.store');
+            Route::put('/resources/{id}', [OwnerResourceController::class, 'updateResource'])->middleware('module:staff-resources')->name('owner.resources.update');
+            Route::delete('/resources/{id}', [OwnerResourceController::class, 'destroyResource'])->middleware('module:staff-resources')->name('owner.resources.destroy');
+            Route::match(['post', 'patch'], '/resources/{id}/toggle', [OwnerResourceController::class, 'toggleResourceStatus'])->middleware('module:staff-resources')->name('owner.resources.toggle');
 
             // Additional Items
             Route::get('/additional-items', [OwnerAdditionalItemController::class, 'index'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items');

@@ -4,7 +4,7 @@
         buka: false,
         sedangkirim: false,
         preview: null,
-        program: { id: null, namalayanan: '', idcategory: '', harga: '', durasi: '', deskripsi: '', is_active: 1, image_url: null, staff_ids: [], resource_ids: [], additional_item_ids: [] },
+        program: { id: null, namalayanan: '', idcategory: '', harga: '', durasi: '', deskripsi: '', is_active: 1, image_url: null, resource_ids: [], additional_item_ids: [] },
         handleFile(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -25,7 +25,6 @@
     @open-edit-program.window="
         program = {
             ...$event.detail,
-            staff_ids: $event.detail.staff_ids || [],
             resource_ids: $event.detail.resource_ids || [],
             additional_item_ids: $event.detail.additional_item_ids || [],
         };
@@ -230,28 +229,6 @@
                     </div>
 
                     {{-- Staff Assignment --}}
-                    @if(isset($staffList) && $staffList->isNotEmpty())
-                        <div>
-                            <label class="mb-1.5 block text-xs font-semibold text-bq-text">Assign Staff <span class="text-bq-text-subtle text-xs font-normal">(optional)</span></label>
-                            <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto p-2 border border-bq-border rounded-lg bg-bq-background/50">
-                                @foreach($staffList as $stf)
-                                    <label class="flex items-center gap-2 text-xs text-bq-text cursor-pointer hover:text-bq-primary">
-                                        <input type="checkbox" name="staff_ids[]" value="{{ $stf->id }}"
-                                               :checked="program.staff_ids && program.staff_ids.includes({{ $stf->id }})"
-                                               @change="
-                                                   if ($event.target.checked) {
-                                                       if (!program.staff_ids.includes({{ $stf->id }})) program.staff_ids.push({{ $stf->id }});
-                                                   } else {
-                                                       program.staff_ids = program.staff_ids.filter(id => id !== {{ $stf->id }});
-                                                   }
-                                               "
-                                               class="rounded border-bq-border text-bq-primary focus:ring-bq-primary/20">
-                                        <span class="truncate">{{ $stf->name }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
 
                     {{-- Resource Assignment --}}
                     @if(isset($resourceList) && $resourceList->isNotEmpty())

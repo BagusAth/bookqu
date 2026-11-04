@@ -11,7 +11,6 @@ use App\Models\Resource;
 use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Voucher;
@@ -156,34 +155,14 @@ class OwnerModulesCrudTest extends TestCase
     // ──────────────────────────────────────────
     // 2. STAFF & RESOURCES TEST
     // ──────────────────────────────────────────
-    public function test_owner_can_crud_staff_and_resources(): void
+    public function test_owner_can_crud_resources(): void
     {
         // Staged module under test is released explicitly (ADR-0011)
         config(['modules.staff-resources' => 'released']);
 
         // View page
-        $res = $this->actingAs($this->userA)->get(route('owner.staff-resources'));
+        $res = $this->actingAs($this->userA)->get(route('owner.resources.index'));
         $res->assertStatus(200);
-
-        // Create Staff
-        $res = $this->actingAs($this->userA)->post(route('owner.staff.store'), [
-            'name' => 'Andi Fotografer',
-            'role' => 'Lead Photographer',
-            'phone' => '081299998888',
-            'service_ids' => [$this->serviceA->id],
-        ]);
-        $res->assertRedirect();
-        $this->assertDatabaseHas('staff', [
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Andi Fotografer',
-        ]);
-
-        $staff = Staff::withoutGlobalScopes()->where('idtenant', $this->tenantA->id)->first();
-        $this->assertNotNull($staff);
-        $this->assertDatabaseHas('service_staff', [
-            'idstaff' => $staff->id,
-            'idservice' => $this->serviceA->id,
-        ]);
 
         // Create Resource
         $res = $this->actingAs($this->userA)->post(route('owner.resources.store'), [
@@ -205,32 +184,19 @@ class OwnerModulesCrudTest extends TestCase
             'idservice' => $this->serviceA->id,
         ]);
 
-        // Delete Staff & Resource
-        $this->actingAs($this->userA)->delete(route('owner.staff.destroy', $staff->id));
-        $this->assertDatabaseMissing('staff', ['id' => $staff->id]);
-
         $this->actingAs($this->userA)->delete(route('owner.resources.destroy', $resource->id));
         $this->assertDatabaseMissing('resources', ['id' => $resource->id]);
     }
 
-    public function test_staff_and_resource_tenant_isolation(): void
+    public function test_resource_tenant_isolation_and_retired_staff_routes(): void
     {
-        $staffB = Staff::create([
-            'idtenant' => $this->tenantB->id,
-            'name' => 'Barber Budi',
-            'role' => 'Barber',
-        ]);
-
-        // Owner A cannot update or delete Owner B's staff
-        $res = $this->actingAs($this->userA)->put(route('owner.staff.update', $staffB->id), [
-            'name' => 'Hacked Staff',
-            'role' => 'Hacked',
-            'is_active' => 1,
-        ]);
-        $res->assertStatus(404);
-
-        $res = $this->actingAs($this->userA)->delete(route('owner.staff.destroy', $staffB->id));
-        $res->assertStatus(404);
+        config(['modules.staff-resources' => 'released']);
+        $resource = Resource::create(['idtenant' => $this->tenantB->id, 'name' => 'Ruang B', 'type' => 'Studio', 'capacity' => 1]);
+        $this->actingAs($this->userA)->delete(route('owner.resources.destroy', $resource->id))->assertNotFound();
+        $this->get('/owner/staff-resources')->assertNotFound();
+        $this->post('/owner/staff', ['name' => 'Nama lama'])->assertNotFound();
+        $this->delete('/owner/staff/1')->assertNotFound();
+        $this->assertDatabaseHas('resources', ['id' => $resource->id]);
     }
 
     // ──────────────────────────────────────────

@@ -113,7 +113,7 @@ class TenantPermissionTest extends TestCase
             $this->assertContains('tenant.permission', $route->gatherMiddleware(), $name);
             $ability = TenantPermission::routeAbility($name, $route->methods()[0], $name === 'owner.bookings.status' ? 'completed' : null);
             $this->assertNotNull($ability, $name);
-            $this->assertTrue(TenantPermission::allowsRole('pemilik', $ability), $name);
+            $this->assertTrue(TenantPermission::allowsRole($ability === 'bookings.request-cancel' ? 'kasir' : 'pemilik', $ability), $name);
         }
     }
 

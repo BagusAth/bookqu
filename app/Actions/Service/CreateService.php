@@ -54,9 +54,6 @@ class CreateService
             'image_url' => $imageUrl,
         ]);
 
-        if (! empty($data['staff_ids'])) {
-            $service->staff()->sync($data['staff_ids']);
-        }
         if (! empty($data['resource_ids'])) {
             $service->resources()->sync($data['resource_ids']);
         }

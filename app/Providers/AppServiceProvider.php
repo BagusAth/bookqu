@@ -12,6 +12,7 @@ use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
+use App\Models\BookingLog;
 use App\Models\Category;
 use App\Models\CustomerNote;
 use App\Models\OwnerBlockedDate;
@@ -28,6 +29,7 @@ use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use App\Models\Voucher;
 use App\Policies\TenantResourcePolicy;
+use App\Support\TenantActor;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Foundation\Events\DiagnosingHealth;
@@ -46,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->scoped(TenantActor::class);
         $this->app->scoped(TenantContext::class, function () {
             return new TenantContext;
         });
@@ -76,6 +79,20 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('tenant-ability', fn (User $user, ?string $ability) => app(TenantResourcePolicy::class)->ability($user, $ability));
         foreach ([Booking::class, Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class, Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class, Staff::class, \App\Models\Resource::class, Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class, TenantMember::class] as $resource) {
             Gate::policy($resource, 'App\\Policies\\'.class_basename($resource).'Policy');
+        }
+
+        Event::listen('eloquent.created: '.Booking::class, function (Booking $booking): void {
+            BookingLog::record($booking->id, 'created', 'Booking dibuat.', [
+                'actor' => request()->routeIs('customer.*') ? 'customer' : 'system',
+            ]);
+        });
+
+        foreach ([Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class,
+            Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class, \App\Models\Resource::class,
+            Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class] as $record) {
+            foreach (['created', 'updated', 'deleted'] as $event) {
+                Event::listen("eloquent.{$event}: {$record}", fn ($model) => app(TenantActor::class)->record($model, $event));
+            }
         }
 
         View::composer('components.landing.pricing', fn ($view) => $view->with(app(GetPublicPlanCards::class)->execute(auth()->user())));

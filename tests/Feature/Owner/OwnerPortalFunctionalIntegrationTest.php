@@ -10,7 +10,6 @@ use App\Models\Plan;
 use App\Models\Resource;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -115,14 +114,6 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
             'name' => 'Hair Treatments',
         ]);
 
-        // Create Staff
-        $staff = Staff::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Jessica Stylist',
-            'role' => 'Senior Hairdresser',
-            'is_active' => true,
-        ]);
-
         // Create Resource
         $resource = Resource::create([
             'idtenant' => $this->tenantA->id,
@@ -149,15 +140,12 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
             'durasi' => 60,
             'is_active' => true,
         ]);
-        $service->staff()->attach($staff->id);
         $service->resources()->attach($resource->id);
         $service->additionalItems()->attach($item->id);
 
         // Verify relationships
-        $loadedService = Service::with(['category', 'staff', 'resources', 'additionalItems'])->find($service->id);
+        $loadedService = Service::with(['category', 'resources', 'additionalItems'])->find($service->id);
         $this->assertEquals('Hair Treatments', $loadedService->category->name);
-        $this->assertCount(1, $loadedService->staff);
-        $this->assertEquals('Jessica Stylist', $loadedService->staff->first()->name);
         $this->assertCount(1, $loadedService->resources);
         $this->assertEquals('Styling Chair 1', $loadedService->resources->first()->name);
         $this->assertCount(1, $loadedService->additionalItems);

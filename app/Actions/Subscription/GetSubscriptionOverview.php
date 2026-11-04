@@ -25,15 +25,11 @@ class GetSubscriptionOverview
      *     semuapaket: Collection<int, Plan>,
      *     jumlahlayanan: int,
      *     jumlahbookingbulanini: int,
-     *     jumlahstaff: int,
      *     maxlayanan: int,
      *     maxbooking: int,
-     *     maxstaff: int,
      *     isunlimited: bool,
-     *     isunlimitedstaff: bool,
      *     persenlayanan: int,
      *     persenbooking: int,
-     *     persenstaff: int,
      *     statustrial: bool,
      *     sisahari: int,
      *     riwayatpembayaran: Collection<int, Payment>
@@ -48,15 +44,11 @@ class GetSubscriptionOverview
                 'semuapaket' => Plan::all(),
                 'jumlahlayanan' => 0,
                 'jumlahbookingbulanini' => 0,
-                'jumlahstaff' => 0,
                 'maxlayanan' => 0,
                 'maxbooking' => 0,
-                'maxstaff' => 0,
                 'isunlimited' => false,
-                'isunlimitedstaff' => false,
                 'persenlayanan' => 0,
                 'persenbooking' => 0,
-                'persenstaff' => 0,
                 'statustrial' => false,
                 'sisahari' => 0,
                 'riwayatpembayaran' => collect(),
@@ -77,7 +69,6 @@ class GetSubscriptionOverview
 
         $jumlahlayanan = SubscriptionUsage::countServices($idtenant);
         $jumlahbookingbulanini = SubscriptionUsage::countMonthlyBookings($idtenant);
-        $jumlahstaff = SubscriptionUsage::countStaff($idtenant);
 
         $isTrial = $langgananaktif !== null
             && $langgananaktif->status === SubscriptionState::STATUS_TRIAL
@@ -85,16 +76,12 @@ class GetSubscriptionOverview
 
         $serviceQuota = EntitlementRules::canCreateService($langgananaktif, 0);
         $bookingQuota = EntitlementRules::canCreateBooking($langgananaktif, 0);
-        $staffQuota = EntitlementRules::canCreateStaff($langgananaktif, 0);
         $maxlayanan = $serviceQuota['maxServices'];
         $maxbooking = $bookingQuota['maxBooking'];
-        $maxstaff = $staffQuota['maxStaff'];
         $isunlimited = $bookingQuota['isUnlimited'];
-        $isunlimitedstaff = $staffQuota['isUnlimited'];
 
         $persenlayanan = SubscriptionUsage::calculatePercentage($jumlahlayanan, $maxlayanan, $serviceQuota['isUnlimited']);
         $persenbooking = SubscriptionUsage::calculatePercentage($jumlahbookingbulanini, $maxbooking, $bookingQuota['isUnlimited']);
-        $persenstaff = SubscriptionUsage::calculatePercentage($jumlahstaff, $maxstaff, $isunlimitedstaff);
 
         $sisahari = SubscriptionState::getRemainingTrialDays($langgananaktif);
         $statustrial = $isTrial && $langgananaktif?->trial_berakhir !== null;
@@ -113,15 +100,11 @@ class GetSubscriptionOverview
             'semuapaket' => $semuapaket,
             'jumlahlayanan' => $jumlahlayanan,
             'jumlahbookingbulanini' => $jumlahbookingbulanini,
-            'jumlahstaff' => $jumlahstaff,
             'maxlayanan' => $maxlayanan,
             'maxbooking' => $maxbooking,
-            'maxstaff' => $maxstaff,
             'isunlimited' => $isunlimited,
-            'isunlimitedstaff' => $isunlimitedstaff,
             'persenlayanan' => $persenlayanan,
             'persenbooking' => $persenbooking,
-            'persenstaff' => $persenstaff,
             'statustrial' => $statustrial,
             'sisahari' => $sisahari,
             'riwayatpembayaran' => $riwayatpembayaran,

@@ -245,6 +245,13 @@ final class EntitlementRules
                 || strtolower(trim((string) $subscription->plan?->namapaket)) === PlanCapability::PLAN_PRO);
     }
 
+    public static function teamLimit(?Subscription $subscription): int
+    {
+        $plan = self::isPro($subscription) ? PlanCapability::PLAN_PRO : self::activePaidPlanName($subscription);
+
+        return $plan === null ? 0 : (int) config('plans.'.$plan.'.team_limit', 0);
+    }
+
     public static function activePaidPlanName(?Subscription $subscription): ?string
     {
         return self::hasEffectivePlan($subscription) && $subscription->status === SubscriptionState::STATUS_ACTIVE

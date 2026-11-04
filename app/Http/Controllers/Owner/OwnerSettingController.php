@@ -47,6 +47,7 @@ class OwnerSettingController extends Controller
         $canManageBusiness = $user !== null && $policy->ability($user, 'settings.manage');
         $canManagePayments = $user !== null && $policy->ability($user, 'payouts.manage');
         $canDeleteBusiness = $user !== null && $policy->ability($user, 'business.delete');
+        $canManageTeam = $user !== null && $policy->ability($user, 'team.manage') && config('modules.team') === 'released';
         $accountUser = $user;
         $payouts = collect();
         if ($tenant->id && $canManagePayments) {
@@ -56,7 +57,7 @@ class OwnerSettingController extends Controller
                 ->get();
         }
 
-        return view('owner.settings', compact('tenant', 'payouts', 'accountUser', 'canManageBusiness', 'canDeleteBusiness'));
+        return view('owner.settings', compact('tenant', 'payouts', 'accountUser', 'canManageBusiness', 'canDeleteBusiness', 'canManageTeam'));
     }
 
     /**

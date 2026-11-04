@@ -7,6 +7,7 @@ namespace App\Actions\Service;
 use App\Actions\Schedule\ClaimSlots;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Support\TenantActor;
 use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Illuminate\Http\UploadedFile;
@@ -64,10 +65,13 @@ class UpdateService
                 'image_url' => $imageUrl,
             ]);
 
-            $layanan->staff()->sync($data['staff_ids'] ?? []);
-            $layanan->resources()->sync($data['resource_ids'] ?? []);
+            $resources = $layanan->resources()->sync($data['resource_ids'] ?? []);
+            $items = [];
             if (array_key_exists('additional_item_ids', $data)) {
-                $layanan->additionalItems()->sync($data['additional_item_ids'] ?? []);
+                $items = $layanan->additionalItems()->sync($data['additional_item_ids'] ?? []);
+            }
+            if (array_filter($resources) || array_filter($items)) {
+                app(TenantActor::class)->record($layanan, 'assignments_updated');
             }
         });
 

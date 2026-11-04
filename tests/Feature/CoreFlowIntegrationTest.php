@@ -9,7 +9,6 @@ use App\Models\Resource;
 use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -454,20 +453,21 @@ class CoreFlowIntegrationTest extends TestCase
     }
 
     /**
-     * 9. Staff / Resource Inactive Fulfillment Check
-     * When a service has assigned staff/resources but all are inactive,
+     * 9. Resource Inactive Fulfillment Check
+     * When a service has assigned resources but all are inactive,
      * the customer cannot select or book that service
      */
-    public function test_inactive_staff_or_resource_blocks_customer_booking(): void
+    public function test_inactive_resource_blocks_customer_booking(): void
     {
-        $staff = Staff::create([
+        $resource = Resource::create([
             'idtenant' => $this->tenantA->id,
             'name' => 'Therapist John',
-            'role' => 'Therapist',
+            'type' => 'Room',
+            'capacity' => 1,
             'is_active' => false, // Inactive
         ]);
 
-        $this->serviceA->staff()->attach($staff->id);
+        $this->serviceA->resources()->attach($resource->id);
 
         $this->assertFalse($this->serviceA->fresh()->hasActiveFulfillment());
 
@@ -478,8 +478,8 @@ class CoreFlowIntegrationTest extends TestCase
 
         $response->assertSessionHasErrors(['service']);
 
-        // Now activate the staff
-        $staff->update(['is_active' => true]);
+        // Now activate the resource
+        $resource->update(['is_active' => true]);
         $this->assertTrue($this->serviceA->fresh()->hasActiveFulfillment());
 
         // Now selecting this program succeeds
