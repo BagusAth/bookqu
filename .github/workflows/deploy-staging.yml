@@ -1,0 +1,131 @@
+name: Deploy staging
+
+on:
+  push:
+    branches: [integration]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bookqu-staging
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
+  deploy:
+    needs: tests
+    if: vars.STAGING_ENABLED == 'true'
+    environment: staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build and package the verified commit
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+          test -s public/build/manifest.json
+          tar -czf "$RUNNER_TEMP/bookqu-staging.tar.gz" \
+            --exclude=.git --exclude='.env*' --exclude=node_modules \
+            --exclude=vendor --exclude=storage --exclude='bootstrap/cache/*.php' .
+
+      - name: Install staging release over verified SSH
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_SSH_USER }}
+          STAGING_PORT: ${{ secrets.STAGING_SSH_PORT }}
+          STAGING_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          STAGING_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+          STAGING_ROOT: ${{ secrets.STAGING_APP_ROOT }}
+          STAGING_URL: ${{ vars.STAGING_URL }}
+        run: |
+          set -euo pipefail
+          [[ "$STAGING_HOST" =~ ^[A-Za-z0-9.-]+$ && "$STAGING_USER" =~ ^[A-Za-z0-9_-]+$ ]]
+          [[ "$STAGING_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ "$STAGING_ROOT" =~ ^/[A-Za-z0-9._/-]+/bookqu-staging$ && "$STAGING_ROOT" != *..* ]]
+          [[ "$STAGING_URL" =~ ^https://[A-Za-z0-9.-]+$ ]]
+          [[ -n "$STAGING_KEY" && -n "$STAGING_KNOWN_HOSTS" ]]
+
+          umask 077
+          printf '%s\n' "$STAGING_KEY" > "$RUNNER_TEMP/staging-key"
+          printf '%s\n' "$STAGING_KNOWN_HOSTS" > "$RUNNER_TEMP/staging-known-hosts"
+          trap 'rm -f "$RUNNER_TEMP/staging-key" "$RUNNER_TEMP/staging-known-hosts"' EXIT
+          options=(-i "$RUNNER_TEMP/staging-key" -o "UserKnownHostsFile=$RUNNER_TEMP/staging-known-hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes -o IdentitiesOnly=yes)
+          remote="$STAGING_USER@$STAGING_HOST"
+          release_id="$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+
+          ssh "${options[@]}" -p "$STAGING_PORT" "$remote" "test -d '$STAGING_ROOT' && test -f '$STAGING_ROOT/shared/.env' && test ! -L '$STAGING_ROOT/uploads' && mkdir -p '$STAGING_ROOT/uploads'"
+          scp "${options[@]}" -P "$STAGING_PORT" "$RUNNER_TEMP/bookqu-staging.tar.gz" "$remote:$STAGING_ROOT/uploads/$release_id.tar.gz"
+
+          ssh "${options[@]}" -p "$STAGING_PORT" "$remote" bash -s -- "$STAGING_ROOT" "$release_id" "$STAGING_URL" <<'REMOTE'
+          set -euo pipefail
+          root="$1"
+          release_id="$2"
+          release="$root/releases/$release_id"
+          url="$3"
+          archive="$root/uploads/$release_id.tar.gz"
+          shared="$root/shared"
+          umask 027
+          test "$(realpath "$root")" = "$root"
+          test ! -L "$shared" && test ! -L "$shared/.env" && test ! -L "$shared/storage"
+          grep -Fxq 'APP_ENV=staging' "$shared/.env"
+          grep -Fxq 'APP_DEBUG=false' "$shared/.env"
+          grep -Fxq "APP_URL=$url" "$shared/.env"
+          test ! -e "$root/current" || test -L "$root/current"
+          previous="$(readlink "$root/current" || true)"
+          if [[ -n "$previous" ]]; then
+            [[ "$previous" == "$root/releases/"* ]]
+            test -f "$previous/artisan"
+          fi
+
+          test ! -L "$root/releases"
+          mkdir -p "$root/releases" "$shared/storage/app/public" "$shared/storage/framework/"{cache,sessions,views} "$shared/storage/logs"
+          mkdir "$release"
+          tar -xzf "$archive" -C "$release"
+          ln -s "$shared/.env" "$release/.env"
+          ln -s "$shared/storage" "$release/storage"
+          cd "$release"
+          composer install --no-dev --no-scripts --no-interaction --optimize-autoloader
+          php artisan storage:link --no-interaction
+
+          switched=false
+          maintenance=false
+          rollback() {
+            status=$?
+            if (( status == 0 )); then
+              return
+            fi
+            if [[ "$switched" == true ]]; then
+              if [[ -n "$previous" ]]; then
+                ln -s "$previous" "$root/.rollback-$release_id"
+                mv -Tf "$root/.rollback-$release_id" "$root/current"
+              else
+                rm -f -- "$root/current"
+              fi
+            fi
+            if [[ "$maintenance" == true ]]; then
+              php "$previous/artisan" up --no-interaction
+            fi
+          }
+          trap rollback EXIT
+          if [[ -n "$previous" ]]; then
+            php "$previous/artisan" down --no-interaction
+            maintenance=true
+          fi
+          php artisan migrate --force --no-interaction
+          php artisan optimize --no-interaction
+          ln -s "$release" "$root/.next-$release_id"
+          mv -Tf "$root/.next-$release_id" "$root/current"
+          switched=true
+          php artisan up --no-interaction
+          curl --fail --silent --show-error --max-time 20 "$url/up" > /dev/null
+          rm -f -- "$archive"
+          REMOTE

@@ -1,11 +1,8 @@
 name: Tests
 
 on:
-  push:
-    branches:
-      - integration
   pull_request:
-  # main runs these jobs through deploy-production.yml before deploying.
+  # Integration and main call these jobs from their deploy workflows.
   workflow_call:
 
 concurrency:
