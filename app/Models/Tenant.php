@@ -87,6 +87,7 @@ class Tenant extends Model
         return $this->hasMany(Subscription::class, 'idtenant');
     }
 
+    /** @return HasOne<Subscription, $this> */
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class, 'idtenant')->latestOfMany();

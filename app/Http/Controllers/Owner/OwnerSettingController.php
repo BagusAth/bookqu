@@ -9,6 +9,7 @@ use App\Actions\Owner\UpdateOwnerAccount;
 use App\Actions\Tenant\CreateInitialProfile;
 use App\Actions\Tenant\UpdateBusinessProfile;
 use App\Actions\Tenant\UpdatePaymentSettings;
+use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\UpdateOwnerAccountRequest;
 use App\Http\Requests\Tenant\StoreInitialProfileRequest;
@@ -73,7 +74,9 @@ class OwnerSettingController extends Controller
 
         session()->put('current_tenant_id', $tenant->id);
 
-        return redirect()->route('owner.dashboard')->with('sukses', 'Profil bisnis berhasil dibuat. Anda mendapatkan Free Trial 7 Hari paket Pro!');
+        return redirect()->route('owner.dashboard')->with('sukses', EntitlementRules::hasEffectivePlan($tenant->subscription)
+            ? 'Profil bisnis berhasil dibuat. Anda mendapatkan Free Trial 7 Hari paket Pro!'
+            : 'Profil bisnis berhasil dibuat. Silakan pilih paket untuk menerima booking.');
     }
 
     public function updateBusinessProfile(UpdateBusinessProfileRequest $request, UpdateBusinessProfile $updateBusinessProfile): RedirectResponse

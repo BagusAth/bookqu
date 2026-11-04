@@ -158,7 +158,7 @@ class GetOwnerDashboardOverview
 
         // ── Subscription / Trial via SubscriptionState ──
         $langganan = Subscription::where('idtenant', $idtenant)
-            ->latest()
+            ->latest('id')
             ->first();
 
         $sisahari = SubscriptionState::getRemainingTrialDays($langganan);

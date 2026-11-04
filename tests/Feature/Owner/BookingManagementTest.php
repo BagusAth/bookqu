@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Payment;
@@ -188,6 +189,8 @@ class BookingManagementTest extends TestCase
 
     public function test_owner_walk_in_without_email_is_recorded_without_a_management_delivery(): void
     {
+        // BQ-139: successful creation requires an active period; original behavior assertions remain.
+        app(CreateTrialSubscription::class)->execute($this->tenant);
         $walkinSchedule = Schedule::factory()->create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
@@ -212,6 +215,8 @@ class BookingManagementTest extends TestCase
 
     public function test_owner_walk_in_booking_creates_payment_with_management_delivery_and_provider(): void
     {
+        // BQ-139: successful creation requires an active period; original behavior assertions remain.
+        app(CreateTrialSubscription::class)->execute($this->tenant);
         $walkinSchedule = Schedule::factory()->create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
@@ -294,7 +299,7 @@ class BookingManagementTest extends TestCase
             'metode' => 'cash',
         ]);
 
-        $response->assertSessionHasErrors(['error']);
+        $response->assertForbidden()->assertSee('Paket berakhir');
         $this->assertDatabaseMissing('bookings', [
             'namapelanggan' => 'Walkin Blocked Guest',
         ]);

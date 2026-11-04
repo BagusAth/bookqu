@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Service;
 
+use App\Domain\Subscription\EntitlementRules;
 use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -21,17 +22,18 @@ class CreateService
     /**
      * Create a new service under tenant with limits, relationships, and cache invalidation.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
+     *
      * @throws ValidationException
      */
     public function execute(Tenant $tenant, array $data, ?UploadedFile $coverImage = null): Service
     {
         app(TenantContext::class)->setTenantId($tenant->id);
 
-        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
         $currentServices = Service::where('idtenant', $tenant->id)->count();
-        $serviceQuota = \App\Domain\Subscription\EntitlementRules::canCreateService($subscription, $currentServices);
-        if (!$serviceQuota['allowed'] && $serviceQuota['message']) {
+        $serviceQuota = EntitlementRules::canCreateService($subscription, $currentServices);
+        if (! $serviceQuota['allowed'] && $serviceQuota['message']) {
             throw ValidationException::withMessages([
                 'namalayanan' => $serviceQuota['message'],
             ]);
@@ -43,29 +45,29 @@ class CreateService
         }
 
         $service = Service::create([
-            'idtenant'    => $tenant->id,
+            'idtenant' => $tenant->id,
             'namalayanan' => $data['namalayanan'],
-            'harga'       => $data['harga'],
-            'durasi'      => $data['durasi'],
-            'idcategory'  => $data['idcategory'] ?? null,
-            'deskripsi'   => $data['deskripsi'] ?? null,
-            'image_url'   => $imageUrl,
+            'harga' => $data['harga'],
+            'durasi' => $data['durasi'],
+            'idcategory' => $data['idcategory'] ?? null,
+            'deskripsi' => $data['deskripsi'] ?? null,
+            'image_url' => $imageUrl,
         ]);
 
-        if (!empty($data['staff_ids'])) {
+        if (! empty($data['staff_ids'])) {
             $service->staff()->sync($data['staff_ids']);
         }
-        if (!empty($data['resource_ids'])) {
+        if (! empty($data['resource_ids'])) {
             $service->resources()->sync($data['resource_ids']);
         }
-        if (!empty($data['additional_item_ids'])) {
+        if (! empty($data['additional_item_ids'])) {
             $service->additionalItems()->sync($data['additional_item_ids']);
         }
 
         try {
             UsageLog::record($tenant->id, 'layanan');
         } catch (\Exception $e) {
-            Log::error('Gagal catat usage log layanan: ' . $e->getMessage());
+            Log::error('Gagal catat usage log layanan: '.$e->getMessage());
         }
 
         $this->clearServiceCache($tenant->id, $service->id);

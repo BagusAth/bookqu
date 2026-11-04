@@ -52,7 +52,7 @@
     @if ($subscriptionExpired ?? false)
         <div role="status" class="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950">
             <p>Langganan telah berakhir. Booking yang sudah ada tetap dapat dikelola.</p>
-            <a href="{{ route('owner.subscription') }}" class="font-semibold underline">Perpanjang langganan</a>
+            @if ($canRenewSubscription ?? false)<a href="{{ route('owner.subscription') }}" class="font-semibold underline">Perpanjang langganan</a>@else<p>Hubungi Pemilik bisnis untuk memperpanjang paket.</p>@endif
         </div>
     @endif
 

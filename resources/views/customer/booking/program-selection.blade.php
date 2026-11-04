@@ -6,6 +6,7 @@
 @section('content')
 <div id="booking-program-root" data-tenant-slug="{{ $tenant->slug }}" x-data="bookingProgram()" @pageshow.window="isSubmitting = false" @pagehide.window="isSubmitting = false" @popstate.window="isSubmitting = false">
     {{-- Form Confirmation (Submitted explicitly by user clicking Continue) --}}
+    @if ($acceptsOnlineBookings)
     <form
         id="booking-program-form"
         class="max-w-5xl mx-auto w-full"
@@ -13,6 +14,10 @@
         action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.select-program', $tenant->slug) }}"
         x-ref="confirmForm"
     >
+    @else
+    <div class="max-w-5xl mx-auto w-full">
+        <p role="status" class="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4">Bisnis ini belum menerima booking online saat ini.</p>
+    @endif
         @csrf
         <input type="hidden" name="service_id" :value="selectedServiceId" />
 
@@ -132,14 +137,18 @@
                         }
                     @endphp
                     <article
-                        class="booking-card group relative flex flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white transition-all cursor-pointer select-none hover:border-[#4F46E5] hover:shadow-md"
+                        class="booking-card group relative flex flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white transition-all select-none {{ $acceptsOnlineBookings ? 'cursor-pointer hover:border-[#4F46E5] hover:shadow-md' : 'cursor-default' }}"
                         :class="isSubmitting && selectedServiceId === {{ $service->id }} ? 'booking-card--submitting' : ''"
                         x-show="isCardVisible({{ $service->id }}, '{{ $service->category?->id ?? '' }}', '{{ addslashes($service->namalayanan) }}')"
+                        @if ($acceptsOnlineBookings)
                         @click="selectServiceById({{ $service->id }})"
                         tabindex="0"
                         role="button"
                         @keydown.enter="selectServiceById({{ $service->id }})"
                         @keydown.space.prevent="selectServiceById({{ $service->id }})"
+                        @else
+                        aria-disabled="true"
+                        @endif
                     >
                         {{-- Service Image Media --}}
                         <div class="booking-card__media relative h-44 sm:h-48 w-full overflow-hidden bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF] flex items-center justify-center">
@@ -253,7 +262,7 @@
         </section>
 
         {{-- Remove sidebar, auto-submit on click --}}
-    </form>
+    @if ($acceptsOnlineBookings)</form>@else</div>@endif
 </div>
 
 {{-- Data Contract: Render both IDs to guarantee 100% compatibility --}}

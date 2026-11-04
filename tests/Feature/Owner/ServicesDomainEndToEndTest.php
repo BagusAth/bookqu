@@ -70,6 +70,7 @@ class ServicesDomainEndToEndTest extends TestCase
      */
     public function test_category_crud_and_unique_validation_per_tenant(): void
     {
+        app(CreateTrialSubscription::class)->execute($this->tenantB);
         // 1. Create Category for Tenant A
         $res = $this->actingAs($this->ownerA)->post('/owner/categories', [
             'name' => 'Private Yoga',

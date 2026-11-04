@@ -30,7 +30,7 @@ class OwnerLandingPageController extends Controller
         // Cek apakah tenant berlangganan paket Pro
         $langganan = Subscription::where('idtenant', $tenant->id)
             ->with('plan')
-            ->latest()
+            ->latest('id')
             ->first();
 
         $adalahpro = EntitlementRules::canAccessFeature($langganan, 'landing-page')['allowed'];
@@ -54,7 +54,7 @@ class OwnerLandingPageController extends Controller
         // Cek apakah tenant berlangganan paket Pro
         $langganan = Subscription::where('idtenant', $tenant->id)
             ->with('plan')
-            ->latest()
+            ->latest('id')
             ->first();
 
         $adalahpro = EntitlementRules::canAccessFeature($langganan, 'landing-page')['allowed'];

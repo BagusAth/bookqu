@@ -26,7 +26,7 @@ final class GetPublicPlanCards
             $previous = $context->getTenantId();
             try {
                 $context->setTenantId((int) $currentTenant->id);
-                $currentSubscription = Subscription::with('plan')->where('idtenant', $currentTenant->id)->latest()->first();
+                $currentSubscription = Subscription::with('plan')->where('idtenant', $currentTenant->id)->latest('id')->first();
             } finally {
                 $context->setTenantId($previous);
             }

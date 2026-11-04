@@ -24,7 +24,7 @@ final class GetOwnerNavigation
         $previous = $context->getTenantId();
         try {
             $context->setTenantId((int) $member->idtenant);
-            $subscription = Subscription::with('plan')->where('idtenant', $member->idtenant)->latest()->first();
+            $subscription = Subscription::with('plan')->where('idtenant', $member->idtenant)->latest('id')->first();
         } finally {
             $context->setTenantId($previous);
         }

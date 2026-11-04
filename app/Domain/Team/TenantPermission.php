@@ -6,6 +6,7 @@ use App\Notifications\BookingStatusChangedOwnerNotification;
 use App\Notifications\NewBookingOwnerNotification;
 use App\Notifications\OwnerPayoutStatusChangedNotification;
 use App\Notifications\PaymentRefundOwedOwnerNotification;
+use App\Notifications\SubscriptionReminderNotification;
 use App\Notifications\TrialExpiringNotification;
 
 final class TenantPermission
@@ -93,6 +94,7 @@ final class TenantPermission
             OwnerPayoutStatusChangedNotification::class => 'payouts.manage',
             PaymentRefundOwedOwnerNotification::class => 'payouts.manage',
             TrialExpiringNotification::class => 'subscription.manage',
+            SubscriptionReminderNotification::class => 'subscription.manage',
         ];
     }
 

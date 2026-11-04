@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -48,14 +49,16 @@ class ScheduleManagementTest extends TestCase
     public function test_owner_can_view_schedule_page(): void
     {
         $response = $this->actingAs($this->user)->get('/owner/schedule');
-        
+
         $response->assertStatus(200);
     }
 
     public function test_owner_can_bulk_store_schedules(): void
     {
+        // BQ-139: successful creation requires an active period; original behavior assertions remain.
+        app(CreateTrialSubscription::class)->execute($this->tenant);
         $today = Carbon::today()->format('Y-m-d');
-        
+
         $response = $this->actingAs($this->user)->post('/owner/schedule/bulk-slots', [
             'jenisslot' => 'harian',
             'idlayanan' => $this->service->id,
@@ -66,13 +69,13 @@ class ScheduleManagementTest extends TestCase
         ]);
 
         $response->assertRedirect('/owner/schedule');
-        
+
         // 09:00 - 09:59, 10:00 - 10:59, 11:00 - 11:59 -> 3 slots
         $this->assertDatabaseCount('schedules', 3);
         $this->assertDatabaseHas('schedules', [
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
-            'tanggal' => $today . ' 00:00:00', // SQLite date formatting
+            'tanggal' => $today.' 00:00:00', // SQLite date formatting
             'jam_mulai' => '09:00:00',
             'jam_selesai' => '09:59:00',
             'status' => 'tersedia',
@@ -110,10 +113,10 @@ class ScheduleManagementTest extends TestCase
         ]);
 
         $response->assertRedirect('/owner/schedule');
-        
+
         $this->assertDatabaseHas('owner_blocked_dates', [
             'idtenant' => $this->tenant->id,
-            'tanggal' => $blockDate . ' 00:00:00', // SQLite date formatting
+            'tanggal' => $blockDate.' 00:00:00', // SQLite date formatting
             'alasan' => 'Libur Nasional',
         ]);
 

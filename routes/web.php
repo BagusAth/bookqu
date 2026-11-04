@@ -89,7 +89,7 @@ Route::middleware('auth')->group(function () {
 
 // ── Owner Dashboard Routes ──
 Route::prefix('owner')
-    ->middleware(['auth', 'verified', 'role:owner', 'tenant', 'tenant.permission'])
+    ->middleware(['auth', 'verified', 'role:owner', 'tenant', 'tenant.permission', 'subscription.create'])
     ->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
         Route::get('/dashboard/polling', [OwnerDashboardController::class, 'pollingData'])->name('owner.dashboard.polling');

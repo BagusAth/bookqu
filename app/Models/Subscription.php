@@ -5,12 +5,19 @@ namespace App\Models;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property Carbon|null $trial_berakhir
+ * @property Carbon|null $langganan_mulai
+ * @property Carbon|null $langganan_berakhir
+ */
 class Subscription extends Model
 {
     use BelongsToTenant;
 
     protected $fillable = [
+        'source_payment_id',
         'idtenant',
         'idplan',
         'status',

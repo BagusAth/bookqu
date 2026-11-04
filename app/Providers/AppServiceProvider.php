@@ -116,7 +116,7 @@ class AppServiceProvider extends ServiceProvider
             if ($tenant) {
                 $langganan = Subscription::where('idtenant', $tenant->id)
                     ->with('plan')
-                    ->latest()
+                    ->latest('id')
                     ->first();
 
                 if ($langganan && $langganan->plan) {

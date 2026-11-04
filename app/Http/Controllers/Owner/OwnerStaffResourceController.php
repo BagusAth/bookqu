@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
-
 use App\Models\Resource;
 use App\Models\Service;
 use App\Models\Staff;
+use App\Models\Subscription;
 use App\Traits\ClearsBookingCache;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\Request;
@@ -14,13 +15,13 @@ use Illuminate\Validation\Rule;
 
 class OwnerStaffResourceController extends Controller
 {
-    use ResolvesOwnerTenant;
     use ClearsBookingCache;
+    use ResolvesOwnerTenant;
 
     public function index(Request $request)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -60,27 +61,27 @@ class OwnerStaffResourceController extends Controller
     public function storeStaff(Request $request)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $validated = $request->validate([
-            'name'                  => 'required|string|max:100',
-            'role'                  => 'required|string|max:100',
-            'phone'                 => 'nullable|string|max:30',
-            'email'                 => 'nullable|email|max:100',
-            'availability'          => 'nullable|string|max:255',
+            'name' => 'required|string|max:100',
+            'role' => 'required|string|max:100',
+            'phone' => 'nullable|string|max:30',
+            'email' => 'nullable|email|max:100',
+            'availability' => 'nullable|string|max:255',
             'availability_schedule' => 'nullable|string|max:255',
-            'is_active'             => 'nullable|boolean',
-            'service_ids'           => 'nullable|array',
-            'service_ids.*'         => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            'is_active' => 'nullable|boolean',
+            'service_ids' => 'nullable|array',
+            'service_ids.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
         // Check subscription staff limit via EntitlementRules
-        $subscription = \App\Models\Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
         $currentStaffCount = Staff::where('idtenant', $tenant->id)->count();
-        $staffQuota = \App\Domain\Subscription\EntitlementRules::canCreateStaff($subscription, $currentStaffCount);
-        if (!$staffQuota['allowed'] && $staffQuota['message']) {
+        $staffQuota = EntitlementRules::canCreateStaff($subscription, $currentStaffCount);
+        if (! $staffQuota['allowed'] && $staffQuota['message']) {
             return back()->withErrors([
                 'name' => $staffQuota['message'],
             ])->withInput();
@@ -89,55 +90,55 @@ class OwnerStaffResourceController extends Controller
         $avail = $validated['availability_schedule'] ?? $validated['availability'] ?? null;
 
         $staff = Staff::create([
-            'idtenant'              => $tenant->id,
-            'name'                  => $validated['name'],
-            'role'                  => $validated['role'],
-            'phone'                 => $validated['phone'] ?? null,
-            'email'                 => $validated['email'] ?? null,
+            'idtenant' => $tenant->id,
+            'name' => $validated['name'],
+            'role' => $validated['role'],
+            'phone' => $validated['phone'] ?? null,
+            'email' => $validated['email'] ?? null,
             'availability_schedule' => $avail,
-            'is_active'             => $request->has('is_active') ? (bool) $request->input('is_active') : true,
+            'is_active' => $request->has('is_active') ? (bool) $request->input('is_active') : true,
         ]);
 
-        if (!empty($validated['service_ids'])) {
+        if (! empty($validated['service_ids'])) {
             $staff->services()->sync($validated['service_ids']);
         }
 
         $this->clearActiveServicesCache($tenant->id);
 
         return redirect()->route('owner.staff-resources', ['tab' => 'staff'])
-            ->with('sukses', 'Staff "' . $staff->name . '" berhasil ditambahkan!');
+            ->with('sukses', 'Staff "'.$staff->name.'" berhasil ditambahkan!');
     }
 
     public function updateStaff(Request $request, int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $staff = Staff::where('idtenant', $tenant->id)->findOrFail($id);
 
         $validated = $request->validate([
-            'name'                  => 'required|string|max:100',
-            'role'                  => 'required|string|max:100',
-            'phone'                 => 'nullable|string|max:30',
-            'email'                 => 'nullable|email|max:100',
-            'availability'          => 'nullable|string|max:255',
+            'name' => 'required|string|max:100',
+            'role' => 'required|string|max:100',
+            'phone' => 'nullable|string|max:30',
+            'email' => 'nullable|email|max:100',
+            'availability' => 'nullable|string|max:255',
             'availability_schedule' => 'nullable|string|max:255',
-            'is_active'             => 'required|boolean',
-            'service_ids'           => 'nullable|array',
-            'service_ids.*'         => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            'is_active' => 'required|boolean',
+            'service_ids' => 'nullable|array',
+            'service_ids.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
         $avail = $validated['availability_schedule'] ?? $validated['availability'] ?? null;
 
         $staff->update([
-            'name'                  => $validated['name'],
-            'role'                  => $validated['role'],
-            'phone'                 => $validated['phone'] ?? null,
-            'email'                 => $validated['email'] ?? null,
+            'name' => $validated['name'],
+            'role' => $validated['role'],
+            'phone' => $validated['phone'] ?? null,
+            'email' => $validated['email'] ?? null,
             'availability_schedule' => $avail,
-            'is_active'             => (bool) $validated['is_active'],
+            'is_active' => (bool) $validated['is_active'],
         ]);
 
         $staff->services()->sync($validated['service_ids'] ?? []);
@@ -145,13 +146,13 @@ class OwnerStaffResourceController extends Controller
         $this->clearActiveServicesCache($tenant->id);
 
         return redirect()->route('owner.staff-resources', ['tab' => 'staff'])
-            ->with('sukses', 'Staff "' . $staff->name . '" berhasil diperbarui!');
+            ->with('sukses', 'Staff "'.$staff->name.'" berhasil diperbarui!');
     }
 
     public function destroyStaff(int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -163,86 +164,87 @@ class OwnerStaffResourceController extends Controller
         $this->clearActiveServicesCache($tenant->id);
 
         return redirect()->route('owner.staff-resources', ['tab' => 'staff'])
-            ->with('sukses', 'Staff "' . $name . '" berhasil dihapus!');
+            ->with('sukses', 'Staff "'.$name.'" berhasil dihapus!');
     }
 
     public function toggleStaffStatus(int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $staff = Staff::where('idtenant', $tenant->id)->findOrFail($id);
-        $staff->update(['is_active' => !$staff->is_active]);
+        $staff->update(['is_active' => ! $staff->is_active]);
 
         $this->clearActiveServicesCache($tenant->id);
 
         $statusText = $staff->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
         return redirect()->route('owner.staff-resources', ['tab' => 'staff'])
-            ->with('sukses', 'Staff "' . $staff->name . '" berhasil ' . $statusText . '!');
+            ->with('sukses', 'Staff "'.$staff->name.'" berhasil '.$statusText.'!');
     }
 
     public function storeResource(Request $request)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $validated = $request->validate([
-            'name'         => 'required|string|max:100',
-            'type'         => 'required|string|max:100',
-            'capacity'     => 'nullable|integer|min:1|max:9999',
-            'location'     => 'nullable|string|max:255',
-            'is_active'    => 'nullable|boolean',
-            'service_ids'  => 'nullable|array',
-            'service_ids.*'=> ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            'name' => 'required|string|max:100',
+            'type' => 'required|string|max:100',
+            'capacity' => 'nullable|integer|min:1|max:9999',
+            'location' => 'nullable|string|max:255',
+            'is_active' => 'nullable|boolean',
+            'service_ids' => 'nullable|array',
+            'service_ids.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
         $resource = Resource::create([
-            'idtenant'  => $tenant->id,
-            'name'      => $validated['name'],
-            'type'      => $validated['type'],
-            'capacity'  => $validated['capacity'] ?? 1,
-            'location'  => $validated['location'] ?? null,
+            'idtenant' => $tenant->id,
+            'name' => $validated['name'],
+            'type' => $validated['type'],
+            'capacity' => $validated['capacity'] ?? 1,
+            'location' => $validated['location'] ?? null,
             'is_active' => $request->has('is_active') ? (bool) $request->input('is_active') : true,
         ]);
 
-        if (!empty($validated['service_ids'])) {
+        if (! empty($validated['service_ids'])) {
             $resource->services()->sync($validated['service_ids']);
         }
 
         $this->clearActiveServicesCache($tenant->id);
 
         return redirect()->route('owner.staff-resources', ['tab' => 'resources'])
-            ->with('sukses', 'Resource "' . $resource->name . '" berhasil ditambahkan!');
+            ->with('sukses', 'Resource "'.$resource->name.'" berhasil ditambahkan!');
     }
 
     public function updateResource(Request $request, int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $resource = Resource::where('idtenant', $tenant->id)->findOrFail($id);
 
         $validated = $request->validate([
-            'name'         => 'required|string|max:100',
-            'type'         => 'required|string|max:100',
-            'capacity'     => 'nullable|integer|min:1|max:9999',
-            'location'     => 'nullable|string|max:255',
-            'is_active'    => 'required|boolean',
-            'service_ids'  => 'nullable|array',
-            'service_ids.*'=> ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            'name' => 'required|string|max:100',
+            'type' => 'required|string|max:100',
+            'capacity' => 'nullable|integer|min:1|max:9999',
+            'location' => 'nullable|string|max:255',
+            'is_active' => 'required|boolean',
+            'service_ids' => 'nullable|array',
+            'service_ids.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
         $resource->update([
-            'name'      => $validated['name'],
-            'type'      => $validated['type'],
-            'capacity'  => $validated['capacity'] ?? 1,
-            'location'  => $validated['location'] ?? null,
+            'name' => $validated['name'],
+            'type' => $validated['type'],
+            'capacity' => $validated['capacity'] ?? 1,
+            'location' => $validated['location'] ?? null,
             'is_active' => (bool) $validated['is_active'],
         ]);
 
@@ -251,13 +253,13 @@ class OwnerStaffResourceController extends Controller
         $this->clearActiveServicesCache($tenant->id);
 
         return redirect()->route('owner.staff-resources', ['tab' => 'resources'])
-            ->with('sukses', 'Resource "' . $resource->name . '" berhasil diperbarui!');
+            ->with('sukses', 'Resource "'.$resource->name.'" berhasil diperbarui!');
     }
 
     public function destroyResource(int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -269,24 +271,24 @@ class OwnerStaffResourceController extends Controller
         $this->clearActiveServicesCache($tenant->id);
 
         return redirect()->route('owner.staff-resources', ['tab' => 'resources'])
-            ->with('sukses', 'Resource "' . $name . '" berhasil dihapus!');
+            ->with('sukses', 'Resource "'.$name.'" berhasil dihapus!');
     }
 
     public function toggleResourceStatus(int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $resource = Resource::where('idtenant', $tenant->id)->findOrFail($id);
-        $resource->update(['is_active' => !$resource->is_active]);
+        $resource->update(['is_active' => ! $resource->is_active]);
 
         $this->clearActiveServicesCache($tenant->id);
 
         $statusText = $resource->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
         return redirect()->route('owner.staff-resources', ['tab' => 'resources'])
-            ->with('sukses', 'Resource "' . $resource->name . '" berhasil ' . $statusText . '!');
+            ->with('sukses', 'Resource "'.$resource->name.'" berhasil '.$statusText.'!');
     }
 }
-

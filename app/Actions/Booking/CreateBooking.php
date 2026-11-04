@@ -70,7 +70,7 @@ class CreateBooking
                 // 1. Atomic monthly booking quota check inside transaction: lock stable synchronization row (Subscription or Tenant)
                 $subscription = Subscription::with('plan')
                     ->where('idtenant', $tenant->id)
-                    ->latest()
+                    ->latest('id')
                     ->lockForUpdate()
                     ->first();
 

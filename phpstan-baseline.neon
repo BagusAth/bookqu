@@ -229,12 +229,6 @@ parameters:
 			path: app/Actions/Subscription/GetSubscriptionOverview.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Console/Commands/CheckExpiredSubscriptions.php
-
-		-
 			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
 			identifier: instanceof.alwaysFalse
 			count: 2
@@ -263,12 +257,6 @@ parameters:
 			identifier: instanceof.alwaysTrue
 			count: 1
 			path: app/Domain/Schedule/SlotCompatibilityRules.php
-
-		-
-			message: '#^Cannot call method lessThan\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 3
-			path: app/Domain/Subscription/SubscriptionState.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
@@ -575,9 +563,3 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Notifications/NewBookingOwnerNotification.php
-
-		-
-			message: '#^Cannot call method translatedFormat\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Notifications/TrialExpiringNotification.php

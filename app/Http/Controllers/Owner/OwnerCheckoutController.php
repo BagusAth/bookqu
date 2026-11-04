@@ -164,7 +164,7 @@ class OwnerCheckoutController extends Controller
         $subscription = Subscription::where('idtenant', $tenant->id)
             ->where('idplan', $payment->idplan)
             ->where('status', 'active')
-            ->latest()
+            ->latest('id')
             ->first();
 
         return view('owner.checkout-invoice', [

@@ -9,6 +9,7 @@ use App\Actions\Owner\GetOwnerNavigation;
 use App\Actions\Team\FilterRevenueFigures;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
+use App\Policies\TenantResourcePolicy;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -74,6 +75,7 @@ class OwnerDashboardController extends Controller
             $overviewData = app(FilterRevenueFigures::class)->execute($overviewData);
         }
         $overviewData['canViewRevenue'] = $canViewRevenue;
+        $overviewData['canRenewSubscription'] = app(TenantResourcePolicy::class)->ability($user, 'subscription.manage');
         $report = collect(app(GetOwnerNavigation::class)->execute($user))->firstWhere('id', 'reports');
         $overviewData['showFullReportLink'] = $report !== null;
         $overviewData['fullReportLocked'] = $report['locked'] ?? false;

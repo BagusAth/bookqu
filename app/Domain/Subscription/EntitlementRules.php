@@ -260,4 +260,16 @@ final class EntitlementRules
         return array_filter($labels, fn ($feature) => ! isset($modules[$feature])
             || ModuleRelease::state($modules[$feature]) === 'released', ARRAY_FILTER_USE_KEY);
     }
+
+    public static function requiresActiveCreation(string $route): bool
+    {
+        if (! str_starts_with($route, 'owner.')) {
+            return false;
+        }
+        if (str_starts_with($route, 'owner.payout-accounts.') || str_starts_with($route, 'owner.refunds.') || str_starts_with($route, 'owner.bookings.cancellation-requests.')) {
+            return false;
+        }
+
+        return str_ends_with($route, '.store') || in_array($route, ['owner.schedule.bulk-store', 'owner.bookings.walkin', 'owner.team.invite'], true);
+    }
 }

@@ -70,7 +70,7 @@ class GetSubscriptionOverview
         $langgananaktif = Subscription::withoutGlobalScopes()
             ->where('idtenant', $idtenant)
             ->with('plan')
-            ->latest()
+            ->latest('id')
             ->first();
 
         $semuapaket = Plan::all();

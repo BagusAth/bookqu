@@ -13,12 +13,14 @@ use App\Actions\Payment\OutcomeIntakeResult;
 use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Actions\Tenant\GetStorefrontTenant;
 use App\Domain\Booking\BookingRules;
+use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\CreateBookingRequest;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Support\CustomerBookingRoutes;
 use App\Support\TenantContext;
@@ -80,7 +82,10 @@ class BookingController extends Controller
         $categories = $services->pluck('category')->filter(fn ($cat) => $cat && $cat->is_active)->unique('id')->values();
         $pendingCheckout = app(StorefrontCheckoutState::class)->pending($tenant);
 
-        return view('customer.booking.program-selection', compact('tenant', 'services', 'servicesPayload', 'categories', 'pendingCheckout'));
+        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
+        $acceptsOnlineBookings = EntitlementRules::hasEffectivePlan($subscription);
+
+        return view('customer.booking.program-selection', compact('tenant', 'services', 'servicesPayload', 'categories', 'pendingCheckout', 'acceptsOnlineBookings'));
     }
 
     public function selectProgram(Request $request, string $slug_usaha)
