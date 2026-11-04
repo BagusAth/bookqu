@@ -2,7 +2,7 @@
 id: BQ-107
 title: Bulk schedule date range capping, past slot protection, and occupancy check on delete
 type: bug-fix
-status: approved
+status: in-progress
 priority: P1
 phase: 4
 domain: schedule

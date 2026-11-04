@@ -18,6 +18,11 @@ use Illuminate\Validation\ValidationException;
 
 class BulkCreateSchedules
 {
+    /**
+     * Longest `rentang` span, in days after the start date (BQ-107, NFR-PERF-002).
+     */
+    public const MAX_RANGE_DAYS = 90;
+
     public function __construct(
         protected ScheduleAvailabilityCache $availabilityCache
     ) {}
@@ -101,6 +106,7 @@ class BulkCreateSchedules
                 throw ValidationException::withMessages(['error' => 'Paket berakhir. Perpanjang paket untuk membuka slot baru.']);
             }
             $count = 0;
+            $timestamp = now();
 
             foreach ($activeDates as $dateStr) {
                 $cursor = Carbon::parse($dateStr.' '.$data['jammulai']);
@@ -115,21 +121,17 @@ class BulkCreateSchedules
                     );
                 }
 
+                // One read of the day's existing slots instead of one conflict query per slot (BQ-107).
+                $existingSlots = ScheduleConflictRules::slotTimesOnDate((int) $tenant->id, (int) $data['idlayanan'], $dateStr);
+                $rows = [];
+
                 while ($cursor->copy()->addMinutes($intervalSlot)->lte($end)) {
                     $jamMulai = $cursor->format('H:i:s');
                     // Subtract 1 minute per specification requirement (e.g. 11:00:00 - 11:59:00 instead of 12:00:00)
                     $jamSelesai = $cursor->copy()->addMinutes($intervalSlot)->subMinute()->format('H:i:s');
 
-                    $hasConflict = ScheduleConflictRules::hasScheduleConflict(
-                        (int) $tenant->id,
-                        (int) $data['idlayanan'],
-                        $dateStr,
-                        $jamMulai,
-                        $jamSelesai
-                    );
-
-                    if (! $hasConflict) {
-                        Schedule::create([
+                    if (! ScheduleConflictRules::overlapsAny($existingSlots, $jamMulai, $jamSelesai)) {
+                        $rows[] = (new Schedule([
                             'idtenant' => $tenant->id,
                             'idlayanan' => $data['idlayanan'],
                             'tanggal' => $dateStr,
@@ -137,11 +139,15 @@ class BulkCreateSchedules
                             'jam_selesai' => $jamSelesai,
                             'harga_override' => $hargaOverride,
                             'status' => 'tersedia',
-                        ]);
-                        $count++;
+                        ]))->getAttributes() + ['created_at' => $timestamp, 'updated_at' => $timestamp];
                     }
 
                     $cursor->addMinutes($intervalSlot);
+                }
+
+                if ($rows !== []) {
+                    Schedule::withoutGlobalScopes()->insert($rows);
+                    $count += count($rows);
                 }
             }
 
