@@ -7,6 +7,7 @@ namespace App\Actions\Schedule;
 use App\Domain\Booking\BookingRules;
 use App\Models\Schedule;
 use App\Models\Tenant;
+use App\Support\CsvCell;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -65,23 +66,23 @@ class ExportScheduleReport
             $file = fopen('php://output', 'w');
             // BOM for UTF-8
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($file, ['BOOKQU - SCHEDULE & UTILIZATION REPORT']);
-            fputcsv($file, ['Bisnis', $tenant->namabisnis ?? '-']);
-            fputcsv($file, ['Periode', ucfirst($period)]);
-            fputcsv($file, ['Tanggal Ekspor', date('Y-m-d H:i:s')]);
-            fputcsv($file, []);
-            fputcsv($file, ['METRIK KPI', 'NILAI']);
-            fputcsv($file, ['Total Slots', $totalSlots]);
-            fputcsv($file, ['Booked Slots', $bookedSlots]);
-            fputcsv($file, ['Available Slots', $availableSlots]);
-            fputcsv($file, ['Utilization Rate (%)', $utilizationRate.'%']);
-            fputcsv($file, []);
-            fputcsv($file, ['RINCIAN SLOT OPERASIONAL']);
-            fputcsv($file, ['Tanggal', 'Jam Mulai', 'Jam Selesai', 'Layanan', 'Tarif (Rp)', 'Status Availability', 'Nama Tamu / Pemesan']);
+            fputcsv($file, CsvCell::row(['BOOKQU - SCHEDULE & UTILIZATION REPORT']));
+            fputcsv($file, CsvCell::row(['Bisnis', $tenant->namabisnis ?? '-']));
+            fputcsv($file, CsvCell::row(['Periode', ucfirst($period)]));
+            fputcsv($file, CsvCell::row(['Tanggal Ekspor', date('Y-m-d H:i:s')]));
+            fputcsv($file, CsvCell::row([]));
+            fputcsv($file, CsvCell::row(['METRIK KPI', 'NILAI']));
+            fputcsv($file, CsvCell::row(['Total Slots', $totalSlots]));
+            fputcsv($file, CsvCell::row(['Booked Slots', $bookedSlots]));
+            fputcsv($file, CsvCell::row(['Available Slots', $availableSlots]));
+            fputcsv($file, CsvCell::row(['Utilization Rate (%)', $utilizationRate.'%']));
+            fputcsv($file, CsvCell::row([]));
+            fputcsv($file, CsvCell::row(['RINCIAN SLOT OPERASIONAL']));
+            fputcsv($file, CsvCell::row(['Tanggal', 'Jam Mulai', 'Jam Selesai', 'Layanan', 'Tarif (Rp)', 'Status Availability', 'Nama Tamu / Pemesan']));
 
             foreach ($schedules as $s) {
                 $b = $s->bookings->whereIn('status', ['paid', 'completed'])->first();
-                fputcsv($file, [
+                fputcsv($file, CsvCell::row([
                     $s->tanggal,
                     substr($s->jam_mulai, 0, 5),
                     substr($s->jam_selesai, 0, 5),
@@ -89,7 +90,7 @@ class ExportScheduleReport
                     $s->harga_override ?? $s->layanan->harga ?? 0,
                     $s->getAvailabilityStatus(),
                     $b ? $b->namapelanggan : '-',
-                ]);
+                ]));
             }
 
             fclose($file);
