@@ -146,6 +146,7 @@ class BulkCreateSchedules
                 }
 
                 if ($rows !== []) {
+                    // scope-bypass: every row carries the authenticated tenant's idtenant
                     Schedule::withoutGlobalScopes()->insert($rows);
                     $count += count($rows);
                 }
