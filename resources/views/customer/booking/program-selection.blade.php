@@ -13,6 +13,7 @@
         method="POST"
         action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.select-program', $tenant->slug) }}"
         x-ref="confirmForm"
+        @submit="guardSubmit($event)"
     >
     @else
     <div class="max-w-5xl mx-auto w-full">
@@ -41,6 +42,9 @@
                         <input
                             type="text"
                             x-model="searchQuery"
+                            @keydown.enter="keepSearchEnterLocal($event)"
+                            enterkeyhint="search"
+                            aria-label="Cari layanan"
                             placeholder="Cari layanan..."
                             class="h-11 sm:h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-[#0F172A] placeholder:text-slate-400 shadow-xs transition-all focus:border-[#4F46E5] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#EEF2FF] hover:border-slate-300"
                         />

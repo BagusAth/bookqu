@@ -21,6 +21,28 @@ document.addEventListener('alpine:init', () => {
             this.activeCategory = catId;
         },
 
+        /**
+         * BQ-118: Enter in the search box filters in place instead of submitting the booking
+         * form. Enter that finishes an IME composition is left to the browser.
+         */
+        keepSearchEnterLocal(event) {
+            if (event.isComposing || event.keyCode === 229) {
+                return;
+            }
+
+            event.preventDefault();
+        },
+
+        /**
+         * BQ-118: an implicit submit without a chosen service stays on this page. Choosing a
+         * card submits through form.submit(), which does not fire this event.
+         */
+        guardSubmit(event) {
+            if (!this.selectedServiceId) {
+                event.preventDefault();
+            }
+        },
+
         init() {
             // Support both IDs consistently to prevent mismatch bugs
             const dataEl = document.getElementById('booking-services-data') || document.getElementById('booking-service-data');
