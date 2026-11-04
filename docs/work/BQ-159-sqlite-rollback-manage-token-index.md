@@ -2,7 +2,7 @@
 id: BQ-159
 title: Fix the SQLite rollback of the legacy payment token migration
 type: bug-fix
-status: proposed
+status: in-progress
 priority: P2
 phase: 8
 domain: payment
@@ -41,3 +41,6 @@ A rollback of that migration on SQLite succeeds.
 None.
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+Reproduced the SQLite rollback failure in LegacyManageTokenRollbackTest. The rollback drops the unique index first. SQLite 713 passed; Pint and PHPStan passed.
