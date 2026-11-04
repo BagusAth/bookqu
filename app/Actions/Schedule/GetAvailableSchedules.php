@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Schedule;
 
 use App\Domain\Booking\BookingRules;
+use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Schedule\AvailabilityRules;
 use App\Models\Booking;
 use App\Models\Schedule;
@@ -178,16 +179,17 @@ class GetAvailableSchedules
             $isBooked = $row['booking_count'] > 0;
             $isAvailable = ! $isPast && ! $isBooked;
             $slotPrice = $row['harga_override'] !== null ? (float) $row['harga_override'] : (float) $service->harga;
-            $durasiMenit = (int) ($service->durasi ?: 60);
-            $slotEndDateTime = (clone $slotDateTime)->addMinutes($durasiMenit);
-            $timeRangeLabel = $slotDateTime->format('H:i').' – '.$slotEndDateTime->format('H:i');
+            // BQ-114: the slot's own end, not the service's current duration
+            $slotRange = BookingTimeRange::forSlot($dateStr, (string) $row['jam_mulai'], (string) $row['jam_selesai']);
+            $timeRangeLabel = $slotRange->label();
 
             return [
                 'id' => $row['id'],
                 'time' => $slotDateTime->format('H:i'),
                 'label' => $timeRangeLabel,
                 'start_time' => $slotDateTime->format('H:i'),
-                'end_time' => $slotEndDateTime->format('H:i'),
+                'end_time' => $slotRange->endTime(),
+                'duration_minutes' => $slotRange->durationMinutes(),
                 'range_label' => $timeRangeLabel,
                 'time_range' => $timeRangeLabel,
                 'period' => 'WIB',

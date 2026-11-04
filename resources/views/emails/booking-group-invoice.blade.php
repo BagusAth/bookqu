@@ -37,7 +37,6 @@
         $firstBk = $bookings->first();
         $tenant = $payment->tenant;
         $layanan = $firstBk?->layanan;
-        $durasi = (int) ($layanan?->durasi ?? 60);
         $tglFormatted = $firstBk?->tanggalbooking ? \Carbon\Carbon::parse($firstBk->tanggalbooking)->translatedFormat('l, d F Y') : '-';
     @endphp
     <div class="wrapper">
@@ -90,16 +89,9 @@
             <div class="detail-card">
                 <h3>Jadwal Sesi Terpilih</h3>
                 @foreach($bookings as $idx => $bk)
-                    @php
-                        $bkDate = $bk->tanggalbooking instanceof \Carbon\CarbonInterface
-                            ? $bk->tanggalbooking->format('Y-m-d')
-                            : \Carbon\Carbon::parse($bk->tanggalbooking)->format('Y-m-d');
-                        $start = \Carbon\Carbon::parse($bkDate . ' ' . $bk->jam);
-                        $end = (clone $start)->addMinutes($durasi);
-                    @endphp
                     <div class="slot-item">
                         <div>
-                            <strong>Sesi #{{ $idx + 1 }}:</strong> {{ $start->format('H:i') }} – {{ $end->format('H:i') }} WIB
+                            <strong>Sesi #{{ $idx + 1 }}:</strong> {{ $sessionRanges[$bk->id]->label() }} WIB
                         </div>
                         <div style="color:#6B7280; font-family:monospace; font-size:12px;">
                             {{ $bk->booking_code }}

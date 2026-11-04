@@ -59,6 +59,8 @@ class Payment extends Model
 
     /**
      * Relasi utama 1 Payment -> Banyak Booking (Multi-Slot Support).
+     *
+     * @return HasMany<Booking, $this>
      */
     public function bookings(): HasMany
     {

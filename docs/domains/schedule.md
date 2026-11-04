@@ -58,4 +58,6 @@ BQ-107: bulk creation refuses past dates and caps a `rentang` at `BulkCreateSche
 
 BQ-108 (AC-JBH-03): `UpdateScheduleAvailability` refuses to close a date, and saves nothing, while `ScheduleConflictRules::activeBookingsOnDate` (the occupancy rule applied to the tenant's bookings on that date) returns any booking; the owner sees the count and the affected bookings until each is rescheduled or cancelled.
 
+BQ-114: the storefront slot picker (`GetAvailableSchedules::getTimeSlots`) and the checkout summary show each slot's own end and length (`BookingTimeRange::forSlot`), not the service's current duration; inclusive ends (`subMinute()` in `BulkCreateSchedules`) display one minute later.
+
 BQ-120: reschedule slot selectability now delegates to `AvailabilityRules::isSlotAvailable`, including closed dates, service fulfillment, time and occupancy, with current-booking exclusion. `BookingManagementTest` verifies blocked GET/POST refusal, reopening and successful claim.

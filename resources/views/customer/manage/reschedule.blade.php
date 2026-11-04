@@ -251,7 +251,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5 pb-4 border-b border-slate-100">
                         <div>
                             <h3 class="text-base font-bold text-slate-900">2. Pilih Jam Sesi</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Durasi sesi: {{ $booking->layanan->durasi ?? 60 }} menit</p>
+                            <p class="text-xs text-slate-500 mt-0.5">Durasi sesi: {{ $timeRange->durationMinutes() ?? '-' }} menit</p>
                         </div>
                         <div>
                             <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 border border-indigo-100" x-text="selectedDateLabel"></span>

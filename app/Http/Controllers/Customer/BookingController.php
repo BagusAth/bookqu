@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\CreateBooking;
+use App\Actions\Booking\GetBookingTimeRanges;
 use App\Actions\Booking\GetScheduleSelection;
 use App\Actions\Booking\ResumeCheckout;
 use App\Actions\Booking\StorefrontCheckoutState;
@@ -13,6 +14,7 @@ use App\Actions\Payment\OutcomeIntakeResult;
 use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Actions\Tenant\GetStorefrontTenant;
 use App\Domain\Booking\BookingRules;
+use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\CreateBookingRequest;
@@ -382,6 +384,9 @@ class BookingController extends Controller
 
         $hargaAkhir = array_sum($hargaPerSlot);
         $hasPriceOverride = collect($hargaPerSlot)->contains(fn ($price) => (float) $price !== (float) $service->harga);
+        // BQ-114: show each chosen slot's own range, not the service's current duration
+        $selectedRanges = array_map(fn (Schedule $slot) => BookingTimeRange::forSlot($selectedDate, (string) $slot->jam_mulai, (string) $slot->jam_selesai), $schedules);
+        $selectedMinutes = array_sum(array_map(fn (BookingTimeRange $range) => (int) $range->durationMinutes(), $selectedRanges));
         $selectedTime = $selectedTimes[0] ?? null;
         $checkoutState = app(StorefrontCheckoutState::class);
         $checkoutFingerprint = $checkoutState->fingerprint($service, $selectedDate, $schedules);
@@ -396,6 +401,8 @@ class BookingController extends Controller
             'hargaAkhir',
             'hasPriceOverride',
             'schedules',
+            'selectedRanges',
+            'selectedMinutes',
             'checkoutFingerprint',
             'pendingCheckout'
         ));
@@ -540,6 +547,7 @@ class BookingController extends Controller
         }
 
         $payment->load(['bookings.layanan']);
+        $timeRanges = app(GetBookingTimeRanges::class)->execute($payment->bookings);
 
         $provider = $payment->provider ?: ($payment->metode === 'singapay' ? 'singapay' : config('payment.default', 'singapay'));
         $isMidtrans = $provider === 'midtrans';
@@ -547,7 +555,7 @@ class BookingController extends Controller
         $snapUrl = $isMidtrans ? config('payment.drivers.midtrans.snap_url') : null;
 
         if ($payment->status === 'gagal') {
-            return view('customer.booking.payment', [
+            return view('customer.booking.payment', $timeRanges + [
                 'tenant' => $tenant,
                 'payment' => $payment,
                 'provider' => $provider,
@@ -560,7 +568,7 @@ class BookingController extends Controller
         }
 
         if ($payment->isExpired()) {
-            return view('customer.booking.payment', [
+            return view('customer.booking.payment', $timeRanges + [
                 'tenant' => $tenant,
                 'payment' => $payment,
                 'provider' => $provider,
@@ -572,7 +580,7 @@ class BookingController extends Controller
             ]);
         }
 
-        return view('customer.booking.payment', [
+        return view('customer.booking.payment', $timeRanges + [
             'tenant' => $tenant,
             'payment' => $payment,
             'provider' => $provider,
@@ -683,7 +691,7 @@ class BookingController extends Controller
 
         $booking = $bookings->first();
 
-        return view('customer.booking.invoice', compact('tenant', 'payment', 'bookings', 'booking'));
+        return view('customer.booking.invoice', app(GetBookingTimeRanges::class)->execute($bookings) + compact('tenant', 'payment', 'bookings', 'booking'));
     }
 
     /**
@@ -798,17 +806,12 @@ class BookingController extends Controller
             $validatedSchedules[] = $schedule;
         }
 
-        // Contiguous sequence check based on service duration
+        // Contiguous sequence check from the slot boundaries (BQ-114)
         usort($validatedSchedules, fn ($a, $b) => strcmp($a->jam_mulai, $b->jam_mulai));
-        $durationMinutes = (int) $service->durasi;
 
-        for ($i = 1; $i < count($validatedSchedules); $i++) {
-            $prevStart = Carbon::parse($selectedDate.' '.$validatedSchedules[$i - 1]->jam_mulai, $wib);
-            $currStart = Carbon::parse($selectedDate.' '.$validatedSchedules[$i]->jam_mulai, $wib);
-            if ((int) abs($currStart->diffInMinutes($prevStart)) !== $durationMinutes) {
-                return CustomerBookingRoutes::route($errorRoute, $slug_usaha)
-                    ->withErrors(['jam' => 'Slot harus berurutan tanpa jeda.']);
-            }
+        if (! BookingRules::validateContiguousSlots($validatedSchedules)) {
+            return CustomerBookingRoutes::route($errorRoute, $slug_usaha)
+                ->withErrors(['jam' => 'Slot harus berurutan tanpa jeda.']);
         }
 
         $validatedScheduleIds = array_map(fn ($s) => $s->id, $validatedSchedules);

@@ -22,7 +22,6 @@
     @php
         $firstBooking = $bookings->first();
         $bookingDate = $firstBooking?->tanggalbooking ? \Carbon\Carbon::parse($firstBooking->tanggalbooking)->translatedFormat('l, d F Y') : '-';
-        $durasiMenit = (int) ($firstBooking?->layanan?->durasi ?? 60);
         $backManageUrl = route('booking.manage.payment', ['order_id' => $payment->order_id]);
     @endphp
 
@@ -102,17 +101,10 @@
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         @foreach($bookings as $idx => $bk)
-                            @php
-                                $bkDate = $bk->tanggalbooking instanceof \Carbon\CarbonInterface
-                                    ? $bk->tanggalbooking->format('Y-m-d')
-                                    : \Carbon\Carbon::parse($bk->tanggalbooking)->format('Y-m-d');
-                                $s = \Carbon\Carbon::parse($bkDate . ' ' . $bk->jam);
-                                $e = (clone $s)->addMinutes($durasiMenit);
-                            @endphp
                             <tr>
                                 <td class="py-2.5 pr-3 align-top font-bold text-slate-500">{{ $idx + 1 }}</td>
                                 <td class="py-2.5 pr-3 align-top font-semibold text-slate-800 font-mono whitespace-nowrap">
-                                    {{ $s->format('H:i') }} – {{ $e->format('H:i') }} WIB
+                                    {{ $sessionRanges[$bk->id]->label() }} WIB
                                     <span class="sm:hidden block mt-0.5 font-medium text-slate-500 text-[11px]">{{ $bk->booking_code }}</span>
                                 </td>
                                 <td class="hidden sm:table-cell py-2.5 pr-3 align-top text-slate-500 font-mono text-[11px]">

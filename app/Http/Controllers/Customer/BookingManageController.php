@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\CancelBooking;
+use App\Actions\Booking\GetBookingTimeRanges;
 use App\Actions\Booking\GetInvoiceAmounts;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\CustomerAccess\ReviewBooking;
@@ -61,7 +62,7 @@ class BookingManageController extends Controller
 
         $isMultiSlot = $bookings->count() > 1;
 
-        return view('customer.manage.payment-show', [
+        return view('customer.manage.payment-show', app(GetBookingTimeRanges::class)->execute($bookings) + [
             'payment' => $payment,
             'bookings' => $bookings,
             'tenant' => $tenant,
@@ -84,7 +85,7 @@ class BookingManageController extends Controller
         $tenant = $payment->tenant;
         $booking = $bookings->first();
 
-        return view('customer.manage.payment-invoice', app(GetInvoiceAmounts::class)->execute($payment) + [
+        return view('customer.manage.payment-invoice', app(GetInvoiceAmounts::class)->execute($payment) + app(GetBookingTimeRanges::class)->execute($bookings) + [
             'payment' => $payment,
             'bookings' => $bookings,
             'booking' => $booking,
@@ -141,7 +142,7 @@ class BookingManageController extends Controller
             $rescheduleDeadline = $bookingDateTime->copy()->subHours($rescheduleHours);
         }
 
-        return view('customer.manage.show', [
+        return view('customer.manage.show', app(GetBookingTimeRanges::class)->execute([$booking]) + [
             'booking' => $booking,
             'isMultiSlot' => $isMultiSlot,
             'canCancel' => $canCancel,
@@ -250,7 +251,7 @@ class BookingManageController extends Controller
             })->values()->all();
         });
 
-        return view('customer.manage.reschedule', [
+        return view('customer.manage.reschedule', app(GetBookingTimeRanges::class)->execute([$booking]) + [
             'booking' => $booking,
             'availabilityPayload' => $availabilityPayload,
             'minDate' => $minDate->toDateString(),
@@ -314,7 +315,7 @@ class BookingManageController extends Controller
             abort(404, 'Invoice hanya tersedia untuk pembayaran yang berhasil.');
         }
 
-        return view('customer.manage.invoice', app(GetInvoiceAmounts::class)->execute($booking->payment) + [
+        return view('customer.manage.invoice', app(GetInvoiceAmounts::class)->execute($booking->payment) + app(GetBookingTimeRanges::class)->execute([$booking]) + [
             'booking' => $booking,
             'invoiceDate' => $booking->payment?->updated_at ?? $booking->created_at,
         ]);
