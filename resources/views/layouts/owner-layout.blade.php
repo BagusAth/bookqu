@@ -66,6 +66,7 @@
     <!-- Reusable UI Components -->
     @include('components.owner.toast')
     @include('components.owner.confirm-modal')
+    @include('components.owner.session-expired')
 
 </body>
 </html>
