@@ -8,8 +8,11 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\TeamInvitationController;
+use App\Http\Controllers\Customer\BookingCheckoutController;
 use App\Http\Controllers\Customer\BookingController;
 use App\Http\Controllers\Customer\BookingManageController;
+use App\Http\Controllers\Customer\BookingPaymentController;
+use App\Http\Controllers\Customer\BookingScheduleController;
 use App\Http\Controllers\Customer\CustomerAccessController;
 use App\Http\Controllers\Owner\BookingCancellationController;
 use App\Http\Controllers\Owner\OwnerAdditionalItemController;
@@ -280,56 +283,56 @@ $bookingSubRoutes = function (string $namePrefix) {
     Route::post('/booking/select-program', [BookingController::class, 'selectProgram'])
         ->name($namePrefix.'select-program');
 
-    Route::get('/booking/schedule', [BookingController::class, 'showScheduleSelection'])
+    Route::get('/booking/schedule', [BookingScheduleController::class, 'showScheduleSelection'])
         ->name($namePrefix.'schedule');
 
-    Route::post('/booking/select-schedule', [BookingController::class, 'selectSchedule'])
+    Route::post('/booking/select-schedule', [BookingScheduleController::class, 'selectSchedule'])
         ->name($namePrefix.'select-schedule');
 
-    Route::get('/booking/schedule/slots', [BookingController::class, 'getScheduleSlots'])
+    Route::get('/booking/schedule/slots', [BookingScheduleController::class, 'getScheduleSlots'])
         ->middleware('throttle:60,1,storefront-slots:')
         ->name($namePrefix.'schedule-slots');
 
-    Route::get('/booking/date', [BookingController::class, 'showDateSelection'])
+    Route::get('/booking/date', [BookingScheduleController::class, 'showDateSelection'])
         ->name($namePrefix.'date');
 
-    Route::post('/booking/select-date', [BookingController::class, 'selectDate'])
+    Route::post('/booking/select-date', [BookingScheduleController::class, 'selectDate'])
         ->name($namePrefix.'select-date');
 
-    Route::get('/booking/time', [BookingController::class, 'showTimeSelection'])
+    Route::get('/booking/time', [BookingScheduleController::class, 'showTimeSelection'])
         ->name($namePrefix.'time');
 
-    Route::post('/booking/select-time', [BookingController::class, 'selectTime'])
+    Route::post('/booking/select-time', [BookingScheduleController::class, 'selectTime'])
         ->name($namePrefix.'select-time');
 
-    Route::get('/booking/checkout', [BookingController::class, 'showCheckout'])
+    Route::get('/booking/checkout', [BookingCheckoutController::class, 'showCheckout'])
         ->name($namePrefix.'checkout');
 
-    Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])->block(120, 120)
+    Route::post('/booking/checkout', [BookingCheckoutController::class, 'processCheckout'])->block(120, 120)
         ->middleware('throttle:10,1,storefront-checkout:')
         ->name($namePrefix.'process-checkout');
 
-    Route::post('/booking/validate-voucher', [BookingController::class, 'validateVoucher'])
+    Route::post('/booking/validate-voucher', [BookingCheckoutController::class, 'validateVoucher'])
         ->middleware(['module:vouchers', 'subscription:promos'])
         ->name($namePrefix.'validate-voucher');
 
-    Route::get('/booking/payment/{payment:order_id}', [BookingController::class, 'showPayment'])
+    Route::get('/booking/payment/{payment:order_id}', [BookingPaymentController::class, 'showPayment'])
         ->middleware(['throttle:60,1,customer-private:', 'customer.access:payment'])
         ->name($namePrefix.'payment');
 
-    Route::post('/booking/payment/{payment:order_id}/check-status', [BookingController::class, 'checkPaymentStatus'])
+    Route::post('/booking/payment/{payment:order_id}/check-status', [BookingPaymentController::class, 'checkPaymentStatus'])
         ->middleware(['throttle:30,1,customer-status:', 'customer.access:payment'])
         ->name($namePrefix.'check-status');
 
-    Route::post('/booking/payment/{payment:order_id}/callback', [BookingController::class, 'handleCallback'])
+    Route::post('/booking/payment/{payment:order_id}/callback', [BookingPaymentController::class, 'handleCallback'])
         ->middleware(['throttle:30,1,customer-status:', 'customer.access:payment'])
         ->name($namePrefix.'callback');
 
-    Route::post('/booking/payment/{payment:order_id}/cancel', [BookingController::class, 'cancelPayment'])
+    Route::post('/booking/payment/{payment:order_id}/cancel', [BookingPaymentController::class, 'cancelPayment'])
         ->middleware(['throttle:10,1,customer-mutation:', 'customer.access:cancel-payment'])
         ->name($namePrefix.'cancel');
 
-    Route::get('/booking/payment/{payment:order_id}/invoice', [BookingController::class, 'showInvoice'])
+    Route::get('/booking/payment/{payment:order_id}/invoice', [BookingPaymentController::class, 'showInvoice'])
         ->middleware(['throttle:60,1,customer-private:', 'customer.access:invoice'])
         ->name($namePrefix.'invoice');
 };

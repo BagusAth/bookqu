@@ -26,7 +26,6 @@ return [
     'scope-bypass-reason' => [],
     // Real writes moved to the Payment lifecycle in BQ-067; the rest are status values in responses, removed by BQ-032 (Outcome intake).
     'payment-status-writers' => [
-        'app/Http/Controllers/Customer/BookingController.php' => 2,
         'app/Http/Controllers/Owner/OwnerCheckoutController.php' => 2,
     ],
 ];
