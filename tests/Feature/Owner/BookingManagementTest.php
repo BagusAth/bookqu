@@ -143,7 +143,7 @@ class BookingManagementTest extends TestCase
 
         $this->travelTo(now()->addMinute());
         $this->patch($url, ['status' => 'paid'])->assertSessionHasErrors('error');
-        $this->patch($url, ['status' => 'cancelled'])->assertSessionHas('sukses');
+        $this->patch($url, ['status' => 'cancelled', 'reason' => 'Lokasi ditutup'])->assertSessionHas('sukses');
         $this->assertSame('gagal', $payment->fresh()->status);
         foreach ($bookings as $member) {
             $this->assertSame('cancelled', $member->fresh()->status);
@@ -208,6 +208,7 @@ class BookingManagementTest extends TestCase
         // Owner cancels one slot -> both slots should be cancelled
         $response = $this->actingAs($this->user)->patch("/owner/bookings/{$b1->id}/status", [
             'status' => 'cancelled',
+            'reason' => 'Lokasi ditutup',
         ]);
 
         $response->assertRedirect();

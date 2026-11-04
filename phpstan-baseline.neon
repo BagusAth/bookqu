@@ -1,26 +1,8 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$cancel_before_hours\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Booking/CancelBooking.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Booking/CancelBooking.php
-
-		-
 			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
 			identifier: instanceof.alwaysFalse
-			count: 1
-			path: app/Actions/Booking/CancelBooking.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>cancel_before_hours" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Actions/Booking/CancelBooking.php
 

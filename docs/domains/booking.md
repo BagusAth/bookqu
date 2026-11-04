@@ -78,3 +78,5 @@ BQ-088: storefront checkout POSTs use the framework session lock (120 seconds, r
 BQ-146: a Kasir can record one pending cancellation request per payment group, with a reason. A Pemilik or Manajer may reject it without changing the booking or approve it under the tenant lock. Approval closes a pending payment through PaymentLifecycle. A settled online payment produces one full business-cancellation refund. Booking history snapshots the authenticated member ID and role for team actions.
 
 BQ-087 (ADR-0023): owner status changes wait for the existing online hold. Owner settlement is limited to unlinked payments, and cancellation after the hold expires the payment in the same transaction. A verified provider success after a historical cash settlement records one double-payment refund and alerts the owner.
+
+BQ-138 backend: the management cancellation endpoint submits a request without changing booking state. Owner acceptance or a business cancellation requires a valid transition for the group, then cancels and records the appropriate refund in one tenant-locked transaction.

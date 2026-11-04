@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminPayoutController;
+use App\Http\Controllers\Admin\AdminRefundController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\Owner\OwnerNotificationController;
 use App\Http\Controllers\Owner\OwnerPaymentSettingsController;
 use App\Http\Controllers\Owner\OwnerPayoutAccountController;
 use App\Http\Controllers\Owner\OwnerProgramController;
+use App\Http\Controllers\Owner\OwnerRefundController;
 use App\Http\Controllers\Owner\OwnerResourceController;
 use App\Http\Controllers\Owner\OwnerReviewController;
 use App\Http\Controllers\Owner\OwnerScheduleController;
@@ -147,6 +149,7 @@ Route::prefix('owner')
             Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
             Route::post('/bookings/{booking}/cancellation-requests', [BookingCancellationController::class, 'store'])->name('owner.bookings.cancellation-requests.store');
             Route::patch('/bookings/cancellation-requests/{cancellationId}', [BookingCancellationController::class, 'decide'])->whereNumber('cancellationId')->name('owner.bookings.cancellation-requests.decide');
+            Route::patch('/refunds/requests/{refundRequestId}', [OwnerRefundController::class, 'decide'])->whereNumber('refundRequestId')->name('owner.refunds.decide');
             Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
             Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
             Route::get('/bookings/{booking}/available-slots', [OwnerBookingController::class, 'getAvailableSlots'])->name('owner.bookings.available-slots');
@@ -271,6 +274,9 @@ Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+        Route::get('/refunds', [AdminRefundController::class, 'index'])->name('admin.refunds');
+        Route::post('/refunds/{refund}/transfer', [AdminRefundController::class, 'transferDetails'])->name('admin.refunds.transfer');
+        Route::patch('/refunds/{refund}', [AdminRefundController::class, 'update'])->name('admin.refunds.update');
         Route::get('/payouts', [AdminPayoutController::class, 'index'])->name('admin.payouts');
         Route::post('/payouts/{payout}/approve', [AdminPayoutController::class, 'approve'])->whereNumber('payout')->name('admin.payouts.approve');
         Route::post('/payouts/{payout}/complete', [AdminPayoutController::class, 'complete'])->whereNumber('payout')->name('admin.payouts.complete');

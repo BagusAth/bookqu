@@ -374,7 +374,7 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response->assertDontSee('Batalkan Reservasi');
     }
 
-    public function test_single_slot_management_displays_reschedule_and_cancel_buttons(): void
+    public function test_single_slot_management_displays_reschedule_and_hides_direct_cancellation(): void
     {
         $orderId = 'ORD-'.strtoupper(Str::random(10));
         $manageToken = Str::random(32);
@@ -409,8 +409,7 @@ class CustomerFrontendSpecificationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Ubah Jadwal');
-        $response->assertSee('Batalkan Reservasi');
-        $response->assertSee('Yakin ingin membatalkan reservasi ini?');
-        $response->assertSee('Ya, Batalkan Reservasi');
+        $response->assertDontSee('Batalkan Reservasi');
+        $response->assertDontSee('Ya, Batalkan Reservasi');
     }
 }

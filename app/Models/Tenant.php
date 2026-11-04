@@ -45,6 +45,7 @@ class Tenant extends Model
         'weekend_price_type',
         'weekend_price_value',
         'cancel_before_hours',
+        'refunds_enabled',
         'reschedule_before_hours',
         'theme_color',
         'button_style',

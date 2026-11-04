@@ -156,7 +156,7 @@ class OwnerBookingController extends Controller
         $validated = $request->validated();
         $statusBaru = $validated['status'];
 
-        $result = $updateBookingStatus->execute($booking, $statusBaru, 'owner');
+        $result = $updateBookingStatus->execute($booking, $statusBaru, 'owner', $validated['reason'] ?? null);
 
         if (! $result['success']) {
             return back()->withErrors([

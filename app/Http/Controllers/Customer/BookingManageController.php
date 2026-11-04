@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Actions\Booking\CancelBooking;
 use App\Actions\Booking\GetInvoiceAmounts;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\CustomerAccess\ResolveManagementTarget;
 use App\Actions\CustomerAccess\ReviewBooking;
+use App\Actions\Payment\RequestBookingRefund;
 use App\Actions\Schedule\GetAvailableSchedules;
+use App\Domain\Booking\BookingRules;
 use App\Domain\CustomerAccess\AccessContext;
 use App\Domain\CustomerAccess\AccessOperation;
 use App\Http\Controllers\Controller;
@@ -16,6 +17,7 @@ use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Models\Review;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -125,19 +127,24 @@ class BookingManageController extends Controller
 
     // ── Cancel booking ─────────────────────────────────────────────────────────
 
-    public function cancel(Request $request, string $bookingCode, CancelBooking $cancelBooking)
+    public function cancel(Request $request, string $bookingCode, RequestBookingRefund $refund): RedirectResponse
     {
-        $booking = $this->targets->booking($this->access($request), $bookingCode, AccessOperation::CancelBooking);
-
-        $result = $cancelBooking->execute($booking, 'customer', access: $request->attributes->get('customer_access'));
-
-        if (! $result['success']) {
-            return back()->withErrors(['cancel' => $result['error']]);
+        $access = $this->access($request);
+        $booking = $this->targets->booking($access, $bookingCode, AccessOperation::CancelBooking);
+        if (! BookingRules::canRequestRefund($booking)) {
+            return back()->withErrors(['cancel' => 'Permintaan refund tidak tersedia. Hubungi pemilik.']);
         }
 
-        return redirect()
-            ->route('booking.manage', ['booking_code' => $bookingCode])
-            ->with('success', 'Booking berhasil dibatalkan. Email konfirmasi telah dikirim.');
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+            'bank_nama' => ['required', 'string', 'max:100'],
+            'nomor_rekening' => ['required', 'string', 'regex:/^[0-9]{5,30}$/'],
+            'nama_pemilik_rekening' => ['required', 'string', 'max:100'],
+        ]);
+        $refund->execute($booking, $access, $data);
+
+        return redirect()->route('booking.manage', ['booking_code' => $bookingCode])
+            ->with('success', 'Permintaan refund dikirim. Booking tetap berlaku sampai ada keputusan.');
     }
 
     // ── Show reschedule form ───────────────────────────────────────────────────

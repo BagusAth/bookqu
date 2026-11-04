@@ -5,6 +5,7 @@ namespace Tests\Feature\Customer;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Payment;
+use App\Models\Refund;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
@@ -13,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
@@ -105,26 +107,42 @@ class BookingManageTest extends TestCase
         $response->assertSee($this->booking->booking_code);
     }
 
-    public function test_customer_can_cancel_booking_within_policy(): void
+    public function test_customer_requests_refund_then_owner_approves_half_and_admin_processes_it(): void
     {
-        $response = $this->grantCustomerAccess($this->booking)->post('/manage/'.$this->booking->booking_code.'/cancel?token='.$this->booking->cancellation_token);
-        $response->assertRedirect('/manage/'.$this->booking->booking_code);
-        $response->assertSessionHas('success');
+        $payload = [
+            'reason' => 'Berhalangan hadir', 'bank_nama' => 'Bank Tes',
+            'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'Pelanggan Tes',
+        ];
+        $url = '/manage/'.$this->booking->booking_code.'/cancel';
+        $this->grantCustomerAccess($this->booking)->post($url, $payload)->assertSessionHasErrors('cancel');
+        $this->booking->tenant->update(['refunds_enabled' => true]);
+        $this->booking->payment->update(['jumlah' => 150001]);
+        $this->grantCustomerAccess($this->booking)->post($url, $payload)->assertSessionHas('success');
+        $this->post($url, $payload)->assertSessionHasErrors('cancel');
+        $refundRequest = DB::table('refund_requests')->first();
+        $this->assertNotSame($payload['nomor_rekening'], $refundRequest->nomor_rekening);
+        $this->assertSame('paid', $this->booking->fresh()->status);
+        $this->assertDatabaseCount('refunds', 0);
 
-        $this->assertDatabaseHas('bookings', [
-            'id' => $this->booking->id,
-            'status' => 'cancelled',
-        ]);
-
-        $this->assertDatabaseHas('refunds', [
-            'booking_id' => $this->booking->id,
-            'status' => 'pending',
-            'jumlah' => 150000,
-        ]);
+        $decision = '/owner/refunds/requests/'.$refundRequest->id;
+        $this->actingAs(Tenant::factory()->create()->user)->patch($decision, ['decision' => 'accepted_half'])->assertNotFound();
+        $this->actingAs($this->booking->tenant->user)->patch($decision, ['decision' => 'accepted_half'])->assertSessionHas('sukses');
+        $this->patch($decision, ['decision' => 'accepted_half'])->assertRedirect();
+        $this->assertDatabaseCount('refunds', 1);
+        $this->assertDatabaseHas('refunds', ['refund_request_id' => $refundRequest->id, 'jumlah' => 75000, 'cause' => 'customer_request']);
+        $this->assertSame('cancelled', $this->booking->fresh()->status);
+        $refund = Refund::firstOrFail();
+        $this->get('/admin/refunds')->assertForbidden();
+        $this->actingAs(User::factory()->create(['role' => 'admin']))->get('/admin/refunds')
+            ->assertOk()->assertDontSee($payload['nomor_rekening']);
+        $this->post("/admin/refunds/{$refund->id}/transfer")->assertOk()->assertSee($payload['nomor_rekening']);
+        $this->patch("/admin/refunds/{$refund->id}", ['status' => 'processed', 'reference' => 'TEST-TRANSFER'])->assertRedirect();
+        $this->assertDatabaseHas('refunds', ['id' => $refund->id, 'status' => 'processed', 'refund_reference' => 'TEST-TRANSFER']);
     }
 
     public function test_customer_cannot_cancel_booking_outside_policy(): void
     {
+        $this->booking->tenant->update(['refunds_enabled' => true]);
         // Change booking to 2 hours from now (violates 24-hr policy)
         $this->booking->update([
             'tanggalbooking' => Carbon::today()->format('Y-m-d'),

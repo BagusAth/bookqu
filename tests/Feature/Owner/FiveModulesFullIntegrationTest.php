@@ -227,6 +227,7 @@ class FiveModulesFullIntegrationTest extends TestCase
 
         $resCancel = $this->patch(route('owner.bookings.status', $booking2->id), [
             'status' => 'cancelled',
+            'reason' => 'Lokasi ditutup',
         ]);
         $resCancel->assertRedirect();
         $this->assertDatabaseHas('bookings', ['id' => $booking2->id, 'status' => 'cancelled']);

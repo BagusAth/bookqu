@@ -2,7 +2,7 @@
 id: BQ-138
 title: Refund requests, owner decisions, business cancellation refunds and admin processing
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: payment
@@ -52,3 +52,8 @@ INV-PAY-03 (idempotent), INV-PAY-06 (one refund per payment), INV-TEN-01.
 - `docs/domains/admin.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+
+Backend shipped in this commit: grant-bound customer request, tenant-locked owner decisions, business cancellation refund, balance debit, admin transfer/retry and daily reminders. The request-to-transfer feature test checks encrypted data, masking, duplicate requests, tenant isolation and 50% rounding. SQLite 713, MySQL group 15, Pint and PHPStan passed.
+Remaining: customer refund input and owner booking panel controls, including the cancellation reason field, still need UI wiring. Status remains in-progress.

@@ -142,11 +142,11 @@ class Booking extends Model
     }
 
     /**
-     * Check if this booking can still be cancelled based on tenant policy.
+     * Direct cancellation from the management page is retired.
      */
     public function canBeCancelled(): bool
     {
-        return BookingRules::canCancel($this);
+        return false;
     }
 
     /**

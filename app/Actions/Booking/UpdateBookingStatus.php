@@ -34,10 +34,10 @@ class UpdateBookingStatus
      * @param  string  $actor  'owner'
      * @return array{success: bool, error?: string, booking?: Booking}
      */
-    public function execute(Booking $booking, string $newStatus, string $actor = 'owner'): array
+    public function execute(Booking $booking, string $newStatus, string $actor = 'owner', ?string $reason = null): array
     {
         if ($newStatus === BookingState::STATUS_CANCELLED) {
-            return $this->cancelBooking->execute($booking, $actor);
+            return $this->cancelBooking->execute($booking, $actor, $reason);
         }
 
         return DB::transaction(function () use ($booking, $newStatus, $actor): array {

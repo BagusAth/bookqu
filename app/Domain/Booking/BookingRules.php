@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -145,19 +146,17 @@ class BookingRules
         return self::applyOccupiesSlotCondition($query, '')->exists();
     }
 
-    /**
-     * Verify whether a booking can be cancelled by a customer based on business policy.
-     */
-    public static function canCancel(Booking $booking): bool
+    public static function canRequestRefund(Booking $booking): bool
     {
-        if ($booking->status !== BookingState::STATUS_PAID) {
-            return false;
-        }
+        $tenant = $booking->tenant;
 
-        if ($booking->isMultiSlot()) {
-            return false;
-        }
+        return $booking->status === BookingState::STATUS_PAID
+            && $tenant instanceof Tenant && (bool) $tenant->refunds_enabled
+            && self::isBeforeCancellationDeadline($booking);
+    }
 
+    private static function isBeforeCancellationDeadline(Booking $booking): bool
+    {
         $tenant = $booking->tenant;
         if (! $tenant) {
             return false;

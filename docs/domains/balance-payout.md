@@ -32,3 +32,5 @@ Functional: Implemented (BQ-015, BQ-103, BQ-122, BQ-123, BQ-124, BQ-125) · Veri
 |---|---|
 | Transfers are manual (no disbursement API); the admin records the reference and proof | — (v1 decision) |
 | A refund can drive the balance below zero when the owner has already withdrawn; the admin settles it outside the app | — (v1 decision) |
+
+BQ-138: an accepted partial refund debits the recorded refund amount. Admin failure and retry change transfer status and leave the existing debit in place.

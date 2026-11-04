@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Payment\RemindOpenRefundRequests;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -21,4 +22,13 @@ Schedule::call(fn () => Artisan::call('app:check-expired-subscriptions'))
 Schedule::call(fn () => Artisan::call('bookings:expire-payments'))
     ->name('bookings:expire-payments')
     ->everyMinute()
+    ->withoutOverlapping();
+
+Artisan::command('refunds:remind-open', function (): void {
+    app(RemindOpenRefundRequests::class)->execute();
+});
+
+Schedule::call(fn () => Artisan::call('refunds:remind-open'))
+    ->name('refunds:remind-open')
+    ->daily()
     ->withoutOverlapping();
