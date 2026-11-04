@@ -2,7 +2,7 @@
 id: BQ-077
 title: Redact raw exception diagnostics outside booking checkout
 type: bug-fix
-status: approved
+status: in-progress
 priority: P2
 phase: 4
 domain: notifications
