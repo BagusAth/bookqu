@@ -4,8 +4,9 @@
 
 @section('content')
 <div class="mx-auto max-w-4xl space-y-6" x-data="{
-    deleteModalOpen: {{ $errors->has('confirm_account') ? 'true' : 'false' }},
+    deleteModalOpen: {{ $errors->hasAny(['confirm_account', 'delete_password']) ? 'true' : 'false' }},
     confirmInput: '',
+    deletePassword: '',
     targetAccount: @js(strtolower(trim($accountUser?->email ?? ''))),
     targetBusiness: @js(strtolower(trim($tenant?->namabisnis ?? '')))
 }">
@@ -114,7 +115,16 @@
 
     @endif
     {{-- ── 2. Account Settings ── --}}
-    <div class="rounded-2xl border border-bq-border bg-bq-surface shadow-2xs" id="account-settings" x-data="{ showPass: false, showConfirm: false }">
+    <div class="rounded-2xl border border-bq-border bg-bq-surface shadow-2xs" id="account-settings" x-data="{
+        showPass: false,
+        showConfirm: false,
+        showCurrent: false,
+        originalEmail: @js(strtolower(trim($accountUser?->email ?? ''))),
+        email: @js(old('email', $accountUser?->email ?? '')),
+        newPassword: '',
+        needsCurrentPassword: @js($errors->has('current_password')),
+        get changesCredentials() { return this.needsCurrentPassword || this.newPassword !== '' || this.email.trim().toLowerCase() !== this.originalEmail; }
+    }">
         <div class="border-b border-bq-border px-4 sm:px-6 py-4">
             <h2 class="text-base font-bold text-bq-text">Account Settings</h2>
             <p class="text-xs text-bq-text-muted">Manage your personal account credentials and security.</p>
@@ -128,7 +138,7 @@
                 </div>
                 <div>
                     <label class="mb-1.5 block text-xs font-bold text-bq-text">Email <span class="text-rose-500">*</span></label>
-                    <input type="email" name="email" required value="{{ old('email', $accountUser?->email ?? '') }}" class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-email">
+                    <input type="email" name="email" required value="{{ old('email', $accountUser?->email ?? '') }}" x-model="email" class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-email">
                 </div>
             </div>
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -150,7 +160,7 @@
                 <div>
                     <label class="mb-1.5 block text-xs font-bold text-bq-text">Change Password <span class="text-[11px] font-normal text-bq-text-muted">(Kosongkan jika tidak ingin ganti)</span></label>
                     <div class="relative">
-                        <input :type="showPass ? 'text' : 'password'" name="password" placeholder="Minimal 8 karakter" class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 pr-11 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-password">
+                        <input :type="showPass ? 'text' : 'password'" name="password" x-model="newPassword" placeholder="Minimal 8 karakter" class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 pr-11 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-password">
                         <button type="button" @click="showPass = !showPass" class="absolute right-3 top-1/2 -translate-y-1/2 text-bq-text-muted hover:text-bq-text">
                             <span class="text-[11px] font-bold" x-text="showPass ? 'Hide' : 'Show'"></span>
                         </button>
@@ -165,6 +175,19 @@
                         </button>
                     </div>
                 </div>
+            </div>
+            <div x-show="changesCredentials" x-cloak class="rounded-xl border border-amber-200 bg-amber-50 p-4" id="current-password-section">
+                <label for="input-current-password" class="mb-1.5 block text-xs font-bold text-bq-text">Password Saat Ini <span class="text-rose-500">*</span></label>
+                <p class="mb-2 text-[11px] text-bq-text-muted">Wajib diisi untuk mengganti email atau password.</p>
+                <div class="relative sm:max-w-sm">
+                    <input :type="showCurrent ? 'text' : 'password'" name="current_password" autocomplete="current-password" :required="changesCredentials" class="w-full rounded-xl border {{ $errors->has('current_password') ? 'border-rose-400' : 'border-bq-border' }} bg-bq-surface px-4 py-2.5 pr-11 text-xs text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20" id="input-current-password">
+                    <button type="button" @click="showCurrent = !showCurrent" class="absolute right-3 top-1/2 -translate-y-1/2 text-bq-text-muted hover:text-bq-text">
+                        <span class="text-[11px] font-bold" x-text="showCurrent ? 'Hide' : 'Show'"></span>
+                    </button>
+                </div>
+                @error('current_password')
+                    <p class="mt-2 text-xs font-semibold text-rose-600">{{ $message }}</p>
+                @enderror
             </div>
             <div class="flex justify-end border-t border-bq-border pt-5">
                 <button type="submit" class="craft-btn inline-flex items-center gap-2 rounded-xl bg-bq-primary px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-bq-primary/25 transition-all hover:bg-bq-primary-hover hover:shadow-lg" id="btn-save-account">
@@ -318,9 +341,25 @@
                             class="w-full rounded-xl border border-rose-300 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
                             autocomplete="off"
                         >
+                        <label for="input-delete-password" class="mt-3 block text-xs font-semibold text-rose-900 mb-1.5">
+                            Password akun Anda:
+                        </label>
+                        <input
+                            type="password"
+                            name="delete_password"
+                            form="form-delete-account"
+                            id="input-delete-password"
+                            x-model="deletePassword"
+                            required
+                            autocomplete="current-password"
+                            class="w-full rounded-xl border border-rose-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                        >
                     </div>
 
                     @error('confirm_account')
+                        <p class="mt-2 text-xs text-rose-600 font-semibold">{{ $message }}</p>
+                    @enderror
+                    @error('delete_password')
                         <p class="mt-2 text-xs text-rose-600 font-semibold">{{ $message }}</p>
                     @enderror
 
@@ -333,14 +372,14 @@
                             Batal
                         </button>
 
-                        <form method="POST" action="{{ route('owner.settings.account.delete') }}" class="w-full sm:w-auto">
+                        <form method="POST" action="{{ route('owner.settings.account.delete') }}" class="w-full sm:w-auto" id="form-delete-account">
                             @csrf
                             @method('DELETE')
                             <input type="hidden" name="confirm_account" :value="confirmInput">
                             <button
                                 type="submit"
-                                :disabled="confirmInput.trim().toLowerCase() !== targetAccount && confirmInput.trim().toLowerCase() !== targetBusiness"
-                                :class="(confirmInput.trim().toLowerCase() === targetAccount || confirmInput.trim().toLowerCase() === targetBusiness)
+                                :disabled="deletePassword === '' || (confirmInput.trim().toLowerCase() !== targetAccount && confirmInput.trim().toLowerCase() !== targetBusiness)"
+                                :class="deletePassword !== '' && (confirmInput.trim().toLowerCase() === targetAccount || confirmInput.trim().toLowerCase() === targetBusiness)
                                     ? 'bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-md shadow-rose-600/25'
                                     : 'bg-rose-200 text-rose-400 cursor-not-allowed'"
                                 class="craft-btn w-full sm:w-auto rounded-xl px-4 py-2.5 text-xs font-bold transition-all"

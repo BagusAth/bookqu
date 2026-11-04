@@ -44,6 +44,7 @@ class DeleteAccountWithOpenFundsTest extends TestCase
 
         $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
             'confirm_account' => 'owner@example.com',
+            'delete_password' => 'password',
         ]);
 
         $response->assertSessionHasErrors([
@@ -59,6 +60,7 @@ class DeleteAccountWithOpenFundsTest extends TestCase
 
         $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
             'confirm_account' => 'owner@example.com',
+            'delete_password' => 'password',
         ]);
 
         $response->assertSessionHasErrors([
@@ -84,6 +86,7 @@ class DeleteAccountWithOpenFundsTest extends TestCase
 
         $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
             'confirm_account' => 'owner@example.com',
+            'delete_password' => 'password',
         ]);
 
         $response->assertSessionHasErrors([
@@ -109,6 +112,7 @@ class DeleteAccountWithOpenFundsTest extends TestCase
 
         $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
             'confirm_account' => 'owner@example.com',
+            'delete_password' => 'password',
         ]);
 
         $response->assertSessionHasErrors([
@@ -139,6 +143,7 @@ class DeleteAccountWithOpenFundsTest extends TestCase
 
         $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
             'confirm_account' => 'owner@example.com',
+            'delete_password' => 'password',
         ]);
 
         $response->assertRedirect('/');

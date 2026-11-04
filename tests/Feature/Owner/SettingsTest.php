@@ -185,6 +185,7 @@ class SettingsTest extends TestCase
     {
         $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
             'confirm_account' => 'wrong-input@example.com',
+            'delete_password' => 'password',
         ]);
 
         $response->assertSessionHasErrors('confirm_account');
@@ -201,6 +202,7 @@ class SettingsTest extends TestCase
 
         $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
             'confirm_account' => $this->user->email,
+            'delete_password' => 'password',
         ]);
 
         $response->assertRedirect('/');
