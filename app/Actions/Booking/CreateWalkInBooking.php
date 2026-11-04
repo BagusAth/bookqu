@@ -7,7 +7,7 @@ use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
 use App\Domain\Booking\BookingState;
-use App\Domain\Subscription\SubscriptionState;
+use App\Domain\Subscription\EntitlementRules;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
@@ -37,8 +37,8 @@ class CreateWalkInBooking
      */
     public function execute(Tenant $tenant, array $data): ?Booking
     {
-        $subscription = Subscription::where('idtenant', $tenant->id)->latest()->first();
-        if ($subscription !== null && SubscriptionState::isExpired($subscription)) {
+        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
+        if (! EntitlementRules::hasEffectivePlan($subscription)) {
             throw ValidationException::withMessages([
                 'error' => 'Langganan Anda telah habis, mohon perpanjang untuk menambah booking walk-in.',
             ]);

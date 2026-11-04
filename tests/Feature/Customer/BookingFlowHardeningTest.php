@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Actions\Booking\CreateBooking;
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Domain\CustomerAccess\AccessProfile;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -11,6 +13,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
@@ -43,6 +46,9 @@ class BookingFlowHardeningTest extends TestCase
             'alamat' => 'Jalan Test',
             'nomorhp' => '08123456789',
         ]);
+        // BQ-086: successful writes require a live subscription; assertions stay unchanged.
+        app(CreateTrialSubscription::class)->execute($this->tenant)->forceFill(['created_at' => now()->subMinute()])->save();
+
         $this->service = Service::create([
             'idtenant' => $this->tenant->id,
             'namalayanan' => 'Program Konsultasi',
@@ -232,5 +238,53 @@ class BookingFlowHardeningTest extends TestCase
     private function customer(): array
     {
         return ['namapelanggan' => 'John Doe', 'email' => 'john@example.com', 'nomorhp' => '081234567890'];
+    }
+
+    public function test_repeated_checkout_for_the_same_fingerprint_hands_off_the_existing_payment(): void
+    {
+        $this->selectSlot();
+        $fingerprint = $this->fingerprintFromCheckoutPage();
+        $this->post('/my-business/booking/checkout', ['checkout_fingerprint' => $fingerprint] + $this->customer())->assertRedirect();
+        $payment = Payment::withoutGlobalScopes()->sole();
+        $response = $this->post('/my-business/booking/checkout', ['checkout_fingerprint' => $fingerprint] + $this->customer());
+        $this->assertCheckoutHandoff($response, $payment);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('bookings', 1);
+    }
+
+    public function test_different_selection_creates_a_distinct_checkout_instead_of_replaying(): void
+    {
+        $this->selectSlot();
+        $first = $this->fingerprintFromCheckoutPage();
+        $this->post('/my-business/booking/checkout', ['checkout_fingerprint' => $first] + $this->customer())->assertRedirect();
+        $this->schedule = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'tanggal' => $this->tomorrow, 'jam_mulai' => '10:00:00', 'jam_selesai' => '11:00:00']);
+        $this->selectSlot();
+        $next = $this->fingerprintFromCheckoutPage();
+        $this->assertNotSame($first, $next);
+        $this->post('/my-business/booking/checkout', ['checkout_fingerprint' => $next] + $this->customer())->assertRedirect();
+        $this->assertDatabaseCount('payments', 2);
+    }
+
+    public function test_checkout_session_lock_is_held_during_creation_and_released_on_exception(): void
+    {
+        $this->selectSlot();
+        $fingerprint = $this->fingerprintFromCheckoutPage();
+        $key = '';
+        $held = false;
+        $this->mock(CreateBooking::class)->shouldReceive('execute')->once()->andReturnUsing(function () use (&$key, &$held): array {
+            $key = 'session:'.request()->session()->getId();
+            $probe = Cache::lock($key, 120);
+            $acquired = $probe->get();
+            $held = ! $acquired;
+            if ($acquired) {
+                $probe->release();
+            }
+            throw new \RuntimeException('Test-only checkout failure');
+        });
+        $this->post('/my-business/booking/checkout', ['checkout_fingerprint' => $fingerprint] + $this->customer())->assertStatus(500);
+        $this->assertTrue($held, 'Session lock was not held during checkout creation.');
+        $lock = Cache::lock($key, 120);
+        $this->assertTrue($lock->get());
+        $lock->release();
     }
 }

@@ -49,6 +49,13 @@
 
 
 
+    @if ($subscriptionExpired ?? false)
+        <div role="status" class="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950">
+            <p>Langganan telah berakhir. Booking yang sudah ada tetap dapat dikelola.</p>
+            @if ($canRenewSubscription ?? false)<a href="{{ route('owner.subscription') }}" class="font-semibold underline">Perpanjang langganan</a>@else<p>Hubungi Pemilik bisnis untuk memperpanjang paket.</p>@endif
+        </div>
+    @endif
+
     {{-- ── Trial Banner ── --}}
     @if ($statustrial)
         @include('components.owner.trial-banner', ['sisahari' => $sisahari])
@@ -65,6 +72,7 @@
             'idPrefix' => 'stat-booking',
         ])
 
+        @if ($canViewRevenue ?? true)
         @include('components.owner.stat-card', [
             'ikon' => 'revenue',
             'label' => 'Total Revenue',
@@ -73,6 +81,7 @@
             'tipeperubahan' => $persenperubahanrevenue > 0 ? 'naik' : ($persenperubahanrevenue < 0 ? 'turun' : 'stabil'),
             'idPrefix' => 'stat-revenue',
         ])
+        @endif
 
         {{-- Customers Card --}}
         <div class="group rounded-xl border border-bq-border bg-bq-surface p-3.5 sm:p-5 shadow-xs transition-all duration-300 hover:border-bq-border-strong hover:shadow-md" id="stat-customers">
@@ -105,6 +114,7 @@
         ])
     </div>
 
+    @if ($canViewRevenue ?? true)
     {{-- ── Revenue Chart & Daily Trends ── --}}
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {{-- Revenue Growth Chart --}}
@@ -183,14 +193,17 @@
                 @endforelse
             </div>
             <div class="mt-5 border-t border-bq-border pt-4">
+                @if ($showFullReportLink ?? false)
                 <a href="{{ route('owner.analytics') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-full-report">
                     <span>View Full Report</span>
-                    <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 uppercase">🔒 Terkunci</span>
+                    @if ($fullReportLocked ?? false)<span class="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 uppercase">🔒 Terkunci</span>@endif
                 </a>
+                @endif
             </div>
         </div>
     </div>
 
+    @endif
     {{-- ── Recent Activity & Upcoming Bookings Grid ── --}}
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {{-- Recent Bookings --}}
@@ -347,12 +360,12 @@
     window.revenueChartData = {
         monthly: {
             labels: @json($labelbulan),
-            data: @json($datarevenueperbulan),
+            data: @json($datarevenueperbulan ?? []),
             subtitle: 'Monthly earnings overview'
         },
         weekly: {
             labels: @json($labelminggu),
-            data: @json($datarevenueperminggu),
+            data: @json($datarevenueperminggu ?? []),
             subtitle: 'Last 7 days daily earnings'
         }
     };

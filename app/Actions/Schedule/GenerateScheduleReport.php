@@ -8,7 +8,6 @@ use App\Domain\Booking\BookingRules;
 use App\Models\Booking;
 use App\Models\Resource;
 use App\Models\Schedule;
-use App\Models\Staff;
 use App\Models\Tenant;
 use App\Support\TenantContext;
 use Carbon\Carbon;
@@ -128,22 +127,6 @@ class GenerateScheduleReport
         $peakDay = $hasDayData ? array_key_first($sortedDays) : 'Tidak ada data';
         $lowDay = $hasDayData ? array_key_last($sortedDays) : 'Tidak ada data';
 
-        // Staff workload based on actual assigned service bookings
-        $staffMembers = Staff::where('idtenant', $tenant->id)->with('services')->get()->map(function ($s) use ($bookings) {
-            $serviceIds = $s->services->pluck('id')->toArray();
-            $handledBookingsCount = ! empty($serviceIds)
-                ? $bookings->whereIn('idlayanan', $serviceIds)->count()
-                : 0;
-
-            return [
-                'name' => $s->name,
-                'role' => $s->role,
-                'services_count' => count($serviceIds),
-                'services_names' => $s->services->pluck('namalayanan')->implode(', '),
-                'count' => $handledBookingsCount,
-            ];
-        });
-
         // Resource workload based on actual assigned service bookings
         $resourceList = Resource::where('idtenant', $tenant->id)->with('services')->get()->map(function ($r) use ($bookings) {
             $serviceIds = $r->services->pluck('id')->toArray();
@@ -173,7 +156,6 @@ class GenerateScheduleReport
             'dailyCounts' => $dailyCounts,
             'peakDay' => $peakDay,
             'lowDay' => $lowDay,
-            'staffMembers' => $staffMembers,
             'resourceList' => $resourceList,
             'period' => $period,
         ];

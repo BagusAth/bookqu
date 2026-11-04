@@ -100,7 +100,7 @@ class RescheduleBooking
                         $tenant,
                         (int) $service->id,
                         [$newScheduleId],
-                        $actor === 'customer' && $targetDate ? Carbon::parse($targetDate)->toDateString() : null,
+                        $targetDate ? Carbon::parse($targetDate)->toDateString() : null,
                         (int) $booking->id,
                     )->first();
                 } catch (SlotClaimRefused $refused) {

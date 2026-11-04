@@ -2,7 +2,7 @@
 id: BQ-146
 title: Pengaturan → Tim: invitations, roles, revocation and the activity log
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: tenancy
@@ -52,3 +52,8 @@ INV-TEN-01, INV-SUB-01.
 - `docs/domains/tenancy.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+
+AC-SET-05/06 and FR-TEAM-001/004/006 verified by TeamInvitationTest (seven scenarios), including role change, session invalidation, single use, expiry, attribution, and cancellation decisions. TeamSeatLockingTest verifies real MySQL tenant locks on issue and acceptance. Staff endpoints and writes retired; historical tables retained.
+SQLite: 710 passed (4077 assertions). MySQL group: 14 passed (54 assertions). Pint and PHPStan passed; one obsolete baseline entry removed. Evidence: PR #39.

@@ -223,52 +223,10 @@ parameters:
 			path: app/Actions/Schedule/UpdateScheduleAvailability.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$isunlimited\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
-			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getBookingLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
-			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getServiceLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>isunlimited" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>namapaket" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
 			message: '#^Using nullsafe property access on non\-nullable type App\\Models\\Subscription\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Actions/Subscription/GetSubscriptionOverview.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Console/Commands/CheckExpiredSubscriptions.php
 
 		-
 			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
@@ -299,36 +257,6 @@ parameters:
 			identifier: instanceof.alwaysTrue
 			count: 1
 			path: app/Domain/Schedule/SlotCompatibilityRules.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domain/Subscription/EntitlementRules.php
-
-		-
-			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getBookingLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Domain/Subscription/EntitlementRules.php
-
-		-
-			message: '#^Parameter \#1 \$plan of static method App\\Domain\\Subscription\\PlanCapability\:\:getServiceLimit\(\) expects App\\Models\\Plan\|null, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Domain/Subscription/EntitlementRules.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>namapaket" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Domain/Subscription/EntitlementRules.php
-
-		-
-			message: '#^Cannot call method lessThan\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 3
-			path: app/Domain/Subscription/SubscriptionState.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
@@ -364,18 +292,6 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
 			identifier: property.notFound
 			count: 5
-			path: app/Http/Controllers/Customer/BookingManageController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Customer/BookingManageController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$updated_at\.$#'
-			identifier: property.notFound
-			count: 1
 			path: app/Http/Controllers/Customer/BookingManageController.php
 
 		-
@@ -457,12 +373,6 @@ parameters:
 			path: app/Http/Controllers/Owner/OwnerBookingController.php
 
 		-
-			message: '#^Anonymous function has an unused use \$booking\.$#'
-			identifier: closure.unusedUse
-			count: 1
-			path: app/Http/Controllers/Owner/OwnerBookingController.php
-
-		-
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),mixed\>\:\:map\(\) contains unresolvable type\.$#'
 			identifier: argument.unresolvableType
 			count: 1
@@ -473,12 +383,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Owner/OwnerBookingController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/Owner/OwnerLandingPageController.php
 
 		-
 			message: '#^Cannot call method format\(\) on string\.$#'
@@ -589,12 +493,6 @@ parameters:
 			path: app/Models/Booking.php
 
 		-
-			message: '#^Match arm comparison between ''reviewed'' and ''reviewed'' is always true\.$#'
-			identifier: match.alwaysTrue
-			count: 3
-			path: app/Models/BookingLog.php
-
-		-
 			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\User\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
 			identifier: property.phpDocType
 			count: 1
@@ -659,15 +557,3 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Notifications/NewBookingOwnerNotification.php
-
-		-
-			message: '#^Cannot call method translatedFormat\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Notifications/TrialExpiringNotification.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapaket\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Providers/AppServiceProvider.php

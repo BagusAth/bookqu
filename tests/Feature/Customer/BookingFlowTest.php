@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Domain\CustomerAccess\AccessProfile;
 use App\Domain\Payment\ProviderOutcome;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
@@ -45,6 +46,8 @@ class BookingFlowTest extends TestCase
             'alamat' => 'Jalan Test',
             'nomorhp' => '08123456789',
         ]);
+        // BQ-086: successful writes require a live subscription; assertions stay unchanged.
+        app(CreateTrialSubscription::class)->execute($this->tenant)->forceFill(['created_at' => now()->subMinute()])->save();
 
         // Create service
         $this->service = Service::create([

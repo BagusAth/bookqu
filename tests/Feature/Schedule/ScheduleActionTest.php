@@ -9,6 +9,7 @@ use App\Actions\Schedule\DeleteBlockedDate;
 use App\Actions\Schedule\DeleteSchedule;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Actions\Schedule\UpdateScheduleAvailability;
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -45,6 +46,8 @@ class ScheduleActionTest extends TestCase
 
     public function test_bulk_create_schedules_action(): void
     {
+        // BQ-139: successful creation requires an active period; original behavior assertions remain.
+        app(CreateTrialSubscription::class)->execute($this->tenant);
         $action = app(BulkCreateSchedules::class);
         $date = Carbon::tomorrow()->toDateString();
 

@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class ProgramManagementTest extends TestCase
@@ -32,12 +34,15 @@ class ProgramManagementTest extends TestCase
             'nomorhp' => '08123456789',
             'deskripsi' => 'Testing business',
         ]);
+        // BQ-086: successful writes require a live subscription; assertions stay unchanged.
+        app(CreateTrialSubscription::class)->execute($this->tenant)->forceFill(['created_at' => now()->subMinute()])->save();
+
     }
 
     public function test_owner_can_view_programs_page(): void
     {
         $response = $this->actingAs($this->user)->get('/owner/programs');
-        
+
         $response->assertStatus(200);
     }
 
@@ -113,12 +118,12 @@ class ProgramManagementTest extends TestCase
 
     public function test_owner_cannot_upload_svg_as_cover_image(): void
     {
-        $fakeSvg = \Illuminate\Http\UploadedFile::fake()->create('malicious.svg', 10, 'image/svg+xml');
+        $fakeSvg = UploadedFile::fake()->create('malicious.svg', 10, 'image/svg+xml');
 
         $response = $this->actingAs($this->user)->post('/owner/programs', [
             'namalayanan' => 'Layanan XSS SVG',
-            'harga'       => 150000,
-            'durasi'      => 60,
+            'harga' => 150000,
+            'durasi' => 60,
             'cover_image' => $fakeSvg,
         ]);
 

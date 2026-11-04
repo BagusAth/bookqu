@@ -129,7 +129,7 @@ class PaymentLifecycle
      * Record the refund owed when a customer cancels a booking whose payment succeeded.
      * At most one refund exists per payment (INV-PAY-06); returns null when none is owed.
      */
-    public function refundCancelledBooking(Booking $booking, ?string $reason = null): ?Refund
+    public function refundCancelledBooking(Booking $booking, ?string $reason = null, bool $businessCancellation = false): ?Refund
     {
         if (! $booking->idpayment) {
             return null;
@@ -142,12 +142,13 @@ class PaymentLifecycle
             return null;
         }
 
-        return $this->withinPaymentTenant($payment, function (?int $tenantId) use ($payment, $booking, $reason): ?Refund {
+        return $this->withinPaymentTenant($payment, function (?int $tenantId) use ($payment, $booking, $reason, $businessCancellation): ?Refund {
             $locked = $this->lock($payment, $tenantId);
 
             if ($locked === null
                 || $locked->status !== PaymentState::STATUS_SUKSES
                 || (int) $locked->idtenant !== (int) $booking->idtenant
+                || ($businessCancellation && PaymentRules::providerOf($locked) === 'manual')
                 || Refund::where('payment_id', $locked->id)->exists()) {
                 return null;
             }
@@ -157,6 +158,7 @@ class PaymentLifecycle
                 'payment_id' => $locked->id,
                 'jumlah' => $locked->jumlah,
                 'status' => 'pending',
+                'cause' => $businessCancellation ? 'business_cancel' : null,
                 'catatan' => $reason ?? 'Refund otomatis dari pembatalan booking oleh customer.',
             ]);
             // The refunded amount leaves the owner's balance again (BQ-015)

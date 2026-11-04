@@ -59,7 +59,7 @@
                             <div class="card-desc-container">
                                 <div class="card-desc-inner">
                                     <p class="card-desc text-sm md:text-base text-slate-500 leading-relaxed mt-2">
-                                        Sinkronisasi instan di semua perangkat. Hindari double-booking dengan kalender pintar kami yang terhubung langsung dengan Google Calendar.
+                                        Lihat jadwal dan booking dalam satu kalender. Slot yang sudah dipesan tidak dapat dipilih pelanggan lain.
                                     </p>
                                 </div>
                             </div>
@@ -89,7 +89,7 @@
                             <div class="card-desc-container">
                                 <div class="card-desc-inner">
                                     <p class="card-desc text-sm md:text-base text-slate-500 leading-relaxed mt-2">
-                                        Terima pembayaran DP atau pelunasan langsung. Terintegrasi dengan berbagai metode pembayaran lokal seperti QRIS, Virtual Account, dan E-Wallet.
+                                        Terima pelunasan melalui BookQu. Terintegrasi dengan berbagai metode pembayaran lokal seperti QRIS, Virtual Account, dan E-Wallet.
                                     </p>
                                 </div>
                             </div>

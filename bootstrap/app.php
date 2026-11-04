@@ -6,6 +6,8 @@ use App\Http\Middleware\CustomerAccessHeaders;
 use App\Http\Middleware\CustomerAccessMiddleware;
 use App\Http\Middleware\EnsureModuleReleased;
 use App\Http\Middleware\EnsureOwnerProfileComplete;
+use App\Http\Middleware\EnsureSubscriptionCanCreate;
+use App\Http\Middleware\EnsureTenantPermission;
 use App\Http\Middleware\PreventPageCaching;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\TenantMiddleware;
@@ -46,6 +48,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'customer.access' => CustomerAccessMiddleware::class,
             'tenant' => TenantMiddleware::class,
+            'tenant.permission' => EnsureTenantPermission::class,
+            'subscription.create' => EnsureSubscriptionCanCreate::class,
             'role' => RoleMiddleware::class,
             'owner.profile' => EnsureOwnerProfileComplete::class,
             'subscription' => CheckSubscription::class,
@@ -64,6 +68,10 @@ return Application::configure(basePath: dirname(__DIR__))
             CustomerAccessMiddleware::class,
             TenantMiddleware::class,
             SubstituteBindings::class,
+            EnsureModuleReleased::class,
+            EnsureSubscriptionCanCreate::class,
+            CheckSubscription::class,
+            EnsureTenantPermission::class,
             Authorize::class,
         ]);
 

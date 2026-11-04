@@ -2,7 +2,7 @@
 id: BQ-139
 title: Ended trial or subscription: what keeps working, renewal rules and reminders
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: subscription
@@ -50,3 +50,8 @@ INV-SUB-01.
 - `docs/domains/subscription.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+
+AC-END-01, AC-END-02 and AC-PKT-02 covered by EndedSubscriptionTest. SubscriptionActivationLockingTest verifies the tenant lock with a separate MySQL connection.
+SQLite: 703 passed (4023 assertions). MySQL: 13 passed (48 assertions). Pint and PHPStan passed; three obsolete baseline entries removed.

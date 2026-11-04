@@ -12,6 +12,7 @@ use App\Domain\Payment\PaymentState;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Schedule\SlotRefusal;
 use App\Models\Booking;
+use App\Models\BookingLog;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Log;
 
@@ -78,6 +79,7 @@ class EvictStalePendingBookings
             $booking->refresh();
             if ($booking->status === BookingState::STATUS_PENDING) {
                 $booking->update(['status' => BookingState::STATUS_CANCELLED]);
+                BookingLog::record($booking->id, 'cancelled', 'Waktu pembayaran berakhir.');
             }
 
             $evictedCount++;

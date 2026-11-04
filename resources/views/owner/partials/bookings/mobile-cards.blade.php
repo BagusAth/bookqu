@@ -3,9 +3,8 @@
         @forelse ($daftarbooking as $booking)
             @php
                 $paymentStatus = $booking->payment?->status ?? ($booking->status === 'paid' ? 'sukses' : 'pending');
-                $staffName = $booking->layanan?->staff?->pluck('name')->join(', ');
                 $resourceName = $booking->layanan?->resources?->pluck('name')->join(', ');
-                $staffResourceDisplay = $staffName ?: ($resourceName ?: 'General Staff');
+                $staffResourceDisplay = $resourceName ?: '—';
                 $bookingData = [
                     'booking_code' => $booking->booking_code,
                     'namapelanggan' => $booking->namapelanggan,
@@ -14,6 +13,16 @@
                     'tanggalbooking' => $booking->tanggalbooking?->toDateString(),
                     'layanan' => $booking->layanan ? ['namalayanan' => $booking->layanan->namalayanan] : null,
                     'id' => $booking->id,
+                    'history' => $booking->logs->map(fn ($log) => [
+                        'id' => $log->id,
+                        'label' => $log->event_label,
+                        'actor' => match ($log->metadata['actor_role'] ?? null) {
+                            'customer' => 'Pelanggan',
+                            'system' => 'Sistem',
+                            null => 'Tidak tercatat',
+                            default => ucfirst($log->metadata['actor_role']).' #'.$log->metadata['actor_iduser'],
+                        },
+                    ])->values(),
                     'code' => $booking->booking_code ?? ('BKQ-' . $booking->id),
                     'name' => $booking->namapelanggan,
                     'email' => $booking->email,
@@ -25,7 +34,6 @@
                     'time' => $booking->jam,
                     'status' => $booking->status,
                     'payment_status' => $paymentStatus,
-                    'staff' => $staffName ?: 'General Staff',
                     'resource' => $resourceName ?: 'General Facility',
                     'notes' => $booking->catatan ?? '-',
                     'order_id' => $booking->payment?->order_id ?? '-',

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Owner;
 
 use App\Actions\Customer\GetCustomerDetail;
 use App\Actions\Customer\SaveCustomerNote;
+use App\Actions\Team\FilterRevenueFigures;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\SaveCustomerNoteRequest;
 use App\Models\Booking;
@@ -179,14 +180,27 @@ class OwnerCustomerController extends Controller
 
         $totalBookingsAll = Booking::where('idtenant', $idtenant)->count();
 
-        return view('owner.customers', compact(
+        $canViewRevenue = $request->attributes->get('can_view_revenue') !== false;
+        if (! $canViewRevenue) {
+            $customers->getCollection()->each(function ($customer): void {
+                unset($customer->total_spent);
+                $customer->formatted_spent = '—';
+            });
+        }
+
+        $viewData = ['canViewRevenue' => $canViewRevenue] + compact(
             'tenant',
             'customers',
             'totalCustomers',
             'totalSpentAll',
             'totalBookingsAll',
             'search',
-        ));
+        );
+        if (! $canViewRevenue) {
+            unset($viewData['totalSpentAll']);
+        }
+
+        return view('owner.customers', $viewData);
     }
 
     /**
@@ -202,6 +216,10 @@ class OwnerCustomerController extends Controller
 
         $identifier = (string) $request->input('identifier', '');
         $data = $getCustomerDetail->execute($tenant, $identifier);
+
+        if ($request->attributes->get('can_view_revenue') === false) {
+            $data = app(FilterRevenueFigures::class)->execute($data);
+        }
 
         return response()->json($data);
     }

@@ -429,7 +429,7 @@
 function ownerNotificationBell() {
     return {
         isOpen: false,
-        unreadCount: {{ auth()->user()?->unreadNotifications()->count() ?? 0 }},
+        unreadCount: {{ $visibleUnreadCount ?? 0 }},
         notifications: [],
         loading: false,
         pollInterval: null,

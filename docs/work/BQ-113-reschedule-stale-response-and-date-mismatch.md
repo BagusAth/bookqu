@@ -2,7 +2,7 @@
 id: BQ-113
 title: Prevent stale reschedule responses and reject a slot from another selected date
 type: bug-fix
-status: approved
+status: in-progress
 priority: P2
 phase: 4
 domain: booking
@@ -62,3 +62,8 @@ Claim tetap di dalam transaksi dengan tenant lock dan pemeriksaan slot aktual; r
 **Bukti audit, belum bukti perbaikan:** pemeriksaan HTTP terisolasi dan Edge/Playwright berhasil mereproduksi payload tanggal 6 dengan ID slot tanggal 5. Audit bersama BQ-114/BQ-117/BQ-119/BQ-120/BQ-121 menjalankan 5 skenario HTTP / 29 asersi yang mengonfirmasi perilaku lama; alat reproduksi sementara bukan tes regresi yang sudah dikomit. Seluruh request eksternal browser diblokir/diganti; tidak ada perubahan produksi.
 
 Implementasi, tes regresi permanen, hasil verifikasi, dan PR: belum ada. Triase Tech Lead 2026-11-02: P2, bukan launch blocker.
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+
+Implementation evidence (2026-11-04): two owner HTTP regressions prove mismatched date refused without mutation (red: 200, green: 422) and matching date succeeds. Owner forwards nullable expected date; omitted-date direct callers retain compatibility. Both loaders bind responses/errors/finally to a monotonically increasing request and selected date; owner also binds booking ID and invalidates on close. Selections clear while loading. Edge/Playwright executed actual loader functions with deferred responses: old success after new success, old error/finally during newer load, modal close/reopen for another booking, all passed. No price/refund changes.
+Verification: full SQLite 677 passed / 3562 assertions; MySQL group 11 passed / 43 assertions; Pint fixed changed PHP; PHPStan no errors, one obsolete unused-closure allowance removed.

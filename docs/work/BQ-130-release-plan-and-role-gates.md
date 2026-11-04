@@ -2,7 +2,7 @@
 id: BQ-130
 title: Three server gates (module, plan, role) and one plan capability list
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: staged-modules
@@ -54,3 +54,10 @@ INV-SUB-01: entitlement only in `EntitlementRules`.
 - `docs/domains/public-site.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+
+Implementation evidence (2026-11-04): new capabilities and former development-teaser routes default hidden per ADR-0021; no unbuilt module promoted. Config plans contains one capability/feature-text/team-limit map; unbuilt capabilities are omitted from both comparison lists. Prices and commercial numeric limits remain in the plans table (ADR-0021 decision 4), and landing prices now read that same source. `EntitlementRules` owns feature checks including unknown-feature denial for trials; overview/landing-page checks use it. `config/owner-navigation.php` declares fifteen menus once and `GetOwnerNavigation` filters module, plan and role for the sidebar and future shell consumers. Subscription CTA hidden from members without the ability. Pricing queries moved out of Blade; unsupported Google Calendar/down-payment marketing claims removed.
+
+Tests: `ReleasePlanGatesTest` (5 tests, AC-PKT-01, eleven module/feature/role probe groups, role-filtered navigation, unknown capabilities and price source); original commercial-feature parity test retained. Existing report-behavior tests now explicitly enable their development module without changing their assertions. Navigation tests intentionally require hidden unbuilt routes rather than old locked teaser pages; ambiguous-multiple-membership pricing test now denies session tenant selection per ADR-0016.
+Verification: full SQLite 695 passed / 3971 assertions; Pint fixed changed PHP; PHPStan no errors, three obsolete baseline entries removed; plan-name architecture allowlist emptied and three Blade-query allowances removed. No new locks or transactional writes; MySQL group not rerun for this read/config/gate item (last result BQ-131: 12/45).

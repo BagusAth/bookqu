@@ -2,30 +2,29 @@
 
 namespace App\Http\Controllers\Owner;
 
-use App\Http\Controllers\Controller;
-
-use App\Models\Booking;
-use App\Models\BookingLog;
-use App\Models\Payment;
-use App\Models\Schedule;
-use App\Models\Tenant;
-use App\Traits\ClearsBookingCache;
 use App\Actions\Booking\CreateWalkInBooking;
-use App\Actions\Booking\UpdateBookingStatus;
 use App\Actions\Booking\RescheduleBooking;
-use App\Http\Requests\Booking\UpdateBookingStatusRequest;
+use App\Actions\Booking\UpdateBookingStatus;
+use App\Actions\Schedule\GetAvailableSchedules;
+use App\Domain\Team\TenantPermission;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\RescheduleBookingRequest;
+use App\Http\Requests\Booking\UpdateBookingStatusRequest;
+use App\Models\Booking;
+use App\Models\Tenant;
+use App\Models\TenantMember;
+use App\Traits\ClearsBookingCache;
+use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class OwnerBookingController extends Controller
 {
     use ClearsBookingCache;
-
-    use \App\Traits\ResolvesOwnerTenant;
+    use ResolvesOwnerTenant;
 
     /**
      * Halaman daftar booking.
@@ -33,37 +32,37 @@ class OwnerBookingController extends Controller
     public function index(Request $request)
     {
         $tenant = $this->resolveTenant();
-        $user   = auth()->user();
-        if (!$tenant) {
-            $tenant = new Tenant();
+        $user = auth()->user();
+        if (! $tenant) {
+            $tenant = new Tenant;
             if ($user) {
                 $tenant->setRelation('user', $user);
             }
 
-            $filterstatus  = $request->input('status', 'semua');
-            $katakunci     = $request->input('katakunci', '');
+            $filterstatus = $request->input('status', 'semua');
+            $katakunci = $request->input('katakunci', '');
             $daftarbooking = Booking::whereRaw('1 = 0')->paginate(15);
 
             return view('owner.bookings', [
-                'tenant'            => $tenant,
-                'daftarbooking'     => $daftarbooking,
-                'totalbooking'      => 0,
-                'bookingpending'    => 0,
+                'tenant' => $tenant,
+                'daftarbooking' => $daftarbooking,
+                'totalbooking' => 0,
+                'bookingpending' => 0,
                 'bookingkonfirmasi' => 0,
-                'bookingselesai'    => 0,
-                'bookingbatal'      => 0,
-                'bookinghariini'    => 0,
-                'filterstatus'      => $filterstatus,
-                'katakunci'         => $katakunci,
+                'bookingselesai' => 0,
+                'bookingbatal' => 0,
+                'bookinghariini' => 0,
+                'filterstatus' => $filterstatus,
+                'katakunci' => $katakunci,
             ]);
         }
 
-        $idtenant     = $tenant->id;
+        $idtenant = $tenant->id;
         $filterstatus = $request->input('status', 'semua');
-        $katakunci    = $request->input('katakunci', '');
+        $katakunci = $request->input('katakunci', '');
 
         $daftarbooking = Booking::where('bookings.idtenant', $idtenant)
-            ->with(['layanan.staff', 'layanan.resources', 'payment'])
+            ->with(['layanan.resources', 'payment', 'logs'])
             ->when($filterstatus !== 'semua', function ($query) use ($filterstatus) {
                 if ($filterstatus === 'today') {
                     $query->whereDate('tanggalbooking', Carbon::today());
@@ -73,30 +72,40 @@ class OwnerBookingController extends Controller
             })
             ->when($katakunci, function ($query) use ($katakunci) {
                 $query->where(function ($q) use ($katakunci) {
-                    $q->where('namapelanggan', 'like', '%' . $katakunci . '%')
-                      ->orWhere('email', 'like', '%' . $katakunci . '%')
-                      ->orWhere('nomorhp', 'like', '%' . $katakunci . '%')
-                      ->orWhere('booking_code', 'like', '%' . $katakunci . '%')
-                      ->orWhere('bookings.id', 'like', '%' . $katakunci . '%');
+                    $q->where('namapelanggan', 'like', '%'.$katakunci.'%')
+                        ->orWhere('email', 'like', '%'.$katakunci.'%')
+                        ->orWhere('nomorhp', 'like', '%'.$katakunci.'%')
+                        ->orWhere('booking_code', 'like', '%'.$katakunci.'%')
+                        ->orWhere('bookings.id', 'like', '%'.$katakunci.'%');
                 });
             })
             ->orderByDesc('bookings.created_at')
             ->paginate(15);
 
         // Statistik
-        $totalbooking      = Booking::where('idtenant', $idtenant)->count();
-        $bookingpending    = Booking::where('idtenant', $idtenant)->where('status', 'pending')->count();
+        $totalbooking = Booking::where('idtenant', $idtenant)->count();
+        $bookingpending = Booking::where('idtenant', $idtenant)->where('status', 'pending')->count();
         $bookingkonfirmasi = Booking::where('idtenant', $idtenant)->where('status', 'paid')->count();
-        $bookingselesai    = Booking::where('idtenant', $idtenant)->where('status', 'completed')->count();
-        $bookingbatal      = Booking::where('idtenant', $idtenant)->where('status', 'cancelled')->count();
+        $bookingselesai = Booking::where('idtenant', $idtenant)->where('status', 'completed')->count();
+        $bookingbatal = Booking::where('idtenant', $idtenant)->where('status', 'cancelled')->count();
 
         // Booking hari ini
         $bookinghariini = Booking::where('idtenant', $idtenant)
             ->whereDate('tanggalbooking', Carbon::today())
             ->count();
 
+        $member = $request->attributes->get('tenant_member');
+        $canRequestCancellation = $member instanceof TenantMember && TenantPermission::allowsRole($member->role, 'bookings.request-cancel');
+        $canDecideCancellation = $member instanceof TenantMember && TenantPermission::allowsRole($member->role, 'bookings.cancel');
+        $cancellationRequests = $canDecideCancellation
+            ? DB::table('booking_cancellation_requests')->where('idtenant', $idtenant)->where('status', 'pending')->orderBy('id')->paginate(10, pageName: 'permintaan')
+            : null;
+
         return view('owner.bookings', compact(
             'tenant',
+            'canRequestCancellation',
+            'canDecideCancellation',
+            'cancellationRequests',
             'daftarbooking',
             'totalbooking',
             'bookingpending',
@@ -119,12 +128,12 @@ class OwnerBookingController extends Controller
     {
         $tenant = $this->resolveTenant();
 
-        if (!$booking instanceof Booking) {
+        if (! $booking instanceof Booking) {
             $booking = Booking::findOrFail($booking);
         }
 
         // Pastikan booking milik tenant yang sedang login
-        if (!$tenant || $booking->idtenant !== $tenant->id) {
+        if (! $tenant || $booking->idtenant !== $tenant->id) {
             abort(404, 'Booking tidak ditemukan.');
         }
 
@@ -133,17 +142,17 @@ class OwnerBookingController extends Controller
 
         $result = $updateBookingStatus->execute($booking, $statusBaru, 'owner');
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return back()->withErrors([
                 'error' => $result['error'],
             ]);
         }
 
         $label = match ($statusBaru) {
-            'paid'       => 'lunas / dikonfirmasi',
-            'completed'  => 'selesai',
-            'cancelled'  => 'dibatalkan',
-            default      => $statusBaru,
+            'paid' => 'lunas / dikonfirmasi',
+            'completed' => 'selesai',
+            'cancelled' => 'dibatalkan',
+            default => $statusBaru,
         };
 
         return back()->with('sukses', "Booking atas nama {$booking->namapelanggan} berhasil ditandai sebagai {$label}.");
@@ -155,29 +164,29 @@ class OwnerBookingController extends Controller
     public function walkinStore(Request $request, CreateWalkInBooking $createWalkInBooking)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $data = $request->all();
-        if (!isset($data['idschedule']) && isset($data['schedule_id'])) {
+        if (! isset($data['idschedule']) && isset($data['schedule_id'])) {
             $data['idschedule'] = $data['schedule_id'];
         }
 
-        $validator = \Illuminate\Support\Facades\Validator::make($data, [
-            'idschedule'    => ['required', 'integer', Rule::exists('schedules', 'id')->where('idtenant', $tenant->id)],
+        $validator = Validator::make($data, [
+            'idschedule' => ['required', 'integer', Rule::exists('schedules', 'id')->where('idtenant', $tenant->id)],
             'namapelanggan' => ['required', 'string', 'max:150'],
-            'nomorhp'       => ['required', 'string', 'max:30'],
-            'email'         => ['nullable', 'email', 'max:100'],
-            'catatan'       => ['nullable', 'string', 'max:500'],
-            'metode'        => ['nullable', 'string', 'in:cash,transfer,manual,qris'],
+            'nomorhp' => ['required', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:100'],
+            'catatan' => ['nullable', 'string', 'max:500'],
+            'metode' => ['nullable', 'string', 'in:cash,transfer,manual,qris'],
         ]);
 
         $validated = $validator->validate();
 
         $booking = $createWalkInBooking->execute($tenant, $validated);
 
-        if (!$booking) {
+        if (! $booking) {
             return back()->withErrors(['error' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.']);
         }
 
@@ -190,47 +199,47 @@ class OwnerBookingController extends Controller
     public function getAvailableSlots(Request $request, $booking)
     {
         $tenant = $this->resolveTenant();
-        if (!$booking instanceof Booking) {
+        if (! $booking instanceof Booking) {
             $booking = Booking::findOrFail($booking);
         }
 
-        if (!$tenant || $booking->idtenant !== $tenant->id) {
+        if (! $tenant || $booking->idtenant !== $tenant->id) {
             return response()->json(['success' => false, 'message' => 'Booking tidak ditemukan.'], 404);
         }
 
         $tanggal = $request->query('tanggal');
-        if (!$tanggal) {
+        if (! $tanggal) {
             $tanggal = Carbon::today()->toDateString();
         } else {
             $tanggal = Carbon::parse($tanggal)->toDateString();
         }
 
         $service = $booking->layanan;
-        $slots = app(\App\Actions\Schedule\GetAvailableSchedules::class)
+        $slots = app(GetAvailableSchedules::class)
             ->getSlotsForReschedule($tenant, (int) $booking->idlayanan, $tanggal, (int) $booking->id);
 
-        $mappedSlots = $slots->map(function ($item) use ($service, $booking) {
+        $mappedSlots = $slots->map(function ($item) use ($service) {
             $slot = $item['schedule'];
             $price = $slot->harga_override ?? ($service ? $service->harga : 0);
 
             return [
-                'id'              => $slot->id,
-                'jam_mulai'       => $item['jam_mulai'],
-                'jam_selesai'     => $item['jam_selesai'],
-                'formatted_time'  => $item['jam_mulai'] . ' - ' . $item['jam_selesai'],
-                'price'           => $price,
-                'formatted_price' => 'Rp ' . number_format($price, 0, ',', '.'),
-                'is_available'    => $item['is_available'],
-                'is_current'      => $item['is_current'],
+                'id' => $slot->id,
+                'jam_mulai' => $item['jam_mulai'],
+                'jam_selesai' => $item['jam_selesai'],
+                'formatted_time' => $item['jam_mulai'].' - '.$item['jam_selesai'],
+                'price' => $price,
+                'formatted_price' => 'Rp '.number_format($price, 0, ',', '.'),
+                'is_available' => $item['is_available'],
+                'is_current' => $item['is_current'],
             ];
         });
 
         return response()->json([
-            'success'      => true,
-            'tanggal'      => $tanggal,
+            'success' => true,
+            'tanggal' => $tanggal,
             'service_name' => $service?->namalayanan ?? 'Layanan',
             'current_slot_id' => $booking->idschedule,
-            'slots'        => $mappedSlots,
+            'slots' => $mappedSlots,
         ]);
     }
 
@@ -241,11 +250,11 @@ class OwnerBookingController extends Controller
     public function reschedule(RescheduleBookingRequest $request, $booking, RescheduleBooking $rescheduleBooking)
     {
         $tenant = $this->resolveTenant();
-        if (!$booking instanceof Booking) {
+        if (! $booking instanceof Booking) {
             $booking = Booking::findOrFail($booking);
         }
 
-        if (!$tenant || $booking->idtenant !== $tenant->id) {
+        if (! $tenant || $booking->idtenant !== $tenant->id) {
             abort(404, 'Booking tidak ditemukan.');
         }
 
@@ -253,17 +262,18 @@ class OwnerBookingController extends Controller
         $newScheduleId = (int) $validated['schedule_id'];
         $alasan = $validated['alasan'] ?? 'Permintaan langsung customer walk-in di studio';
 
-        $result = $rescheduleBooking->execute($booking, $newScheduleId, 'owner', $alasan);
+        $result = $rescheduleBooking->execute($booking, $newScheduleId, 'owner', $alasan, $validated['tanggal'] ?? null);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => $result['error']], 422);
             }
+
             return back()->withErrors(['error' => $result['error']]);
         }
 
         $tglFormatted = Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y');
-        $jamFormatted = substr($booking->jam, 0, 5) . ' WIB';
+        $jamFormatted = substr($booking->jam, 0, 5).' WIB';
         $successMsg = "Jadwal booking #{$booking->booking_code} ({$booking->namapelanggan}) berhasil diubah ke {$tglFormatted} pukul {$jamFormatted}!";
 
         if ($request->wantsJson() || $request->ajax()) {
@@ -277,4 +287,3 @@ class OwnerBookingController extends Controller
         return back()->with('sukses', $successMsg);
     }
 }
-

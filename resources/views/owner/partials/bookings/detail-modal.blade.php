@@ -116,10 +116,6 @@
                                     <span class="font-mono font-bold text-[#231a3d]" x-text="activeBooking.time"></span>
                                 </div>
                                 <div class="flex justify-between gap-3">
-                                    <span class="text-[#6e6584]">Staff Ditugaskan:</span>
-                                    <span class="font-medium text-[#231a3d]" x-text="activeBooking.staff || 'General Staff'"></span>
-                                </div>
-                                <div class="flex justify-between gap-3">
                                     <span class="text-[#6e6584]">Fasilitas / Resource:</span>
                                     <span class="font-medium text-[#231a3d]" x-text="activeBooking.resource || 'General Facility'"></span>
                                 </div>
@@ -191,6 +187,14 @@
                                 </button>
                             </form>
                         </template>
+                        @if ($canRequestCancellation ?? false)
+                            <form x-show="['pending', 'paid'].includes(activeBooking.status)" method="POST" :action="'/owner/bookings/' + activeBooking.id + '/cancellation-requests'" class="space-y-2">
+                                @csrf
+                                <label class="block">Alasan pembatalan <textarea name="reason" required maxlength="500" class="block w-full rounded border p-2"></textarea></label>
+                                <button class="font-semibold text-red-700">Minta pembatalan</button>
+                            </form>
+                        @endif
+                        @if ($canDecideCancellation ?? false)
                         <form :id="'form-drawer-cancel-' + activeBooking.id" method="POST" :action="'/owner/bookings/' + activeBooking.id + '/status'">
                             @csrf
                             @method('PATCH')
@@ -201,8 +205,15 @@
                                 Batalkan
                             </button>
                         </form>
+                        @endif
                     </div>
                 </template>
+                        <section x-show="activeBooking?.history?.length">
+                            <h3 class="font-semibold">Riwayat booking</h3>
+                            <template x-for="entry in (activeBooking?.history || [])" :key="entry.id">
+                                <p x-text="entry.label + ' · ' + entry.actor"></p>
+                            </template>
+                        </section>
             </div>
 
         </div>

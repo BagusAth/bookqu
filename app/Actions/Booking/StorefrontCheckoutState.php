@@ -53,9 +53,9 @@ final class StorefrontCheckoutState
         return $schedules->count() === count(array_unique($scheduleIds)) ? $this->fingerprint($service, $date, $schedules) : null;
     }
 
-    public function remember(Payment $payment): void
+    public function remember(Payment $payment, ?string $fingerprint = null): void
     {
-        session()->put(self::PENDING, ['tenant_id' => (int) $payment->idtenant, 'payment_id' => (int) $payment->id]);
+        session()->put(self::PENDING, ['tenant_id' => (int) $payment->idtenant, 'payment_id' => (int) $payment->id, 'fingerprint' => $fingerprint]);
     }
 
     /**

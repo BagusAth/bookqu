@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
@@ -85,6 +86,8 @@ class CustomDomainBookingTest extends TestCase
 
     public function test_booking_forms_and_navigation_keep_the_custom_domain_through_checkout(): void
     {
+        // BQ-139: successful creation requires an active period; original behavior assertions remain.
+        app(CreateTrialSubscription::class)->execute($this->tenant);
         $this->withServerVariables(['HTTP_HOST' => 'studiobrama.com'])->withSession(['booking' => [
             'tenant_id' => $this->tenant->id, 'service_id' => $this->service->id,
             'tanggal' => $this->schedule->tanggal->toDateString(), 'jam' => ['10:00'],

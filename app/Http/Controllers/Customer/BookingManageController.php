@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\CancelBooking;
+use App\Actions\Booking\GetInvoiceAmounts;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\CustomerAccess\ReviewBooking;
 use App\Actions\Schedule\GetAvailableSchedules;
@@ -83,7 +84,7 @@ class BookingManageController extends Controller
         $tenant = $payment->tenant;
         $booking = $bookings->first();
 
-        return view('customer.manage.payment-invoice', [
+        return view('customer.manage.payment-invoice', app(GetInvoiceAmounts::class)->execute($payment) + [
             'payment' => $payment,
             'bookings' => $bookings,
             'booking' => $booking,
@@ -309,11 +310,11 @@ class BookingManageController extends Controller
     {
         $booking = $this->resolveBooking($bookingCode, 'invoice');
 
-        if (! $booking->payment || $booking->payment->status !== 'sukses' || ! in_array($booking->status, ['paid', 'completed'])) {
+        if (! ($booking->payment instanceof Payment) || $booking->payment->status !== 'sukses' || ! in_array($booking->status, ['paid', 'completed'])) {
             abort(404, 'Invoice hanya tersedia untuk pembayaran yang berhasil.');
         }
 
-        return view('customer.manage.invoice', [
+        return view('customer.manage.invoice', app(GetInvoiceAmounts::class)->execute($booking->payment) + [
             'booking' => $booking,
             'invoiceDate' => $booking->payment?->updated_at ?? $booking->created_at,
         ]);

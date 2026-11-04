@@ -8,7 +8,7 @@
                         <th class="px-3.5 py-3 lg:px-4 lg:py-3.5">Customer</th>
                         <th class="px-3.5 py-3 lg:px-4 lg:py-3.5">Service</th>
                         <th class="px-3.5 py-3 lg:px-4 lg:py-3.5">Date &amp; Time</th>
-                        <th class="px-3.5 py-3 lg:px-4 lg:py-3.5">Staff / Resource</th>
+                        <th class="px-3.5 py-3 lg:px-4 lg:py-3.5">Resource</th>
                         <th class="px-3.5 py-3 lg:px-4 lg:py-3.5">Amount</th>
                         <th class="px-3.5 py-3 lg:px-4 lg:py-3.5 text-center">Payment</th>
                         <th class="px-3.5 py-3 lg:px-4 lg:py-3.5 text-center">Status</th>
@@ -19,9 +19,8 @@
                     @forelse ($daftarbooking as $booking)
                         @php
                             $paymentStatus = $booking->payment?->status ?? ($booking->status === 'paid' ? 'sukses' : 'pending');
-                            $staffName = $booking->layanan?->staff?->pluck('name')->join(', ');
                             $resourceName = $booking->layanan?->resources?->pluck('name')->join(', ');
-                            $staffResourceDisplay = $staffName ?: ($resourceName ?: 'General Staff / Spot');
+                            $staffResourceDisplay = $resourceName ?: '—';
                             $bookingData = [
                                 'booking_code' => $booking->booking_code,
                                 'namapelanggan' => $booking->namapelanggan,
@@ -30,6 +29,16 @@
                                 'tanggalbooking' => $booking->tanggalbooking?->toDateString(),
                                 'layanan' => $booking->layanan ? ['namalayanan' => $booking->layanan->namalayanan] : null,
                                 'id' => $booking->id,
+                    'history' => $booking->logs->map(fn ($log) => [
+                        'id' => $log->id,
+                        'label' => $log->event_label,
+                        'actor' => match ($log->metadata['actor_role'] ?? null) {
+                            'customer' => 'Pelanggan',
+                            'system' => 'Sistem',
+                            null => 'Tidak tercatat',
+                            default => ucfirst($log->metadata['actor_role']).' #'.$log->metadata['actor_iduser'],
+                        },
+                    ])->values(),
                                 'code' => $booking->booking_code ?? ('BKQ-' . $booking->id),
                                 'name' => $booking->namapelanggan,
                                 'email' => $booking->email,
@@ -41,7 +50,6 @@
                                 'time' => $booking->jam,
                                 'status' => $booking->status,
                                 'payment_status' => $paymentStatus,
-                                'staff' => $staffName ?: 'General Staff',
                                 'resource' => $resourceName ?: 'General Facility',
                                 'notes' => $booking->catatan ?? '-',
                                 'order_id' => $booking->payment?->order_id ?? '-',
@@ -88,10 +96,10 @@
                                 <p class="text-[11px] text-bq-text-muted font-mono mt-0.5">{{ substr($booking->jam, 0, 5) }} WIB</p>
                             </td>
 
-                            {{-- Staff / Resource --}}
+                            {{-- Resource --}}
                             <td class="whitespace-nowrap px-3.5 py-3 lg:px-4 lg:py-3.5 text-xs text-bq-text-muted">
                                 <div class="flex items-center gap-1.5" title="{{ $staffResourceDisplay }}">
-                                    <span class="h-2 w-2 rounded-full shrink-0 {{ $staffName ? 'bg-indigo-500' : ($resourceName ? 'bg-sky-500' : 'bg-slate-400') }}"></span>
+                                    <span class="h-2 w-2 rounded-full shrink-0 {{ $resourceName ? 'bg-sky-500' : 'bg-slate-400' }}"></span>
                                     <span class="max-w-[110px] truncate">{{ $staffResourceDisplay }}</span>
                                 </div>
                             </td>
@@ -201,6 +209,7 @@
                                                     </svg>
                                                     📅 Ubah Jadwal
                                                 </button>
+                                                @if ($canDecideCancellation ?? false)
                                                 <form id="form-cancel-booking-{{ $booking->id }}" method="POST" action="{{ route('owner.bookings.status', $booking->id) }}">
                                                     @csrf
                                                     @method('PATCH')
@@ -212,6 +221,7 @@
                                                         ✕ Batalkan Booking
                                                     </button>
                                                 </form>
+                                                @endif
                                             </div>
                                         </div>
                                     @endif

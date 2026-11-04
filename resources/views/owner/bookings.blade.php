@@ -33,6 +33,20 @@
     @endif
 
     {{-- ── Top Summary Stats ── --}}
+    @if (isset($cancellationRequests) && $cancellationRequests->count())
+        <section class="space-y-3 rounded-xl border p-4">
+            <h2 class="font-semibold">Permintaan pembatalan</h2>
+            @foreach ($cancellationRequests as $item)
+                <form method="POST" action="{{ route('owner.bookings.cancellation-requests.decide', $item->id) }}" class="flex flex-wrap items-center gap-3">
+                    @csrf @method('PATCH')
+                    <span>Booking #{{ $item->booking_id }} · {{ $item->reason }}</span>
+                    <button name="decision" value="approve" class="font-semibold text-indigo-700">Setujui pembatalan</button>
+                    <button name="decision" value="reject" class="font-semibold text-red-700">Tolak</button>
+                </form>
+            @endforeach
+            {{ $cancellationRequests->links() }}
+        </section>
+    @endif
     @include('owner.partials.bookings.summary-stats')
 
     {{-- ── Search & Filter Controls ── --}}

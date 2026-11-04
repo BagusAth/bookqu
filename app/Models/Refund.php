@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Refund extends Model
 {
     protected $fillable = [
+        'cause',
         'booking_id',
         'payment_id',
         'jumlah',
@@ -35,6 +36,6 @@ class Refund extends Model
 
     public function getJumlahFormattedAttribute(): string
     {
-        return 'Rp ' . number_format((float) $this->jumlah, 0, ',', '.');
+        return 'Rp '.number_format((float) $this->jumlah, 0, ',', '.');
     }
 }

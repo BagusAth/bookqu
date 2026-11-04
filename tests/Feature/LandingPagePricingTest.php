@@ -219,7 +219,7 @@ class LandingPagePricingTest extends TestCase
         $response->assertSee(route('owner.checkout', $mediumPlan->id));
     }
 
-    public function test_multi_tenant_owner_uses_session_current_tenant_context_for_pricing(): void
+    public function test_ambiguous_memberships_cannot_select_a_tenant_through_the_pricing_session(): void
     {
         $owner = User::factory()->create([
             'role' => 'owner',
@@ -256,8 +256,9 @@ class LandingPagePricingTest extends TestCase
             ->get('/');
 
         $response->assertStatus(200);
-        $response->assertSee('✓ Paket Aktif Anda');
-        $response->assertSee('Pilih Small');
+        // ADR-0016 permits one active membership; a session tenant ID cannot choose between ambiguous memberships.
+        $response->assertDontSee('✓ Paket Aktif Anda');
+        $this->get('/owner/bookings')->assertForbidden();
     }
 
     public function test_authenticated_customer_sees_logout_and_no_secondary_login_link(): void

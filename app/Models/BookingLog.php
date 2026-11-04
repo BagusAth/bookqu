@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\TenantActor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,7 +20,7 @@ class BookingLog extends Model
     protected function casts(): array
     {
         return [
-            'metadata'   => 'array',
+            'metadata' => 'array',
             'created_at' => 'datetime',
         ];
     }
@@ -33,11 +34,14 @@ class BookingLog extends Model
 
     public static function record(int $bookingId, string $event, ?string $description = null, array $metadata = []): self
     {
+        $fallback = ($metadata['actor'] ?? null) === 'customer' || in_array($event, ['viewed', 'reviewed'], true) ? 'customer' : 'system';
+        $metadata = [...$metadata, ...app(TenantActor::class)->bookingMetadata($fallback)];
+
         return static::create([
-            'booking_id'  => $bookingId,
-            'event'       => $event,
+            'booking_id' => $bookingId,
+            'event' => $event,
             'description' => $description,
-            'metadata'    => empty($metadata) ? null : $metadata,
+            'metadata' => $metadata,
         ]);
     }
 
@@ -46,45 +50,45 @@ class BookingLog extends Model
     public function getEventLabelAttribute(): string
     {
         return match ($this->event) {
-            'created'         => 'Booking Dibuat',
+            'created' => 'Booking Dibuat',
             'payment_pending' => 'Menunggu Pembayaran',
             'payment_success' => 'Pembayaran Berhasil',
-            'payment_failed'  => 'Pembayaran Gagal',
-            'cancelled'       => 'Booking Dibatalkan',
-            'rescheduled'     => 'Jadwal Diubah',
-            'viewed'          => 'Booking Dilihat',
-            'reviewed'        => 'Ulasan Diberikan',
-            default           => ucfirst($this->event),
+            'payment_failed' => 'Pembayaran Gagal',
+            'cancelled' => 'Booking Dibatalkan',
+            'rescheduled' => 'Jadwal Diubah',
+            'viewed' => 'Booking Dilihat',
+            'reviewed' => 'Ulasan Diberikan',
+            default => ucfirst($this->event),
         };
     }
 
     public function getEventIconAttribute(): string
     {
         return match ($this->event) {
-            'created'         => 'plus-circle',
+            'created' => 'plus-circle',
             'payment_pending' => 'clock',
             'payment_success' => 'check-circle',
-            'payment_failed'  => 'x-circle',
-            'cancelled'       => 'ban',
-            'rescheduled'     => 'calendar',
-            'viewed'          => 'eye',
-            'reviewed'        => 'star',
-            default           => 'info',
+            'payment_failed' => 'x-circle',
+            'cancelled' => 'ban',
+            'rescheduled' => 'calendar',
+            'viewed' => 'eye',
+            'reviewed' => 'star',
+            default => 'info',
         };
     }
 
     public function getEventColorAttribute(): string
     {
         return match ($this->event) {
-            'created'         => 'indigo',
+            'created' => 'indigo',
             'payment_pending' => 'amber',
             'payment_success' => 'emerald',
-            'payment_failed'  => 'red',
-            'cancelled'       => 'red',
-            'rescheduled'     => 'blue',
-            'viewed'          => 'gray',
-            'reviewed'        => 'amber',
-            default           => 'gray',
+            'payment_failed' => 'red',
+            'cancelled' => 'red',
+            'rescheduled' => 'blue',
+            'viewed' => 'gray',
+            'reviewed' => 'amber',
+            default => 'gray',
         };
     }
 }

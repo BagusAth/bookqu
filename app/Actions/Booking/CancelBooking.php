@@ -35,7 +35,7 @@ class CancelBooking
      * @param  string  $actor  'customer'|'owner'
      * @return array{success: bool, error?: string, booking?: Booking}
      */
-    public function execute(Booking $booking, string $actor = 'customer', ?string $reason = null, ?AccessContext $access = null): array
+    public function execute(Booking $booking, string $actor = 'customer', ?string $reason = null, ?AccessContext $access = null, bool $teamDecision = false): array
     {
         // Guard 1: customer cannot cancel individual slot of a multi-slot booking
         if ($actor === 'customer' && $booking->isMultiSlot()) {
@@ -65,7 +65,7 @@ class CancelBooking
         }
 
         try {
-            DB::transaction(function () use ($booking, $actor, $reason, $access) {
+            DB::transaction(function () use ($booking, $actor, $reason, $access, $teamDecision) {
                 // Tenant-first synchronization with claims and payment outcomes (ADR-0005 decision 4)
                 ClaimSlots::lockTenant((int) $booking->idtenant);
                 if ($access !== null) {
@@ -83,7 +83,7 @@ class CancelBooking
                     : collect([$booking]);
 
                 foreach ($targetBookings as $target) {
-                    if (BookingState::canTransition($target->status, BookingState::STATUS_CANCELLED)) {
+                    if ((! $teamDecision || $target->status !== BookingState::STATUS_CANCELLED) && BookingState::canTransition($target->status, BookingState::STATUS_CANCELLED)) {
                         $target->update(['status' => BookingState::STATUS_CANCELLED]);
 
                         // Audit log per slot
@@ -111,35 +111,42 @@ class CancelBooking
                 }
 
                 // A customer cancelling a paid booking is owed one refund (ADR-0004 decision 7)
-                if ($actor === 'customer') {
-                    $this->paymentLifecycle->refundCancelledBooking($booking, $reason);
+                if ($actor === 'customer' || $teamDecision) {
+                    $this->paymentLifecycle->refundCancelledBooking($booking, $reason, $teamDecision);
                 }
             });
 
-            // 5. Send cancellation email to customer
-            if ($booking->email) {
-                try {
-                    $booking->refresh()->load(['tenant.user', 'layanan', 'payment', 'refund']);
-                    Mail::to($booking->email)->send(new BookingCancelledMail($booking));
-                } catch (\Throwable $e) {
-                    Log::warning('CancelBooking: Failed to send cancellation email', ['exception_type' => $e::class, 'booking_id' => $booking->id]);
-                }
-            }
-
-            // 6. Notify owner (only if cancelled by customer)
-            if ($actor !== 'owner') {
-                try {
-                    $owner = $booking->tenant?->user;
-                    if ($owner) {
-                        $owner->notify(new BookingStatusChangedOwnerNotification(
-                            $booking,
-                            BookingState::STATUS_CANCELLED,
-                            ['updated_by' => $actor]
-                        ));
+            $announce = function () use ($booking, $actor): void {
+                // 5. Send cancellation email to customer
+                if ($booking->email) {
+                    try {
+                        $booking->refresh()->load(['tenant.user', 'layanan', 'payment', 'refund']);
+                        Mail::to($booking->email)->send(new BookingCancelledMail($booking));
+                    } catch (\Throwable $e) {
+                        Log::warning('CancelBooking: Failed to send cancellation email', ['exception_type' => $e::class, 'booking_id' => $booking->id]);
                     }
-                } catch (\Throwable $e) {
-                    Log::warning('CancelBooking: Failed to notify owner', ['exception_type' => $e::class, 'booking_id' => $booking->id]);
                 }
+
+                // 6. Notify owner (only if cancelled by customer)
+                if ($actor !== 'owner') {
+                    try {
+                        $owner = $booking->tenant?->user;
+                        if ($owner) {
+                            $owner->notify(new BookingStatusChangedOwnerNotification(
+                                $booking,
+                                BookingState::STATUS_CANCELLED,
+                                ['updated_by' => $actor]
+                            ));
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('CancelBooking: Failed to notify owner', ['exception_type' => $e::class, 'booking_id' => $booking->id]);
+                    }
+                }
+            };
+            if ($teamDecision) {
+                DB::afterCommit($announce);
+            } else {
+                $announce();
             }
 
             return ['success' => true, 'booking' => $booking];

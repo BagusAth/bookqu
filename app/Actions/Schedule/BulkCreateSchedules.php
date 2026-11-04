@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Actions\Schedule;
 
 use App\Domain\Schedule\ScheduleConflictRules;
+use App\Domain\Subscription\EntitlementRules;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class BulkCreateSchedules
 {
@@ -93,6 +96,10 @@ class BulkCreateSchedules
 
         $createdCount = DB::transaction(function () use ($activeDates, $data, $service, $tenant, $intervalSlot) {
             ClaimSlots::lockTenant((int) $tenant->id);
+            $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
+            if (! EntitlementRules::hasEffectivePlan($subscription)) {
+                throw ValidationException::withMessages(['error' => 'Paket berakhir. Perpanjang paket untuk membuka slot baru.']);
+            }
             $count = 0;
 
             foreach ($activeDates as $dateStr) {

@@ -62,9 +62,19 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 | Gap | Item |
 |---|---|
 | `Customer/BookingController` (≈850 lines) still holds the storefront session handling and repeats contiguity checks before checkout (the claim itself goes through `ClaimSlots`; date checks live in `ValidateBookingDate`) | BQ-029 |
-| Checkout has only a browser double-submit guard; two concurrent POSTs show the customer "slot sudah terisi" for their own hold | BQ-088 |
+
 | Owner bookings list shows the service's current price instead of the charged amount, and maps payment states that do not exist | BQ-135 |
 | Owner can mark paid or cancel while the customer's online payment is open | BQ-087 |
 | Reschedule does not evaluate or record slot price differences (price drift across surge/override slots) | BQ-140 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). Not implemented yet: [ADR-0008](../adr/ADR-0008-booking-checkout-draft.md) (typed checkout draft, BQ-029); until then BQ-083's checkout fingerprint keeps the quote equal to the charge.
+
+BQ-086: storefront date selection and booking creation require an effective subscription through `EntitlementRules`, independent of scheduler status cleanup; existing payment outcomes and access grants are unaffected.
+
+BQ-121: `GetInvoiceAmounts` projects customer invoice and share totals from `payments.jumlah`. Legacy groups show no invented per-session amounts and explicitly identify the whole-transaction total. Catalog and schedule overrides are not historical charge evidence. HTTP regressions: `BookingManageTest`.
+
+BQ-113: owner reschedule forwards an optional expected date to `ClaimSlots` under the existing tenant-first transaction; direct callers omitting it retain compatibility. Owner/customer slot loaders ignore stale success/error/finally responses, and owner modal closure invalidates pending requests. `BookingManagementTest` covers matching and mismatched dates; Edge harness exercised reversed responses and reopening.
+
+BQ-088: storefront checkout POSTs use the framework session lock (120 seconds, released in finally after session persistence). The session stores only its own pending payment ID and quote fingerprint. Matching retries resume that payment through a newly issued Checkout grant; different selections proceed normally. `BookingFlowHardeningTest` covers replay/no duplicate rows, different selection, held lock and exception release. No credential is cached in the session.
+
+BQ-146: a Kasir can record one pending cancellation request per payment group, with a reason. A Pemilik or Manajer may reject it without changing the booking or approve it under the tenant lock. Approval closes a pending payment through PaymentLifecycle. A settled online payment produces one full business-cancellation refund. Booking history snapshots the authenticated member ID and role for team actions.

@@ -16,7 +16,6 @@ use App\Models\Booking;
 use App\Models\Category;
 use App\Models\Resource;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +32,7 @@ class OwnerProgramController extends Controller
     public function index(Request $request): View
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -42,9 +41,9 @@ class OwnerProgramController extends Controller
         $selectedCategory = $request->input('category', '');
 
         $daftarlayanan = Service::where('idtenant', $idtenant)
-            ->with(['category', 'staff', 'resources', 'additionalItems'])
+            ->with(['category', 'resources', 'additionalItems'])
             ->when($katakunci !== '', function ($query) use ($katakunci) {
-                $query->where('namalayanan', 'like', '%' . $katakunci . '%');
+                $query->where('namalayanan', 'like', '%'.$katakunci.'%');
             })
             ->when($selectedCategory, function ($query) use ($selectedCategory) {
                 $query->where('idcategory', $selectedCategory);
@@ -54,7 +53,6 @@ class OwnerProgramController extends Controller
             ->paginate(12);
 
         $kategoriList = Category::where('idtenant', $idtenant)->orderBy('name')->get();
-        $staffList = Staff::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
         $resourceList = Resource::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
         $additionalItemList = AdditionalItem::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
 
@@ -66,18 +64,17 @@ class OwnerProgramController extends Controller
             ->whereMonth('tanggalbooking', Carbon::now()->month)
             ->count();
         $pendapatanlayanan = Booking::where('idtenant', $idtenant)
-            ->whereHas('payment', fn($q) => $q->where('status', 'sukses'))
+            ->whereHas('payment', fn ($q) => $q->where('status', 'sukses'))
             ->whereYear('tanggalbooking', Carbon::now()->year)
             ->whereMonth('tanggalbooking', Carbon::now()->month)
             ->with('payment')
             ->get()
-            ->sum(fn($b) => $b->payment->jumlah ?? 0);
+            ->sum(fn ($b) => $b->payment->jumlah ?? 0);
 
         return view('owner.programs', compact(
             'tenant',
             'daftarlayanan',
             'kategoriList',
-            'staffList',
             'resourceList',
             'additionalItemList',
             'totallayanan',
@@ -95,7 +92,7 @@ class OwnerProgramController extends Controller
     public function store(StoreServiceRequest $request, CreateService $createService): RedirectResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -105,11 +102,11 @@ class OwnerProgramController extends Controller
             $request->file('cover_image')
         );
 
-        $redirectRoute = ($request->is('*programs*') && !str_contains($request->headers->get('referer', ''), '/services'))
+        $redirectRoute = ($request->is('*programs*') && ! str_contains($request->headers->get('referer', ''), '/services'))
             ? 'owner.programs'
             : 'owner.services';
 
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $service->namalayanan . '" berhasil ditambahkan!');
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "'.$service->namalayanan.'" berhasil ditambahkan!');
     }
 
     /**
@@ -118,7 +115,7 @@ class OwnerProgramController extends Controller
     public function update(UpdateServiceRequest $request, $program, UpdateService $updateService): RedirectResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -130,11 +127,11 @@ class OwnerProgramController extends Controller
             $request->input('remove_image') === '1'
         );
 
-        $redirectRoute = ($request->is('*programs*') && !str_contains($request->headers->get('referer', ''), '/services'))
+        $redirectRoute = ($request->is('*programs*') && ! str_contains($request->headers->get('referer', ''), '/services'))
             ? 'owner.programs'
             : 'owner.services';
 
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $service->namalayanan . '" berhasil diperbarui!');
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "'.$service->namalayanan.'" berhasil diperbarui!');
     }
 
     /**
@@ -143,17 +140,17 @@ class OwnerProgramController extends Controller
     public function destroy($program, DeleteService $deleteService): RedirectResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $namalayanan = $deleteService->execute($tenant, $program);
 
-        $redirectRoute = (request()->is('*programs*') && !str_contains(request()->headers->get('referer', ''), '/services'))
+        $redirectRoute = (request()->is('*programs*') && ! str_contains(request()->headers->get('referer', ''), '/services'))
             ? 'owner.programs'
             : 'owner.services';
 
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $namalayanan . '" berhasil dihapus!');
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "'.$namalayanan.'" berhasil dihapus!');
     }
 
     /**
@@ -162,17 +159,17 @@ class OwnerProgramController extends Controller
     public function toggleStatus($id, ToggleServiceStatus $toggleServiceStatus): RedirectResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $service = $toggleServiceStatus->execute($tenant, $id);
         $statusText = $service->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
-        $redirectRoute = (request()->is('*programs*') && !str_contains(request()->headers->get('referer', ''), '/services'))
+        $redirectRoute = (request()->is('*programs*') && ! str_contains(request()->headers->get('referer', ''), '/services'))
             ? 'owner.programs'
             : 'owner.services';
 
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "' . $service->namalayanan . '" berhasil ' . $statusText . '!');
+        return redirect()->route($redirectRoute)->with('sukses', 'Program "'.$service->namalayanan.'" berhasil '.$statusText.'!');
     }
 }

@@ -70,7 +70,7 @@ class CreateBooking
                 // 1. Atomic monthly booking quota check inside transaction: lock stable synchronization row (Subscription or Tenant)
                 $subscription = Subscription::with('plan')
                     ->where('idtenant', $tenant->id)
-                    ->latest()
+                    ->latest('id')
                     ->lockForUpdate()
                     ->first();
 
@@ -78,6 +78,9 @@ class CreateBooking
                     DB::table('tenants')->where('id', $tenant->id)->lockForUpdate()->first();
                 }
 
+                if (! EntitlementRules::hasEffectivePlan($subscription)) {
+                    return ['quota_error' => true, 'error' => 'Bisnis ini belum menerima booking online saat ini.'];
+                }
                 if (! EntitlementRules::isUnlimitedBooking($subscription)) {
                     $dateCarbon = Carbon::parse($selectedDate, $wib);
                     $totalMonthlyBookings = DB::table('bookings')

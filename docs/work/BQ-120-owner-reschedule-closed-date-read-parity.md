@@ -2,7 +2,7 @@
 id: BQ-120
 title: Stop offering owner reschedule slots that the availability claim will refuse
 type: bug-fix
-status: approved
+status: in-progress
 priority: P1
 phase: 4
 domain: schedule
@@ -57,3 +57,8 @@ Read/write agreement mengikuti INV-SCH-01; cache bukan sumber otoritas claim. Te
 ## Evidence (fill when done)
 
 **Bukti audit:** HTTP terisolasi membuktikan GET `is_available=true` untuk slot pada blocked date, disusul POST 422. Termasuk 5 skenario / 29 asersi audit pada BQ-113. Tidak ada bukti bypass claim. Belum ada implementasi/PR.
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+
+Implementation evidence (2026-11-04): reschedule reader uses the same `AvailabilityRules` authority as locked claims rather than its own occupancy/past-only predicate. Existing current-slot label/exclusion retained; no cache ownership or blocked-date mutation changes. New HTTP regression initially offered the blocked slot, now proves disabled GET, rejected POST with original booking unchanged, then reopened GET and successful claim.
+Verification: full SQLite 678 passed / 3570 assertions; Pint fixed changed PHP; PHPStan no errors, baseline unchanged. No new transaction/lock writes in this read-only item (MySQL group last passed 11/43 under BQ-113).

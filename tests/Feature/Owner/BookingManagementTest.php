@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Booking;
+use App\Models\OwnerBlockedDate;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Schedule;
@@ -187,6 +189,8 @@ class BookingManagementTest extends TestCase
 
     public function test_owner_walk_in_without_email_is_recorded_without_a_management_delivery(): void
     {
+        // BQ-139: successful creation requires an active period; original behavior assertions remain.
+        app(CreateTrialSubscription::class)->execute($this->tenant);
         $walkinSchedule = Schedule::factory()->create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
@@ -211,6 +215,8 @@ class BookingManagementTest extends TestCase
 
     public function test_owner_walk_in_booking_creates_payment_with_management_delivery_and_provider(): void
     {
+        // BQ-139: successful creation requires an active period; original behavior assertions remain.
+        app(CreateTrialSubscription::class)->execute($this->tenant);
         $walkinSchedule = Schedule::factory()->create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
@@ -293,9 +299,42 @@ class BookingManagementTest extends TestCase
             'metode' => 'cash',
         ]);
 
-        $response->assertSessionHasErrors(['error']);
+        $response->assertForbidden()->assertSee('Paket berakhir');
         $this->assertDatabaseMissing('bookings', [
             'namapelanggan' => 'Walkin Blocked Guest',
         ]);
+    }
+
+    public function test_reschedule_rejects_a_slot_from_another_selected_date_without_mutation(): void
+    {
+        $booking = Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $this->schedule->id, 'status' => 'paid']);
+        $target = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'tanggal' => '2026-11-05', 'jam_mulai' => '10:00:00', 'jam_selesai' => '11:00:00']);
+        $this->actingAs($this->user)->postJson('/owner/bookings/'.$booking->id.'/reschedule', ['tanggal' => '2026-11-06', 'schedule_id' => $target->id])->assertUnprocessable();
+        $this->assertSame($this->schedule->id, $booking->fresh()->idschedule);
+    }
+
+    public function test_reschedule_accepts_a_slot_matching_the_selected_date(): void
+    {
+        $booking = Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $this->schedule->id, 'status' => 'paid']);
+        $target = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'tanggal' => '2026-11-05', 'jam_mulai' => '10:00:00', 'jam_selesai' => '11:00:00']);
+        $this->actingAs($this->user)->postJson('/owner/bookings/'.$booking->id.'/reschedule', ['tanggal' => '2026-11-05', 'schedule_id' => $target->id])->assertOk()->assertJsonPath('success', true);
+        $this->assertSame($target->id, $booking->fresh()->idschedule);
+        $this->assertSame('2026-11-05', $booking->fresh()->tanggalbooking->toDateString());
+    }
+
+    public function test_closed_date_slots_are_unselectable_and_reopening_restores_bookability(): void
+    {
+        $booking = Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $this->schedule->id, 'status' => 'paid']);
+        $target = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'tanggal' => '2026-11-05', 'jam_mulai' => '10:00:00', 'jam_selesai' => '11:00:00']);
+        $closed = OwnerBlockedDate::create(['idtenant' => $this->tenant->id, 'tanggal' => '2026-11-05', 'alasan' => 'Libur']);
+        $this->actingAs($this->user)->getJson('/owner/bookings/'.$booking->id.'/available-slots?tanggal=2026-11-05')
+            ->assertOk()->assertJsonPath('slots.0.is_available', false);
+        $this->postJson('/owner/bookings/'.$booking->id.'/reschedule', ['tanggal' => '2026-11-05', 'schedule_id' => $target->id])->assertUnprocessable();
+        $this->assertSame($this->schedule->id, $booking->fresh()->idschedule);
+        $closed->delete();
+        $this->getJson('/owner/bookings/'.$booking->id.'/available-slots?tanggal=2026-11-05')
+            ->assertOk()->assertJsonPath('slots.0.is_available', true);
+        $this->postJson('/owner/bookings/'.$booking->id.'/reschedule', ['tanggal' => '2026-11-05', 'schedule_id' => $target->id])->assertOk();
+        $this->assertSame($target->id, $booking->fresh()->idschedule);
     }
 }

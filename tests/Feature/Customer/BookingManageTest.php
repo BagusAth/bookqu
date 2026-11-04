@@ -246,4 +246,31 @@ class BookingManageTest extends TestCase
         $this->assertEquals('rescheduled', $notification->data['event_type']);
         $this->assertEquals('Jadwal Booking Diubah', $notification->data['title']);
     }
+
+    public function test_invoice_keeps_the_recorded_charge_after_catalog_and_override_changes(): void
+    {
+        $this->service->update(['harga' => 250000]);
+        $this->schedule->update(['harga_override' => 275000]);
+        $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'/invoice');
+        $response->assertOk()->assertSee('Rp 150.000')->assertDontSee('275.000')->assertDontSee('250.000');
+        $this->assertEquals(150000, $this->payment->fresh()->jumlah);
+        $this->assertSame('sukses', $this->payment->fresh()->status);
+        $this->assertDatabaseCount('refunds', 0);
+    }
+
+    public function test_group_invoice_does_not_invent_legacy_per_slot_prices(): void
+    {
+        $schedule = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'harga_override' => 900000]);
+        Booking::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+            'idschedule' => $schedule->id, 'idpayment' => $this->payment->id, 'status' => 'paid',
+        ]);
+        $this->payment->update(['jumlah' => 350000]);
+        $this->service->update(['harga' => 800000]);
+        $this->grantCustomerAccess($this->payment)->get('/manage/payment/'.$this->payment->order_id.'/invoice')
+            ->assertOk()->assertSee('350.000')->assertSee('Rincian harga historis per sesi tidak tersedia.')
+            ->assertDontSee('800.000')->assertDontSee('900.000')->assertDontSee('175.000');
+        $this->assertEquals(350000, $this->payment->fresh()->jumlah);
+        $this->assertDatabaseCount('refunds', 0);
+    }
 }

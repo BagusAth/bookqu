@@ -34,3 +34,8 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Nee
 | Changing email or password needs no current password; email change keeps verification; other sessions stay logged in | BQ-098 |
 | Audit P0: dead "forgot password" link, redirect loop, logout without CSRF handling on verify notice (status unknown since `ab24193`) | BQ-040 … BQ-042 |
 | Owner registration not wrapped in DB transaction, and silent asynchronous CSRF 419 session expiration | BQ-112 |
+
+BQ-131: platform owner role is distinct from the tenant role. TenantPermission owns the Pemilik/Manajer/Kasir map; permission middleware and policies enforce it server-side. Own account fields refer to the signed-in member, not the business owner. Cashier dashboard/customer responses omit revenue/spending, and notification delivery/feed/counts are role-filtered. Existing admin/customer authorization mechanisms are unchanged.
+
+BQ-146: a team invitation expires after 24 hours. The emailed fragment is exchanged via a rate-limited, CSRF-protected POST for a session-bound invitation reference. Storage contains only the selector and secret hash. Delivery uses an encrypted queue job and a non-logging mailer. Acceptance rechecks expiry, invited email, membership and seats before consuming the invitation. New invitees create an account without opening a business or starting a trial.
+A revoked or otherwise invalid existing membership invalidates the session on the next owner request.

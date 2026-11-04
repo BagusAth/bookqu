@@ -9,6 +9,7 @@ use App\Actions\Owner\TenantBalanceLedger;
 use App\Domain\Booking\BookingState;
 use App\Domain\Payment\PaymentTransition;
 use App\Models\Booking;
+use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\UsageLog;
@@ -45,6 +46,7 @@ class BookingGroupConsequences implements PaymentConsequences
         foreach ($this->lockGroup($payment) as $booking) {
             if ($booking->status === BookingState::STATUS_PENDING) {
                 $booking->update(['status' => BookingState::STATUS_PAID]);
+                BookingLog::record($booking->id, 'payment_success', 'Pembayaran dicatat.');
 
                 if (! $booking->booking_code) {
                     $booking->assignBookingCode();
@@ -91,6 +93,7 @@ class BookingGroupConsequences implements PaymentConsequences
         foreach ($this->lockGroup($payment) as $booking) {
             if ($booking->status === BookingState::STATUS_PENDING) {
                 $booking->update(['status' => BookingState::STATUS_CANCELLED]);
+                BookingLog::record($booking->id, 'cancelled', 'Pembayaran ditutup.');
                 $cancelledBookings[] = $booking;
             }
         }

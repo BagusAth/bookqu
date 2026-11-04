@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Domain\Subscription\EntitlementRules;
-use App\Domain\Subscription\SubscriptionState;
 use App\Models\Subscription;
 use App\Support\TenantContext;
 use Closure;
@@ -32,13 +31,13 @@ class CheckSubscription
         }
 
         /** @var Subscription|null $subscription */
-        $subscription = Subscription::with('plan')->where('idtenant', $tenantId)->latest()->first();
+        $subscription = Subscription::with('plan')->where('idtenant', $tenantId)->latest('id')->first();
 
         if (! $subscription) {
             return redirect()->route('owner.subscription')->with('error', 'Silakan berlangganan untuk mengakses fitur ini.');
         }
 
-        if (SubscriptionState::isExpired($subscription)) {
+        if (! EntitlementRules::hasEffectivePlan($subscription)) {
             return redirect()->route('owner.subscription')->with('error', 'Langganan Anda telah habis, mohon perpanjang.');
         }
 

@@ -60,3 +60,7 @@ Functional: Implemented · Verification: Needs Verification · Architecture: Tar
 | Custom domains can be set only in the hidden landing-page module | BQ-154 |
 
 Target decision: [ADR-0010](../adr/ADR-0010-authorization-and-tenant-scoping.md) — owner Policies with foreign-id 404s, a tenant-context runner for jobs/webhooks/commands, and scope bypasses only in four named places (BQ-009, BQ-031). Not implemented yet.
+
+BQ-131: accepted, non-revoked `tenant_members` are resolved fresh for each owner request; ambiguous memberships fail closed, and a pemilik must equal tenants.iduser. Migration backfills existing owners; new tenant creation establishes the membership. Resource policies check tenant plus TenantPermission ability; foreign bound records remain 404. Revocation and per-route ability mapping are covered by `Team/TenantPermissionTest`; MySQL backfill by `TenantMembershipBackfillTest`.
+
+BQ-146: outstanding invitations reserve a non-owner seat until revoked, accepted or expired. Issue and acceptance both use the tenant lock and EntitlementRules. Owners may revoke access and edit non-owner roles even after a downgrade. Booking history records actor ID and role from the authenticated membership. The owner activity list is tenant-filtered and stores event and subject references without request payloads. Staff writes and service links are retired while the historical tables are retained for one release.

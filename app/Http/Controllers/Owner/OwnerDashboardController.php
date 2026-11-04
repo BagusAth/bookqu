@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Dashboard\GetOwnerDashboardOverview;
+use App\Actions\Owner\GetOwnerNavigation;
+use App\Actions\Team\FilterRevenueFigures;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
+use App\Policies\TenantResourcePolicy;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -21,12 +24,12 @@ class OwnerDashboardController extends Controller
         $tenant = $this->resolveTenant();
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             abort(403, 'User tidak ditemukan.');
         }
 
-        if (!$tenant) {
-            $tenant = new Tenant();
+        if (! $tenant) {
+            $tenant = new Tenant;
             $tenant->setRelation('user', $user);
 
             $labelbulan = [];
@@ -67,6 +70,16 @@ class OwnerDashboardController extends Controller
 
         $overviewData = $dashboardOverview->getOverviewData($tenant);
 
+        $canViewRevenue = request()->attributes->get('can_view_revenue') !== false;
+        if (! $canViewRevenue) {
+            $overviewData = app(FilterRevenueFigures::class)->execute($overviewData);
+        }
+        $overviewData['canViewRevenue'] = $canViewRevenue;
+        $overviewData['canRenewSubscription'] = app(TenantResourcePolicy::class)->ability($user, 'subscription.manage');
+        $report = collect(app(GetOwnerNavigation::class)->execute($user))->firstWhere('id', 'reports');
+        $overviewData['showFullReportLink'] = $report !== null;
+        $overviewData['fullReportLocked'] = $report['locked'] ?? false;
+
         return view('owner.dashboard', $overviewData);
     }
 
@@ -74,11 +87,14 @@ class OwnerDashboardController extends Controller
     {
         $tenant = $this->resolveTenant();
 
-        if (!$tenant) {
+        if (! $tenant) {
             return response()->json(['success' => false, 'message' => 'Tenant tidak ditemukan.'], 404);
         }
 
         $data = $dashboardOverview->getPollingData($tenant);
+        if (request()->attributes->get('can_view_revenue') === false) {
+            $data = app(FilterRevenueFigures::class)->execute($data);
+        }
 
         return response()->json([
             'success' => true,

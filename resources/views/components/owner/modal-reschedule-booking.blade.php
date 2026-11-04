@@ -3,6 +3,7 @@
     id="modal-owner-reschedule"
     x-data="{
         buka: false,
+        slotRequest: 0,
         sedangMemuat: false,
         sedangKirim: false,
         booking: null,
@@ -33,6 +34,11 @@
 
         async muatSlot() {
             if (!this.booking || !this.selectedDate) return;
+            const request = ++this.slotRequest;
+            const bookingId = this.booking.id;
+            const date = this.selectedDate;
+            const current = () => request === this.slotRequest && this.buka && this.booking?.id === bookingId && this.selectedDate === date;
+            this.selectedScheduleId = null;
             this.sedangMemuat = true;
             this.pesanError = '';
             this.slots = [];
@@ -45,6 +51,7 @@
                     }
                 });
                 const data = await res.json();
+                if (!current()) return;
                 if (data.success) {
                     this.slots = data.slots || [];
                     // Jika slot saat ini berada di tanggal ini, pastikan terpilih secara default
@@ -56,9 +63,9 @@
                     this.pesanError = data.message || 'Gagal memuat slot jadwal.';
                 }
             } catch (err) {
-                this.pesanError = 'Terjadi kendala saat memuat slot jadwal.';
+                if (current()) this.pesanError = 'Terjadi kendala saat memuat slot jadwal.';
             } finally {
-                this.sedangMemuat = false;
+                if (current()) this.sedangMemuat = false;
             }
         },
 
@@ -73,7 +80,7 @@
         }
     }"
     @open-owner-reschedule.window="bukaModal($event.detail)"
-    @keydown.escape.window="buka = false"
+    @keydown.escape.window="buka = false; slotRequest++; selectedScheduleId = null"
     x-cloak
 >
     {{-- Overlay --}}
@@ -86,7 +93,7 @@
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
         class="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm"
-        @click="buka = false"
+        @click="buka = false; slotRequest++; selectedScheduleId = null"
     ></div>
 
     {{-- Modal Dialog --}}
@@ -111,7 +118,7 @@
                     </div>
                     <p class="text-xs text-bq-text-muted mt-0.5">Penyesuaian jadwal langsung khusus Owner tanpa perlu token pelanggan.</p>
                 </div>
-                <button @click="buka = false" class="rounded-xl p-1.5 text-bq-text-subtle transition-colors hover:bg-slate-100 hover:text-bq-text cursor-pointer">
+                <button @click="buka = false; slotRequest++; selectedScheduleId = null" class="rounded-xl p-1.5 text-bq-text-subtle transition-colors hover:bg-slate-100 hover:text-bq-text cursor-pointer">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -245,7 +252,7 @@
                 <div class="pt-3 border-t border-bq-border flex items-center justify-between gap-2">
                     <button
                         type="button"
-                        @click="buka = false"
+                        @click="buka = false; slotRequest++; selectedScheduleId = null"
                         class="rounded-xl border border-bq-border bg-white px-4 py-2.5 text-xs font-bold text-bq-text hover:bg-slate-50 transition cursor-pointer shadow-2xs"
                     >
                         Batal

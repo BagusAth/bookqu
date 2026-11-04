@@ -10,6 +10,7 @@ use App\Models\Staff;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\View;
@@ -27,20 +28,20 @@ class OwnerUiAuditTest extends TestCase
         Notification::fake();
     }
 
-    public function test_saving_service_with_all_checkboxes_unchecked_detaches_staff_and_resources(): void
+    public function test_saving_service_with_all_checkboxes_unchecked_detaches_resources(): void
     {
         $tenant = Tenant::factory()->create();
         $service = Service::factory()->create(['idtenant' => $tenant->id]);
         $staff = Staff::create(['idtenant' => $tenant->id, 'name' => 'Staff', 'is_active' => true]);
         $resource = Resource::create(['idtenant' => $tenant->id, 'name' => 'Room', 'type' => 'room', 'capacity' => 1, 'is_active' => true]);
-        $service->staff()->attach($staff->id);
+        DB::table('service_staff')->insert(['idservice' => $service->id, 'idstaff' => $staff->id]);
         $service->resources()->attach($resource->id);
 
         $this->actingAs($tenant->user)->put(route('owner.services.update', $service->id), [
             'namalayanan' => $service->namalayanan, 'harga' => $service->harga, 'durasi' => $service->durasi, 'is_active' => '1',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
-        $this->assertDatabaseMissing('service_staff', ['idservice' => $service->id]);
+        $this->assertDatabaseHas('service_staff', ['idservice' => $service->id]);
         $this->assertDatabaseMissing('service_resource', ['idservice' => $service->id]);
         $this->assertDatabaseHas('services', ['id' => $service->id, 'namalayanan' => $service->namalayanan]);
     }

@@ -182,8 +182,7 @@ class OwnerScheduleController extends Controller
             'harga' => 'required|numeric|min:0',
         ]);
 
-        Service::where('idtenant', $tenant->id)
-            ->where('id', $data['idlayanan'])
+        Service::where('idtenant', $tenant->id)->findOrFail($data['idlayanan'])
             ->update(['harga' => $data['harga']]);
 
         $cacheService->clearServiceCache((int) $tenant->id, (int) $data['idlayanan']);

@@ -4,6 +4,7 @@ namespace Tests\Feature\Customer;
 
 use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Contracts\Payments\PaymentGatewayInterface;
 use App\Domain\Schedule\SlotRefusal;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
@@ -59,6 +60,7 @@ class SafeOperationErrorsTest extends TestCase
     private function storefront(): array
     {
         $tenant = Tenant::factory()->create();
+        app(CreateTrialSubscription::class)->execute($tenant);
         $service = Service::factory()->create(['idtenant' => $tenant->id, 'harga' => 50000, 'durasi' => 60]);
         $schedule = Schedule::factory()->create([
             'idtenant' => $tenant->id, 'idlayanan' => $service->id,

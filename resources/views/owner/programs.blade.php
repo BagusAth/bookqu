@@ -166,7 +166,6 @@
                             'durasi'              => $layanan->durasi,
                             'deskripsi'           => $layanan->deskripsi ?: '',
                             'is_active'           => (int) ($layanan->is_active ?? 1),
-                            'staff_ids'           => $layanan->staff->pluck('id')->toArray(),
                             'resource_ids'        => $layanan->resources->pluck('id')->toArray(),
                             'additional_item_ids' => $layanan->additionalItems->pluck('id')->toArray(),
                             'image_url'           => $layanan->image_url
@@ -225,12 +224,6 @@
 
                         {{-- Hierarchy: Staff & Resources breakdown --}}
                         <div class="mt-3 space-y-1.5">
-                            @if($layanan->staff->isNotEmpty())
-                                <div class="flex items-center gap-1 text-[11px] text-bq-text-muted">
-                                    <svg class="h-3.5 w-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                    <span class="truncate">Staff: {{ $layanan->staff->pluck('name')->join(', ') }}</span>
-                                </div>
-                            @endif
                             @if($layanan->resources->isNotEmpty())
                                 <div class="flex items-center gap-1 text-[11px] text-bq-text-muted">
                                     <svg class="h-3.5 w-3.5 text-sky-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Actions\Team\CreateOwnerMembership;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +13,11 @@ use Illuminate\Support\Facades\Storage;
 class Tenant extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::created(fn (Tenant $tenant) => app(CreateOwnerMembership::class)->execute($tenant));
+    }
 
     protected $hidden = ['midtrans_sandbox_client_key', 'midtrans_sandbox_server_key', 'midtrans_prod_client_key', 'midtrans_prod_server_key'];
 
@@ -81,6 +87,7 @@ class Tenant extends Model
         return $this->hasMany(Subscription::class, 'idtenant');
     }
 
+    /** @return HasOne<Subscription, $this> */
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class, 'idtenant')->latestOfMany();

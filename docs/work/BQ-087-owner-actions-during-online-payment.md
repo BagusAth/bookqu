@@ -2,7 +2,7 @@
 id: BQ-087
 title: Lock owner booking actions while an online payment is open, and never ignore a double payment
 type: bug-fix
-status: approved
+status: in-progress
 priority: P1
 phase: 4
 domain: payment
@@ -81,3 +81,7 @@ Only a customer cancellation records a refund (`CancelBooking.php:114-115`). An 
 ## Evidence (fill when done)
 
 _Fill in when done._
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+
+Blocked in this session: Plan 2 removes provider-linked owner settlement, directly contradicting Accepted ADR-0004 decision 6. No application change made; BQ-049 remains open with BQ-087 until the accepted contract is amended.

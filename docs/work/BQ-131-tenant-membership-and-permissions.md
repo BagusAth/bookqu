@@ -2,7 +2,7 @@
 id: BQ-131
 title: Tenant membership, role permission map and owner policies
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: tenancy
@@ -53,3 +53,12 @@ INV-TEN-01, INV-TEN-02: tenant and role only from the membership; foreign ids st
 - `docs/domains/tenancy.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-04 untuk sesi agen.
+
+Implementation evidence (2026-11-04): membership schema and owner backfill; new owners receive an accepted pemilik membership. Resolver re-reads accepted/non-revoked memberships, denies ambiguous ownership and checks pemilik against tenants.iduser. TenantPermission maps roles, every owner route and notification types; permission middleware and 18 resource Policies enforce tenant/ability checks, with 404 for foreign records. Cashier dashboard/customer responses remove revenue/spending before rendering/JSON; own-account forms use the member identity and omit business/delete controls. Notification delivery, feed, mutations and unread counts filter by ability; cashier booking notifications contain no amount. No invitations or activity UI (BQ-146).
+
+Tests: 9 new feature tests (matrix, every route/gate, revocation, forged cancellation, 18 foreign-resource policies, revenue omission, own identity, notification feed/delivery) plus one MySQL migration-backfill test. Existing subscription foreign-payment expectation amended from 403 to the explicitly required 404 (ADR-0010/0016); no assertion was weakened to preserve a bug.
+Verification: full SQLite 690 passed / 3988 assertions; MySQL group 12 passed / 45 assertions; Pint fixed changed PHP; PHPStan no errors, baseline unchanged. Status remains in-progress until merge.
+
+Out-of-scope finding: the legacy payments token-removal down migration fails on SQLite because a unique index still references manage_token when dropping the column. Discovered by an initial DatabaseMigrations teardown; the backfill test uses the existing MySQL DatabaseTruncation pattern and verifies this migration without exercising unrelated historical rollbacks. Legacy onboarding atomicity remains BQ-112.

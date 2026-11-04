@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
-
 use App\Models\AdditionalItem;
 use App\Models\Service;
+use App\Support\TenantActor;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,7 +17,7 @@ class OwnerAdditionalItemController extends Controller
     public function index(Request $request)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -45,74 +45,77 @@ class OwnerAdditionalItemController extends Controller
     public function store(Request $request)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $validated = $request->validate([
-            'name'         => 'required|string|max:150',
-            'description'  => 'nullable|string|max:500',
-            'price'        => 'required|numeric|min:0',
-            'stock'        => 'nullable|integer|min:0',
-            'is_active'    => 'nullable|boolean',
-            'service_ids'  => 'nullable|array',
-            'service_ids.*'=> ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            'name' => 'required|string|max:150',
+            'description' => 'nullable|string|max:500',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'nullable|integer|min:0',
+            'is_active' => 'nullable|boolean',
+            'service_ids' => 'nullable|array',
+            'service_ids.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
         $item = AdditionalItem::create([
-            'idtenant'    => $tenant->id,
-            'name'        => $validated['name'],
+            'idtenant' => $tenant->id,
+            'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
-            'price'       => $validated['price'],
-            'stock'       => $validated['stock'] ?? null,
-            'is_active'   => $request->has('is_active') ? (bool) $request->input('is_active') : true,
+            'price' => $validated['price'],
+            'stock' => $validated['stock'] ?? null,
+            'is_active' => $request->has('is_active') ? (bool) $request->input('is_active') : true,
         ]);
 
-        if (!empty($validated['service_ids'])) {
+        if (! empty($validated['service_ids'])) {
             $item->services()->sync($validated['service_ids']);
         }
 
         return redirect()->route('owner.additional-items')
-            ->with('sukses', 'Add-on "' . $item->name . '" berhasil ditambahkan!');
+            ->with('sukses', 'Add-on "'.$item->name.'" berhasil ditambahkan!');
     }
 
     public function update(Request $request, int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $item = AdditionalItem::where('idtenant', $tenant->id)->findOrFail($id);
 
         $validated = $request->validate([
-            'name'         => 'required|string|max:150',
-            'description'  => 'nullable|string|max:500',
-            'price'        => 'required|numeric|min:0',
-            'stock'        => 'nullable|integer|min:0',
-            'is_active'    => 'required|boolean',
-            'service_ids'  => 'nullable|array',
-            'service_ids.*'=> ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            'name' => 'required|string|max:150',
+            'description' => 'nullable|string|max:500',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'nullable|integer|min:0',
+            'is_active' => 'required|boolean',
+            'service_ids' => 'nullable|array',
+            'service_ids.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
         $item->update([
-            'name'        => $validated['name'],
+            'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
-            'price'       => $validated['price'],
-            'stock'       => $validated['stock'] ?? null,
-            'is_active'   => (bool) $validated['is_active'],
+            'price' => $validated['price'],
+            'stock' => $validated['stock'] ?? null,
+            'is_active' => (bool) $validated['is_active'],
         ]);
 
-        $item->services()->sync($validated['service_ids'] ?? []);
+        $changes = $item->services()->sync($validated['service_ids'] ?? []);
+        if (array_filter($changes)) {
+            app(TenantActor::class)->record($item, 'assignments_updated');
+        }
 
         return redirect()->route('owner.additional-items')
-            ->with('sukses', 'Add-on "' . $item->name . '" berhasil diperbarui!');
+            ->with('sukses', 'Add-on "'.$item->name.'" berhasil diperbarui!');
     }
 
     public function destroy(int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -122,22 +125,22 @@ class OwnerAdditionalItemController extends Controller
         $item->delete();
 
         return redirect()->route('owner.additional-items')
-            ->with('sukses', 'Add-on "' . $name . '" berhasil dihapus!');
+            ->with('sukses', 'Add-on "'.$name.'" berhasil dihapus!');
     }
 
     public function toggleStatus(int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $item = AdditionalItem::where('idtenant', $tenant->id)->findOrFail($id);
-        $item->update(['is_active' => !$item->is_active]);
+        $item->update(['is_active' => ! $item->is_active]);
 
         $statusText = $item->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
         return redirect()->route('owner.additional-items')
-            ->with('sukses', 'Add-on "' . $item->name . '" berhasil ' . $statusText . '!');
+            ->with('sukses', 'Add-on "'.$item->name.'" berhasil '.$statusText.'!');
     }
 }
-

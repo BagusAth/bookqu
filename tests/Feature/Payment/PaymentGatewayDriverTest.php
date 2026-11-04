@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payment;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Infrastructure\Payments\SingaPay\SingaPayClient;
@@ -52,6 +53,8 @@ class PaymentGatewayDriverTest extends TestCase
             'alamat' => 'Jl. Merdeka No. 1',
             'nomorhp' => '081234567890',
         ]);
+        // BQ-086: successful writes require a live subscription; assertions stay unchanged.
+        app(CreateTrialSubscription::class)->execute($this->tenant)->forceFill(['created_at' => now()->subMinute()])->save();
 
         $this->layanan = Service::create([
             'idtenant' => $this->tenant->id,

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Actions\Team\ResolveTenantMembership;
 use App\Domain\CustomerAccess\AccessContext;
 use App\Models\Tenant;
 use App\Support\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TenantMiddleware
 {
@@ -57,9 +59,16 @@ class TenantMiddleware
             if ($isOwnerRoute) {
                 $user = auth()->user();
                 if ($user) {
-                    $ownerTenant = Tenant::where('iduser', $user->id)->first();
-                    if ($ownerTenant) {
-                        app(TenantContext::class)->setTenantId($ownerTenant->id);
+                    $member = app(ResolveTenantMembership::class)->execute($user);
+                    if ($member !== null) {
+                        app(TenantContext::class)->setTenantId((int) $member->idtenant);
+                        $request->attributes->set('tenant_member', $member);
+                    } elseif (Tenant::where('iduser', $user->id)->exists()
+                        || app(ResolveTenantMembership::class)->hasMembership($user)) {
+                        Auth::logout();
+                        $request->session()->invalidate();
+                        $request->session()->regenerateToken();
+                        abort(403);
                     }
                 }
             }

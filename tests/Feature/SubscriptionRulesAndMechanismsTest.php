@@ -7,7 +7,6 @@ use App\Models\Category;
 use App\Models\Plan;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -178,65 +177,30 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
         $response->assertRedirect(route(CustomerBookingRoutes::name('customer.booking.schedule'), $tenant->slug));
     }
 
-    /**
-     * 3. Small plan enforces staff limit of 2.
-     */
-    public function test_small_plan_enforces_staff_limit_of_two(): void
+    public function test_small_plan_has_no_team_seats(): void
     {
-        // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.staff-resources' => 'released']);
-
-        $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
-        $tenant = Tenant::create([
-            'iduser' => $owner->id,
-            'namabisnis' => 'Salon Small',
-            'jenisbisnis' => 'Salon',
-            'slug' => 'salon-small',
-            'alamat' => 'Jl. Salon 1',
-            'nomorhp' => '08345678901',
-        ]);
-
+        $this->travelTo(now()->startOfDay());
+        config(['modules.team' => 'released']);
+        $tenant = Tenant::factory()->create();
         Subscription::create([
             'idtenant' => $tenant->id,
             'idplan' => $this->planSmall->id,
             'status' => 'active',
+            'langganan_berakhir' => now()->addMonth(),
         ]);
-
-        $this->actingAs($owner);
-        session(['current_tenant_id' => $tenant->id]);
-
-        // Staff 1
-        $res1 = $this->post('/owner/staff', [
-            'name' => 'Staff 1',
-            'role' => 'Stylist',
-        ]);
-        $res1->assertRedirect(route('owner.staff-resources', ['tab' => 'staff']));
-        $this->assertDatabaseHas('staff', ['name' => 'Staff 1', 'idtenant' => $tenant->id]);
-
-        // Staff 2
-        $res2 = $this->post('/owner/staff', [
-            'name' => 'Staff 2',
-            'role' => 'Colorist',
-        ]);
-        $res2->assertRedirect(route('owner.staff-resources', ['tab' => 'staff']));
-        $this->assertDatabaseHas('staff', ['name' => 'Staff 2', 'idtenant' => $tenant->id]);
-
-        // Staff 3 (should be blocked)
-        $res3 = $this->post('/owner/staff', [
-            'name' => 'Staff 3',
-            'role' => 'Assistant',
-        ]);
-        $res3->assertSessionHasErrors('name');
-        $this->assertDatabaseMissing('staff', ['name' => 'Staff 3', 'idtenant' => $tenant->id]);
+        $this->actingAs($tenant->user)->postJson('/owner/settings/team/invitations', [
+            'email' => 'cashier@example.com', 'role' => 'kasir',
+        ])->assertUnprocessable()->assertJsonValidationErrors('email');
+        $this->assertDatabaseCount('tenant_invitations', 0);
     }
 
     /**
-     * 4. Medium plan allows up to 15 staff, unlimited services, and access to Analytics & Export.
+     * 4. Medium plan allows unlimited services, and access to Analytics & Export.
      */
     public function test_medium_plan_features_and_limits(): void
     {
         // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.staff-resources' => 'released', 'modules.analytics' => 'released', 'modules.landing-page' => 'released']);
+        config(['modules.analytics' => 'released', 'modules.landing-page' => 'released']);
 
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
@@ -284,22 +248,6 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
         }
         $this->assertEquals(6, Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->count());
 
-        // Fill 15 staff
-        for ($s = 1; $s <= 15; $s++) {
-            Staff::create([
-                'idtenant' => $tenant->id,
-                'name' => "Staff $s",
-                'role' => 'Specialist',
-            ]);
-        }
-
-        // 16th staff attempt should fail
-        $res16 = $this->post('/owner/staff', [
-            'name' => 'Staff 16',
-            'role' => 'Nurse',
-        ]);
-        $res16->assertSessionHasErrors('name');
-        $this->assertDatabaseMissing('staff', ['name' => 'Staff 16', 'idtenant' => $tenant->id]);
     }
 
     /**
@@ -307,6 +255,8 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
      */
     public function test_small_plan_cannot_access_analytics(): void
     {
+        // BQ-130: isolate this behavior behind an explicitly enabled development module.
+        config(['modules.analytics' => 'released']);
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
             'iduser' => $owner->id,

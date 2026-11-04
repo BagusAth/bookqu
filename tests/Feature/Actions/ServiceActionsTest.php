@@ -8,6 +8,7 @@ use App\Actions\Service\CreateService;
 use App\Actions\Service\DeleteService;
 use App\Actions\Service\ToggleServiceStatus;
 use App\Actions\Service\UpdateService;
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Booking;
 use App\Models\Plan;
 use App\Models\Schedule;
@@ -25,6 +26,7 @@ class ServiceActionsTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Tenant $tenant;
 
     protected function setUp(): void
@@ -33,13 +35,15 @@ class ServiceActionsTest extends TestCase
 
         $this->user = User::factory()->create(['role' => 'owner']);
         $this->tenant = Tenant::create([
-            'iduser'      => $this->user->id,
-            'namabisnis'  => 'Action Test Spa',
-            'slug'        => 'action-test-spa',
+            'iduser' => $this->user->id,
+            'namabisnis' => 'Action Test Spa',
+            'slug' => 'action-test-spa',
             'jenisbisnis' => 'Spa',
-            'nomorhp'     => '08123456789',
-            'alamat'      => 'Jl. Test No. 1',
+            'nomorhp' => '08123456789',
+            'alamat' => 'Jl. Test No. 1',
         ]);
+        // BQ-086: successful writes require a live subscription; assertions stay unchanged.
+        app(CreateTrialSubscription::class)->execute($this->tenant)->forceFill(['created_at' => now()->subMinute()])->save();
 
         app(TenantContext::class)->setTenantId($this->tenant->id);
     }
@@ -50,71 +54,71 @@ class ServiceActionsTest extends TestCase
 
         $service = $action->execute($this->tenant, [
             'namalayanan' => 'Aromatherapy Massage',
-            'harga'       => 150000,
-            'durasi'      => 60,
-            'deskripsi'   => 'Relaksasi tubuh dan pikiran',
+            'harga' => 150000,
+            'durasi' => 60,
+            'deskripsi' => 'Relaksasi tubuh dan pikiran',
         ]);
 
         $this->assertInstanceOf(Service::class, $service);
         $this->assertDatabaseHas('services', [
-            'id'          => $service->id,
-            'idtenant'    => $this->tenant->id,
+            'id' => $service->id,
+            'idtenant' => $this->tenant->id,
             'namalayanan' => 'Aromatherapy Massage',
-            'harga'       => 150000,
-            'durasi'      => 60,
+            'harga' => 150000,
+            'durasi' => 60,
         ]);
     }
 
     public function test_create_service_enforces_plan_quota_limit(): void
     {
         $plan = Plan::create([
-            'namapaket'    => 'small',
+            'namapaket' => 'small',
             'hargabulanan' => 50000,
-            'maxlayanan'   => 1,
-            'maxbooking'   => 50,
-            'isunlimited'  => false,
+            'maxlayanan' => 1,
+            'maxbooking' => 50,
+            'isunlimited' => false,
         ]);
 
         Subscription::create([
             'idtenant' => $this->tenant->id,
-            'idplan'   => $plan->id,
-            'status'   => 'active',
+            'idplan' => $plan->id,
+            'status' => 'active',
         ]);
 
         $action = app(CreateService::class);
 
         $action->execute($this->tenant, [
             'namalayanan' => 'Layanan Pertama',
-            'harga'       => 50000,
-            'durasi'      => 30,
+            'harga' => 50000,
+            'durasi' => 30,
         ]);
 
         $this->expectException(ValidationException::class);
 
         $action->execute($this->tenant, [
             'namalayanan' => 'Layanan Kedua Yang Melebihi Kuota',
-            'harga'       => 75000,
-            'durasi'      => 45,
+            'harga' => 75000,
+            'durasi' => 45,
         ]);
     }
 
     public function test_update_service_action_modifies_attributes(): void
     {
         $service = Service::create([
-            'idtenant'    => $this->tenant->id,
+            'idtenant' => $this->tenant->id,
             'namalayanan' => 'Refleksi Kaki',
-            'harga'       => 80000,
-            'durasi'      => 45,
+            'harga' => 80000,
+            'durasi' => 45,
         ]);
 
         $action = app(UpdateService::class);
 
         $updated = $action->execute($this->tenant, $service, [
             'namalayanan' => 'Refleksi Kaki Premium',
-            'harga'       => 120000,
-            'durasi'      => 60,
-            'deskripsi'   => 'Durasi lebih lama dengan essential oil',
-            'is_active'   => true,
+            'harga' => 120000,
+            'durasi' => 60,
+            'deskripsi' => 'Durasi lebih lama dengan essential oil',
+            'is_active' => true,
         ]);
 
         $this->assertEquals('Refleksi Kaki Premium', $updated->namalayanan);
@@ -125,11 +129,11 @@ class ServiceActionsTest extends TestCase
     public function test_toggle_service_status_action_switches_active_state(): void
     {
         $service = Service::create([
-            'idtenant'    => $this->tenant->id,
+            'idtenant' => $this->tenant->id,
             'namalayanan' => 'Totok Wajah',
-            'harga'       => 90000,
-            'durasi'      => 30,
-            'is_active'   => true,
+            'harga' => 90000,
+            'durasi' => 30,
+            'is_active' => true,
         ]);
 
         $action = app(ToggleServiceStatus::class);
@@ -144,31 +148,31 @@ class ServiceActionsTest extends TestCase
     public function test_delete_service_action_blocked_if_active_bookings_exist(): void
     {
         $service = Service::create([
-            'idtenant'    => $this->tenant->id,
+            'idtenant' => $this->tenant->id,
             'namalayanan' => 'Facial Deep Clean',
-            'harga'       => 200000,
-            'durasi'      => 60,
+            'harga' => 200000,
+            'durasi' => 60,
         ]);
 
         $schedule = Schedule::create([
-            'idtenant'    => $this->tenant->id,
-            'idlayanan'   => $service->id,
-            'tanggal'     => now()->addDays(2)->toDateString(),
-            'jam_mulai'   => '10:00:00',
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $service->id,
+            'tanggal' => now()->addDays(2)->toDateString(),
+            'jam_mulai' => '10:00:00',
             'jam_selesai' => '11:00:00',
-            'status'      => 'tersedia',
+            'status' => 'tersedia',
         ]);
 
         Booking::create([
-            'idtenant'       => $this->tenant->id,
-            'idlayanan'      => $service->id,
-            'idschedule'     => $schedule->id,
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $service->id,
+            'idschedule' => $schedule->id,
             'tanggalbooking' => now()->addDays(2),
-            'jam'            => '10:00:00',
-            'namapelanggan'  => 'Pelanggan Aktif',
-            'nomorhp'        => '08123456789',
-            'email'          => 'pelanggan@example.com',
-            'status'         => 'paid',
+            'jam' => '10:00:00',
+            'namapelanggan' => 'Pelanggan Aktif',
+            'nomorhp' => '08123456789',
+            'email' => 'pelanggan@example.com',
+            'status' => 'paid',
         ]);
 
         $action = app(DeleteService::class);
@@ -180,10 +184,10 @@ class ServiceActionsTest extends TestCase
     public function test_delete_service_action_succeeds_without_active_bookings(): void
     {
         $service = Service::create([
-            'idtenant'    => $this->tenant->id,
+            'idtenant' => $this->tenant->id,
             'namalayanan' => 'Layanan Lama',
-            'harga'       => 50000,
-            'durasi'      => 30,
+            'harga' => 50000,
+            'durasi' => 30,
         ]);
 
         $action = app(DeleteService::class);
@@ -196,31 +200,31 @@ class ServiceActionsTest extends TestCase
     public function test_delete_service_action_blocked_if_completed_bookings_exist(): void
     {
         $service = Service::create([
-            'idtenant'    => $this->tenant->id,
+            'idtenant' => $this->tenant->id,
             'namalayanan' => 'Facial Selesai',
-            'harga'       => 200000,
-            'durasi'      => 60,
+            'harga' => 200000,
+            'durasi' => 60,
         ]);
 
         $schedule = Schedule::create([
-            'idtenant'    => $this->tenant->id,
-            'idlayanan'   => $service->id,
-            'tanggal'     => now()->subDays(2)->toDateString(),
-            'jam_mulai'   => '10:00:00',
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $service->id,
+            'tanggal' => now()->subDays(2)->toDateString(),
+            'jam_mulai' => '10:00:00',
             'jam_selesai' => '11:00:00',
-            'status'      => 'tersedia',
+            'status' => 'tersedia',
         ]);
 
         Booking::create([
-            'idtenant'       => $this->tenant->id,
-            'idlayanan'      => $service->id,
-            'idschedule'     => $schedule->id,
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $service->id,
+            'idschedule' => $schedule->id,
             'tanggalbooking' => now()->subDays(2),
-            'jam'            => '10:00:00',
-            'namapelanggan'  => 'Pelanggan Lama Selesai',
-            'nomorhp'        => '08123456789',
-            'email'          => 'selesai@example.com',
-            'status'         => 'completed',
+            'jam' => '10:00:00',
+            'namapelanggan' => 'Pelanggan Lama Selesai',
+            'nomorhp' => '08123456789',
+            'email' => 'selesai@example.com',
+            'status' => 'completed',
         ]);
 
         $action = app(DeleteService::class);

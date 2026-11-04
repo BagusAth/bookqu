@@ -31,3 +31,5 @@ Functional: Implemented, gated in the UI only · Verification: Needs Verificatio
 | Staff, resource and add-on UI still shown in released owner pages (services, service modals, bookings) | BQ-157 |
 
 Target decision: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) — module registry `config/modules.php` with `module:<name>` middleware (`hidden` → 404, `locked` → lock page only), implemented by BQ-008 (2026-11-01): Tier 3 routes answer 404, Tier 2 routes refuse writes with 403.
+
+BQ-130: ADR-0021 registry entries are hidden for unbuilt redesign capabilities, including the old integrations/analytics/report entry points by default. Core completed capabilities stay released; no unbuilt capability is promoted. `ModuleRelease` normalizes unknown states to hidden. Routes apply module, feature and permission gates in that order; legacy gate override tests explicitly enable a module to exercise its inner behavior. Sidebar/navigation comes from `config/owner-navigation.php`, prepared by `GetOwnerNavigation`; only working, role-allowed entries render, with plan upgrade locks (Unit hidden below Pro).

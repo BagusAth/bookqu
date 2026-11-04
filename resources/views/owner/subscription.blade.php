@@ -40,7 +40,7 @@
     </div>
 
     {{-- Usage Stats --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div class="rounded-xl border border-bq-border bg-bq-surface p-5">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-bq-text">Services Used</p>
@@ -61,16 +61,6 @@
             </div>
             <p class="mt-2 text-xs text-bq-text-muted">{{ ($isunlimited || $maxbooking <= 0) ? 'Unlimited bookings' : $persenbooking . '% of your plan limit' }}</p>
         </div>
-        <div class="rounded-xl border border-bq-border bg-bq-surface p-5">
-            <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-bq-text">Staff Members</p>
-                <span class="text-sm font-bold text-bq-text">{{ $jumlahstaff }} / {{ ($isunlimitedstaff || $maxstaff <= 0) ? '∞' : $maxstaff }}</span>
-            </div>
-            <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-bq-background">
-                <div class="h-full rounded-full transition-all duration-500 {{ $persenstaff > 80 ? 'bg-rose-500' : ($persenstaff > 60 ? 'bg-amber-500' : 'bg-indigo-500') }}" style="width: {{ ($isunlimitedstaff || $maxstaff <= 0) ? 20 : $persenstaff }}%"></div>
-            </div>
-            <p class="mt-2 text-xs text-bq-text-muted">{{ ($isunlimitedstaff || $maxstaff <= 0) ? 'Unlimited staff' : $persenstaff . '% of your plan limit' }}</p>
-        </div>
     </div>
 
     {{-- Plans Comparison --}}
@@ -87,7 +77,7 @@
                 };
             @endphp
             <div class="relative rounded-xl border bg-bq-surface p-6 transition-all hover:shadow-md {{ $warnapaket }}">
-                @if ($paket->namapaket === 'medium')
+                @if ($paket->id === $recommendedPlanId)
                     <span class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-bq-primary px-3 py-0.5 text-xs font-bold text-white shadow-sm">Popular</span>
                 @endif
                 <h3 class="text-lg font-bold text-bq-text capitalize">{{ $paket->namapaket }}</h3>
