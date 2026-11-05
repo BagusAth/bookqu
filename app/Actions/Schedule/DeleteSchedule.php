@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Schedule;
 
+use App\Actions\Booking\EvictStalePendingBookings;
 use App\Domain\Schedule\ScheduleConflictRules;
 use App\Models\Schedule;
 use App\Models\Tenant;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\DB;
 class DeleteSchedule
 {
     public function __construct(
-        protected ScheduleAvailabilityCache $availabilityCache
+        protected ScheduleAvailabilityCache $availabilityCache,
+        protected EvictStalePendingBookings $evictStalePendingBookings,
     ) {}
 
     /**
@@ -43,15 +45,23 @@ class DeleteSchedule
             : Carbon::parse($slot->tanggal)->format('Y-m-d');
 
         // Check and delete under the tenant lock so a concurrent claim cannot slip in between
-        $deleted = DB::transaction(function () use ($tenant, $slot) {
-            ClaimSlots::lockTenant((int) $tenant->id);
-            if (! ScheduleConflictRules::canDeleteSchedule($slot)) {
-                return false;
-            }
-            $slot->delete();
+        try {
+            $deleted = DB::transaction(function () use ($tenant, $slot) {
+                ClaimSlots::lockTenant((int) $tenant->id);
+                if (! ScheduleConflictRules::canDeleteSchedule($slot)) {
+                    return false;
+                }
 
-            return true;
-        });
+                // Pending bookings that no longer hold the slot expire through the Payment
+                // lifecycle first, so their payment is closed before the slot goes (BQ-107).
+                $this->evictStalePendingBookings->execute((int) $slot->id);
+                $slot->delete();
+
+                return true;
+            });
+        } catch (SlotClaimRefused) {
+            $deleted = false;
+        }
 
         if (! $deleted) {
             return [

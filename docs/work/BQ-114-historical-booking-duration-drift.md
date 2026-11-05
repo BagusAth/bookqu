@@ -2,7 +2,7 @@
 id: BQ-114
 title: Keep existing booking times stable when the service duration changes
 type: bug-fix
-status: approved
+status: in-progress
 priority: P1
 phase: 4
 domain: booking
@@ -10,7 +10,7 @@ requirements: [FR-SERVICE-003, FR-SERVICE-005, FR-BOOKING-008, FR-MANAGE-003, FR
 invariants: [INV-SCH-01, INV-BOOK-04, INV-BOOK-06]
 lane: heavy
 approval: tech-lead
-decision:
+decision: Tech Lead 2026-11-04 (see "Decision")
 launch-blocker: true
 depends-on: []
 ---
@@ -39,6 +39,16 @@ Booking berbayar awalnya pukul 14.00, slot berakhir 15.00, durasi layanan 60 men
 4. Tinjau pembacaan slot baru dan validasi multi-slot setelah durasi katalog diubah. Pilihan UI dan claim harus konsisten terhadap durasi/rentang yang disepakati, tanpa memindahkan atau memperpanjang booking lama diam-diam.
 5. Tetapkan fallback eksplisit bagi booking legacy tanpa slot; jangan mengarang durasi historis yang tidak tersimpan. Penyesuaian harga historis ditangani BQ-121, bukan item ini.
 
+## Decision (2026-11-04)
+
+Tech Lead menyetujui usulan berikut (disampaikan melalui developer; tanpa kolom atau migrasi baru):
+
+1. **Sumber rentang:** slot yang dipesan — `jam_mulai` slot pertama sampai akhir slot terakhir. Durasi katalog saat ini tidak dipakai untuk booking yang sudah ada.
+2. **Konvensi akhir slot:** interval slot selalu kelipatan 5 menit (minimal 5). Bila `jam_selesai − jam_mulai` bersisa 4 menit terhadap 5, akhir itu inklusif dan ditampilkan +1 menit (14:59 → 15:00); bila bersisa 0, ditampilkan apa adanya.
+3. **Satu proyeksi:** satu kelas domain (`App\Domain\Booking\BookingTimeRange`) untuk booking tunggal dan grup; halaman kelola, invoice, teks berbagi dan Google Calendar hanya merender hasilnya.
+4. **Kontiguitas multi-slot:** slot berikutnya harus mulai tepat di akhir slot sebelumnya (memakai aturan no. 2), bukan berdasarkan durasi katalog saat ini (`BookingRules` / `SlotCompatibilityRules`).
+5. **Fallback tanpa slot:** tampilkan jam mulai saja, tanpa jam selesai dan tanpa jam akhir Calendar; jangan mengarang durasi.
+
 ## Invariants at risk
 
 Perubahan katalog tidak boleh diam-diam mengubah reservasi yang sudah sah. Pertahankan occupancy tunggal, contiguity, tenant isolation, dan transaksi claim. Jika keputusan mengubah aturan produk durasi booking, ajukan product decision sebelum implementasi bagian tersebut.
@@ -57,3 +67,5 @@ Perubahan katalog tidak boleh diam-diam mengubah reservasi yang sudah sah. Perta
 ## Evidence (fill when done)
 
 **Bukti audit:** skenario HTTP pada SQLite terisolasi membuktikan detail menampilkan 15.30 setelah layanan diubah menjadi 90 menit, sementara akhir slot tetap 15:00:00. Bagian dari 5 skenario / 29 asersi audit pada BQ-113; bukan tes perbaikan. Belum ada implementasi/PR. Launch-blocker dan keputusan sumber waktu menunggu Tech Lead.
+
+Merge readiness PR #41/#42 (Tech Lead-approved scope): preserved BQ-029/BQ-030 controller split and moved stored-range view data to Checkout/Payment/Manage controllers; slot policy and grant expiry reuse BookingTimeRange. Duration/interval inputs require multiples of five. Evidence: MergeReadinessTest (2 tests, 30 assertions), existing BookingTimeRangeAfterDurationChangeTest and BookingTimeRangeTest in full suite.

@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
-use App\Actions\Subscription\CreateTrialSubscription;
+use App\Actions\Owner\RegisterOwner;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
-use App\Models\Tenant;
-use App\Models\User;
-use App\Support\ReservedTenantSlugs;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
@@ -29,38 +24,9 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      */
-    public function store(RegisterRequest $request, CreateTrialSubscription $createTrial): RedirectResponse
+    public function store(RegisterRequest $request, RegisterOwner $registerOwner): RedirectResponse
     {
-        $validated = $request->validated();
-
-        $user = User::create([
-            'namalengkap' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'nomorhp' => $validated['nomorhp'],
-            'role' => 'owner',
-        ]);
-
-        // FS-002 & FS-003: Buat Tenant dengan auto-generate slug dari nama bisnis
-        $slug = Str::slug($validated['nama_bisnis']) ?: 'bisnis';
-        $slugBase = $slug;
-        $counter = 1;
-        // Reserved words would be shadowed by an application route (BQ-011)
-        while (ReservedTenantSlugs::contains($slug) || Tenant::where('slug', $slug)->exists()) {
-            $slug = $slugBase.'-'.$counter++;
-        }
-
-        $tenant = Tenant::create([
-            'iduser' => $user->id,
-            'namabisnis' => $validated['nama_bisnis'],
-            'jenisbisnis' => $validated['jenis_bisnis'],
-            'alamat' => $validated['alamat'],
-            'nomorhp' => $validated['nomorhp'],
-            'slug' => $slug,
-        ]);
-
-        // FS-018: Buat Subscription trial 7 hari setara paket Pro via CreateTrialSubscription
-        $createTrial->execute($tenant);
+        ['user' => $user, 'tenant' => $tenant] = $registerOwner->execute($request->validated());
 
         Auth::login($user);
         $request->session()->regenerate();

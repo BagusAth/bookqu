@@ -17,7 +17,9 @@ class OwnerDashboardPollingTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $tenant;
+
     protected $service;
 
     protected function setUp(): void
@@ -95,6 +97,46 @@ class OwnerDashboardPollingTest extends TestCase
             ->assertJsonPath('data.total_revenue', 50000);
     }
 
+    public function test_html_customer_names_stay_raw_data_in_polling_and_text_on_the_dashboard(): void
+    {
+        $payload = '<img src=x onerror=alert(1)>';
+        $schedule = Schedule::create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => Carbon::today(),
+            'jam_mulai' => '13:00:00',
+            'jam_selesai' => '13:59:00',
+            'status' => 'tersedia',
+        ]);
+        Booking::create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'idschedule' => $schedule->id,
+            'namapelanggan' => $payload,
+            'email' => 'xss@example.com',
+            'nomorhp' => '08124',
+            'tanggalbooking' => Carbon::today(),
+            'jam' => '13:00:00',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->getJson(route('owner.dashboard.polling'))
+            ->assertJsonPath('data.recent_activities.0.customer_name', $payload)
+            ->assertJsonPath('data.recent_activities.0.time', '13:00');
+
+        $this->actingAs($this->user)
+            ->withSession(['current_tenant_id' => $this->tenant->id])
+            ->get(route('owner.dashboard'))
+            ->assertOk()
+            ->assertSee(e($payload), false)
+            ->assertDontSee($payload, false)
+            ->assertSee('id="activity-row-template"', false)
+            ->assertSee('id="activity-card-template"', false)
+            ->assertDontSee('${item.customer_name}', false);
+    }
+
     public function test_booking_status_paid_is_returned_and_dynamic()
     {
         $schedule = Schedule::create([
@@ -157,7 +199,7 @@ class OwnerDashboardPollingTest extends TestCase
             'alamat' => 'Alamat',
             'nomorhp' => '08123',
         ]);
-        
+
         $otherService = Service::create([
             'idtenant' => $otherTenant->id,
             'namalayanan' => 'Layanan',
@@ -197,11 +239,11 @@ class OwnerDashboardPollingTest extends TestCase
     {
         // 1 active service was already created in setUp()
         Service::create([
-            'idtenant'    => $this->tenant->id,
+            'idtenant' => $this->tenant->id,
             'namalayanan' => 'Layanan Nonaktif',
-            'harga'       => 150000,
-            'durasi'      => 60,
-            'is_active'   => false,
+            'harga' => 150000,
+            'durasi' => 60,
+            'is_active' => false,
         ]);
 
         $response = $this->actingAs($this->user)

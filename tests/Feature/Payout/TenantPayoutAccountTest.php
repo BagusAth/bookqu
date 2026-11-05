@@ -14,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class TenantPayoutAccountTest extends TestCase
@@ -358,5 +359,119 @@ class TenantPayoutAccountTest extends TestCase
         $response = $this->actingAs($this->admin)->get('/admin/payouts');
         $response->assertOk();
         $response->assertSee('Rekening baru (&lt; 24 jam)', false);
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function storeAccount(array $overrides = []): TestResponse
+    {
+        return $this->actingAs($this->owner)->post('/owner/payout-accounts', array_merge([
+            'bank_kode' => 'BCA',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'Pemilik Toko',
+            'current_password' => 'secret123',
+        ], $overrides));
+    }
+
+    public function test_re_adding_a_deleted_account_restores_it(): void
+    {
+        $account = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'Bank Central Asia (BCA)',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'Nama Lama',
+            'is_default' => true,
+            'changed_at' => now()->subDays(10),
+        ]);
+        $account->delete();
+
+        $this->storeAccount(['nama_pemilik_rekening' => 'Nama Baru'])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('owner.settings.balance'));
+
+        $this->assertSame(1, TenantPayoutAccount::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->count());
+        $restored = TenantPayoutAccount::withoutGlobalScopes()->whereNull('deleted_at')->findOrFail($account->id);
+        $this->assertSame('Nama Baru', $restored->nama_pemilik_rekening);
+        $this->assertTrue($restored->is_default);
+        $this->assertTrue($restored->changed_at->equalTo(now()));
+        Notification::assertSentTo($this->owner, PayoutAccountChangedNotification::class, fn ($n) => $n->actionType === 'ditambahkan');
+    }
+
+    public function test_deleted_account_of_another_tenant_is_not_restored(): void
+    {
+        $otherTenant = Tenant::factory()->create();
+        $foreign = TenantPayoutAccount::withoutGlobalScopes()->create([
+            'idtenant' => $otherTenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'Bank Central Asia (BCA)',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'Orang Lain',
+            'is_default' => true,
+            'changed_at' => now(),
+        ]);
+        $foreign->delete();
+
+        $this->storeAccount()->assertSessionHasNoErrors();
+
+        $this->assertSoftDeleted('tenant_payout_accounts', ['id' => $foreign->id]);
+        $this->assertDatabaseHas('tenant_payout_accounts', ['idtenant' => $this->tenant->id, 'nomor_rekening' => '1234567890', 'deleted_at' => null]);
+    }
+
+    public function test_adding_a_duplicate_of_a_live_account_returns_a_validation_error(): void
+    {
+        $this->storeAccount()->assertSessionHasNoErrors();
+
+        $this->storeAccount(['nama_pemilik_rekening' => 'Duplikat'])->assertSessionHasErrors('nomor_rekening');
+
+        $this->assertSame(1, TenantPayoutAccount::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->count());
+    }
+
+    public function test_updating_an_account_to_the_number_of_another_live_account_returns_a_validation_error(): void
+    {
+        $this->storeAccount()->assertSessionHasNoErrors();
+        $this->storeAccount(['nomor_rekening' => '5555566666'])->assertSessionHasNoErrors();
+        $second = TenantPayoutAccount::withoutGlobalScopes()->whereNull('deleted_at')->where('nomor_rekening', '5555566666')->firstOrFail();
+
+        $this->actingAs($this->owner)->put('/owner/payout-accounts/'.$second->id, [
+            'bank_kode' => 'BCA',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'Pemilik Toko',
+            'current_password' => 'secret123',
+        ])->assertSessionHasErrors('nomor_rekening');
+
+        $this->assertSame('5555566666', $second->fresh()->nomor_rekening);
+    }
+
+    public function test_switching_the_primary_account_is_not_limited_by_the_create_update_delete_throttle(): void
+    {
+        $this->storeAccount(['nomor_rekening' => '1111100001'])->assertSessionHasNoErrors();
+        $this->storeAccount(['nomor_rekening' => '1111100002'])->assertSessionHasNoErrors();
+        $first = TenantPayoutAccount::withoutGlobalScopes()->whereNull('deleted_at')->where('nomor_rekening', '1111100001')->firstOrFail();
+        $second = TenantPayoutAccount::withoutGlobalScopes()->whereNull('deleted_at')->where('nomor_rekening', '1111100002')->firstOrFail();
+
+        foreach ([$second, $first, $second, $first, $second] as $target) {
+            $this->actingAs($this->owner)
+                ->post('/owner/payout-accounts/'.$target->id.'/default')
+                ->assertRedirect(route('owner.settings.balance'));
+        }
+        $this->assertTrue($second->fresh()->is_default);
+
+        // Switching the primary account five times left the third account change allowed.
+        $this->storeAccount(['nomor_rekening' => '1111100003'])->assertSessionHasNoErrors();
+        $this->storeAccount(['nomor_rekening' => '1111100004'])->assertStatus(429);
+    }
+
+    public function test_the_configured_account_limit_is_applied_and_named(): void
+    {
+        config(['payouts.max_accounts' => 2]);
+        $this->storeAccount(['nomor_rekening' => '1111100001'])->assertSessionHasNoErrors();
+        $this->storeAccount(['nomor_rekening' => '1111100002'])->assertSessionHasNoErrors();
+
+        $this->storeAccount(['nomor_rekening' => '1111100003'])->assertSessionHasErrors('rekening');
+
+        $this->assertStringContainsString('Maksimal 2 rekening', session('errors')->first('rekening'));
+        $this->assertSame(2, TenantPayoutAccount::withoutGlobalScopes()->whereNull('deleted_at')->where('idtenant', $this->tenant->id)->count());
     }
 }

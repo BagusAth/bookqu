@@ -15,17 +15,14 @@
 <body class="bg-slate-50 font-sans text-slate-900 antialiased min-h-screen flex flex-col" x-data="manageBooking()" x-init="init()">
 
     @php
-        $bookingDate = $booking->tanggalbooking ? \Carbon\Carbon::parse($booking->tanggalbooking)->format('Y-m-d') : now()->format('Y-m-d');
-        $startDateTime = \Carbon\Carbon::parse($bookingDate . ' ' . $booking->jam);
-        $durasiMenit = (int) ($booking->layanan?->durasi ?? 60);
-        $endDateTime = (clone $startDateTime)->addMinutes($durasiMenit);
+        // BQ-114: the range comes from the booked slot (GetBookingTimeRanges), not the current service duration
 
         $eventTitle = 'Booking ' . ($booking->layanan?->namalayanan ?? 'Layanan') . ' - ' . ($booking->tenant?->namabisnis ?? '');
         $eventLocation = ($booking->tenant?->alamat ? $booking->tenant->alamat . ', ' : '') . ($booking->tenant?->namabisnis ?? '');
         $eventDetails = 'Reservasi resmi di ' . ($booking->tenant?->namabisnis ?? '') . "\nKode Booking: " . $booking->booking_code;
 
         // Google Calendar URL
-        $gCalDates = $startDateTime->format('Ymd\THis') . '/' . $endDateTime->format('Ymd\THis');
+        $gCalDates = $timeRange->googleCalendarDates();
         $gCalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
             . '&text=' . urlencode($eventTitle)
             . '&dates=' . $gCalDates
@@ -35,7 +32,7 @@
         // WhatsApp Share URL
         $waText = "Halo! Reservasi booking sesi *" . ($booking->layanan->namalayanan ?? 'Layanan') . "* saya di *" . $booking->tenant->namabisnis . "*\n"
             . "📅 Tanggal: " . \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') . "\n"
-            . "⏰ Jam: " . \Carbon\Carbon::parse($booking->jam)->format('H:i') . " WIB\n"
+            . "⏰ Jam: " . $timeRange->label(' - ') . " WIB\n"
             . "🔖 Kode Booking: " . $booking->booking_code;
         $waShareUrl = 'https://api.whatsapp.com/send?text=' . urlencode($waText);
 

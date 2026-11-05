@@ -18,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -283,5 +284,49 @@ class OwnerPayoutFlowTest extends TestCase
             'idtenant' => $this->tenant->id, 'jumlah' => $amount, 'status' => 'pending', 'requested_at' => now(),
             'bank_nama' => 'BCA', 'nomor_rekening' => '1234567890', 'nama_pemilik_rekening' => 'Pemilik',
         ]);
+    }
+
+    public function test_the_configured_minimum_payout_amount_is_applied_and_named(): void
+    {
+        config(['payouts.min_amount' => 50000]);
+        $this->tenant->update(['saldo_platform' => 300000]);
+
+        $this->actingAs($this->owner)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
+            'jumlah' => 20000,
+            'payout_account_id' => $this->payoutAccount->id,
+        ])->assertSessionHasErrors('jumlah');
+
+        $this->assertStringContainsString('Rp 50.000', session('errors')->first('jumlah'));
+        $this->assertDatabaseCount('owner_payouts', 0);
+        $this->actingAs($this->owner)->get('/owner/settings/balance')
+            ->assertOk()
+            ->assertSee('Minimal Rp 50.000')
+            ->assertDontSee('Minimal Rp 10.000');
+    }
+
+    public function test_a_lower_configured_minimum_accepts_smaller_payouts(): void
+    {
+        config(['payouts.min_amount' => 5000]);
+        $this->tenant->update(['saldo_platform' => 300000]);
+
+        $this->actingAs($this->owner)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
+            'jumlah' => 6000,
+            'payout_account_id' => $this->payoutAccount->id,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('owner_payouts', ['idtenant' => $this->tenant->id, 'jumlah' => 6000]);
+    }
+
+    public function test_approved_by_references_users_and_is_cleared_when_the_admin_is_deleted(): void
+    {
+        $foreignKeys = collect(Schema::getForeignKeys('owner_payouts'));
+        $approvedBy = $foreignKeys->first(fn (array $key): bool => $key['columns'] === ['approved_by']);
+
+        $this->assertNotNull($approvedBy);
+        $this->assertSame('users', $approvedBy['foreign_table']);
+        $this->assertSame(['id'], $approvedBy['foreign_columns']);
+        $this->assertSame('set null', strtolower((string) $approvedBy['on_delete']));
     }
 }

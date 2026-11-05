@@ -259,9 +259,13 @@
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="status" value="cancelled">
+                                <label class="block text-sm">
+                                    Alasan pembatalan
+                                    <textarea name="reason" required maxlength="500" class="block w-full rounded border p-2"></textarea>
+                                </label>
                                 <button
                                     type="button"
-                                    @click="$dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan booking ' + selectedSlot.booking_id + ' untuk ' + selectedSlot.customer + '?', formId: `form-calendar-cancel-${selectedSlot.raw_booking_id}`, confirmText: 'Ya, Batalkan' })"
+                                    @click="if (!$el.form.reportValidity()) return; $dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan booking ' + selectedSlot.booking_id + ' untuk ' + selectedSlot.customer + '?', formId: `form-calendar-cancel-${selectedSlot.raw_booking_id}`, confirmText: 'Ya, Batalkan' })"
                                     class="craft-btn w-full sm:w-auto justify-center rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold shadow-2xs cursor-pointer"
                                 >
                                     Batalkan
@@ -296,9 +300,13 @@
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="status" value="cancelled">
+                                <label class="block text-sm">
+                                    Alasan pembatalan
+                                    <textarea name="reason" required maxlength="500" class="block w-full rounded border p-2"></textarea>
+                                </label>
                                 <button
                                     type="button"
-                                    @click="$dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan pesanan pending ' + selectedSlot.booking_id + ' ini?', formId: `form-calendar-cancel-${selectedSlot.raw_booking_id}`, confirmText: 'Ya, Batalkan' })"
+                                    @click="if (!$el.form.reportValidity()) return; $dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan pesanan pending ' + selectedSlot.booking_id + ' ini?', formId: `form-calendar-cancel-${selectedSlot.raw_booking_id}`, confirmText: 'Ya, Batalkan' })"
                                     class="craft-btn w-full sm:w-auto justify-center rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold shadow-2xs cursor-pointer"
                                 >
                                     Batalkan

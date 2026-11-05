@@ -11,9 +11,7 @@
     $lastSlot = $allBookings->last();
 
     $bookingDate = $firstSlot->tanggalbooking ? \Carbon\Carbon::parse($firstSlot->tanggalbooking)->format('Y-m-d') : now()->format('Y-m-d');
-    $startDateTime = \Carbon\Carbon::parse($bookingDate . ' ' . $firstSlot->jam);
-    $durasiMenit = (int) ($lastSlot->layanan->durasi ?? 60);
-    $endDateTime = \Carbon\Carbon::parse($bookingDate . ' ' . $lastSlot->jam)->addMinutes($durasiMenit);
+    // BQ-114: ranges come from the booked slots (GetBookingTimeRanges), not the current service duration
 
     $eventTitle = 'Booking ' . ($firstSlot->layanan->namalayanan ?? 'Layanan') . ' - ' . $tenant->namabisnis;
     $eventLocation = ($tenant->alamat ? $tenant->alamat . ', ' : '') . $tenant->namabisnis;
@@ -21,7 +19,7 @@
     $eventDetails = 'Reservasi resmi di ' . $tenant->namabisnis . "\nOrder ID: " . $payment->order_id;
 
     // Google Calendar URL (spans from earliest slot start to latest slot end)
-    $gCalDates = $startDateTime->format('Ymd\THis') . '/' . $endDateTime->format('Ymd\THis');
+    $gCalDates = $timeRange->googleCalendarDates();
     $gCalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
         . '&text=' . urlencode($eventTitle)
         . '&dates=' . $gCalDates
@@ -29,12 +27,7 @@
         . '&location=' . urlencode($eventLocation);
 
     // WhatsApp Share URL (lists all slots without management credentials)
-    $slotListText = $allBookings->map(function($b) {
-        $dur = (int) ($b->layanan->durasi ?? 60);
-        $start = \Carbon\Carbon::parse($b->jam);
-        $end = (clone $start)->addMinutes($dur);
-        return $start->format('H:i') . ' - ' . $end->format('H:i') . ' WIB';
-    })->implode("\n");
+    $slotListText = $allBookings->map(fn ($b) => $sessionRanges[$b->id]->label(' - ') . ' WIB')->implode("\n");
 
     $waText = "Halo! Saya telah melakukan booking sesi *" . ($firstSlot->layanan->namalayanan ?? 'Layanan') . "* di *" . $tenant->namabisnis . "*\n"
         . "📅 Tanggal: " . \Carbon\Carbon::parse($firstSlot->tanggalbooking)->translatedFormat('l, d F Y') . "\n"
@@ -154,7 +147,7 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-[#64748B]">Durasi per Sesi</span>
-                        <span class="font-semibold text-[#0F172A]">{{ $booking->layanan->durasi ?? 60 }} {{ $booking->layanan->satuan_durasi ?? 'menit' }}</span>
+                        <span class="font-semibold text-[#0F172A]">{{ $sessionRanges[$booking->id]->durationMinutes() !== null ? $sessionRanges[$booking->id]->durationMinutes().' menit' : '-' }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-[#64748B]">Hari &amp; Tanggal</span>

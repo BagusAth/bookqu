@@ -598,14 +598,16 @@ class RF09StabilityAndHardeningTest extends TestCase
             'status' => BookingState::STATUS_PAID,
         ]);
 
-        app(UpdateScheduleAvailability::class)->execute($this->tenant, [
+        $result = app(UpdateScheduleAvailability::class)->execute($this->tenant, [
             'tanggal_block' => $date,
             'alasan' => 'Renovasi',
             'weekend_price_type' => 'none',
         ]);
 
+        // BQ-108 (AC-JBH-03): the date stays open until the paid booking is handled.
+        $this->assertFalse($result['success']);
         $this->assertSame(BookingState::STATUS_PAID, $booking->fresh()->status);
-        $this->assertDatabaseHas('owner_blocked_dates', ['idtenant' => $this->tenant->id, 'alasan' => 'Renovasi']);
+        $this->assertDatabaseMissing('owner_blocked_dates', ['idtenant' => $this->tenant->id, 'alasan' => 'Renovasi']);
     }
 
     /**

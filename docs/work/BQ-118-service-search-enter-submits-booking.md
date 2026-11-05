@@ -2,7 +2,7 @@
 id: BQ-118
 title: Keep Enter in storefront service search from submitting an empty booking form
 type: bug-fix
-status: approved
+status: in-progress
 priority: P2
 phase: 4
 domain: booking

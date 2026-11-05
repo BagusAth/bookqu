@@ -64,7 +64,14 @@ class CreateService
         try {
             UsageLog::record($tenant->id, 'layanan');
         } catch (\Exception $e) {
-            Log::error('Gagal catat usage log layanan: '.$e->getMessage());
+            // BQ-077: log the exception type and location, never its message.
+            Log::error('CreateService: Failed to record service usage', [
+                'tenant_id' => $tenant->id,
+                'service_id' => $service->id,
+                'exception_type' => $e::class,
+                'exception_file' => $e->getFile(),
+                'exception_line' => $e->getLine(),
+            ]);
         }
 
         $this->clearServiceCache($tenant->id, $service->id);

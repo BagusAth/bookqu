@@ -18,7 +18,6 @@
         $displayBookings = $payment->bookings && $payment->bookings->isNotEmpty() ? $payment->bookings : ($payment->booking ? collect([$payment->booking]) : collect());
         $firstBooking = $displayBookings->first();
         $layanan = $firstBooking?->layanan;
-        $durasiMenit = (int) ($layanan?->durasi ?? 60);
     @endphp
 
     {{-- State: FAILED --}}

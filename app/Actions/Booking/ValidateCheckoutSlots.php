@@ -70,9 +70,9 @@ final class ValidateCheckoutSlots
             $validatedSchedules[] = $schedule;
         }
 
-        // Contiguous sequence check based on service duration
+        // Contiguous sequence check from the stored slot boundaries.
         usort($validatedSchedules, fn ($a, $b) => strcmp($a->jam_mulai, $b->jam_mulai));
-        if (! BookingRules::validateContiguousSlots($validatedSchedules, (int) $service->durasi, $selectedDate, $wib)) {
+        if (! BookingRules::validateContiguousSlots($validatedSchedules)) {
             throw ValidationException::withMessages(['jam' => 'Slot harus berurutan tanpa jeda.']);
         }
 

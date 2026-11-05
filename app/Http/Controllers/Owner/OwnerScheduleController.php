@@ -202,7 +202,22 @@ class OwnerScheduleController extends Controller
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $updateScheduleAvailability->execute($tenant, $request->validated());
+        $result = $updateScheduleAvailability->execute($tenant, $request->validated());
+
+        if (! $result['success']) {
+            return redirect('/owner/schedule')
+                ->withErrors(['tanggal_block' => $result['error']])
+                ->withInput()
+                ->with('blocked_date_conflicts', [
+                    'tanggal' => $result['blocked_date_value'],
+                    'bookings' => $result['conflicting_bookings']->map(fn (Booking $booking): array => [
+                        'booking_code' => (string) $booking->booking_code,
+                        'namapelanggan' => (string) $booking->namapelanggan,
+                        'jam' => substr((string) $booking->jam, 0, 5),
+                        'layanan' => $booking->layanan instanceof Service ? $booking->layanan->namalayanan : '-',
+                    ])->values()->all(),
+                ]);
+        }
 
         return redirect('/owner/schedule')->with('sukses', 'Pengaturan availability berhasil disimpan.');
     }

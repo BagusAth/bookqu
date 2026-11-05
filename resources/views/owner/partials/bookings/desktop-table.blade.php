@@ -217,10 +217,14 @@
                                                     @csrf
                                                     @method('PATCH')
                                                     <input type="hidden" name="status" value="cancelled">
+                                                    <label class="block text-sm">
+                                                        Alasan pembatalan
+                                                        <textarea name="reason" required maxlength="500" class="block w-full rounded border p-2"></textarea>
+                                                    </label>
                                                     <button type="button"
                                                         class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium text-rose-700 hover:bg-rose-50 border-t border-slate-100"
                                                         id="cancel-booking-{{ $booking->id }}"
-                                                        @click="$dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan booking ini?', formId: 'form-cancel-booking-{{ $booking->id }}' })">
+                                                        @click="if (!$el.form.reportValidity()) return; $dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan booking ini?', formId: 'form-cancel-booking-{{ $booking->id }}' })">
                                                         ✕ Batalkan Booking
                                                     </button>
                                                 </form>

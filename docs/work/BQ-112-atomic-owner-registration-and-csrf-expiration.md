@@ -2,7 +2,7 @@
 id: BQ-112
 title: Atomic owner registration transaction and asynchronous CSRF expiration handling
 type: bug-fix
-status: approved
+status: in-progress
 priority: P2
 phase: 4
 domain: auth

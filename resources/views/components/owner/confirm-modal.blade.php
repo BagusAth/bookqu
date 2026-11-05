@@ -76,7 +76,7 @@
                 <button 
                     x-show="formId"
                     type="button" 
-                    @click="if (formId && document.getElementById(formId)) { document.getElementById(formId).submit(); buka = false; }" 
+                    @click="if (formId && document.getElementById(formId)) { const form = document.getElementById(formId); if (form.reportValidity()) { form.requestSubmit(); buka = false; } }"
                     class="craft-btn w-full rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:from-rose-700 hover:to-rose-800 transition active:scale-[0.98] cursor-pointer"
                     x-text="confirmText"
                 >

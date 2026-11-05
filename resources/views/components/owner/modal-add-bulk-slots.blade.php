@@ -147,7 +147,7 @@
                     {{-- Slot Duration (read-only, synced from program) --}}
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-bq-text">Slot Duration <span class="text-rose-500">*</span></label>
-                        <input type="hidden" name="intervalslot" :value="intervalslot">
+                        <input type="hidden" name="intervalslot" step="5" :value="intervalslot">
                         <div class="relative">
                             <input
                                 type="text"

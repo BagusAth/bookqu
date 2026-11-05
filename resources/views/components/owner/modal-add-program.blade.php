@@ -189,7 +189,7 @@
                             <label for="input-durasi" class="mb-1.5 block text-sm font-medium text-bq-text">Duration (min) <span class="text-rose-500">*</span></label>
                             <input
                                 type="number"
-                                name="durasi"
+                                name="durasi" step="5"
                                 id="input-durasi"
                                 required
                                 min="5"

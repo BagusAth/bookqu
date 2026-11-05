@@ -107,9 +107,8 @@ class CreateBooking
 
                 // 3. Contiguous validation: Sort schedules by jam_mulai ascending
                 usort($orderedSchedules, fn ($a, $b) => strcmp($a->jam_mulai, $b->jam_mulai));
-                $durationMinutes = (int) $service->durasi;
 
-                if (! BookingRules::validateContiguousSlots($orderedSchedules, $durationMinutes, $selectedDate, $wib)) {
+                if (! BookingRules::validateContiguousSlots($orderedSchedules)) {
                     return ['error' => 'Slot harus berurutan tanpa jeda.'];
                 }
 

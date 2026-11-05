@@ -136,7 +136,9 @@ document.addEventListener('alpine:init', () => {
         },
 
         get selectedDurationFormatted() {
-            return `${this.selectedSlots.length * this.service.duration} menit`;
+            // BQ-114: each slot's own length, falling back to the service duration for old payloads
+            const minutes = this.selectedSlots.reduce((sum, slot) => sum + Number(slot.duration_minutes ?? this.service.duration), 0);
+            return `${minutes} menit`;
         },
 
         get subtotal() {

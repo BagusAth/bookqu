@@ -15,28 +15,16 @@ use Illuminate\Support\Facades\DB;
 class BookingRules
 {
     /**
-     * Validate that multi-slot schedules are contiguous without any gaps.
+     * Validate that multi-slot schedules are contiguous without any gaps: each slot starts
+     * exactly where the previous slot ends, read from the stored slot boundaries rather than
+     * the service's current duration (BQ-114 decision 4).
      * Assumes schedules are already sorted by jam_mulai ascending.
+     *
+     * @param  array<int, array{jam_mulai: string, jam_selesai: string}|object>  $orderedSchedules
      */
-    public static function validateContiguousSlots(array $orderedSchedules, int $durationMinutes, string $date, string $timezone = 'Asia/Jakarta'): bool
+    public static function validateContiguousSlots(array $orderedSchedules): bool
     {
-        if (count($orderedSchedules) <= 1) {
-            return true;
-        }
-
-        for ($i = 1; $i < count($orderedSchedules); $i++) {
-            $prev = is_array($orderedSchedules[$i - 1]) ? (object) $orderedSchedules[$i - 1] : $orderedSchedules[$i - 1];
-            $curr = is_array($orderedSchedules[$i]) ? (object) $orderedSchedules[$i] : $orderedSchedules[$i];
-
-            $prevStart = Carbon::parse($date.' '.$prev->jam_mulai, $timezone);
-            $currStart = Carbon::parse($date.' '.$curr->jam_mulai, $timezone);
-
-            if ((int) abs($currStart->diffInMinutes($prevStart)) !== $durationMinutes) {
-                return false;
-            }
-        }
-
-        return true;
+        return BookingTimeRange::areContiguous($orderedSchedules);
     }
 
     /**
@@ -166,7 +154,7 @@ class BookingRules
         }
 
         $buffer = $tenant->booking_buffer_minutes;
-        $slotEnd = Carbon::parse($date.' '.$end, 'Asia/Jakarta')->addMinute();
+        $slotEnd = Carbon::instance(BookingTimeRange::forSlot($date, $start, $end)->end ?? throw new \LogicException('Slot end is required.'));
         $nearby = array_merge(
             $occupied[$slotStart->copy()->subDay()->toDateString()] ?? [],
             $occupied[$date] ?? [],
@@ -200,7 +188,7 @@ class BookingRules
 
                 return [
                     Carbon::parse($date.' '.$slot->jam_mulai, 'Asia/Jakarta'),
-                    Carbon::parse($date.' '.$slot->jam_selesai, 'Asia/Jakarta')->addMinute(),
+                    Carbon::instance(BookingTimeRange::forSlot($date, (string) $slot->jam_mulai, (string) $slot->jam_selesai)->end ?? throw new \LogicException('Slot end is required.')),
                 ];
             })->groupBy(fn (array $range) => $range[0]->toDateString())->map(fn ($ranges) => $ranges->values()->all())->all();
     }

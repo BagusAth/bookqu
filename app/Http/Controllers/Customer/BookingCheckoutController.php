@@ -6,6 +6,7 @@ use App\Actions\Booking\CreateBooking;
 use App\Actions\Booking\ResumeCheckout;
 use App\Actions\Booking\StorefrontCheckoutState;
 use App\Actions\CustomerAccess\CustomerAccessLinks;
+use App\Domain\Booking\BookingTimeRange;
 use App\Http\Requests\Booking\CreateBookingRequest;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -77,6 +78,8 @@ final class BookingCheckoutController extends StorefrontBookingController
 
         $hargaAkhir = array_sum($hargaPerSlot);
         $hasPriceOverride = collect($hargaPerSlot)->contains(fn ($price) => (float) $price !== (float) $service->harga);
+        $selectedRanges = array_map(fn (Schedule $slot) => BookingTimeRange::forSlot($selectedDate, (string) $slot->jam_mulai, (string) $slot->jam_selesai), $schedules);
+        $selectedMinutes = array_sum(array_map(fn (BookingTimeRange $range) => (int) $range->durationMinutes(), $selectedRanges));
         $selectedTime = $selectedTimes[0] ?? null;
         $checkoutState = app(StorefrontCheckoutState::class);
         $checkoutFingerprint = $checkoutState->fingerprint($service, $selectedDate, $schedules);
@@ -91,6 +94,8 @@ final class BookingCheckoutController extends StorefrontBookingController
             'hargaAkhir',
             'hasPriceOverride',
             'schedules',
+            'selectedRanges',
+            'selectedMinutes',
             'checkoutFingerprint',
             'pendingCheckout'
         ) + ['bookingPolicy' => $tenant->only([

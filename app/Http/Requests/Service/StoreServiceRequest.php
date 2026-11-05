@@ -28,7 +28,7 @@ class StoreServiceRequest extends FormRequest
         return [
             'namalayanan' => ['required', 'string', 'max:255'],
             'harga' => ['required', 'numeric', 'min:0'],
-            'durasi' => ['required', 'integer', 'min:5', 'max:480'],
+            'durasi' => ['required', 'integer', 'min:5', 'max:480', 'multiple_of:5'],
             'idcategory' => ['nullable', Rule::exists('categories', 'id')->where('idtenant', $tenantId)],
             'deskripsi' => ['nullable', 'string', 'max:1000'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],

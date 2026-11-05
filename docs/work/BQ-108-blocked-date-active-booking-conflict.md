@@ -2,7 +2,7 @@
 id: BQ-108
 title: Conflict detection and notification when blocking dates with existing bookings
 type: bug-fix
-status: approved
+status: in-progress
 priority: P1
 phase: 4
 domain: schedule

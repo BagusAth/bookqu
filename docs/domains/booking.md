@@ -62,10 +62,13 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 | Gap | Item |
 |---|---|
 
+
 | Owner bookings list shows the service's current price instead of the charged amount, and maps payment states that do not exist | BQ-135 |
 | Reschedule does not evaluate or record slot price differences (price drift across surge/override slots) | BQ-140 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). BQ-029 uses a typed checkout draft and separates catalog, schedule, checkout and payment routes. The session adapter retains the legacy shape, and placement retains the BQ-083 quote fingerprint and transactional slot claim.
+
+BQ-114 (Tech Lead decision 2026-11-04): an existing booking keeps the range of the slots it booked. `Domain/Booking/BookingTimeRange` owns the rule: first slot start to last slot end; a stored end whose length is 4 minutes over a multiple of 5 is inclusive and ends one minute later (14:00–14:59 → 15:00); a booking without a slot shows its start only. `Actions/Booking/GetBookingTimeRanges` prepares `timeRange` and `sessionRanges` for the customer manage, invoice, payment and group pages and the group invoice mail, including the Google Calendar and share text. Contiguity (`BookingRules::validateContiguousSlots`, INV-BOOK-06) requires each slot to start at the previous slot's end instead of comparing with the service's current duration. Evidence: `Unit/Domain/BookingTimeRangeTest`, `Customer/BookingTimeRangeAfterDurationChangeTest`.
 
 BQ-086: storefront date selection and booking creation require an effective subscription through `EntitlementRules`, independent of scheduler status cleanup; existing payment outcomes and access grants are unaffected.
 

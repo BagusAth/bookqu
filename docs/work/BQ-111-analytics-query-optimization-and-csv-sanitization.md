@@ -2,7 +2,7 @@
 id: BQ-111
 title: Analytics query aggregation optimization and CSV formula injection protection
 type: improvement
-status: approved
+status: in-progress
 priority: P2
 phase: 4
 domain: insights

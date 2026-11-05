@@ -11,6 +11,7 @@ use App\Actions\Tenant\UpdateBusinessProfile;
 use App\Actions\Tenant\UpdatePaymentSettings;
 use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Owner\DeleteOwnerAccountRequest;
 use App\Http\Requests\Owner\UpdateOwnerAccountRequest;
 use App\Http\Requests\Tenant\StoreInitialProfileRequest;
 use App\Http\Requests\Tenant\UpdateBusinessProfileRequest;
@@ -20,7 +21,6 @@ use App\Models\Tenant;
 use App\Policies\TenantResourcePolicy;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -107,9 +107,16 @@ class OwnerSettingController extends Controller
             abort(403, 'User tidak ditemukan.');
         }
 
-        $updateOwnerAccount->execute($user, $request->validated());
+        $emailChanged = strcasecmp(trim((string) $request->validated('email')), trim((string) $user->email)) !== 0;
+        $updateOwnerAccount->execute($user, $request->validated(), $request->session()->getId());
 
-        return redirect()->route('owner.settings')->with('sukses', 'Akun berhasil diperbarui.');
+        if ($request->filled('password')) {
+            $request->session()->regenerate();
+        }
+
+        return redirect()->route('owner.settings')->with('sukses', $emailChanged
+            ? 'Akun berhasil diperbarui. Cek email baru Anda untuk verifikasi.'
+            : 'Akun berhasil diperbarui.');
     }
 
     public function updatePaymentSettings(UpdatePaymentSettingsRequest $request, UpdatePaymentSettings $updatePaymentSettings): RedirectResponse
@@ -132,7 +139,7 @@ class OwnerSettingController extends Controller
     /**
      * Hapus akun dan seluruh data bisnis owner secara permanen setelah konfirmasi.
      */
-    public function deleteAccount(Request $request, DeleteOwnerAccount $deleteOwnerAccount): RedirectResponse
+    public function deleteAccount(DeleteOwnerAccountRequest $request, DeleteOwnerAccount $deleteOwnerAccount): RedirectResponse
     {
         $user = $request->user();
         if (! $user) {

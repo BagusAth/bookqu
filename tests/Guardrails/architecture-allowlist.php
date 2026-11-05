@@ -28,4 +28,6 @@ return [
     'payment-status-writers' => [
         'app/Http/Controllers/Owner/OwnerCheckoutController.php' => 2,
     ],
+    // Added empty by BQ-089: views assign only fixed markup to innerHTML.
+    'inner-html-data' => [],
 ];

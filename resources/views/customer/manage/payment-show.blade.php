@@ -47,18 +47,8 @@
         $lastBooking = $bookings->last();
         $layanan = $firstBooking?->layanan;
         $bookingDate = $firstBooking?->tanggalbooking ? \Carbon\Carbon::parse($firstBooking->tanggalbooking)->format('Y-m-d') : now()->format('Y-m-d');
-        $durasiMenit = (int) ($layanan?->durasi ?? 60);
-
-        // Compute contiguous event range for Google Calendar
-        $firstStart = \Carbon\Carbon::parse($bookingDate . ' ' . $firstBooking?->jam);
-        $lastStart = \Carbon\Carbon::parse($bookingDate . ' ' . $lastBooking?->jam);
-        $overallEnd = (clone $lastStart)->addMinutes($durasiMenit);
-
-        $scheduleListText = $bookings->map(function($b) use ($durasiMenit, $bookingDate) {
-            $s = \Carbon\Carbon::parse($bookingDate . ' ' . $b->jam);
-            $e = (clone $s)->addMinutes($durasiMenit);
-            return $s->format('H:i') . ' – ' . $e->format('H:i');
-        })->implode(', ');
+        // BQ-114: ranges come from the booked slots (GetBookingTimeRanges), not the current service duration
+        $scheduleListText = $bookings->map(fn ($b) => $sessionRanges[$b->id]->label())->implode(', ');
 
         $eventTitle = 'Reservasi ' . ($layanan?->namalayanan ?? 'Layanan') . ' - ' . $tenant->namabisnis;
         $eventLocation = ($tenant->alamat ? $tenant->alamat . ', ' : '') . $tenant->namabisnis;
@@ -70,7 +60,7 @@
             . "Waktu:\n" . $scheduleListText . " WIB\n\n"
             . "Order ID:\n" . $payment->order_id;
 
-        $gCalDates = $firstStart->format('Ymd\THis') . '/' . $overallEnd->format('Ymd\THis');
+        $gCalDates = $timeRange->googleCalendarDates();
         $gCalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
             . '&text=' . urlencode($eventTitle)
             . '&dates=' . $gCalDates
@@ -246,14 +236,10 @@
                         <div class="border-t border-slate-200/60 pt-3 space-y-2">
                             <span class="text-xs font-semibold text-slate-500 block mb-1">Daftar Sesi Terjadwal:</span>
                             @foreach($bookings as $idx => $b)
-                                @php
-                                    $slotStart = \Carbon\Carbon::parse($bookingDate . ' ' . $b->jam);
-                                    $slotEnd = (clone $slotStart)->addMinutes($durasiMenit);
-                                @endphp
                                 <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-xs py-1.5 px-2.5 rounded-lg bg-white border border-slate-200/70">
                                     <div class="flex items-center gap-2 whitespace-nowrap">
                                         <span class="font-bold text-slate-700">Sesi #{{ $idx + 1 }}:</span>
-                                        <span class="font-semibold text-indigo-700 font-mono">{{ $slotStart->format('H:i') }} – {{ $slotEnd->format('H:i') }} WIB</span>
+                                        <span class="font-semibold text-indigo-700 font-mono">{{ $sessionRanges[$b->id]->label() }} WIB</span>
                                     </div>
                                     <span class="font-bold text-slate-800 whitespace-nowrap">{{ $b->priceLabel }}</span>
                                 </div>
