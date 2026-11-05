@@ -80,8 +80,10 @@ Only a customer cancellation records a refund (`CancelBooking.php:114-115`). An 
 
 ## Evidence (fill when done)
 
-_Fill in when done._
+The status route and team approval share the tenant-locked cancellation guard. Verified provider outcomes on legacy cash settlements produce one double-payment refund and alert. SQLite 712 tests, MySQL group 14 tests plus the new concurrent webhook/owner test, Pint and PHPStan passed. BQ-049 closed in the same commit.
 
 Disetujui Tech Lead 2026-11-04 untuk sesi agen.
 
 Unblocked 2026-11-04: ADR-0023 amends ADR-0004 decision 6, so Plan 2 is the accepted contract. Case 3 (owner cancels a paid booking) stays with BQ-138.
+
+Merge readiness PR #41/#42: all four owner cancellation forms now require reason and preserve it through validated confirmation submission. Evidence: MergeReadinessTest::test_all_four_owner_cancellation_forms_preserve_a_required_reason_through_confirmation.

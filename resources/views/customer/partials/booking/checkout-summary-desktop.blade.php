@@ -34,21 +34,17 @@
                         {{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d F Y') }}
                     </p>
                     <div class="mt-1.5 flex flex-wrap gap-1.5">
-                        @foreach ($selectedTimes as $time)
-                            @php
-                                $st = \Carbon\Carbon::createFromFormat('H:i', substr($time, 0, 5));
-                                $et = (clone $st)->addMinutes($service->durasi);
-                            @endphp
+                        @foreach ($selectedRanges as $range)
                             <span class="inline-flex items-center gap-1 rounded-lg bg-[#4F46E5]/10 px-2 py-1 text-xs font-bold text-[#4F46E5]">
                                 <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                {{ substr($time, 0, 5) }} – {{ $et->format('H:i') }} WIB
+                                {{ $range->label() }} WIB
                             </span>
                         @endforeach
                     </div>
                     <p class="text-[11px] text-[#64748B] mt-1 font-medium">
-                        {{ count($selectedTimes) }} sesi ({{ count($selectedTimes) * $service->durasi }} {{ $service->satuan_durasi ?: 'menit' }})
+                        {{ count($selectedRanges) }} sesi ({{ $selectedMinutes }} menit)
                     </p>
                 </div>
             </div>
@@ -93,12 +89,10 @@
                 <div class="mt-2.5 pt-2 border-t border-[#E2E8F0] space-y-1.5">
                     @foreach ($selectedTimes as $i => $time)
                         @php
-                            $st = \Carbon\Carbon::createFromFormat('H:i', substr($time, 0, 5));
-                            $et = (clone $st)->addMinutes($service->durasi);
                             $slotPrice = $schedules[$i]?->harga_override ?? $service->harga;
                         @endphp
                         <div class="flex justify-between items-center text-[#64748B]">
-                            <span>Sesi {{ $i + 1 }} ({{ $st->format('H:i') }} – {{ $et->format('H:i') }})</span>
+                            <span>Sesi {{ $i + 1 }} ({{ $selectedRanges[$i]->label() }})</span>
                             <span class="font-medium text-[#0F172A]">Rp {{ number_format($slotPrice, 0, ',', '.') }}</span>
                         </div>
                     @endforeach

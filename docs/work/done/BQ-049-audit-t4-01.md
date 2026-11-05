@@ -2,13 +2,13 @@
 id: BQ-049
 title: [BUG-T4-01] Pembatalan Booking Tanpa Membatalkan Transaksi Gateway (Zombie Debits)
 type: bug-fix
-status: approved
+status: done
 priority: P0
 phase: 4
 domain: payment
 requirements: []
 invariants: []
-launch-blocker: true
+launch-blocker: false
 needs-lead-approval: false
 depends-on: [BQ-039]
 source: docs/audit-bug/TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md at a68ffe8
@@ -18,7 +18,7 @@ source: docs/audit-bug/TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md at a68ffe8
 
 > **2026-11-01:** the remaining scope is absorbed by BQ-087 (owner cancellation leaves the payment open) and product decision D-001 in `docs/product-decisions.md` (refunds are recorded but never processed). Close this item together with BQ-087.
 
-Covered by [ADR-0007](../adr/ADR-0007-provider-outcome-intake.md) decision 6 (best-effort gateway cancel after commit); verify with BQ-032.
+Covered by [ADR-0007](../../adr/ADR-0007-provider-outcome-intake.md) decision 6 (best-effort gateway cancel after commit); verify with BQ-032.
 
 Migrated verbatim from the 2026-10 audit (TAHAP-4-PAYMENT-GATEWAY-EXPIRY.md, stage 4: Payment Gateway, Webhooks, Halaman Pembayaran & Expiry Engine). Status in the current code is unverified — check it first (BQ-039).
 
@@ -45,3 +45,5 @@ Partial verification, BQ-002 (2026-10-31): payer cancellation now requires an ex
 Still open: SingaPay cancellation is unsupported and intentionally a no-op under ADR-0007; owner cancellation of a pending booking remains a separate path for triage. This audit item is not closed by the payer-only acceptance. The historical recommendation to call the provider before local state is superseded by ADR-0007: external calls follow commit.
 
 Session 5 triage (2026-11-01): taken off the launch blockers. An owner cancelling a pending booking leaves the payment open, but a later payment becomes a refund owed through the lifecycle and the owner is notified (ADR-0007), so no money is lost silently. SingaPay links cannot be cancelled at the gateway. Closing the payment on owner cancellation needs a new payment transition; that is post-launch work.
+
+Closed with BQ-087 under ADR-0023: owner cancellation waits for the provider hold to end, then expires the local payment and cancels the group together. Late success still records a refund owed; gateway cancellation remains best-effort after commit.

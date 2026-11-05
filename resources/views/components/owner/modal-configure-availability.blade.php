@@ -3,7 +3,7 @@
 
 <div
     id="modal-configure-availability"
-    x-data="{ buka: false, sedangkirim: false }"
+    x-data="{ buka: @js(session()->has('blocked_date_conflicts')), sedangkirim: false }"
     @open-configure-availability.window="buka = true"
     @keydown.escape.window="buka = false"
     x-cloak
@@ -46,6 +46,22 @@
             <form method="POST" action="/owner/schedule/availability" @submit="sedangkirim = true" id="form-configure-availability">
                 @csrf
                 <div class="space-y-4 px-4 sm:px-6 py-4 sm:py-5 max-h-[75vh] overflow-y-auto">
+                    @if (session('blocked_date_conflicts'))
+                        @php($blockedDateConflicts = session('blocked_date_conflicts'))
+                        <div class="rounded-xl border border-rose-200 bg-rose-50 p-4" id="blocked-date-conflicts" role="alert">
+                            <p class="text-sm font-semibold text-rose-700">{{ $errors->first('tanggal_block') }}</p>
+                            <ul class="mt-2 space-y-1 text-xs sm:text-sm text-rose-700">
+                                @foreach ($blockedDateConflicts['bookings'] as $conflict)
+                                    <li>
+                                        <span class="font-medium">{{ $conflict['jam'] }}</span>
+                                        · {{ $conflict['namapelanggan'] }}
+                                        · {{ $conflict['layanan'] }}
+                                        <span class="text-rose-500">({{ $conflict['booking_code'] }})</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label for="input-block-date" class="mb-1.5 block text-sm font-medium text-bq-text">Block Date</label>
@@ -53,6 +69,7 @@
                                 type="date"
                                 name="tanggal_block"
                                 id="input-block-date"
+                                value="{{ old('tanggal_block') }}"
                                 class="w-full rounded-xl border border-bq-border bg-bq-surface px-4 py-2.5 text-xs sm:text-sm text-bq-text transition-all focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
                             >
                         </div>

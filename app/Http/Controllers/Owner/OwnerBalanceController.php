@@ -54,7 +54,10 @@ class OwnerBalanceController extends Controller
         $eligibilityReasons = $tenant ? PayoutEligibility::reasons($tenant, $request->user()) : [];
         $isEligible = empty($eligibilityReasons);
 
+        $minPayoutAmount = (int) config('payouts.min_amount', 10000);
+
         return view('owner.balance', compact(
+            'minPayoutAmount',
             'tenant',
             'availableBalance',
             'inFlightPayouts',

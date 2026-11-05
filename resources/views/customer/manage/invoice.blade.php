@@ -448,7 +448,7 @@
         \Carbon\Carbon::setLocale('id');
         $issuedAt = \Carbon\Carbon::parse($invoiceDate ?? $booking->created_at);
         $bookingDate = \Carbon\Carbon::parse($booking->tanggalbooking);
-        $jamFormatted = \Carbon\Carbon::parse($booking->jam)->format('H:i');
+        $jamFormatted = $timeRange->label(' – '); // BQ-114: from the booked slot
 
         $statusConfig = [
             'paid' => [
@@ -694,7 +694,7 @@
                                         {{ $jamFormatted }} WIB
                                     </p>
                                     <p class="mobile-only" style="font-size: 12px; color: #475569; margin: 2px 0 0 0;">
-                                        {{ $booking->layanan->durasi ?? 60 }} {{ $booking->layanan->satuan_durasi ?? 'menit' }}
+                                        {{ $timeRange->durationMinutes() !== null ? $timeRange->durationMinutes().' menit' : '-' }}
                                     </p>
                                     @if($booking->rescheduled_from_date)
                                         <span style="display: inline-block; font-size: 10px; font-weight: 700; color: #D97706; background: #FEF3C7; padding: 2px 6px; border-radius: 4px; margin-top: 4px;">
@@ -703,7 +703,7 @@
                                     @endif
                                 </td>
                                 <td class="col-optional" style="text-align: center; color: #475569; font-size: 13px;">
-                                    {{ $booking->layanan->durasi ?? 60 }} {{ $booking->layanan->satuan_durasi ?? 'menit' }}
+                                    {{ $timeRange->durationMinutes() !== null ? $timeRange->durationMinutes().' menit' : '-' }}
                                 </td>
                                 <td class="col-optional" style="text-align: center; font-weight: 600; color: #0F172A;">
                                     1

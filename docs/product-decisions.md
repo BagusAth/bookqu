@@ -4,7 +4,7 @@ Dokumen ini berisi keputusan yang perlu divalidasi Product Lead, dan catatan kep
 
 **Cara menjawab:** balas dengan nomor entri dan poinnya, misalnya "D-001 setuju semua" atau "D-001 setuju kecuali poin 3: …". Setelah disetujui, Tech Lead membuat pekerjaannya. Keputusan yang sudah diambil bisa dibuka lagi kapan saja dengan menyebut nomornya.
 
-Terakhir diperbarui: 4 November 2026
+Terakhir diperbarui: 5 November 2026
 
 ---
 
@@ -78,3 +78,4 @@ Diambil Tech Lead sebelum peran Product Lead ditetapkan. Product Lead bisa membu
 - D-020 · Aturan pemesanan tambahan di Kebijakan Booking · Disetujui 4 Nov 2026: batas paling lambat memesan, paling jauh hari ke depan, dan jeda antar booking; booking langsung berlaku setelah dibayar, tanpa persetujuan manual → BQ-144
 - D-021 · Yang tidak termasuk rilis ini · Disetujui 4 Nov 2026: slot otomatis dari jam buka, tutup otomatis di libur nasional, saran otomatis di Laporan, uang muka, pengingat dan integrasi WhatsApp, serta peran buatan sendiri diajukan lagi setelah rilis
 - D-022 · Tiga fitur yang sudah ada tetapi belum diterima resmi · Disetujui 4 Nov 2026: reset password lewat link email sekali pakai yang punya masa berlaku; pembatasan percobaan login, pendaftaran, reset password, dan formulir publik per akun dan per alamat internet; halaman utama BookQu dengan paket dan harga mengikuti D-017 → sudah ada di kode (FR-AUTH-007, FR-AUTH-008, FR-PUBLIC-005)
+- D-023 · Durasi layanan dan interval slot kelipatan 5 menit · Disetujui 5 Nov 2026: owner hanya bisa menyimpan durasi layanan dan interval jadwal massal dalam kelipatan 5 menit; layanan lama yang tidak sesuai harus diubah saat diedit → BQ-114

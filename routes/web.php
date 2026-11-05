@@ -2,14 +2,18 @@
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminPayoutController;
+use App\Http\Controllers\Admin\AdminRefundController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\TeamInvitationController;
+use App\Http\Controllers\Customer\BookingCheckoutController;
 use App\Http\Controllers\Customer\BookingController;
 use App\Http\Controllers\Customer\BookingManageController;
+use App\Http\Controllers\Customer\BookingPaymentController;
+use App\Http\Controllers\Customer\BookingScheduleController;
 use App\Http\Controllers\Customer\CustomerAccessController;
 use App\Http\Controllers\Owner\BookingCancellationController;
 use App\Http\Controllers\Owner\OwnerAdditionalItemController;
@@ -18,6 +22,7 @@ use App\Http\Controllers\Owner\OwnerAppearanceController;
 use App\Http\Controllers\Owner\OwnerAssetController;
 use App\Http\Controllers\Owner\OwnerBalanceController;
 use App\Http\Controllers\Owner\OwnerBookingController;
+use App\Http\Controllers\Owner\OwnerBookingPolicyController;
 use App\Http\Controllers\Owner\OwnerCalendarController;
 use App\Http\Controllers\Owner\OwnerCategoryController;
 use App\Http\Controllers\Owner\OwnerCheckoutController;
@@ -29,6 +34,7 @@ use App\Http\Controllers\Owner\OwnerNotificationController;
 use App\Http\Controllers\Owner\OwnerPaymentSettingsController;
 use App\Http\Controllers\Owner\OwnerPayoutAccountController;
 use App\Http\Controllers\Owner\OwnerProgramController;
+use App\Http\Controllers\Owner\OwnerRefundController;
 use App\Http\Controllers\Owner\OwnerResourceController;
 use App\Http\Controllers\Owner\OwnerReviewController;
 use App\Http\Controllers\Owner\OwnerScheduleController;
@@ -107,6 +113,8 @@ Route::prefix('owner')
         Route::post('/notifications/read-all', [OwnerNotificationController::class, 'markAllAsRead'])->name('owner.notifications.read-all');
         Route::post('/notifications/{id}/read', [OwnerNotificationController::class, 'markAsRead'])->name('owner.notifications.read');
         Route::delete('/notifications/{id}', [OwnerNotificationController::class, 'destroy'])->name('owner.notifications.destroy');
+        Route::patch('/settings/booking-policy', [OwnerBookingPolicyController::class, 'update'])->name('owner.settings.booking-policy');
+        Route::patch('/settings/notification-preferences', [OwnerBookingPolicyController::class, 'notifications'])->name('owner.settings.notification-preferences');
         Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
         Route::prefix('settings/team')->middleware('module:team')->group(function () {
             Route::get('/', [OwnerTeamController::class, 'index'])->name('owner.team.index');
@@ -144,6 +152,7 @@ Route::prefix('owner')
             Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
             Route::post('/bookings/{booking}/cancellation-requests', [BookingCancellationController::class, 'store'])->name('owner.bookings.cancellation-requests.store');
             Route::patch('/bookings/cancellation-requests/{cancellationId}', [BookingCancellationController::class, 'decide'])->whereNumber('cancellationId')->name('owner.bookings.cancellation-requests.decide');
+            Route::patch('/refunds/requests/{refundRequestId}', [OwnerRefundController::class, 'decide'])->whereNumber('refundRequestId')->name('owner.refunds.decide');
             Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
             Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
             Route::get('/bookings/{booking}/available-slots', [OwnerBookingController::class, 'getAvailableSlots'])->name('owner.bookings.available-slots');
@@ -216,11 +225,14 @@ Route::prefix('owner')
             Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets.destroy');
             Route::get('/settings/balance', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.settings.balance');
             Route::get('/payouts/{payout}/proof', [OwnerBalanceController::class, 'proof'])->whereNumber('payout')->middleware('module:balance')->name('owner.payouts.proof');
-            Route::prefix('payout-accounts')->middleware(['module:balance', 'throttle:3,10'])->group(function () {
-                Route::post('/', [OwnerPayoutAccountController::class, 'store'])->name('owner.payout-accounts.store');
-                Route::put('/{account}', [OwnerPayoutAccountController::class, 'update'])->whereNumber('account')->name('owner.payout-accounts.update');
-                Route::delete('/{account}', [OwnerPayoutAccountController::class, 'destroy'])->whereNumber('account')->name('owner.payout-accounts.destroy');
-                Route::post('/{account}/default', [OwnerPayoutAccountController::class, 'makeDefault'])->whereNumber('account')->name('owner.payout-accounts.default');
+            Route::prefix('payout-accounts')->middleware('module:balance')->group(function () {
+                // BQ-127: the strict limit guards account changes only; switching the primary account has its own.
+                Route::middleware('throttle:3,10,payout-account-changes')->group(function () {
+                    Route::post('/', [OwnerPayoutAccountController::class, 'store'])->name('owner.payout-accounts.store');
+                    Route::put('/{account}', [OwnerPayoutAccountController::class, 'update'])->whereNumber('account')->name('owner.payout-accounts.update');
+                    Route::delete('/{account}', [OwnerPayoutAccountController::class, 'destroy'])->whereNumber('account')->name('owner.payout-accounts.destroy');
+                });
+                Route::post('/{account}/default', [OwnerPayoutAccountController::class, 'makeDefault'])->whereNumber('account')->middleware('throttle:20,10,payout-account-default')->name('owner.payout-accounts.default');
             });
             Route::get('/settings/integrations', [OwnerIntegrationController::class, 'index'])->middleware(['module:integrations', 'subscription:integrations'])->name('owner.settings.integrations');
         });
@@ -268,6 +280,9 @@ Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+        Route::get('/refunds', [AdminRefundController::class, 'index'])->name('admin.refunds');
+        Route::post('/refunds/{refund}/transfer', [AdminRefundController::class, 'transferDetails'])->name('admin.refunds.transfer');
+        Route::patch('/refunds/{refund}', [AdminRefundController::class, 'update'])->name('admin.refunds.update');
         Route::get('/payouts', [AdminPayoutController::class, 'index'])->name('admin.payouts');
         Route::post('/payouts/{payout}/approve', [AdminPayoutController::class, 'approve'])->whereNumber('payout')->name('admin.payouts.approve');
         Route::post('/payouts/{payout}/complete', [AdminPayoutController::class, 'complete'])->whereNumber('payout')->name('admin.payouts.complete');
@@ -280,56 +295,56 @@ $bookingSubRoutes = function (string $namePrefix) {
     Route::post('/booking/select-program', [BookingController::class, 'selectProgram'])
         ->name($namePrefix.'select-program');
 
-    Route::get('/booking/schedule', [BookingController::class, 'showScheduleSelection'])
+    Route::get('/booking/schedule', [BookingScheduleController::class, 'showScheduleSelection'])
         ->name($namePrefix.'schedule');
 
-    Route::post('/booking/select-schedule', [BookingController::class, 'selectSchedule'])
+    Route::post('/booking/select-schedule', [BookingScheduleController::class, 'selectSchedule'])
         ->name($namePrefix.'select-schedule');
 
-    Route::get('/booking/schedule/slots', [BookingController::class, 'getScheduleSlots'])
+    Route::get('/booking/schedule/slots', [BookingScheduleController::class, 'getScheduleSlots'])
         ->middleware('throttle:60,1,storefront-slots:')
         ->name($namePrefix.'schedule-slots');
 
-    Route::get('/booking/date', [BookingController::class, 'showDateSelection'])
+    Route::get('/booking/date', [BookingScheduleController::class, 'showDateSelection'])
         ->name($namePrefix.'date');
 
-    Route::post('/booking/select-date', [BookingController::class, 'selectDate'])
+    Route::post('/booking/select-date', [BookingScheduleController::class, 'selectDate'])
         ->name($namePrefix.'select-date');
 
-    Route::get('/booking/time', [BookingController::class, 'showTimeSelection'])
+    Route::get('/booking/time', [BookingScheduleController::class, 'showTimeSelection'])
         ->name($namePrefix.'time');
 
-    Route::post('/booking/select-time', [BookingController::class, 'selectTime'])
+    Route::post('/booking/select-time', [BookingScheduleController::class, 'selectTime'])
         ->name($namePrefix.'select-time');
 
-    Route::get('/booking/checkout', [BookingController::class, 'showCheckout'])
+    Route::get('/booking/checkout', [BookingCheckoutController::class, 'showCheckout'])
         ->name($namePrefix.'checkout');
 
-    Route::post('/booking/checkout', [BookingController::class, 'processCheckout'])->block(120, 120)
+    Route::post('/booking/checkout', [BookingCheckoutController::class, 'processCheckout'])->block(120, 120)
         ->middleware('throttle:10,1,storefront-checkout:')
         ->name($namePrefix.'process-checkout');
 
-    Route::post('/booking/validate-voucher', [BookingController::class, 'validateVoucher'])
+    Route::post('/booking/validate-voucher', [BookingCheckoutController::class, 'validateVoucher'])
         ->middleware(['module:vouchers', 'subscription:promos'])
         ->name($namePrefix.'validate-voucher');
 
-    Route::get('/booking/payment/{payment:order_id}', [BookingController::class, 'showPayment'])
+    Route::get('/booking/payment/{payment:order_id}', [BookingPaymentController::class, 'showPayment'])
         ->middleware(['throttle:60,1,customer-private:', 'customer.access:payment'])
         ->name($namePrefix.'payment');
 
-    Route::post('/booking/payment/{payment:order_id}/check-status', [BookingController::class, 'checkPaymentStatus'])
+    Route::post('/booking/payment/{payment:order_id}/check-status', [BookingPaymentController::class, 'checkPaymentStatus'])
         ->middleware(['throttle:30,1,customer-status:', 'customer.access:payment'])
         ->name($namePrefix.'check-status');
 
-    Route::post('/booking/payment/{payment:order_id}/callback', [BookingController::class, 'handleCallback'])
+    Route::post('/booking/payment/{payment:order_id}/callback', [BookingPaymentController::class, 'handleCallback'])
         ->middleware(['throttle:30,1,customer-status:', 'customer.access:payment'])
         ->name($namePrefix.'callback');
 
-    Route::post('/booking/payment/{payment:order_id}/cancel', [BookingController::class, 'cancelPayment'])
+    Route::post('/booking/payment/{payment:order_id}/cancel', [BookingPaymentController::class, 'cancelPayment'])
         ->middleware(['throttle:10,1,customer-mutation:', 'customer.access:cancel-payment'])
         ->name($namePrefix.'cancel');
 
-    Route::get('/booking/payment/{payment:order_id}/invoice', [BookingController::class, 'showInvoice'])
+    Route::get('/booking/payment/{payment:order_id}/invoice', [BookingPaymentController::class, 'showInvoice'])
         ->middleware(['throttle:60,1,customer-private:', 'customer.access:invoice'])
         ->name($namePrefix.'invoice');
 };

@@ -47,6 +47,20 @@
             <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
                 <template x-if="activeBooking">
                     <div class="space-y-4">
+                        <div x-show="activeBooking.onlineWaiting" class="text-sm font-semibold text-amber-700" x-data="{
+                            seconds: 0,
+                            timer: null,
+                            init() {
+                                if (!activeBooking.onlineHoldUntil) return;
+                                const tick = () => this.seconds = Math.max(0, activeBooking.onlineHoldUntil - Math.floor(Date.now() / 1000));
+                                tick();
+                                this.timer = setInterval(tick, 1000);
+                            },
+                            destroy() { clearInterval(this.timer); }
+                        }">
+                            <p x-text="activeBooking.onlineWaiting"></p>
+                            <p x-text="seconds > 0 ? Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') : 'Muat ulang untuk memperbarui status'"></p>
+                        </div>
                         {{-- Status Banner --}}
                         <div class="flex items-center justify-between p-3.5 rounded-2xl border border-[#e7e2f7] bg-[#f7f7fa]">
                             <div>
@@ -153,7 +167,7 @@
                 <button type="button" @click="detailOpen = false" class="px-4 py-2 rounded-xl border border-[#e7e2f7] bg-white text-xs font-bold text-[#231a3d] hover:bg-[#f7f7fa] transition cursor-pointer shrink-0 shadow-2xs">
                     Tutup
                 </button>
-                <template x-if="activeBooking && (activeBooking.status === 'paid' || activeBooking.status === 'pending')">
+                <template x-if="activeBooking && !activeBooking.onlineWaiting && (activeBooking.status === 'paid' || activeBooking.status === 'pending')">
                         {{-- Tombol Ubah Jadwal (Reschedule) Khusus Owner --}}
                         <button
                             type="button"
@@ -167,7 +181,7 @@
                             <span>Ubah Jadwal</span>
                         </button>
 
-                        <template x-if="activeBooking.status === 'pending'">
+                        <template x-if="activeBooking.status === 'pending' && !activeBooking.providerLinked">
                             <form method="POST" :action="'/owner/bookings/' + activeBooking.id + '/status'">
                                 @csrf
                                 @method('PATCH')
@@ -199,9 +213,13 @@
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="status" value="cancelled">
+                            <label class="block text-sm">
+                                Alasan pembatalan
+                                <textarea name="reason" required maxlength="500" class="block w-full rounded border p-2"></textarea>
+                            </label>
                             <button type="button"
                                 class="craft-btn px-3.5 py-2 rounded-xl border border-rose-200 text-rose-700 bg-rose-50 text-xs font-bold hover:bg-rose-100 transition cursor-pointer"
-                                @click="$dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan booking ini?', formId: 'form-drawer-cancel-' + activeBooking.id })">
+                                @click="if (!$el.form.reportValidity()) return; $dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan booking ini?', formId: 'form-drawer-cancel-' + activeBooking.id })">
                                 Batalkan
                             </button>
                         </form>

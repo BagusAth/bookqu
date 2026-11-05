@@ -5,36 +5,26 @@ namespace App\Domain\Booking;
 use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Models\Booking;
+use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class BookingRules
 {
     /**
-     * Validate that multi-slot schedules are contiguous without any gaps.
+     * Validate that multi-slot schedules are contiguous without any gaps: each slot starts
+     * exactly where the previous slot ends, read from the stored slot boundaries rather than
+     * the service's current duration (BQ-114 decision 4).
      * Assumes schedules are already sorted by jam_mulai ascending.
+     *
+     * @param  array<int, array{jam_mulai: string, jam_selesai: string}|object>  $orderedSchedules
      */
-    public static function validateContiguousSlots(array $orderedSchedules, int $durationMinutes, string $date, string $timezone = 'Asia/Jakarta'): bool
+    public static function validateContiguousSlots(array $orderedSchedules): bool
     {
-        if (count($orderedSchedules) <= 1) {
-            return true;
-        }
-
-        for ($i = 1; $i < count($orderedSchedules); $i++) {
-            $prev = is_array($orderedSchedules[$i - 1]) ? (object) $orderedSchedules[$i - 1] : $orderedSchedules[$i - 1];
-            $curr = is_array($orderedSchedules[$i]) ? (object) $orderedSchedules[$i] : $orderedSchedules[$i];
-
-            $prevStart = Carbon::parse($date.' '.$prev->jam_mulai, $timezone);
-            $currStart = Carbon::parse($date.' '.$curr->jam_mulai, $timezone);
-
-            if ((int) abs($currStart->diffInMinutes($prevStart)) !== $durationMinutes) {
-                return false;
-            }
-        }
-
-        return true;
+        return BookingTimeRange::areContiguous($orderedSchedules);
     }
 
     /**
@@ -76,8 +66,8 @@ class BookingRules
     public static function applyOccupiesSlotCondition(mixed $query, string $prefix = 'bookings.'): mixed
     {
         $prefix = $prefix !== '' ? rtrim($prefix, '.').'.' : '';
-        $holdCutoff = now()->subMinutes(PaymentRules::settlementMarginMinutes());
-        $legacyCutoff = now()->subMinutes(PaymentRules::deadlineMinutes(PaymentState::TIPE_BOOKING) + PaymentRules::settlementMarginMinutes());
+        $holdCutoff = PaymentRules::settlementCutoff();
+        $legacyCutoff = self::legacyHoldCutoff();
         $paymentOfBooking = $prefix === '' ? 'bookings.idpayment' : $prefix.'idpayment';
 
         return $query->where(function ($q) use ($prefix, $holdCutoff, $legacyCutoff, $paymentOfBooking) {
@@ -108,6 +98,30 @@ class BookingRules
         });
     }
 
+    public static function onlinePaymentHoldEnd(Booking $booking, Payment $payment): ?Carbon
+    {
+        if ((int) $payment->idtenant !== (int) $booking->idtenant
+            || ! PaymentRules::hasProviderLink($payment) || $payment->status !== PaymentState::STATUS_PENDING) {
+            return null;
+        }
+
+        $deadline = $payment->expired_at;
+        if ($deadline !== null) {
+            return Carbon::parse($deadline)->gt(PaymentRules::settlementCutoff())
+                ? Carbon::parse($deadline)->addMinutes(PaymentRules::settlementMarginMinutes()) : null;
+        }
+        if ($booking->created_at === null || $booking->created_at->lt(self::legacyHoldCutoff())) {
+            return null;
+        }
+
+        return $booking->created_at->copy()->addMinutes(PaymentRules::deadlineMinutes(PaymentState::TIPE_BOOKING) + PaymentRules::settlementMarginMinutes());
+    }
+
+    private static function legacyHoldCutoff(): Carbon
+    {
+        return PaymentRules::settlementCutoff()->subMinutes(PaymentRules::deadlineMinutes(PaymentState::TIPE_BOOKING));
+    }
+
     /**
      * Check if a slot is already occupied by an active booking.
      */
@@ -120,19 +134,76 @@ class BookingRules
         return self::applyOccupiesSlotCondition($query, '')->exists();
     }
 
-    /**
-     * Verify whether a booking can be cancelled by a customer based on business policy.
-     */
-    public static function canCancel(Booking $booking): bool
+    public static function maximumAdvanceDays(Tenant $tenant): int
     {
-        if ($booking->status !== BookingState::STATUS_PAID) {
+        return $tenant->booking_max_days_ahead ?? 30;
+    }
+
+    public static function hasSlotPolicy(Tenant $tenant): bool
+    {
+        return $tenant->booking_min_lead_hours > 0 || $tenant->booking_max_days_ahead !== null || $tenant->booking_buffer_minutes > 0;
+    }
+
+    /** @param array<string, list<array{Carbon, Carbon}>> $occupied */
+    public static function slotAllowedByPolicy(Tenant $tenant, string $date, string $start, string $end, Carbon $now, array $occupied): bool
+    {
+        $slotStart = Carbon::parse($date.' '.$start, 'Asia/Jakarta');
+        if (($tenant->booking_min_lead_hours > 0 && $slotStart->lt($now->copy()->addHours($tenant->booking_min_lead_hours)))
+            || ($tenant->booking_max_days_ahead !== null && $slotStart->toDateString() > $now->copy()->addDays($tenant->booking_max_days_ahead)->toDateString())) {
             return false;
         }
 
-        if ($booking->isMultiSlot()) {
-            return false;
+        $buffer = $tenant->booking_buffer_minutes;
+        $slotEnd = Carbon::instance(BookingTimeRange::forSlot($date, $start, $end)->end ?? throw new \LogicException('Slot end is required.'));
+        $nearby = array_merge(
+            $occupied[$slotStart->copy()->subDay()->toDateString()] ?? [],
+            $occupied[$date] ?? [],
+            $occupied[$slotStart->copy()->addDay()->toDateString()] ?? [],
+        );
+        foreach ($nearby as [$busyStart, $busyEnd]) {
+            if ($slotStart->lt($busyEnd->copy()->addMinutes($buffer))
+                && $slotEnd->gt($busyStart->copy()->subMinutes($buffer))) {
+                return false;
+            }
         }
 
+        return true;
+    }
+
+    /** @return array<string, list<array{Carbon, Carbon}>> */
+    public static function occupiedRanges(Tenant $tenant, int $serviceId, string $firstDate, string $lastDate): array
+    {
+        // The configured buffer is at most 24 hours, so include adjacent calendar dates.
+        $query = DB::table('bookings')->join('schedules', 'schedules.id', '=', 'bookings.idschedule')
+            ->where('bookings.idtenant', $tenant->id)->where('bookings.idlayanan', $serviceId)
+            ->where('schedules.idtenant', $tenant->id)
+            ->whereBetween('bookings.tanggalbooking', [
+                Carbon::parse($firstDate)->subDay()->toDateString(),
+                Carbon::parse($lastDate)->addDay()->toDateString(),
+            ]);
+
+        return self::applyOccupiesSlotCondition($query)->get(['bookings.tanggalbooking', 'schedules.jam_mulai', 'schedules.jam_selesai'])
+            ->map(function ($slot): array {
+                $date = Carbon::parse($slot->tanggalbooking)->toDateString();
+
+                return [
+                    Carbon::parse($date.' '.$slot->jam_mulai, 'Asia/Jakarta'),
+                    Carbon::instance(BookingTimeRange::forSlot($date, (string) $slot->jam_mulai, (string) $slot->jam_selesai)->end ?? throw new \LogicException('Slot end is required.')),
+                ];
+            })->groupBy(fn (array $range) => $range[0]->toDateString())->map(fn ($ranges) => $ranges->values()->all())->all();
+    }
+
+    public static function canRequestRefund(Booking $booking): bool
+    {
+        $tenant = $booking->tenant;
+
+        return $booking->status === BookingState::STATUS_PAID
+            && $tenant instanceof Tenant && (bool) $tenant->refunds_enabled
+            && self::isBeforeCancellationDeadline($booking);
+    }
+
+    private static function isBeforeCancellationDeadline(Booking $booking): bool
+    {
         $tenant = $booking->tenant;
         if (! $tenant) {
             return false;

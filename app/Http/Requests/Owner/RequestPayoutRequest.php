@@ -33,7 +33,7 @@ class RequestPayoutRequest extends FormRequest
                     ->where('idtenant', $tenantId)
                     ->whereNull('deleted_at'),
             ],
-            'jumlah' => ['required', 'integer', 'min:10000'],
+            'jumlah' => ['required', 'integer', 'min:'.$this->minAmount()],
         ];
     }
 
@@ -49,7 +49,12 @@ class RequestPayoutRequest extends FormRequest
             'payout_account_id.exists' => 'Rekening penarikan yang dipilih tidak valid.',
             'jumlah.required' => 'Nominal withdraw wajib diisi.',
             'jumlah.integer' => 'Nominal withdraw harus berupa angka bulat.',
-            'jumlah.min' => 'Nominal withdraw minimal Rp 10.000.',
+            'jumlah.min' => 'Nominal withdraw minimal Rp '.number_format($this->minAmount(), 0, ',', '.').'.',
         ];
+    }
+
+    private function minAmount(): int
+    {
+        return (int) config('payouts.min_amount', 10000);
     }
 }

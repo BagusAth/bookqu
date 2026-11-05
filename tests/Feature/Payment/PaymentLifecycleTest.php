@@ -24,6 +24,7 @@ use App\Notifications\PaymentRefundOwedOwnerNotification;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
@@ -158,6 +159,32 @@ class PaymentLifecycleTest extends TestCase
         $this->assertSame('cancelled', $bookings->last()->fresh()->status);
         $this->assertSame(1, Refund::where('payment_id', $payment->id)->count());
         Notification::assertNotSentTo($this->owner, NewBookingOwnerNotification::class);
+    }
+
+    public function test_owner_settlement_rejects_a_provider_link_and_legacy_cash_success_owes_one_refund(): void
+    {
+        [$payment, $bookings] = $this->pendingGroup();
+        $payment->update(['provider' => 'midtrans', 'snap_token' => 'test-checkout']);
+        $refused = $this->lifecycle->transition($payment, PaymentTransition::SettledByOwner, 'cash');
+        $this->assertSame(PaymentTransitionOutcome::Rejected, $refused->outcome);
+        $this->assertSame('pending', $payment->fresh()->status);
+        $this->assertSame('pending', $bookings->first()->fresh()->status);
+
+        // Historical state from before ADR-0023.
+        $payment->update(['status' => 'sukses', 'metode' => 'cash']);
+        $bookings->first()->update(['status' => 'paid']);
+        Log::spy();
+        foreach (range(1, 2) as $attempt) {
+            $outcome = $this->lifecycle->transition($payment, PaymentTransition::ProviderSucceeded, 'qris');
+            $this->assertSame(PaymentTransitionOutcome::RefundOwed, $outcome->outcome);
+            $this->assertSame('double-payment', $outcome->reason);
+        }
+        $this->assertDatabaseCount('refunds', 1);
+        $this->assertDatabaseHas('refunds', ['payment_id' => $payment->id, 'jumlah' => $payment->jumlah, 'cause' => 'double-payment']);
+        $this->assertSame('paid', $bookings->first()->fresh()->status);
+        $this->assertSame('cash', $payment->fresh()->metode);
+        Notification::assertSentToTimes($this->owner, PaymentRefundOwedOwnerNotification::class, 1);
+        Log::shouldHaveReceived('critical')->once();
     }
 
     public function test_owner_settlement_settles_the_whole_group_in_cash(): void

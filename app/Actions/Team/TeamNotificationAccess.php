@@ -4,6 +4,7 @@ namespace App\Actions\Team;
 
 use App\Domain\Team\TenantPermission;
 use App\Models\User;
+use App\Notifications\RefundTeamNotification;
 use App\Policies\TenantResourcePolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
@@ -18,6 +19,10 @@ final class TeamNotificationAccess
         $member = app(ResolveTenantMembership::class)->execute($recipient);
         $ability = TenantPermission::notificationMap()[$notification::class] ?? null;
         if ($member === null || $ability === null || ! TenantPermission::allowsRole((string) $member->role, $ability)) {
+            return false;
+        }
+        if ($notification instanceof RefundTeamNotification
+            && $notification->idtenant !== (int) $member->idtenant) {
             return false;
         }
         foreach (get_object_vars($notification) as $subject) {

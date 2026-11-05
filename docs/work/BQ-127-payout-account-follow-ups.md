@@ -2,7 +2,7 @@
 id: BQ-127
 title: Fix payout account follow-ups found in the PR #31 audit
 type: bug-fix
-status: approved
+status: in-progress
 priority: P2
 phase: 4
 domain: balance-payout

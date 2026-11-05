@@ -15,10 +15,12 @@ use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Payment\PaymentTransition;
 use App\Domain\Payment\PaymentTransitionOutcome;
+use App\Domain\Payment\RefundRequestState;
 use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Refund;
+use App\Models\RefundRequest;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\PaymentRefundOwedOwnerNotification;
@@ -68,9 +70,18 @@ class PaymentLifecycle
                 return new PaymentTransitionResult(PaymentTransitionOutcome::Rejected, $locked, 'transition-not-applicable');
             }
 
+            if ($transition === PaymentTransition::SettledByOwner && PaymentRules::hasProviderLink($locked)) {
+                return new PaymentTransitionResult(PaymentTransitionOutcome::Rejected, $locked, 'provider-linked-payment');
+            }
+
             $target = $transition->targetStatus();
 
             if ($locked->status === $target) {
+                if ($transition === PaymentTransition::ProviderSucceeded && $locked->metode === PaymentState::METODE_CASH
+                    && PaymentRules::hasProviderLink($locked)) {
+                    return $this->refundOwed($locked, $consequences, 'double-payment');
+                }
+
                 return new PaymentTransitionResult(PaymentTransitionOutcome::AlreadyFinal, $locked);
             }
 
@@ -99,7 +110,8 @@ class PaymentLifecycle
             if ($target === PaymentState::STATUS_SUKSES) {
                 $locked->update([
                     'status' => PaymentState::STATUS_SUKSES,
-                    'metode' => $method ?? $locked->metode ?? PaymentState::METODE_MIDTRANS,
+                    'metode' => $transition === PaymentTransition::SettledByOwner
+                        ? PaymentState::METODE_CASH : ($method ?? $locked->metode ?? PaymentState::METODE_MIDTRANS),
                 ]);
                 $consequences->deliver($locked, $transition);
             } else {
@@ -129,7 +141,7 @@ class PaymentLifecycle
      * Record the refund owed when a customer cancels a booking whose payment succeeded.
      * At most one refund exists per payment (INV-PAY-06); returns null when none is owed.
      */
-    public function refundCancelledBooking(Booking $booking, ?string $reason = null, bool $businessCancellation = false): ?Refund
+    public function refundCancelledBooking(Booking $booking, ?string $reason = null, bool $businessCancellation = false, ?RefundRequest $request = null, ?RefundRequestState $decision = null): ?Refund
     {
         if (! $booking->idpayment) {
             return null;
@@ -142,13 +154,15 @@ class PaymentLifecycle
             return null;
         }
 
-        return $this->withinPaymentTenant($payment, function (?int $tenantId) use ($payment, $booking, $reason, $businessCancellation): ?Refund {
+        return $this->withinPaymentTenant($payment, function (?int $tenantId) use ($payment, $booking, $reason, $businessCancellation, $request, $decision): ?Refund {
             $locked = $this->lock($payment, $tenantId);
 
             if ($locked === null
                 || $locked->status !== PaymentState::STATUS_SUKSES
                 || (int) $locked->idtenant !== (int) $booking->idtenant
-                || ($businessCancellation && PaymentRules::providerOf($locked) === 'manual')
+                || (float) $locked->jumlah <= 0
+                || (($businessCancellation || $request !== null) && PaymentRules::providerOf($locked) === 'manual')
+                || ($request !== null && ((int) $request->idtenant !== (int) $locked->idtenant || (int) $request->idpayment !== $locked->id))
                 || Refund::where('payment_id', $locked->id)->exists()) {
                 return null;
             }
@@ -156,9 +170,10 @@ class PaymentLifecycle
             $refund = Refund::create([
                 'booking_id' => $booking->id,
                 'payment_id' => $locked->id,
-                'jumlah' => $locked->jumlah,
+                'jumlah' => $decision?->amount((float) $locked->jumlah) ?? $locked->jumlah,
                 'status' => 'pending',
-                'cause' => $businessCancellation ? 'business_cancel' : null,
+                'cause' => $businessCancellation ? 'business_cancel' : 'customer_request',
+                'refund_request_id' => $request?->id,
                 'catatan' => $reason ?? 'Refund otomatis dari pembatalan booking oleh customer.',
             ]);
             // The refunded amount leaves the owner's balance again (BQ-015)
@@ -194,11 +209,13 @@ class PaymentLifecycle
             'payment_id' => $payment->id,
             'jumlah' => $payment->jumlah,
             'status' => 'pending',
-            'catatan' => 'Pembayaran diterima setelah pesanan dibatalkan atau kedaluwarsa.',
+            'cause' => $reason === 'double-payment' ? $reason : 'late_success',
+            'catatan' => $reason === 'double-payment' ? 'Pembayaran online diterima setelah pelunasan tunai.'
+                : 'Pembayaran diterima setelah pesanan dibatalkan atau kedaluwarsa.',
         ]);
 
         DB::afterCommit(function () use ($payment, $refund, $reason) {
-            Log::critical('PaymentLifecycle: payment succeeded after its purchase was withdrawn; refund owed', [
+            Log::critical('PaymentLifecycle: provider payment needs a refund', [
                 'payment_id' => $payment->id,
                 'order_id' => $payment->order_id,
                 'refund_id' => $refund->id,

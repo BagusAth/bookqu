@@ -7,7 +7,7 @@ Owns owner registration, login, email verification, password reset, roles and ac
 | Route | Controller |
 |---|---|
 | `login`, `login.store`, `logout` | `Auth/AuthenticatedSessionController` |
-| `register`, `register.store` | `Auth/RegisteredUserController` — creates `User` (role `owner`), `Tenant`, and a 7-day trial (`CreateTrialSubscription`) |
+| `register`, `register.store` | `Auth/RegisteredUserController` → `Actions/Owner/RegisterOwner`: creates `User` (role `owner`), `Tenant`, and a 7-day trial (`CreateTrialSubscription`) in one transaction (BQ-112); login and the verification mail follow the commit |
 | `verification.notice/verify/send` | `Auth/EmailVerificationController` (`signed`, `throttle:6,1`) |
 | `password.request/email/reset/store/update` | `Auth/PasswordResetLinkController`, `Auth/NewPasswordController` |
 | `owner.settings.account`, `owner.settings.account.delete` | `Owner/OwnerSettingController` → `Actions/Owner/UpdateOwnerAccount`, `DeleteOwnerAccount` |
@@ -20,7 +20,11 @@ FR-AUTH-001…006; FR-AUTH-007 (password reset) and FR-AUTH-008 (rate limiting) 
 
 ## Evidence
 
-`tests/Feature/Auth/AuthTest.php`, `Auth/PasswordResetTest.php`, `Owner/SettingsTest.php`.
+`tests/Feature/Auth/AuthTest.php`, `Auth/PasswordResetTest.php`, `Owner/SettingsTest.php`, `Owner/AccountChangeRequiresCurrentPasswordTest.php`, `Auth/AtomicOwnerRegistrationTest.php`.
+
+BQ-112: every owner page includes `components/owner/session-expired`, which wraps `window.fetch`; a same-origin response with status 419 or 401 opens the "Sesi Anda telah berakhir" dialog (reload or sign in again) instead of leaving only a generic failure toast.
+
+BQ-098: changing the email or setting a new password requires `current_password` (`UpdateOwnerAccountRequest`); name and phone stay free. A new email clears `email_verified_at`, sends verification to the new address and `AccountEmailChangedNotification` (masked new address) to the old one. A new password rotates the remember token and deletes the user's other rows in the `sessions` table (database session driver), then regenerates the current session. Account deletion requires `delete_password` (`DeleteOwnerAccountRequest`) besides the typed confirmation.
 
 ## Status
 
@@ -31,9 +35,8 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Nee
 | Gap | Item |
 |---|---|
 | Login and registration have no rate limiting | BQ-007 |
-| Changing email or password needs no current password; email change keeps verification; other sessions stay logged in | BQ-098 |
+| The current-password check on account changes and deletion has no rate limit of its own (`routes/web.php` is reserved for BQ-128/BQ-130) | FR-AUTH-008 |
 | Audit P0: dead "forgot password" link, redirect loop, logout without CSRF handling on verify notice (status unknown since `ab24193`) | BQ-040 … BQ-042 |
-| Owner registration not wrapped in DB transaction, and silent asynchronous CSRF 419 session expiration | BQ-112 |
 
 BQ-131: platform owner role is distinct from the tenant role. TenantPermission owns the Pemilik/Manajer/Kasir map; permission middleware and policies enforce it server-side. Own account fields refer to the signed-in member, not the business owner. Cashier dashboard/customer responses omit revenue/spending, and notification delivery/feed/counts are role-filtered. Existing admin/customer authorization mechanisms are unchanged.
 

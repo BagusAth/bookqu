@@ -11,6 +11,7 @@ final class GetStorefrontTenant
         'id', 'iduser', 'namabisnis', 'slug', 'custom_domain', 'jenisbisnis', 'alamat',
         'deskripsi', 'logo_path', 'banner_path', 'nomorhp', 'weekend_price_type',
         'weekend_price_value', 'cancel_before_hours', 'reschedule_before_hours',
+        'refunds_enabled', 'booking_min_lead_hours', 'booking_max_days_ahead', 'booking_buffer_minutes',
         'theme_color', 'button_style', 'font_family', 'card_style',
     ];
 

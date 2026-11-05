@@ -244,7 +244,7 @@ class RF09StabilityAndHardeningTest extends TestCase
     /**
      * P1-03: Owner cancellation policy vs customer cancellation policy
      */
-    public function test_p1_03_owner_cancellation_does_not_create_automatic_refund(): void
+    public function test_p1_03_owner_cancellation_records_the_full_online_refund(): void
     {
         $payment = Payment::create([
             'idtenant' => $this->tenant->id,
@@ -281,16 +281,16 @@ class RF09StabilityAndHardeningTest extends TestCase
         $booking->refresh();
         $this->assertSame('cancelled', $booking->status);
 
-        // No refund record created for owner cancellation
-        $this->assertDatabaseMissing('refunds', [
-            'booking_id' => $booking->id,
+        // The business cancellation records a full refund.
+        $this->assertDatabaseHas('refunds', [
+            'booking_id' => $booking->id, 'cause' => 'business_cancel', 'jumlah' => $payment->jumlah,
         ]);
     }
 
     /**
      * P1-03: Customer cancellation on paid booking DOES create a refund record
      */
-    public function test_p1_03_customer_cancellation_creates_pending_refund(): void
+    public function test_p1_03_customer_cannot_cancel_a_paid_booking_directly(): void
     {
         $payment = Payment::create([
             'idtenant' => $this->tenant->id,
@@ -332,18 +332,10 @@ class RF09StabilityAndHardeningTest extends TestCase
 
         $cancelAction = app(CancelBooking::class);
 
-        // When actor is customer
-        $cancelAction->execute($booking, 'customer', 'Berhalangan hadir');
-
-        $booking->refresh();
-        $this->assertSame('cancelled', $booking->status);
-
-        // Pending refund record created
-        $this->assertDatabaseHas('refunds', [
-            'booking_id' => $booking->id,
-            'status' => 'pending',
-            'jumlah' => 50000,
-        ]);
+        $result = $cancelAction->execute($booking, 'customer', 'Berhalangan hadir');
+        $this->assertFalse($result['success']);
+        $this->assertSame('paid', $booking->fresh()->status);
+        $this->assertDatabaseMissing('refunds', ['booking_id' => $booking->id]);
     }
 
     /**
@@ -606,14 +598,16 @@ class RF09StabilityAndHardeningTest extends TestCase
             'status' => BookingState::STATUS_PAID,
         ]);
 
-        app(UpdateScheduleAvailability::class)->execute($this->tenant, [
+        $result = app(UpdateScheduleAvailability::class)->execute($this->tenant, [
             'tanggal_block' => $date,
             'alasan' => 'Renovasi',
             'weekend_price_type' => 'none',
         ]);
 
+        // BQ-108 (AC-JBH-03): the date stays open until the paid booking is handled.
+        $this->assertFalse($result['success']);
         $this->assertSame(BookingState::STATUS_PAID, $booking->fresh()->status);
-        $this->assertDatabaseHas('owner_blocked_dates', ['idtenant' => $this->tenant->id, 'alasan' => 'Renovasi']);
+        $this->assertDatabaseMissing('owner_blocked_dates', ['idtenant' => $this->tenant->id, 'alasan' => 'Renovasi']);
     }
 
     /**

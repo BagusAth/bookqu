@@ -30,9 +30,10 @@ class RequestOwnerPayout
         string $requestKey,
         ?User $user = null
     ): OwnerPayout {
-        if (! is_finite($amount) || $amount < 10000 || floor((float) $amount) != $amount) {
+        $minAmount = (int) config('payouts.min_amount', 10000);
+        if (! is_finite($amount) || $amount < $minAmount || floor((float) $amount) != $amount) {
             throw ValidationException::withMessages([
-                'jumlah' => 'Nominal withdraw harus berupa angka bulat dan minimal Rp 10.000.',
+                'jumlah' => 'Nominal withdraw harus berupa angka bulat dan minimal Rp '.number_format($minAmount, 0, ',', '.').'.',
             ]);
         }
 

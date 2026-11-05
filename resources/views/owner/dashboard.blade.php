@@ -298,6 +298,41 @@
                     </tbody>
                 </table>
             </div>
+
+            {{-- Live refresh clones these and fills them with textContent only (BQ-089) --}}
+            <template id="activity-row-template">
+                <tr class="transition-colors hover:bg-bq-background/50">
+                    <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text" data-field="program_name"></td>
+                    <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted" data-field="customer_name"></td>
+                    <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted" data-field="date"></td>
+                    <td class="whitespace-nowrap px-5 py-3.5 text-center">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset" data-field="status"></span>
+                    </td>
+                </tr>
+            </template>
+            <template id="activity-row-empty-template">
+                <tr>
+                    <td colspan="4" class="py-8 text-center text-sm text-bq-text-muted">No booking records found yet.</td>
+                </tr>
+            </template>
+            <template id="activity-card-template">
+                <div class="p-3.5 transition hover:bg-bq-background/40">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-xs font-bold text-bq-text" data-field="program_name"></p>
+                            <p class="text-[11px] text-bq-text-muted mt-0.5 truncate" data-field="customer_name"></p>
+                        </div>
+                        <span class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ring-inset" data-field="status"></span>
+                    </div>
+                    <div class="mt-2 flex items-center justify-between text-[11px] text-bq-text-subtle">
+                        <span data-field="date"></span>
+                        <span class="font-medium text-bq-text"><span data-field="time"></span> WIB</span>
+                    </div>
+                </div>
+            </template>
+            <template id="activity-card-empty-template">
+                <div class="py-8 text-center text-xs text-bq-text-muted">No booking records found yet.</div>
+            </template>
         </div>
 
         {{-- Upcoming Bookings Card --}}
@@ -530,68 +565,45 @@
             const mobileList = document.getElementById('activity-mobile-list');
 
             if (data.recent_activities) {
-                if (tbody) {
-                    tbody.innerHTML = '';
-                    if (data.recent_activities.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-sm text-bq-text-muted">No booking records found yet.</td></tr>';
-                    } else {
-                        data.recent_activities.forEach(item => {
-                            const statusText = item.status === 'paid' ? 'confirmed' : item.status;
-                            let colorClass = 'bg-gray-50 text-gray-700 ring-gray-600/20';
-                            if (item.status === 'completed' || item.status === 'paid') colorClass = 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
-                            else if (item.status === 'pending') colorClass = 'bg-amber-50 text-amber-700 ring-amber-600/20';
-                            else if (item.status === 'cancelled') colorClass = 'bg-rose-50 text-rose-700 ring-rose-600/20';
-
-                            const row = `
-                                <tr class="transition-colors hover:bg-bq-background/50">
-                                    <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">${item.program_name}</td>
-                                    <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.customer_name}</td>
-                                    <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.date}</td>
-                                    <td class="whitespace-nowrap px-5 py-3.5 text-center">
-                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset ${colorClass}">
-                                            ${statusText}
-                                        </span>
-                                    </td>
-                                </tr>
-                            `;
-                            tbody.innerHTML += row;
-                        });
-                    }
-                }
-
-                if (mobileList) {
-                    mobileList.innerHTML = '';
-                    if (data.recent_activities.length === 0) {
-                        mobileList.innerHTML = '<div class="py-8 text-center text-xs text-bq-text-muted">No booking records found yet.</div>';
-                    } else {
-                        data.recent_activities.forEach(item => {
-                            const statusText = item.status === 'paid' ? 'confirmed' : item.status;
-                            let colorClass = 'bg-gray-50 text-gray-700 ring-gray-600/20';
-                            if (item.status === 'completed' || item.status === 'paid') colorClass = 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
-                            else if (item.status === 'pending') colorClass = 'bg-amber-50 text-amber-700 ring-amber-600/20';
-                            else if (item.status === 'cancelled') colorClass = 'bg-rose-50 text-rose-700 ring-rose-600/20';
-
-                            const card = `
-                                <div class="p-3.5 transition hover:bg-bq-background/40">
-                                    <div class="flex items-start justify-between gap-2">
-                                        <div class="min-w-0 flex-1">
-                                            <p class="truncate text-xs font-bold text-bq-text">${item.program_name}</p>
-                                            <p class="text-[11px] text-bq-text-muted mt-0.5 truncate">${item.customer_name}</p>
-                                        </div>
-                                        <span class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ring-inset ${colorClass}">
-                                            ${statusText}
-                                        </span>
-                                    </div>
-                                    <div class="mt-2 flex items-center justify-between text-[11px] text-bq-text-subtle">
-                                        <span>${item.date}</span>
-                                    </div>
-                                </div>
-                            `;
-                            mobileList.innerHTML += card;
-                        });
-                    }
-                }
+                renderActivities(tbody, 'activity-row-template', 'activity-row-empty-template', data.recent_activities);
+                renderActivities(mobileList, 'activity-card-template', 'activity-card-empty-template', data.recent_activities);
             }
+        }
+
+        // Server data only ever reaches the DOM through textContent (BQ-089).
+        const STATUS_COLORS = {
+            completed: ['bg-emerald-50', 'text-emerald-700', 'ring-emerald-600/20'],
+            paid: ['bg-emerald-50', 'text-emerald-700', 'ring-emerald-600/20'],
+            pending: ['bg-amber-50', 'text-amber-700', 'ring-amber-600/20'],
+            cancelled: ['bg-rose-50', 'text-rose-700', 'ring-rose-600/20'],
+        };
+        const DEFAULT_STATUS_COLOR = ['bg-gray-50', 'text-gray-700', 'ring-gray-600/20'];
+
+        function renderActivities(container, templateId, emptyTemplateId, items) {
+            const template = document.getElementById(templateId);
+            const emptyTemplate = document.getElementById(emptyTemplateId);
+            if (!container || !template || !emptyTemplate) return;
+
+            if (items.length === 0) {
+                container.replaceChildren(emptyTemplate.content.cloneNode(true));
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            items.forEach(item => {
+                const node = template.content.cloneNode(true);
+                node.querySelectorAll('[data-field]').forEach(field => {
+                    const name = field.dataset.field;
+                    if (name === 'status') {
+                        field.textContent = item.status === 'paid' ? 'confirmed' : String(item.status ?? '');
+                        field.classList.add(...(STATUS_COLORS[item.status] || DEFAULT_STATUS_COLOR));
+                    } else {
+                        field.textContent = String(item[name] ?? '');
+                    }
+                });
+                fragment.appendChild(node);
+            });
+            container.replaceChildren(fragment);
         }
 
         function updateChangeColor(el, val) {

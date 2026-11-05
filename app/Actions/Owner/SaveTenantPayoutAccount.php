@@ -32,26 +32,54 @@ class SaveTenantPayoutAccount
             $maxAccounts = (int) config('payouts.max_accounts', 3);
             $bankNama = (string) (config("banks.{$data->bankKode}") ?? $data->bankKode);
 
+            // The unique index covers soft-deleted rows too (BQ-127), so match them explicitly.
+            $sameNumber = TenantPayoutAccount::withTrashed()
+                ->where('idtenant', $lockedTenant->id)
+                ->where('bank_kode', $data->bankKode)
+                ->where('nomor_rekening', $data->nomorRekening)
+                ->when($existing !== null, fn ($query) => $query->whereKeyNot($existing->id))
+                ->first();
+
+            if ($sameNumber !== null && ! $sameNumber->trashed()) {
+                throw ValidationException::withMessages([
+                    'nomor_rekening' => 'Rekening ini sudah tersimpan.',
+                ]);
+            }
+
             if ($existing === null) {
                 $count = TenantPayoutAccount::where('idtenant', $lockedTenant->id)->count();
                 if ($count >= $maxAccounts) {
                     throw ValidationException::withMessages([
-                        'rekening' => 'Maksimal 3 rekening tersimpan.',
+                        'rekening' => 'Maksimal '.$maxAccounts.' rekening tersimpan.',
                     ]);
                 }
 
-                $isFirst = $count === 0;
-                $account = TenantPayoutAccount::create([
+                $attributes = [
                     'idtenant' => $lockedTenant->id,
                     'bank_kode' => $data->bankKode,
                     'bank_nama' => $bankNama,
                     'nomor_rekening' => $data->nomorRekening,
                     'nama_pemilik_rekening' => $data->namaPemilik,
-                    'is_default' => $isFirst,
+                    'is_default' => $count === 0,
                     'changed_at' => now(),
-                ]);
+                ];
+
+                if ($sameNumber !== null) {
+                    // Re-adding a deleted account of this tenant restores that row.
+                    $sameNumber->restore();
+                    $sameNumber->fill($attributes)->save();
+                    $account = $sameNumber;
+                } else {
+                    $account = TenantPayoutAccount::create($attributes);
+                }
                 $actionType = 'ditambahkan';
             } else {
+                if ($sameNumber !== null) {
+                    throw ValidationException::withMessages([
+                        'nomor_rekening' => 'Rekening ini pernah dihapus. Tambahkan sebagai rekening baru untuk memulihkannya.',
+                    ]);
+                }
+
                 $account = TenantPayoutAccount::where('idtenant', $lockedTenant->id)->findOrFail($existing->id);
                 $hasChanged = $account->bank_kode !== $data->bankKode
                     || $account->nomor_rekening !== $data->nomorRekening

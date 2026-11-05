@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Dashboard\GetOwnerAnalyticsTrends;
 use App\Http\Controllers\Controller;
-
 use App\Models\Booking;
-use App\Models\Payment;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Support\CsvCell;
+use App\Support\TenantContext;
+use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OwnerAnalyticsController extends Controller
 {
-    use \App\Traits\ResolvesOwnerTenant;
+    use ResolvesOwnerTenant;
 
     /**
      * Halaman analytics.
@@ -23,8 +24,8 @@ class OwnerAnalyticsController extends Controller
     {
         $tenant = $this->resolveTenant();
         $user = auth()->user();
-        if (!$tenant) {
-            $tenant = new Tenant();
+        if (! $tenant) {
+            $tenant = new Tenant;
             if ($user) {
                 $tenant->setRelation('user', $user);
             }
@@ -52,7 +53,7 @@ class OwnerAnalyticsController extends Controller
                 'distribusistatus' => ['completed' => 0, 'paid' => 0, 'pending' => 0, 'cancelled' => 0],
                 'revenueperLayanan' => collect(),
                 'bookingperhari' => array_fill(0, 30, 0),
-                'labelhari' => array_map(fn($i) => Carbon::now()->subDays(29 - $i)->format('d M'), range(0, 29)),
+                'labelhari' => array_map(fn ($i) => Carbon::now()->subDays(29 - $i)->format('d M'), range(0, 29)),
                 'ratarataharian' => 0,
                 'tingkatkonversi' => 0,
             ]);
@@ -60,24 +61,14 @@ class OwnerAnalyticsController extends Controller
 
         $idtenant = $tenant->id;
 
-        // ── Revenue 12 bulan terakhir ──
-        $revenueperbulan = [];
-        $bookingperbulan = [];
-        $labelbulanpanjang = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $awal = Carbon::now()->subMonths($i)->startOfMonth();
-            $akhir = Carbon::now()->subMonths($i)->endOfMonth();
-            $labelbulanpanjang[] = $awal->format('M Y');
-
-            $revenueperbulan[] = round(Payment::where('idtenant', $idtenant)
-                ->where('tipe', 'booking')->where('status', 'sukses')
-                ->whereBetween('created_at', [$awal, $akhir])
-                ->sum('jumlah'));
-
-            $bookingperbulan[] = Booking::where('idtenant', $idtenant)
-                ->whereBetween('tanggalbooking', [$awal->format('Y-m-d'), $akhir->format('Y-m-d')])
-                ->count();
-        }
+        // ── Revenue 12 bulan terakhir & booking 30 hari terakhir (grouped queries, BQ-111) ──
+        [
+            'labelbulanpanjang' => $labelbulanpanjang,
+            'revenueperbulan' => $revenueperbulan,
+            'bookingperbulan' => $bookingperbulan,
+            'labelhari' => $labelhari,
+            'bookingperhari' => $bookingperhari,
+        ] = app(GetOwnerAnalyticsTrends::class)->execute((int) $idtenant);
 
         // ── Revenue summary ──
         $revenuebulanini = end($revenueperbulan);
@@ -127,15 +118,6 @@ class OwnerAnalyticsController extends Controller
             });
 
         // ── Rata-rata per hari (30 hari terakhir) ──
-        $bookingperhari = [];
-        $labelhari = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $tanggalnya = Carbon::now()->subDays($i);
-            $labelhari[] = $tanggalnya->format('d M');
-            $bookingperhari[] = Booking::where('idtenant', $idtenant)
-                ->whereDate('tanggalbooking', $tanggalnya->format('Y-m-d'))
-                ->count();
-        }
         $ratarataharian = count($bookingperhari) > 0 ? round(array_sum($bookingperhari) / count($bookingperhari), 1) : 0;
 
         // ── Conversion rate ──
@@ -166,49 +148,83 @@ class OwnerAnalyticsController extends Controller
     public function export(): StreamedResponse
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
-        $filename = 'analytics-' . $tenant->slug . '-' . now()->format('Ymd-His') . '.csv';
+        $filename = 'analytics-'.$tenant->slug.'-'.now()->format('Ymd-His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
         return response()->streamDownload(function () use ($tenant) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, [
-                'Tanggal',
-                'Nama Program',
-                'Nama Pelanggan',
-                'Email',
-                'Nomor HP',
-                'Status',
-                'Harga',
-            ]);
+            // The stream runs after TenantMiddleware cleared the context, so the tenant scope
+            // would match nothing (BQ-111); restore the already-resolved tenant for its queries.
+            $tenantContext = app(TenantContext::class);
+            $tenantContext->setTenantId((int) $tenant->id);
 
-            Booking::where('idtenant', $tenant->id)
-                ->with(['layanan', 'payment'])
-                ->orderByDesc('tanggalbooking')
-                ->chunk(500, function ($bookings) use ($handle) {
-                    foreach ($bookings as $booking) {
-                        $harga = $booking->payment?->jumlah ?? $booking->layanan->harga ?? 0;
-                        fputcsv($handle, [
-                            optional($booking->tanggalbooking)->format('Y-m-d'),
-                            $booking->layanan->namalayanan ?? '-',
-                            $booking->namapelanggan,
-                            $booking->email,
-                            $booking->nomorhp,
-                            $booking->status,
-                            $harga,
-                        ]);
-                    }
-                });
-
-            fclose($handle);
+            try {
+                $this->writeExportRows($tenant);
+            } finally {
+                $tenantContext->clear();
+            }
         }, $filename, $headers);
     }
-}
 
+    private function writeExportRows(Tenant $tenant): void
+    {
+        $handle = fopen('php://output', 'w');
+        fputcsv($handle, [
+            'Tanggal',
+            'Nama Program',
+            'Nama Pelanggan',
+            'Email',
+            'Nomor HP',
+            'Status',
+            'Harga',
+            'Keterangan Harga',
+        ]);
+
+        // BQ-111: a transaction's amount is written once, on its first row; there is no
+        // historical per-session amount to split it into (BQ-121).
+        $writtenPayments = [];
+
+        Booking::where('idtenant', $tenant->id)
+            ->with(['layanan', 'payment' => fn ($query) => $query->withCount('bookings')])
+            ->orderByDesc('tanggalbooking')
+            ->orderBy('jam')
+            ->orderBy('id')
+            ->chunk(500, function ($bookings) use ($handle, &$writtenPayments) {
+                foreach ($bookings as $booking) {
+                    $harga = $booking->payment?->jumlah ?? $booking->layanan->harga ?? 0;
+                    $keterangan = '';
+
+                    $sessions = (int) ($booking->payment->bookings_count ?? 0);
+                    if ($booking->payment !== null && $sessions > 1) {
+                        if (isset($writtenPayments[(int) $booking->idpayment])) {
+                            $harga = '';
+                            $keterangan = 'Termasuk dalam total transaksi';
+                        } else {
+                            $writtenPayments[(int) $booking->idpayment] = true;
+                            $keterangan = 'Total transaksi '.$sessions.' sesi';
+                        }
+                    }
+
+                    fputcsv($handle, CsvCell::row([
+                        optional($booking->tanggalbooking)->format('Y-m-d'),
+                        $booking->layanan->namalayanan ?? '-',
+                        $booking->namapelanggan,
+                        $booking->email,
+                        $booking->nomorhp,
+                        $booking->status,
+                        $harga,
+                        $keterangan,
+                    ]));
+                }
+            });
+
+        fclose($handle);
+    }
+}

@@ -29,6 +29,9 @@
                                 'tanggalbooking' => $booking->tanggalbooking?->toDateString(),
                                 'layanan' => $booking->layanan ? ['namalayanan' => $booking->layanan->namalayanan] : null,
                                 'id' => $booking->id,
+                    'onlineWaiting' => $onlinePayment[$booking->id]['waiting'] ?? null,
+                    'onlineHoldUntil' => $onlinePayment[$booking->id]['holdUntil'] ?? null,
+                    'providerLinked' => $onlinePayment[$booking->id]['linked'] ?? false,
                     'history' => $booking->logs->map(fn ($log) => [
                         'id' => $log->id,
                         'label' => $log->event_label,
@@ -145,7 +148,7 @@
                                     };
                                 @endphp
                                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ring-inset {{ $warnastatus }}">
-                                    {{ $statusLabel }}
+                                    {{ $onlinePayment[$booking->id]['waiting'] ?? $statusLabel }}
                                 </span>
                             </td>
 
@@ -164,7 +167,7 @@
                                     </button>
 
                                     {{-- FS-010: Dropdown aksi ubah status booking --}}
-                                    @if (in_array($booking->status, ['paid', 'pending']))
+                                    @if (in_array($booking->status, ['paid', 'pending']) && empty($onlinePayment[$booking->id]['waiting']))
                                         <div class="relative inline-block text-left" x-data="{ open: false }">
                                             <button @click="open = !open"
                                                 class="inline-flex items-center gap-1 rounded-lg border border-bq-border bg-bq-surface px-2.5 py-1.5 text-xs font-medium text-bq-text-muted transition hover:border-bq-border-strong hover:text-bq-text"
@@ -177,7 +180,7 @@
                                             <div x-show="open" @click.outside="open = false"
                                                 class="absolute right-0 z-20 mt-1 w-44 origin-top-right rounded-xl border border-bq-border bg-white shadow-xl overflow-hidden"
                                                 style="display: none;">
-                                                @if ($booking->status === 'pending')
+                                                @if ($booking->status === 'pending' && ! ($onlinePayment[$booking->id]['linked'] ?? false))
                                                     <form method="POST" action="{{ route('owner.bookings.status', $booking->id) }}">
                                                         @csrf
                                                         @method('PATCH')
@@ -214,10 +217,14 @@
                                                     @csrf
                                                     @method('PATCH')
                                                     <input type="hidden" name="status" value="cancelled">
+                                                    <label class="block text-sm">
+                                                        Alasan pembatalan
+                                                        <textarea name="reason" required maxlength="500" class="block w-full rounded border p-2"></textarea>
+                                                    </label>
                                                     <button type="button"
                                                         class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium text-rose-700 hover:bg-rose-50 border-t border-slate-100"
                                                         id="cancel-booking-{{ $booking->id }}"
-                                                        @click="$dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan booking ini?', formId: 'form-cancel-booking-{{ $booking->id }}' })">
+                                                        @click="if (!$el.form.reportValidity()) return; $dispatch('open-confirm', { title: 'Batalkan Booking?', message: 'Apakah Anda yakin ingin membatalkan booking ini?', formId: 'form-cancel-booking-{{ $booking->id }}' })">
                                                         ✕ Batalkan Booking
                                                     </button>
                                                 </form>

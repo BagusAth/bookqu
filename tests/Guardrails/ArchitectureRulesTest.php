@@ -86,6 +86,32 @@ class ArchitectureRulesTest extends TestCase
     }
 
     /**
+     * BQ-089 (NFR-SEC-004): markup assigned to innerHTML must be a fixed literal. Data goes
+     * through textContent or cloned <template> nodes, so `innerHTML +=`, template literals
+     * with `${…}` and concatenated or variable right-hand sides fail.
+     */
+    public function test_views_never_build_inner_html_from_data(): void
+    {
+        $this->assertRule('inner-html-data', $this->countCallback(['resources/views'], function (string $source): int {
+            preg_match_all('/\.innerHTML\s*(\+?=)(?!=)\s*/', $source, $assignments, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+            $unsafe = 0;
+
+            foreach ($assignments as $assignment) {
+                $rest = substr($source, $assignment[0][1] + strlen($assignment[0][0]));
+
+                $isFixedLiteral = $assignment[1][0] === '='
+                    && preg_match('/^(?:`[^`$]*`|\'[^\'\n]*\'|"[^"\n]*")\s*(?:;|\n|$)/', $rest) === 1;
+
+                if (! $isFixedLiteral) {
+                    $unsafe++;
+                }
+            }
+
+            return $unsafe;
+        }));
+    }
+
+    /**
      * @param  array<string, int>  $violations
      */
     private function assertRule(string $rule, array $violations): void

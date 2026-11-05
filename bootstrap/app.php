@@ -83,7 +83,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['credential']);
+        $exceptions->dontFlash(['credential', 'bank_nama', 'nomor_rekening', 'nama_pemilik_rekening']);
 
         // An expired CSRF token (stale tab, Back button, idle session) never shows the bare
         // "Page Expired" page on the storefront: the customer returns to the form with a hint.

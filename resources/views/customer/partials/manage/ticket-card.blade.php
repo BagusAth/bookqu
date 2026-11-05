@@ -58,7 +58,7 @@
                                 <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 3"/>
                                 </svg>
-                                {{ $booking->layanan?->durasi ?? 60 }} {{ $booking->layanan?->satuan_durasi ?? 'menit' }}
+                                {{ $timeRange->durationMinutes() !== null ? $timeRange->durationMinutes().' menit' : '-' }}
                             </span>
                             @if($booking->layanan?->kapasitas)
                                 <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
@@ -82,7 +82,7 @@
                                     {{ \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') }}
                                 </p>
                                 <p class="text-sm font-semibold text-indigo-600">
-                                    {{ \Carbon\Carbon::parse($booking->jam)->format('H:i') }} - {{ $endDateTime->format('H:i') }} WIB
+                                    {{ $timeRange->label(' – ') }} WIB
                                 </p>
                             </div>
                         </div>

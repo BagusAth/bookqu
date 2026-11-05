@@ -79,8 +79,15 @@ class ExpireBookingPayments extends Command
                 $processed++;
 
             } catch (\Throwable $e) {
-                Log::error("ExpireBookingPayments: Failed to expire Payment #{$payment->id}: ".$e->getMessage());
-                $this->error("  Failed to expire Payment #{$payment->id}: ".$e->getMessage());
+                // BQ-077: the exception message can carry SQL, credentials or provider payloads; log only its type and location.
+                Log::error('ExpireBookingPayments: Failed to expire payment', [
+                    'payment_id' => $payment->id,
+                    'tenant_id' => $payment->idtenant,
+                    'exception_type' => $e::class,
+                    'exception_file' => $e->getFile(),
+                    'exception_line' => $e->getLine(),
+                ]);
+                $this->error("  Failed to expire Payment #{$payment->id} (".class_basename($e).'). See the application log.');
             }
         }
 

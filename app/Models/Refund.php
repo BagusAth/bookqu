@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -9,6 +10,7 @@ class Refund extends Model
 {
     protected $fillable = [
         'cause',
+        'refund_request_id',
         'booking_id',
         'payment_id',
         'jumlah',
@@ -32,6 +34,13 @@ class Refund extends Model
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class, 'payment_id');
+    }
+
+    /** @return BelongsTo<RefundRequest, $this> */
+    public function refundRequest(): BelongsTo
+    {
+        // scope-bypass: admin reads the request of this refund by its stored foreign key.
+        return $this->belongsTo(RefundRequest::class)->withoutGlobalScope(TenantScope::class);
     }
 
     public function getJumlahFormattedAttribute(): string

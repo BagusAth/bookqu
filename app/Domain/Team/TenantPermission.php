@@ -6,6 +6,7 @@ use App\Notifications\BookingStatusChangedOwnerNotification;
 use App\Notifications\NewBookingOwnerNotification;
 use App\Notifications\OwnerPayoutStatusChangedNotification;
 use App\Notifications\PaymentRefundOwedOwnerNotification;
+use App\Notifications\RefundTeamNotification;
 use App\Notifications\SubscriptionReminderNotification;
 use App\Notifications\TrialExpiringNotification;
 
@@ -45,7 +46,7 @@ final class TenantPermission
         if ($route === 'settings.account.delete') {
             return 'business.delete';
         }
-        if ($route === 'settings.account') {
+        if (in_array($route, ['settings.account', 'settings.notification-preferences'], true)) {
             return 'account.manage';
         }
         if ($route === 'settings' && $method === 'GET') {
@@ -81,6 +82,7 @@ final class TenantPermission
     {
         return match ($event) {
             'new_booking','cancelled','rescheduled','completed','status_updated','status_change' => 'bookings.view',
+            'refund_request', 'refund_reminder', 'refund_processed', 'refund_failed' => 'refunds.decide',
             'payout_requested','payout_approved','payout_rejected','refund_owed' => 'payouts.manage',
             'trial_expiring','subscription_expiring','subscription' => 'subscription.manage',
             default => null,
@@ -91,6 +93,7 @@ final class TenantPermission
     public static function notificationMap(): array
     {
         return [
+            RefundTeamNotification::class => 'refunds.decide',
             NewBookingOwnerNotification::class => 'bookings.view',
             BookingStatusChangedOwnerNotification::class => 'bookings.view',
             OwnerPayoutStatusChangedNotification::class => 'payouts.manage',

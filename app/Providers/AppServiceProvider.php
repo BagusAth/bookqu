@@ -7,6 +7,7 @@ use App\Actions\Subscription\GetPublicPlanCards;
 use App\Actions\Team\GetVisibleNotifications;
 use App\Actions\Team\TeamNotificationAccess;
 use App\Contracts\Payments\PaymentGatewayInterface;
+use App\Domain\Notifications\NotificationPreferences;
 use App\Domain\Subscription\EntitlementRules;
 use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Models\AdditionalItem;
@@ -75,7 +76,14 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        Event::listen(NotificationSending::class, fn ($event) => app(TeamNotificationAccess::class)->allows($event->notifiable, $event->notification));
+        Event::listen(NotificationSending::class, function (NotificationSending $event): bool {
+            if (! app(TeamNotificationAccess::class)->allows($event->notifiable, $event->notification)) {
+                return false;
+            }
+
+            return $event->channel !== 'mail' || ! $event->notifiable instanceof User
+                || NotificationPreferences::allowsMail($event->notifiable, $event->notification);
+        });
         Gate::define('tenant-ability', fn (User $user, ?string $ability) => app(TenantResourcePolicy::class)->ability($user, $ability));
         foreach ([Booking::class, Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class, Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class, Staff::class, \App\Models\Resource::class, Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class, TenantMember::class] as $resource) {
             Gate::policy($resource, 'App\\Policies\\'.class_basename($resource).'Policy');

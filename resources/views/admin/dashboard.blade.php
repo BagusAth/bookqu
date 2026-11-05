@@ -8,6 +8,7 @@
     @vite('resources/css/app.css')
 </head>
 <body class="bg-slate-100 text-slate-900">
+    <a href="{{ route('admin.refunds') }}" class="inline-block px-6 py-3 text-indigo-700 underline">Kelola refund</a>
     <div class="min-h-screen">
         {{-- ── Topbar ── --}}
         <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">

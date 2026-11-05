@@ -3,6 +3,7 @@
 namespace App\Actions\Booking;
 
 use App\Actions\Schedule\GetAvailableSchedules;
+use App\Domain\Booking\BookingRules;
 use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Subscription\SubscriptionUsage;
 use App\Models\Service;
@@ -22,8 +23,9 @@ final class ValidateBookingDate
         Validator::make(['tanggal' => $date], ['tanggal' => ['required', 'date_format:Y-m-d']])->validate();
         $selected = Carbon::parse($date, 'Asia/Jakarta');
         $min = Carbon::today('Asia/Jakarta');
-        if ($selected->lt($min) || $selected->gt($min->copy()->addDays(30))) {
-            throw ValidationException::withMessages(['tanggal' => 'Tanggal yang dipilih di luar rentang pemesanan (hari ini sampai 30 hari ke depan).']);
+        $maxDays = BookingRules::maximumAdvanceDays($tenant);
+        if ($selected->lt($min) || $selected->gt($min->copy()->addDays($maxDays))) {
+            throw ValidationException::withMessages(['tanggal' => "Tanggal yang dipilih di luar rentang pemesanan (hari ini sampai {$maxDays} hari ke depan)."]);
         }
         if ($simulate) {
             return $selected->toDateString();

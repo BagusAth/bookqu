@@ -90,10 +90,6 @@
             @if ($displayBookings->isNotEmpty())
                 <div class="space-y-2.5">
                     @foreach ($displayBookings as $bItem)
-                        @php
-                            $slotStart = \Carbon\Carbon::parse(($bItem->tanggalbooking ? \Carbon\Carbon::parse($bItem->tanggalbooking)->format('Y-m-d') : now()->format('Y-m-d')) . ' ' . $bItem->jam);
-                            $slotEnd = (clone $slotStart)->addMinutes($durasiMenit);
-                        @endphp
                         <div class="rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
                             <div class="flex items-center gap-2.5">
                                 <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
@@ -116,7 +112,7 @@
                                     <span class="text-[#64748B] text-xs block">Tanggal &amp; Waktu</span>
                                     <strong class="text-[#0F172A] font-semibold">
                                         {{ \Carbon\Carbon::parse($bItem->tanggalbooking)->translatedFormat('d M Y') }},
-                                        <span class="font-mono text-[#4F46E5]">{{ $slotStart->format('H:i') }} – {{ $slotEnd->format('H:i') }}</span> WIB
+                                        <span class="font-mono text-[#4F46E5]">{{ isset($sessionRanges[$bItem->id]) ? $sessionRanges[$bItem->id]->label() : substr((string) $bItem->jam, 0, 5) }}</span> WIB
                                     </strong>
                                 </div>
                             </div>

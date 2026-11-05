@@ -2,7 +2,7 @@
 id: BQ-029
 title: Decompose Customer/BookingController
 type: refactor
-status: approved
+status: in-progress
 priority: P2
 phase: 6
 domain: booking
@@ -27,4 +27,5 @@ Characterization tests → extract a booking-flow session object and step action
 
 ## Evidence
 
-_Fill in when done._
+Storefront routes now delegate to catalog, schedule, checkout and payment controllers. CheckoutDraftSession keeps the historical session wire format behind a typed draft. Slot validation uses the shared contiguity rule; existing checkout placement, fingerprint, URLs and feature tests remain intact. The payment writer allowlist shrank by two and five old PHPStan baseline entries were removed. SQLite: 712 passed. Pint and PHPStan pass.
+MySQL group: 15 tests passed (59 assertions).

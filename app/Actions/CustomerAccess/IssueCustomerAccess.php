@@ -2,6 +2,7 @@
 
 namespace App\Actions\CustomerAccess;
 
+use App\Actions\Booking\GetBookingTimeRanges;
 use App\Actions\Schedule\ClaimSlots;
 use App\Domain\CustomerAccess\AccessProfile;
 use App\Domain\CustomerAccess\AccessRules;
@@ -9,7 +10,6 @@ use App\Domain\CustomerAccess\IssuedGrant;
 use App\Models\Booking;
 use App\Models\CustomerAccessGrant;
 use App\Models\Payment;
-use App\Models\Service;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -36,9 +36,8 @@ final class IssueCustomerAccess
             abort_if($bookings->isEmpty() || $bookings->contains(fn (Booking $booking) => (int) $booking->idtenant !== $tenantId), 404);
             abort_if($profile === AccessProfile::Checkout && ! $subject instanceof Payment, 404);
             $issued = CarbonImmutable::now();
-            $latestEnd = $bookings->map(fn (Booking $booking) => CarbonImmutable::parse(
-                CarbonImmutable::parse($booking->getRawOriginal('tanggalbooking'))->toDateString().' '.$booking->jam, 'Asia/Jakarta'
-            )->addMinutes((int) ($booking->layanan instanceof Service ? $booking->layanan->durasi : 60)))->max();
+            $ranges = app(GetBookingTimeRanges::class)->execute($bookings);
+            $latestEnd = collect($ranges['sessionRanges'])->map(fn ($range) => $range->end ?? $range->start)->max();
             $deadline = $subject instanceof Payment && $subject->expired_at !== null ? CarbonImmutable::parse($subject->getRawOriginal('expired_at')) : null;
             // Settled free payments have no pending deadline; capture issuance for their checkout invoice.
             if ($subject instanceof Payment && $subject->status !== 'pending' && $deadline === null) {

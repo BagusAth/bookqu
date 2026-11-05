@@ -44,6 +44,7 @@ class Service extends Model
         return $this->belongsTo(Tenant::class, 'idtenant');
     }
 
+    /** @return BelongsTo<Category, $this> */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'idcategory');

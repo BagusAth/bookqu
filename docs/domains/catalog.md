@@ -28,6 +28,8 @@ Owns what customers can book: services and their categories.
 
 `tests/Feature/Actions/ServiceActionsTest.php`, `Owner/ProgramManagementTest.php`, `Owner/ServicesDomainEndToEndTest.php`, `Owner/OwnerModulesCrudTest.php`.
 
+BQ-114: changing a service's `durasi` affects only slots created afterwards; existing slots and bookings keep their stored range (`Domain/Booking/BookingTimeRange`, evidence `Customer/BookingTimeRangeAfterDurationChangeTest`).
+
 ## Status
 
 Functional: Implemented · Verification: Verified · Architecture: Target

@@ -18,6 +18,7 @@ class OperationsReadinessTest extends TestCase
         $events = app(Schedule::class)->events();
         Artisan::shouldReceive('call')->once()->with('app:check-expired-subscriptions')->andReturn(0);
         Artisan::shouldReceive('call')->once()->with('bookings:expire-payments')->andReturn(0);
+        Artisan::shouldReceive('call')->once()->with('refunds:remind-open')->andReturn(0);
 
         foreach ($events as $event) {
             $event->run($this->app);
