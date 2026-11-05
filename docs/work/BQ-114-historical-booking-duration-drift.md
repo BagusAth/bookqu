@@ -10,7 +10,7 @@ requirements: [FR-SERVICE-003, FR-SERVICE-005, FR-BOOKING-008, FR-MANAGE-003, FR
 invariants: [INV-SCH-01, INV-BOOK-04, INV-BOOK-06]
 lane: heavy
 approval: tech-lead
-decision: Tech Lead 2026-11-04 (see "Decision")
+decision: Tech Lead 2026-11-04 (see "Decision"), D-023
 launch-blocker: true
 depends-on: []
 ---
