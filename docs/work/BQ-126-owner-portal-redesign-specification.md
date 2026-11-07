@@ -80,7 +80,7 @@ Agen berhenti di setiap gerbang. Fase berikutnya hanya boleh dimulai kalau tidak
 2. **Simpan sumber rancangan di repo** sebagai lampiran work item ini (lihat "Pertanyaan terbuka" 1):
    - `docs/work/BQ-126/rancangan-ulang-portal-owner.md`: salinan Rancangan, apa adanya, ditambah satu catatan di atas bahwa D-001 mengalahkan §10 poin 2;
    - `docs/work/BQ-126/prototype-portal-owner.html`: salinan Prototype.
-3. **Buat item lanjutan dari audit PR #31** (`docs/work/BQ-127-payout-account-follow-ups.md`, light lane):
+3. **Buat item lanjutan dari audit PR #31** (`docs/work/done/BQ-127-payout-account-follow-ups.md`, light lane):
    - soft delete tetap terkena indeks unik, sehingga rekening yang pernah dihapus tidak bisa ditambahkan lagi dan muncul galat 500;
    - `throttle:3,10` berlaku untuk "Jadikan utama";
    - batas 3 rekening dan Rp 10.000 ditulis langsung di kode, tidak membaca `config/payouts.php`;

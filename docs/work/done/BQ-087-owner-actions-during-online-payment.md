@@ -2,7 +2,7 @@
 id: BQ-087
 title: Lock owner booking actions while an online payment is open, and never ignore a double payment
 type: bug-fix
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: payment
@@ -78,7 +78,7 @@ Only a customer cancellation records a refund (`CancelBooking.php:114-115`). An 
 
 `docs/domains/payment.md`, `docs/domains/booking.md` (owner actions), `docs/requirements.md` FR-BOOKING-009/014 wording (Tech Lead), BQ-049.
 
-## Evidence (fill when done)
+## Evidence
 
 The status route and team approval share the tenant-locked cancellation guard. Verified provider outcomes on legacy cash settlements produce one double-payment refund and alert. SQLite 712 tests, MySQL group 14 tests plus the new concurrent webhook/owner test, Pint and PHPStan passed. BQ-049 closed in the same commit.
 
@@ -87,3 +87,5 @@ Disetujui Tech Lead 2026-11-04 untuk sesi agen.
 Unblocked 2026-11-04: ADR-0023 amends ADR-0004 decision 6, so Plan 2 is the accepted contract. Case 3 (owner cancels a paid booking) stays with BQ-138.
 
 Merge readiness PR #41/#42: all four owner cancellation forms now require reason and preserve it through validated confirmation submission. Evidence: MergeReadinessTest::test_all_four_owner_cancellation_forms_preserve_a_required_reason_through_confirmation.
+
+Closed 2026-11-07. Merged into `integration` in PR #41 (merge commit `0076697`, 2026-11-07); CI green on all four jobs; full suite 777 tests, PHPStan and `composer audit` clean. Fix commit `b1d550a`. Tests: BookingManagementTest, PaymentLifecycleTest, MergeReadinessTest.

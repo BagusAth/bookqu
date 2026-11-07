@@ -2,7 +2,7 @@
 id: BQ-112
 title: Atomic owner registration transaction and asynchronous CSRF expiration handling
 type: bug-fix
-status: in-progress
+status: done
 priority: P2
 phase: 4
 domain: auth
@@ -57,6 +57,6 @@ None. Tenant association (`FR-TENANT-001`) and data integrity are strengthened.
 
 `docs/domains/auth.md` (Known gaps).
 
-## Evidence (fill when done)
+## Evidence
 
-_Fill in when done._
+Closed 2026-11-07. Merged into `integration` in PR #41 (merge commit `0076697`, 2026-11-07); CI green on all four jobs; full suite 777 tests, PHPStan and `composer audit` clean. Fix commit `72ad8e9`. Test: AtomicOwnerRegistrationTest.

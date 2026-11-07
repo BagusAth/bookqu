@@ -2,7 +2,7 @@
 id: BQ-089
 title: Dashboard live refresh renders customer names as HTML
 type: bug-fix
-status: in-progress
+status: done
 priority: P0
 phase: 4
 domain: insights
@@ -46,6 +46,6 @@ None of the domain invariants; the change is output escaping only.
 
 `docs/domains/insights.md` known gaps (remove the row when done).
 
-## Evidence (fill when done)
+## Evidence
 
-_Fill in when done._
+Closed 2026-11-07. Merged into `integration` in PR #41 (merge commit `0076697`, 2026-11-07); CI green on all four jobs; full suite 777 tests, PHPStan and `composer audit` clean. Fix commit `6f56df2`. Tests: OwnerDashboardPollingTest; ArchitectureRulesTest guards `innerHTML` to fixed literals.

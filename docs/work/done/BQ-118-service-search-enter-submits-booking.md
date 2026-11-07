@@ -2,7 +2,7 @@
 id: BQ-118
 title: Keep Enter in storefront service search from submitting an empty booking form
 type: bug-fix
-status: in-progress
+status: done
 priority: P2
 phase: 4
 domain: booking
@@ -48,6 +48,8 @@ Tidak ada perubahan domain atau otorisasi. Pilihan booking harus tetap berasal d
 
 Item ini; tidak ada perubahan domain/requirement.
 
-## Evidence (fill when done)
+## Evidence
 
 **Bukti audit:** Edge menjalankan Alpine pada HTML route storefront aktual dengan fixture sintetis; menekan Enter pada pencarian menangkap POST `booking/select-program` dan `service_id` kosong. Request ditahan oleh harness agar tidak membuat booking atau menghubungi provider. Belum ada perbaikan/PR.
+
+Closed 2026-11-07. Merged into `integration` in PR #41 (merge commit `0076697`, 2026-11-07); CI green on all four jobs; full suite 777 tests, PHPStan and `composer audit` clean. Fix commit `6b6e242` (`public/js/booking-program.js`, `program-selection.blade.php`). No automated test: the fix is client-side; the audit reproduction above is the only browser evidence.

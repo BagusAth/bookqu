@@ -2,7 +2,7 @@
 id: BQ-098
 title: Changing the owner's email or password does not ask for the current password
 type: bug-fix
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: auth
@@ -55,6 +55,6 @@ Login and verification flows (`docs/domains/auth.md`); owner access to tenant da
 
 `docs/domains/auth.md`.
 
-## Evidence (fill when done)
+## Evidence
 
-_Fill in when done._
+Closed 2026-11-07. Merged into `integration` in PR #41 (merge commit `0076697`, 2026-11-07); CI green on all four jobs; full suite 777 tests, PHPStan and `composer audit` clean. Fix commit `6ff8112`. Tests: AccountChangeRequiresCurrentPasswordTest, SettingsTest.

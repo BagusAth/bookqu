@@ -2,7 +2,7 @@
 id: BQ-127
 title: Fix payout account follow-ups found in the PR #31 audit
 type: bug-fix
-status: in-progress
+status: done
 priority: P2
 phase: 4
 domain: balance-payout
@@ -55,4 +55,6 @@ Add or extend tests in `tests/Feature/Payout/TenantPayoutAccountTest.php` and `O
 
 `docs/domains/balance-payout.md`, if the behaviour description changes.
 
-## Evidence (fill when done)
+## Evidence
+
+Closed 2026-11-07. Merged into `integration` in PR #41 (merge commit `0076697`, 2026-11-07); CI green on all four jobs; full suite 777 tests, PHPStan and `composer audit` clean. Fix commit `b5f7239`. Tests: OwnerPayoutFlowTest, TenantPayoutAccountTest.

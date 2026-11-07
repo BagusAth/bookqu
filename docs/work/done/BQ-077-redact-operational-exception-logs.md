@@ -2,7 +2,7 @@
 id: BQ-077
 title: Redact raw exception diagnostics outside booking checkout
 type: bug-fix
-status: in-progress
+status: done
 priority: P2
 phase: 4
 domain: notifications
@@ -36,3 +36,5 @@ Notifications/payment Evidence only where behavior changes.
 ## Evidence
 
 Recorded 2026-11-01 during BQ-005; implementation deliberately deferred beyond the user's three-task run.
+
+Closed 2026-11-07. Merged into `integration` in PR #41 (merge commit `0076697`, 2026-11-07); CI green on all four jobs; full suite 777 tests, PHPStan and `composer audit` clean. Fix commit `b9bf643`. Test: RedactedOperationalDiagnosticsTest.

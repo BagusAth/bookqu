@@ -51,7 +51,7 @@ Found in the owner UI audit of 2026-11-02.
 
 Do not treat the existing `priceLabel` accessor or a fresh `BookingRules::calculateSlotPrices` call as an immutable record of a past charge: the underlying catalog/override can change. For this item's owner UI, a clearly labelled recorded payment/group total is an available source; exact historical per-slot allocation and any snapshot schema belong to the Tech Lead decision in BQ-121. The existing light-lane approval of BQ-095 does not approve that schema or payment work. Coordinate the eventual shared presentation source to avoid two implementations.
 
-Related duration drift after a service edit is tracked separately in [BQ-114](../BQ-114-historical-booking-duration-drift.md). No change to this item's approval, status or existing owner scope is implied by these links.
+Related duration drift after a service edit is tracked separately in [BQ-114](BQ-114-historical-booking-duration-drift.md). No change to this item's approval, status or existing owner scope is implied by these links.
 
 ## Invariants at risk
 

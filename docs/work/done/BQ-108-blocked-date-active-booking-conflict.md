@@ -2,7 +2,7 @@
 id: BQ-108
 title: Conflict detection and notification when blocking dates with existing bookings
 type: bug-fix
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: schedule
@@ -56,6 +56,6 @@ In `app/Actions/Schedule/UpdateScheduleAvailability.php:33-51` and `app/Http/Con
 
 `docs/domains/schedule.md` (Known gaps).
 
-## Evidence (fill when done)
+## Evidence
 
-_Fill in when done._
+Closed 2026-11-07. Merged into `integration` in PR #41 (merge commit `0076697`, 2026-11-07); CI green on all four jobs; full suite 777 tests, PHPStan and `composer audit` clean. Fix commit `769e100`. Tests: BlockedDateActiveBookingConflictTest, RF09StabilityAndHardeningTest (AC-JBH-03).

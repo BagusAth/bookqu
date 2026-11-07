@@ -2,7 +2,7 @@
 
 From the current state to a production-ready, maintainable BookQu. Each phase ends at a gate owned by a role (`AGENTS.md` → "Roles"); outside the gates developers and agents work through `docs/workflow.md`. History of finished work lives in `docs/work/done/` and Git.
 
-## Current status (2026-11-04)
+## Current status (2026-11-07)
 
 - **Not launched yet.** `main` still runs the 2026-10-05 code; everything since then is on `integration`. **Release policy (D-018):** production is released only after every capability of the owner portal redesign is built and tested; urgent security fixes may ship earlier through the hotfix path.
 - **Specification is approved:**
@@ -32,7 +32,7 @@ From the current state to a production-ready, maintainable BookQu. Each phase en
   - the remaining items stay, listed in E0, E7 or phase 6.
 - **Deferred until after the first release:**
   - D-021 items;
-  - Phase 6 refactors that no page item needs: BQ-016, BQ-030, BQ-034, BQ-035, BQ-075;
+  - Phase 6 refactors that no page item needs: BQ-016, BQ-034, BQ-035, BQ-075;
   - BQ-082.
 
 ## Phases
@@ -45,7 +45,7 @@ From the current state to a production-ready, maintainable BookQu. Each phase en
 | **3 — Guardrails** | CI on MySQL/MariaDB, gated deploy, quality and architecture checks | Tech Lead | built; branch protection still open |
 | **4 — Build the redesign** | Every epic E0–E6 item done; every acceptance criterion of `owner-portal.md` passes | Tech Lead (PR audits) | next: wave 0, see "Build plan for phase 4" |
 | **5 — Launch** | Release v1.0.0 and stabilize (E7, D-018) | Product Lead (go/no-go), Tech Lead (execution) | after phase 4 |
-| **6 — Architecture alignment** | Structural refactor toward the ADRs | Tech Lead (PR audits) | BQ-029 with BQ-148; BQ-031 and BQ-033 merged into BQ-131 and BQ-130; after launch: BQ-016, BQ-030, BQ-034, BQ-035, BQ-075 |
+| **6 — Architecture alignment** | Structural refactor toward the ADRs | Tech Lead (PR audits) | BQ-029 and BQ-030 done; BQ-031 and BQ-033 merged into BQ-131 and BQ-130; after launch: BQ-016, BQ-034, BQ-035, BQ-075 |
 | **7 — Cleanup** | Dead code, old branches | Tech Lead | BQ-037 done; old branch clean-up per BQ-085 |
 | **8 — Continuous evolution** | New features and routine care | per decision table | BQ-082, D-003, D-021 items and future items |
 
@@ -84,7 +84,7 @@ An agent can take an item end to end. Give it the item file as the prompt; the i
 | **2 · E1 foundations** | Shell, gates, roles, shared components | BQ-131, then BQ-130 | BQ-129, then BQ-128 (after BQ-130) | New shell live on staging; every route behind the three gates |
 | **3 · E2 core pages** | Daily work in the new portal | BQ-133, then BQ-135 | BQ-132, then BQ-134 (after BQ-133), BQ-136 (after BQ-135), BQ-137 | Owner can run a day on staging: services, slots, calendar, bookings, Beranda, customers |
 | **4 · E3 decisions + E4 pages** | Money, policy and the public face | BQ-138, BQ-139, BQ-140, BQ-144 | BQ-141, BQ-142, BQ-143, BQ-145 | Refund flow end to end on staging; Pengaturan and Pembayaran complete |
-| **5 · E5 Medium** | Paid value for Medium | BQ-148 (with BQ-029), then BQ-149, BQ-150, BQ-146 | BQ-147 | Promo, add-on and team accounts work on staging with a Medium tenant |
+| **5 · E5 Medium** | Paid value for Medium | BQ-148, then BQ-149, BQ-150, BQ-146 | BQ-147 | Promo, add-on and team accounts work on staging with a Medium tenant |
 | **6 · E6 Pro and core rules** | Paid value for Pro | BQ-151, then BQ-152, BQ-153 | BQ-154, BQ-155, then BQ-156 | Capacity, units, no-show, landing page, integrations on staging with a Pro tenant |
 | **7 · E7 release** | First production release (D-018) | BQ-157, then BQ-158 with the Tech Lead | Regression pass on staging against every `AC-*` | Product Lead go |
 
@@ -93,9 +93,11 @@ An agent can take an item end to end. Give it the item file as the prompt; the i
 - then BQ-017 staging, because waves 2–7 demo on staging;
 - then BQ-022 and BQ-019 before wave 7.
 
-**After the release:** BQ-016, BQ-030, BQ-034, BQ-035, BQ-075 (phase 6) and BQ-082.
+**After the release:** BQ-016, BQ-034, BQ-035, BQ-075 (phase 6) and BQ-082.
 
 **Progress (2026-11-04):** PR #39 delivered BQ-086, BQ-088, BQ-113, BQ-120, BQ-121, BQ-130, BQ-131, BQ-139 and BQ-146. Next for Developer A: BQ-087 with BQ-049 (ADR-0023); after that, BQ-133 and BQ-135 wait for BQ-107, BQ-108 and BQ-129 of Developer B.
+
+**Progress (2026-11-07):** PR #41 (`0076697`, including PR #42) delivered BQ-087, BQ-049, BQ-029, BQ-030, BQ-159, BQ-089, BQ-098, BQ-107, BQ-108, BQ-111, BQ-112, BQ-114, BQ-118, BQ-127 and BQ-077; D-023 sets service duration and bulk slot interval to multiples of 5. **Wave 1 is done.** Build items: 20 of 47 merged, 2 partial (BQ-138, BQ-144), 25 not started. Wave 2 waits on BQ-129, then BQ-128 (Developer B); BQ-130 and BQ-131 are already merged. Operations: BQ-017 staging is in progress.
 
 ### Rules for the waves
 
