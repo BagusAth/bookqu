@@ -2,7 +2,7 @@
 id: BQ-114
 title: Keep existing booking times stable when the service duration changes
 type: bug-fix
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: booking
@@ -64,8 +64,10 @@ Perubahan katalog tidak boleh diam-diam mengubah reservasi yang sudah sah. Perta
 
 `docs/domains/booking.md`, `docs/domains/schedule.md`, dan `docs/domains/catalog.md` hanya setelah sumber rentang diputuskan; requirement/ADR diperbarui hanya jika aturannya berubah.
 
-## Evidence (fill when done)
+## Evidence
 
 **Bukti audit:** skenario HTTP pada SQLite terisolasi membuktikan detail menampilkan 15.30 setelah layanan diubah menjadi 90 menit, sementara akhir slot tetap 15:00:00. Bagian dari 5 skenario / 29 asersi audit pada BQ-113; bukan tes perbaikan. Belum ada implementasi/PR. Launch-blocker dan keputusan sumber waktu menunggu Tech Lead.
 
 Merge readiness PR #41/#42 (Tech Lead-approved scope): preserved BQ-029/BQ-030 controller split and moved stored-range view data to Checkout/Payment/Manage controllers; slot policy and grant expiry reuse BookingTimeRange. Duration/interval inputs require multiples of five. Evidence: MergeReadinessTest (2 tests, 30 assertions), existing BookingTimeRangeAfterDurationChangeTest and BookingTimeRangeTest in full suite.
+
+Closed 2026-11-07. Merged into `integration` in PR #41 (merge commit `0076697`, 2026-11-07); CI green on all four jobs; full suite 777 tests, PHPStan and `composer audit` clean. Fix commits `303a6b8` and `cbb3815`; D-023 recorded in `e04d568`. Tests: BookingTimeRangeAfterDurationChangeTest, BookingTimeRangeTest, BookingRulesTest, SlotCompatibilityRulesTest, MergeReadinessTest. Legacy services with a duration that is not a multiple of 5 are not yet checked in production.

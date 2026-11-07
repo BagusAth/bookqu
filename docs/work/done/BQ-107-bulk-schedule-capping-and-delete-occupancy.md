@@ -2,7 +2,7 @@
 id: BQ-107
 title: Bulk schedule date range capping, past slot protection, and occupancy check on delete
 type: bug-fix
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: schedule
@@ -68,6 +68,6 @@ If a slot was claimed by a customer who abandoned payment after the 15-minute de
 
 `docs/domains/schedule.md` (Known gaps).
 
-## Evidence (fill when done)
+## Evidence
 
-_Fill in when done._
+Closed 2026-11-07. Merged into `integration` in PR #41 (merge commit `0076697`, 2026-11-07); CI green on all four jobs; full suite 777 tests, PHPStan and `composer audit` clean. Fix commits `d2e4bf9` and `eeac146`. Test: BulkScheduleLimitsAndDeleteOccupancyTest. Bulk interval must be a multiple of 5 (D-023).
