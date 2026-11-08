@@ -2,7 +2,7 @@
 id: BQ-149
 title: Promo page and promo codes in checkout
 type: feature
-status: proposed
+status: approved
 priority: P1
 phase: 4
 domain: booking
@@ -48,3 +48,5 @@ INV-PAY-03/04; quota exact under concurrency.
 - `docs/domains/booking.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.

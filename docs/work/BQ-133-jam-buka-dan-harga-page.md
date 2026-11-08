@@ -2,7 +2,7 @@
 id: BQ-133
 title: Jam Buka & Harga: opening hours, price rules, closed dates and slots
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: schedule
@@ -51,3 +51,11 @@ INV-BOOK-03 (occupancy only in `BookingRules`), INV-SCH-01.
 - `docs/domains/schedule.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.
+
+Backend (bundle A, 2026-11-07): opening hours with breaks and `slot_open_days_ahead` (FR-SCHEDULE-011); peak-hour rules, special-date prices and the weekend rule priced by `SlotPricing` (FR-SCHEDULE-012); price simulator (AC-JBH-02); "Terapkan harga dasar" for future free slots (AC-JBH-04); bulk preview with new and existing counts, no duplicates (FR-SCHEDULE-014, AC-JBH-01); slot runway with the 7-day warning (AC-JBH-05). AC-JBH-03 was delivered by BQ-108. Bulk creation no longer stores the weekend price in `harga_override`. Tests: `SlotPricingTest`, `PriceRulesAndOpeningHoursTest`.
+
+Order of rules (Tech Lead to confirm): slot override wins; otherwise a special-date price replaces base and weekend; otherwise the weekend rule (`multiplier` × base, `fixed` = price); then every matching peak rule adds its extra.
+
+Tech Lead decision 2026-11-07: the bulk interval follows FR-SCHEDULE-014 (5–480 minutes, multiples of 5, defaulting to the service duration on the page) and may differ from the duration; `ServicesDomainEndToEndTest` was updated to the requirement. Remaining: the page tabs (needs BQ-129), removing the old default-pricing form, and moving occupancy out of the schedule Blade. Status stays in-progress.

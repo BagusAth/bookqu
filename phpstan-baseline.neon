@@ -13,20 +13,8 @@ parameters:
 			path: app/Actions/Booking/CreateBooking.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Booking/CreateWalkInBooking.php
-
-		-
 			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
 			identifier: instanceof.alwaysFalse
-			count: 1
-			path: app/Actions/Booking/CreateWalkInBooking.php
-
-		-
-			message: '#^Strict comparison using \!\=\= between float and '''' will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
 			count: 1
 			path: app/Actions/Booking/CreateWalkInBooking.php
 
@@ -67,18 +55,6 @@ parameters:
 			path: app/Actions/Booking/UpdateBookingStatus.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Customer/GetCustomerDetail.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga_override\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Customer/GetCustomerDetail.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namalayanan\.$#'
 			identifier: property.notFound
 			count: 2
@@ -99,18 +75,6 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Booking\>\:\:map\(\) contains unresolvable type\.$#'
 			identifier: argument.unresolvableType
-			count: 1
-			path: app/Actions/Customer/GetCustomerDetail.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>harga" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Customer/GetCustomerDetail.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>harga_override" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Actions/Customer/GetCustomerDetail.php
 

@@ -19,6 +19,7 @@ class ScheduleConflictRulesTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected Service $service;
 
     protected function setUp(): void
@@ -111,22 +112,5 @@ class ScheduleConflictRulesTest extends TestCase
 
         $booking->update(['status' => 'cancelled']);
         $this->assertTrue(ScheduleConflictRules::canDeleteSchedule($schedule->fresh()));
-    }
-
-    public function test_calculate_weekend_price(): void
-    {
-        $this->assertSame(
-            180000.0,
-            ScheduleConflictRules::calculateWeekendPrice($this->service, 'multiplier', 1.2)
-        );
-
-        $this->assertSame(
-            200000.0,
-            ScheduleConflictRules::calculateWeekendPrice($this->service, 'fixed', 200000.0)
-        );
-
-        $this->assertNull(
-            ScheduleConflictRules::calculateWeekendPrice($this->service, 'none', null)
-        );
     }
 }

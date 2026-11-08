@@ -2,7 +2,7 @@
 id: BQ-151
 title: Booking seats and capacity per slot
 type: feature
-status: proposed
+status: approved
 priority: P1
 phase: 4
 domain: booking
@@ -50,3 +50,5 @@ INV-BOOK-03/04/05.
 - `docs/domains/schedule.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.

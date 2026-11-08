@@ -99,6 +99,8 @@ An agent can take an item end to end. Give it the item file as the prompt; the i
 
 **Progress (2026-11-07):** PR #41 (`0076697`, including PR #42) delivered BQ-087, BQ-049, BQ-029, BQ-030, BQ-159, BQ-089, BQ-098, BQ-107, BQ-108, BQ-111, BQ-112, BQ-114, BQ-118, BQ-127 and BQ-077; D-023 sets service duration and bulk slot interval to multiples of 5. **Wave 1 is done.** Build items: 20 of 47 merged, 2 partial (BQ-138, BQ-144), 25 not started. Wave 2 waits on BQ-129, then BQ-128 (Developer B); BQ-130 and BQ-131 are already merged. Operations: BQ-017 staging is in progress.
 
+**Plan (2026-11-07, Tech Lead):** the ops items BQ-017, BQ-020, BQ-021 and BQ-074 step 2 are deferred until the server steps can be coordinated; they stay release prerequisites for wave 7, and wave checkpoints are demonstrated locally until staging runs. While BQ-129 is open, Developer A builds the backend of the remaining items in three bundles, one PR each: A = BQ-133 + BQ-148 (pricing), B = BQ-151 + BQ-152 + BQ-153 (capacity), C = BQ-149 + BQ-150 + BQ-140 (checkout). Their UI follows BQ-129, so these items stay `in-progress` until it lands.
+
 ### Rules for the waves
 
 - **An item may move forward a wave** when all its `depends-on` are done and it touches no file of the other developer's open item.

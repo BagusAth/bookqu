@@ -3,7 +3,8 @@
 namespace App\Actions\Booking;
 
 use App\Actions\CustomerAccess\CustomerAccessLinks;
-use App\Domain\Booking\BookingRules;
+use App\Domain\Booking\BookingPricing;
+use App\Domain\Schedule\PriceRules;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
@@ -29,10 +30,13 @@ final class StorefrontCheckoutState
     public function fingerprint(Service $service, string $date, iterable $schedules): string
     {
         $schedules = collect($schedules)->sortBy('id')->values()->all();
-        $prices = BookingRules::calculateSlotPrices($schedules, $service)['slot_prices'];
-        $parts = [(int) $service->id, Carbon::parse($date)->toDateString()];
+        $day = Carbon::parse($date)->toDateString();
+        $tenant = $service->tenant;
+        $rules = $tenant instanceof Tenant ? PriceRules::forTenant($tenant, $day, $day) : PriceRules::none();
+        $lines = BookingPricing::quote($service, $schedules, $rules)['lines'];
+        $parts = [(int) $service->id, $day];
         foreach ($schedules as $index => $schedule) {
-            $parts[] = (int) $schedule->id.'@'.number_format($prices[$index], 2, '.', '');
+            $parts[] = (int) $schedule->id.'@'.number_format($lines[$index]['amount'], 2, '.', '');
         }
 
         return hash_hmac('sha256', implode('|', $parts), (string) config('app.key'));

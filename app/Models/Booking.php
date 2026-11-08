@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingRules;
 use App\Models\Scopes\TenantScope;
 use App\Traits\BelongsToTenant;
@@ -172,7 +173,9 @@ class Booking extends Model
      */
     public function getPriceLabelAttribute(): string
     {
-        $amount = (float) ($this->schedule?->harga_override ?? $this->layanan?->harga ?? 0);
+        // FR-BOOKING-023: the frozen amount; bookings placed before the breakdown keep the old label
+        $amount = BookingPricing::frozenSlotAmount($this->payment instanceof Payment ? $this->payment : null, (int) $this->idschedule)
+            ?? (float) ($this->schedule?->harga_override ?? $this->layanan?->harga ?? 0);
 
         return 'Rp '.number_format($amount, 0, ',', '.');
     }

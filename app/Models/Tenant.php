@@ -48,6 +48,7 @@ class Tenant extends Model
         'refunds_enabled',
         'booking_min_lead_hours',
         'booking_max_days_ahead',
+        'slot_open_days_ahead',
         'booking_buffer_minutes',
         'reschedule_before_hours',
         'theme_color',
@@ -62,6 +63,7 @@ class Tenant extends Model
             'refunds_enabled' => 'boolean',
             'booking_min_lead_hours' => 'integer',
             'booking_max_days_ahead' => 'integer',
+            'slot_open_days_ahead' => 'integer',
             'booking_buffer_minutes' => 'integer',
             'midtrans_sandbox_client_key' => 'encrypted',
             'midtrans_sandbox_server_key' => 'encrypted',
@@ -104,6 +106,11 @@ class Tenant extends Model
     public function blockedDates(): HasMany
     {
         return $this->hasMany(OwnerBlockedDate::class, 'idtenant');
+    }
+
+    public function openingHours(): HasMany
+    {
+        return $this->hasMany(OpeningHour::class, 'idtenant');
     }
 
     public function payouts(): HasMany
