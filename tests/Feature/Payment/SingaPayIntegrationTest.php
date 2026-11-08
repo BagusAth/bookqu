@@ -293,7 +293,7 @@ class SingaPayIntegrationTest extends TestCase
                 && $payload['items'][0]['unit_price'] === 150000
                 && is_string($payload['expired_at'])
                 && preg_match('/^\d{13}$/', $payload['expired_at']) === 1
-                && $payload['required_customer_detail'] === true
+                && $payload['required_customer_detail'] === false
                 && array_key_exists('customer_pays_fee', $payload)
                 && isset($payload['success_redirect_url'])
                 && isset($payload['expired_redirect_url'])

@@ -3,7 +3,6 @@
 namespace Tests\Unit\Domain;
 
 use App\Domain\Booking\BookingRules;
-use App\Models\Service;
 use Tests\TestCase;
 
 class BookingRulesTest extends TestCase
@@ -30,21 +29,5 @@ class BookingRulesTest extends TestCase
         ];
 
         $this->assertFalse(BookingRules::validateContiguousSlots($slots));
-    }
-
-    public function test_calculate_slot_prices_with_overrides(): void
-    {
-        $service = new Service(['harga' => 100000]);
-
-        $schedules = [
-            (object) ['harga_override' => null],
-            (object) ['harga_override' => 125000],
-            (object) ['harga_override' => 0],
-        ];
-
-        $pricing = BookingRules::calculateSlotPrices($schedules, $service);
-
-        $this->assertSame([100000.0, 125000.0, 0.0], $pricing['slot_prices']);
-        $this->assertSame(225000.0, $pricing['total']);
     }
 }

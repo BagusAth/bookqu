@@ -2,7 +2,7 @@
 id: BQ-150
 title: Layanan → Add-on tab and add-ons in checkout
 type: feature
-status: proposed
+status: approved
 priority: P1
 phase: 4
 domain: catalog
@@ -49,3 +49,5 @@ INV-PAY-04; stock exact under concurrency.
 - `docs/domains/booking.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.

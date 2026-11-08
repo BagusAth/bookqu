@@ -8,10 +8,12 @@ use App\Actions\Payment\CreateBookingPayment;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
+use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
 use App\Domain\CustomerAccess\AccessProfile;
 use App\Domain\Payment\PaymentTransition;
+use App\Domain\Schedule\PriceRules;
 use App\Domain\Subscription\EntitlementRules;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -112,9 +114,9 @@ class CreateBooking
                     return ['error' => 'Slot harus berurutan tanpa jeda.'];
                 }
 
-                // 4. Calculate slot prices via domain rule
-                $pricing = BookingRules::calculateSlotPrices($orderedSchedules, $service);
-                $hargaAkhir = $pricing['total'];
+                // 4. Quote through the single booking pricing rule, inside the lock (ADR-0019)
+                $quote = BookingPricing::quote($service, $orderedSchedules, PriceRules::forTenant($tenant, $selectedDate, $selectedDate));
+                $hargaAkhir = $quote['total'];
 
                 $fullCatatan = trim($customerData['catatan'] ?? '');
                 if ($slotCount > 1) {
@@ -148,7 +150,7 @@ class CreateBooking
                     }
 
                     if (! empty($createdBookings)) {
-                        $payment->update(['idbooking' => $createdBookings[0]->id]);
+                        $payment->update(['idbooking' => $createdBookings[0]->id, 'price_breakdown' => $quote]);
                     }
 
                     app(RequestManagementDelivery::class)->execute($payment, 'confirmed');
@@ -189,7 +191,7 @@ class CreateBooking
                 }
 
                 if (! empty($createdBookings)) {
-                    $payment->update(['idbooking' => $createdBookings[0]->id]);
+                    $payment->update(['idbooking' => $createdBookings[0]->id, 'price_breakdown' => $quote]);
                 }
 
                 return [

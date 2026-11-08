@@ -6,11 +6,14 @@ use App\Actions\CustomerAccess\RequestManagementDelivery;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
+use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingState;
+use App\Domain\Schedule\PriceRules;
 use App\Domain\Subscription\EntitlementRules;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
+use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Traits\ClearsBookingCache;
@@ -58,10 +61,14 @@ class CreateWalkInBooking
                     ->execute($tenant, (int) $serviceId, [(int) $data['idschedule']])
                     ->first();
 
+                // Walk-ins use the same pricing rule as the storefront (ADR-0019 decision 6)
                 $service = $schedule->layanan;
-                $amount = ($schedule->harga_override !== null && $schedule->harga_override !== '')
-                    ? (float) $schedule->harga_override
-                    : ($service ? (float) $service->harga : 0);
+                if (! $service instanceof Service) {
+                    return null;
+                }
+                $slotDate = Carbon::parse($schedule->tanggal)->toDateString();
+                $quote = BookingPricing::quote($service, [$schedule], PriceRules::forTenant($tenant, $slotDate, $slotDate));
+                $amount = $quote['total'];
 
                 // Create Payment record for Walk-in
                 $orderId = 'WLK-'.strtoupper(Str::random(10));
@@ -76,6 +83,7 @@ class CreateWalkInBooking
                     'nama_pembayar' => $data['namapelanggan'],
                     'email_pembayar' => $data['email'] ?? ($tenant->user->email ?? 'walkin@example.com'),
                     'hp_pembayar' => $data['nomorhp'],
+                    'price_breakdown' => $quote,
                 ]);
 
                 // Create Booking record

@@ -2,7 +2,7 @@
 id: BQ-148
 title: One booking pricing rule with a frozen price breakdown
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: booking
@@ -49,3 +49,9 @@ INV-PAY-04: provider amount equals the stored total.
 - `docs/domains/payment.md`
 
 ## Evidence (fill when done)
+
+Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.
+
+Backend (bundle A, 2026-11-07): `BookingPricing::quote` (slot price × participants, then add-ons and promo, both empty until BQ-150/BQ-149) prices the checkout page, the checkout fingerprint, `CreateBooking` inside the lock and walk-ins. Placement stores the result in `payments.price_breakdown`; `jumlah` equals its total. `Booking::priceLabel` and the customer detail read the frozen line; older bookings keep the old label. `CreateBookingRequest` keeps refusing `voucher_code` and `selected_addons` (ADR-0019 decision 5) until BQ-149/BQ-150. Test: `PriceRulesAndOpeningHoursTest::test_storefront_placement_freezes_the_amount_against_later_price_changes`, `test_checkout_fingerprint_changes_when_a_price_rule_changes`, `SlotPricingTest::test_quote_sums_slot_prices_per_participant_and_keeps_zero_overrides`.
+
+Remaining: owner lists, invoices and reports that still show current prices move to the breakdown with their pages (BQ-135, BQ-147). Status stays in-progress.

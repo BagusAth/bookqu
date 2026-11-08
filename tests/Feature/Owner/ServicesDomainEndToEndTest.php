@@ -236,11 +236,11 @@ class ServicesDomainEndToEndTest extends TestCase
     }
 
     /**
-     * Test Schedule slot generation: interval strictly equals Service::durasi,
-     * slot duration is jam_mulai to jam_mulai + durasi - 1 min,
-     * and duplicate/conflicting slots are prevented.
+     * Test Schedule slot generation: the interval may differ from Service::durasi
+     * (FR-SCHEDULE-014, Tech Lead decision 2026-11-07), each slot runs from jam_mulai to
+     * jam_mulai + interval - 1 min, and duplicate/conflicting slots are prevented.
      */
-    public function test_schedule_generation_synchronizes_duration_strictly_with_service(): void
+    public function test_schedule_generation_uses_the_interval_and_prevents_duplicates(): void
     {
         $service = Service::create([
             'idtenant' => $this->tenantA->id,
@@ -252,16 +252,21 @@ class ServicesDomainEndToEndTest extends TestCase
 
         $testDate = Carbon::tomorrow()->format('Y-m-d');
 
-        // 1. Attempt with invalid intervalslot (e.g. 45 min instead of 60 min) must fail
-        $resInvalid = $this->actingAs($this->ownerA)->post('/owner/schedule/bulk-slots', [
+        // 1. An interval other than the service duration creates slots of that length
+        $otherDate = Carbon::tomorrow()->addDay()->format('Y-m-d');
+        $this->actingAs($this->ownerA)->post('/owner/schedule/bulk-slots', [
             'jenisslot' => 'harian',
             'idlayanan' => $service->id,
-            'tanggal' => $testDate,
+            'tanggal' => $otherDate,
             'jammulai' => '09:00',
             'jamselesai' => '12:00',
             'intervalslot' => 45,
-        ]);
-        $resInvalid->assertSessionHasErrors('intervalslot');
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(
+            [['09:00:00', '09:44:00'], ['09:45:00', '10:29:00'], ['10:30:00', '11:14:00'], ['11:15:00', '11:59:00']],
+            DB::table('schedules')->where('idlayanan', $service->id)->whereDate('tanggal', $otherDate)->orderBy('jam_mulai')
+                ->get(['jam_mulai', 'jam_selesai'])->map(fn ($slot) => [$slot->jam_mulai, $slot->jam_selesai])->all()
+        );
 
         // 2. Valid generation: intervalslot = 60
         $resValid = $this->actingAs($this->ownerA)->post('/owner/schedule/bulk-slots', [

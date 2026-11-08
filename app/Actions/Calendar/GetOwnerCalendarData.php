@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Calendar;
 
+use App\Actions\Schedule\PriceSlots;
 use App\Domain\Booking\BookingRules;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
@@ -136,6 +137,7 @@ class GetOwnerCalendarData
             'services' => $services,
             'bookings' => $bookings,
             'schedules' => $schedules,
+            'slotPrices' => app(PriceSlots::class)->execute($tenant, $schedules),
             'weekSchedules' => $weekSchedules,
             'monthBookings' => $monthBookings,
             'monthSchedules' => $monthSchedules,

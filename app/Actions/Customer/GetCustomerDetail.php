@@ -39,7 +39,7 @@ class GetCustomerDetail
             })
             ->exists();
 
-        if (!$exists) {
+        if (! $exists) {
             abort(404, 'Customer tidak ditemukan.');
         }
 
@@ -61,11 +61,11 @@ class GetCustomerDetail
 
         // Spending from payment state machine
         $paidBookingIds = $bookings
-            ->filter(fn($b) => in_array($b->status, ['paid', 'completed']))
+            ->filter(fn ($b) => in_array($b->status, ['paid', 'completed']))
             ->pluck('id');
 
         $paidPaymentIds = $bookings
-            ->filter(fn($b) => in_array($b->status, ['paid', 'completed']))
+            ->filter(fn ($b) => in_array($b->status, ['paid', 'completed']))
             ->pluck('idpayment')
             ->filter()
             ->unique();
@@ -83,15 +83,15 @@ class GetCustomerDetail
             ->whereIn('id', $allPaidPaymentIds)
             ->sum('jumlah');
 
-        $today           = Carbon::today()->toDateString();
-        $lastBooking     = $bookings->first();
+        $today = Carbon::today()->toDateString();
+        $lastBooking = $bookings->first();
         $upcomingBooking = $bookings
-            ->filter(fn($b) => $b->tanggalbooking && $b->tanggalbooking->toDateString() >= $today && in_array($b->status, ['paid', 'pending']))
+            ->filter(fn ($b) => $b->tanggalbooking && $b->tanggalbooking->toDateString() >= $today && in_array($b->status, ['paid', 'pending']))
             ->sortBy('tanggalbooking')
             ->first();
 
         $servicesUsed = $bookings
-            ->map(fn($b) => $b->layanan?->namalayanan)
+            ->map(fn ($b) => $b->layanan?->namalayanan)
             ->filter()
             ->unique()
             ->values()
@@ -116,53 +116,53 @@ class GetCustomerDetail
             ->get()
             ->map(function ($p) {
                 $groupBookings = $p->bookings->isNotEmpty() ? $p->bookings : ($p->booking ? collect([$p->booking]) : collect());
-                $serviceNames = $groupBookings->map(fn($b) => $b->layanan?->namalayanan)->filter()->unique()->implode(', ');
-                $slots = $groupBookings->sortBy('jam')->map(fn($b) => substr($b->jam, 0, 5))->implode(', ');
+                $serviceNames = $groupBookings->map(fn ($b) => $b->layanan?->namalayanan)->filter()->unique()->implode(', ');
+                $slots = $groupBookings->sortBy('jam')->map(fn ($b) => substr($b->jam, 0, 5))->implode(', ');
 
                 return [
-                    'order_id'     => $p->order_id ?? $p->external_id ?? ('PAY-' . $p->id),
+                    'order_id' => $p->order_id ?? $p->external_id ?? ('PAY-'.$p->id),
                     'booking_code' => $groupBookings->pluck('booking_code')->filter()->implode(', ') ?: '-',
-                    'service'      => $serviceNames ?: '-',
-                    'slots'        => $slots,
-                    'jumlah'       => 'Rp ' . number_format((float) $p->jumlah, 0, ',', '.'),
-                    'status'       => $p->status,
-                    'date'         => $p->created_at?->format('d M Y'),
+                    'service' => $serviceNames ?: '-',
+                    'slots' => $slots,
+                    'jumlah' => 'Rp '.number_format((float) $p->jumlah, 0, ',', '.'),
+                    'status' => $p->status,
+                    'date' => $p->created_at?->format('d M Y'),
                 ];
             });
 
-        $bookingHistory = $bookings->map(fn($b) => [
-            'id'      => $b->id,
-            'code'    => $b->booking_code ?? ('BKQ-' . $b->id),
+        $bookingHistory = $bookings->map(fn ($b) => [
+            'id' => $b->id,
+            'code' => $b->booking_code ?? ('BKQ-'.$b->id),
             'service' => $b->layanan?->namalayanan ?? '-',
-            'price'   => 'Rp ' . number_format((float) ($b->schedule?->harga_override ?? $b->layanan?->harga ?? 0), 0, ',', '.'),
-            'date'    => $b->tanggalbooking ? $b->tanggalbooking->format('d M Y') : '-',
-            'time'    => $b->jam ? substr($b->jam, 0, 5) : '-',
-            'status'  => $b->status,
-            'notes'   => $b->catatan ?: null,
+            'price' => $b->priceLabel,
+            'date' => $b->tanggalbooking ? $b->tanggalbooking->format('d M Y') : '-',
+            'time' => $b->jam ? substr($b->jam, 0, 5) : '-',
+            'status' => $b->status,
+            'notes' => $b->catatan ?: null,
         ])->values();
 
         $paidCount = $paidBookingIds->count();
 
         return [
-            'identifier'       => $identifier,
-            'name'             => $first->namapelanggan ?: 'Customer',
-            'email'            => $first->email ?: '-',
-            'phone'            => $first->nomorhp ?: '-',
-            'first_seen'       => $bookings->sortBy('created_at')->first()?->created_at?->format('d M Y') ?? '-',
-            'total_bookings'   => $bookings->count(),
-            'total_spent'      => $totalSpent,
-            'formatted_spent'  => 'Rp ' . number_format($totalSpent, 0, ',', '.'),
-            'avg_transaction'  => $paidCount > 0
-                ? 'Rp ' . number_format($totalSpent / $paidCount, 0, ',', '.')
+            'identifier' => $identifier,
+            'name' => $first->namapelanggan ?: 'Customer',
+            'email' => $first->email ?: '-',
+            'phone' => $first->nomorhp ?: '-',
+            'first_seen' => $bookings->sortBy('created_at')->first()?->created_at?->format('d M Y') ?? '-',
+            'total_bookings' => $bookings->count(),
+            'total_spent' => $totalSpent,
+            'formatted_spent' => 'Rp '.number_format($totalSpent, 0, ',', '.'),
+            'avg_transaction' => $paidCount > 0
+                ? 'Rp '.number_format($totalSpent / $paidCount, 0, ',', '.')
                 : 'Rp 0',
-            'last_booking'     => $lastBooking?->tanggalbooking ? $lastBooking->tanggalbooking->format('d M Y') : '-',
+            'last_booking' => $lastBooking?->tanggalbooking ? $lastBooking->tanggalbooking->format('d M Y') : '-',
             'upcoming_booking' => $upcomingBooking
-                ? $upcomingBooking->tanggalbooking->format('d M Y') . ' ' . substr($upcomingBooking->jam, 0, 5)
+                ? $upcomingBooking->tanggalbooking->format('d M Y').' '.substr($upcomingBooking->jam, 0, 5)
                 : null,
-            'services_used'    => $servicesUsed,
-            'notes'            => $note?->notes ?? '',
-            'bookings'         => $bookingHistory,
-            'payments'         => $payments,
+            'services_used' => $servicesUsed,
+            'notes' => $note?->notes ?? '',
+            'bookings' => $bookingHistory,
+            'payments' => $payments,
         ];
     }
 }

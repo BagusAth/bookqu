@@ -6,6 +6,7 @@ use App\Actions\Booking\CreateWalkInBooking;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\Booking\UpdateBookingStatus;
 use App\Actions\Schedule\GetAvailableSchedules;
+use App\Actions\Schedule\PriceSlots;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Payment\PaymentRules;
 use App\Domain\Team\TenantPermission;
@@ -234,9 +235,11 @@ class OwnerBookingController extends Controller
         $slots = app(GetAvailableSchedules::class)
             ->getSlotsForReschedule($tenant, (int) $booking->idlayanan, $tanggal, (int) $booking->id);
 
-        $mappedSlots = $slots->map(function ($item) use ($service) {
+        $slotPrices = app(PriceSlots::class)->execute($tenant, $slots->pluck('schedule')->each(fn ($slot) => $slot->setRelation('layanan', $service)));
+
+        $mappedSlots = $slots->map(function ($item) use ($service, $slotPrices) {
             $slot = $item['schedule'];
-            $price = $slot->harga_override ?? ($service ? $service->harga : 0);
+            $price = $slotPrices[(int) $slot->id] ?? ($slot->harga_override ?? ($service ? $service->harga : 0));
 
             return [
                 'id' => $slot->id,

@@ -6,7 +6,9 @@ use App\Actions\Booking\CreateBooking;
 use App\Actions\Booking\ResumeCheckout;
 use App\Actions\Booking\StorefrontCheckoutState;
 use App\Actions\CustomerAccess\CustomerAccessLinks;
+use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingTimeRange;
+use App\Domain\Schedule\PriceRules;
 use App\Http\Requests\Booking\CreateBookingRequest;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -46,7 +48,6 @@ final class BookingCheckoutController extends StorefrontBookingController
 
         // Resolve schedules for each selected time
         $schedules = [];
-        $hargaPerSlot = [];
         foreach ($selectedTimes as $i => $time) {
             $sid = $scheduleIds[$i] ?? null;
             $schedule = null;
@@ -73,11 +74,12 @@ final class BookingCheckoutController extends StorefrontBookingController
             }
 
             $schedules[] = $schedule;
-            $hargaPerSlot[] = $schedule->harga_override !== null ? (float) $schedule->harga_override : (float) $service->harga;
         }
 
-        $hargaAkhir = array_sum($hargaPerSlot);
-        $hasPriceOverride = collect($hargaPerSlot)->contains(fn ($price) => (float) $price !== (float) $service->harga);
+        $quote = BookingPricing::quote($service, $schedules, PriceRules::forTenant($tenant, $selectedDate, $selectedDate));
+        $hargaAkhir = $quote['total'];
+        $slotPrices = array_column($quote['lines'], 'unit_price');
+        $hasPriceOverride = collect($quote['lines'])->contains(fn (array $line) => $line['unit_price'] !== (int) round((float) $service->harga));
         $selectedRanges = array_map(fn (Schedule $slot) => BookingTimeRange::forSlot($selectedDate, (string) $slot->jam_mulai, (string) $slot->jam_selesai), $schedules);
         $selectedMinutes = array_sum(array_map(fn (BookingTimeRange $range) => (int) $range->durationMinutes(), $selectedRanges));
         $selectedTime = $selectedTimes[0] ?? null;
@@ -92,6 +94,7 @@ final class BookingCheckoutController extends StorefrontBookingController
             'selectedTime',
             'selectedTimes',
             'hargaAkhir',
+            'slotPrices',
             'hasPriceOverride',
             'schedules',
             'selectedRanges',

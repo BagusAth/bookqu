@@ -50,6 +50,7 @@ Payer cancellation (BQ-002) runs through CustomerAccess/CancelCheckoutPayment: a
 
 - Each adapter translates its notifications with `outcomeFromNotification()`, so provider status words stay in the adapters.
 - SingaPay's `queryOutcome` (BQ-074) reads the payment link stored in `external_id`. Once the link's `current_usage` is at least 1, it looks up the paid entry of that link in the merchant's payment-link history (newest first, up to 500 entries) and reports `sukses` with the paid amount. Anything else is `unknown`: SingaPay never reports `gagal` through a query, and expiry stays with BookQu's deadline (ADR-0009). An unpaid answer is reused for 10 seconds per payment, so status pages that poll do not call SingaPay on every request.
+- SingaPay payment links are created with `required_customer_detail = false` (booking and subscription), so the hosted page does not ask again for the name, phone and email already entered in BookQu (Tech Lead 2026-11-08). The page still shows the amount and the payment-method choice. SingaPay offers no documented field to prefill those details.
 - All provider settings live in `config/payment.php`; `config/midtrans.php` was removed.
 
 `PaymentGatewayManager::driver()` picks `config('payment.default')` (`PAYMENT_GATEWAY_DRIVER`); `forPayment()` picks the payment's own `provider`.
@@ -60,7 +61,7 @@ Payer cancellation (BQ-002) runs through CustomerAccess/CancelCheckoutPayment: a
 
 ## Data
 
-`payments`: `idtenant`, `tipe` (`booking` / `subscription`), `idplan`, `idbooking` (deprecated), `jumlah`, `status`, `metode`, `provider`, `order_id`, `external_id`, `manage_token`, `snap_token`, `payment_url`, `expired_at`, payer fields. `refunds`: `booking_id` (nullable: a late subscription payment has no booking), `payment_id`, `jumlah`, `status`, `refund_reference`.
+`payments`: `idtenant`, `tipe` (`booking` / `subscription`), `idplan`, `idbooking` (deprecated), `jumlah`, `status`, `metode`, `provider`, `order_id`, `external_id`, `manage_token`, `snap_token`, `payment_url`, `expired_at`, payer fields. `refunds`: `booking_id` (nullable: a late subscription payment has no booking), `payment_id`, `jumlah`, `status`, `refund_reference`. `price_breakdown` (JSON, BQ-148): the frozen breakdown of a booking group (lines per slot, base subtotal, add-ons, promo, total); `jumlah` equals its total. Null for subscription payments and bookings placed before BQ-148.
 
 ## Invariants
 

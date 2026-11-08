@@ -127,7 +127,7 @@
                                         time: '{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}',
                                         payment_status: 'Belum Ada Transaksi',
                                         booking_status: 'Available',
-                                        amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
+                                        amount: 'Rp {{ number_format($slotPrices[$sched->id] ?? $sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
                                         notes: 'Slot aktif ini terbuka untuk reservasi pelanggan atau walk-in booking.'
                                     })"
                                     class="craft-card rounded-2xl border p-4 border-[#b499ff] bg-[#f3effe]/50 hover:bg-[#f3effe] cursor-pointer shadow-2xs"
@@ -154,7 +154,7 @@
                                     @if ($hasBooking)
                                         Dipesan oleh: <span class="font-bold text-[#231a3d]">{{ $hasBooking->namapelanggan }}</span>
                                     @else
-                                        Tarif: <span class="font-bold text-[#231a3d]">Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}</span>
+                                        Tarif: <span class="font-bold text-[#231a3d]">Rp {{ number_format($slotPrices[$sched->id] ?? $sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}</span>
                                     @endif
                                 </p>
                                 @if ($avail === \App\Models\Schedule::STATUS_AVAILABLE)
@@ -176,7 +176,7 @@
                                                 time: '{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}',
                                                 payment_status: 'Belum Ada Transaksi',
                                                 booking_status: 'Available',
-                                                amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
+                                                amount: 'Rp {{ number_format($slotPrices[$sched->id] ?? $sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
                                                 notes: 'Slot aktif ini terbuka untuk reservasi pelanggan atau walk-in booking.'
                                             }); walkinMode = true"
                                             class="craft-btn inline-flex items-center gap-1 rounded-lg bg-[#382186] px-2.5 py-1 text-[10px] font-bold text-white hover:bg-[#2d1a6d] shadow-2xs transition"

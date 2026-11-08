@@ -7,6 +7,8 @@ namespace App\Actions\Schedule;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Schedule\AvailabilityRules;
+use App\Domain\Schedule\PriceRules;
+use App\Domain\Schedule\SlotPricing;
 use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -195,7 +197,9 @@ class GetAvailableSchedules
         $occupied = $tenant->booking_buffer_minutes > 0
             ? BookingRules::occupiedRanges($tenant, $service->id, $dateStr, $dateStr) : [];
 
-        return collect($scheduleRows)->map(function (array $row) use ($isToday, $isPastDate, $nowWib, $dateStr, $wib, $service, $tenant, $occupied) {
+        $priceRules = PriceRules::forTenant($tenant, $dateStr, $dateStr);
+
+        return collect($scheduleRows)->map(function (array $row) use ($isToday, $isPastDate, $nowWib, $dateStr, $wib, $service, $tenant, $occupied, $priceRules) {
             $slotDateTime = Carbon::parse($dateStr.' '.$row['jam_mulai'], $wib);
             $hour = (int) $slotDateTime->format('H');
             $session = 'evening';
@@ -211,7 +215,7 @@ class GetAvailableSchedules
             $isAvailable = ! $isPast && ! $isBooked
                 && (! BookingRules::hasSlotPolicy($tenant)
                     || BookingRules::slotAllowedByPolicy($tenant, $dateStr, $row['jam_mulai'], $row['jam_selesai'], $nowWib, $occupied));
-            $slotPrice = $row['harga_override'] !== null ? (float) $row['harga_override'] : (float) $service->harga;
+            $slotPrice = SlotPricing::price($service, $dateStr, (string) $row['jam_mulai'], $row['harga_override'], $priceRules)['price'];
             // BQ-114: the slot's own end, not the service's current duration
             $slotRange = BookingTimeRange::forSlot($dateStr, (string) $row['jam_mulai'], (string) $row['jam_selesai']);
             $timeRangeLabel = $slotRange->label();

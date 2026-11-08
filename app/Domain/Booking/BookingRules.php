@@ -6,7 +6,6 @@ use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Models\Booking;
 use App\Models\Payment;
-use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use Carbon\Carbon;
@@ -25,30 +24,6 @@ class BookingRules
     public static function validateContiguousSlots(array $orderedSchedules): bool
     {
         return BookingTimeRange::areContiguous($orderedSchedules);
-    }
-
-    /**
-     * Calculate prices for a collection of schedules based on schedule override or service base price.
-     *
-     * @return array{slot_prices: float[], total: float}
-     */
-    public static function calculateSlotPrices(iterable $schedules, Service $service): array
-    {
-        $slotPrices = [];
-        foreach ($schedules as $schedule) {
-            $schedObj = is_array($schedule) ? (object) $schedule : $schedule;
-            $price = ($schedObj->harga_override !== null && $schedObj->harga_override !== '')
-                ? (float) $schedObj->harga_override
-                : (float) $service->harga;
-            $slotPrices[] = (float) max(0, $price);
-        }
-
-        $total = max(0, array_sum($slotPrices));
-
-        return [
-            'slot_prices' => $slotPrices,
-            'total' => $total,
-        ];
     }
 
     /**

@@ -109,23 +109,4 @@ class ScheduleConflictRules
     {
         return ! BookingRules::isSlotOccupied((int) $schedule->id);
     }
-
-    /**
-     * Calculate weekend price override based on tenant configuration.
-     */
-    public static function calculateWeekendPrice(
-        Service $service,
-        ?string $weekendPriceType,
-        ?float $weekendPriceValue
-    ): ?float {
-        if ($weekendPriceType === 'multiplier' && $weekendPriceValue) {
-            return (float) ($service->harga * $weekendPriceValue);
-        }
-
-        if ($weekendPriceType === 'fixed' && $weekendPriceValue) {
-            return (float) $weekendPriceValue;
-        }
-
-        return null;
-    }
 }

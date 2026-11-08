@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Owner;
 use App\Actions\Schedule\BulkCreateSchedules;
 use App\Actions\Schedule\DeleteBlockedDate;
 use App\Actions\Schedule\DeleteSchedule;
+use App\Actions\Schedule\PriceSlots;
 use App\Actions\Schedule\UpdateScheduleAvailability;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Schedule\BulkCreateScheduleRequest;
@@ -102,8 +103,11 @@ class OwnerScheduleController extends Controller
             ->limit(10)
             ->get();
 
+        $slotPrices = app(PriceSlots::class)->execute($tenant, $jadwalminggu->flatten());
+
         return view('owner.schedule', compact(
             'tenant',
+            'slotPrices',
             'daftarhari',
             'jadwalminggu',
             'awalminggu',

@@ -76,7 +76,7 @@
                 <div class="mt-2.5 pt-2 border-t border-[#F1F5F9] space-y-1.5">
                     @foreach ($selectedTimes as $i => $time)
                         @php
-                            $slotPrice = $schedules[$i]?->harga_override ?? $service->harga;
+                            $slotPrice = $slotPrices[$i] ?? $service->harga;
                         @endphp
                         <div class="flex justify-between items-center text-[#64748B]">
                             <span>Sesi {{ $i + 1 }} ({{ $selectedRanges[$i]->label() }})</span>

@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property array<string, mixed>|null $price_breakdown frozen price breakdown of a booking group (BQ-148)
+ */
 class Payment extends Model
 {
     use BelongsToTenant, HasFactory;
@@ -35,12 +38,14 @@ class Payment extends Model
         'email_pembayar',
         'hp_pembayar',
         'catatan',
+        'price_breakdown',
     ];
 
     protected function casts(): array
     {
         return [
             'jumlah' => 'decimal:2',
+            'price_breakdown' => 'array',
             'expired_at' => 'datetime',
             'balance_credited_at' => 'datetime',
             'customer_access_version' => 'integer',

@@ -46,6 +46,7 @@ class ExportScheduleReport
             $schedulesQuery->whereBetween('tanggal', [$startDate, $endDate]);
         }
         $schedules = $schedulesQuery->orderBy('tanggal')->orderBy('jam_mulai')->get();
+        $slotPrices = app(PriceSlots::class)->execute($tenant, $schedules);
 
         $totalSlots = $schedules->count();
         $bookedSlots = $schedules->filter(fn ($s) => $s->bookings->whereIn('status', ['paid', 'completed'])->isNotEmpty())->count();
@@ -62,7 +63,7 @@ class ExportScheduleReport
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
-        $callback = function () use ($tenant, $schedules, $totalSlots, $bookedSlots, $availableSlots, $utilizationRate, $period) {
+        $callback = function () use ($tenant, $schedules, $slotPrices, $totalSlots, $bookedSlots, $availableSlots, $utilizationRate, $period) {
             $file = fopen('php://output', 'w');
             // BOM for UTF-8
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
@@ -87,7 +88,7 @@ class ExportScheduleReport
                     substr($s->jam_mulai, 0, 5),
                     substr($s->jam_selesai, 0, 5),
                     $s->layanan->namalayanan ?? '-',
-                    $s->harga_override ?? $s->layanan->harga ?? 0,
+                    $slotPrices[(int) $s->id] ?? $s->harga_override ?? $s->layanan->harga ?? 0,
                     $s->getAvailabilityStatus(),
                     $b ? $b->namapelanggan : '-',
                 ]));

@@ -189,7 +189,7 @@
                                                     time: '{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}',
                                                     payment_status: 'Belum Ada Transaksi',
                                                     booking_status: 'Available',
-                                                    amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
+                                                    amount: 'Rp {{ number_format($slotPrices[$sched->id] ?? $sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
                                                     notes: 'Slot aktif ini terbuka untuk reservasi pelanggan.'
                                                 })"
                                                 class="craft-card rounded-xl border border-dashed border-[#b499ff] bg-[#f3effe]/60 hover:bg-[#f3effe] p-3 text-[#231a3d] cursor-pointer shadow-2xs"
@@ -201,7 +201,7 @@
                                                             <span class="rounded bg-[#e7e2f7] px-1.5 py-0.2 text-[9px] font-black uppercase text-[#382186]">Tersedia</span>
                                                         </div>
                                                         <p class="text-xs font-bold text-[#231a3d] truncate mt-0.5">{{ $sched->layanan->namalayanan ?? 'Layanan' }}</p>
-                                                        <p class="text-[10px] text-[#6e6584]">Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}</p>
+                                                        <p class="text-[10px] text-[#6e6584]">Rp {{ number_format($slotPrices[$sched->id] ?? $sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}</p>
                                                     </div>
                                                     <button
                                                         type="button"
@@ -219,7 +219,7 @@
                                                             time: '{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}',
                                                             payment_status: 'Belum Ada Transaksi',
                                                             booking_status: 'Available',
-                                                            amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
+                                                            amount: 'Rp {{ number_format($slotPrices[$sched->id] ?? $sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
                                                             notes: 'Slot aktif ini terbuka untuk reservasi pelanggan.'
                                                         }); walkinMode = true"
                                                         class="shrink-0 craft-btn rounded-lg bg-[#382186] hover:bg-[#2d1a6d] px-2.5 py-1.5 text-[10px] font-black text-white shadow-2xs"
@@ -359,7 +359,7 @@
                                                             time: '{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}',
                                                             payment_status: 'Belum Ada Transaksi',
                                                             booking_status: 'Available',
-                                                            amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
+                                                            amount: 'Rp {{ number_format($slotPrices[$sched->id] ?? $sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
                                                             notes: 'Slot aktif ini terbuka untuk reservasi pelanggan.'
                                                         })"
                                                         class="craft-card h-full rounded-xl border border-dashed border-[#b499ff] bg-[#f3effe]/60 hover:bg-[#f3effe] p-2 text-[10px] text-[#231a3d] font-semibold cursor-pointer shadow-2xs"
@@ -386,7 +386,7 @@
                                                                     time: '{{ substr($sched->jam_mulai, 0, 5) }} - {{ substr($sched->jam_selesai, 0, 5) }}',
                                                                     payment_status: 'Belum Ada Transaksi',
                                                                     booking_status: 'Available',
-                                                                    amount: 'Rp {{ number_format($sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
+                                                                    amount: 'Rp {{ number_format($slotPrices[$sched->id] ?? $sched->harga_override ?? $sched->layanan->harga ?? 0, 0, ',', '.') }}',
                                                                     notes: 'Slot aktif ini terbuka untuk reservasi pelanggan.'
                                                                 }); walkinMode = true"
                                                                 class="whitespace-nowrap rounded-md bg-[#382186] hover:bg-[#2d1a6d] px-1.5 py-0.5 text-[8px] font-extrabold text-white transition shadow-2xs"

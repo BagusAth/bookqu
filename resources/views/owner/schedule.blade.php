@@ -196,7 +196,7 @@
                                     {{ $slot->layanan->namalayanan ?? 'Layanan' }}
                                 </p>
                                 <p class="text-[11px] text-bq-text-muted font-semibold">
-                                    Rp {{ number_format($slot->harga_override ?? $slot->layanan->harga ?? 0, 0, ',', '.') }}
+                                    Rp {{ number_format($slotPrices[$slot->id] ?? $slot->harga_override ?? $slot->layanan->harga ?? 0, 0, ',', '.') }}
                                     @if ($adabooking)
                                         &bull; <span class="text-[#231a3d] font-bold">{{ $bookingnya->namapelanggan ?? '' }}</span>
                                     @endif
@@ -296,7 +296,7 @@
                                 }}
                             ">
                                 <p class="font-bold {{ $adabooking ? 'text-bq-text-muted' : 'text-bq-primary' }}">
-                                    Rp {{ number_format($slot->harga_override ?? $slot->layanan->harga ?? 0, 0, ',', '.') }}
+                                    Rp {{ number_format($slotPrices[$slot->id] ?? $slot->harga_override ?? $slot->layanan->harga ?? 0, 0, ',', '.') }}
                                 </p>
                                 <p class="mt-0.5 truncate {{ $adabooking ? 'text-bq-text-subtle' : 'text-bq-text-muted' }}">
                                     {{ $adabooking ? 'Booked: ' . ($bookingnya->namapelanggan ?? '') : 'Available' }}
