@@ -32,7 +32,7 @@ class GetCustomerPanel
 
         $stats = [['label' => 'Booking', 'value' => (string) $detail['total_bookings']]];
         if ($canViewRevenue) {
-            $stats[] = ['label' => 'Total dibayar', 'value' => (string) $detail['formatted_spent'], 'tone' => 'money'];
+            $stats[] = ['label' => 'Total dibayar', 'value' => (string) $detail['formatted_spent']];
         }
         $stats[] = ['label' => 'Dibatalkan', 'value' => (string) $bookings->where('status', 'cancelled')->count()];
         $stats[] = ['label' => 'Tidak datang', 'value' => (string) $bookings->where('status', 'no_show')->count()];
