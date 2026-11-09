@@ -157,6 +157,85 @@
             },
         }));
 
+        // BQ-136 (AC-BRD-06): Beranda sections 2–4. Refreshed every 60 seconds only while the tab is
+        // visible; the timer stops when it is hidden and the data refreshes once on return. The page
+        // renders the data with x-text, never as HTML.
+        window.Alpine.data('ownerBeranda', (initial, url) => ({
+            live: initial,
+            timer: null,
+            requestNumber: 0,
+
+            init() {
+                this.onVisibility = () => {
+                    if (document.visibilityState === 'visible') {
+                        this.refresh();
+                        this.start();
+                    } else {
+                        this.stop();
+                    }
+                };
+                document.addEventListener('visibilitychange', this.onVisibility);
+                if (document.visibilityState === 'visible') this.start();
+            },
+
+            destroy() {
+                this.stop();
+                document.removeEventListener('visibilitychange', this.onVisibility);
+            },
+
+            start() {
+                if (this.timer === null) this.timer = setInterval(() => this.refresh(), 60000);
+            },
+
+            stop() {
+                if (this.timer !== null) clearInterval(this.timer);
+                this.timer = null;
+            },
+
+            async refresh() {
+                const requestNumber = ++this.requestNumber;
+                try {
+                    const response = await fetch(url, { headers: jsonHeaders });
+                    if (!response.ok || requestNumber !== this.requestNumber) return;
+                    const body = await response.json();
+                    if (body && body.data) this.live = body.data;
+                } catch (error) {
+                    // Keep the last data; the next visible tick retries.
+                }
+            },
+        }));
+
+        // BQ-136: the booking link card. Copy or share, then record the share for the new owner guide.
+        window.Alpine.data('ownerBookingLink', (link, markUrl) => ({
+            copied: false,
+            canShare: typeof navigator.share === 'function',
+
+            async copy() {
+                try {
+                    await navigator.clipboard.writeText(link.url);
+                    this.copied = true;
+                    setTimeout(() => { this.copied = false; }, 2000);
+                    window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Link booking disalin.' } }));
+                    this.mark();
+                } catch (error) {
+                    window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Link tidak dapat disalin. Salin secara manual.' } }));
+                }
+            },
+
+            async share() {
+                try {
+                    await navigator.share({ text: link.share_text, url: link.url });
+                    this.mark();
+                } catch (error) {
+                    // The member closed the share sheet.
+                }
+            },
+
+            mark() {
+                fetch(markUrl, { method: 'POST', headers: { ...jsonHeaders, 'X-CSRF-TOKEN': csrfToken() } }).catch(() => {});
+            },
+        }));
+
         // BQ-128: global search. Results open the booking/customer panel when its endpoint exists,
         // otherwise the Booking or Pelanggan list filtered to the result. Stale responses are ignored.
         window.Alpine.data('ownerSearch', (url) => ({

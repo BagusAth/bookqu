@@ -211,8 +211,9 @@ class OwnerAppShellTest extends TestCase
         $this->assertStringNotContainsString('prefetch', $settings);
         $this->assertStringNotContainsString('chart.umd', $settings);
 
+        // BQ-136 (AC-BRD-07): Beranda draws no chart any more, so no owner page loads Chart.js.
         $dashboard = (string) $this->get(route('owner.dashboard'))->assertOk()->getContent();
-        $this->assertStringContainsString('chart.umd', $dashboard);
+        $this->assertStringNotContainsString('chart.umd', $dashboard);
     }
 
     public function test_plan_summary_shows_the_real_trial_days_left(): void

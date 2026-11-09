@@ -69,6 +69,8 @@ class Tenant extends Model
             'midtrans_sandbox_server_key' => 'encrypted',
             'midtrans_prod_client_key' => 'encrypted',
             'midtrans_prod_server_key' => 'encrypted',
+            'booking_link_shared_at' => 'datetime',
+            'owner_guide_completed_at' => 'datetime',
         ];
     }
 

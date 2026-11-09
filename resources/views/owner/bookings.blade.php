@@ -34,7 +34,7 @@
 
     {{-- ── Top Summary Stats ── --}}
     @if (isset($cancellationRequests) && $cancellationRequests->count())
-        <section class="space-y-3 rounded-xl border p-4">
+        <section id="permintaan-pembatalan" class="space-y-3 rounded-xl border p-4">
             <h2 class="font-semibold">Permintaan pembatalan</h2>
             @foreach ($cancellationRequests as $item)
                 <form method="POST" action="{{ route('owner.bookings.cancellation-requests.decide', $item->id) }}" class="flex flex-wrap items-center gap-3">

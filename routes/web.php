@@ -111,6 +111,7 @@ Route::prefix('owner')
     ->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
         Route::get('/dashboard/polling', [OwnerDashboardController::class, 'pollingData'])->name('owner.dashboard.polling');
+        Route::post('/dashboard/link-shared', [OwnerDashboardController::class, 'linkShared'])->name('owner.dashboard.link-shared');
         Route::get('/search', [OwnerShellController::class, 'search'])->middleware('throttle:60,1,owner-search')->name('owner.search');
         Route::get('/notifications', [OwnerNotificationController::class, 'index'])->name('owner.notifications');
         Route::post('/notifications/read-all', [OwnerNotificationController::class, 'markAllAsRead'])->name('owner.notifications.read-all');
