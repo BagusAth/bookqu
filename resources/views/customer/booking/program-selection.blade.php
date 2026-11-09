@@ -90,6 +90,11 @@
                                         : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200 font-medium'"
                                     class="inline-flex h-8.5 items-center gap-1.5 rounded-full border px-3.5 py-1 shrink-0 transition-all cursor-pointer"
                                 >
+                                    @if ($cat->image_src)
+                                        <img src="{{ $cat->image_src }}" alt="" class="h-5 w-5 rounded-full object-cover" loading="lazy">
+                                    @else
+                                        <span class="h-2 w-2 rounded-full" style="background-color: {{ \App\Support\CategoryColor::hex($cat->color) }}" aria-hidden="true"></span>
+                                    @endif
                                     <span>{{ $cat->name }}</span>
                                 </button>
                             @endforeach

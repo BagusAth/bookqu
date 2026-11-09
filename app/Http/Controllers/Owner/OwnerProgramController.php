@@ -6,18 +6,13 @@ namespace App\Http\Controllers\Owner;
 
 use App\Actions\Service\CreateService;
 use App\Actions\Service\DeleteService;
+use App\Actions\Service\GetLayananPage;
 use App\Actions\Service\ToggleServiceStatus;
 use App\Actions\Service\UpdateService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Service\StoreServiceRequest;
 use App\Http\Requests\Service\UpdateServiceRequest;
-use App\Models\AdditionalItem;
-use App\Models\Booking;
-use App\Models\Category;
-use App\Models\Resource;
-use App\Models\Service;
 use App\Traits\ResolvesOwnerTenant;
-use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,63 +22,25 @@ class OwnerProgramController extends Controller
     use ResolvesOwnerTenant;
 
     /**
-     * Halaman daftar program/layanan.
+     * The Layanan page (owner-portal.md §8.6): tab Layanan by default, tab Kategori with `?tab=kategori`.
      */
-    public function index(Request $request): View
+    public function index(Request $request, GetLayananPage $getLayananPage): View
     {
-        $tenant = $this->resolveTenant();
-        if (! $tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $tab = $request->query('tab') === GetLayananPage::TAB_CATEGORIES ? GetLayananPage::TAB_CATEGORIES : GetLayananPage::TAB_SERVICES;
 
-        $idtenant = $tenant->id;
-        $katakunci = (string) $request->input('katakunci', '');
-        $selectedCategory = $request->input('category', '');
-
-        $daftarlayanan = Service::where('idtenant', $idtenant)
-            ->with(['category', 'resources', 'additionalItems'])
-            ->when($katakunci !== '', function ($query) use ($katakunci) {
-                $query->where('namalayanan', 'like', '%'.$katakunci.'%');
-            })
-            ->when($selectedCategory, function ($query) use ($selectedCategory) {
-                $query->where('idcategory', $selectedCategory);
-            })
-            ->withCount('bookings')
-            ->orderByDesc('created_at')
-            ->paginate(12);
-
-        $kategoriList = Category::where('idtenant', $idtenant)->orderBy('name')->get();
-        $resourceList = Resource::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
-        $additionalItemList = AdditionalItem::where('idtenant', $idtenant)->where('is_active', true)->orderBy('name')->get();
-
-        // Statistik program dengan pembatasan tahun dan bulan berjalan
-        $totallayanan = Service::where('idtenant', $idtenant)->count();
-        $ratarataharga = Service::where('idtenant', $idtenant)->avg('harga') ?? 0;
-        $totalbookinglayanan = Booking::where('idtenant', $idtenant)
-            ->whereYear('tanggalbooking', Carbon::now()->year)
-            ->whereMonth('tanggalbooking', Carbon::now()->month)
-            ->count();
-        $pendapatanlayanan = Booking::where('idtenant', $idtenant)
-            ->whereHas('payment', fn ($q) => $q->where('status', 'sukses'))
-            ->whereYear('tanggalbooking', Carbon::now()->year)
-            ->whereMonth('tanggalbooking', Carbon::now()->month)
-            ->with('payment')
-            ->get()
-            ->sum(fn ($b) => $b->payment->jumlah ?? 0);
-
-        return view('owner.programs', compact(
-            'tenant',
-            'daftarlayanan',
-            'kategoriList',
-            'resourceList',
-            'additionalItemList',
-            'totallayanan',
-            'ratarataharga',
-            'totalbookinglayanan',
-            'pendapatanlayanan',
-            'katakunci',
-            'selectedCategory',
+        return view('owner.services', array_merge(
+            $getLayananPage->execute($tenant, $request->only(['katakunci', 'category', 'search', 'status', 'sort'])),
+            ['tenant' => $tenant, 'activeTab' => $tab],
         ));
+    }
+
+    /**
+     * The former programs page moved to Layanan (owner-portal.md §8.6: `owner.programs.*` redirects to `owner.services.*`).
+     */
+    public function legacyIndex(Request $request): RedirectResponse
+    {
+        return redirect()->route('owner.services', $request->query(), 301);
     }
 
     /**
@@ -106,7 +63,7 @@ class OwnerProgramController extends Controller
             ? 'owner.programs'
             : 'owner.services';
 
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "'.$service->namalayanan.'" berhasil ditambahkan!');
+        return redirect()->route($redirectRoute)->with('sukses', 'Layanan "'.$service->namalayanan.'" berhasil ditambahkan!');
     }
 
     /**
@@ -131,7 +88,7 @@ class OwnerProgramController extends Controller
             ? 'owner.programs'
             : 'owner.services';
 
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "'.$service->namalayanan.'" berhasil diperbarui!');
+        return redirect()->route($redirectRoute)->with('sukses', 'Layanan "'.$service->namalayanan.'" berhasil diperbarui!');
     }
 
     /**
@@ -150,7 +107,7 @@ class OwnerProgramController extends Controller
             ? 'owner.programs'
             : 'owner.services';
 
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "'.$namalayanan.'" berhasil dihapus!');
+        return redirect()->route($redirectRoute)->with('sukses', 'Layanan "'.$namalayanan.'" berhasil dihapus!');
     }
 
     /**
@@ -170,6 +127,6 @@ class OwnerProgramController extends Controller
             ? 'owner.programs'
             : 'owner.services';
 
-        return redirect()->route($redirectRoute)->with('sukses', 'Program "'.$service->namalayanan.'" berhasil '.$statusText.'!');
+        return redirect()->route($redirectRoute)->with('sukses', 'Layanan "'.$service->namalayanan.'" berhasil '.$statusText.'!');
     }
 }

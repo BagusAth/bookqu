@@ -17,7 +17,7 @@ class DeleteService
     use ClearsBookingCache;
 
     /**
-     * Delete a service with active booking protection.
+     * Delete a service that has never been booked.
      *
      * @return string Name of the deleted service
      *
@@ -34,10 +34,11 @@ class DeleteService
             ->findOrFail($targetId);
         $namalayanan = $layanan->namalayanan;
 
-        $hasActiveBookings = $layanan->bookings()->whereIn('status', ['pending', 'paid', 'completed'])->exists();
-        if ($hasActiveBookings) {
+        // FR-SERVICE-006, AC-LYN-02: any booking, cancelled ones included, is history the service must keep.
+        $hasBookingHistory = $layanan->bookings()->exists();
+        if ($hasBookingHistory) {
             throw ValidationException::withMessages([
-                'error' => 'Layanan "'.$namalayanan.'" memiliki riwayat transaksi atau jadwal booking aktif. Untuk menjaga integritas data riwayat keuangan, layanan tidak dapat dihapus. Silakan nonaktifkan status layanan ini.',
+                'error' => 'Layanan "'.$namalayanan.'" sudah pernah dibooking, jadi tidak bisa dihapus. Nonaktifkan layanan ini agar tidak bisa dibooking lagi; riwayatnya tetap tersimpan.',
             ]);
         }
 

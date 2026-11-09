@@ -41,9 +41,9 @@ class ProgramManagementTest extends TestCase
 
     public function test_owner_can_view_programs_page(): void
     {
-        $response = $this->actingAs($this->user)->get('/owner/programs');
-
-        $response->assertStatus(200);
+        // BQ-132 (owner-portal.md §8.6): the programs page moved to Layanan.
+        $this->actingAs($this->user)->get('/owner/programs')->assertStatus(301)->assertRedirect(route('owner.services'));
+        $this->get(route('owner.services'))->assertStatus(200);
     }
 
     public function test_owner_can_create_a_program(): void

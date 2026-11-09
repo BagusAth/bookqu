@@ -1,172 +1,79 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Category\CreateCategory;
+use App\Actions\Category\DeleteCategory;
+use App\Actions\Category\ToggleCategoryStatus;
+use App\Actions\Category\UpdateCategory;
+use App\Actions\Service\GetLayananPage;
 use App\Http\Controllers\Controller;
-
-use App\Models\Category;
-use App\Traits\ClearsBookingCache;
+use App\Http\Requests\Category\StoreCategoryRequest;
+use App\Http\Requests\Category\UpdateCategoryRequest;
 use App\Traits\ResolvesOwnerTenant;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class OwnerCategoryController extends Controller
 {
     use ResolvesOwnerTenant;
-    use ClearsBookingCache;
 
-    public function index(Request $request)
+    /**
+     * The Layanan page opened on its Kategori tab (owner-portal.md §8.6).
+     */
+    public function index(Request $request, GetLayananPage $getLayananPage): View
     {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $tab = $request->query('tab') === GetLayananPage::TAB_SERVICES ? GetLayananPage::TAB_SERVICES : GetLayananPage::TAB_CATEGORIES;
 
-        $search = $request->input('search', '');
-        $status = $request->input('status', 'all');
-        $sort   = $request->input('sort', 'newest');
-
-        $query = Category::where('idtenant', $tenant->id)
-            ->withCount('services')
-            ->when($search, function ($q) use ($search) {
-                $q->where(function ($sub) use ($search) {
-                    $sub->where('name', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%");
-                });
-            })
-            ->when($status === 'active', fn($q) => $q->where('is_active', true))
-            ->when($status === 'inactive', fn($q) => $q->where('is_active', false));
-
-        if ($sort === 'name_asc') {
-            $query->orderBy('name', 'asc');
-        } elseif ($sort === 'name_desc') {
-            $query->orderBy('name', 'desc');
-        } elseif ($sort === 'services') {
-            $query->orderByDesc('services_count');
-        } else {
-            $query->orderBy('created_at', 'desc');
-        }
-
-        $categories = $query->get();
-
-        return view('owner.categories', compact('tenant', 'categories', 'search', 'status', 'sort'));
+        return view('owner.services', array_merge(
+            $getLayananPage->execute($tenant, $request->only(['katakunci', 'category', 'search', 'status', 'sort'])),
+            ['tenant' => $tenant, 'activeTab' => $tab],
+        ));
     }
 
-    public function store(Request $request)
+    public function store(StoreCategoryRequest $request, CreateCategory $createCategory): RedirectResponse
     {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $category = $createCategory->execute($tenant, $request->validated(), $request->file('image'));
 
-        $validated = $request->validate([
-            'name'        => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('categories', 'name')->where('idtenant', $tenant->id),
-            ],
-            'description' => 'nullable|string|max:500',
-            'color'       => 'nullable|string|max:50',
-            'is_active'   => 'nullable|boolean',
-        ], [
-            'name.unique' => 'Kategori dengan nama ini sudah ada.',
-        ]);
-
-        Category::create([
-            'idtenant'    => $tenant->id,
-            'name'        => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'color'       => $validated['color'] ?? 'indigo',
-            'is_active'   => $request->has('is_active') ? (bool) $request->input('is_active') : true,
-        ]);
-
-        $this->clearActiveServicesCache($tenant->id);
-
-        return redirect()->route('owner.categories')->with('sukses', 'Kategori "' . $validated['name'] . '" berhasil ditambahkan!');
+        return redirect()->route('owner.categories')->with('sukses', 'Kategori "'.$category->name.'" berhasil ditambahkan!');
     }
 
-    public function update(Request $request, int $id)
+    public function update(UpdateCategoryRequest $request, int $id, UpdateCategory $updateCategory): RedirectResponse
     {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $category = $updateCategory->execute($tenant, $id, $request->validated(), $request->file('image'), $request->input('remove_image') === '1');
 
-        $category = Category::where('idtenant', $tenant->id)->findOrFail($id);
-
-        $validated = $request->validate([
-            'name'        => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('categories', 'name')->where('idtenant', $tenant->id)->ignore($category->id),
-            ],
-            'description' => 'nullable|string|max:500',
-            'color'       => 'nullable|string|max:50',
-            'is_active'   => 'required|boolean',
-        ], [
-            'name.unique' => 'Kategori dengan nama ini sudah ada.',
-        ]);
-
-        $category->update([
-            'name'        => $validated['name'],
-            'slug'        => Str::slug($validated['name']),
-            'description' => $validated['description'] ?? null,
-            'color'       => $validated['color'] ?? $category->color,
-            'is_active'   => (bool) $validated['is_active'],
-        ]);
-
-        $this->clearActiveServicesCache($tenant->id);
-
-        return redirect()->route('owner.categories')->with('sukses', 'Kategori "' . $category->name . '" berhasil diperbarui!');
+        return redirect()->route('owner.categories')->with('sukses', 'Kategori "'.$category->name.'" berhasil diperbarui!');
     }
 
-    public function destroy(int $id)
+    public function destroy(int $id, DeleteCategory $deleteCategory): RedirectResponse
     {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $name = $deleteCategory->execute($tenant, $id);
 
-        $category = Category::where('idtenant', $tenant->id)->findOrFail($id);
-        $name = $category->name;
-
-        // Unlink associated services safely
-        $category->services()->update(['idcategory' => null]);
-        $category->delete();
-
-        $this->clearActiveServicesCache($tenant->id);
-
-        return redirect()->route('owner.categories')->with('sukses', 'Kategori "' . $name . '" berhasil dihapus!');
+        return redirect()->route('owner.categories')->with('sukses', 'Kategori "'.$name.'" berhasil dihapus!');
     }
 
-    public function toggleStatus(int $id)
+    public function toggleStatus(Request $request, int $id, ToggleCategoryStatus $toggleCategoryStatus): RedirectResponse|JsonResponse
     {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
-
-        $category = Category::where('idtenant', $tenant->id)->findOrFail($id);
-        $category->update([
-            'is_active' => !$category->is_active,
-        ]);
-
-        $this->clearActiveServicesCache($tenant->id);
-
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $category = $toggleCategoryStatus->execute($tenant, $id);
         $statusText = $category->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
-        if (request()->wantsJson()) {
+        if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'is_active' => $category->is_active,
-                'message' => 'Kategori "' . $category->name . '" berhasil ' . $statusText . '.',
+                'message' => 'Kategori "'.$category->name.'" berhasil '.$statusText.'.',
             ]);
         }
 
-        return redirect()->route('owner.categories')->with('sukses', 'Kategori "' . $category->name . '" berhasil ' . $statusText . '!');
+        return redirect()->route('owner.categories')->with('sukses', 'Kategori "'.$category->name.'" berhasil '.$statusText.'!');
     }
 }
-

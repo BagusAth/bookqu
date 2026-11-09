@@ -61,6 +61,9 @@ class UpdateService
                 'durasi' => $data['durasi'],
                 'idcategory' => $data['idcategory'] ?? null,
                 'deskripsi' => $data['deskripsi'] ?? null,
+                'satuan_harga' => ($data['satuan_harga'] ?? null) ?: $layanan->satuan_harga,
+                'satuan_durasi' => ($data['satuan_durasi'] ?? null) ?: $layanan->satuan_durasi,
+                'is_popular' => array_key_exists('is_popular', $data) ? (bool) $data['is_popular'] : $layanan->is_popular,
                 'is_active' => (bool) ($data['is_active'] ?? true),
                 'image_url' => $imageUrl,
             ]);

@@ -2,7 +2,7 @@
 id: BQ-132
 title: Layanan page with tabs Layanan and Kategori
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: catalog
@@ -51,3 +51,17 @@ INV-SUB-01 for the service limit; existing bookings keep their times and amounts
 - `docs/domains/catalog.md`
 
 ## Evidence (fill when done)
+
+## Implementation notes
+
+- **Schema (approved by the Tech Lead through the developer, 2026-11-09):** expand-only migration adding `categories.image_url` (nullable string) and `categories.sort_order` (unsigned int, default 0) with index `(idtenant, sort_order)` for FR-CATEGORY-006.
+- **Routes:** `GET /owner/programs` answers 301 to `owner.services` with the query kept. The `owner.programs.*` write aliases keep working, and their redirect then lands on Layanan. `GET /owner/categories` renders the same page on its Kategori tab.
+- **AC-LYN-02:** `DeleteService` now refuses any booking history, cancelled bookings included (it used to check only pending, paid and completed). The `slot-occupancy` allowlist entry for `DeleteService` is removed.
+- **Category delete:** refused while a service uses the category (§8.6 "delete when empty"). Before, it unlinked the services. `ServicesDomainEndToEndTest` step 5 now asserts the refusal, and the category and the service link both stay.
+- **Units:** the form has no unit field (BQ-152). It sends the service's current `resource_ids` back unchanged, because BQ-045 requires that a save without them detaches every unit.
+- **Images:** uploaded directly. The gallery picker waits until a gallery page exists.
+- **BQ-099 findings carried:**
+  - card actions are always visible;
+  - no native alerts (the shared confirm dialog and toast);
+  - routes go through `@js` templates;
+  - "Lihat layanan" uses the `category` filter.

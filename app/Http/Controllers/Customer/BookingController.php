@@ -51,7 +51,9 @@ final class BookingController extends StorefrontBookingController
             ];
         })->values();
 
-        $categories = $services->pluck('category')->filter(fn ($cat) => $cat && $cat->is_active)->unique('id')->values();
+        // FR-CATEGORY-006: the public page follows the owner's display order.
+        $categories = $services->pluck('category')->filter(fn ($cat) => $cat && $cat->is_active)->unique('id')
+            ->sortBy([['sort_order', 'asc'], ['name', 'asc']])->values();
         $pendingCheckout = app(StorefrontCheckoutState::class)->pending($tenant);
 
         $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();

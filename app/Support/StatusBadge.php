@@ -56,6 +56,8 @@ final class StatusBadge
                 'failed' => ['Transfer gagal', 'danger'],
                 default => [$status, 'neutral'],
             },
+            // BQ-132: services, categories and other catalogue rows that are switched on or off.
+            'availability' => $status === 'active' ? ['Aktif', 'success'] : ['Nonaktif', 'neutral'],
             default => [$status, 'neutral'],
         };
     }

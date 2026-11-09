@@ -1,6 +1,6 @@
 {{--
     Status badge (BQ-129, owner-portal.md §9): one label and one colour per state, from
-    App\Support\StatusBadge. Types: booking, payment, payout, refund_request, refund.
+    App\Support\StatusBadge. Types: booking, payment, payout, refund_request, refund, availability (active|inactive).
 --}}
 @props([
     'type',

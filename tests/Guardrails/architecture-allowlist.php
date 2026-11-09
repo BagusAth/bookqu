@@ -17,7 +17,6 @@ return [
     // Removed by BQ-012 (Slot bookability).
     'slot-occupancy' => [
         'app/Actions/Booking/CreateBooking.php' => 1,
-        'app/Actions/Service/DeleteService.php' => 1,
         'app/Domain/Subscription/SubscriptionUsage.php' => 1,
     ],
     // Removed by BQ-033.

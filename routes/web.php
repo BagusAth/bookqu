@@ -142,7 +142,7 @@ Route::prefix('owner')
         Route::get('/checkout/{payment:order_id}/invoice', [OwnerCheckoutController::class, 'showInvoice'])->name('owner.checkout.invoice');
 
         Route::middleware('owner.profile')->group(function () {
-            Route::get('/programs', [OwnerProgramController::class, 'index'])->name('owner.programs');
+            Route::get('/programs', [OwnerProgramController::class, 'legacyIndex'])->name('owner.programs');
             Route::post('/programs', [OwnerProgramController::class, 'store'])->name('owner.programs.store');
             Route::put('/programs/{program}', [OwnerProgramController::class, 'update'])->name('owner.programs.update');
             Route::delete('/programs/{program}', [OwnerProgramController::class, 'destroy'])->name('owner.programs.destroy');
