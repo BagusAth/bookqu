@@ -20,6 +20,9 @@
     <!-- Chart.js (Deferred to prevent render blocking) -->
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 
+    <!-- Shared owner blocks register their Alpine behaviour before Alpine starts (BQ-129) -->
+    <script defer src="{{ asset('js/owner-ui.js') }}"></script>
+
     <!-- Vite Assets -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -50,14 +53,7 @@
             @include('components.owner.topbar')
 
             <div class="p-3.5 sm:p-5 md:p-6 lg:p-8 flex-1">
-                @if (session('pesan'))
-                    <div class="mb-5 rounded-2xl border border-[#ffb84d]/60 bg-[#fff8eb] px-4 py-3 text-xs font-bold text-[#875000] shadow-2xs flex items-center gap-2">
-                        <svg class="h-4 w-4 text-[#ffb84d] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <span>{{ session('pesan') }}</span>
-                    </div>
-                @endif
+                {{-- Flash messages, including `pesan`, show once in the toast (BQ-129) --}}
                 @yield('content')
             </div>
         </main>
@@ -66,6 +62,9 @@
     <!-- Reusable UI Components -->
     @include('components.owner.toast')
     @include('components.owner.confirm-modal')
+    {{-- The one booking panel and customer panel every page opens (owner-portal.md rule 3, AC-PNL-06) --}}
+    <x-owner.booking-panel />
+    <x-owner.customer-panel />
     @include('components.owner.session-expired')
 
 </body>

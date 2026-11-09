@@ -21,7 +21,7 @@
             const file = e.target.files[0];
             if (!file) return;
             if (file.size > 10 * 1024 * 1024) {
-                alert('Ukuran gambar maksimal adalah 10MB.');
+                window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Ukuran gambar maksimal adalah 10MB.' } }));
                 this.reset();
                 return;
             }

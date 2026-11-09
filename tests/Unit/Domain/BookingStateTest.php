@@ -31,10 +31,15 @@ class BookingStateTest extends TestCase
         $this->assertFalse(BookingState::canTransition(BookingState::STATUS_COMPLETED, BookingState::STATUS_PAID));
     }
 
+    /**
+     * Labels from the approved owner-portal contract (owner-portal.md §8, BQ-129).
+     */
     public function test_format_label_provides_indonesian_description(): void
     {
-        $this->assertSame('lunas / dikonfirmasi', BookingState::formatLabel(BookingState::STATUS_PAID));
-        $this->assertSame('selesai', BookingState::formatLabel(BookingState::STATUS_COMPLETED));
-        $this->assertSame('dibatalkan', BookingState::formatLabel(BookingState::STATUS_CANCELLED));
+        $this->assertSame('Menunggu bayar', BookingState::formatLabel(BookingState::STATUS_PENDING));
+        $this->assertSame('Terkonfirmasi', BookingState::formatLabel(BookingState::STATUS_PAID));
+        $this->assertSame('Selesai', BookingState::formatLabel(BookingState::STATUS_COMPLETED));
+        $this->assertSame('Dibatalkan', BookingState::formatLabel(BookingState::STATUS_CANCELLED));
+        $this->assertSame('Tidak datang', BookingState::formatLabel('no_show'));
     }
 }

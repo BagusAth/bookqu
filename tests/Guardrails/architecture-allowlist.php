@@ -30,4 +30,6 @@ return [
     ],
     // Added empty by BQ-089: views assign only fixed markup to innerHTML.
     'inner-html-data' => [],
+    // Added empty by BQ-129: owner views use the confirm dialog and toast, not native dialogs.
+    'native-dialogs' => [],
 ];

@@ -112,6 +112,22 @@ class ArchitectureRulesTest extends TestCase
     }
 
     /**
+     * BQ-129 (owner-portal.md §9): owner pages use the confirm dialog and the toast, never the
+     * browser's native confirm(), alert() or prompt().
+     */
+    public function test_owner_views_never_use_native_browser_dialogs(): void
+    {
+        $this->assertRule('native-dialogs', $this->countCallback(
+            ['resources/views/owner', 'resources/views/components/owner', 'resources/views/layouts'],
+            function (string $source): int {
+                $code = (string) preg_replace('/\{\{--.*?--\}\}/s', '', $source);
+
+                return preg_match_all('/(?<![\w.$-])(?:window\.)?(?:confirm|alert|prompt)\s*\(/', $code);
+            },
+        ));
+    }
+
+    /**
      * @param  array<string, int>  $violations
      */
     private function assertRule(string $rule, array $violations): void
