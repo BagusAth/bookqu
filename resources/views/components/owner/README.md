@@ -7,7 +7,7 @@ Built in BQ-129 for `docs/owner-portal.md` §9. Every owner page uses these inst
 | Page header | `<x-owner.page-header title purpose>` + `action` slot | One primary action per page |
 | Tabs | `<x-owner.tabs :tabs="['key' => 'Label']" param="tab">` | Active tab in the URL; unknown value → first tab |
 | Booking panel | `$dispatch('open-booking-panel', { url })` | Rendered once by the layout; JSON contract in `booking-panel.blade.php` (filled by BQ-135) |
-| Customer panel | `$dispatch('open-customer-panel', { url })` | Rendered once by the layout; JSON contract in `customer-panel.blade.php` (filled by BQ-137) |
+| Customer panel | `$dispatch('open-customer-panel', { url: route('owner.customers.panel', ['identifier' => …]) })` | Rendered once by the layout; JSON contract in `customer-panel.blade.php` (`GetCustomerPanel`, BQ-137). "Buat booking" prefills the walk-in form with `walkin-prefill` |
 | Walk-in form | `<x-owner.walkin-form :slots>` or `:fixed-slot` | Posts to `owner.bookings.walkin` |
 | Status badge | `<x-owner.status-badge type status>` | Labels and tones from `App\Support\StatusBadge` |
 | Upgrade prompt | `<x-owner.upgrade-prompt feature plan>` | The page decides access through `EntitlementRules` |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Dashboard;
 
+use App\Domain\Customer\CustomerIdentity;
 use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Subscription\SubscriptionState;
 use App\Models\Booking;
@@ -170,7 +171,7 @@ class GetOwnerDashboardOverview
         $totalpelanggan = DB::table('bookings')
             ->where('idtenant', $idtenant)
             ->distinct()
-            ->count(DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id))))"));
+            ->count(DB::raw(CustomerIdentity::sql()));
 
         $upcomingbookings = Booking::where('bookings.idtenant', $idtenant)
             ->where('tanggalbooking', '>=', Carbon::today())
@@ -270,7 +271,7 @@ class GetOwnerDashboardOverview
             $totalpelanggan = DB::table('bookings')
                 ->where('idtenant', $idtenant)
                 ->distinct()
-                ->count(DB::raw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id))))"));
+                ->count(DB::raw(CustomerIdentity::sql()));
 
             // ── Recent Activity ──
             $aktivitasterbaru = Booking::where('bookings.idtenant', $idtenant)

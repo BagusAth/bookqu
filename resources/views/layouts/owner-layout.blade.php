@@ -76,7 +76,7 @@
     @include('components.owner.confirm-modal')
     {{-- The one booking panel and customer panel every page opens (owner-portal.md rule 3, AC-PNL-06) --}}
     <x-owner.booking-panel />
-    <x-owner.customer-panel />
+    <x-owner.customer-panel :can-walk-in="(bool) ($shell['ready'] && $shell['canWalkIn'])" />
     @include('components.owner.session-expired')
 </body>
 </html>

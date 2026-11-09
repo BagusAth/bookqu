@@ -19,7 +19,18 @@
     $labelClass = 'mb-1 block text-sm font-medium text-bq-text';
 @endphp
 
-<form method="POST" action="{{ route('owner.bookings.walkin') }}" {{ $attributes->merge(['class' => 'space-y-4']) }}>
+{{-- BQ-137 (AC-PLG-04): "Buat booking" in the customer panel fills the contact fields with walkin-prefill. --}}
+<form
+    method="POST"
+    action="{{ route('owner.bookings.walkin') }}"
+    x-data
+    x-on:walkin-prefill.window="
+        $refs.name.value = $event.detail.namapelanggan || '';
+        $refs.phone.value = $event.detail.nomorhp || '';
+        $refs.email.value = $event.detail.email || '';
+    "
+    {{ $attributes->merge(['class' => 'space-y-4']) }}
+>
     @csrf
 
     <div>
@@ -52,19 +63,19 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
             <label for="{{ $idPrefix }}-name" class="{{ $labelClass }}">Nama pelanggan</label>
-            <input id="{{ $idPrefix }}-name" type="text" name="namapelanggan" required maxlength="150" value="{{ old('namapelanggan') }}" autocomplete="off" class="{{ $field }}">
+            <input id="{{ $idPrefix }}-name" x-ref="name" type="text" name="namapelanggan" required maxlength="150" value="{{ old('namapelanggan') }}" autocomplete="off" class="{{ $field }}">
             @error('namapelanggan')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
         </div>
         <div>
             <label for="{{ $idPrefix }}-phone" class="{{ $labelClass }}">Nomor HP</label>
-            <input id="{{ $idPrefix }}-phone" type="tel" name="nomorhp" required maxlength="30" value="{{ old('nomorhp') }}" autocomplete="off" class="{{ $field }}">
+            <input id="{{ $idPrefix }}-phone" x-ref="phone" type="tel" name="nomorhp" required maxlength="30" value="{{ old('nomorhp') }}" autocomplete="off" class="{{ $field }}">
             @error('nomorhp')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
         </div>
     </div>
 
     <div>
         <label for="{{ $idPrefix }}-email" class="{{ $labelClass }}">Email <span class="font-normal text-bq-text-muted">(opsional)</span></label>
-        <input id="{{ $idPrefix }}-email" type="email" name="email" maxlength="100" value="{{ old('email') }}" autocomplete="off" class="{{ $field }}">
+        <input id="{{ $idPrefix }}-email" x-ref="email" type="email" name="email" maxlength="100" value="{{ old('email') }}" autocomplete="off" class="{{ $field }}">
         @error('email')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
     </div>
 

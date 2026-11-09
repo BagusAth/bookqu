@@ -131,6 +131,32 @@
         const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const jsonHeaders = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
 
+        // BQ-137 (BQ-100 finding 3): the customer note editor in the customer panel. One save at a
+        // time; the result is reported with a toast and the panel keeps the saved text.
+        window.Alpine.data('ownerCustomerNote', (customer) => ({
+            text: customer.note || '',
+            saving: false,
+
+            async save() {
+                if (this.saving) return;
+                this.saving = true;
+                try {
+                    const response = await fetch(customer.note_url, {
+                        method: 'POST',
+                        headers: { ...jsonHeaders, 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
+                        body: JSON.stringify({ customer_identifier: customer.identifier, notes: this.text }),
+                    });
+                    if (!response.ok) throw new Error('note save failed');
+                    customer.note = this.text;
+                    window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Catatan disimpan.' } }));
+                } catch (error) {
+                    window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Catatan gagal disimpan. Coba lagi.' } }));
+                } finally {
+                    this.saving = false;
+                }
+            },
+        }));
+
         // BQ-128: global search. Results open the booking/customer panel when its endpoint exists,
         // otherwise the Booking or Pelanggan list filtered to the result. Stale responses are ignored.
         window.Alpine.data('ownerSearch', (url) => ({

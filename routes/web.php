@@ -226,6 +226,7 @@ Route::prefix('owner')
             // Customers CRM
             Route::get('/customers', [OwnerCustomerController::class, 'index'])->name('owner.customers');
             Route::get('/customers/detail', [OwnerCustomerController::class, 'show'])->name('owner.customers.detail');
+            Route::get('/customers/panel', [OwnerCustomerController::class, 'panel'])->name('owner.customers.panel');
             Route::post('/customers/note', [OwnerCustomerController::class, 'saveNote'])->name('owner.customers.note');
 
             // Settings & Configurations

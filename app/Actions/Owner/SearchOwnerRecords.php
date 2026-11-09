@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Owner;
 
+use App\Domain\Customer\CustomerIdentity;
 use App\Models\Booking;
 use App\Models\Tenant;
 use App\Support\StatusBadge;
@@ -48,7 +49,7 @@ final class SearchOwnerRecords
             ->orderByDesc('tanggalbooking')
             ->orderByDesc('id')
             ->limit(50)
-            ->get(['id', 'idlayanan', 'booking_code', 'namapelanggan', 'nomorhp', 'tanggalbooking', 'jam', 'status']);
+            ->get(['id', 'idlayanan', 'booking_code', 'namapelanggan', 'email', 'nomorhp', 'tanggalbooking', 'jam', 'status']);
 
         $bookings = $matches->take(self::LIMIT)->map(fn (Booking $booking): array => [
             'code' => (string) $booking->booking_code,
@@ -64,12 +65,12 @@ final class SearchOwnerRecords
         $customers = $matches
             ->filter(fn (Booking $booking): bool => stripos((string) $booking->namapelanggan, $query) !== false
                 || (strlen($digits) >= 4 && str_contains(preg_replace('/\D+/', '', (string) $booking->nomorhp) ?? '', $digits)))
-            ->unique(fn (Booking $booking): string => mb_strtolower(trim((string) $booking->nomorhp)) ?: mb_strtolower(trim((string) $booking->namapelanggan)))
+            ->unique(fn (Booking $booking): string => CustomerIdentity::forBooking($booking))
             ->take(self::LIMIT)
             ->map(fn (Booking $booking): array => [
                 'name' => (string) $booking->namapelanggan,
                 'phone' => (string) $booking->nomorhp,
-                'panel_url' => Route::has('owner.customers.panel') ? route('owner.customers.panel', ['phone' => $booking->nomorhp]) : null,
+                'panel_url' => route('owner.customers.panel', ['identifier' => CustomerIdentity::forBooking($booking)]),
                 'href' => route('owner.customers', ['search' => $booking->namapelanggan]),
             ])->values()->all();
 
