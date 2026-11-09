@@ -129,7 +129,7 @@ class OwnerSidebarNavigationTest extends TestCase
 
         // Must not contain links to hidden features in dropdown
         $response->assertDontSee(route('owner.settings.appearance'));
-        $response->assertDontSee(route('owner.settings.payment-setting'));
+        $response->assertDontSee('/owner/settings/payment-setting');
 
         // Retains active links: Pengaturan and Paket & Tagihan come from the navigation definition (BQ-128)
         $response->assertSee(route('owner.settings'));

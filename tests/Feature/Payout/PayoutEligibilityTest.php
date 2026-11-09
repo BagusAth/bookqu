@@ -220,7 +220,7 @@ class PayoutEligibilityTest extends TestCase
             'jumlah' => 300000,
             'payout_account_id' => $this->account->id,
         ]);
-        $validResponse->assertRedirect(route('owner.settings.balance'));
+        $validResponse->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
         $this->assertDatabaseHas('owner_payouts', ['idtenant' => $this->tenant->id, 'jumlah' => 300000]);
     }
 
@@ -248,14 +248,14 @@ class PayoutEligibilityTest extends TestCase
             'request_key' => (string) Str::uuid(),
             'jumlah' => 50000,
             'payout_account_id' => $this->account->id,
-        ])->assertRedirect(route('owner.settings.balance'));
+        ])->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
 
         // 2nd request today
         $this->actingAs($this->owner)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
             'jumlah' => 50000,
             'payout_account_id' => $this->account->id,
-        ])->assertRedirect(route('owner.settings.balance'));
+        ])->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
 
         // 3rd request today hits daily limit
         $response = $this->actingAs($this->owner)->post('/owner/payouts', [
@@ -271,9 +271,9 @@ class PayoutEligibilityTest extends TestCase
     {
         $this->tenant->update(['saldo_platform' => 0]);
 
-        $response = $this->actingAs($this->owner)->get('/owner/settings/balance');
+        $response = $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo']));
         $response->assertOk();
-        $response->assertSee('Belum dapat mengajukan withdraw');
+        $response->assertSee('Belum dapat mengajukan pencairan');
         $response->assertSee('Saldo belum tersedia untuk ditarik.');
     }
 }

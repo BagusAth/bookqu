@@ -8,7 +8,7 @@ Modules whose backend exists but which are not fully released. The release polic
 | Additional items | `owner.additional-items*` | `Owner/OwnerAdditionalItemController`, `Models/AdditionalItem` | 3 | Owner CRUD reachable by URL |
 | Staff & resources | `owner.staff*`, `owner.resources*`, `owner.staff-resources` | `Owner/OwnerStaffResourceController` (292 lines), `Models/Staff`, `Models/Resource` | 3 | Reachable; links also affect `Service::hasActiveFulfillment()` |
 | Appearance | `owner.settings.appearance*` | `Owner/OwnerAppearanceController`, `Actions/Tenant/UpdateAppearanceSettings` | 3 | Reachable; storefront ignores the settings |
-| Direct payment gateway | `owner.settings.payment` (POST), `owner.settings.payments`, `owner.settings.payment-setting` | `OwnerSettingController::updatePaymentSettings`, `Actions/Tenant/UpdatePaymentSettings`, `Owner/OwnerPaymentSettingsController` | 3 | Reachable; saves Midtrans keys in plain text; `payment_mode = owner` changes checkout behaviour |
+| Direct payment gateway | none since BQ-141 (D-016: the owner gateway form and its routes are removed) | Backend left: `OwnerSettingController::updatePaymentSettings` (unrouted), `Actions/Tenant/UpdatePaymentSettings`, `tenants.payment_mode` and the Midtrans key columns | 3 | No owner route; `payment_mode = owner` still changes checkout behaviour for tenants that already have it |
 | Media assets | `owner.settings.assets*` | `Owner/OwnerAssetController`, `Models/Asset` | 3 | Reachable; images only |
 | Landing page builder | `owner.landing-page*` (`subscription:pro`) | `Owner/OwnerLandingPageController` | 3 | Reachable for Pro/trial |
 | Integrations | `owner.settings.integrations` | `Owner/OwnerIntegrationController` | 2 ("Coming soon") | Display only |

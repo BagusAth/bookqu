@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Owner\GetPaymentsPage;
 use App\Actions\Owner\RequestOwnerPayout;
-use App\Domain\Payout\PayoutEligibility;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\RequestPayoutRequest;
 use App\Models\OwnerPayout;
-use App\Models\Payment;
 use App\Models\TenantPayoutAccount;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -23,60 +21,31 @@ class OwnerBalanceController extends Controller
 {
     use ResolvesOwnerTenant;
 
-    public function index(Request $request): View
+    /**
+     * The Pembayaran page (owner-portal.md §8.12). Pemilik only through `payouts.manage` (AC-PAY-01).
+     */
+    public function index(Request $request, GetPaymentsPage $getPaymentsPage): View
     {
-        $tenant = $this->resolveTenant();
-        $availableBalance = $tenant?->saldo_platform ?? 0;
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
 
-        $inFlightPayouts = OwnerPayout::where('idtenant', $tenant?->id)
-            ->whereIn('status', ['pending', 'approved'])
-            ->sum('jumlah');
+        return view('owner.payments', $getPaymentsPage->execute(
+            $tenant,
+            $request->user() ?? abort(403),
+            is_string($request->query('tab')) ? $request->query('tab') : null,
+        ) + ['tenant' => $tenant]);
+    }
 
-        $pendingSettlement = $inFlightPayouts;
-
-        $totalEarnings = Payment::where('idtenant', $tenant?->id)
-            ->where('status', 'sukses')
-            ->where('tipe', 'booking')
-            ->sum('jumlah');
-
-        $payouts = OwnerPayout::where('idtenant', $tenant?->id)
-            ->latest('requested_at')
-            ->paginate(15)
-            ->withQueryString();
-
-        $payoutAccounts = TenantPayoutAccount::where('idtenant', $tenant?->id)
-            ->orderByDesc('is_default')
-            ->latest()
-            ->get();
-
-        $requestKey = (string) Str::uuid();
-
-        $eligibilityReasons = $tenant ? PayoutEligibility::reasons($tenant, $request->user()) : [];
-        $isEligible = empty($eligibilityReasons);
-
-        $minPayoutAmount = (int) config('payouts.min_amount', 10000);
-
-        return view('owner.balance', compact(
-            'minPayoutAmount',
-            'tenant',
-            'availableBalance',
-            'inFlightPayouts',
-            'pendingSettlement',
-            'totalEarnings',
-            'payouts',
-            'payoutAccounts',
-            'requestKey',
-            'eligibilityReasons',
-            'isEligible'
-        ));
+    /**
+     * The former balance page now is the Saldo & Pencairan tab (§8.12).
+     */
+    public function legacyBalance(Request $request): RedirectResponse
+    {
+        return redirect()->route('owner.payments', ['tab' => 'saldo'] + $request->query(), 301);
     }
 
     public function store(RequestPayoutRequest $request, RequestOwnerPayout $requestOwnerPayout): RedirectResponse
     {
-        $tenant = $this->resolveTenant();
-        if (! $tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
 
         $account = TenantPayoutAccount::where('idtenant', $tenant->id)
             ->whereNull('deleted_at')
@@ -90,7 +59,7 @@ class OwnerBalanceController extends Controller
             $request->user()
         );
 
-        return redirect()->route('owner.settings.balance')->with('sukses', 'Permintaan withdraw berhasil dibuat dan menunggu review admin.');
+        return redirect()->route('owner.payments', ['tab' => 'saldo'])->with('sukses', 'Permintaan pencairan dibuat dan menunggu review admin.');
     }
 
     /**

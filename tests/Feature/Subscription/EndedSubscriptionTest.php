@@ -43,7 +43,7 @@ class EndedSubscriptionTest extends TestCase
         $tenant = Tenant::factory()->create();
         $subscription = app(CreateTrialSubscription::class)->execute($tenant);
         $subscription->update(['trial_berakhir' => now()->subDay()]);
-        foreach (['/owner/dashboard', '/owner/bookings', '/owner/calendar', '/owner/customers', '/owner/reviews', '/owner/settings/balance', '/owner/subscription'] as $path) {
+        foreach (['/owner/dashboard', '/owner/bookings', '/owner/calendar', '/owner/customers', '/owner/reviews', '/owner/payments', '/owner/subscription'] as $path) {
             $this->actingAs($tenant->user)->get($path)->assertOk();
         }
         $this->postJson('/owner/schedule/bulk-slots', [])->assertForbidden()->assertJsonPath('code', 'subscription-ended');

@@ -169,7 +169,7 @@ class GetBeranda
             return [
                 'kind' => 'payout-account', 'tone' => 'info',
                 'message' => 'Simpan rekening pencairan agar pendapatan booking online bisa dicairkan.',
-                'action' => Route::has('owner.settings.balance') ? ['label' => 'Simpan rekening', 'url' => route('owner.settings.balance')] : null,
+                'action' => Route::has('owner.payments') ? ['label' => 'Simpan rekening', 'url' => route('owner.payments', ['tab' => 'rekening'])] : null,
                 'note' => null,
             ];
         }
@@ -299,8 +299,8 @@ class GetBeranda
                 'count' => Review::where('idtenant', $tenant->id)->where('rating', '<=', 3)->whereNull('balasan')->count()];
         }
 
-        if (TenantPermission::allowsRole($role, 'payouts.manage') && Route::has('owner.settings.balance')) {
-            $items[] = ['key' => 'payouts', 'label' => 'Perubahan status pencairan', 'url' => route('owner.settings.balance'),
+        if (TenantPermission::allowsRole($role, 'payouts.manage') && Route::has('owner.payments')) {
+            $items[] = ['key' => 'payouts', 'label' => 'Perubahan status pencairan', 'url' => route('owner.payments', ['tab' => 'saldo']),
                 'count' => $user->unreadNotifications()->where('type', OwnerPayoutStatusChangedNotification::class)->count()];
         }
 

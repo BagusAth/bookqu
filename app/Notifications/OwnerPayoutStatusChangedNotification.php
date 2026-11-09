@@ -61,7 +61,7 @@ class OwnerPayoutStatusChangedNotification extends Notification implements Shoul
                 default => 'amber',
             },
             'icon' => 'wallet',
-            'url' => url('/owner/settings/balance'),
+            'url' => route('owner.payments', ['tab' => 'saldo']),
         ];
     }
 
@@ -96,7 +96,7 @@ class OwnerPayoutStatusChangedNotification extends Notification implements Shoul
         }
 
         return $mail
-            ->action('Lihat Saldo & Riwayat', url('/owner/settings/balance'))
+            ->action('Lihat Saldo & Riwayat', route('owner.payments', ['tab' => 'saldo']))
             ->line('Terima kasih telah menggunakan BookQu!');
     }
 }

@@ -31,7 +31,6 @@ use App\Http\Controllers\Owner\OwnerDashboardController;
 use App\Http\Controllers\Owner\OwnerIntegrationController;
 use App\Http\Controllers\Owner\OwnerLandingPageController;
 use App\Http\Controllers\Owner\OwnerNotificationController;
-use App\Http\Controllers\Owner\OwnerPaymentSettingsController;
 use App\Http\Controllers\Owner\OwnerPayoutAccountController;
 use App\Http\Controllers\Owner\OwnerPriceRuleController;
 use App\Http\Controllers\Owner\OwnerProgramController;
@@ -131,7 +130,6 @@ Route::prefix('owner')
         Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');
         Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
         Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');
-        Route::post('/settings/payment', [OwnerSettingController::class, 'updatePaymentSettings'])->middleware('module:direct-payment')->name('owner.settings.payment');
         Route::post('/payouts', [OwnerBalanceController::class, 'store'])->middleware('module:balance')->name('owner.payouts.request');
 
         // ── Checkout Routes (tanpa owner.profile middleware, karena ini billing) ──
@@ -234,12 +232,12 @@ Route::prefix('owner')
             Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
             Route::get('/settings/appearance', [OwnerAppearanceController::class, 'index'])->middleware(['module:appearance', 'subscription:branding'])->name('owner.settings.appearance');
             Route::post('/settings/appearance', [OwnerAppearanceController::class, 'update'])->middleware(['module:appearance', 'subscription:branding'])->name('owner.settings.appearance.update');
-            Route::get('/settings/payment-setting', [OwnerPaymentSettingsController::class, 'index'])->middleware('module:direct-payment')->name('owner.settings.payment-setting');
-            Route::get('/settings/payments', [OwnerPaymentSettingsController::class, 'index'])->middleware('module:direct-payment')->name('owner.settings.payments');
             Route::get('/settings/assets', [OwnerAssetController::class, 'index'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets');
             Route::post('/settings/assets', [OwnerAssetController::class, 'store'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets.store');
             Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets.destroy');
-            Route::get('/settings/balance', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.settings.balance');
+            // BQ-141 (owner-portal.md §8.12): one Pembayaran page; the former balance page redirects to its Saldo tab.
+            Route::get('/payments', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.payments');
+            Route::get('/settings/balance', [OwnerBalanceController::class, 'legacyBalance'])->middleware('module:balance')->name('owner.settings.balance');
             Route::get('/payouts/{payout}/proof', [OwnerBalanceController::class, 'proof'])->whereNumber('payout')->middleware('module:balance')->name('owner.payouts.proof');
             Route::prefix('payout-accounts')->middleware('module:balance')->group(function () {
                 // BQ-127: the strict limit guards account changes only; switching the primary account has its own.

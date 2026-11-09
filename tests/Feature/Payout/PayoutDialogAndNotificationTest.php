@@ -254,7 +254,7 @@ class PayoutDialogAndNotificationTest extends TestCase
             'jumlah' => 100000,
             'payout_account_id' => $this->account->id,
         ]);
-        $response->assertRedirect(route('owner.settings.balance'));
+        $response->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
 
         Notification::assertSentTo(
             $this->admin,
@@ -268,24 +268,23 @@ class PayoutDialogAndNotificationTest extends TestCase
 
     public function test_owner_balance_view_renders_accessibility_attributes_and_dialog(): void
     {
-        $response = $this->actingAs($this->owner)->get('/owner/settings/balance');
+        $response = $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo']));
         $response->assertOk();
 
         // Check WCAG dialog accessibility attributes
         $response->assertSee('role="dialog"', false);
         $response->assertSee('aria-modal="true"', false);
 
-        // Check header and cards in Indonesian
-        $response->assertSee('Saldo');
-        $response->assertSee('Kelola saldo hasil booking dan tarik ke rekening Anda.');
-        $response->assertSee('Saldo Tersedia');
-        $response->assertSee('Sedang Diproses');
-        $response->assertSee('Total Pendapatan');
+        // Check header and the Saldo & Pencairan tab in Indonesian (BQ-141, owner-portal.md §8.12)
+        $response->assertSee('Pembayaran');
+        $response->assertSee('Cara Anda menerima uang, berapa saldo Anda, dan kapan bisa dicairkan.');
+        $response->assertSee('Saldo tersedia');
+        $response->assertSee('Mutasi saldo');
 
         // Check dialog triggers and form
-        $response->assertSee('Tarik Saldo');
+        $response->assertSee('Cairkan saldo');
         $response->assertSee('id="withdraw-form"', false);
-        $response->assertSee('Konfirmasi Withdraw');
-        $response->assertSee('Riwayat Withdraw');
+        $response->assertSee('Ajukan pencairan');
+        $response->assertSee('Riwayat pencairan');
     }
 }
