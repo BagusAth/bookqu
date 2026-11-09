@@ -10,8 +10,8 @@ return [
     // Removed by BQ-032 (Provider outcome intake).
     'provider-sdk' => [],
     // Removed by BQ-035.
+    // The top bar no longer queries (BQ-128: GetOwnerShell prepares the shell).
     'blade-queries' => [
-        'resources/views/components/owner/topbar.blade.php' => 1,
         'resources/views/owner/landing-page.blade.php' => 1,
     ],
     // Removed by BQ-012 (Slot bookability).

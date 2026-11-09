@@ -25,7 +25,6 @@ Functional: Implemented, gated in the UI only · Verification: Needs Verificatio
 
 | Gap | Item |
 |---|---|
-| Sidebar visibility still uses its own list instead of `config/modules.php` | BQ-130 |
 | Direct-gateway keys stored unencrypted | BQ-004 |
 | Audit P0: staff/resource relations never detached when unchecked | BQ-045 |
 | Staff, resource and add-on UI still shown in released owner pages (services, service modals, bookings) | BQ-157 |
@@ -33,3 +32,5 @@ Functional: Implemented, gated in the UI only · Verification: Needs Verificatio
 Target decision: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) — module registry `config/modules.php` with `module:<name>` middleware (`hidden` → 404, `locked` → lock page only), implemented by BQ-008 (2026-11-01): Tier 3 routes answer 404, Tier 2 routes refuse writes with 403.
 
 BQ-130: ADR-0021 registry entries are hidden for unbuilt redesign capabilities, including the old integrations/analytics/report entry points by default. Core completed capabilities stay released; no unbuilt capability is promoted. `ModuleRelease` normalizes unknown states to hidden. Routes apply module, feature and permission gates in that order; legacy gate override tests explicitly enable a module to exercise its inner behavior. Sidebar/navigation comes from `config/owner-navigation.php`, prepared by `GetOwnerNavigation`; only working, role-allowed entries render, with plan upgrade locks (Unit hidden below Pro).
+
+BQ-128: `Actions/Owner/GetOwnerShell` prepares the whole owner shell once per request from that definition (view composer on `layouts.owner-layout`): the sidebar groups, the phone bottom bar (Beranda, Kalender, + Booking, Booking, Lainnya) and its "Lainnya" sheet, one active menu by route name (`match` prefixes in `config/owner-navigation.php`, longest wins), menu badges (bookings needing a decision, the slot runway warning, unanswered reviews, trial days left), the account menu and the storefront link (`CustomerBookingRoutes`). A locked menu opens the shared upgrade prompt. The top bar's search (`owner.search`, tenant-scoped) and "+ Booking" (walk-in form with `owner.bookings.walkin-slots`, hidden when the subscription has ended) are FR-SHELL-002. Evidence: `Owner/OwnerAppShellTest`, `Owner/OwnerSidebarNavigationTest`.

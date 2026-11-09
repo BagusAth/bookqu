@@ -128,6 +128,176 @@
             },
         }));
 
+        const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const jsonHeaders = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+
+        // BQ-128: global search. Results open the booking/customer panel when its endpoint exists,
+        // otherwise the Booking or Pelanggan list filtered to the result. Stale responses are ignored.
+        window.Alpine.data('ownerSearch', (url) => ({
+            query: '',
+            open: false,
+            loading: false,
+            failed: false,
+            results: { bookings: [], customers: [] },
+            requestNumber: 0,
+
+            async search() {
+                const term = this.query.trim();
+                const requestNumber = ++this.requestNumber;
+                if (term.length < 2) {
+                    this.open = false;
+                    this.results = { bookings: [], customers: [] };
+                    return;
+                }
+                this.open = true;
+                this.loading = true;
+                this.failed = false;
+                try {
+                    const target = new URL(url, window.location.origin);
+                    target.searchParams.set('q', term);
+                    const response = await fetch(target, { headers: jsonHeaders });
+                    if (requestNumber !== this.requestNumber) return;
+                    if (!response.ok) throw new Error('search failed');
+                    const data = await response.json();
+                    this.results = { bookings: data.bookings || [], customers: data.customers || [] };
+                } catch (error) {
+                    if (requestNumber === this.requestNumber) this.failed = true;
+                } finally {
+                    if (requestNumber === this.requestNumber) this.loading = false;
+                }
+            },
+
+            choose(result, kind) {
+                this.close();
+                if (result.panel_url) {
+                    this.$dispatch(kind === 'booking' ? 'open-booking-panel' : 'open-customer-panel', { url: result.panel_url });
+                } else if (result.href) {
+                    window.location.assign(result.href);
+                }
+            },
+
+            openFirst() {
+                const first = this.results.bookings[0] || this.results.customers[0];
+                if (first) this.choose(first, this.results.bookings[0] ? 'booking' : 'customer');
+            },
+
+            close() {
+                this.open = false;
+            },
+        }));
+
+        // BQ-128 (BQ-090 findings): one initialisation; the list loads when the dropdown opens;
+        // the unread count is refreshed only while the tab is visible.
+        window.Alpine.data('ownerBell', (config) => ({
+            open: false,
+            loading: false,
+            loaded: false,
+            items: [],
+            unread: config.unread || 0,
+            timer: null,
+
+            init() {
+                this.timer = setInterval(() => {
+                    if (document.visibilityState === 'visible') this.refresh(true);
+                }, 120000);
+            },
+
+            destroy() {
+                clearInterval(this.timer);
+            },
+
+            toggle() {
+                this.open = !this.open;
+                if (this.open && !this.loaded) this.refresh(false);
+            },
+
+            async refresh(background) {
+                if (!background) this.loading = true;
+                try {
+                    const target = new URL(config.listUrl, window.location.origin);
+                    target.searchParams.set('limit', '8');
+                    const response = await fetch(target, { headers: jsonHeaders });
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    if (!data.success) return;
+                    this.unread = data.unread_count;
+                    if (!background || this.loaded) {
+                        this.items = data.data;
+                        this.loaded = true;
+                    }
+                } catch (error) {
+                    // The count stays as rendered; the full list is on the Notifikasi page.
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async openItem(item) {
+                if (!item.is_read) {
+                    item.is_read = true;
+                    this.unread = Math.max(0, this.unread - 1);
+                    try {
+                        await fetch(config.readUrl.replace('__ID__', encodeURIComponent(item.id)), {
+                            method: 'POST',
+                            headers: { ...jsonHeaders, 'X-CSRF-TOKEN': csrfToken() },
+                        });
+                    } catch (error) {
+                        // Reading the item still works; the server state catches up on the next refresh.
+                    }
+                }
+                if (item.url) window.location.assign(item.url);
+            },
+
+            async markAllRead() {
+                this.unread = 0;
+                this.items.forEach((item) => { item.is_read = true; });
+                try {
+                    await fetch(config.readAllUrl, { method: 'POST', headers: { ...jsonHeaders, 'X-CSRF-TOKEN': csrfToken() } });
+                } catch (error) {
+                    // See openItem.
+                }
+            },
+        }));
+
+        // BQ-128: "+ Booking" picks a date and loads that day's free slots, first when its dialog opens.
+        window.Alpine.data('ownerWalkInSlots', (url, today) => ({
+            today,
+            date: today,
+            slots: [],
+            loading: false,
+            loaded: false,
+            failed: false,
+            requestNumber: 0,
+
+            loadWhenOpened(event) {
+                const id = event.detail && event.detail.id;
+                if (!this.loaded && id && this.$el.closest('#' + CSS.escape(id))) this.load();
+            },
+
+            async load() {
+                if (!this.date) return;
+                const requestNumber = ++this.requestNumber;
+                this.loading = true;
+                this.failed = false;
+                try {
+                    const target = new URL(url, window.location.origin);
+                    target.searchParams.set('date', this.date);
+                    const response = await fetch(target, { headers: jsonHeaders });
+                    if (requestNumber !== this.requestNumber) return;
+                    if (!response.ok) throw new Error('slots failed');
+                    this.slots = (await response.json()).slots || [];
+                    this.loaded = true;
+                } catch (error) {
+                    if (requestNumber === this.requestNumber) {
+                        this.slots = [];
+                        this.failed = true;
+                    }
+                } finally {
+                    if (requestNumber === this.requestNumber) this.loading = false;
+                }
+            },
+        }));
+
         window.Alpine.data('ownerToasts', (initial) => ({
             toasts: [],
             nextId: 0,

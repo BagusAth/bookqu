@@ -59,7 +59,7 @@ final class TenantPermission
             'bookings' => match ($route) {
                 'bookings.cancellation-requests.store' => 'bookings.request-cancel',
                 'bookings.cancellation-requests.decide' => 'bookings.cancel',
-                'bookings.walkin' => 'bookings.walkin','bookings.reschedule' => 'bookings.reschedule',default => 'bookings.view'
+                'bookings.walkin', 'bookings.walkin-slots' => 'bookings.walkin','bookings.reschedule' => 'bookings.reschedule',default => 'bookings.view'
             },
             'customers' => $method === 'GET' ? 'customers.view' : 'customers.manage',
             'programs','services','categories','resources','additional-items' => 'services.manage',
@@ -67,6 +67,8 @@ final class TenantPermission
             'vouchers' => 'promos.manage','reviews' => 'reviews.manage','landing-page' => 'booking-page.manage',
             'payouts','payout-accounts' => 'payouts.manage','checkout','subscription' => 'subscription.manage',
             'notifications' => 'notifications.view','help' => 'help.view','team' => 'team.manage',
+            // BQ-128: the shell search finds bookings and customers, which every role may view
+            'search' => 'bookings.view',
             'settings' => match ($route) {
                 'settings.balance','settings.payments','settings.payment','settings.payment-setting' => 'payouts.manage',
                 'settings.integrations' => 'integrations.manage', default => 'settings.manage',

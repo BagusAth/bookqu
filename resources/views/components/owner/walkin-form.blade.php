@@ -1,12 +1,14 @@
 {{--
     Walk-in form (BQ-129, owner-portal.md §9, FR-BOOKING-010): the one server action
     `owner.bookings.walkin`. Pass `fixed-slot` (['id' => …, 'label' => …]) for a fixed slot, or
-    `slots` (a list of them) for a choice. Participants and add-ons appear only once their
+    `slots` (a list of them) for a choice, or `slots-url` to pick a date and load that day's free
+    slots (`owner.bookings.walkin-slots`, BQ-128). Participants and add-ons appear only once their
     backend exists (BQ-151, BQ-150): no control without a backend (§3 rule 6).
 --}}
 @props([
     'fixedSlot' => null,
     'slots' => [],
+    'slotsUrl' => null,
     'idPrefix' => 'walkin',
 ])
 
@@ -25,6 +27,17 @@
         @if ($fixedSlot)
             <input type="hidden" name="idschedule" value="{{ $fixedSlot['id'] }}">
             <p id="{{ $idPrefix }}-slot" class="rounded-lg bg-bq-background px-3 py-2 text-sm text-bq-text">{{ $fixedSlot['label'] }}</p>
+        @elseif ($slotsUrl)
+            <div x-data="ownerWalkInSlots(@js($slotsUrl), @js(now()->timezone('Asia/Jakarta')->toDateString()))" x-on:open-dialog.window="loadWhenOpened($event)" class="grid grid-cols-1 gap-2 sm:grid-cols-[10rem_1fr]">
+                <input type="date" x-model="date" x-on:change="load()" x-bind:min="today" aria-label="Tanggal" class="{{ $field }}">
+                <select id="{{ $idPrefix }}-slot" name="idschedule" required x-bind:disabled="loading" class="{{ $field }}">
+                    <option value="" x-text="loading ? 'Memuat slot…' : (slots.length ? 'Pilih slot' : 'Tidak ada slot kosong')">Pilih slot</option>
+                    <template x-for="slot in slots" x-bind:key="slot.id">
+                        <option x-bind:value="slot.id" x-text="slot.label"></option>
+                    </template>
+                </select>
+                <p x-show="failed" x-cloak class="text-xs text-bq-danger sm:col-span-2" role="alert">Slot tidak dapat dimuat. Coba lagi.</p>
+            </div>
         @else
             <select id="{{ $idPrefix }}-slot" name="idschedule" required class="{{ $field }}">
                 <option value="">Pilih slot</option>

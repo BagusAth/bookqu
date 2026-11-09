@@ -50,20 +50,4 @@ final class GetOwnerNavigation
 
         return $items;
     }
-
-    /** @return list<array{title: ?string, items: list<array<string, mixed>>}> */
-    public function sections(User $user): array
-    {
-        $groups = [];
-        foreach ($this->execute($user) as $item) {
-            $key = $item['group'] ?? '';
-            if (! isset($groups[$key])) {
-                $groups[$key] = ['title' => $item['group'], 'items' => []];
-            }
-            $groups[$key]['items'][] = ['label' => $item['label'], 'href' => $item['url'], 'route' => [$item['route']], 'icon' => $item['icon'],
-                'badge' => $item['locked'] ? 'Terkunci' : null, 'badge_type' => $item['locked'] ? 'lock' : null];
-        }
-
-        return array_values($groups);
-    }
 }

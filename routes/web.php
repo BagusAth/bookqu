@@ -41,6 +41,7 @@ use App\Http\Controllers\Owner\OwnerReviewController;
 use App\Http\Controllers\Owner\OwnerScheduleController;
 use App\Http\Controllers\Owner\OwnerScheduleReportController;
 use App\Http\Controllers\Owner\OwnerSettingController;
+use App\Http\Controllers\Owner\OwnerShellController;
 use App\Http\Controllers\Owner\OwnerSubscriptionController;
 use App\Http\Controllers\Owner\OwnerTeamController;
 use App\Http\Controllers\Owner\OwnerVoucherController;
@@ -110,6 +111,7 @@ Route::prefix('owner')
     ->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
         Route::get('/dashboard/polling', [OwnerDashboardController::class, 'pollingData'])->name('owner.dashboard.polling');
+        Route::get('/search', [OwnerShellController::class, 'search'])->middleware('throttle:60,1,owner-search')->name('owner.search');
         Route::get('/notifications', [OwnerNotificationController::class, 'index'])->name('owner.notifications');
         Route::post('/notifications/read-all', [OwnerNotificationController::class, 'markAllAsRead'])->name('owner.notifications.read-all');
         Route::post('/notifications/{id}/read', [OwnerNotificationController::class, 'markAsRead'])->name('owner.notifications.read');
@@ -166,6 +168,7 @@ Route::prefix('owner')
             Route::patch('/refunds/requests/{refundRequestId}', [OwnerRefundController::class, 'decide'])->whereNumber('refundRequestId')->name('owner.refunds.decide');
             Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
             Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
+            Route::get('/bookings/walkin-slots', [OwnerShellController::class, 'walkInSlots'])->name('owner.bookings.walkin-slots');
             Route::get('/bookings/{booking}/available-slots', [OwnerBookingController::class, 'getAvailableSlots'])->name('owner.bookings.available-slots');
             Route::post('/bookings/{booking}/reschedule', [OwnerBookingController::class, 'reschedule'])->name('owner.bookings.reschedule');
             Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware(['module:analytics', 'subscription:analytics']);

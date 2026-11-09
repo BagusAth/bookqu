@@ -1,6 +1,11 @@
 @extends('layouts.owner-layout')
 
-@section('title', 'Dashboard')
+@section('title', 'Beranda')
+
+{{-- Chart.js only where a chart is drawn, pinned to an exact version (BQ-128, BQ-090) --}}
+@push('head')
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+@endpush
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-4 sm:space-y-6">
