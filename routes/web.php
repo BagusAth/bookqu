@@ -27,6 +27,7 @@ use App\Http\Controllers\Owner\OwnerCategoryController;
 use App\Http\Controllers\Owner\OwnerCheckoutController;
 use App\Http\Controllers\Owner\OwnerCustomerController;
 use App\Http\Controllers\Owner\OwnerDashboardController;
+use App\Http\Controllers\Owner\OwnerHelpController;
 use App\Http\Controllers\Owner\OwnerIntegrationController;
 use App\Http\Controllers\Owner\OwnerLandingPageController;
 use App\Http\Controllers\Owner\OwnerNotificationController;
@@ -115,6 +116,8 @@ Route::prefix('owner')
         Route::post('/notifications/read-all', [OwnerNotificationController::class, 'markAllAsRead'])->name('owner.notifications.read-all');
         Route::post('/notifications/{id}/read', [OwnerNotificationController::class, 'markAsRead'])->name('owner.notifications.read');
         Route::delete('/notifications/{id}', [OwnerNotificationController::class, 'destroy'])->name('owner.notifications.destroy');
+        // BQ-145 (owner-portal.md §8.17): Bantuan for every role, behind its module until released (ADR-0021).
+        Route::get('/help', [OwnerHelpController::class, 'index'])->middleware('module:help')->name('owner.help');
         Route::patch('/settings/booking-policy', [OwnerBookingPolicyController::class, 'update'])->name('owner.settings.booking-policy');
         Route::patch('/settings/notification-preferences', [OwnerBookingPolicyController::class, 'notifications'])->name('owner.settings.notification-preferences');
         Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');

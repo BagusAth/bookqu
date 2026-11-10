@@ -33,6 +33,8 @@ Owns plans, the tenant's subscription state, trials, feature entitlement, usage 
 
 `tests/Unit/Domain/EntitlementRulesTest.php`, `PlanCapabilityTest.php`, `SubscriptionStateTest.php`, `tests/Feature/Subscription/SubscriptionActionTest.php`, `SubscriptionRulesAndMechanismsTest.php`, `Owner/AnalyticsAndSubscriptionTest.php`, `Owner/CheckoutMidtransTest.php`.
 
+BQ-145: Paket & Tagihan (owner-portal.md §8.15) is prepared by `GetSubscriptionOverview`: plan, status label, end date (`SubscriptionState::periodEnd`), usage of services, bookings this month and team accounts (`EntitlementRules::teamLimit`), the comparison from the plan list (`x-plan-features`), and billing rows with an invoice for paid plans or "Bayar sekarang" for an open payment. The invoice shows only the paid amount, never the plan's current price (AC-PKT-04). On phones the checkout shows the order summary before the form, and the Snap token is passed with `@js`. Pemilik only (AC-PKT-03). Evidence: `Owner/PaketNotifikasiBantuanTest`.
+
 ## Status
 
 Functional: Implemented · Verification: Verified (partial) · Architecture: Target, with gaps below.
@@ -47,7 +49,6 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Tar
 | Expiry command updates status with raw queries | BQ-130 |
 | Quota also re-checked in `BookingController::selectDate` | BQ-029 |
 | Audit P1: "Change plan" button dead, sidebar subscription card wrong for paid plans | BQ-066 |
-| Checkout mobile layout order inverted, subscription invoice labels order as "Kode Booking", and unquoted Snap token | BQ-145 |
 
 Target decisions: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) (release gate separate from entitlement; both fail closed, BQ-006/BQ-033) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (subscription payments swept, BQ-071). Not implemented yet.
 

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Team\GetNotificationsPage;
 use App\Actions\Team\GetVisibleNotifications;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\InternalRedirect;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Http\JsonResponse;
@@ -62,24 +64,14 @@ class OwnerNotificationController extends Controller
             ]);
         }
 
-        // Full page view
-        $filter = $request->input('filter', 'all');
+        // Full page (BQ-145, owner-portal.md §8.16): unread and type filters for what this role may see.
+        $page = app(GetNotificationsPage::class)->execute(
+            $user,
+            is_string($request->query('filter')) ? $request->query('filter') : null,
+            is_string($request->query('type')) ? $request->query('type') : null,
+        );
 
-        $query = $this->visibleNotifications($user)->latest();
-
-        if ($filter === 'unread') {
-            $query->whereNull('read_at');
-        } elseif ($filter === 'new_booking') {
-            $query->where('data->event_type', 'new_booking');
-        } elseif ($filter === 'status_change') {
-            $query->whereIn('data->event_type', ['cancelled', 'rescheduled', 'completed', 'status_updated']);
-        }
-
-        $notifications = $query->paginate(15)->withQueryString();
-        $unreadCount = $this->visibleNotifications($user)->whereNull('read_at')->count();
-        $totalCount = $this->visibleNotifications($user)->count();
-
-        return view('owner.notifications', compact('tenant', 'notifications', 'unreadCount', 'totalCount', 'filter'));
+        return view('owner.notifications', $page + ['tenant' => $tenant]);
     }
 
     /**
@@ -101,9 +93,13 @@ class OwnerNotificationController extends Controller
             ]);
         }
 
-        $redirectUrl = $request->input('redirect') ?: back()->getTargetUrl();
+        // AC-NTF-01: land on the item's target. BQ-102: only targets inside this application are followed.
+        $origin = $request->getSchemeAndHttpHost();
+        $target = InternalRedirect::target($request->input('redirect'), $origin)
+            ?? InternalRedirect::target($notification?->data['url'] ?? null, $origin)
+            ?? route('owner.notifications');
 
-        return redirect($redirectUrl);
+        return redirect($target);
     }
 
     /**
