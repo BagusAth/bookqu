@@ -36,7 +36,7 @@ class OwnerPayoutAccountController extends Controller
 
         $action->execute($tenant, $data);
 
-        return redirect()->route('owner.settings.balance')->with('sukses', 'Rekening penarikan berhasil ditambahkan.');
+        return redirect()->route('owner.payments', ['tab' => 'rekening'])->with('sukses', 'Rekening penarikan berhasil ditambahkan.');
     }
 
     public function update(UpdatePayoutAccountRequest $request, int $account, SaveTenantPayoutAccount $action): RedirectResponse
@@ -56,7 +56,7 @@ class OwnerPayoutAccountController extends Controller
 
         $action->execute($tenant, $data, $accountModel);
 
-        return redirect()->route('owner.settings.balance')->with('sukses', 'Rekening penarikan berhasil diperbarui.');
+        return redirect()->route('owner.payments', ['tab' => 'rekening'])->with('sukses', 'Rekening penarikan berhasil diperbarui.');
     }
 
     public function destroy(DestroyPayoutAccountRequest $request, int $account, DeleteTenantPayoutAccount $action): RedirectResponse
@@ -70,7 +70,7 @@ class OwnerPayoutAccountController extends Controller
 
         $action->execute($tenant, $accountModel);
 
-        return redirect()->route('owner.settings.balance')->with('sukses', 'Rekening penarikan berhasil dihapus.');
+        return redirect()->route('owner.payments', ['tab' => 'rekening'])->with('sukses', 'Rekening penarikan berhasil dihapus.');
     }
 
     public function makeDefault(Request $request, int $account, MakeDefaultPayoutAccount $action): RedirectResponse
@@ -84,6 +84,6 @@ class OwnerPayoutAccountController extends Controller
 
         $action->execute($tenant, $accountModel);
 
-        return redirect()->route('owner.settings.balance')->with('sukses', 'Rekening utama berhasil diubah.');
+        return redirect()->route('owner.payments', ['tab' => 'rekening'])->with('sukses', 'Rekening utama berhasil diubah.');
     }
 }

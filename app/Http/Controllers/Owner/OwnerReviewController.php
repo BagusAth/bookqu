@@ -1,108 +1,50 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Review\GetReviewsPage;
+use App\Actions\Review\ReplyToReview;
+use App\Actions\Review\ToggleReviewVisibility;
 use App\Http\Controllers\Controller;
-
-use App\Models\Review;
 use App\Traits\ResolvesOwnerTenant;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class OwnerReviewController extends Controller
 {
     use ResolvesOwnerTenant;
 
-    public function index(Request $request)
+    /**
+     * The Ulasan page (owner-portal.md §8.11).
+     */
+    public function index(Request $request, GetReviewsPage $getReviewsPage): View
     {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
 
-        $search = $request->input('search', '');
-        $ratingFilter = $request->input('rating', 'all');
-
-        $query = Review::where('idtenant', $tenant->id)
-            ->with(['booking.layanan'])
-            ->orderByDesc('created_at');
-
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('komentar', 'like', "%{$search}%")
-                  ->orWhere('balasan', 'like', "%{$search}%")
-                  ->orWhereHas('booking', function ($bq) use ($search) {
-                      $bq->where('namapelanggan', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        if ($ratingFilter !== 'all' && is_numeric($ratingFilter)) {
-            $query->where('rating', (int) $ratingFilter);
-        }
-
-        $reviews = $query->get();
-
-        // Calculate aggregate statistics for tenant
-        $allTenantReviews = Review::where('idtenant', $tenant->id)->get();
-        $totalReviews = $allTenantReviews->count();
-        $avgRating = $totalReviews > 0 ? round($allTenantReviews->avg('rating'), 1) : 0;
-
-        $ratingCounts = [
-            5 => $allTenantReviews->where('rating', 5)->count(),
-            4 => $allTenantReviews->where('rating', 4)->count(),
-            3 => $allTenantReviews->where('rating', 3)->count(),
-            2 => $allTenantReviews->where('rating', 2)->count(),
-            1 => $allTenantReviews->where('rating', 1)->count(),
-        ];
-
-        return view('owner.reviews', compact(
-            'tenant',
-            'reviews',
-            'totalReviews',
-            'avgRating',
-            'ratingCounts',
-            'search',
-            'ratingFilter'
-        ));
+        return view('owner.reviews', $getReviewsPage->execute(
+            $tenant,
+            is_string($request->query('tab')) ? $request->query('tab') : null,
+            is_string($request->query('search')) ? $request->query('search') : '',
+        ) + ['tenant' => $tenant]);
     }
 
-    public function reply(Request $request, int $id)
+    public function reply(Request $request, int $id, ReplyToReview $replyToReview): RedirectResponse
     {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $replyToReview->execute($tenant, $id, $request->only('balasan'));
 
-        $review = Review::where('idtenant', $tenant->id)->findOrFail($id);
-
-        $validated = $request->validate([
-            'balasan' => 'required|string|max:1000',
-        ]);
-
-        $review->update([
-            'balasan'     => $validated['balasan'],
-            'dibalas_pada'=> now(),
-        ]);
-
-        return redirect()->route('owner.reviews')
-            ->with('sukses', 'Balasan ulasan berhasil disimpan!');
+        return redirect()->route('owner.reviews')->with('sukses', 'Balasan ulasan disimpan.');
     }
 
-    public function toggleVisibility(int $id)
+    public function toggleVisibility(int $id, ToggleReviewVisibility $toggleReviewVisibility): RedirectResponse
     {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $review = $toggleReviewVisibility->execute($tenant, $id);
 
-        $review = Review::where('idtenant', $tenant->id)->findOrFail($id);
-        $review->update([
-            'is_hidden' => !$review->is_hidden,
-        ]);
-
-        $statusText = $review->is_hidden ? 'disembunyikan dari publik' : 'ditampilkan kembali ke publik';
         return redirect()->route('owner.reviews')
-            ->with('sukses', 'Ulasan berhasil ' . $statusText . '.');
+            ->with('sukses', $review->is_hidden ? 'Ulasan disembunyikan dari halaman booking.' : 'Ulasan ditampilkan lagi di halaman booking.');
     }
 }
-

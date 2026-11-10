@@ -12,7 +12,6 @@ use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class UpdateService
 {
@@ -39,16 +38,15 @@ class UpdateService
             ->findOrFail($targetId);
 
         $imageUrl = $layanan->image_url;
+        $resolveImage = app(ResolveServiceImage::class);
 
-        if ($coverImage) {
-            if ($layanan->image_url && ! str_starts_with($layanan->image_url, 'http') && Storage::disk('public')->exists($layanan->image_url)) {
-                Storage::disk('public')->delete($layanan->image_url);
-            }
-            $imageUrl = $coverImage->store('programs', 'public');
+        // BQ-142 (FR-ASSET-005): a gallery pick or a new upload into the gallery replaces the image.
+        // Gallery files belong to the gallery; only a pre-gallery file of this service is removed.
+        if ($coverImage || ! empty($data['image_asset_id'])) {
+            $resolveImage->discardLegacyFile($tenant, $layanan->image_url);
+            $imageUrl = $resolveImage->execute($tenant, $data['image_asset_id'] ?? null, $coverImage);
         } elseif ($removeImage) {
-            if ($layanan->image_url && ! str_starts_with($layanan->image_url, 'http') && Storage::disk('public')->exists($layanan->image_url)) {
-                Storage::disk('public')->delete($layanan->image_url);
-            }
+            $resolveImage->discardLegacyFile($tenant, $layanan->image_url);
             $imageUrl = null;
         }
 
@@ -61,6 +59,9 @@ class UpdateService
                 'durasi' => $data['durasi'],
                 'idcategory' => $data['idcategory'] ?? null,
                 'deskripsi' => $data['deskripsi'] ?? null,
+                'satuan_harga' => ($data['satuan_harga'] ?? null) ?: $layanan->satuan_harga,
+                'satuan_durasi' => ($data['satuan_durasi'] ?? null) ?: $layanan->satuan_durasi,
+                'is_popular' => array_key_exists('is_popular', $data) ? (bool) $data['is_popular'] : $layanan->is_popular,
                 'is_active' => (bool) ($data['is_active'] ?? true),
                 'image_url' => $imageUrl,
             ]);

@@ -2,13 +2,11 @@
 
 namespace App\Providers;
 
-use App\Actions\Owner\GetOwnerNavigation;
+use App\Actions\Owner\GetOwnerShell;
 use App\Actions\Subscription\GetPublicPlanCards;
-use App\Actions\Team\GetVisibleNotifications;
 use App\Actions\Team\TeamNotificationAccess;
 use App\Contracts\Payments\PaymentGatewayInterface;
 use App\Domain\Notifications\NotificationPreferences;
-use App\Domain\Subscription\EntitlementRules;
 use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Models\AdditionalItem;
 use App\Models\Asset;
@@ -111,45 +109,9 @@ class AppServiceProvider extends ServiceProvider
             URL::forceRootUrl(request()->getSchemeAndHttpHost());
         }
 
-        View::composer(['components.owner.sidebar', 'components.owner.topbar'], function ($view): void {
-            $user = auth()->user();
-            $count = $user ? app(GetVisibleNotifications::class)->execute($user)->whereNull('read_at')->count() : 0;
-            $view->with('visibleUnreadCount', $count);
-            $view->with('navigationSections', $user ? app(GetOwnerNavigation::class)->sections($user) : []);
-            $view->with('canManageSubscription', $user && app(TenantResourcePolicy::class)->ability($user, 'subscription.manage'));
-        });
-
-        // Share Pro subscription status with the sidebar
-        View::composer('components.owner.sidebar', function ($view) {
-            $userId = auth()->id();
-            $tenantId = app(TenantContext::class)->getTenantId();
-            $tenant = null;
-
-            if (is_numeric($tenantId)) {
-                $tenant = Tenant::find($tenantId);
-                if ($tenant && $tenant->iduser !== $userId) {
-                    $tenant = null;
-                }
-            }
-
-            if (! $tenant && $userId) {
-                $tenant = Tenant::where('iduser', $userId)->first();
-            }
-
-            $adalahpro = false;
-
-            if ($tenant) {
-                $langganan = Subscription::where('idtenant', $tenant->id)
-                    ->with('plan')
-                    ->latest('id')
-                    ->first();
-
-                if ($langganan && $langganan->plan) {
-                    $adalahpro = EntitlementRules::isPro($langganan);
-                }
-            }
-
-            $view->with('adalahpro', $adalahpro);
+        // The owner app shell (sidebar, top bar, phone navigation) is prepared once per request (BQ-128).
+        View::composer('layouts.owner-layout', function ($view): void {
+            $view->with('shell', app(GetOwnerShell::class)->execute(auth()->user(), request()->route()?->getName()));
         });
     }
 }

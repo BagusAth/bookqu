@@ -6,7 +6,7 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 
 | Route | Code |
 |---|---|
-| `owner.settings.balance` (released by BQ-015: balance, withdraw form, history) | `Owner/OwnerBalanceController` |
+| `owner.payments` (Pembayaran page, BQ-141: tabs Ringkasan, Transaksi, Saldo & Pencairan, Rekening, Pengaturan); `owner.settings.balance` answers 301 to its Saldo tab | `Owner/OwnerBalanceController` → `Actions/Owner/GetPaymentsPage`, `GetBalanceLedger` |
 | `owner.payouts.proof` (own tenant only) | `OwnerBalanceController::proof` |
 | `owner.payout-accounts.*` (CRUD saved payout accounts) | `Owner/OwnerPayoutAccountController` → `Actions/Owner/*TenantPayoutAccount` |
 | `admin.payouts*` (`role:admin`) | `Admin/AdminPayoutController` → `Actions/Admin/ProcessOwnerPayout` |
@@ -19,6 +19,15 @@ The minimum payout is `payouts.min_amount` (request rule, `RequestOwnerPayout` a
 ## Data
 
 `tenants.saldo_platform`; `tenant_payout_accounts`: `idtenant`, `bank_kode`, `bank_nama`, `nomor_rekening`, `nama_pemilik_rekening`, `is_default`, `changed_at` (at most `payouts.max_accounts` live accounts per tenant, default 3, BQ-123; the unique `idtenant`+`bank_kode`+`nomor_rekening` index includes soft-deleted rows, so re-adding a deleted account restores its row and a live duplicate is refused, BQ-127); `payments.balance_credited_at`; `owner_payouts`: `idtenant`, `request_key` (UUID), `payout_account_id`, `bank_kode`, amount, snapshot bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `approved_at`, `approved_by` (foreign key to `users.id`, `nullOnDelete`, BQ-127), `processed_at`, `processed_by` (no foreign key yet), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk). `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
+
+BQ-141: the balance ledger has no table. `GetBalanceLedger` reads the records whose writes change `saldo_platform`:
+
+- credited booking payments (`balance_credited_at`), as money in;
+- refunds of credited payments, as money out;
+- payout holds at request, as money out;
+- rejected or failed payouts at processing, as money back in.
+
+Its total therefore equals the balance (AC-PAY-02). A balance written directly, as the local `DatabaseSeeder` does, shows up as a difference. The page is Pemilik only through `payouts.manage` (AC-PAY-01) and stays open when the subscription has ended (D-002). The owner gateway form is removed (D-016, AC-PAY-05). Evidence: `Owner/PembayaranPageTest`.
 
 ## Evidence
 

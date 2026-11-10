@@ -2,7 +2,7 @@
 id: BQ-129
 title: Owner shared building blocks: page header, tabs, panels, walk-in form, dialogs
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: insights
@@ -51,3 +51,11 @@ None directly; components are presentation only (`.ai/rules/frontend.md`).
 None beyond this item.
 
 ## Evidence (fill when done)
+
+## Implementation notes (2026-11-09, before merge)
+
+- Blocks live in `resources/views/components/owner/` (index in its `README.md`); behaviour in `public/js/owner-ui.js`, loaded by the owner layout before Alpine starts.
+- **Split with the page items.** BQ-129 delivers the booking and customer panel frames: one instance each in the owner layout, opened by `open-booking-panel` / `open-customer-panel` with a JSON URL, and the JSON contract documented in each component. The endpoints and the actions are filled by BQ-135 (booking) and BQ-137 (customer). AC-PNL-06 is complete when Beranda, Kalender, Booking, Pelanggan, search (BQ-128) and notifications (BQ-145) open the panel through that event.
+- **Labels.** `BookingState::formatLabel` now returns the labels of `owner-portal.md` §8 (it had no callers outside its unit test). Refund labels live in `App\Support\StatusBadge` until the refund domain has a formatter.
+- **Walk-in form.** It posts only the fields `owner.bookings.walkin` accepts today; participants and add-ons appear with BQ-151 and BQ-150 (§3 rule 6).
+- **Absorbed findings carried here:** one token palette from the BQ-126 prototype (`resources/css/app.css`), accessible dialogs and drawers (BQ-106), one flash mechanism (layout `pesan` duplicate removed), confirm dialog with a tone instead of a fixed red trash can, toast ids, `aria-live` and close label, native `confirm()`/`alert()` removed with guardrail `native-dialogs`. Restraint rules are proposed in the components README for the Tech Lead to adopt into `.ai/rules/frontend.md`. Migrating each page's own badges, headers, inline flashes and hard-coded colours happens in its page item (wave 3 onwards).

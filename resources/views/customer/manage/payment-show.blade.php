@@ -9,13 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     @php
-        $themeColor = $tenant->theme_color ?: '#4F46E5';
-        $fontFamily = $tenant->font_family ?: 'Plus Jakarta Sans';
-        $buttonRadius = match($tenant->button_style) {
-            'rounded-md' => '0.375rem',
-            'rounded-full', 'pill' => '9999px',
-            default => '0.75rem',
-        };
+        // BQ-142: the same normalised look as the booking pages.
+        $branding = \App\Support\StorefrontBranding::for($tenant);
+        $themeColor = $branding['color'];
+        $fontFamily = $branding['font'];
+        $buttonRadius = $branding['buttonRadius'];
     @endphp
     <link href="https://fonts.googleapis.com/css2?family={{ str_replace(' ', '+', $fontFamily) }}:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
     @vite('resources/css/app.css')

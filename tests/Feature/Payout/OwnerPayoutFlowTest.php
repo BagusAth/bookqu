@@ -99,11 +99,11 @@ class OwnerPayoutFlowTest extends TestCase
             'request_key' => (string) Str::uuid(),
             'jumlah' => 100000,
             'payout_account_id' => $this->payoutAccount->id,
-        ])->assertRedirect(route('owner.settings.balance'));
+        ])->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
 
         $this->assertDatabaseHas('owner_payouts', ['idtenant' => $this->tenant->id, 'status' => 'pending', 'nomor_rekening' => '1234567890']);
         $this->assertEquals(200000, (float) $this->tenant->fresh()->saldo_platform);
-        $this->actingAs($this->owner)->get('/owner/settings/balance')->assertOk()->assertSee('id="withdraw-form"', false);
+        $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo']))->assertOk()->assertSee('id="withdraw-form"', false);
     }
 
     public function test_owner_request_requires_a_valid_bank_account(): void
@@ -133,11 +133,11 @@ class OwnerPayoutFlowTest extends TestCase
             ]);
         }
 
-        $responsePage1 = $this->actingAs($this->owner)->get('/owner/settings/balance');
+        $responsePage1 = $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo']));
         $responsePage1->assertOk();
         $this->assertCount(15, $responsePage1->viewData('payouts'));
 
-        $responsePage2 = $this->actingAs($this->owner)->get('/owner/settings/balance?page=2');
+        $responsePage2 = $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo', 'pencairan' => 2]));
         $responsePage2->assertOk();
         $this->assertCount(1, $responsePage2->viewData('payouts'));
     }
@@ -153,12 +153,12 @@ class OwnerPayoutFlowTest extends TestCase
             'payout_account_id' => $this->payoutAccount->id,
         ];
 
-        $this->actingAs($this->owner)->post('/owner/payouts', $payload)->assertRedirect(route('owner.settings.balance'));
+        $this->actingAs($this->owner)->post('/owner/payouts', $payload)->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
         $this->assertEquals(200000, (float) $this->tenant->fresh()->saldo_platform);
         $this->assertDatabaseCount('owner_payouts', 1);
 
         // Second POST with same request_key
-        $this->actingAs($this->owner)->post('/owner/payouts', $payload)->assertRedirect(route('owner.settings.balance'));
+        $this->actingAs($this->owner)->post('/owner/payouts', $payload)->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
         $this->assertEquals(200000, (float) $this->tenant->fresh()->saldo_platform);
         $this->assertDatabaseCount('owner_payouts', 1);
     }
@@ -172,13 +172,13 @@ class OwnerPayoutFlowTest extends TestCase
             'request_key' => (string) Str::uuid(),
             'jumlah' => 100000,
             'payout_account_id' => $this->payoutAccount->id,
-        ])->assertRedirect(route('owner.settings.balance'));
+        ])->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
 
         $this->actingAs($this->owner)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
             'jumlah' => 50000,
             'payout_account_id' => $this->payoutAccount->id,
-        ])->assertRedirect(route('owner.settings.balance'));
+        ])->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
 
         $this->assertEquals(150000, (float) $this->tenant->fresh()->saldo_platform);
         $this->assertDatabaseCount('owner_payouts', 2);
@@ -186,13 +186,13 @@ class OwnerPayoutFlowTest extends TestCase
 
     public function test_balance_view_renders_request_key_and_alpine_double_submit_protection(): void
     {
-        $response = $this->actingAs($this->owner)->get('/owner/settings/balance');
+        $response = $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo']));
         $response->assertOk();
         $response->assertSee('name="request_key"', false);
         $response->assertSee('x-data="{ submitting: false }"', false);
         $response->assertSee(':disabled="submitting"', false);
         $response->assertSee('Memproses…');
-        $response->assertSee('Riwayat Withdraw');
+        $response->assertSee('Riwayat pencairan'); // BQ-141: Pembayaran page copy (owner-portal.md §8.12)
         $response->assertDontSee('Riwayat Penarikan Dana Terbaru');
     }
 
@@ -299,7 +299,7 @@ class OwnerPayoutFlowTest extends TestCase
 
         $this->assertStringContainsString('Rp 50.000', session('errors')->first('jumlah'));
         $this->assertDatabaseCount('owner_payouts', 0);
-        $this->actingAs($this->owner)->get('/owner/settings/balance')
+        $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo']))
             ->assertOk()
             ->assertSee('Minimal Rp 50.000')
             ->assertDontSee('Minimal Rp 10.000');

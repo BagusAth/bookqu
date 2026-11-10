@@ -301,7 +301,7 @@ function paymentPage() {
             const self = this;
 
             this.paymentOpened = true;
-            window.snap.pay('{{ $snapToken }}', {
+            window.snap.pay(@js($snapToken), {
                 onSuccess: function(result) {
                     self.statusMessage = 'Pembayaran berhasil! Mengarahkan ke halaman invoice...';
                     self.statusType = 'sukses';

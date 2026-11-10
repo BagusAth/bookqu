@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Customer;
 
+use App\Domain\Customer\CustomerIdentity;
 use App\Models\Booking;
 use App\Models\CustomerNote;
 use App\Models\Payment;
@@ -35,7 +36,7 @@ class GetCustomerDetail
         $exists = DB::table('bookings')
             ->where('idtenant', $idtenant)
             ->where(function ($q) use ($identifier) {
-                $q->whereRaw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id)))) = ?", [$identifier]);
+                $q->whereRaw(CustomerIdentity::sql().' = ?', [$identifier]);
             })
             ->exists();
 
@@ -46,7 +47,7 @@ class GetCustomerDetail
         // Load full booking history for this identifier
         $bookings = Booking::where('idtenant', $idtenant)
             ->where(function ($q) use ($identifier) {
-                $q->whereRaw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id)))) = ?", [$identifier]);
+                $q->whereRaw(CustomerIdentity::sql().' = ?', [$identifier]);
             })
             ->with(['layanan', 'payment'])
             ->orderByDesc('tanggalbooking')
@@ -59,29 +60,11 @@ class GetCustomerDetail
 
         $first = $bookings->first();
 
-        // Spending from payment state machine
+        // Rule 8, AC-PLG-02: the one spending rule shared with the Pelanggan list.
         $paidBookingIds = $bookings
-            ->filter(fn ($b) => in_array($b->status, ['paid', 'completed']))
+            ->filter(fn ($b) => in_array($b->status, SumCustomerPayments::COUNTED_STATES, true))
             ->pluck('id');
-
-        $paidPaymentIds = $bookings
-            ->filter(fn ($b) => in_array($b->status, ['paid', 'completed']))
-            ->pluck('idpayment')
-            ->filter()
-            ->unique();
-
-        // Also include payments referenced by idbooking for legacy
-        $legacyPaidPaymentIds = Payment::where('idtenant', $idtenant)
-            ->whereIn('idbooking', $paidBookingIds)
-            ->pluck('id');
-
-        $allPaidPaymentIds = $paidPaymentIds->concat($legacyPaidPaymentIds)->unique()->values();
-
-        $totalSpent = (float) Payment::where('idtenant', $idtenant)
-            ->where('tipe', 'booking')
-            ->where('status', 'sukses')
-            ->whereIn('id', $allPaidPaymentIds)
-            ->sum('jumlah');
+        $totalSpent = app(SumCustomerPayments::class)->execute((int) $idtenant, [$identifier])[$identifier] ?? 0.0;
 
         $today = Carbon::today()->toDateString();
         $lastBooking = $bookings->first();

@@ -12,6 +12,11 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/**
+ * The Beranda live refresh (`owner.dashboard.polling`). BQ-136 replaced the old all-time figures and
+ * recent-activity list with the owner-portal.md §8.1 contract (figures, actions, today, tomorrow);
+ * these tests keep their original intent on that contract.
+ */
 class OwnerDashboardPollingTest extends TestCase
 {
     use RefreshDatabase;
@@ -39,6 +44,8 @@ class OwnerDashboardPollingTest extends TestCase
             'alamat' => 'Jalan Test',
             'nomorhp' => '08123456789',
         ]);
+        // The page shows sections 2–4 once the new owner guide is done (AC-BRD-05).
+        $this->tenant->forceFill(['owner_guide_completed_at' => now()])->save();
 
         $this->service = Service::create([
             'idtenant' => $this->tenant->id,
@@ -48,109 +55,22 @@ class OwnerDashboardPollingTest extends TestCase
         ]);
     }
 
-    public function test_owner_can_access_polling_endpoint_and_get_json()
+    private function todayBooking(array $attributes = [], ?Tenant $tenant = null, ?Service $service = null): Booking
     {
-        $response = $this->actingAs($this->user)
-            ->withSession(['current_tenant_id' => $this->tenant->id])
-            ->getJson(route('owner.dashboard.polling'));
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'success',
-                'data' => [
-                    'total_bookings',
-                    'total_revenue',
-                    'total_customers',
-                    'active_services',
-                    'recent_activities',
-                ],
-            ]);
-    }
-
-    public function test_revenue_uses_payment_status_sukses()
-    {
-        Payment::create([
-            'idtenant' => $this->tenant->id,
-            'idbooking' => null,
-            'idlangganan' => null,
-            'tipe' => 'booking',
-            'metode' => 'midtrans',
-            'jumlah' => 100000,
-            'status' => 'pending',
-        ]);
-
-        Payment::create([
-            'idtenant' => $this->tenant->id,
-            'idbooking' => null,
-            'idlangganan' => null,
-            'tipe' => 'booking',
-            'metode' => 'midtrans',
-            'jumlah' => 50000,
-            'status' => 'sukses',
-        ]);
-
-        $response = $this->actingAs($this->user)
-            ->withSession(['current_tenant_id' => $this->tenant->id])
-            ->getJson(route('owner.dashboard.polling'));
-
-        $response->assertStatus(200)
-            ->assertJsonPath('data.total_revenue', 50000);
-    }
-
-    public function test_html_customer_names_stay_raw_data_in_polling_and_text_on_the_dashboard(): void
-    {
-        $payload = '<img src=x onerror=alert(1)>';
+        $tenant ??= $this->tenant;
+        $service ??= $this->service;
         $schedule = Schedule::create([
-            'idtenant' => $this->tenant->id,
-            'idlayanan' => $this->service->id,
+            'idtenant' => $tenant->id,
+            'idlayanan' => $service->id,
             'tanggal' => Carbon::today(),
-            'jam_mulai' => '13:00:00',
-            'jam_selesai' => '13:59:00',
-            'status' => 'tersedia',
-        ]);
-        Booking::create([
-            'idtenant' => $this->tenant->id,
-            'idlayanan' => $this->service->id,
-            'idschedule' => $schedule->id,
-            'namapelanggan' => $payload,
-            'email' => 'xss@example.com',
-            'nomorhp' => '08124',
-            'tanggalbooking' => Carbon::today(),
-            'jam' => '13:00:00',
-            'status' => 'pending',
-        ]);
-
-        $this->actingAs($this->user)
-            ->withSession(['current_tenant_id' => $this->tenant->id])
-            ->getJson(route('owner.dashboard.polling'))
-            ->assertJsonPath('data.recent_activities.0.customer_name', $payload)
-            ->assertJsonPath('data.recent_activities.0.time', '13:00');
-
-        $this->actingAs($this->user)
-            ->withSession(['current_tenant_id' => $this->tenant->id])
-            ->get(route('owner.dashboard'))
-            ->assertOk()
-            ->assertSee(e($payload), false)
-            ->assertDontSee($payload, false)
-            ->assertSee('id="activity-row-template"', false)
-            ->assertSee('id="activity-card-template"', false)
-            ->assertDontSee('${item.customer_name}', false);
-    }
-
-    public function test_booking_status_paid_is_returned_and_dynamic()
-    {
-        $schedule = Schedule::create([
-            'idtenant' => $this->tenant->id,
-            'idlayanan' => $this->service->id,
-            'tanggal' => Carbon::today(),
-            'jam_mulai' => '10:00:00',
-            'jam_selesai' => '11:00:00',
+            'jam_mulai' => $attributes['jam'] ?? '10:00:00',
+            'jam_selesai' => '23:59:00',
             'status' => 'tersedia',
         ]);
 
-        $booking = Booking::create([
-            'idtenant' => $this->tenant->id,
-            'idlayanan' => $this->service->id,
+        return Booking::create(array_merge([
+            'idtenant' => $tenant->id,
+            'idlayanan' => $service->id,
             'idschedule' => $schedule->id,
             'namapelanggan' => 'John Doe',
             'email' => 'john@example.com',
@@ -158,21 +78,69 @@ class OwnerDashboardPollingTest extends TestCase
             'tanggalbooking' => Carbon::today(),
             'jam' => '10:00:00',
             'status' => 'pending',
-        ]);
+        ], $attributes));
+    }
 
-        $response1 = $this->actingAs($this->user)
-            ->withSession(['current_tenant_id' => $this->tenant->id])
-            ->getJson(route('owner.dashboard.polling'));
+    private function figure(string $key): ?array
+    {
+        return collect($this->actingAs($this->user)->getJson(route('owner.dashboard.polling'))->assertOk()->json('data.figures'))
+            ->firstWhere('key', $key);
+    }
 
-        $response1->assertJsonPath('data.recent_activities.0.status', 'pending');
+    public function test_owner_can_access_polling_endpoint_and_get_json()
+    {
+        $this->actingAs($this->user)
+            ->getJson(route('owner.dashboard.polling'))
+            ->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'data' => ['figures', 'actions', 'today', 'tomorrow' => ['count', 'first_time', 'first_customer'], 'next'],
+            ]);
+    }
+
+    public function test_revenue_uses_payment_status_sukses()
+    {
+        foreach (['pending' => 100000, 'sukses' => 50000] as $status => $amount) {
+            Payment::create([
+                'idtenant' => $this->tenant->id,
+                'tipe' => 'booking',
+                'metode' => 'midtrans',
+                'jumlah' => $amount,
+                'status' => $status,
+            ]);
+        }
+
+        $this->assertSame('Rp 50.000', $this->figure('revenue')['value']);
+    }
+
+    public function test_html_customer_names_stay_raw_data_in_polling_and_text_on_the_dashboard(): void
+    {
+        $payload = '<img src=x onerror=alert(1)>';
+        $this->todayBooking(['namapelanggan' => $payload, 'jam' => '13:00:00']);
+
+        $this->actingAs($this->user)
+            ->getJson(route('owner.dashboard.polling'))
+            ->assertJsonPath('data.today.0.customer', $payload)
+            ->assertJsonPath('data.today.0.start', '13:00');
+
+        $this->get(route('owner.dashboard'))
+            ->assertOk()
+            ->assertDontSee($payload, false)
+            ->assertSee('x-text="row.customer"', false)
+            ->assertDontSee('x-html', false);
+    }
+
+    public function test_booking_status_paid_is_returned_and_dynamic()
+    {
+        $booking = $this->todayBooking();
+
+        $this->actingAs($this->user)->getJson(route('owner.dashboard.polling'))
+            ->assertJsonPath('data.today.0.status.label', 'Menunggu bayar');
 
         $booking->update(['status' => 'paid']);
 
-        $response2 = $this->actingAs($this->user)
-            ->withSession(['current_tenant_id' => $this->tenant->id])
-            ->getJson(route('owner.dashboard.polling'));
-
-        $response2->assertJsonPath('data.recent_activities.0.status', 'paid');
+        $this->getJson(route('owner.dashboard.polling'))
+            ->assertJsonPath('data.today.0.status.label', 'Terkonfirmasi');
     }
 
     public function test_polling_does_not_mutate_database()
@@ -180,9 +148,7 @@ class OwnerDashboardPollingTest extends TestCase
         $this->assertDatabaseCount('bookings', 0);
         $this->assertDatabaseCount('payments', 0);
 
-        $this->actingAs($this->user)
-            ->withSession(['current_tenant_id' => $this->tenant->id])
-            ->getJson(route('owner.dashboard.polling'));
+        $this->actingAs($this->user)->getJson(route('owner.dashboard.polling'));
 
         $this->assertDatabaseCount('bookings', 0);
         $this->assertDatabaseCount('payments', 0);
@@ -199,74 +165,25 @@ class OwnerDashboardPollingTest extends TestCase
             'alamat' => 'Alamat',
             'nomorhp' => '08123',
         ]);
+        $otherService = Service::create(['idtenant' => $otherTenant->id, 'namalayanan' => 'Layanan', 'harga' => 1000, 'durasi' => 60]);
+        $this->todayBooking(['namapelanggan' => 'Other Customer'], $otherTenant, $otherService);
 
-        $otherService = Service::create([
-            'idtenant' => $otherTenant->id,
-            'namalayanan' => 'Layanan',
-            'harga' => 1000,
-            'durasi' => 60,
-        ]);
-
-        $schedule = Schedule::create([
-            'idtenant' => $otherTenant->id,
-            'idlayanan' => $otherService->id,
-            'tanggal' => Carbon::today(),
-            'jam_mulai' => '10:00:00',
-            'jam_selesai' => '11:00:00',
-            'status' => 'tersedia',
-        ]);
-
-        Booking::create([
-            'idtenant' => $otherTenant->id,
-            'idlayanan' => $otherService->id,
-            'idschedule' => $schedule->id,
-            'namapelanggan' => 'Other Customer',
-            'email' => 'cust@example.com',
-            'nomorhp' => '08123',
-            'tanggalbooking' => Carbon::today(),
-            'jam' => '10:00:00',
-            'status' => 'pending',
-        ]);
-
-        $response = $this->actingAs($this->user)
-            ->withSession(['current_tenant_id' => $this->tenant->id])
-            ->getJson(route('owner.dashboard.polling'));
-
-        $response->assertJsonPath('data.total_bookings', 0);
-    }
-
-    public function test_active_services_only_counts_active_services()
-    {
-        // 1 active service was already created in setUp()
-        Service::create([
-            'idtenant' => $this->tenant->id,
-            'namalayanan' => 'Layanan Nonaktif',
-            'harga' => 150000,
-            'durasi' => 60,
-            'is_active' => false,
-        ]);
-
-        $response = $this->actingAs($this->user)
-            ->withSession(['current_tenant_id' => $this->tenant->id])
-            ->getJson(route('owner.dashboard.polling'));
-
-        $response->assertJsonPath('data.active_services', 1);
+        $this->assertSame('0', $this->figure('bookings')['value']);
+        $this->getJson(route('owner.dashboard.polling'))->assertJsonPath('data.today', []);
     }
 
     public function test_owner_dashboard_view_displays_all_business_summary_components()
     {
-        $response = $this->actingAs($this->user)
-            ->withSession(['current_tenant_id' => $this->tenant->id])
-            ->get(route('owner.dashboard'));
-
-        $response->assertStatus(200);
-        $response->assertSee('Total Bookings');
-        $response->assertSee('Total Revenue');
-        $response->assertSee('Total Customers');
-        $response->assertSee('Active Services');
-        $response->assertSee('Revenue Growth');
-        $response->assertSee('Daily Trends');
-        $response->assertSee('Upcoming Schedule');
-        $response->assertSee('Recent Bookings');
+        $this->actingAs($this->user)
+            ->get(route('owner.dashboard'))
+            ->assertStatus(200)
+            ->assertSee('Booking hari ini')
+            ->assertSee('Menunggu pembayaran')
+            ->assertSee('Pendapatan hari ini')
+            ->assertSee('Slot terisi hari ini')
+            ->assertSee('Perlu tindakan')
+            ->assertSee('Jadwal hari ini')
+            ->assertSee('Link booking Anda')
+            ->assertSee('Aksi cepat');
     }
 }

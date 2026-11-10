@@ -60,28 +60,22 @@ class SettingsTest extends TestCase
         ]);
     }
 
-    public function test_owner_can_update_payment_settings(): void
+    public function test_gateway_settings_can_no_longer_be_saved_from_the_owner_portal(): void
     {
-        // Staged module under test is released explicitly (ADR-0011)
+        // D-016, BQ-141 (AC-PAY-05): the gateway form is removed, even where the module is released.
         config(['modules.direct-payment' => 'released']);
+        $before = $this->tenant->fresh()->payment_mode;
 
-        $response = $this->actingAs($this->user)->post('/owner/settings/payment', [
+        $this->actingAs($this->user)->post('/owner/settings/payment', [
             'payment_mode' => 'owner',
             'midtrans_environment' => 'sandbox',
             'midtrans_sandbox_merchant_id' => 'G123456789',
             'midtrans_sandbox_client_key' => 'SB-Mid-client-XXXX',
             'midtrans_sandbox_server_key' => 'SB-Mid-server-YYYY',
-        ]);
+        ])->assertNotFound();
 
-        $response->assertRedirect('/owner/settings');
-        $response->assertSessionHas('sukses');
-
-        $this->assertDatabaseHas('tenants', [
-            'id' => $this->tenant->id,
-            'payment_mode' => 'owner',
-            'midtrans_environment' => 'sandbox',
-            'midtrans_sandbox_merchant_id' => 'G123456789',
-        ]);
+        $this->assertSame($before, $this->tenant->fresh()->payment_mode);
+        $this->assertDatabaseMissing('tenants', ['id' => $this->tenant->id, 'midtrans_sandbox_merchant_id' => 'G123456789']);
     }
 
     public function test_owner_can_request_payout(): void
@@ -105,7 +99,7 @@ class SettingsTest extends TestCase
             'payout_account_id' => $account->id,
         ]);
 
-        $response->assertRedirect(route('owner.settings.balance'));
+        $response->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('owner_payouts', [

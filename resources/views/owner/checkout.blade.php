@@ -73,7 +73,7 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
 
         {{-- Left Column: Form & Context --}}
-        <div class="lg:col-span-3 space-y-5">
+        <div data-checkout-form class="order-2 lg:order-1 lg:col-span-3 space-y-5">
 
             {{-- Page Title --}}
             <div>
@@ -216,7 +216,7 @@
         </div>
 
         {{-- Right Column: Selected Plan & Payment Summary --}}
-        <div class="lg:col-span-2 space-y-4">
+        <div data-checkout-summary class="order-1 lg:order-2 lg:col-span-2 space-y-4">
 
             @php
                 $tierName = strtolower($plan->namapaket);

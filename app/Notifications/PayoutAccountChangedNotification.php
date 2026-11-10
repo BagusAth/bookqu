@@ -36,6 +36,6 @@ class PayoutAccountChangedNotification extends Notification implements ShouldQue
             ->greeting('Halo '.($notifiable->namalengkap ?? 'Owner').',')
             ->line("Rekening penarikan {$this->actionType}: {$this->bankNama} {$this->maskedNumber}.")
             ->line('Jika ini bukan Anda, segera ganti password dan hubungi admin BookQu.')
-            ->action('Cek Saldo & Rekening', url('/owner/settings/balance'));
+            ->action('Cek Saldo & Rekening', route('owner.payments', ['tab' => 'rekening']));
     }
 }

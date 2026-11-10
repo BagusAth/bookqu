@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Customer;
 
+use App\Domain\Customer\CustomerIdentity;
 use App\Models\CustomerNote;
 use App\Models\Tenant;
 use App\Support\TenantContext;
@@ -25,17 +26,17 @@ class SaveCustomerNote
         $exists = DB::table('bookings')
             ->where('idtenant', $tenant->id)
             ->where(function ($q) use ($identifier) {
-                $q->whereRaw("LOWER(TRIM(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(nomorhp), ''), CONCAT('guest-', id)))) = ?", [$identifier]);
+                $q->whereRaw(CustomerIdentity::sql().' = ?', [$identifier]);
             })
             ->exists();
 
-        if (!$exists) {
+        if (! $exists) {
             abort(403, 'Akses tidak diizinkan.');
         }
 
         return CustomerNote::updateOrCreate(
             [
-                'idtenant'            => $tenant->id,
+                'idtenant' => $tenant->id,
                 'customer_identifier' => $identifier,
             ],
             [

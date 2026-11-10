@@ -1,5 +1,10 @@
-{{-- Page Header Component --}}
+{{--
+    Page header (BQ-129, owner-portal.md §9): title, one-line purpose, one primary action.
+    `judul`, `subjudul` and the `aksi` slot are the former names, kept for pages not yet migrated.
+--}}
 @props([
+    'title' => null,
+    'purpose' => null,
     'judul' => '',
     'subjudul' => '',
     'aksi' => null,
@@ -7,19 +12,21 @@
 ])
 
 @php
-    $judulLower = strtolower($judul);
+    $heading = $title ?? $judul;
+    $subheading = $purpose ?? $subjudul;
+    $primaryAction = $action ?? $aksi;
 @endphp
 
-<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-    <div>
-        <h1 class="text-2xl font-black tracking-tight text-[#231a3d] sm:text-3xl">{{ $judul }}</h1>
-        @if ($subjudul)
-            <p class="mt-1 text-xs sm:text-sm text-[#6e6584] leading-relaxed">{{ $subjudul }}</p>
+<div {{ $attributes->merge(['class' => 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between']) }}>
+    <div class="min-w-0">
+        <h1 class="text-xl font-semibold text-bq-text sm:text-2xl">{{ $heading }}</h1>
+        @if ($subheading)
+            <p class="mt-1 text-sm text-bq-text-muted">{{ $subheading }}</p>
         @endif
     </div>
-    @if ($aksi)
-        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-            {{ $aksi }}
+    @if ($primaryAction)
+        <div class="flex shrink-0 flex-wrap items-center gap-2">
+            {{ $primaryAction }}
         </div>
     @endif
 </div>

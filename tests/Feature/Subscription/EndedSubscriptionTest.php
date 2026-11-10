@@ -43,7 +43,7 @@ class EndedSubscriptionTest extends TestCase
         $tenant = Tenant::factory()->create();
         $subscription = app(CreateTrialSubscription::class)->execute($tenant);
         $subscription->update(['trial_berakhir' => now()->subDay()]);
-        foreach (['/owner/dashboard', '/owner/bookings', '/owner/calendar', '/owner/customers', '/owner/reviews', '/owner/settings/balance', '/owner/subscription'] as $path) {
+        foreach (['/owner/dashboard', '/owner/bookings', '/owner/calendar', '/owner/customers', '/owner/reviews', '/owner/payments', '/owner/subscription'] as $path) {
             $this->actingAs($tenant->user)->get($path)->assertOk();
         }
         $this->postJson('/owner/schedule/bulk-slots', [])->assertForbidden()->assertJsonPath('code', 'subscription-ended');
@@ -95,9 +95,9 @@ class EndedSubscriptionTest extends TestCase
         $this->travelTo(Carbon::parse('2026-11-04 10:00:00', 'Asia/Jakarta'));
         $tenant = Tenant::factory()->create();
         app(CreateTrialSubscription::class)->execute($tenant)->update(['trial_berakhir' => now()->subSecond()]);
-        config(['modules.vouchers' => 'released', 'modules.additional-items' => 'released', 'modules.assets' => 'released']);
+        config(['modules.vouchers' => 'released', 'modules.additional-items' => 'released', 'modules.booking-page' => 'released']);
         $this->actingAs($tenant->user);
-        foreach (['/owner/services', '/owner/programs', '/owner/categories', '/owner/schedule/bulk-slots', '/owner/bookings/walkin', '/owner/vouchers', '/owner/additional-items', '/owner/settings/assets'] as $path) {
+        foreach (['/owner/services', '/owner/programs', '/owner/categories', '/owner/schedule/bulk-slots', '/owner/bookings/walkin', '/owner/vouchers', '/owner/additional-items', '/owner/booking-page/media'] as $path) {
             $this->postJson($path, [])->assertForbidden()->assertJsonPath('code', 'subscription-ended');
         }
         foreach (['owner.units.store', 'owner.promos.store', 'owner.team.invite'] as $route) {

@@ -30,7 +30,7 @@ class OwnerIntegrationController extends Controller
                 'description' => 'Memproses pembayaran otomatis menggunakan QRIS, Virtual Account Bank (BCA, Mandiri, BNI, BRI), dan E-Wallet.',
                 'status' => $midtransConfigured ? 'connected' : 'disconnected',
                 'is_active' => true,
-                'action_url' => route('owner.settings.payment-setting'),
+                'action_url' => route('owner.payments', ['tab' => 'pengaturan']),
                 'action_label' => 'Konfigurasi Midtrans',
             ],
             [

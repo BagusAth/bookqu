@@ -87,7 +87,7 @@
                 <div class="flex items-center rounded-xl border border-bq-border bg-slate-50 px-3.5 py-2">
                     <span class="text-xs font-medium text-bq-text-muted">bookqu.com/</span>
                     <input type="text" value="{{ $tenant->slug }}" class="w-full border-0 bg-transparent px-1 text-xs font-bold text-bq-text focus:outline-none cursor-default" id="input-slug" readonly>
-                    <button type="button" @click="navigator.clipboard.writeText('{{ url('/' . $tenant->slug) }}'); alert('Link booking berhasil disalin!')" class="text-xs font-bold text-[#4F46E5] hover:text-[#4338CA] whitespace-nowrap px-2 py-1 rounded-lg hover:bg-indigo-50 transition">
+                    <button type="button" @click="navigator.clipboard.writeText('{{ url('/' . $tenant->slug) }}'); $dispatch('toast', { type: 'success', message: 'Link booking berhasil disalin.' })" class="text-xs font-bold text-[#4F46E5] hover:text-[#4338CA] whitespace-nowrap px-2 py-1 rounded-lg hover:bg-indigo-50 transition">
                         Salin Link
                     </button>
                 </div>

@@ -60,15 +60,17 @@ class BookingState
     }
 
     /**
-     * Human-readable Indonesian label for booking status.
+     * Human-readable Indonesian label for booking status, as listed in the owner-portal
+     * contract (owner-portal.md §8). `no_show` arrives with ADR-0018 (BQ-153).
      */
     public static function formatLabel(string $status): string
     {
         return match ($status) {
-            self::STATUS_PAID => 'lunas / dikonfirmasi',
-            self::STATUS_COMPLETED => 'selesai',
-            self::STATUS_CANCELLED => 'dibatalkan',
-            self::STATUS_PENDING => 'menunggu pembayaran',
+            self::STATUS_PENDING => 'Menunggu bayar',
+            self::STATUS_PAID => 'Terkonfirmasi',
+            self::STATUS_COMPLETED => 'Selesai',
+            self::STATUS_CANCELLED => 'Dibatalkan',
+            'no_show' => 'Tidak datang',
             default => $status,
         };
     }

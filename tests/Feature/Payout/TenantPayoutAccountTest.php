@@ -63,7 +63,7 @@ class TenantPayoutAccountTest extends TestCase
             'current_password' => 'secret123',
         ]);
 
-        $response->assertRedirect(route('owner.settings.balance'));
+        $response->assertRedirect(route('owner.payments', ['tab' => 'rekening']));
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('tenant_payout_accounts', [
@@ -137,7 +137,7 @@ class TenantPayoutAccountTest extends TestCase
             'current_password' => 'secret123',
         ]);
 
-        $response->assertRedirect(route('owner.settings.balance'));
+        $response->assertRedirect(route('owner.payments', ['tab' => 'rekening']));
         $this->assertDatabaseHas('tenant_payout_accounts', [
             'id' => $account->id,
             'bank_kode' => 'MANDIRI',
@@ -179,7 +179,7 @@ class TenantPayoutAccountTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->owner)->post('/owner/payout-accounts/'.$acc2->id.'/default');
-        $response->assertRedirect(route('owner.settings.balance'));
+        $response->assertRedirect(route('owner.payments', ['tab' => 'rekening']));
 
         $this->assertFalse((bool) $acc1->fresh()->is_default);
         $this->assertTrue((bool) $acc2->fresh()->is_default);
@@ -284,7 +284,7 @@ class TenantPayoutAccountTest extends TestCase
             'current_password' => 'secret123',
         ]);
 
-        $response->assertRedirect(route('owner.settings.balance'));
+        $response->assertRedirect(route('owner.payments', ['tab' => 'rekening']));
         $this->assertSoftDeleted('tenant_payout_accounts', ['id' => $acc1->id]);
 
         // acc2 promoted to default
@@ -312,7 +312,7 @@ class TenantPayoutAccountTest extends TestCase
             'jumlah' => 100000,
             'payout_account_id' => $account->id,
         ]);
-        $response->assertRedirect(route('owner.settings.balance'));
+        $response->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
 
         $payout = OwnerPayout::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->firstOrFail();
         $this->assertEquals('1234567890', $payout->nomor_rekening);
@@ -389,7 +389,7 @@ class TenantPayoutAccountTest extends TestCase
 
         $this->storeAccount(['nama_pemilik_rekening' => 'Nama Baru'])
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('owner.settings.balance'));
+            ->assertRedirect(route('owner.payments', ['tab' => 'rekening']));
 
         $this->assertSame(1, TenantPayoutAccount::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->count());
         $restored = TenantPayoutAccount::withoutGlobalScopes()->whereNull('deleted_at')->findOrFail($account->id);
@@ -454,7 +454,7 @@ class TenantPayoutAccountTest extends TestCase
         foreach ([$second, $first, $second, $first, $second] as $target) {
             $this->actingAs($this->owner)
                 ->post('/owner/payout-accounts/'.$target->id.'/default')
-                ->assertRedirect(route('owner.settings.balance'));
+                ->assertRedirect(route('owner.payments', ['tab' => 'rekening']));
         }
         $this->assertTrue($second->fresh()->is_default);
 

@@ -4,101 +4,69 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Owner;
 
-use App\Actions\Dashboard\GetOwnerDashboardOverview;
-use App\Actions\Owner\GetOwnerNavigation;
-use App\Actions\Team\FilterRevenueFigures;
+use App\Actions\Dashboard\GetBeranda;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
-use App\Policies\TenantResourcePolicy;
 use App\Traits\ResolvesOwnerTenant;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class OwnerDashboardController extends Controller
 {
     use ResolvesOwnerTenant;
 
-    public function index(GetOwnerDashboardOverview $dashboardOverview): View
+    /**
+     * Beranda (owner-portal.md §8.1).
+     */
+    public function index(GetBeranda $getBeranda): View
     {
+        $user = auth()->user() ?? abort(403, 'User tidak ditemukan.');
         $tenant = $this->resolveTenant();
-        $user = auth()->user();
 
-        if (! $user) {
-            abort(403, 'User tidak ditemukan.');
-        }
-
-        if (! $tenant) {
-            $tenant = new Tenant;
-            $tenant->setRelation('user', $user);
-
-            $labelbulan = [];
-            $datarevenueperbulan = [];
-            for ($i = 6; $i >= 0; $i--) {
-                $labelbulan[] = Carbon::now()->subMonths($i)->startOfMonth()->format('M');
-                $datarevenueperbulan[] = 0;
-            }
-
-            $labelminggu = [];
-            $datarevenueperminggu = [];
-            for ($i = 6; $i >= 0; $i--) {
-                $labelminggu[] = Carbon::today()->subDays($i)->format('d M');
-                $datarevenueperminggu[] = 0;
-            }
-
+        if ($tenant === null) {
+            // An account without a business yet: only the guide's first step applies.
             return view('owner.dashboard', [
-                'tenant' => $tenant,
-                'totalbooking' => 0,
-                'persenperubahanboking' => 0,
-                'totalrevenue' => 0,
-                'persenperubahanrevenue' => 0,
-                'programaktif' => 0,
-                'totalpelanggan' => 0,
-                'datarevenueperbulan' => $datarevenueperbulan,
-                'labelbulan' => $labelbulan,
-                'datarevenueperminggu' => $datarevenueperminggu,
-                'labelminggu' => $labelminggu,
-                'trendlayanan' => collect(),
-                'aktivitasterbaru' => collect(),
-                'upcomingbookings' => collect(),
-                'statustrial' => false,
-                'sisahari' => 0,
-                'showProfilePrompt' => true,
-                'showPaymentPrompt' => false,
+                'tenant' => (new Tenant)->setRelation('user', $user),
+                'banner' => null,
+                'guide' => ['steps' => [['key' => 'profile', 'label' => 'Lengkapi profil bisnis', 'hint' => 'Nama bisnis, jenis bisnis, nomor HP dan alamat.', 'done' => false, 'event' => 'open-complete-profile', 'url' => null]], 'done' => 0],
+                'live' => [],
+                'link' => null,
+                'quickActions' => [],
+                'profileIncomplete' => true,
             ]);
         }
 
-        $overviewData = $dashboardOverview->getOverviewData($tenant);
+        $page = $getBeranda->execute($tenant, $user);
+        $profileStep = collect($page['guide']['steps'] ?? [])->firstWhere('key', 'profile');
 
-        $canViewRevenue = request()->attributes->get('can_view_revenue') !== false;
-        if (! $canViewRevenue) {
-            $overviewData = app(FilterRevenueFigures::class)->execute($overviewData);
-        }
-        $overviewData['canViewRevenue'] = $canViewRevenue;
-        $overviewData['canRenewSubscription'] = app(TenantResourcePolicy::class)->ability($user, 'subscription.manage');
-        $report = collect(app(GetOwnerNavigation::class)->execute($user))->firstWhere('id', 'reports');
-        $overviewData['showFullReportLink'] = $report !== null;
-        $overviewData['fullReportLocked'] = $report['locked'] ?? false;
-
-        return view('owner.dashboard', $overviewData);
+        return view('owner.dashboard', $page + [
+            'tenant' => $tenant,
+            'profileIncomplete' => $profileStep !== null && ! $profileStep['done'],
+        ]);
     }
 
-    public function pollingData(GetOwnerDashboardOverview $dashboardOverview): JsonResponse
+    /**
+     * Live refresh of sections 2–4 (AC-BRD-06); amounts are left out for roles without revenue.
+     */
+    public function pollingData(GetBeranda $getBeranda): JsonResponse
     {
         $tenant = $this->resolveTenant();
-
-        if (! $tenant) {
+        if ($tenant === null) {
             return response()->json(['success' => false, 'message' => 'Tenant tidak ditemukan.'], 404);
         }
 
-        $data = $dashboardOverview->getPollingData($tenant);
-        if (request()->attributes->get('can_view_revenue') === false) {
-            $data = app(FilterRevenueFigures::class)->execute($data);
-        }
+        return response()->json(['success' => true, 'data' => $getBeranda->live($tenant, auth()->user() ?? abort(403))]);
+    }
 
-        return response()->json([
-            'success' => true,
-            'data' => $data,
-        ]);
+    /**
+     * The booking link was copied or shared from the link card (guide step 4).
+     */
+    public function linkShared(GetBeranda $getBeranda): Response
+    {
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $getBeranda->markLinkShared($tenant);
+
+        return response()->noContent();
     }
 }

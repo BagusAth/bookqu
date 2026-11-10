@@ -371,7 +371,8 @@ class CustomerManagementTest extends TestCase
         $response = $this->actingAs($this->ownerA)->get(route('owner.customers'));
 
         $response->assertOk();
-        $response->assertSee('Belum ada data customer');
+        // BQ-137: the empty-state copy of owner-portal.md §8.5.
+        $response->assertSee('Pelanggan muncul otomatis setelah booking pertama.');
     }
 
     /** 15. Pagination: page 2 returns 200 when there are more than 20 unique customers */
@@ -413,8 +414,10 @@ class CustomerManagementTest extends TestCase
 
         $response = $this->actingAs($this->ownerA)->get(route('owner.customers'));
         $response->assertOk();
-        // Total spending = 300.000
-        $response->assertSee('300.000');
+        // BQ-137: the §8.5 summary counts customers; spending (sukses payments only) shows per customer.
+        $response->assertViewHas('summary', fn (array $summary): bool => $summary['total'] === 2);
+        $response->assertSee('Rp 100.000');
+        $response->assertSee('Rp 200.000');
     }
 
     /** 19. Upcoming booking shows the customer's earliest future booking with its own time */

@@ -10,14 +10,13 @@ return [
     // Removed by BQ-032 (Provider outcome intake).
     'provider-sdk' => [],
     // Removed by BQ-035.
+    // The top bar no longer queries (BQ-128: GetOwnerShell prepares the shell).
     'blade-queries' => [
-        'resources/views/components/owner/topbar.blade.php' => 1,
         'resources/views/owner/landing-page.blade.php' => 1,
     ],
     // Removed by BQ-012 (Slot bookability).
     'slot-occupancy' => [
         'app/Actions/Booking/CreateBooking.php' => 1,
-        'app/Actions/Service/DeleteService.php' => 1,
         'app/Domain/Subscription/SubscriptionUsage.php' => 1,
     ],
     // Removed by BQ-033.
@@ -30,4 +29,6 @@ return [
     ],
     // Added empty by BQ-089: views assign only fixed markup to innerHTML.
     'inner-html-data' => [],
+    // Added empty by BQ-129: owner views use the confirm dialog and toast, not native dialogs.
+    'native-dialogs' => [],
 ];

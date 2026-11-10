@@ -2,7 +2,7 @@
 id: BQ-143
 title: Ulasan page with tabs and suggested replies
 type: feature
-status: proposed
+status: in-progress
 priority: P2
 phase: 4
 domain: customers-reviews
@@ -48,3 +48,17 @@ INV-TEN-01.
 - `docs/domains/customers-reviews.md`
 
 ## Evidence (fill when done)
+
+## Implementation notes
+
+- **Wave:** built ahead of wave 4 under the ROADMAP rule. Its only dependency is BQ-129, and it touches no file of Developer A's open items (BQ-133, BQ-138, BQ-144).
+- **Code:** `Actions/Review/GetReviewsPage` prepares the summary, the tabs with counts, search and the paginated list. The controller is thin. `ReplyToReview` and `ToggleReviewVisibility` hold the writes.
+- **AC-ULS-02:** "Belum dibalas" is every review whose reply is null or empty, hidden reviews included.
+- **AC-ULS-01:** the public booking page shows no reviews today, so a hidden review cannot appear there. The test guards this. Showing visible reviews publicly is in neither `owner-portal.md` nor `requirements.md`; it would be a product change (`D-NNN`) and is not built here.
+- **Suggested replies:** three sentences per tone, chosen by rating (4–5 positive, 1–3 negative).
+- **BQ-101 findings carried:**
+  - pagination with 15 reviews per page and aggregates instead of loading every row;
+  - search kept in a plain form field, with no Alpine interpolation;
+  - a named route template through `@js`;
+  - the shared accessible dialog with a single-submit guard.
+- **Booking link:** each review links to the filtered Booking list until BQ-135 adds the booking panel.

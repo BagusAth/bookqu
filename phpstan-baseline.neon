@@ -97,24 +97,6 @@ parameters:
 			path: app/Actions/Customer/GetCustomerDetail.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Service\:\:\$bookingshariini\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Actions/Dashboard/GetOwnerDashboardOverview.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Service\:\:\$bookingskemarin\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Dashboard/GetOwnerDashboardOverview.php
-
-		-
-			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
-			identifier: instanceof.alwaysFalse
-			count: 1
-			path: app/Actions/Dashboard/GetOwnerDashboardOverview.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>namabisnis" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -251,12 +233,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>saldo_platform" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Owner/OwnerBalanceController.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'

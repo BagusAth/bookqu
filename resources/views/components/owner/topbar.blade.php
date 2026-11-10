@@ -1,514 +1,166 @@
-{{-- Owner Portal Topbar Component --}}
-@php
-    $tenantContextId = app(\App\Support\TenantContext::class)->getTenantId();
-    $tenant = $tenantContextId ? \App\Models\Tenant::find($tenantContextId) : auth()->user()?->tenant;
-    $currentPath = request()->path();
-    $currentRoute = request()->route() ? request()->route()->getName() : '';
+{{--
+    Owner top bar (BQ-128, owner-portal.md §4.2): search, + Booking, the public booking page link,
+    the notification bell and the account menu. Data comes from GetOwnerShell; behaviour from
+    public/js/owner-ui.js (ownerSearch, ownerBell).
+--}}
+<header class="sticky top-0 z-40 flex h-16 items-center gap-2 border-b border-bq-border bg-bq-surface px-3 sm:gap-3 sm:px-5">
+    <a href="{{ route('owner.dashboard') }}" class="flex items-center gap-2 md:hidden" aria-label="Beranda {{ $shell['business'] }}">
+        <img src="{{ asset('logo_icon.png') }}" alt="" class="h-8 w-8 rounded-lg" width="32" height="32">
+    </a>
 
-    // Generate dynamic breadcrumb labels
-    $parentSection = '';
-    $currentBreadcrumbLabel = 'Dashboard';
-
-    if (str_contains($currentPath, 'calendar')) {
-        $parentSection = 'Booking';
-        $currentBreadcrumbLabel = 'Calendar';
-    } elseif (str_contains($currentPath, 'schedule-report')) {
-        $parentSection = 'Analytics';
-        $currentBreadcrumbLabel = 'Schedule Report';
-    } elseif (str_contains($currentPath, 'schedule')) {
-        $parentSection = 'Booking';
-        $currentBreadcrumbLabel = 'Schedule';
-    } elseif (str_contains($currentPath, 'bookings')) {
-        $parentSection = 'Booking';
-        $currentBreadcrumbLabel = 'Bookings';
-    } elseif (str_contains($currentPath, 'services') || str_contains($currentPath, 'programs')) {
-        $parentSection = 'Services';
-        $currentBreadcrumbLabel = 'Services';
-    } elseif (str_contains($currentPath, 'categories')) {
-        $parentSection = 'Services';
-        $currentBreadcrumbLabel = 'Categories';
-    } elseif (str_contains($currentPath, 'staff-resources')) {
-        $parentSection = 'Services';
-        $currentBreadcrumbLabel = 'Staff & Resources';
-    } elseif (str_contains($currentPath, 'additional-items')) {
-        $parentSection = 'Services';
-        $currentBreadcrumbLabel = 'Additional Items';
-    } elseif (str_contains($currentPath, 'customers')) {
-        $parentSection = 'Customers';
-        $currentBreadcrumbLabel = 'Customers CRM';
-    } elseif (str_contains($currentPath, 'vouchers')) {
-        $parentSection = 'Marketing';
-        $currentBreadcrumbLabel = 'Vouchers';
-    } elseif (str_contains($currentPath, 'reviews')) {
-        $parentSection = 'Marketing';
-        $currentBreadcrumbLabel = 'Reviews';
-    } elseif (str_contains($currentPath, 'analytics')) {
-        $parentSection = 'Analytics';
-        $currentBreadcrumbLabel = 'Overview';
-    } elseif (str_contains($currentPath, 'settings/business') || str_contains($currentPath, 'settings/profile')) {
-        $parentSection = 'Settings';
-        $currentBreadcrumbLabel = 'Business Profile';
-    } elseif (str_contains($currentPath, 'settings/appearance')) {
-        $parentSection = 'Settings';
-        $currentBreadcrumbLabel = 'Appearance';
-    } elseif (str_contains($currentPath, 'settings/payment-setting')) {
-        $parentSection = 'Settings';
-        $currentBreadcrumbLabel = 'Payments';
-    } elseif (str_contains($currentPath, 'settings/assets')) {
-        $parentSection = 'Settings';
-        $currentBreadcrumbLabel = 'Media Assets';
-    } elseif (str_contains($currentPath, 'settings/integrations')) {
-        $parentSection = 'Settings';
-        $currentBreadcrumbLabel = 'Integrations';
-    } elseif (str_contains($currentPath, 'subscription')) {
-        $parentSection = 'Settings';
-        $currentBreadcrumbLabel = 'Subscription';
-    } elseif (str_contains($currentPath, 'landing-page')) {
-        $parentSection = 'Marketing';
-        $currentBreadcrumbLabel = 'Landing Page [PRO]';
-    } elseif (str_contains($currentPath, 'notifications')) {
-        $parentSection = 'Account';
-        $currentBreadcrumbLabel = 'Notifications';
-    }
-@endphp
-
-<header class="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b border-[#e7e2f7] bg-white/85 px-4 sm:px-6 lg:px-8 backdrop-blur-md shadow-2xs">
-    {{-- Left: Mobile Toggle & Breadcrumb Navigation --}}
-    <div class="flex min-w-0 items-center gap-2 sm:gap-3">
-        <button
-            type="button"
-            @click="sidebaropen = true"
-            class="craft-btn rounded-xl p-2 text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#231a3d] transition-colors lg:hidden cursor-pointer"
-            id="btn-mobile-menu"
-            aria-label="Open Navigation Menu"
+    @if ($shell['canSearch'])
+        <div
+            class="relative min-w-0 flex-1 sm:max-w-md"
+            x-data="ownerSearch(@js(route('owner.search')))"
+            x-on:keydown.escape="close()"
+            x-on:click.outside="close()"
         >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
-        </button>
-
-        {{-- Dynamic Breadcrumb --}}
-        <nav class="flex items-center gap-1 sm:gap-1.5 text-xs font-semibold text-[#6e6584] min-w-0" aria-label="Breadcrumb">
-            <a href="{{ route('owner.dashboard') }}" class="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-lg text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#382186] transition shrink-0" title="Dashboard">
-                <svg class="h-3.5 w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                </svg>
-            </a>
-            @if ($parentSection)
-                <span class="text-[#cbd5e1] hidden sm:inline">/</span>
-                <span class="hidden sm:inline-block text-[#6e6584] truncate">{{ $parentSection }}</span>
-            @endif
-            <span class="text-[#cbd5e1] hidden sm:inline">/</span>
-            <span class="block min-w-0 rounded-lg bg-[#f3effe] px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-bold text-[#382186] border border-[#b499ff]/30 shadow-2xs truncate">
-                {{ $currentBreadcrumbLabel }}
-            </span>
-        </nav>
-    </div>
-
-    {{-- Right: Quick Action, View/Copy Public Link, Profile Dropdown --}}
-    <div class="flex shrink-0 items-center gap-1.5 sm:gap-3">
-        @if ($tenant && $tenant->slug)
-            {{-- Unified Public Booking Page Action Group --}}
-            <div class="inline-flex items-stretch rounded-xl border border-[#b499ff]/40 bg-[#f3effe] p-0.5 shadow-2xs">
-                <a
-                    href="/{{ $tenant->slug }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="craft-btn inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 sm:py-1 text-xs font-bold text-[#382186] hover:bg-white transition-all active:scale-[0.98]"
-                    title="Lihat reservasi publik di tab baru"
-                    id="btn-topbar-view-booking-page"
+            <label for="owner-search" class="sr-only">Cari booking atau pelanggan</label>
+            <div class="flex items-center gap-2 rounded-lg border border-bq-border bg-bq-background px-3 focus-within:border-bq-primary focus-within:ring-2 focus-within:ring-bq-primary/20">
+                <x-owner.icon name="search" class="h-4 w-4 text-bq-text-muted" />
+                <input
+                    id="owner-search"
+                    type="search"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-controls="owner-search-results"
+                    x-bind:aria-expanded="open ? 'true' : 'false'"
+                    autocomplete="off"
+                    maxlength="100"
+                    placeholder="Cari kode booking, nama, atau nomor HP"
+                    x-model="query"
+                    x-on:input.debounce.300ms="search()"
+                    x-on:keydown.enter.prevent="openFirst()"
+                    class="h-9 w-full min-w-0 border-0 bg-transparent p-0 text-sm text-bq-text placeholder:text-bq-text-subtle focus:outline-none focus:ring-0"
                 >
-                    <svg class="h-4 w-4 sm:h-3.5 sm:w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                    </svg>
-                    <span class="hidden md:inline">Booking Page</span>
-                </a>
-                <div class="w-px bg-[#b499ff]/30 my-0.5"></div>
-                <button
-                    type="button"
-                    x-data="{ copied: false }"
-                    @click="
-                        navigator.clipboard.writeText(window.location.origin + '/{{ $tenant->slug }}');
-                        copied = true;
-                        setTimeout(() => copied = false, 2500);
-                        $dispatch('toast', { message: 'Link reservasi berhasil disalin ke clipboard!', type: 'success' });
-                    "
-                    class="craft-btn inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 sm:py-1 text-xs font-bold text-[#382186] hover:bg-white transition-all active:scale-[0.98] cursor-pointer"
-                    title="Salin tautan reservasi publik"
-                    id="btn-topbar-copy-link"
-                >
-                    <svg x-show="!copied" class="h-4 w-4 sm:h-3.5 sm:w-3.5 text-[#382186]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                    </svg>
-                    <svg x-show="copied" x-cloak class="h-4 w-4 sm:h-3.5 sm:w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="hidden xl:inline text-[11px]" x-text="copied ? 'Tersalin!' : 'Salin'"></span>
-                </button>
             </div>
-        @endif
 
-        {{-- Business Status Chip --}}
-        <a
-            href="{{ route('owner.settings.business') }}"
-            class="hidden xl:inline-flex items-center gap-2 rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] px-3 py-1.5 hover:bg-[#e7e2f7]/60 hover:border-[#b499ff] transition-colors"
-            title="Kelola Pengaturan Bisnis"
-        >
-            <span class="relative flex h-2 w-2">
-                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-            </span>
-            <span class="text-xs font-bold text-[#231a3d] truncate max-w-[140px]">{{ $tenant->namabisnis ?? 'Bisnis' }}</span>
-        </a>
+            <div
+                id="owner-search-results"
+                x-show="open"
+                x-cloak
+                role="listbox"
+                aria-label="Hasil pencarian"
+                class="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-xl border border-bq-border bg-bq-surface p-2 shadow-lg"
+            >
+                <p x-show="loading" class="px-3 py-2 text-sm text-bq-text-muted" role="status">Mencari…</p>
+                <p x-show="!loading && failed" class="px-3 py-2 text-sm text-bq-danger" role="alert">Pencarian gagal. Coba lagi.</p>
+                <p x-show="!loading && !failed && results.bookings.length === 0 && results.customers.length === 0" class="px-3 py-2 text-sm text-bq-text-muted">Tidak ada yang cocok.</p>
 
-        {{-- Notification Bell Dropdown --}}
-        <div class="relative" x-data="ownerNotificationBell()" x-init="init()" @click.outside="isOpen = false">
+                <template x-if="results.bookings.length">
+                    <div>
+                        <p class="px-3 pb-1 pt-2 text-xs font-medium text-bq-text-muted">Booking</p>
+                        <template x-for="booking in results.bookings" x-bind:key="booking.code">
+                            <button type="button" role="option" x-on:click="choose(booking, 'booking')" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-bq-background">
+                                <span class="min-w-0">
+                                    <span class="block font-medium text-bq-text" x-text="booking.code"></span>
+                                    <span class="block truncate text-bq-text-muted"><span x-text="booking.customer"></span> · <span x-text="booking.date"></span> <span x-text="booking.time"></span></span>
+                                </span>
+                                <span class="shrink-0 text-xs text-bq-text-muted" x-text="booking.status.label"></span>
+                            </button>
+                        </template>
+                    </div>
+                </template>
+
+                <template x-if="results.customers.length">
+                    <div>
+                        <p class="px-3 pb-1 pt-2 text-xs font-medium text-bq-text-muted">Pelanggan</p>
+                        <template x-for="customer in results.customers" x-bind:key="customer.name + customer.phone">
+                            <button type="button" role="option" x-on:click="choose(customer, 'customer')" class="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-bq-background">
+                                <span class="block font-medium text-bq-text" x-text="customer.name"></span>
+                                <span class="block text-bq-text-muted" x-text="customer.phone"></span>
+                            </button>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+    @else
+        <div class="flex-1"></div>
+    @endif
+
+    <div class="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+        @if ($shell['canWalkIn'])
             <button
                 type="button"
-                @click="toggleDropdown()"
-                class="craft-btn group relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl border border-[#e7e2f7] bg-white text-[#6e6584] hover:border-[#b499ff] hover:bg-[#f8f6ff] hover:text-[#382186] hover:shadow-[0_4px_16px_rgba(56,33,134,0.08)] transition-all cursor-pointer active:scale-95"
-                id="btn-owner-notifications"
-                aria-label="Lihat Notifikasi"
-                :aria-expanded="isOpen"
+                id="owner-new-booking"
+                x-data
+                x-on:click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', trigger: $el })"
+                class="hidden items-center gap-1.5 rounded-lg bg-bq-primary px-3 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover md:inline-flex"
             >
-                {{-- Modern Bell Icon with subtle hover motion --}}
-                <svg
-                    class="h-5 w-5 transition-transform duration-300 group-hover:scale-105"
-                    :class="unreadCount > 0 ? 'text-[#382186]' : 'text-[#6e6584] group-hover:text-[#382186]'"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="1.85"
-                >
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M10.5 5.25a1.5 1.5 0 013 0"/>
-                </svg>
+                <x-owner.icon name="plus" class="h-4 w-4" />
+                Booking
+            </button>
+        @endif
 
-                {{-- Unread Glowing Badge Counter --}}
-                <span
-                    x-show="unreadCount > 0"
-                    x-transition:enter="transition ease-out duration-200"
-                    x-transition:enter-start="opacity-0 scale-50"
-                    x-transition:enter-end="opacity-100 scale-100"
-                    x-cloak
-                    class="absolute -top-1 -right-1 flex h-4.5 min-w-4.5 items-center justify-center"
-                >
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-60"></span>
-                    <span class="relative inline-flex items-center justify-center min-h-4.5 min-w-4.5 rounded-full bg-gradient-to-r from-rose-500 to-rose-600 px-1 text-[9px] font-black tracking-tight text-white shadow-xs border-2 border-white" x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
-                </span>
+        @if ($shell['storefrontUrl'])
+            <a href="{{ $shell['storefrontUrl'] }}" target="_blank" rel="noopener" class="hidden rounded-lg p-2 text-bq-text-muted hover:bg-bq-background hover:text-bq-text lg:inline-flex" title="Buka halaman booking">
+                <x-owner.icon name="external" />
+                <span class="sr-only">Buka halaman booking (tab baru)</span>
+            </a>
+        @endif
+
+        <div
+            id="owner-notification-bell"
+            class="relative"
+            x-data="ownerBell({ listUrl: @js(route('owner.notifications')), readAllUrl: @js(route('owner.notifications.read-all')), readUrl: @js(route('owner.notifications.read', ['id' => '__ID__'])), unread: {{ (int) $shell['unreadCount'] }} })"
+            x-on:keydown.escape="open = false"
+            x-on:click.outside="open = false"
+        >
+            <button type="button" x-on:click="toggle()" x-bind:aria-expanded="open ? 'true' : 'false'" aria-controls="owner-notification-list" class="relative rounded-lg p-2 text-bq-text-muted hover:bg-bq-background hover:text-bq-text">
+                <x-owner.icon name="bell" />
+                <span class="sr-only">Notifikasi</span>
+                <span x-show="unread > 0" x-cloak class="absolute right-1 top-1 min-w-4 rounded-full bg-bq-danger px-1 text-center text-[11px] font-semibold leading-4 text-white tabular-nums" x-text="unread > 99 ? '99+' : unread"></span>
+                <span class="sr-only" x-text="unread + ' belum dibaca'"></span>
             </button>
 
-            {{-- Dropdown Menu --}}
-            <div
-                x-show="isOpen"
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                x-transition:leave="transition ease-in duration-120"
-                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                x-cloak
-                class="fixed inset-x-4 top-[4.5rem] sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2.5 sm:w-[390px] sm:max-w-sm origin-top-right rounded-3xl border border-[#e7e2f7] bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_-12px_rgba(35,26,61,0.18)] z-50 overflow-hidden divide-y divide-[#f2eefc]"
-                style="display: none;"
-                id="owner-notifications-dropdown"
-            >
-                {{-- Decorative Top Accent Gradient --}}
-                <div class="h-1 w-full bg-gradient-to-r from-[#382186] via-[#7a5af8] to-[#b499ff]"></div>
-
-                {{-- Header --}}
-                <div class="flex items-center justify-between px-5 py-3.5 bg-[#fdfcff]/90">
-                    <div class="flex items-center gap-2.5">
-                        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f3effe] text-[#382186]">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <span class="text-xs font-extrabold text-[#231a3d] block leading-none">Notifikasi Bisnis</span>
-                            <span class="text-[10px] text-[#6e6584] mt-0.5 block" x-text="unreadCount > 0 ? `${unreadCount} belum dibaca` : 'Semua sudah dibaca'"></span>
-                        </div>
-                    </div>
-
-                    <button
-                        type="button"
-                        x-show="unreadCount > 0"
-                        @click="markAllAsRead()"
-                        class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold text-[#382186] hover:bg-[#f3effe] transition cursor-pointer"
-                        id="btn-mark-all-read"
-                    >
-                        <svg class="h-3.5 w-3.5 text-[#7a5af8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        <span>Tandai dibaca</span>
-                    </button>
+            <div id="owner-notification-list" x-show="open" x-cloak class="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-1.5rem)] rounded-xl border border-bq-border bg-bq-surface shadow-lg">
+                <div class="flex items-center justify-between border-b border-bq-border px-4 py-3">
+                    <p class="text-sm font-semibold text-bq-text">Notifikasi</p>
+                    <button type="button" x-show="unread > 0" x-on:click="markAllRead()" class="text-xs font-medium text-bq-primary hover:text-bq-primary-hover">Tandai semua dibaca</button>
                 </div>
-
-                {{-- List of Notifications --}}
-                <div class="max-h-[min(24rem,calc(100dvh-15rem))] overflow-y-auto divide-y divide-[#f7f7fa]">
-                    <template x-if="loading && notifications.length === 0">
-                        <div class="p-8 text-center text-xs text-[#6e6584]">
-                            <svg class="inline-block h-6 w-6 animate-spin text-[#382186] mb-2" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                            </svg>
-                            <p class="font-medium">Memuat notifikasi...</p>
-                        </div>
+                <p x-show="loading" class="px-4 py-6 text-center text-sm text-bq-text-muted" role="status">Memuat…</p>
+                <p x-show="!loading && items.length === 0" class="px-4 py-6 text-center text-sm text-bq-text-muted">Belum ada notifikasi.</p>
+                <ul class="max-h-80 overflow-y-auto">
+                    <template x-for="item in items" x-bind:key="item.id">
+                        <li>
+                            <button type="button" x-on:click="openItem(item)" class="block w-full border-b border-bq-border px-4 py-3 text-left hover:bg-bq-background" x-bind:class="item.is_read ? '' : 'bg-bq-primary-light/50'">
+                                <span class="block text-sm font-medium text-bq-text" x-text="item.title"></span>
+                                <span class="mt-0.5 block text-sm text-bq-text-muted" x-text="item.message"></span>
+                                <span class="mt-0.5 block text-xs text-bq-text-subtle" x-text="item.created_at"></span>
+                            </button>
+                        </li>
                     </template>
-
-                    <template x-if="!loading && notifications.length === 0">
-                        <div class="p-9 text-center" id="empty-notifications-state">
-                            <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f3effe] to-[#e7e2f7] text-[#382186] shadow-inner">
-                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M10.5 5.25a1.5 1.5 0 013 0"/>
-                                </svg>
-                            </div>
-                            <p class="text-xs font-extrabold text-[#231a3d]">Belum ada notifikasi baru</p>
-                            <p class="text-[11px] text-[#6e6584] mt-1 max-w-xs mx-auto leading-relaxed">Reservasi masuk dan perubahan status operasional akan muncul secara instan di sini.</p>
-                        </div>
-                    </template>
-
-                    <template x-for="item in notifications" :key="item.id">
-                        <div
-                            @click="handleNotificationClick(item)"
-                            :class="item.is_read ? 'bg-white hover:bg-[#faf9fe]' : 'bg-[#f7f5ff] hover:bg-[#efeafc] border-l-[3px] border-[#7a5af8]'"
-                            class="group relative flex items-start gap-3.5 p-4 transition-all cursor-pointer"
-                        >
-                            {{-- Event Icon Badge --}}
-                            <div class="shrink-0 mt-0.5">
-                                <template x-if="item.event_type === 'new_booking'">
-                                    <div class="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 shadow-2xs">
-                                        <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                        </svg>
-                                    </div>
-                                </template>
-                                <template x-if="item.event_type === 'cancelled'">
-                                    <div class="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200/80 shadow-2xs">
-                                        <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                    </div>
-                                </template>
-                                <template x-if="item.event_type === 'rescheduled'">
-                                    <div class="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 shadow-2xs">
-                                        <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                    </div>
-                                </template>
-                                <template x-if="item.event_type === 'completed' || (item.event_type !== 'new_booking' && item.event_type !== 'cancelled' && item.event_type !== 'rescheduled')">
-                                    <div class="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-[#f3effe] text-[#382186] border border-[#b499ff]/40 shadow-2xs">
-                                        <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                    </div>
-                                </template>
-                            </div>
-
-                            {{-- Content --}}
-                            <div class="flex-1 min-w-0 pr-1">
-                                <div class="flex items-baseline justify-between gap-1 mb-1">
-                                    <p class="text-xs font-bold text-[#231a3d] truncate group-hover:text-[#382186] transition-colors" x-text="item.title"></p>
-                                    <span class="text-[10px] text-[#6e6584] whitespace-nowrap shrink-0 font-medium" x-text="item.created_at"></span>
-                                </div>
-                                <p class="text-[11px] text-[#6e6584] line-clamp-2 leading-relaxed" x-text="item.message"></p>
-                            </div>
-
-                            {{-- Unread Dot Indicator --}}
-                            <div class="shrink-0 self-center pl-1" x-show="!item.is_read">
-                                <span class="relative flex h-2.5 w-2.5">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7a5af8] opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#382186]"></span>
-                                </span>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-
-                {{-- Footer --}}
-                <div class="p-3 bg-[#fdfcff]/90 text-center">
-                    <a
-                        href="{{ route('owner.notifications') }}"
-                        class="group inline-flex items-center justify-center gap-1.5 text-xs font-extrabold text-[#382186] hover:text-[#231a3d] transition py-1.5 px-4 rounded-xl hover:bg-[#f3effe]"
-                        id="link-view-all-notifications"
-                    >
-                        <span>Lihat Semua Notifikasi</span>
-                        <svg class="h-3.5 w-3.5 text-[#7a5af8] transition-transform duration-200 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </a>
-                </div>
+                </ul>
+                <a href="{{ route('owner.notifications') }}" class="block px-4 py-3 text-center text-sm font-medium text-bq-primary hover:text-bq-primary-hover">Lihat semua</a>
             </div>
         </div>
 
-        {{-- Interactive User Profile Dropdown --}}
-        <div class="relative pl-1.5 sm:pl-2 border-l border-[#e7e2f7]" x-data="{ userMenuOpen: false }">
-            <button
-                type="button"
-                @click="userMenuOpen = !userMenuOpen"
-                class="craft-btn flex items-center gap-2 rounded-2xl p-1 hover:bg-[#f7f7fa] transition cursor-pointer"
-                id="btn-user-menu"
-                aria-haspopup="true"
-                :aria-expanded="userMenuOpen"
-            >
-                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#382186] to-[#231a3d] text-xs font-bold text-white shadow-2xs border border-[#b499ff]/30">
-                    {{ strtoupper(substr(auth()->user()->namalengkap ?? 'O', 0, 1)) }}
-                </div>
-                <div class="hidden xl:block text-left leading-tight pr-1">
-                    <p class="text-xs font-extrabold text-[#231a3d] truncate max-w-[110px]">{{ auth()->user()->namalengkap ?? 'Owner' }}</p>
-                    <p class="text-[10px] font-semibold text-[#6e6584]">Owner</p>
-                </div>
-                <svg
-                    class="hidden sm:block h-3.5 w-3.5 text-[#6e6584] transition-transform duration-200"
-                    :class="userMenuOpen ? 'rotate-180 text-[#382186]' : ''"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                >
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
+        <div class="relative" x-data="{ open: false }" x-on:keydown.escape="open = false" x-on:click.outside="open = false">
+            <button type="button" x-on:click="open = !open" x-bind:aria-expanded="open ? 'true' : 'false'" aria-controls="owner-account-menu" class="flex items-center gap-2 rounded-lg p-1 hover:bg-bq-background">
+                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-bq-primary-light text-sm font-semibold text-bq-primary" aria-hidden="true">{{ $shell['user']['initial'] }}</span>
+                <span class="hidden text-left lg:block">
+                    <span class="block max-w-[10rem] truncate text-sm font-medium text-bq-text">{{ $shell['user']['name'] }}</span>
+                    <span class="block text-xs text-bq-text-muted">{{ $shell['user']['role'] }}</span>
+                </span>
+                <span class="sr-only">Menu akun</span>
             </button>
-
-            {{-- Dropdown Popover Menu --}}
-            <div
-                x-show="userMenuOpen"
-                @click.outside="userMenuOpen = false"
-                @keydown.escape.window="userMenuOpen = false"
-                x-transition:enter="transition ease-out duration-150"
-                x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
-                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                x-transition:leave="transition ease-in duration-100"
-                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
-                x-cloak
-                class="absolute right-0 mt-2 w-64 origin-top-right rounded-2xl border border-[#e7e2f7] bg-white p-2 shadow-xl z-50 divide-y divide-[#e7e2f7]"
-                style="display: none;"
-                id="user-profile-dropdown"
-            >
-                <div class="px-3 py-2.5">
-                    <p class="text-xs font-bold text-[#231a3d] truncate">{{ auth()->user()->namalengkap ?? 'Owner' }}</p>
-                    <p class="text-[11px] text-[#6e6584] truncate">{{ auth()->user()->email ?? '' }}</p>
-                    <div class="mt-1.5 flex items-center gap-1.5">
-                        <span class="inline-flex rounded-md bg-[#f3effe] px-2 py-0.5 text-[10px] font-bold text-[#382186] border border-[#b499ff]/30 truncate">
-                            {{ $tenant->namabisnis ?? 'Bisnis Aktif' }}
-                        </span>
-                    </div>
+            <div id="owner-account-menu" x-show="open" x-cloak class="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-bq-border bg-bq-surface p-2 shadow-lg">
+                <div class="border-b border-bq-border px-3 pb-2 pt-1">
+                    <p class="truncate text-sm font-medium text-bq-text">{{ $shell['user']['name'] }}</p>
+                    <p class="text-xs text-bq-text-muted">{{ $shell['user']['role'] }} · {{ $shell['business'] }}</p>
                 </div>
-
-                <div class="py-1.5 space-y-0.5 text-xs font-medium">
-                    <a href="{{ route('owner.settings.business') }}" class="craft-btn flex items-center gap-2.5 rounded-xl px-3 py-2 text-[#231a3d] hover:bg-[#f3effe] hover:text-[#382186] transition">
-                        <svg class="h-4 w-4 text-[#6e6584]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                        </svg>
-                        <span>Profil &amp; Bisnis</span>
-                    </a>
-                    <a href="{{ route('owner.subscription') }}" class="craft-btn flex items-center gap-2.5 rounded-xl px-3 py-2 text-[#231a3d] hover:bg-[#f3effe] hover:text-[#382186] transition">
-                        <svg class="h-4 w-4 text-[#6e6584]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                        </svg>
-                        <span>Paket Langganan</span>
-                    </a>
-                </div>
-
-                <div class="pt-1.5">
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="craft-btn flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition cursor-pointer">
-                            <svg class="h-4 w-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            <span>Keluar Akun</span>
-                        </button>
-                    </form>
-                </div>
+                @if ($shell['canManageAccount'])
+                    <a href="{{ route('owner.settings') }}#account-settings" class="mt-1 block rounded-lg px-3 py-2 text-sm text-bq-text hover:bg-bq-background">Pengaturan akun</a>
+                @endif
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-bq-danger hover:bg-bq-danger-bg">
+                        <x-owner.icon name="logout" class="h-4 w-4" />
+                        Keluar
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </header>
-
-<script>
-function ownerNotificationBell() {
-    return {
-        isOpen: false,
-        unreadCount: {{ $visibleUnreadCount ?? 0 }},
-        notifications: [],
-        loading: false,
-        pollInterval: null,
-
-        init() {
-            this.fetchNotifications();
-            this.pollInterval = setInterval(() => {
-                this.fetchNotifications(true);
-            }, 30000);
-        },
-
-        toggleDropdown() {
-            this.isOpen = !this.isOpen;
-            if (this.isOpen && this.notifications.length === 0) {
-                this.fetchNotifications();
-            }
-        },
-
-        async fetchNotifications(isBackground = false) {
-            if (!isBackground) this.loading = true;
-            try {
-                const res = await fetch('{{ route("owner.notifications") }}?limit=8', {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.success) {
-                        this.notifications = json.data;
-                        this.unreadCount = json.unread_count;
-                    }
-                }
-            } catch (e) {
-                console.error('Failed to load notifications', e);
-            } finally {
-                if (!isBackground) this.loading = false;
-            }
-        },
-
-        async handleNotificationClick(item) {
-            if (!item.is_read) {
-                this.unreadCount = Math.max(0, this.unreadCount - 1);
-                item.is_read = true;
-                try {
-                    await fetch(`/owner/notifications/${item.id}/read`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                        }
-                    });
-                } catch (e) {
-                    console.error('Failed to mark read', e);
-                }
-            }
-            if (item.url) {
-                window.location.href = item.url;
-            }
-        },
-
-        async markAllAsRead() {
-            this.unreadCount = 0;
-            this.notifications.forEach(n => n.is_read = true);
-            try {
-                await fetch('{{ route("owner.notifications.read-all") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    }
-                });
-            } catch (e) {
-                console.error('Failed to mark all as read', e);
-            }
-        }
-    };
-}
-</script>

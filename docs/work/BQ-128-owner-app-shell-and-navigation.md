@@ -2,7 +2,7 @@
 id: BQ-128
 title: Owner app shell: sidebar, top bar, bottom navigation and global search
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: staged-modules
@@ -53,3 +53,12 @@ INV-TEN-01: search results come only from the current tenant.
 - `docs/domains/staged-modules.md`
 
 ## Evidence (fill when done)
+
+## Implementation notes (2026-11-09, before merge)
+
+- **One shell view model.** `Actions/Owner/GetOwnerShell` (composer on `layouts.owner-layout`) replaces the sidebar/topbar composers and the unused `adalahpro` composer; sidebar, top bar and phone navigation run no queries (BQ-090). Active state is decided by route name through `match` prefixes in `config/owner-navigation.php` (BQ-091).
+- **Menus** come only from `config/owner-navigation.php` through the three gates; menus whose page does not exist yet (Unit, Halaman Booking, Promo, Bantuan, Pembayaran's new path) appear when their items add the route. Badges: bookings needing a decision (open refund requests, pending cancellation requests, for roles that decide them), slot runway warning (`GetSlotRunway`), unanswered reviews, trial days left.
+- **Top bar:** search (`owner.search`, `SearchOwnerRecords`, tenant-scoped, throttled 60/min); results open the booking/customer panel once BQ-135/BQ-137 add `owner.bookings.panel` / `owner.customers.panel`, and until then the Booking or Pelanggan list filtered to the result. "+ Booking" opens the shared walk-in form with a date and the free slots of that date (`owner.bookings.walkin-slots`, `ListWalkInSlots`, single availability rule). Bell: one initialisation, list loaded on open, unread count refreshed every 2 minutes only while the tab is visible. Account menu: name, role, Pengaturan akun, Keluar.
+- **Absorbed findings carried here:** no hover prefetch; Chart.js only on the dashboard, pinned to 4.4.4; Inter 400–700 only; no infinite animations or blur in the shell; no "Admin Portal"; no hand-written storefront or notification URLs in the shell; the 1024 px top bar no longer overflows; `TenantPermission::routeAbility` maps `owner.search` and `owner.bookings.walkin-slots`.
+- **Not in this item:** page-level vocabulary and headers (each page item, with BQ-129 blocks); hand-written URLs inside page modals listed by BQ-105 (their page items); permanent redirects of merged paths (§10.2, with the page that replaces them); splitting the landing-page JS out of `app.js` (needs a Vite entry change).
+- **Found while verifying:** `DatabaseSeeder` fails on current `integration` at `Staff::services()` (method removed); local seeding stops after tenants and services.

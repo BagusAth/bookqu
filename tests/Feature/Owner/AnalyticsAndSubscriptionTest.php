@@ -67,7 +67,8 @@ class AnalyticsAndSubscriptionTest extends TestCase
     {
         $response = $this->actingAs($this->user)->get('/owner/subscription');
         $response->assertStatus(200);
-        $response->assertSee('Subscription');
+        // BQ-145: the page is titled per owner-portal.md §8.15.
+        $response->assertSee('Paket & Tagihan');
     }
 
     public function test_owner_with_pro_trial_can_view_analytics(): void

@@ -18,20 +18,19 @@ use App\Http\Controllers\Customer\CustomerAccessController;
 use App\Http\Controllers\Owner\BookingCancellationController;
 use App\Http\Controllers\Owner\OwnerAdditionalItemController;
 use App\Http\Controllers\Owner\OwnerAnalyticsController;
-use App\Http\Controllers\Owner\OwnerAppearanceController;
-use App\Http\Controllers\Owner\OwnerAssetController;
 use App\Http\Controllers\Owner\OwnerBalanceController;
 use App\Http\Controllers\Owner\OwnerBookingController;
+use App\Http\Controllers\Owner\OwnerBookingPageController;
 use App\Http\Controllers\Owner\OwnerBookingPolicyController;
 use App\Http\Controllers\Owner\OwnerCalendarController;
 use App\Http\Controllers\Owner\OwnerCategoryController;
 use App\Http\Controllers\Owner\OwnerCheckoutController;
 use App\Http\Controllers\Owner\OwnerCustomerController;
 use App\Http\Controllers\Owner\OwnerDashboardController;
+use App\Http\Controllers\Owner\OwnerHelpController;
 use App\Http\Controllers\Owner\OwnerIntegrationController;
 use App\Http\Controllers\Owner\OwnerLandingPageController;
 use App\Http\Controllers\Owner\OwnerNotificationController;
-use App\Http\Controllers\Owner\OwnerPaymentSettingsController;
 use App\Http\Controllers\Owner\OwnerPayoutAccountController;
 use App\Http\Controllers\Owner\OwnerPriceRuleController;
 use App\Http\Controllers\Owner\OwnerProgramController;
@@ -41,6 +40,7 @@ use App\Http\Controllers\Owner\OwnerReviewController;
 use App\Http\Controllers\Owner\OwnerScheduleController;
 use App\Http\Controllers\Owner\OwnerScheduleReportController;
 use App\Http\Controllers\Owner\OwnerSettingController;
+use App\Http\Controllers\Owner\OwnerShellController;
 use App\Http\Controllers\Owner\OwnerSubscriptionController;
 use App\Http\Controllers\Owner\OwnerTeamController;
 use App\Http\Controllers\Owner\OwnerVoucherController;
@@ -110,10 +110,14 @@ Route::prefix('owner')
     ->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
         Route::get('/dashboard/polling', [OwnerDashboardController::class, 'pollingData'])->name('owner.dashboard.polling');
+        Route::post('/dashboard/link-shared', [OwnerDashboardController::class, 'linkShared'])->name('owner.dashboard.link-shared');
+        Route::get('/search', [OwnerShellController::class, 'search'])->middleware('throttle:60,1,owner-search')->name('owner.search');
         Route::get('/notifications', [OwnerNotificationController::class, 'index'])->name('owner.notifications');
         Route::post('/notifications/read-all', [OwnerNotificationController::class, 'markAllAsRead'])->name('owner.notifications.read-all');
         Route::post('/notifications/{id}/read', [OwnerNotificationController::class, 'markAsRead'])->name('owner.notifications.read');
         Route::delete('/notifications/{id}', [OwnerNotificationController::class, 'destroy'])->name('owner.notifications.destroy');
+        // BQ-145 (owner-portal.md §8.17): Bantuan for every role, behind its module until released (ADR-0021).
+        Route::get('/help', [OwnerHelpController::class, 'index'])->middleware('module:help')->name('owner.help');
         Route::patch('/settings/booking-policy', [OwnerBookingPolicyController::class, 'update'])->name('owner.settings.booking-policy');
         Route::patch('/settings/notification-preferences', [OwnerBookingPolicyController::class, 'notifications'])->name('owner.settings.notification-preferences');
         Route::get('/settings', [OwnerSettingController::class, 'index'])->name('owner.settings');
@@ -128,7 +132,6 @@ Route::prefix('owner')
         Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');
         Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
         Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');
-        Route::post('/settings/payment', [OwnerSettingController::class, 'updatePaymentSettings'])->middleware('module:direct-payment')->name('owner.settings.payment');
         Route::post('/payouts', [OwnerBalanceController::class, 'store'])->middleware('module:balance')->name('owner.payouts.request');
 
         // ── Checkout Routes (tanpa owner.profile middleware, karena ini billing) ──
@@ -140,7 +143,7 @@ Route::prefix('owner')
         Route::get('/checkout/{payment:order_id}/invoice', [OwnerCheckoutController::class, 'showInvoice'])->name('owner.checkout.invoice');
 
         Route::middleware('owner.profile')->group(function () {
-            Route::get('/programs', [OwnerProgramController::class, 'index'])->name('owner.programs');
+            Route::get('/programs', [OwnerProgramController::class, 'legacyIndex'])->name('owner.programs');
             Route::post('/programs', [OwnerProgramController::class, 'store'])->name('owner.programs.store');
             Route::put('/programs/{program}', [OwnerProgramController::class, 'update'])->name('owner.programs.update');
             Route::delete('/programs/{program}', [OwnerProgramController::class, 'destroy'])->name('owner.programs.destroy');
@@ -166,6 +169,7 @@ Route::prefix('owner')
             Route::patch('/refunds/requests/{refundRequestId}', [OwnerRefundController::class, 'decide'])->whereNumber('refundRequestId')->name('owner.refunds.decide');
             Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
             Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
+            Route::get('/bookings/walkin-slots', [OwnerShellController::class, 'walkInSlots'])->name('owner.bookings.walkin-slots');
             Route::get('/bookings/{booking}/available-slots', [OwnerBookingController::class, 'getAvailableSlots'])->name('owner.bookings.available-slots');
             Route::post('/bookings/{booking}/reschedule', [OwnerBookingController::class, 'reschedule'])->name('owner.bookings.reschedule');
             Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware(['module:analytics', 'subscription:analytics']);
@@ -223,18 +227,25 @@ Route::prefix('owner')
             // Customers CRM
             Route::get('/customers', [OwnerCustomerController::class, 'index'])->name('owner.customers');
             Route::get('/customers/detail', [OwnerCustomerController::class, 'show'])->name('owner.customers.detail');
+            Route::get('/customers/panel', [OwnerCustomerController::class, 'panel'])->name('owner.customers.panel');
             Route::post('/customers/note', [OwnerCustomerController::class, 'saveNote'])->name('owner.customers.note');
 
             // Settings & Configurations
             Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
-            Route::get('/settings/appearance', [OwnerAppearanceController::class, 'index'])->middleware(['module:appearance', 'subscription:branding'])->name('owner.settings.appearance');
-            Route::post('/settings/appearance', [OwnerAppearanceController::class, 'update'])->middleware(['module:appearance', 'subscription:branding'])->name('owner.settings.appearance.update');
-            Route::get('/settings/payment-setting', [OwnerPaymentSettingsController::class, 'index'])->middleware('module:direct-payment')->name('owner.settings.payment-setting');
-            Route::get('/settings/payments', [OwnerPaymentSettingsController::class, 'index'])->middleware('module:direct-payment')->name('owner.settings.payments');
-            Route::get('/settings/assets', [OwnerAssetController::class, 'index'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets');
-            Route::post('/settings/assets', [OwnerAssetController::class, 'store'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets.store');
-            Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets.destroy');
-            Route::get('/settings/balance', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.settings.balance');
+            // BQ-142 (owner-portal.md §8.9): Halaman Booking for every plan (D-009, D-010), behind its module until released (ADR-0021).
+            Route::middleware('module:booking-page')->group(function () {
+                Route::get('/booking-page', [OwnerBookingPageController::class, 'index'])->name('owner.booking-page');
+                Route::post('/booking-page/appearance', [OwnerBookingPageController::class, 'updateAppearance'])->name('owner.booking-page.appearance');
+                Route::get('/booking-page/qr', [OwnerBookingPageController::class, 'qr'])->name('owner.booking-page.qr');
+                Route::get('/booking-page/poster', [OwnerBookingPageController::class, 'poster'])->name('owner.booking-page.poster');
+                Route::post('/booking-page/media', [OwnerBookingPageController::class, 'storeMedia'])->name('owner.booking-page.media.store');
+                Route::delete('/booking-page/media/{asset}', [OwnerBookingPageController::class, 'destroyMedia'])->whereNumber('asset')->name('owner.booking-page.media.destroy');
+                Route::get('/settings/appearance', [OwnerBookingPageController::class, 'legacyAppearance'])->name('owner.settings.appearance');
+                Route::get('/settings/assets', [OwnerBookingPageController::class, 'legacyAssets'])->name('owner.settings.assets');
+            });
+            // BQ-141 (owner-portal.md §8.12): one Pembayaran page; the former balance page redirects to its Saldo tab.
+            Route::get('/payments', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.payments');
+            Route::get('/settings/balance', [OwnerBalanceController::class, 'legacyBalance'])->middleware('module:balance')->name('owner.settings.balance');
             Route::get('/payouts/{payout}/proof', [OwnerBalanceController::class, 'proof'])->whereNumber('payout')->middleware('module:balance')->name('owner.payouts.proof');
             Route::prefix('payout-accounts')->middleware('module:balance')->group(function () {
                 // BQ-127: the strict limit guards account changes only; switching the primary account has its own.

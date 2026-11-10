@@ -2,7 +2,7 @@
 id: BQ-136
 title: Beranda: today, needs action and the new owner guide
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: insights
@@ -49,3 +49,29 @@ Figures from payments and bookings of the current tenant only.
 - `docs/domains/insights.md`
 
 ## Evidence (fill when done)
+
+## Implementation notes
+
+- **Schema (approved by the Tech Lead through the developer, 2026-11-09):** expand-only migration adding nullable `tenants.booking_link_shared_at` and `tenants.owner_guide_completed_at`. Guide step 4 and "never again" (AC-BRD-05) cannot be derived from other data.
+- **Action:** `Actions/Dashboard/GetBeranda` replaces `GetOwnerDashboardOverview`, which is removed together with the old charts. Its three baseline entries are removed from `phpstan-baseline.neon`.
+- **Polling:** `owner.dashboard.polling` now returns `figures`, `actions`, `today`, `tomorrow` and `next`. `POST owner.dashboard.link-shared` records the first share.
+- **Revenue today:** successful booking payments with `created_at` today. Payments have no settlement timestamp; analytics uses the same column.
+- **"Perlu tindakan" links:**
+  - refund requests go to the Booking page until BQ-135 adds the decision panel;
+  - Kasir cancellation requests go to `owner.bookings#permintaan-pembatalan` (anchor added);
+  - ended paid bookings go to `owner.bookings?status=paid`;
+  - reviews go to `owner.reviews`;
+  - payout status changes count the unread `OwnerPayoutStatusChangedNotification` notifications.
+- **Row actions:** "Tandai selesai" for paid bookings that have ended. "Tidak datang" waits for ADR-0018 (no control without a backend).
+- **Not built:** participants per row (BQ-151) and the online/walk-in split of "Booking hari ini" (no column tells them apart).
+- **Tests changed by the spec:**
+  - `OwnerDashboardPollingTest` keeps its intents on the §8.1 contract. The "active services" figure test is dropped because §8.1 has no such figure.
+  - `OwnerApplicationActionsTest` now covers `GetBeranda`.
+  - `OwnerPortalFunctionalIntegrationTest` marks the guide done before checking revenue on Beranda.
+  - `OwnerAppShellTest` now asserts that Chart.js loads on no owner page.
+- **BQ-094 findings:** they concerned the removed charts and all-time cards. The remaining ones hold:
+  - values are never truncated;
+  - labels state their period ("hari ini");
+  - there are no fake trend indicators;
+  - status labels come from `StatusBadge`;
+  - copy is Indonesian.

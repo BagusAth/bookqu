@@ -31,7 +31,12 @@ class UpdateServiceRequest extends FormRequest
             'durasi' => ['required', 'integer', 'min:5', 'max:480', 'multiple_of:5'],
             'idcategory' => ['nullable', Rule::exists('categories', 'id')->where('idtenant', $tenantId)],
             'deskripsi' => ['nullable', 'string', 'max:1000'],
+            'satuan_harga' => ['nullable', 'string', 'max:20'],
+            'satuan_durasi' => ['nullable', 'string', 'max:20'],
+            'is_popular' => ['nullable', 'boolean'],
             'is_active' => ['required', 'boolean'],
+            // BQ-142 (FR-ASSET-005): an image of this business's gallery, or a new upload into it.
+            'image_asset_id' => ['nullable', 'integer', Rule::exists('assets', 'id')->where('idtenant', $tenantId)],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
             'remove_image' => ['nullable', 'in:0,1'],
             'resource_ids' => ['nullable', 'array'],

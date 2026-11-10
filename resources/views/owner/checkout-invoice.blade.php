@@ -59,7 +59,7 @@
                             <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-6 w-auto mt-1" />
                         </div>
                         <div class="min-w-0 sm:text-right">
-                            <p class="text-xs font-medium text-white/70 uppercase tracking-wider">Kode Booking</p>
+                            <p class="text-xs font-medium text-white/70 uppercase tracking-wider">Nomor pesanan</p>
                             <p class="text-base sm:text-lg font-bold font-mono break-all">{{ $payment->order_id }}</p>
                         </div>
                     </div>
@@ -107,14 +107,9 @@
                                         <p class="font-medium text-bq-text">Subscription Plan {{ ucfirst($plan->namapaket) }}</p>
                                         <p class="text-xs text-bq-text-muted">Durasi 1 bulan</p>
                                     </td>
-                                    <td class="px-4 py-3 text-right font-medium text-bq-text whitespace-nowrap">Rp {{ number_format($plan->hargabulanan, 0, ',', '.') }}</td>
+                                    {{-- AC-PKT-04: the invoice shows what was paid, never the plan's current price --}}
+                                    <td class="px-4 py-3 text-right font-medium text-bq-text whitespace-nowrap">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</td>
                                 </tr>
-                                @if($payment->jumlah > $plan->hargabulanan)
-                                    <tr>
-                                        <td class="px-4 py-3 text-bq-text-muted">Biaya Layanan Platform</td>
-                                        <td class="px-4 py-3 text-right text-bq-text-muted whitespace-nowrap">Rp {{ number_format($payment->jumlah - $plan->hargabulanan, 0, ',', '.') }}</td>
-                                    </tr>
-                                @endif
                             </tbody>
                             <tfoot>
                                 <tr class="bg-bq-background">

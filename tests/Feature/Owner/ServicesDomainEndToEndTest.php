@@ -116,7 +116,8 @@ class ServicesDomainEndToEndTest extends TestCase
             'name' => 'Vinyasa Flow',
         ]);
 
-        // 5. Safe unlinking when category is deleted
+        // 5. A category in use is never deleted and never touches its services
+        //    (BQ-132, owner-portal.md §8.6: "delete when empty").
         $service = Service::create([
             'idtenant' => $this->tenantA->id,
             'namalayanan' => 'Sunrise Yoga',
@@ -126,11 +127,11 @@ class ServicesDomainEndToEndTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->actingAs($this->ownerA)->delete("/owner/categories/{$catA->id}");
-        $this->assertDatabaseMissing('categories', ['id' => $catA->id]);
+        $this->actingAs($this->ownerA)->delete("/owner/categories/{$catA->id}")->assertSessionHasErrors('error');
+        $this->assertDatabaseHas('categories', ['id' => $catA->id]);
         $this->assertDatabaseHas('services', [
             'id' => $service->id,
-            'idcategory' => null, // Safely unlinked, NOT deleted
+            'idcategory' => $catA->id,
         ]);
     }
 

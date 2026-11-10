@@ -66,7 +66,8 @@ class OwnerSidebarNavigationTest extends TestCase
             $response = $this->actingAs($this->user)->get($route);
             $response->assertStatus(200);
             $response->assertSee('BookQu');
-            $response->assertSee('Admin Portal');
+            // BQ-128 (BQ-091): the owner app no longer calls itself "Admin Portal".
+            $response->assertDontSee('Admin Portal');
             $response->assertSee('Beranda')->assertSee('Layanan')->assertSee('Jam Buka &amp; Harga', false);
             $response->assertDontSee('id="nav-integrations"', false);
 
@@ -128,10 +129,10 @@ class OwnerSidebarNavigationTest extends TestCase
 
         // Must not contain links to hidden features in dropdown
         $response->assertDontSee(route('owner.settings.appearance'));
-        $response->assertDontSee(route('owner.settings.payment-setting'));
+        $response->assertDontSee('/owner/settings/payment-setting');
 
-        // Retains active links
-        $response->assertSee(route('owner.settings.business'));
+        // Retains active links: Pengaturan and Paket & Tagihan come from the navigation definition (BQ-128)
+        $response->assertSee(route('owner.settings'));
         $response->assertSee(route('owner.subscription'));
     }
 }

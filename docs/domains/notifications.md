@@ -33,6 +33,8 @@ Customer confirmation/invoice/reschedule flows persist delivery intent, then que
 
 `tests/Feature/Owner/OwnerDashboardPollingTest.php`; `SingaPayIntegrationTest::test_webhook_paid_status` proves queued owner notification and ID-only customer delivery without immediate mail; `CustomerAccessTest::test_queued_delivery_captures_recipient_and_rejects_stale_family_generations` exercises worker delivery and stale-intent refusal.
 
+BQ-145: the notification centre (owner-portal.md §8.16, `Actions/Team/GetNotificationsPage`) lists what the role may see, with unread and type filters (Booking, Refund, Pencairan, Paket). Types hidden from the role are not offered (AC-NTF-02, through `GetVisibleNotifications`). Opening an item marks it read and redirects to its stored `url` (AC-NTF-01). `Support/InternalRedirect` accepts only same-site paths or the current origin, so external and `//host` targets fall back to the list (BQ-102). Delete uses the shared confirm dialog. Evidence: `Owner/PaketNotifikasiBantuanTest`.
+
 ## Status
 
 Functional: Implemented · Verification: Verified (partial; production worker/SMTP pending) · Architecture: Target
@@ -43,7 +45,6 @@ Functional: Implemented · Verification: Verified (partial; production worker/SM
 |---|---|
 | Production scheduler/worker execution not yet verified | BQ-020 |
 | Production mail transport not configured (`.env.example` uses `log`) | BQ-021 |
-| Mark-as-read follows any `redirect` URL (POST, CSRF-protected; hardening) and notification delete uses native `confirm()` | BQ-145 |
 
 Implemented decision: [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosting.md) — queued after-commit mail with id-only customer-access jobs, run by a cron-driven short-lived worker. Hosting setup remains a Tech Lead action (BQ-020/021), documented in [operations §4](../operations.md#4-scheduler-and-queue).
 

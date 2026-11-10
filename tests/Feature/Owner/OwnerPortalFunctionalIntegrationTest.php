@@ -253,9 +253,12 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
         $customerRes->assertSee('Bella Customer');
         $customerRes->assertSee('200.000');
 
-        // 3. Dashboard displays revenue Rp 200.000 and total booking 1
+        // 3. Beranda (BQ-136, owner-portal.md §8.1) shows today's revenue Rp 200.000 and tomorrow's booking,
+        //    once the new owner guide is done.
+        $this->tenantA->forceFill(['owner_guide_completed_at' => now()])->save();
         $dashboardRes = $this->get(route('owner.dashboard'));
         $dashboardRes->assertStatus(200);
         $dashboardRes->assertSee('200.000');
+        $dashboardRes->assertSee('Bella Customer');
     }
 }

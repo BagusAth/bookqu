@@ -39,10 +39,8 @@ class CreateService
             ]);
         }
 
-        $imageUrl = null;
-        if ($coverImage) {
-            $imageUrl = $coverImage->store('programs', 'public');
-        }
+        // BQ-142 (FR-ASSET-005): the image comes from the gallery, or a new upload goes into it.
+        $imageUrl = app(ResolveServiceImage::class)->execute($tenant, $data['image_asset_id'] ?? null, $coverImage);
 
         $service = Service::create([
             'idtenant' => $tenant->id,
@@ -51,6 +49,10 @@ class CreateService
             'durasi' => $data['durasi'],
             'idcategory' => $data['idcategory'] ?? null,
             'deskripsi' => $data['deskripsi'] ?? null,
+            'satuan_harga' => ($data['satuan_harga'] ?? null) ?: 'sesi',
+            'satuan_durasi' => ($data['satuan_durasi'] ?? null) ?: 'menit',
+            'is_popular' => (bool) ($data['is_popular'] ?? false),
+            'is_active' => (bool) ($data['is_active'] ?? true),
             'image_url' => $imageUrl,
         ]);
 

@@ -6,7 +6,7 @@ namespace Tests\Feature\Actions;
 
 use App\Actions\Customer\GetCustomerDetail;
 use App\Actions\Customer\SaveCustomerNote;
-use App\Actions\Dashboard\GetOwnerDashboardOverview;
+use App\Actions\Dashboard\GetBeranda;
 use App\Actions\Owner\DeleteOwnerAccount;
 use App\Actions\Owner\RequestOwnerPayout;
 use App\Actions\Owner\UpdateOwnerAccount;
@@ -140,19 +140,17 @@ class OwnerApplicationActionsTest extends TestCase
         $this->assertEquals(1, $detail['total_bookings']);
     }
 
-    public function test_get_owner_dashboard_overview_action(): void
+    public function test_get_beranda_action(): void
     {
-        $action = app(GetOwnerDashboardOverview::class);
+        // BQ-136: Beranda (owner-portal.md §8.1) replaced the old dashboard overview.
+        $action = app(GetBeranda::class);
 
-        $overview = $action->getOverviewData($this->tenant);
-        $this->assertArrayHasKey('totalbooking', $overview);
-        $this->assertArrayHasKey('totalrevenue', $overview);
-        $this->assertArrayHasKey('datarevenueperbulan', $overview);
-        $this->assertArrayHasKey('datarevenueperminggu', $overview);
+        $page = $action->execute($this->tenant, $this->tenant->user);
+        $this->assertSame(['banner', 'guide', 'live', 'link', 'quickActions'], array_keys($page));
 
-        $polling = $action->getPollingData($this->tenant);
-        $this->assertArrayHasKey('total_bookings', $polling);
-        $this->assertArrayHasKey('total_revenue', $polling);
+        $live = $action->live($this->tenant, $this->tenant->user);
+        $this->assertSame(['figures', 'actions', 'today', 'tomorrow', 'next'], array_keys($live));
+        $this->assertContains('revenue', array_column($live['figures'], 'key'));
     }
 
     public function test_update_business_profile_action(): void
