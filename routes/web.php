@@ -18,10 +18,9 @@ use App\Http\Controllers\Customer\CustomerAccessController;
 use App\Http\Controllers\Owner\BookingCancellationController;
 use App\Http\Controllers\Owner\OwnerAdditionalItemController;
 use App\Http\Controllers\Owner\OwnerAnalyticsController;
-use App\Http\Controllers\Owner\OwnerAppearanceController;
-use App\Http\Controllers\Owner\OwnerAssetController;
 use App\Http\Controllers\Owner\OwnerBalanceController;
 use App\Http\Controllers\Owner\OwnerBookingController;
+use App\Http\Controllers\Owner\OwnerBookingPageController;
 use App\Http\Controllers\Owner\OwnerBookingPolicyController;
 use App\Http\Controllers\Owner\OwnerCalendarController;
 use App\Http\Controllers\Owner\OwnerCategoryController;
@@ -230,11 +229,17 @@ Route::prefix('owner')
 
             // Settings & Configurations
             Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
-            Route::get('/settings/appearance', [OwnerAppearanceController::class, 'index'])->middleware(['module:appearance', 'subscription:branding'])->name('owner.settings.appearance');
-            Route::post('/settings/appearance', [OwnerAppearanceController::class, 'update'])->middleware(['module:appearance', 'subscription:branding'])->name('owner.settings.appearance.update');
-            Route::get('/settings/assets', [OwnerAssetController::class, 'index'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets');
-            Route::post('/settings/assets', [OwnerAssetController::class, 'store'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets.store');
-            Route::delete('/settings/assets/{id}', [OwnerAssetController::class, 'destroy'])->middleware(['module:assets', 'subscription:gallery'])->name('owner.settings.assets.destroy');
+            // BQ-142 (owner-portal.md §8.9): Halaman Booking for every plan (D-009, D-010), behind its module until released (ADR-0021).
+            Route::middleware('module:booking-page')->group(function () {
+                Route::get('/booking-page', [OwnerBookingPageController::class, 'index'])->name('owner.booking-page');
+                Route::post('/booking-page/appearance', [OwnerBookingPageController::class, 'updateAppearance'])->name('owner.booking-page.appearance');
+                Route::get('/booking-page/qr', [OwnerBookingPageController::class, 'qr'])->name('owner.booking-page.qr');
+                Route::get('/booking-page/poster', [OwnerBookingPageController::class, 'poster'])->name('owner.booking-page.poster');
+                Route::post('/booking-page/media', [OwnerBookingPageController::class, 'storeMedia'])->name('owner.booking-page.media.store');
+                Route::delete('/booking-page/media/{asset}', [OwnerBookingPageController::class, 'destroyMedia'])->whereNumber('asset')->name('owner.booking-page.media.destroy');
+                Route::get('/settings/appearance', [OwnerBookingPageController::class, 'legacyAppearance'])->name('owner.settings.appearance');
+                Route::get('/settings/assets', [OwnerBookingPageController::class, 'legacyAssets'])->name('owner.settings.assets');
+            });
             // BQ-141 (owner-portal.md §8.12): one Pembayaran page; the former balance page redirects to its Saldo tab.
             Route::get('/payments', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.payments');
             Route::get('/settings/balance', [OwnerBalanceController::class, 'legacyBalance'])->middleware('module:balance')->name('owner.settings.balance');

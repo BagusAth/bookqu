@@ -11,23 +11,13 @@
         @yield('head')
         @if(isset($tenant))
             @php
-                $themeColor = $tenant->theme_color ?: '#4F46E5';
-                $fontFamily = $tenant->font_family ?: 'Plus Jakarta Sans';
-                $buttonRadius = match($tenant->button_style) {
-                    'rounded-md' => '0.375rem',
-                    'rounded-full', 'pill' => '9999px',
-                    default => '0.75rem',
-                };
-                $cardShadow = match($tenant->card_style) {
-                    'elevated' => '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
-                    'bordered' => 'none',
-                    'flat' => 'none',
-                    default => '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                };
-                $cardBorder = match($tenant->card_style) {
-                    'bordered' => '2px solid #CBD5E1',
-                    default => '1px solid #E2E8F0',
-                };
+                // BQ-142: one normaliser for the stored look; unknown values never reach this style block.
+                $branding = \App\Support\StorefrontBranding::for($tenant);
+                $themeColor = $branding['color'];
+                $fontFamily = $branding['font'];
+                $buttonRadius = $branding['buttonRadius'];
+                $cardShadow = $branding['cardShadow'];
+                $cardBorder = $branding['cardBorder'];
             @endphp
             <link rel="preconnect" href="https://fonts.googleapis.com">
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -131,6 +121,12 @@
                 <img src="{{ Storage::url($tenant->banner_path) }}" alt="Banner {{ $tenant->namabisnis }}" class="w-full h-full object-cover opacity-85">
                 <div class="absolute inset-0 bg-gradient-to-t from-[#0F172A]/70 via-transparent to-transparent"></div>
             </div>
+        @endif
+        {{-- Business description from Halaman Booking → Tampilan (BQ-142, AC-HBK-01) --}}
+        @if(isset($tenant) && filled($tenant->deskripsi) && Request::routeIs('customer.booking.program', 'customer.booking.slug.program'))
+            <section class="no-print border-b border-[#E2E8F0] bg-white">
+                <p class="booking-shell mx-auto w-full max-w-[1280px] whitespace-pre-line px-4 py-3 text-sm text-[#475569] sm:px-6">{{ $tenant->deskripsi }}</p>
+            </section>
         @endif
 
         {{-- Stepper Progress Bar (Step 1-6) --}}

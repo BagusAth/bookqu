@@ -39,10 +39,8 @@ class CreateService
             ]);
         }
 
-        $imageUrl = null;
-        if ($coverImage) {
-            $imageUrl = $coverImage->store('programs', 'public');
-        }
+        // BQ-142 (FR-ASSET-005): the image comes from the gallery, or a new upload goes into it.
+        $imageUrl = app(ResolveServiceImage::class)->execute($tenant, $data['image_asset_id'] ?? null, $coverImage);
 
         $service = Service::create([
             'idtenant' => $tenant->id,

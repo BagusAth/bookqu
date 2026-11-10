@@ -28,7 +28,7 @@
         service: {},
         category: {},
         blankService() {
-            return { id: null, namalayanan: '', idcategory: '', harga: '', satuan_harga: 'sesi', durasi: 60, satuan_durasi: 'menit', deskripsi: '', is_popular: false, is_active: true, imageUrl: null, remove_image: false, resource_ids: [] };
+            return { id: null, namalayanan: '', idcategory: '', harga: '', satuan_harga: 'sesi', durasi: 60, satuan_durasi: 'menit', deskripsi: '', is_popular: false, is_active: true, imageUrl: null, remove_image: false, resource_ids: [], image_asset_id: '' };
         },
         blankCategory() {
             return { id: null, name: '', description: '', color: 'purple', sort_order: 0, is_active: true, imageUrl: null, remove_image: false };
@@ -184,6 +184,7 @@
                                     'harga' => $card['price'], 'satuan_harga' => $card['priceUnit'], 'durasi' => $card['duration'],
                                     'satuan_durasi' => $card['durationUnit'], 'deskripsi' => $card['description'],
                                     'is_popular' => $card['isPopular'], 'is_active' => $card['isActive'], 'imageUrl' => $card['imageUrl'],
+                                    'image_asset_id' => $card['imageAssetId'] !== null ? (string) $card['imageAssetId'] : '',
                                     'resource_ids' => $card['resourceIds'],
                                 ]), $el)">Ubah</button>
 
@@ -282,16 +283,22 @@
                     <textarea id="service-description" name="deskripsi" rows="3" maxlength="1000" x-model="service.deskripsi" class="{{ $inputClass }}"></textarea>
                 </div>
 
-                <div>
-                    <label for="service-image" class="{{ $labelClass }}">Gambar <span class="font-normal text-bq-text-muted">(JPG, PNG, WEBP, maks. 10 MB)</span></label>
-                    <template x-if="service.imageUrl && !service.remove_image">
-                        <img x-bind:src="service.imageUrl" alt="" class="mt-2 h-24 w-40 rounded-lg object-cover">
-                    </template>
-                    <input id="service-image" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm text-bq-text-muted">
-                    <label x-show="service.imageUrl" class="mt-2 inline-flex items-center gap-2 text-sm text-bq-text">
-                        <input type="checkbox" name="remove_image" value="1" x-model="service.remove_image" class="rounded border-bq-border text-bq-primary"> Hapus gambar
+                {{-- BQ-142 (FR-ASSET-005): pick from the gallery, or upload a new image into it --}}
+                <fieldset class="space-y-2">
+                    <legend class="{{ $labelClass }}">Gambar <span class="font-normal text-bq-text-muted">(opsional)</span></legend>
+                    <x-owner.gallery-picker
+                        name="image_asset_id"
+                        :images="$pickerImages"
+                        model="service.image_asset_id"
+                        label="Pilih gambar layanan dari galeri"
+                        :gallery-url="$galleryUrl"
+                    />
+                    <label for="service-image" class="block text-xs text-bq-text-muted">Atau unggah gambar baru ke galeri (JPG, PNG, WEBP, maks. 10 MB)</label>
+                    <input id="service-image" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-bq-text-muted">
+                    <label x-show="service.imageUrl" class="inline-flex items-center gap-2 text-sm text-bq-text">
+                        <input type="checkbox" name="remove_image" value="1" x-model="service.remove_image" class="rounded border-bq-border text-bq-primary"> Lepas gambar dari layanan
                     </label>
-                </div>
+                </fieldset>
 
                 <div class="flex flex-col gap-3 sm:flex-row sm:gap-6">
                     <label class="inline-flex items-center gap-2 text-sm text-bq-text">

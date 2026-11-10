@@ -14,6 +14,29 @@ BookQu's own marketing pages, separate from tenant storefronts.
 
 The storefront slug pattern excludes these paths (`routes/web.php`).
 
+## Tenant booking page look and sharing (BQ-142)
+
+The owner sets the look of the storefront in Halaman Booking (`owner.booking-page`, owner-portal.md §8.9, D-009):
+
+- logo and cover from the media gallery;
+- theme colour, button style (pill, rounded, square), card style (elevated, outline, soft), font and description.
+
+`App\Support\StorefrontBranding` holds the allowed values and normalises stored ones for `customer/layouts/booking-shell` and the payment page. Unknown values fall back to the defaults, so nothing reaches the style block unvalidated. Older values map to the new names.
+
+Sharing (FR-PUBLIC-006, D-010):
+
+- copy, open and WhatsApp share;
+- an SVG QR code of the current link (`Actions/Tenant/BuildBookingQr`, `bacon/bacon-qr-code`, approved 2026-11-10);
+- a printable poster;
+- ready texts for an Instagram bio and a WhatsApp message.
+
+Every image lives in the tenant's media gallery under `tenants/{id}/assets` (FR-ASSET-005):
+
+- `Actions/Media/StoreMediaAsset` adds images;
+- `Actions/Media/DeleteMediaAsset` asks for confirmation while an image is the logo, the cover or a service image, then clears those references.
+
+Evidence: `Owner/HalamanBookingPageTest`.
+
 ## Evidence
 
 `tests/Feature/LandingPagePricingTest.php`, `PrivacyPolicyTest.php`, `TermsConditionsTest.php`, `SitemapTest.php`.

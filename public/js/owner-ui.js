@@ -236,6 +236,22 @@
             },
         }));
 
+        // BQ-142: copy a ready-made text (promotion materials) with a toast as feedback.
+        window.Alpine.data('ownerCopyText', (text) => ({
+            copied: false,
+
+            async copy() {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    this.copied = true;
+                    setTimeout(() => { this.copied = false; }, 2000);
+                    window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Teks disalin.' } }));
+                } catch (error) {
+                    window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Teks tidak dapat disalin. Salin secara manual.' } }));
+                }
+            },
+        }));
+
         // BQ-128: global search. Results open the booking/customer panel when its endpoint exists,
         // otherwise the Booking or Pelanggan list filtered to the result. Stale responses are ignored.
         window.Alpine.data('ownerSearch', (url) => ({

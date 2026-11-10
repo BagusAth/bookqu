@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Actions\Service;
 
+use App\Domain\Modules\ModuleRelease;
 use App\Domain\Subscription\EntitlementRules;
+use App\Models\Asset;
 use App\Models\Category;
 use App\Models\Service;
 use App\Models\Subscription;
@@ -13,6 +15,7 @@ use App\Support\CategoryColor;
 use App\Support\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Route;
 
 /**
  * Prepares the Layanan page (owner-portal.md §8.6): the service list with its usage meter and the
@@ -29,6 +32,8 @@ class GetLayananPage
      * @return array{
      *     services: LengthAwarePaginator<int, Service>,
      *     serviceCards: list<array<string, mixed>>,
+     *     pickerImages: list<array{id: int, url: string, alt: string}>,
+     *     galleryUrl: string|null,
      *     categoryOptions: list<array{id: int, name: string}>,
      *     categories: list<array<string, mixed>>,
      *     usage: array{used: int, max: int, unlimited: bool, canCreate: bool, message: string|null},
@@ -57,6 +62,9 @@ class GetLayananPage
             ->withQueryString();
 
         $allCategories = Category::where('idtenant', $tenant->id)->orderBy('sort_order')->orderBy('name')->get();
+        // BQ-142 (FR-ASSET-005): the service image picks from this business's gallery.
+        $gallery = Asset::where('idtenant', $tenant->id)->latest()->latest('id')->get();
+        $assetIdsByPath = $gallery->pluck('id', 'file_path');
 
         $categories = Category::where('idtenant', $tenant->id)
             ->withCount('services')
@@ -76,7 +84,9 @@ class GetLayananPage
 
         return [
             'services' => $services,
-            'serviceCards' => $services->getCollection()->map(fn (Service $service): array => $this->serviceCard($service))->values()->all(),
+            'serviceCards' => $services->getCollection()->map(fn (Service $service): array => $this->serviceCard($service) + ['imageAssetId' => $assetIdsByPath[(string) $service->image_url] ?? null])->values()->all(),
+            'galleryUrl' => Route::has('owner.booking-page') && ModuleRelease::state('booking-page') !== 'hidden' ? route('owner.booking-page', ['section' => 'galeri']) : null,
+            'pickerImages' => $gallery->map(fn (Asset $asset): array => ['id' => (int) $asset->id, 'url' => $asset->url, 'alt' => (string) $asset->title])->values()->all(),
             'categoryOptions' => $allCategories->map(fn (Category $category): array => ['id' => (int) $category->id, 'name' => (string) $category->name])->values()->all(),
             'categories' => $this->categoryRows($categories),
             'usage' => $this->usage($tenant),

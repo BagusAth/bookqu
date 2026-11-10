@@ -2,7 +2,7 @@
 id: BQ-142
 title: Halaman Booking: link, QR, promotion materials, appearance and media gallery
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: public-site
@@ -48,3 +48,29 @@ INV-TEN-01 for media files.
 - `docs/domains/public-site.md`
 
 ## Evidence (fill when done)
+
+## Implementation notes
+
+- **Decisions (developer, 2026-11-10, on behalf of the Tech Lead):** the new dependency `bacon/bacon-qr-code` (^3.1, server-side SVG) is approved. Gallery wiring covers Layanan and Tampilan in this item.
+- **Wave:** built ahead of wave 4 under the ROADMAP rule. It depends on BQ-129 and BQ-130.
+- **Page:** `owner.booking-page` has the sections Link & QR, Materi promosi, Tampilan and Galeri media (`Actions/Tenant/GetBookingPageData`).
+  - It stays behind the redesign module `booking-page`, which is `hidden` until the Tech Lead releases it (ADR-0021). Tests release it explicitly.
+  - Landing page and own domain (Pro) are other items, and show nothing here.
+- **AC-HBK-01:** `Support/StorefrontBranding` defines the button styles, card styles, fonts and colour format. The request validates them exactly; the storefront shell and payment page normalise stored values, with older values mapped. The business description now shows on the storefront's service page.
+- **AC-HBK-02:** `Actions/Tenant/BuildBookingQr` encodes `CustomerBookingRoutes::url('customer.booking.program', slug)`. The QR download and the printable poster use it, so a new slug changes the QR.
+- **AC-HBK-05:**
+  - files go under `tenants/{id}/assets`;
+  - logo, cover and service image ids are validated against the tenant;
+  - deleting another business's image answers 404;
+  - SVG uploads are refused.
+- **Deleting an image in use:** it asks for confirmation (shared confirm dialog). Then `DeleteMediaAsset` clears the logo, cover and service references and deletes the file.
+- **Layanan:** the service form picks from the gallery (`image_asset_id`), and a new upload is stored in the gallery (category `service`). Replacing an image removes only pre-gallery files, never gallery files (`ResolveServiceImage`).
+- **Old paths:** `owner.settings.appearance` and `owner.settings.assets` answer 301 into the page. The old controllers, views and write routes are removed.
+- **Follow-ups:**
+  - category images still upload directly, not through the gallery;
+  - the logo field of the business-profile request belongs to BQ-144's file (`OwnerSettingController`);
+  - Unit and the landing page will use the picker when they are built.
+- **Tests changed by the spec:**
+  - `OwnerModulesCrudTest` uses the new gallery and appearance routes (card style `outline`);
+  - `ReleaseGateAndHardeningTest` maps the old paths to `booking-page`;
+  - `EndedSubscriptionTest` posts to the new gallery upload, which is still refused when the subscription has ended.

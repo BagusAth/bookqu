@@ -377,18 +377,19 @@ class OwnerModulesCrudTest extends TestCase
     public function test_owner_can_upload_and_delete_assets(): void
     {
         // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.assets' => 'released']);
+        // BQ-142: the gallery lives in Halaman Booking (owner-portal.md §8.9).
+        config(['modules.booking-page' => 'released']);
 
         Storage::fake('public');
 
         $file = UploadedFile::fake()->create('banner.jpg', 100, 'image/jpeg');
 
-        $res = $this->actingAs($this->userA)->post(route('owner.settings.assets.store'), [
+        $res = $this->actingAs($this->userA)->post(route('owner.booking-page.media.store'), [
             'file' => $file,
             'title' => 'Banner Promosi',
             'category' => 'cover',
         ]);
-        $res->assertRedirect(route('owner.settings.assets'));
+        $res->assertRedirect(route('owner.booking-page', ['section' => 'galeri']));
 
         $asset = Asset::withoutGlobalScopes()->where('idtenant', $this->tenantA->id)->first();
         $this->assertNotNull($asset);
@@ -397,8 +398,8 @@ class OwnerModulesCrudTest extends TestCase
         Storage::disk('public')->assertExists($asset->file_path);
 
         // Delete
-        $res = $this->actingAs($this->userA)->delete(route('owner.settings.assets.destroy', $asset->id));
-        $res->assertRedirect(route('owner.settings.assets'));
+        $res = $this->actingAs($this->userA)->delete(route('owner.booking-page.media.destroy', $asset->id));
+        $res->assertRedirect(route('owner.booking-page', ['section' => 'galeri']));
         $this->assertDatabaseMissing('assets', ['id' => $asset->id]);
         Storage::disk('public')->assertMissing($asset->file_path);
     }
@@ -406,23 +407,24 @@ class OwnerModulesCrudTest extends TestCase
     public function test_owner_can_update_appearance_settings(): void
     {
         // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.appearance' => 'released']);
+        // BQ-142: Tampilan lives in Halaman Booking; card styles are elevated, outline and soft.
+        config(['modules.booking-page' => 'released']);
 
-        $res = $this->actingAs($this->userA)->post(route('owner.settings.appearance.update'), [
+        $res = $this->actingAs($this->userA)->post(route('owner.booking-page.appearance'), [
             'theme_color' => '#10B981',
             'button_style' => 'pill',
             'font_family' => 'Outfit',
-            'card_style' => 'bordered',
+            'card_style' => 'outline',
             'deskripsi' => 'Studio foto modern profesional.',
         ]);
 
-        $res->assertRedirect(route('owner.settings.appearance'));
+        $res->assertRedirect(route('owner.booking-page', ['section' => 'tampilan']));
         $this->assertDatabaseHas('tenants', [
             'id' => $this->tenantA->id,
             'theme_color' => '#10B981',
             'button_style' => 'pill',
             'font_family' => 'Outfit',
-            'card_style' => 'bordered',
+            'card_style' => 'outline',
         ]);
     }
 }

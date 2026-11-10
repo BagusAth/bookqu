@@ -1,7 +1,8 @@
 {{--
     Gallery image picker frame (BQ-129, owner-portal.md §9): one gallery per business. The page
     passes `images` (['id' => …, 'url' => …, 'alt' => …]) from that gallery; the chosen id goes into
-    the hidden input `name`. Uploading lives on the gallery page (`gallery-url`).
+    the hidden input `name`. Uploading lives on the gallery page (`gallery-url`). Pass `model` (an
+    Alpine expression, BQ-142) to bind the choice to page state, for example in an edit dialog.
 --}}
 @props([
     'name',
@@ -9,11 +10,12 @@
     'selected' => null,
     'galleryUrl' => null,
     'label' => 'Pilih gambar',
+    'model' => null,
 ])
 
 @php $pickerId = 'gallery-'.\Illuminate\Support\Str::slug($name); @endphp
 
-<div x-data="{ chosen: @js($selected !== null ? (string) $selected : '') }" {{ $attributes->merge(['class' => 'space-y-2']) }}>
+<div x-data="{ chosen: @js($selected !== null ? (string) $selected : '') }" @if ($model) x-modelable="chosen" x-model="{{ $model }}" @endif {{ $attributes->merge(['class' => 'space-y-2']) }}>
     <input type="hidden" name="{{ $name }}" x-bind:value="chosen">
 
     @if (count($images) === 0)

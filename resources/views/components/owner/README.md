@@ -11,7 +11,7 @@ Built in BQ-129 for `docs/owner-portal.md` §9. Every owner page uses these inst
 | Walk-in form | `<x-owner.walkin-form :slots>` or `:fixed-slot` | Posts to `owner.bookings.walkin` |
 | Status badge | `<x-owner.status-badge type status>` | Labels and tones from `App\Support\StatusBadge` |
 | Upgrade prompt | `<x-owner.upgrade-prompt feature plan>` | The page decides access through `EntitlementRules` |
-| Gallery picker | `<x-owner.gallery-picker name :images>` | One gallery per business |
+| Gallery picker | `<x-owner.gallery-picker name :images>` (`model` binds the choice to page state) | One gallery per business (BQ-142): Layanan and Halaman Booking → Tampilan pick from it |
 | Empty state | `<x-owner.empty-state title description action-label action-href>` | What it is, how to start, one button |
 | Dialog / drawer | `<x-owner.dialog id title>`, `<x-owner.drawer id title>` | `role="dialog"`, focus trap, Escape, focus returns to the trigger (`public/js/owner-ui.js`) |
 | Confirm dialog | `$dispatch('open-confirm', { title, message, formId, tone })` | Never native `confirm()`/`alert()` (guardrail `native-dialogs`) |

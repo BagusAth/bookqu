@@ -95,9 +95,9 @@ class EndedSubscriptionTest extends TestCase
         $this->travelTo(Carbon::parse('2026-11-04 10:00:00', 'Asia/Jakarta'));
         $tenant = Tenant::factory()->create();
         app(CreateTrialSubscription::class)->execute($tenant)->update(['trial_berakhir' => now()->subSecond()]);
-        config(['modules.vouchers' => 'released', 'modules.additional-items' => 'released', 'modules.assets' => 'released']);
+        config(['modules.vouchers' => 'released', 'modules.additional-items' => 'released', 'modules.booking-page' => 'released']);
         $this->actingAs($tenant->user);
-        foreach (['/owner/services', '/owner/programs', '/owner/categories', '/owner/schedule/bulk-slots', '/owner/bookings/walkin', '/owner/vouchers', '/owner/additional-items', '/owner/settings/assets'] as $path) {
+        foreach (['/owner/services', '/owner/programs', '/owner/categories', '/owner/schedule/bulk-slots', '/owner/bookings/walkin', '/owner/vouchers', '/owner/additional-items', '/owner/booking-page/media'] as $path) {
             $this->postJson($path, [])->assertForbidden()->assertJsonPath('code', 'subscription-ended');
         }
         foreach (['owner.units.store', 'owner.promos.store', 'owner.team.invite'] as $route) {

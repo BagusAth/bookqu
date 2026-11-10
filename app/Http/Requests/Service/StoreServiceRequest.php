@@ -35,6 +35,8 @@ class StoreServiceRequest extends FormRequest
             'satuan_durasi' => ['nullable', 'string', 'max:20'],
             'is_popular' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
+            // BQ-142 (FR-ASSET-005): an image of this business's gallery, or a new upload into it.
+            'image_asset_id' => ['nullable', 'integer', Rule::exists('assets', 'id')->where('idtenant', $tenantId)],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
             'resource_ids' => ['nullable', 'array'],
             'resource_ids.*' => ['integer', Rule::exists('resources', 'id')->where('idtenant', $tenantId)],

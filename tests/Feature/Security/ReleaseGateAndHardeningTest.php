@@ -71,9 +71,11 @@ class ReleaseGateAndHardeningTest extends TestCase
             'owner.additional-items' => 'additional-items',
             'owner.team' => 'team',
             'owner.resources' => 'staff-resources',
-            'owner.settings.appearance' => 'appearance',
+            // BQ-142: the former appearance and assets pages redirect inside Halaman Booking.
+            'owner.settings.appearance' => 'booking-page',
+            'owner.booking-page' => 'booking-page',
             'owner.settings.payment' => 'direct-payment',
-            'owner.settings.assets' => 'assets',
+            'owner.settings.assets' => 'booking-page',
             'owner.landing-page' => 'landing-page',
             'owner.settings.integrations' => 'integrations',
             'owner.analytics' => 'analytics',
