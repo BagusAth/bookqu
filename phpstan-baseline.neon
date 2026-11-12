@@ -127,24 +127,6 @@ parameters:
 			path: app/Actions/Schedule/DeleteSchedule.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namapelanggan\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Schedule/ExportScheduleReport.php
-
-		-
-			message: '#^Variable \$sortedDays in empty\(\) always exists and is not falsy\.$#'
-			identifier: empty.variable
-			count: 1
-			path: app/Actions/Schedule/GenerateScheduleReport.php
-
-		-
-			message: '#^Variable \$sortedHours in empty\(\) always exists and is not falsy\.$#'
-			identifier: empty.variable
-			count: 1
-			path: app/Actions/Schedule/GenerateScheduleReport.php
-
-		-
 			message: '#^Strict comparison using \!\=\= between float\|int\|numeric\-string and '''' will always evaluate to true\.$#'
 			identifier: notIdentical.alwaysTrue
 			count: 1
@@ -209,30 +191,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Customer/BookingManageController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Service\:\:\$bookingbayar\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$jumlah\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Service\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>jumlah" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'

@@ -494,17 +494,17 @@ class CoreFlowIntegrationTest extends TestCase
      */
     public function test_schedule_report_shows_no_data_when_empty(): void
     {
-        // BQ-130: isolate this behavior behind an explicitly enabled development module.
-        config(['modules.schedule-report' => 'released']);
+        // BQ-147: the schedule report is now Laporan → Okupansi (owner-portal.md §8.13), behind the `reports` module.
+        config(['modules.reports' => 'released']);
         $this->actingAs($this->ownerA);
         session(['current_tenant_id' => $this->tenantA->id]);
 
-        $response = $this->get(route('owner.schedule-report'));
+        $response = $this->get(route('owner.analytics', ['tab' => 'okupansi', 'periode' => 'kustom', 'dari' => now()->toDateString(), 'sampai' => $this->tomorrow]));
         $response->assertStatus(200);
 
-        // Since tenant A has 0 confirmed bookings, peak hours and peak days must display 'Tidak ada data'
-        $response->assertSee('Tidak ada data');
-        $response->assertDontSee('14:00 (Jam paling diminati)');
+        // Since tenant A has 0 confirmed bookings, no busiest day or hour is invented.
+        $response->assertSee('Belum ada slot terisi pada periode ini.');
+        $response->assertDontSee('Hari paling ramai:');
     }
 
     /**
@@ -817,8 +817,8 @@ class CoreFlowIntegrationTest extends TestCase
      */
     public function test_schedule_report_calculates_utilization_correctly(): void
     {
-        // BQ-130: isolate this behavior behind an explicitly enabled development module.
-        config(['modules.schedule-report' => 'released']);
+        // BQ-147: the schedule report is now Laporan → Okupansi (owner-portal.md §8.13), behind the `reports` module.
+        config(['modules.reports' => 'released']);
         // Tenant A currently has 1 schedule (scheduleA). Let's create a second schedule
         $scheduleA2 = Schedule::create([
             'idtenant' => $this->tenantA->id,
@@ -858,10 +858,10 @@ class CoreFlowIntegrationTest extends TestCase
         $this->actingAs($this->ownerA);
         session(['current_tenant_id' => $this->tenantA->id]);
 
-        $response = $this->get(route('owner.schedule-report'));
+        $response = $this->get(route('owner.analytics', ['tab' => 'okupansi', 'periode' => 'kustom', 'dari' => now()->toDateString(), 'sampai' => $this->tomorrow]));
         $response->assertStatus(200);
 
         // Total slots: 2, Booked: 1, Available: 1, Utilization: 50%
-        $response->assertSee('50%');
+        $response->assertSee('50,0%');
     }
 }

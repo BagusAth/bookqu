@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Owner;
 
-use App\Actions\Dashboard\GetOwnerAnalyticsTrends;
+use App\Actions\Report\GetReport;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\ReportPeriod;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,7 +21,8 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * BQ-111: grouped analytics queries, per-transaction amounts and formula-safe CSV exports.
+ * BQ-111: grouped analytics queries, per-transaction amounts and formula-safe CSV exports,
+ * on the Laporan page and its exports since BQ-147.
  */
 class AnalyticsExportAndAggregationTest extends TestCase
 {
@@ -61,58 +63,55 @@ class AnalyticsExportAndAggregationTest extends TestCase
         $this->bookingOn('2026-10-17');
         $this->bookingOn('2026-08-05');
 
+        // BQ-147: the series are part of Laporan (GetReport) for the chosen period; still grouped queries.
         app(TenantContext::class)->setTenantId((int) $this->tenant->id);
         DB::enableQueryLog();
-        $trends = app(GetOwnerAnalyticsTrends::class)->execute((int) $this->tenant->id);
+        $year = app(GetReport::class)->execute($this->tenant, ReportPeriod::fromQuery(['periode' => '12-bulan']), 'pendapatan');
         $queries = count(DB::getQueryLog());
         DB::disableQueryLog();
+        $month = app(GetReport::class)->execute($this->tenant, ReportPeriod::fromQuery([]), 'pendapatan');
 
-        $this->assertLessThanOrEqual(3, $queries);
-        $this->assertCount(12, $trends['revenueperbulan']);
-        $this->assertSame('Dec 2025', $trends['labelbulanpanjang'][0]);
-        $this->assertSame('Nov 2026', $trends['labelbulanpanjang'][11]);
-        $this->assertEquals(200000, $trends['revenueperbulan'][11]);
-        $this->assertEquals(0, $trends['revenueperbulan'][10]);
-        $this->assertEquals(70000, $trends['revenueperbulan'][9]);
-        $this->assertSame(3, $trends['bookingperbulan'][11]);
-        $this->assertSame(1, $trends['bookingperbulan'][10]);
-        $this->assertSame(1, $trends['bookingperbulan'][8]);
+        $this->assertLessThanOrEqual(10, $queries);
+        $this->assertCount(12, $year['revenue']['series']);
+        $this->assertEquals(200000, $year['revenue']['series'][11]['gross']);
+        $this->assertEquals(0, $year['revenue']['series'][10]['gross']);
+        $this->assertEquals(70000, $year['revenue']['series'][9]['gross']);
+        $this->assertEquals(270000, $year['revenue']['gross']);
+        $this->assertSame(5, $year['summary']['bookings']);
 
-        $this->assertCount(30, $trends['bookingperhari']);
-        $this->assertSame('15 Nov', $trends['labelhari'][29]);
-        $this->assertSame(2, $trends['bookingperhari'][29]);
-        $this->assertSame(1, $trends['bookingperhari'][15]);
-        $this->assertSame(1, $trends['bookingperhari'][0]);
+        $this->assertCount(30, $month['revenue']['series']);
+        $this->assertEquals(150000, $month['revenue']['series'][1]['gross']);
+        $this->assertEquals(50000, $month['revenue']['series'][13]['gross']);
+        $this->assertSame(3, $month['summary']['bookings']);
     }
 
-    public function test_analytics_page_still_renders_the_series(): void
+    public function test_laporan_page_renders_the_series(): void
     {
-        config(['modules.analytics' => 'released']);
+        config(['modules.reports' => 'released']);
         $this->paidPayment(150000, '2026-11-02 09:00:00');
 
-        $this->actingAs($this->owner)->get('/owner/analytics')->assertOk()->assertSee('Analytics');
+        $this->actingAs($this->owner)->get('/owner/analytics?tab=pendapatan')->assertOk()->assertSee('Laporan')->assertSee('Rp 150.000');
     }
 
     public function test_analytics_export_neutralises_spreadsheet_formulas(): void
     {
-        config(['modules.analytics' => 'released']);
-        $this->bookingOn('2026-11-16', '09:00:00', ['namapelanggan' => '=HYPERLINK("http://evil")', 'email' => '@evil@example.com', 'nomorhp' => '+6281234']);
-        $this->bookingOn('2026-11-16', '10:00:00', ['namapelanggan' => '-2+3', 'email' => 'ok@example.com']);
+        config(['modules.reports' => 'released']);
+        $this->bookingOn('2026-11-16', '09:00:00', ['namapelanggan' => '=HYPERLINK("http://evil")', 'email' => 'evil@example.com', 'idpayment' => $this->paidPayment(100000, '2026-11-10 09:00:00')->id, 'status' => 'paid']);
+        $this->bookingOn('2026-11-16', '10:00:00', ['namapelanggan' => '-2+3', 'email' => 'ok@example.com', 'idpayment' => $this->paidPayment(100000, '2026-11-10 10:00:00')->id, 'status' => 'paid']);
 
-        $csv = $this->actingAs($this->owner)->get('/owner/analytics/export')->assertOk()->streamedContent();
-        $rows = $this->rows($csv);
-
-        $names = array_column(array_slice($rows, 1), 2);
-        $this->assertContains("'=HYPERLINK(\"http://evil\")", $names);
-        $this->assertContains("'-2+3", $names);
-        $this->assertContains("'@evil@example.com", array_column(array_slice($rows, 1), 3));
-        $this->assertContains("'+6281234", array_column(array_slice($rows, 1), 4));
-        $this->assertNotContains('=HYPERLINK("http://evil")', $names);
+        // BQ-147: customer names appear in the Pendapatan (transactions) and Pelanggan exports.
+        foreach (['pendapatan' => 2, 'pelanggan' => 0] as $tab => $column) {
+            $rows = $this->rows($this->actingAs($this->owner)->get('/owner/analytics/export?tab='.$tab)->assertOk()->streamedContent());
+            $names = array_column($rows, $column);
+            $this->assertContains("'=HYPERLINK(\"http://evil\")", $names);
+            $this->assertContains("'-2+3", $names);
+            $this->assertNotContains('=HYPERLINK("http://evil")', $names);
+        }
     }
 
     public function test_multi_slot_transaction_amount_is_written_once(): void
     {
-        config(['modules.analytics' => 'released']);
+        config(['modules.reports' => 'released']);
         $payment = Payment::factory()->create(['idtenant' => $this->tenant->id, 'tipe' => 'booking', 'status' => 'sukses', 'jumlah' => 300000]);
         foreach (['09:00:00', '10:00:00', '11:00:00'] as $time) {
             $this->bookingOn('2026-11-16', $time, ['idpayment' => $payment->id, 'status' => 'paid']);
@@ -120,48 +119,45 @@ class AnalyticsExportAndAggregationTest extends TestCase
         $single = Payment::factory()->create(['idtenant' => $this->tenant->id, 'tipe' => 'booking', 'status' => 'sukses', 'jumlah' => 120000]);
         $this->bookingOn('2026-11-17', '09:00:00', ['idpayment' => $single->id, 'status' => 'paid']);
 
-        $csv = $this->actingAs($this->owner)->get('/owner/analytics/export')->assertOk()->streamedContent();
-        $rows = array_slice($this->rows($csv), 1);
+        // BQ-147: the Pendapatan export lists one row per payment with its number of slots.
+        $rows = $this->rows($this->actingAs($this->owner)->get('/owner/analytics/export?tab=pendapatan')->assertOk()->streamedContent());
+        $transactions = array_values(array_filter($rows, fn (array $row): bool => str_starts_with($row[0], '2026-11-15 ')));
 
-        $this->assertSame(['Tanggal', 'Nama Program', 'Nama Pelanggan', 'Email', 'Nomor HP', 'Status', 'Harga', 'Keterangan Harga'], $this->rows($csv)[0]);
-        $this->assertEquals(420000, array_sum(array_map(fn (array $row): float => (float) $row[6], $rows)));
-        $groupRows = array_values(array_filter($rows, fn (array $row): bool => $row[0] === '2026-11-16'));
-        $this->assertCount(3, $groupRows);
-        $this->assertSame(['300000.00', '', ''], array_column($groupRows, 6));
-        $this->assertSame('Total transaksi 3 sesi', $groupRows[0][7]);
-        $this->assertSame('Termasuk dalam total transaksi', $groupRows[1][7]);
+        $this->assertCount(2, $transactions);
+        $this->assertEquals(420000, array_sum(array_map(fn (array $row): float => (float) $row[4], $transactions)));
+        $this->assertSame(['300000', '3'], [$transactions[0][4], $transactions[0][6]]);
+        $this->assertSame(['120000', '1'], [$transactions[1][4], $transactions[1][6]]);
+        $this->assertSame('Foto Studio', $transactions[0][3]);
     }
 
     public function test_analytics_export_contains_only_the_owners_bookings(): void
     {
-        config(['modules.analytics' => 'released']);
+        config(['modules.reports' => 'released']);
         $this->bookingOn('2026-11-16', '09:00:00', ['namapelanggan' => 'Pelanggan Saya']);
         $other = Tenant::factory()->create();
         $otherService = Service::factory()->create(['idtenant' => $other->id]);
         $otherSlot = Schedule::factory()->create(['idtenant' => $other->id, 'idlayanan' => $otherService->id]);
         Booking::factory()->create(['idtenant' => $other->id, 'idlayanan' => $otherService->id, 'idschedule' => $otherSlot->id, 'namapelanggan' => 'Pelanggan Lain']);
 
-        $rows = array_slice($this->rows($this->actingAs($this->owner)->get('/owner/analytics/export')->streamedContent()), 1);
+        $rows = $this->rows($this->actingAs($this->owner)->get('/owner/analytics/export?tab=pelanggan')->streamedContent());
+        $list = array_slice($rows, (int) array_search(['Pelanggan', 'Booking', 'Jenis'], $rows, true) + 1);
 
-        $this->assertSame(['Pelanggan Saya'], array_column($rows, 2));
-        $this->assertSame('Foto Studio', $rows[0][1]);
+        $this->assertSame(['Pelanggan Saya'], array_column($list, 0));
     }
 
-    public function test_schedule_report_export_neutralises_spreadsheet_formulas(): void
+    public function test_schedule_report_export_moves_to_the_okupansi_export(): void
     {
-        config(['modules.schedule-report' => 'released']);
-        $this->bookingOn('2026-11-16', '09:00:00', ['namapelanggan' => '=cmd|"/C calc"!A0', 'status' => 'paid']);
+        // BQ-147: the schedule report is Laporan → Okupansi; its export has no free-text cells left.
+        config(['modules.reports' => 'released']);
 
-        $csv = $this->actingAs($this->owner)->get('/owner/schedule-report/export?period=all')->assertOk()->streamedContent();
-
-        $this->assertStringContainsString("'=cmd|", $csv);
-        $this->assertStringNotContainsString(',=cmd|', $csv);
-        $this->assertStringNotContainsString(',"=cmd|', $csv);
+        $this->actingAs($this->owner)->get('/owner/schedule-report/export?periode=bulan-lalu')
+            ->assertStatus(301)
+            ->assertRedirect(route('owner.analytics.export', ['tab' => 'okupansi', 'periode' => 'bulan-lalu']));
     }
 
     public function test_exports_are_not_reachable_while_the_modules_are_hidden(): void
     {
-        config(['modules.analytics' => 'hidden', 'modules.schedule-report' => 'hidden']);
+        config(['modules.reports' => 'hidden']);
 
         $this->actingAs($this->owner)->get('/owner/analytics/export')->assertNotFound();
         $this->actingAs($this->owner)->get('/owner/schedule-report/export')->assertNotFound();

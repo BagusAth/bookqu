@@ -78,8 +78,9 @@ class ReleaseGateAndHardeningTest extends TestCase
             'owner.settings.assets' => 'booking-page',
             'owner.landing-page' => 'landing-page',
             'owner.settings.integrations' => 'integrations',
-            'owner.analytics' => 'analytics',
-            'owner.schedule-report' => 'schedule-report',
+            // BQ-147: Laporan and the former schedule report sit behind the redesign module `reports`.
+            'owner.analytics' => 'reports',
+            'owner.schedule-report' => 'reports',
             'owner.settings.balance' => 'balance',
             'owner.payouts' => 'balance',
         ];

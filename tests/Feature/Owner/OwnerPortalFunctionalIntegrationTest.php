@@ -160,7 +160,7 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
     public function test_subscription_feature_gating_backend_and_ui(): void
     {
         // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.landing-page' => 'released', 'modules.analytics' => 'released']);
+        config(['modules.landing-page' => 'released', 'modules.reports' => 'released']);
 
         // Owner B is on Free plan
         $this->actingAs($this->ownerB);
@@ -171,8 +171,9 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
         $responseNonPro->assertRedirect(route('owner.subscription'));
         $responseNonPro->assertSessionHas('error');
 
-        // Accessing Analytics (PRO feature) redirects to subscription
-        $responseAnalyticsNonPro = $this->get('/owner/analytics');
+        // BQ-147: Laporan shows a preview with the upgrade prompt below Medium; its export redirects (AC-LAP-03)
+        $this->get('/owner/analytics')->assertOk()->assertSee('Laporan tersedia di paket Medium');
+        $responseAnalyticsNonPro = $this->get('/owner/analytics/export');
         $responseAnalyticsNonPro->assertRedirect(route('owner.subscription'));
         $responseAnalyticsNonPro->assertSessionHas('error');
 
@@ -184,7 +185,7 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
         $responsePro->assertStatus(200);
 
         $responseAnalyticsPro = $this->get('/owner/analytics');
-        $responseAnalyticsPro->assertStatus(200);
+        $responseAnalyticsPro->assertStatus(200)->assertDontSee('Laporan tersedia di paket Medium');
     }
 
     /**

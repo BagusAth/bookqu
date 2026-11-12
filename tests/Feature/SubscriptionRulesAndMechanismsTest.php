@@ -200,7 +200,7 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
     public function test_medium_plan_features_and_limits(): void
     {
         // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.analytics' => 'released', 'modules.landing-page' => 'released']);
+        config(['modules.reports' => 'released', 'modules.landing-page' => 'released']);
 
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
@@ -255,8 +255,8 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
      */
     public function test_small_plan_cannot_access_analytics(): void
     {
-        // BQ-130: isolate this behavior behind an explicitly enabled development module.
-        config(['modules.analytics' => 'released']);
+        // BQ-147: Laporan is behind the `reports` module (owner-portal.md §8.13).
+        config(['modules.reports' => 'released']);
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
             'iduser' => $owner->id,
@@ -276,7 +276,9 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
         $this->actingAs($owner);
         session(['current_tenant_id' => $tenant->id]);
 
-        $response = $this->get('/owner/analytics');
+        // BQ-147: Small sees a preview without data; the export is refused (AC-LAP-03).
+        $this->get('/owner/analytics')->assertOk()->assertSee('Laporan tersedia di paket Medium');
+        $response = $this->get('/owner/analytics/export');
         $response->assertRedirect(route('owner.subscription'));
         $response->assertSessionHas('error');
     }

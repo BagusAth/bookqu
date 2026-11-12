@@ -73,17 +73,17 @@ class AnalyticsAndSubscriptionTest extends TestCase
 
     public function test_owner_with_pro_trial_can_view_analytics(): void
     {
-        // BQ-130: isolate this behavior behind an explicitly enabled development module.
-        config(['modules.analytics' => 'released']);
+        // BQ-147: the page is Laporan (owner-portal.md §8.13), behind the `reports` module.
+        config(['modules.reports' => 'released']);
         $response = $this->actingAs($this->user)->get('/owner/analytics');
         $response->assertStatus(200);
-        $response->assertSee('Analytics');
+        $response->assertSee('Laporan');
     }
 
     public function test_owner_can_export_analytics_csv(): void
     {
-        // BQ-130: isolate this behavior behind an explicitly enabled development module.
-        config(['modules.analytics' => 'released']);
+        // BQ-147: Laporan is behind the `reports` module.
+        config(['modules.reports' => 'released']);
         $response = $this->actingAs($this->user)->get('/owner/analytics/export');
         $response->assertStatus(200);
         $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
@@ -112,8 +112,8 @@ class AnalyticsAndSubscriptionTest extends TestCase
 
     public function test_owner_without_pro_is_blocked_from_pro_features(): void
     {
-        // BQ-130: isolate this behavior behind an explicitly enabled development module.
-        config(['modules.analytics' => 'released']);
+        // BQ-147: Laporan is behind the `reports` module.
+        config(['modules.reports' => 'released']);
         // Change to small plan and active (non-trial)
         Subscription::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->update([
             'idplan' => $this->starterPlan->id,
@@ -121,7 +121,9 @@ class AnalyticsAndSubscriptionTest extends TestCase
             'trial_berakhir' => null,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/owner/analytics');
+        // BQ-147: Small sees a preview without data; the export is refused (AC-LAP-03).
+        $this->actingAs($this->user)->get('/owner/analytics')->assertOk()->assertSee('Laporan tersedia di paket Medium');
+        $response = $this->actingAs($this->user)->get('/owner/analytics/export');
         $response->assertRedirect('/owner/subscription');
         $response->assertSessionHas('error');
     }

@@ -8,16 +8,16 @@ Read-only views that aggregate booking, payment and schedule data for the owner.
 |---|---|---|
 | `owner.dashboard` (Beranda), `owner.dashboard.polling`, `owner.dashboard.link-shared` | `Owner/OwnerDashboardController` → `Actions/Dashboard/GetBeranda` | Tier 1 |
 | `owner.calendar` | `Owner/OwnerCalendarController` → `Actions/Calendar/GetOwnerCalendarData` | Tier 1 |
-| `owner.analytics`, `owner.analytics.export` (`subscription:medium`) | `Owner/OwnerAnalyticsController` (queries inline in the controller) | Tier 2 (locked UI) |
-| `owner.schedule-report`, `owner.schedule-report.export` | `Owner/OwnerScheduleReportController` → `Actions/Schedule/GenerateScheduleReport`, `ExportScheduleReport` | Tier 2 (locked UI) |
+| `owner.analytics` (Laporan), `owner.analytics.export` (`subscription:analytics`) | `Owner/OwnerAnalyticsController` → `Actions/Report/GetReport`, `ExportReport`, period `Support/ReportPeriod` | Redesign module `reports` (hidden until released, ADR-0021) |
+| `owner.schedule-report`, `owner.schedule-report.export` | 301 to Laporan → Okupansi and its export | Module `reports` |
 
 ## Evidence
 
-`tests/Feature/Owner/OwnerDashboardPollingTest.php`, `Owner/AnalyticsAndSubscriptionTest.php`, `Owner/FiveModulesFullIntegrationTest.php`, `Owner/OwnerSidebarNavigationTest.php` (locked banners).
+`tests/Feature/Owner/OwnerDashboardPollingTest.php`, `Owner/AnalyticsAndSubscriptionTest.php`, `Owner/FiveModulesFullIntegrationTest.php`, `Owner/OwnerSidebarNavigationTest.php` (locked banners), `Owner/LaporanPageTest.php`.
 
 BQ-089: the dashboard live refresh clones `<template>` rows and fills them with `textContent`; the polling JSON stays raw data (`OwnerDashboardPollingTest`). `ArchitectureRulesTest::test_views_never_build_inner_html_from_data` (rule `inner-html-data`) fails on any view that assigns non-literal markup to `innerHTML`.
 
-BQ-111: `Actions/Dashboard/GetOwnerAnalyticsTrends` builds the 12-month revenue and booking series and the 30-day booking series from three grouped queries (period computed in a derived table for MariaDB's ONLY_FULL_GROUP_BY). The analytics CSV re-applies the tenant context inside the stream (`TenantMiddleware` clears it before a streamed body runs, which had left the export empty), writes a multi-session transaction's amount once with a `Keterangan Harga` note (no invented per-session amount, BQ-121), and both CSV exports pass every cell through `App\Support\CsvCell` (CWE-1236). Exports answer 404 while their module is hidden (ADR-0021). Evidence: `Owner/AnalyticsExportAndAggregationTest`.
+BQ-111: the analytics series come from grouped queries (period computed in a derived table for MariaDB's ONLY_FULL_GROUP_BY); since BQ-147 they are part of `GetReport`. The analytics CSV re-applies the tenant context inside the stream (`TenantMiddleware` clears it before a streamed body runs, which had left the export empty), writes a multi-session transaction's amount once with a `Keterangan Harga` note (no invented per-session amount, BQ-121), and both CSV exports pass every cell through `App\Support\CsvCell` (CWE-1236). Exports answer 404 while their module is hidden (ADR-0021). Evidence: `Owner/AnalyticsExportAndAggregationTest`.
 
 BQ-136: Beranda (owner-portal.md §8.1, FR-DASH-008) replaces the old dashboard and its charts (AC-BRD-07); trends belong to Laporan (BQ-147). `GetBeranda` prepares:
 
@@ -30,6 +30,15 @@ BQ-136: Beranda (owner-portal.md §8.1, FR-DASH-008) replaces the old dashboard 
 
 Sections 2–4 refresh every 60 seconds only while the tab is visible (`ownerBeranda` in `public/js/owner-ui.js`) and render with `x-text` (AC-BRD-06). Evidence: `Owner/BerandaPageTest`, `Owner/OwnerDashboardPollingTest`.
 
+BQ-147: Laporan (owner-portal.md §8.13, FR-ANALYTICS-007) replaces the analytics page and the schedule report. Pemilik and Manajer (`reports.view`); Small, an ended plan or no plan sees the upgrade prompt over a sample, and no figure of the business is read (AC-LAP-03). One period filter (`ReportPeriod`: this month, last month, the last 3, 6 or 12 months, or a custom range of at most 366 days) applies to every tab and the export. `GetReport` holds the definitions, computed once per request so a period shows the same figures on every tab (AC-LAP-04):
+
+- **Booking:** booking rows by service date; the slots of one checkout share a payment and count once (AC-LAP-02).
+- **Revenue:** successful booking payments created in the period minus refunds recorded in the period on successful booking payments (AC-LAP-01). Refunds of a double payment are left out (that money was never revenue). Walk-in is `provider = manual`, everything else online. Per service through the payment's booking.
+- **Customers:** `CustomerIdentity`; new when the first booking was made in the period.
+- **Occupancy:** slots of the period holding an occupying booking (`BookingRules::applyOccupiesSlotCondition`), free slots, and booked slots per weekday and hour.
+
+Charts are CSS bars and a heat-map table, so no chart library loads. Each tab exports its own CSV (`ExportReport`): formula-safe cells, one row per payment in the Pendapatan transactions, tenant context restored inside the stream, refused below Medium by `subscription:analytics`. Not yet shown, waiting for their items: the no-show rate (shown once the `no-show` module is released, ADR-0018/BQ-153), most used unit and utilisation per unit (BQ-152), promo usage (BQ-149). Evidence: `Owner/LaporanPageTest`, `Owner/AnalyticsExportAndAggregationTest`.
+
 ## Status
 
 Functional: Implemented · Verification: Needs Verification (metric definitions not specified) · Architecture: Needs Refactor
@@ -38,7 +47,6 @@ Functional: Implemented · Verification: Needs Verification (metric definitions 
 
 | Gap | Item |
 |---|---|
-| Calendar and schedule report count every `pending` booking as occupied, ignoring the 15-minute grace; analytics and schedule controller use their own "booked" status lists | BQ-012 |
-| `OwnerAnalyticsController` still holds the summary, top-service and status queries (the monthly and daily series moved to `GetOwnerAnalyticsTrends`, BQ-111) | BQ-029 (pattern), BQ-012 |
+| Calendar counts every `pending` booking as occupied, ignoring the 15-minute grace (Laporan uses `BookingRules` since BQ-147) | BQ-012 |
 | Audit P0/P1: deleting a slot from the calendar redirects out of it; week view hides free slots; empty AJAX error | BQ-046, BQ-062 |
 | Owner dialog and drawer accessibility gaps (missing role="dialog", focus trapping, and keyboard escape handling) | BQ-129 |

@@ -126,8 +126,8 @@ class SubscriptionActionTest extends TestCase
 
     public function test_trial_expiration_is_blocked_by_middleware(): void
     {
-        // BQ-130: isolate this behavior behind an explicitly enabled development module.
-        config(['modules.analytics' => 'released']);
+        // BQ-147: Laporan is behind the `reports` module; its export is the gated data route.
+        config(['modules.reports' => 'released']);
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
             'iduser' => $owner->id,
@@ -157,7 +157,8 @@ class SubscriptionActionTest extends TestCase
         $this->actingAs($owner);
         session(['current_tenant_id' => $tenant->id]);
 
-        $response = $this->get('/owner/analytics');
+        $this->get('/owner/analytics')->assertOk()->assertSee('Laporan tersedia di paket Medium');
+        $response = $this->get('/owner/analytics/export');
         $response->assertRedirect(route('owner.subscription'));
         $response->assertSessionHas('error', 'Langganan Anda telah habis, mohon perpanjang.');
     }
