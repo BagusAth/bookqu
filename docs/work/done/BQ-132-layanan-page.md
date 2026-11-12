@@ -2,7 +2,7 @@
 id: BQ-132
 title: Layanan page with tabs Layanan and Kategori
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: catalog
@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-114]
 
 # BQ-132: Layanan page with tabs Layanan and Kategori
 
-Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -50,8 +50,9 @@ INV-SUB-01 for the service limit; existing bookings keep their times and amounts
 
 - `docs/domains/catalog.md`
 
-## Evidence (fill when done)
+## Evidence
 
+Closed 2026-11-12. Merged into `integration` in PR #45 (merge commit `cd41f24`, 2026-11-10) after the Tech Lead audit. Before the merge: full suite 897 tests on SQLite, the item tests also on MySQL 8, Pint and PHPStan clean. Commit `d500db2`. Tests: `Owner/LayananPageTest` (AC-LYN-01 to AC-LYN-03, category order on the storefront), `Owner/ServicesDomainEndToEndTest`, `Owner/ProgramManagementTest`; guardrail `slot-occupancy` allowlist reduced.
 ## Implementation notes
 
 - **Schema (approved by the Tech Lead through the developer, 2026-11-09):** expand-only migration adding `categories.image_url` (nullable string) and `categories.sort_order` (unsigned int, default 0) with index `(idtenant, sort_order)` for FR-CATEGORY-006.

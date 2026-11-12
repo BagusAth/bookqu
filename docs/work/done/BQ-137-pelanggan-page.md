@@ -2,7 +2,7 @@
 id: BQ-137
 title: Pelanggan: directory, quick filters and the customer panel
 type: feature
-status: in-progress
+status: done
 priority: P2
 phase: 4
 domain: customers-reviews
@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-131]
 
 # BQ-137: Pelanggan: directory, quick filters and the customer panel
 
-Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -49,8 +49,9 @@ INV-TEN-01 for customer identities and notes.
 
 - `docs/domains/customers-reviews.md`
 
-## Evidence (fill when done)
+## Evidence
 
+Closed 2026-11-12. Merged into `integration` in PR #45 (merge commit `cd41f24`, 2026-11-10) after the Tech Lead audit. Before the merge: full suite 897 tests on SQLite, the item tests also on MySQL 8, Pint and PHPStan clean. Commit `ce276d1`. Tests: `Owner/PelangganPageTest` (AC-PLG-01 to AC-PLG-04, escaped search), `Owner/CustomerManagementTest`.
 ## Implementation notes
 
 - **Page:** `Actions/Customer/ListCustomers` prepares the summary (total, new this month, returning = 2+ bookings), the quick filters and the paginated directory.

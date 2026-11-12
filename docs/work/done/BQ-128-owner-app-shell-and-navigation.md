@@ -2,7 +2,7 @@
 id: BQ-128
 title: Owner app shell: sidebar, top bar, bottom navigation and global search
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: staged-modules
@@ -17,7 +17,7 @@ depends-on: [BQ-130]
 
 # BQ-128: Owner app shell: sidebar, top bar, bottom navigation and global search
 
-Epic **E1 · Foundations** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E1 · Foundations** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -52,8 +52,9 @@ INV-TEN-01: search results come only from the current tenant.
 
 - `docs/domains/staged-modules.md`
 
-## Evidence (fill when done)
+## Evidence
 
+Closed 2026-11-12. Merged into `integration` in PR #45 (merge commit `cd41f24`, 2026-11-10) after the Tech Lead audit. Before the merge: full suite 897 tests on SQLite, the item tests also on MySQL 8, Pint and PHPStan clean. Commit `b91ca43`. Tests: `Owner/OwnerAppShellTest`, `Owner/OwnerSidebarNavigationTest`; guardrail `blade-queries` (topbar entry removed from the allowlist).
 ## Implementation notes (2026-11-09, before merge)
 
 - **One shell view model.** `Actions/Owner/GetOwnerShell` (composer on `layouts.owner-layout`) replaces the sidebar/topbar composers and the unused `adalahpro` composer; sidebar, top bar and phone navigation run no queries (BQ-090). Active state is decided by route name through `match` prefixes in `config/owner-navigation.php` (BQ-091).

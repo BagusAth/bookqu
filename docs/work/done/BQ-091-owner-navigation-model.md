@@ -17,7 +17,7 @@ depends-on: [BQ-092, BQ-093]
 
 # BQ-091: One navigation model for the owner sidebar, breadcrumb and topbar
 
-> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-128](../BQ-128-owner-app-shell-and-navigation.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-128.
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-128](BQ-128-owner-app-shell-and-navigation.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-128.
 
 
 Found in the owner UI audit of 2026-11-02.

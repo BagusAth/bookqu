@@ -2,7 +2,7 @@
 id: BQ-129
 title: Owner shared building blocks: page header, tabs, panels, walk-in form, dialogs
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: insights
@@ -17,7 +17,7 @@ depends-on: []
 
 # BQ-129: Owner shared building blocks: page header, tabs, panels, walk-in form, dialogs
 
-Epic **E1 · Foundations** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E1 · Foundations** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -50,8 +50,9 @@ None directly; components are presentation only (`.ai/rules/frontend.md`).
 
 None beyond this item.
 
-## Evidence (fill when done)
+## Evidence
 
+Closed 2026-11-12. Merged into `integration` in PR #45 (merge commit `cd41f24`, 2026-11-10) after the Tech Lead audit. Before the merge: full suite 897 tests on SQLite, the item tests also on MySQL 8, Pint and PHPStan clean. Commit `2d3657d`. Tests: `Owner/SharedBuildingBlocksTest`, `Domain/Booking/BookingStateTest` (labels); guardrail `native-dialogs`.
 ## Implementation notes (2026-11-09, before merge)
 
 - Blocks live in `resources/views/components/owner/` (index in its `README.md`); behaviour in `public/js/owner-ui.js`, loaded by the owner layout before Alpine starts.
