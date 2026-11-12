@@ -29,7 +29,6 @@ use App\Http\Controllers\Owner\OwnerCustomerController;
 use App\Http\Controllers\Owner\OwnerDashboardController;
 use App\Http\Controllers\Owner\OwnerHelpController;
 use App\Http\Controllers\Owner\OwnerIntegrationController;
-use App\Http\Controllers\Owner\OwnerLandingPageController;
 use App\Http\Controllers\Owner\OwnerNotificationController;
 use App\Http\Controllers\Owner\OwnerPayoutAccountController;
 use App\Http\Controllers\Owner\OwnerPriceRuleController;
@@ -175,8 +174,6 @@ Route::prefix('owner')
             Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('module:reports');
             Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware(['module:reports', 'subscription:analytics']);
             Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
-            Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page')->middleware(['module:landing-page', 'subscription:landing-page']);
-            Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware(['module:landing-page', 'subscription:landing-page']);
 
             // ── Extended Core Business Modules (Tahap 2) ──
             Route::get('/calendar', [OwnerCalendarController::class, 'index'])->name('owner.calendar');
@@ -242,6 +239,14 @@ Route::prefix('owner')
                 Route::delete('/booking-page/media/{asset}', [OwnerBookingPageController::class, 'destroyMedia'])->whereNumber('asset')->name('owner.booking-page.media.destroy');
                 Route::get('/settings/appearance', [OwnerBookingPageController::class, 'legacyAppearance'])->name('owner.settings.appearance');
                 Route::get('/settings/assets', [OwnerBookingPageController::class, 'legacyAssets'])->name('owner.settings.assets');
+                // BQ-154: landing page and own domain are Pro (AC-HBK-03); the former builder redirects here.
+                Route::middleware('subscription:landing-page')->group(function () {
+                    Route::post('/booking-page/landing', [OwnerBookingPageController::class, 'saveLanding'])->name('owner.booking-page.landing');
+                    Route::get('/booking-page/landing/preview', [OwnerBookingPageController::class, 'previewLanding'])->name('owner.booking-page.landing.preview');
+                    Route::post('/booking-page/domain', [OwnerBookingPageController::class, 'updateDomain'])->name('owner.booking-page.domain');
+                    Route::post('/booking-page/domain/check', [OwnerBookingPageController::class, 'checkDomain'])->middleware('throttle:10,1')->name('owner.booking-page.domain.check');
+                });
+                Route::get('/landing-page', [OwnerBookingPageController::class, 'legacyLanding'])->name('owner.landing-page');
             });
             // BQ-141 (owner-portal.md §8.12): one Pembayaran page; the former balance page redirects to its Saldo tab.
             Route::get('/payments', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.payments');

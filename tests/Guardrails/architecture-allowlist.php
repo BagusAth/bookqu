@@ -10,10 +10,9 @@ return [
     // Removed by BQ-032 (Provider outcome intake).
     'provider-sdk' => [],
     // Removed by BQ-035.
-    // The top bar no longer queries (BQ-128: GetOwnerShell prepares the shell).
-    'blade-queries' => [
-        'resources/views/owner/landing-page.blade.php' => 1,
-    ],
+    // The top bar no longer queries (BQ-128: GetOwnerShell prepares the shell); the landing
+    // builder view was replaced by the Halaman Booking sections (BQ-154).
+    'blade-queries' => [],
     // Removed by BQ-012 (Slot bookability).
     'slot-occupancy' => [
         'app/Actions/Booking/CreateBooking.php' => 1,

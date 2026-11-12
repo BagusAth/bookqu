@@ -200,7 +200,7 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
     public function test_medium_plan_features_and_limits(): void
     {
         // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.reports' => 'released', 'modules.landing-page' => 'released']);
+        config(['modules.reports' => 'released', 'modules.booking-page' => 'released']);
 
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $tenant = Tenant::create([
@@ -229,7 +229,8 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
         $resExport->assertStatus(200);
 
         // Access Landing page (Pro only, Medium should be redirected)
-        $resLanding = $this->get('/owner/landing-page');
+        // BQ-154: the landing page lives in Halaman Booking; saving it is Pro only
+        $resLanding = $this->post(route('owner.booking-page.landing'), ['template' => 'modern', 'action' => 'save']);
         $resLanding->assertRedirect(route('owner.subscription'));
         $resLanding->assertSessionHas('error');
 

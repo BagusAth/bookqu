@@ -8,8 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property string|null $custom_domain
+ * @property string|null $custom_domain_status `pending`, `connected` or `not_connected` (BQ-154)
+ * @property Carbon|null $custom_domain_checked_at
+ * @property Carbon|null $custom_domain_verified_at
+ */
 class Tenant extends Model
 {
     use HasFactory;
@@ -71,7 +78,19 @@ class Tenant extends Model
             'midtrans_prod_server_key' => 'encrypted',
             'booking_link_shared_at' => 'datetime',
             'owner_guide_completed_at' => 'datetime',
+            'custom_domain_checked_at' => 'datetime',
+            'custom_domain_verified_at' => 'datetime',
         ];
+    }
+
+    /**
+     * The landing page of a Pro business (BQ-154).
+     *
+     * @return HasOne<TenantLandingPage, $this>
+     */
+    public function landingPage(): HasOne
+    {
+        return $this->hasOne(TenantLandingPage::class, 'idtenant');
     }
 
     public function user(): BelongsTo

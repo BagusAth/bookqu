@@ -44,6 +44,8 @@ class CustomDomainBookingTest extends TestCase
             'alamat' => 'Jalan Sunset No. 8',
             'nomorhp' => '08123456789',
         ]);
+        // BQ-154: a domain serves its business only after its DNS check connected it.
+        $this->tenant->forceFill(['custom_domain_status' => 'connected', 'custom_domain_verified_at' => now()])->save();
 
         $this->service = Service::create([
             'idtenant' => $this->tenant->id,
@@ -103,6 +105,16 @@ class CustomDomainBookingTest extends TestCase
                 ->assertSee('action="http://studiobrama.com'.$action.'"', false)
                 ->assertSee('href="http://studiobrama.com"', false)
                 ->assertDontSee('http://studio-brama/', false);
+        }
+    }
+
+    public function test_a_saved_domain_that_is_not_connected_returns_404(): void
+    {
+        // BQ-154: pending or failing DNS never resolves to the business (INV-TEN-01).
+        foreach (['pending', 'not_connected'] as $status) {
+            $this->tenant->forceFill(['custom_domain_status' => $status])->save();
+
+            $this->withServerVariables(['HTTP_HOST' => 'studiobrama.com'])->get('http://studiobrama.com/')->assertNotFound();
         }
     }
 

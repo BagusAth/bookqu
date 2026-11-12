@@ -291,7 +291,8 @@ class CustomerAccessTest extends TestCase
     {
         [$payment] = $this->reservation();
         $issued = $this->enter($payment);
-        $payment->tenant->update(['custom_domain' => 'studio.example.test']);
+        // BQ-154: a connected domain, so the storefront would answer on it.
+        $payment->tenant->forceFill(['custom_domain' => 'studio.example.test', 'custom_domain_status' => 'connected'])->save();
         $this->get('http://studio.example.test/access')->assertNotFound();
         $this->get('http://studio.example.test/booking/payment/'.$payment->order_id)->assertNotFound();
         $this->assertStringStartsWith('http://localhost/access#', app(CustomerAccessLinks::class)->entry($issued));

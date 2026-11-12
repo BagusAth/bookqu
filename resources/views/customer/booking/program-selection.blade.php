@@ -5,6 +5,10 @@
 
 @section('content')
 <div id="booking-program-root" data-tenant-slug="{{ $tenant->slug }}" x-data="bookingProgram()" @pageshow.window="isSubmitting = false" @pagehide.window="isSubmitting = false" @popstate.window="isSubmitting = false">
+    @if ($landing)
+        @include('customer.booking.partials.landing', ['landing' => $landing])
+    @endif
+
     {{-- Form Confirmation (Submitted explicitly by user clicking Continue) --}}
     @if ($acceptsOnlineBookings)
     <form

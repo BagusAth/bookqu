@@ -160,14 +160,15 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
     public function test_subscription_feature_gating_backend_and_ui(): void
     {
         // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.landing-page' => 'released', 'modules.reports' => 'released']);
+        config(['modules.booking-page' => 'released', 'modules.reports' => 'released']);
 
         // Owner B is on Free plan
         $this->actingAs($this->ownerB);
         session(['current_tenant_id' => $this->tenantB->id]);
 
         // Accessing Landing Page (PRO feature) redirects to subscription
-        $responseNonPro = $this->get('/owner/landing-page');
+        // BQ-154: landing page and own domain live in Halaman Booking; their writes are refused below Pro
+        $responseNonPro = $this->post(route('owner.booking-page.domain'), ['custom_domain' => 'booking.example.com']);
         $responseNonPro->assertRedirect(route('owner.subscription'));
         $responseNonPro->assertSessionHas('error');
 
@@ -181,7 +182,7 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
         $this->actingAs($this->ownerA);
         session(['current_tenant_id' => $this->tenantA->id]);
 
-        $responsePro = $this->get('/owner/landing-page');
+        $responsePro = $this->get(route('owner.booking-page.landing.preview'));
         $responsePro->assertStatus(200);
 
         $responseAnalyticsPro = $this->get('/owner/analytics');

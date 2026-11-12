@@ -91,22 +91,21 @@ class AnalyticsAndSubscriptionTest extends TestCase
 
     public function test_owner_can_view_and_update_landing_page(): void
     {
-        // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.landing-page' => 'released']);
+        // BQ-154: the landing builder is a Halaman Booking section; the theme colour moved to Tampilan (BQ-142).
+        config(['modules.booking-page' => 'released']);
 
         $response = $this->actingAs($this->user)->get('/owner/landing-page');
-        $response->assertStatus(200);
+        $response->assertRedirect(route('owner.booking-page', ['section' => 'landing']));
+        $this->actingAs($this->user)->get(route('owner.booking-page', ['section' => 'domain']))->assertOk();
 
-        $postResponse = $this->actingAs($this->user)->post('/owner/landing-page', [
+        $postResponse = $this->actingAs($this->user)->post(route('owner.booking-page.domain'), [
             'custom_domain' => 'booking.example.com',
-            'theme_color' => '#4F46E5',
         ]);
 
         $postResponse->assertRedirect();
         $this->assertDatabaseHas('tenants', [
             'id' => $this->tenant->id,
             'custom_domain' => 'booking.example.com',
-            'theme_color' => '#4F46E5',
         ]);
     }
 

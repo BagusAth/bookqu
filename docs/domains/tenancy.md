@@ -6,7 +6,7 @@ Owns tenant isolation, tenant resolution (slug and custom domain), and the busin
 
 | Kind | Where |
 |---|---|
-| Middleware `tenant` | `app/Http/Middleware/TenantMiddleware.php` — owner routes: tenant of the logged-in owner; public routes: `{slug_usaha}` or the request host as custom domain |
+| Middleware `tenant` | `app/Http/Middleware/TenantMiddleware.php` — owner routes: tenant of the logged-in owner; public routes: `{slug_usaha}` or the request host as custom domain, only while its DNS check is `connected` (BQ-154) |
 | Middleware `owner.profile` | `app/Http/Middleware/EnsureOwnerProfileComplete.php` — requires `namabisnis`, `slug`, `jenisbisnis`, `nomorhp`; also checks direct-gateway keys when `payment_mode = owner` |
 | Routes | `owner.settings*`, `owner.profile.complete`, `owner.settings.profile` (`routes/web.php`); public `{slug_usaha}` and `Route::domain('{custom_domain}')` groups |
 | Controllers | `Owner/OwnerSettingController` |
@@ -57,7 +57,7 @@ Functional: Implemented · Verification: Needs Verification · Architecture: Tar
 | Custom-domain storefront behaviour only partly tested | BQ-039 |
 | Owner views write `/owner/...` URLs by hand; storefront links bypass `CustomerBookingRoutes` | BQ-128 |
 | Renaming the business changes the slug and breaks old links (no redirect); old slug cache not cleared | BQ-144 |
-| Custom domains can be set only in the hidden landing-page module | BQ-154 |
+| TLS certificates for custom domains are not issued by the application; the server needs on-demand certificates before the feature is released | Tech Lead (ops) |
 
 Target decision: [ADR-0010](../adr/ADR-0010-authorization-and-tenant-scoping.md) — owner Policies with foreign-id 404s, a tenant-context runner for jobs/webhooks/commands, and scope bypasses only in four named places (BQ-009, BQ-031). Not implemented yet.
 
