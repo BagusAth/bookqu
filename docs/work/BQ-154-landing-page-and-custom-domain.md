@@ -2,7 +2,7 @@
 id: BQ-154
 title: Landing page and custom domain for Pro
 type: feature
-status: proposed
+status: approved
 priority: P2
 phase: 4
 domain: public-site
@@ -45,5 +45,17 @@ INV-TEN-01: a domain resolves to exactly one tenant.
 ## Docs to update
 
 - `docs/domains/public-site.md`
+
+## Approval (Tech Lead, 2026-11-13)
+
+Approved, including the four decisions recorded on the `bagus` branch (schema `tenant_landing_pages` and the three `tenants.custom_domain_*` columns; DNS check by CNAME or A records as a queued job on save, on "Cek sekarang" and hourly; `TenantMiddleware` serves a domain only while it is `connected`, normalised and unique; the published landing page replaces the top of the storefront home).
+
+Open points decided:
+
+1. **TLS:** certificates for custom domains are issued by the server (for example on-demand certificates). This is a release prerequisite and is added to the ops checklist (BQ-017, BQ-022).
+2. **Below Pro:** the hourly check also stops a connected domain when the business no longer has the Pro capability; it answers 404 like an unconnected domain. Required change before merge.
+3. **Configuration:** `CUSTOM_DOMAIN_CNAME_TARGET` and `CUSTOM_DOMAIN_A_RECORDS` are set per environment by the Tech Lead during staging and production setup. Until then nothing connects (fail closed).
+
+Before the PR: sync with `integration` (PR #46 changed `ExportScheduleReport`, `GenerateScheduleReport`, `OwnerAnalyticsController` and `routes/web.php`) and count `no_show` in Laporan (BQ-147, FR-BOOKING-020). The unused `landing-page` key of `config/modules.php` is removed in BQ-157.
 
 ## Evidence (fill when done)
