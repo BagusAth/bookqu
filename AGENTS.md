@@ -54,8 +54,8 @@ Trade-off order: security → data integrity → tenant isolation → business c
 | Role | Person | Decides |
 |---|---|---|
 | Product Lead | Brammy | What BookQu offers: features outside `docs/product.md` / `docs/requirements.md`, pricing, priorities, whether to release |
-| Tech Lead | agathan | Architecture and technical rules, task assignment, audits and merges heavy-lane PRs into `integration`, executes releases and production operations |
-| Developer | Bagus, agathan | How a task is implemented, inside their own branch; audits and merges the other developer's light-lane PRs |
+| Tech Lead | agathan | Architecture and technical rules, task assignment, audits and merges the other developer's heavy-lane PRs into `integration`, executes releases and production operations |
+| Developer | Bagus, agathan | How a task is implemented, inside their own branch; merges their own light-lane PRs |
 | Agent | Claude Code, Codex, Antigravity, Cursor, … | Nothing on its own: executes for the developer who runs the session |
 
 People change; roles do not. Documents name roles. Names in older documents (`docs/work/done/`, ADRs) are history.
@@ -76,7 +76,7 @@ The agent asks **the developer running the session**. When the decision belongs 
 2. **Light lane** (UI, copy, tests, non-authority docs, behaviour-preserving refactors): implement, run related tests, then the full suite once.
 3. **Heavy lane** (domain rules, schema, security/auth, payment, tenancy, product changes): write a work item `docs/work/BQ-NNN-slug.md` from `docs/work/_TEMPLATE.md`, get the decision from the table above, then implement with full verification. A product change starts as a `D-NNN` entry in `docs/product-decisions.md`; its work item is written only after the Product Lead approves.
 4. Update the domain file, requirement or ADR only where their content changed.
-5. Sync from `integration` again, then open a PR into `integration` using `.github/pull_request_template.md`. A light-lane PR is audited and merged by a developer other than its author. A heavy-lane PR is audited and merged by the Tech Lead; when the Tech Lead is its author, the other developer reviews it first. Nobody merges their own PR without a review by someone else, and every merge needs the four green CI jobs. Never push to `integration` or `main` directly.
+5. Sync from `integration` again, then open a PR into `integration` using `.github/pull_request_template.md`. Every merge needs the four green CI jobs. The author merges a light-lane PR. The Tech Lead audits and merges a heavy-lane PR of another developer, and merges their own heavy-lane PR. When unsure whether a PR is light or heavy, treat it as heavy. Never push to `integration` or `main` directly.
 
 Full process, lanes, branches and definition of done: `docs/workflow.md`.
 
