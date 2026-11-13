@@ -24,13 +24,14 @@ class UpdateBookingStatus
 
     public function __construct(
         protected CancelBooking $cancelBooking,
-        protected PaymentLifecycle $paymentLifecycle
+        protected PaymentLifecycle $paymentLifecycle,
+        protected MarkBookingNoShow $markBookingNoShow,
     ) {}
 
     /**
      * Update booking status (used primarily by owner).
      *
-     * @param  string  $newStatus  'paid'|'completed'|'cancelled'
+     * @param  string  $newStatus  'paid'|'completed'|'cancelled'|'no_show'
      * @param  string  $actor  'owner'
      * @return array{success: bool, error?: string, booking?: Booking}
      */
@@ -38,6 +39,9 @@ class UpdateBookingStatus
     {
         if ($newStatus === BookingState::STATUS_CANCELLED) {
             return $this->cancelBooking->execute($booking, $actor, $reason);
+        }
+        if ($newStatus === BookingState::STATUS_NO_SHOW) {
+            return $this->markBookingNoShow->execute($booking);
         }
 
         return DB::transaction(function () use ($booking, $newStatus, $actor): array {

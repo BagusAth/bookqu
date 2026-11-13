@@ -201,7 +201,8 @@ final class BookingCheckoutController extends StorefrontBookingController
             $selectedDate,
             $selectedTimes,
             $scheduleIds,
-            $customerData
+            $customerData,
+            (int) ($request->validated('peserta') ?? 1),
         );
 
         // Handle slot conflict or quota error

@@ -20,8 +20,9 @@ The central domain: creating, changing and ending reservations, including multi-
 | `GetScheduleSelection` | Builds 31 Indonesian date entries and morning/afternoon/evening slots through `GetAvailableSchedules`; shared by page and AJAX. AJAX service comes only from the tenant-scoped session; closed dates expose no slots. |
 | `ValidateBookingDate` | Shared POST date-window, monthly-quota, owner-closed and availability checks before session mutation. The controller's shared `storeSelectedTime` path validates both new and legacy slot submissions; legacy POST time ignores request-supplied dates. |
 | `CreateBooking` | One transaction: lock subscription/tenant row and check monthly quota (`EntitlementRules::canCreateBooking`), lock schedules, evict stale pending, validate tenant/service/date/status/past/occupancy, check contiguity, quote through `BookingPricing::quote` (ADR-0019 decision 1) inside the lock and store it as `payments.price_breakdown`, create one payment + N bookings (`pending`, or `paid` when free). After commit: initialize the gateway payment; on failure mark payment `gagal` and bookings `cancelled`; clear availability cache. |
-| `CreateWalkInBooking` | Owner booking: lock schedule, evict stale pending, check occupancy, create `paid` booking with a `cash` payment `sukses`. |
-| `UpdateBookingStatus` | Owner status change through `BookingState::canTransition`; `cancelled` delegates to `CancelBooking`. |
+| `CreateWalkInBooking` | Owner booking: lock schedule, evict stale pending, check room for the participants and unit conflicts, create `paid` booking with a `cash` payment `sukses`. |
+| `MarkBookingNoShow` | Under the tenant lock: a `paid` payment group whose session has ended (`BookingRules::sessionHasEnded`) becomes `no_show`; payment, balance and refunds stay untouched (ADR-0018). Every role may do it. |
+| `UpdateBookingStatus` | Owner status change through `BookingState::canTransition`; `cancelled` delegates to `CancelBooking`, `no_show` to `MarkBookingNoShow`. |
 | `CancelBooking` | Actor `customer` or `owner`. Customers cannot cancel multi-slot bookings and must pass `BookingRules::canCancel` (paid, before `cancel_before_hours`). Owners cancel the whole payment group. Creates a `Refund` only for customer cancellation of a successful payment (one per payment). |
 | `RescheduleBooking` | Moves a single-slot booking to another available schedule; multi-slot is rejected. |
 | `EvictStalePendingBookings` | Inside the caller's transaction: request the stale pending booking's payment expiry from `PaymentLifecycle` and cancel the booking. |
@@ -30,18 +31,18 @@ Unexpected checkout/reschedule failures return generic Indonesian messages to cu
 
 ## Rules (authoritative)
 
-`App\Domain\Booking\BookingState` (states, transitions, labels) · `App\Domain\Booking\BookingRules` (pending hold from the payment deadline, occupancy condition, contiguity, pricing, cancel/reschedule policy).
+`App\Domain\Booking\BookingState` (states, transitions, labels) · `App\Domain\Booking\BookingRules` (pending hold from the payment deadline, occupancy condition, room for participants against the service capacity, unit conflicts, contiguity, cancel/reschedule policy, no-show time condition) · `App\Domain\Booking\BookingSeats` (seat rows that follow each booking).
 
 ## Data
 
-`bookings`: `idtenant`, `idlayanan`, `idschedule`, `namapelanggan`, `nomorhp`, `email`, `tanggalbooking`, `jam`, `status`, `idpayment`, `catatan`, `booking_code` (unique), `cancellation_token`, `reschedule_token`, `rescheduled_from_*`. Virtual column `active_idschedule` with unique index `unique_active_booking_slot` (pending/paid/completed). `booking_logs` keeps an event trail.
+`bookings`: `idtenant`, `idlayanan`, `idschedule`, `namapelanggan`, `nomorhp`, `email`, `tanggalbooking`, `jam`, `status`, `idpayment`, `catatan`, `booking_code` (unique), `cancellation_token`, `reschedule_token`, `rescheduled_from_*`, `peserta` (participants, default 1). `booking_seats`: one row per participant (`idbooking`, `idschedule`, `seat_no` below the service capacity, `status` copied from the booking) with virtual `active_idschedule` (pending/paid/completed/no_show) and the unique seat index (`active_idschedule`, `seat_no`) that replaced `unique_active_booking_slot` (BQ-151). `services.kapasitas` is the capacity per slot (default 1). `units` and `service_unit` link services to shared units (BQ-152). `booking_logs` keeps an event trail.
 
 ## Invariants
 
-- **INV-BOOK-01** — status ∈ `pending`, `paid`, `cancelled`, `completed`.
-- **INV-BOOK-02** — transitions only via `BookingState::canTransition`: pending→paid / cancelled / completed; paid→completed / cancelled. `pending→completed` is used when the owner completes an unpaid online booking (e.g. paid on site); the online payment stays `pending` until it expires (BQ-014).
-- **INV-BOOK-03** — occupying = `paid`, `completed`, or `pending` while its payment is `pending` and `now < payments.expired_at + settlement margin` (ADR-0009). The rule lives only in `BookingRules::applyOccupiesSlotCondition`.
-- **INV-BOOK-04** — at most one occupying booking per schedule (row lock + `unique_active_booking_slot`).
+- **INV-BOOK-01** — status ∈ `pending`, `paid`, `cancelled`, `completed`, `no_show`.
+- **INV-BOOK-02** — transitions only via `BookingState::canTransition`: pending→paid / cancelled / completed; paid→completed / cancelled / no_show (after the session ends). `no_show` is terminal. `pending→completed` is used when the owner completes an unpaid online booking (e.g. paid on site); the online payment stays `pending` until it expires (BQ-014).
+- **INV-BOOK-03** — occupying = `paid`, `completed`, `no_show`, or `pending` while its payment is `pending` and `now < payments.expired_at + settlement margin` (ADR-0009). The rule lives only in `BookingRules::applyOccupiesSlotCondition`.
+- **INV-BOOK-04** — the participants of occupying bookings of a schedule never exceed the service capacity, and two occupying bookings that use the same active unit never overlap in time (tenant lock + seat index on `booking_seats`).
 - **INV-BOOK-05** — stale pending is evicted inside the booking transaction.
 - **INV-BOOK-06** — multi-slot is contiguous, all-or-nothing, one payment; customers cannot cancel or reschedule it partially.
 
@@ -65,6 +66,9 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 
 | Owner bookings list shows the service's current price instead of the charged amount, and maps payment states that do not exist | BQ-135 |
 | Reschedule does not evaluate or record slot price differences (price drift across surge/override slots) | BQ-140 |
+| Unit page, capacity and unit fields in Layanan, participants input in checkout and walk-in, Kalender unit filter and the no-show panel action have backend only; the UI follows | BQ-151, BQ-152, BQ-153 |
+| The customer reschedule calendar counts capacity but not unit conflicts (advisory; the time list and the claim do) | BQ-152 |
+| The hidden staff-resources module keeps its own `resources` tables until BQ-157 removes it; units were copied from it once | BQ-157 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). BQ-029 uses a typed checkout draft and separates catalog, schedule, checkout and payment routes. The session adapter retains the legacy shape, and placement retains the BQ-083 quote fingerprint and transactional slot claim.
 

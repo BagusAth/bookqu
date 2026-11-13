@@ -21,6 +21,8 @@ enum SlotRefusal: string
     case BookingPolicy = 'booking-policy';
     case ServiceUnavailable = 'service-unavailable';
     case Occupied = 'occupied';
+    case NotEnoughRoom = 'not-enough-room';
+    case UnitBusy = 'unit-busy';
     case InconsistentGroup = 'inconsistent-group';
 
     /**
@@ -30,7 +32,7 @@ enum SlotRefusal: string
     {
         return match ($this) {
             self::Blocked, self::DateClosed => AvailabilityRules::STATUS_BLOCKED,
-            self::Occupied, self::InconsistentGroup => AvailabilityRules::STATUS_BOOKED,
+            self::Occupied, self::NotEnoughRoom, self::UnitBusy, self::InconsistentGroup => AvailabilityRules::STATUS_BOOKED,
             default => AvailabilityRules::STATUS_UNAVAILABLE,
         };
     }
@@ -51,6 +53,8 @@ enum SlotRefusal: string
             self::BookingPolicy => 'Jadwal tidak memenuhi kebijakan pemesanan bisnis.',
             self::ServiceUnavailable => 'Layanan ini sedang tidak tersedia. Silakan hubungi pengelola.',
             self::Occupied => "Slot waktu {$time} sudah dibooking oleh pelanggan lain. Silakan pilih waktu lain.",
+            self::NotEnoughRoom => "Sisa tempat jam {$time} tidak cukup untuk jumlah peserta ini.",
+            self::UnitBusy => "Unit untuk jam {$time} sudah dipakai booking lain. Silakan pilih waktu lain.",
             self::InconsistentGroup => "Slot waktu {$time} sedang diperiksa oleh sistem. Silakan pilih waktu lain.",
         };
     }

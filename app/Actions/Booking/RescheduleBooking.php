@@ -102,9 +102,10 @@ class RescheduleBooking
                         [$newScheduleId],
                         $targetDate ? Carbon::parse($targetDate)->toDateString() : null,
                         (int) $booking->id,
+                        max(1, (int) $booking->peserta),
                     )->first();
                 } catch (SlotClaimRefused $refused) {
-                    throw new Exception($refused->refusal === SlotRefusal::Occupied ? 'SLOT_TAKEN' : 'SLOT_NOT_FOUND');
+                    throw new Exception(in_array($refused->refusal, [SlotRefusal::Occupied, SlotRefusal::NotEnoughRoom, SlotRefusal::UnitBusy], true) ? 'SLOT_TAKEN' : 'SLOT_NOT_FOUND');
                 }
 
                 // Reload the source booking after synchronization; it may have changed meanwhile

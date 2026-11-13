@@ -25,6 +25,8 @@ class CreateBookingRequest extends FormRequest
             'nomorhp' => ['required', 'string', 'max:20', 'regex:/^\+?(?:\d[\s\-]?){9,14}\d$/'],
             'email' => ['required', 'email', 'max:100'],
             'catatan' => ['nullable', 'string', 'max:500'],
+            // Room for the participants is decided by the claim (FR-BOOKING-021)
+            'peserta' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'selected_addons' => ['nullable'],
             'voucher_code' => ['nullable'],
             'checkout_fingerprint' => ['nullable', 'string', 'max:128'],

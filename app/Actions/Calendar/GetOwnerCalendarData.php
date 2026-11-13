@@ -86,7 +86,7 @@ class GetOwnerCalendarData
                 ->whereDoesntHave('bookings', fn ($q) => BookingRules::applyOccupiesSlotCondition($q, 'bookings.'));
         } elseif ($selectedStatus === 'blocked') {
             $schedulesQuery->where('status', 'diblokir');
-        } elseif ($selectedStatus !== 'all' && in_array($selectedStatus, ['paid', 'pending', 'completed', 'cancelled'], true)) {
+        } elseif ($selectedStatus !== 'all' && in_array($selectedStatus, ['paid', 'pending', 'completed', 'cancelled', 'no_show'], true)) {
             $schedulesQuery->whereHas('bookings', fn ($q) => $q->where('status', $selectedStatus));
         }
 
@@ -103,7 +103,7 @@ class GetOwnerCalendarData
 
         if ($selectedStatus === 'available' || $selectedStatus === 'blocked') {
             $bookingsQuery->whereRaw('1 = 0');
-        } elseif ($selectedStatus !== 'all' && in_array($selectedStatus, ['paid', 'pending', 'completed', 'cancelled'], true)) {
+        } elseif ($selectedStatus !== 'all' && in_array($selectedStatus, ['paid', 'pending', 'completed', 'cancelled', 'no_show'], true)) {
             $bookingsQuery->where('status', $selectedStatus);
         }
 

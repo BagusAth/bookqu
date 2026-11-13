@@ -22,7 +22,8 @@ use LogicException;
  * 1. locks the tenant row first (decision 4), then the requested schedules;
  * 2. verifies every schedule belongs to the tenant and service before any cleanup (decision 5);
  * 3. reclaims stale pending bookings on those schedules through the Payment lifecycle (decision 6);
- * 4. re-evaluates each slot with AvailabilityRules::refusal(), the rule listings use.
+ * 4. re-evaluates each slot with AvailabilityRules::refusal(), the rule listings use,
+ *    including room for the participants and unit conflicts (ADR-0017 decision 5).
  *
  * A refusal throws SlotClaimRefused, so the caller's whole transaction rolls back.
  */
@@ -44,6 +45,7 @@ class ClaimSlots
         array $scheduleIds,
         ?string $date = null,
         ?int $excludeBookingId = null,
+        int $participants = 1,
     ): Collection {
         if (DB::transactionLevel() === 0) {
             throw new LogicException('ClaimSlots must run inside the booking operation\'s transaction.');
@@ -93,6 +95,7 @@ class ClaimSlots
                 tenantId: (int) $tenant->id,
                 serviceId: $serviceId,
                 date: $date,
+                participants: $participants,
             );
 
             if ($refusal === null && $applyPolicy

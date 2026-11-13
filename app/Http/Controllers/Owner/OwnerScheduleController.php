@@ -69,14 +69,14 @@ class OwnerScheduleController extends Controller
 
         $slotterboking = Schedule::where('schedules.idtenant', $idtenant)
             ->whereBetween('tanggal', [$awalminggu->format('Y-m-d'), $akhirminggu->format('Y-m-d')])
-            ->whereHas('bookings', fn ($q) => $q->whereIn('status', ['paid', 'completed']))
+            ->whereHas('bookings', fn ($q) => $q->whereIn('status', ['paid', 'completed', 'no_show']))
             ->count();
 
         $rasioterboking = $totalslot > 0 ? round(($slotterboking / $totalslot) * 100) : 0;
 
         $estimasirevenue = Booking::where('bookings.idtenant', $idtenant)
             ->whereBetween('tanggalbooking', [$awalminggu->format('Y-m-d'), $akhirminggu->format('Y-m-d')])
-            ->whereIn('status', ['paid', 'completed'])
+            ->whereIn('status', ['paid', 'completed', 'no_show'])
             ->with('layanan')
             ->get()
             ->sum(fn ($b) => $b->layanan->harga ?? 0);

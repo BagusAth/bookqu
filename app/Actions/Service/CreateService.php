@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Service;
 
+use App\Actions\Unit\AssignServiceUnits;
 use App\Domain\Subscription\EntitlementRules;
 use App\Models\Service;
 use App\Models\Subscription;
@@ -12,6 +13,7 @@ use App\Models\UsageLog;
 use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -54,7 +56,12 @@ class CreateService
             'is_popular' => (bool) ($data['is_popular'] ?? false),
             'is_active' => (bool) ($data['is_active'] ?? true),
             'image_url' => $imageUrl,
+            'kapasitas' => max(1, (int) ($data['kapasitas'] ?? 1)),
         ]);
+
+        if (! empty($data['unit_ids'])) {
+            DB::transaction(fn () => app(AssignServiceUnits::class)->execute($tenant, $service, $data['unit_ids']));
+        }
 
         if (! empty($data['resource_ids'])) {
             $service->resources()->sync($data['resource_ids']);

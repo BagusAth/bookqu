@@ -2,7 +2,7 @@
 id: BQ-151
 title: Booking seats and capacity per slot
 type: feature
-status: approved
+status: in-progress
 priority: P1
 phase: 4
 domain: booking
@@ -52,3 +52,5 @@ INV-BOOK-03/04/05.
 ## Evidence (fill when done)
 
 Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.
+
+Backend 2026-11-13: `booking_seats` with backfill (seat 0 per existing booking) replaces `unique_active_booking_slot` in one migration; `BookingSeats` keeps seats in step through the Booking model; `services.kapasitas` (existing display values reset to 1, Tech Lead to confirm) and `bookings.peserta`; `BookingRules::hasRoomFor`/`hasRoomSql` used by the claim, checkout validation and every listing (`seats_left`); participants in checkout, walk-in and reschedule; price per participant through `BookingPricing::quote`. Tests: `Booking/CapacityUnitsAndNoShowTest` (AC-KAL-05, capacity, seat index, per-participant charge), `Database/BookingSeatsMigrationTest` (backfill), `Actions/Booking/BookingSeatLockingTest` (MySQL, last seat). Remaining: capacity field in Layanan, participants in checkout/walk-in UI, remaining capacity shown in listings UI.

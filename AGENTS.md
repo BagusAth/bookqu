@@ -33,9 +33,9 @@ This section is the BookQu part of this file. Everything after it is the Laravel
 1. **Tenant isolation.** No tenant may read or change another tenant's data (INV-TEN-01). Tenant context comes only from `TenantMiddleware`/`TenantContext`; never trust a tenant id from the request.
 2. **User-supplied identifiers are untrusted.** Check existence, ownership, tenant and eligibility for every id, `order_id` and `booking_code`. A public identifier alone never grants access — require a customer access grant (ADR-0006).
 3. **Authorization is server-side.** A hidden menu, disabled button or Alpine state is not authorization. Team roles (Pemilik, Manajer, Kasir) are decided only by `TenantPermission` (ADR-0016, once implemented); never compare role names elsewhere.
-4. **Booking states** are `pending`, `paid`, `cancelled`, `completed`, plus `no_show` once ADR-0018 is implemented; change them only through `BookingState::canTransition` (INV-BOOK-01/02).
+4. **Booking states** are `pending`, `paid`, `cancelled`, `completed` and `no_show` (ADR-0018); change them only through `BookingState::canTransition` (INV-BOOK-01/02).
 5. **One occupancy rule.** "Slot occupied", "slot full" (capacity), unit conflicts (ADR-0017) and the pending hold (payment deadline + settlement margin, ADR-0009) live only in `App\Domain\Booking\BookingRules`; never re-implement them (INV-BOOK-03).
-6. **No double booking.** Booking writes lock the tenant and schedules in a transaction, evict stale pending first, and rely on the `unique_active_booking_slot` index, which ADR-0017 replaces with the seat index on `booking_seats` (INV-BOOK-04/05).
+6. **No double booking.** Booking writes lock the tenant and schedules in a transaction, evict stale pending first, and rely on the seat index on `booking_seats` (ADR-0017) as the final guard (INV-BOOK-04/05).
 7. **Payment is separate from booking.** Payment states are `pending`, `sukses`, `gagal`. Success comes only from a verified webhook or a server-side status query; repeated events must be idempotent (INV-PAY-*).
 8. **Provider code stays behind** `PaymentGatewayInterface` / `PaymentGatewayManager`.
 9. **Entitlement** (features, limits) is decided only by `EntitlementRules` (INV-SUB-01).

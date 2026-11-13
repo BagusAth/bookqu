@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * The `unique_active_booking_slot` index is the last line of defence against
+ * The seat index on `booking_seats` (ADR-0017) is the last line of defence against
  * double booking when two requests pass the occupancy check together (INV-BOOK-05).
  */
 class ActiveBookingSlotIndexTest extends TestCase
