@@ -2,7 +2,7 @@
 id: BQ-156
 title: API keys and signed webhooks for Pro
 type: feature
-status: proposed
+status: approved
 priority: P2
 phase: 4
 domain: tenancy
@@ -44,5 +44,13 @@ INV-TEN-01.
 ## Docs to update
 
 - `docs/domains/integrations.md`
+
+## Approval (Tech Lead, 2026-11-13)
+
+Approved to start after BQ-155, following ADR-0022 decisions 5-7.
+
+1. **Schema:** hashed API keys, webhook endpoints with their own secret, and a delivery log.
+2. **Limits:** API rate limit of 60 requests per minute per key; webhook retries up to 5 times with backoff, then the owner is notified; the delivery log is kept 30 days.
+3. **Rules:** SSRF refusal at save and at delivery, HMAC-SHA256 signatures with a timestamp and an event id, revocable keys, tenant scope on every read (INV-TEN-01), Pro through `EntitlementRules`, module gate until released.
 
 ## Evidence (fill when done)
