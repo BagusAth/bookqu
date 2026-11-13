@@ -3,19 +3,24 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\CreateBooking;
+use App\Actions\Booking\QuoteBooking;
 use App\Actions\Booking\ResumeCheckout;
 use App\Actions\Booking\StorefrontCheckoutState;
 use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingTimeRange;
+use App\Domain\Modules\ModuleRelease;
 use App\Domain\Schedule\PriceRules;
 use App\Http\Requests\Booking\CreateBookingRequest;
+use App\Http\Requests\Booking\QuoteBookingRequest;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
+use App\Models\Service;
 use App\Support\CustomerBookingRoutes;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 final class BookingCheckoutController extends StorefrontBookingController
 {
@@ -178,11 +183,12 @@ final class BookingCheckoutController extends StorefrontBookingController
                 ->withErrors(['jam' => 'Jadwal yang dipilih tidak boleh duplikat.']);
         }
 
-        // The page carries a fingerprint of what it showed; another tab or a price change makes it stale.
         $checkoutState = app(StorefrontCheckoutState::class);
         $fingerprint = $request->input('checkout_fingerprint');
-        if (is_string($fingerprint) && $fingerprint !== ''
-            && ! hash_equals((string) $checkoutState->fingerprintFor($tenant, $service, $selectedDate, $scheduleIds), $fingerprint)) {
+        $voucherCode = $request->validated('voucher_code');
+        $addOns = $request->validated('selected_addons') ?? [];
+        if (blank($voucherCode) && $addOns === [] && (int) ($request->validated('peserta') ?? 1) === 1
+            && filled($fingerprint) && ! hash_equals((string) $checkoutState->fingerprintFor($tenant, $service, $selectedDate, $scheduleIds), $fingerprint)) {
             return CustomerBookingRoutes::route('customer.booking.checkout', $slug_usaha)
                 ->withInput($request->except('checkout_fingerprint'))
                 ->with('error', 'Pilihan jadwal atau harga berubah, misalnya karena diubah di tab lain. Periksa kembali ringkasan pesanan sebelum melanjutkan.');
@@ -195,15 +201,23 @@ final class BookingCheckoutController extends StorefrontBookingController
             'catatan' => $request->input('catatan'),
         ];
 
-        $result = $createBooking->execute(
-            $tenant,
-            $service,
-            $selectedDate,
-            $selectedTimes,
-            $scheduleIds,
-            $customerData,
-            (int) ($request->validated('peserta') ?? 1),
-        );
+        try {
+            $result = $createBooking->execute(
+                $tenant,
+                $service,
+                $selectedDate,
+                $selectedTimes,
+                $scheduleIds,
+                $customerData,
+                (int) ($request->validated('peserta') ?? 1),
+                $voucherCode,
+                $addOns,
+                filled($fingerprint) ? $fingerprint : null,
+            );
+        } catch (ValidationException $e) {
+            return CustomerBookingRoutes::route('customer.booking.checkout', $slug_usaha)
+                ->withErrors($e->errors())->withInput($request->except('checkout_fingerprint'));
+        }
 
         // Handle slot conflict or quota error
         if (isset($result['error'])) {
@@ -227,11 +241,29 @@ final class BookingCheckoutController extends StorefrontBookingController
         return redirect()->away(app(CustomerAccessLinks::class)->entry($result['access']));
     }
 
-    public function validateVoucher(Request $request, string $slug_usaha)
+    public function validateVoucher(QuoteBookingRequest $request, string $slug_usaha, QuoteBooking $quoteBooking, StorefrontCheckoutState $checkoutState): JsonResponse
     {
-        return response()->json([
-            'valid' => false,
-            'message' => 'Fitur voucher saat ini belum aktif.',
-        ], 422);
+        $tenant = $this->resolveTenant($slug_usaha) ?? abort(404);
+        abort_unless(ModuleRelease::state('promos') === 'released'
+            || ModuleRelease::state('add-ons') === 'released', 404);
+        $draft = $this->drafts->read();
+        $service = $this->resolveService($tenant->id, (int) $draft->serviceId);
+        $ids = (array) ($draft->scheduleIds ?? $draft->scheduleId);
+        if (($draft->tenantId !== null && (int) $draft->tenantId !== (int) $tenant->id)
+            || $service === null || $draft->date === null || $ids === []) {
+            throw ValidationException::withMessages(['checkout' => 'Pilih layanan dan jadwal terlebih dahulu.']);
+        }
+        $schedules = Schedule::where('idtenant', $tenant->id)->where('idlayanan', $service->id)
+            ->whereDate('tanggal', $draft->date)->whereIn('id', $ids)->orderBy('jam_mulai')->get();
+        if ($schedules->count() !== count($ids)) {
+            throw ValidationException::withMessages(['checkout' => 'Pilihan jadwal tidak tersedia.']);
+        }
+        $schedules->first()?->load('layanan');
+        $currentService = $schedules->first()?->layanan;
+        abort_unless($currentService instanceof Service, 404);
+        $quote = $quoteBooking->execute($tenant, $currentService, $draft->date, $schedules, (int) ($request->validated('peserta') ?? 1),
+            $request->validated('voucher_code'), $request->validated('selected_addons') ?? []);
+
+        return response()->json(['quote' => $quote, 'checkout_fingerprint' => $checkoutState->fingerprintOfQuote($service, $draft->date, $quote)]);
     }
 }

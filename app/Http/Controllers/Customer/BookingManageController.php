@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\GetBookingTimeRanges;
 use App\Actions\Booking\GetInvoiceAmounts;
+use App\Actions\Booking\QuoteReschedule;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\CustomerAccess\ResolveManagementTarget;
 use App\Actions\CustomerAccess\ReviewBooking;
@@ -18,6 +19,9 @@ use App\Models\Booking;
 use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Models\Review;
+use App\Models\Schedule;
+use App\Models\Service;
+use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -216,10 +220,20 @@ class BookingManageController extends Controller
         $tenant = $booking->tenant;
         $service = $booking->layanan;
 
+        abort_unless($tenant instanceof Tenant && $service instanceof Service, 404);
         $slots = app(GetAvailableSchedules::class)
             ->getCustomerRescheduleSlots($tenant, $service, $selectedDate, (int) $booking->id);
 
-        return response()->json(['slots' => $slots]);
+        $schedules = Schedule::where('idtenant', $tenant->id)->where('idlayanan', $service->id)
+            ->whereDate('tanggal', $selectedDate)->whereIn('id', array_column($slots, 'id'))->get();
+        $prices = app(QuoteReschedule::class)->execute($booking, $tenant, $service, $selectedDate, $schedules);
+        $eligible = array_values(array_filter($slots, fn (array $slot): bool => isset($prices[$slot['id']])
+            && ($prices[$slot['id']]['price_difference'] ?? 0) <= 0));
+
+        return response()->json([
+            'slots' => $eligible,
+            'message' => count($eligible) < count($slots) ? 'Ada slot dengan harga lebih tinggi. Hubungi pemilik.' : null,
+        ]);
     }
 
     // ── Invoice ────────────────────────────────────────────────────────────────

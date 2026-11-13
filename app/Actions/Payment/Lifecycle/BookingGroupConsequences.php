@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Payment\Lifecycle;
 
+use App\Actions\Booking\BookingPricingReservations;
 use App\Actions\CustomerAccess\RequestManagementDelivery;
 use App\Actions\Owner\TenantBalanceLedger;
 use App\Domain\Booking\BookingState;
@@ -41,6 +42,7 @@ class BookingGroupConsequences implements PaymentConsequences
 
     public function deliver(Payment $payment, PaymentTransition $transition): void
     {
+        app(BookingPricingReservations::class)->finish($payment, paid: true);
         $paidBookings = [];
 
         foreach ($this->lockGroup($payment) as $booking) {
@@ -88,6 +90,7 @@ class BookingGroupConsequences implements PaymentConsequences
 
     public function withdraw(Payment $payment, PaymentTransition $transition): void
     {
+        app(BookingPricingReservations::class)->finish($payment, paid: false);
         $cancelledBookings = [];
 
         foreach ($this->lockGroup($payment) as $booking) {

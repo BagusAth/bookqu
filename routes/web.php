@@ -357,7 +357,7 @@ $bookingSubRoutes = function (string $namePrefix) {
         ->name($namePrefix.'process-checkout');
 
     Route::post('/booking/validate-voucher', [BookingCheckoutController::class, 'validateVoucher'])
-        ->middleware(['module:vouchers', 'subscription:promos'])
+        ->middleware('throttle:60,1')
         ->name($namePrefix.'validate-voucher');
 
     Route::get('/booking/payment/{payment:order_id}', [BookingPaymentController::class, 'showPayment'])

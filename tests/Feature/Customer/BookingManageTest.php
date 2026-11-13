@@ -218,6 +218,31 @@ class BookingManageTest extends TestCase
         $this->assertNotContains($closedDate, $offered);
     }
 
+    public function test_customer_cannot_move_to_a_more_expensive_slot_but_owner_can(): void
+    {
+        $date = now()->addDays(4)->toDateString();
+        $slot = Schedule::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+            'tanggal' => $date, 'jam_mulai' => '10:00', 'jam_selesai' => '10:59',
+            'harga_override' => 200000, 'status' => 'tersedia',
+        ]);
+        $original = $this->booking->idschedule;
+        $url = '/manage/'.$this->booking->booking_code.'/reschedule';
+        $this->grantCustomerAccess($this->booking)->getJson($url.'/slots?tanggal='.$date)
+            ->assertOk()->assertJsonCount(0, 'slots')->assertJsonPath('message', 'Ada slot dengan harga lebih tinggi. Hubungi pemilik.');
+        $this->post($url, ['tanggal' => $date, 'schedule_id' => $slot->id])->assertSessionHasErrors('reschedule');
+        $this->assertSame($original, $this->booking->fresh()->idschedule);
+
+        $owner = $this->tenant->user;
+        $this->actingAs($owner)->getJson(route('owner.bookings.available-slots', ['booking' => $this->booking->id, 'tanggal' => $date]))
+            ->assertOk()->assertJsonPath('slots.0.price_difference', 50000);
+        $this->postJson(route('owner.bookings.reschedule', $this->booking->id), ['tanggal' => $date, 'schedule_id' => $slot->id])
+            ->assertOk()->assertJsonPath('success', true);
+        $this->assertDatabaseHas('bookings', ['id' => $this->booking->id, 'idschedule' => $slot->id]);
+        $this->assertDatabaseHas('payments', ['id' => $this->payment->id, 'jumlah' => 150000]);
+        $this->assertSame(50000, $this->booking->logs()->where('event', 'rescheduled')->firstOrFail()->metadata['price_difference']);
+    }
+
     public function test_reschedule_onto_a_date_closed_by_the_owner_is_refused(): void
     {
         $closedDate = Carbon::tomorrow()->addDays(3)->format('Y-m-d');

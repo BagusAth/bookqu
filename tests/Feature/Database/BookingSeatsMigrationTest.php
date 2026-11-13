@@ -22,7 +22,10 @@ class BookingSeatsMigrationTest extends TestCase
 
     public function test_backfill_keeps_every_existing_booking_and_resets_capacity(): void
     {
-        Artisan::call('migrate:rollback', ['--step' => 2]);
+        Artisan::call('migrate:rollback', ['--path' => [
+            'database/migrations/2026_11_13_000002_create_units_tables.php',
+            'database/migrations/2026_11_13_000001_add_booking_seats_capacity_and_no_show.php',
+        ]]);
 
         $service = Service::factory()->create();
         DB::table('services')->where('id', $service->id)->update(['kapasitas' => 8]);

@@ -6,9 +6,7 @@ use App\Actions\CustomerAccess\RequestManagementDelivery;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
-use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingState;
-use App\Domain\Schedule\PriceRules;
 use App\Domain\Subscription\EntitlementRules;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -36,6 +34,7 @@ class CreateWalkInBooking
      *     email?: ?string,
      *     catatan?: ?string,
      *     metode?: ?string,
+     *     selected_addons?: list<array{id: int, quantity: int}>|null,
      *     peserta?: int|null
      * } $data
      */
@@ -52,6 +51,7 @@ class CreateWalkInBooking
 
         try {
             $booking = DB::transaction(function () use ($tenant, $data, $participants) {
+                ClaimSlots::lockTenant((int) $tenant->id);
                 // scope-bypass: only to read the schedule's service; ClaimSlots verifies tenant ownership under lock.
                 $serviceId = Schedule::withoutGlobalScopes()->whereKey($data['idschedule'])->value('idlayanan');
 
@@ -70,7 +70,7 @@ class CreateWalkInBooking
                     return null;
                 }
                 $slotDate = Carbon::parse($schedule->tanggal)->toDateString();
-                $quote = BookingPricing::quote($service, [$schedule], PriceRules::forTenant($tenant, $slotDate, $slotDate), $participants);
+                $quote = app(QuoteBooking::class)->execute($tenant, $service, $slotDate, [$schedule], $participants, selection: $data['selected_addons'] ?? []);
                 $amount = $quote['total'];
 
                 // Create Payment record for Walk-in
@@ -88,6 +88,9 @@ class CreateWalkInBooking
                     'hp_pembayar' => $data['nomorhp'],
                     'price_breakdown' => $quote,
                 ]);
+
+                app(BookingPricingReservations::class)->reserve($payment);
+                app(BookingPricingReservations::class)->finish($payment, paid: true);
 
                 // Create Booking record
                 $booking = Booking::create([
