@@ -57,13 +57,15 @@ class CreateBooking
         string $selectedDate,
         array $selectedTimes,
         array $scheduleIds,
-        array $customerData
+        array $customerData,
+        int $participants = 1,
     ): array {
         $slotCount = count($scheduleIds);
+        $participants = max(1, $participants);
 
         // Wrap slot availability check, atomic quota check, and booking/payment creation in a transaction
         try {
-            $result = DB::transaction(function () use ($tenant, $service, $selectedDate, $scheduleIds, $customerData, $slotCount) {
+            $result = DB::transaction(function () use ($tenant, $service, $selectedDate, $scheduleIds, $customerData, $slotCount, $participants) {
                 $wib = 'Asia/Jakarta';
 
                 // Tenant-first synchronization before any child row (ADR-0005 decision 4)
@@ -89,7 +91,7 @@ class CreateBooking
                         ->where('idtenant', $tenant->id)
                         ->whereYear('tanggalbooking', $dateCarbon->year)
                         ->whereMonth('tanggalbooking', $dateCarbon->month)
-                        ->whereIn('status', [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
+                        ->whereIn('status', [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED, BookingState::STATUS_NO_SHOW])
                         ->count();
 
                     $bookingQuota = EntitlementRules::canCreateBooking($subscription, $totalMonthlyBookings, $slotCount);
@@ -104,7 +106,7 @@ class CreateBooking
                 // 2. Claim the selected schedules: lock, verify ownership, reclaim stale pending
                 // bookings and re-check them with the rule listings use (ADR-0005)
                 $orderedSchedules = $this->claimSlots
-                    ->execute($tenant, (int) $service->id, $scheduleIds, $selectedDate)
+                    ->execute($tenant, (int) $service->id, $scheduleIds, $selectedDate, participants: $participants)
                     ->all();
 
                 // 3. Contiguous validation: Sort schedules by jam_mulai ascending
@@ -115,7 +117,7 @@ class CreateBooking
                 }
 
                 // 4. Quote through the single booking pricing rule, inside the lock (ADR-0019)
-                $quote = BookingPricing::quote($service, $orderedSchedules, PriceRules::forTenant($tenant, $selectedDate, $selectedDate));
+                $quote = BookingPricing::quote($service, $orderedSchedules, PriceRules::forTenant($tenant, $selectedDate, $selectedDate), $participants);
                 $hargaAkhir = $quote['total'];
 
                 $fullCatatan = trim($customerData['catatan'] ?? '');
@@ -140,6 +142,7 @@ class CreateBooking
                             'email' => $customerData['email'],
                             'tanggalbooking' => $selectedDate,
                             'jam' => $slotTime.':00',
+                            'peserta' => $participants,
                             'status' => BookingState::STATUS_PAID,
                             'idpayment' => $payment->id,
                             'booking_code' => Booking::generateBookingCode(),
@@ -181,6 +184,7 @@ class CreateBooking
                         'email' => $customerData['email'],
                         'tanggalbooking' => $selectedDate,
                         'jam' => $slotTime.':00',
+                        'peserta' => $participants,
                         'status' => BookingState::STATUS_PENDING,
                         'idpayment' => $payment->id,
                         'booking_code' => Booking::generateBookingCode(),

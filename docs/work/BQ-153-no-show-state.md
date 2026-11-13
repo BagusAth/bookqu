@@ -2,7 +2,7 @@
 id: BQ-153
 title: No-show booking state
 type: feature
-status: approved
+status: in-progress
 priority: P1
 phase: 4
 domain: booking
@@ -48,3 +48,5 @@ INV-BOOK-01/02.
 ## Evidence (fill when done)
 
 Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.
+
+Backend 2026-11-13: `BookingState::STATUS_NO_SHOW` (paid → no_show, terminal), `bookings.status` enum, seat index and occupancy include `no_show`; `MarkBookingNoShow` (tenant lock, whole payment group, after `BookingRules::sessionHasEnded`, payment untouched) through `owner.bookings.status`; status lists for quota, schedule reports and analytics count it. Tests: `Booking/CapacityUnitsAndNoShowTest` (time condition, group, payment unchanged, terminal, Kasir allowed). Remaining: panel action, labels in owner lists, no-show rate in Laporan (BQ-147).

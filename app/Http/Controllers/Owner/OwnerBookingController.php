@@ -213,6 +213,8 @@ class OwnerBookingController extends Controller
             'email' => ['nullable', 'email', 'max:100'],
             'catatan' => ['nullable', 'string', 'max:500'],
             'metode' => ['nullable', 'string', 'in:cash,transfer,manual,qris'],
+            // Room for the participants is decided by the claim (FR-BOOKING-021)
+            'peserta' => ['nullable', 'integer', 'min:1', 'max:9999'],
         ]);
 
         $validated = $validator->validate();

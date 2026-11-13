@@ -15,6 +15,7 @@ use App\Models\Service;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
 use Carbon\Carbon;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -47,23 +48,16 @@ class GetAvailableSchedules
         $cacheKey = $this->availabilityCache->getAvailabilityCacheKey((int) $tenant->id, (int) $service->id);
 
         $loadDates = function () use ($tenant, $service, $minDate, $maxDate, $todayStr, $nowTimeStr): array {
-            $rows = DB::table('schedules')
-                ->leftJoin('bookings', function ($join) {
-                    $join->on('schedules.id', '=', 'bookings.idschedule');
-                    BookingRules::applyOccupiesSlotCondition($join, 'bookings.');
-                })
-                ->where('schedules.idtenant', $tenant->id)
-                ->where('schedules.idlayanan', $service->id)
-                ->where('schedules.status', 'tersedia')
-                ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()])
-                ->groupBy('schedules.tanggal')
-                ->orderBy('schedules.tanggal')
-                ->select([
-                    'schedules.tanggal',
-                    DB::raw('count(distinct schedules.id) as total_slots'),
-                    DB::raw("count(distinct case when bookings.id is null and (substr(schedules.tanggal, 1, 10) > '{$todayStr}' or (substr(schedules.tanggal, 1, 10) = '{$todayStr}' and substr(schedules.jam_mulai, 1, 5) > '{$nowTimeStr}')) then schedules.id end) as available_slots"),
-                ])
-                ->get();
+            $rows = $this->countPerDate(
+                DB::table('schedules')
+                    ->where('schedules.idtenant', $tenant->id)
+                    ->where('schedules.idlayanan', $service->id)
+                    ->where('schedules.status', 'tersedia')
+                    ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()]),
+                BookingRules::hasRoomSql(),
+                $todayStr,
+                $nowTimeStr,
+            );
 
             $blockedDates = DB::table('owner_blocked_dates')
                 ->where('idtenant', $tenant->id)
@@ -85,20 +79,28 @@ class GetAvailableSchedules
             })->values()->all();
         };
 
-        if (! BookingRules::hasSlotPolicy($tenant)) {
+        $usesUnits = BookingRules::activeUnitIds((int) $tenant->id, (int) $service->id) !== [];
+        if (! BookingRules::hasSlotPolicy($tenant) && ! $usesUnits) {
             return Cache::remember($cacheKey, now()->addSeconds(60), $loadDates);
         }
 
+        // Booking policy and shared units need each slot evaluated; the counts come from the same
+        // rules the time selection uses.
         $dates = $loadDates();
         $counts = [];
-        $occupied = BookingRules::occupiedRanges($tenant, $service->id, $minDate->toDateString(), $maxDate->toDateString());
+        $hasPolicy = BookingRules::hasSlotPolicy($tenant);
+        $occupied = $hasPolicy ? BookingRules::occupiedRanges($tenant, $service->id, $minDate->toDateString(), $maxDate->toDateString()) : [];
+        $unitBusy = BookingRules::unitBusyRanges((int) $tenant->id, (int) $service->id, $minDate->toDateString(), $maxDate->toDateString());
+        [$hasRoom, $roomBindings] = BookingRules::hasRoomSql();
         $slots = DB::table('schedules')->where('idtenant', $tenant->id)->where('idlayanan', $service->id)
             ->where('status', 'tersedia')->whereBetween('tanggal', [$minDate->toDateString(), $maxDate->toDateString()])
-            ->get(['tanggal', 'jam_mulai', 'jam_selesai']);
+            ->whereRaw($hasRoom, $roomBindings)
+            ->get(['id', 'tanggal', 'jam_mulai', 'jam_selesai']);
         foreach ($slots as $slot) {
             $date = Carbon::parse($slot->tanggal)->toDateString();
             if (Carbon::parse($date.' '.$slot->jam_mulai, $wib)->gt($nowWib)
-                && BookingRules::slotAllowedByPolicy($tenant, $date, $slot->jam_mulai, $slot->jam_selesai, $nowWib, $occupied)) {
+                && (! $hasPolicy || BookingRules::slotAllowedByPolicy($tenant, $date, $slot->jam_mulai, $slot->jam_selesai, $nowWib, $occupied))
+                && ! BookingRules::slotHitsBusyUnit($unitBusy, (int) $slot->id, $date, (string) $slot->jam_mulai, (string) $slot->jam_selesai)) {
                 $counts[$date] = ($counts[$date] ?? 0) + 1;
             }
         }
@@ -117,7 +119,7 @@ class GetAvailableSchedules
      */
     public function countAvailableSlotsOnDate(Tenant $tenant, Service $service, string $date): int
     {
-        if (BookingRules::hasSlotPolicy($tenant)) {
+        if (BookingRules::hasSlotPolicy($tenant) || BookingRules::activeUnitIds((int) $tenant->id, (int) $service->id) !== []) {
             return count(array_filter($this->getTimeSlots($tenant, $service, $date), fn (array $slot) => $slot['is_available']));
         }
 
@@ -125,16 +127,13 @@ class GetAvailableSchedules
         $nowWib = Carbon::now($wib);
         $isToday = Carbon::parse($date, $wib)->isSameDay($nowWib);
 
+        [$hasRoom, $roomBindings] = BookingRules::hasRoomSql();
         $query = DB::table('schedules')
-            ->leftJoin('bookings', function ($join) {
-                $join->on('schedules.id', '=', 'bookings.idschedule');
-                BookingRules::applyOccupiesSlotCondition($join, 'bookings.');
-            })
             ->where('schedules.idtenant', $tenant->id)
             ->where('schedules.idlayanan', $service->id)
             ->where('schedules.status', 'tersedia')
             ->whereDate('schedules.tanggal', $date)
-            ->whereNull('bookings.id');
+            ->whereRaw($hasRoom, $roomBindings);
 
         if ($isToday) {
             $nowTimeStr = $nowWib->format('H:i');
@@ -155,16 +154,14 @@ class GetAvailableSchedules
         $cacheKey = $this->availabilityCache->getSchedulesCacheKey((int) $tenant->id, (int) $service->id, $dateStr);
 
         $scheduleRows = Cache::remember($cacheKey, now()->addSeconds(300), function () use ($tenant, $service, $dateStr) {
+            [$seatsTaken, $seatBindings] = BookingRules::seatsTakenSql();
+
             return DB::table('schedules')
-                ->leftJoin('bookings', function ($join) {
-                    $join->on('schedules.id', '=', 'bookings.idschedule');
-                    BookingRules::applyOccupiesSlotCondition($join, 'bookings.');
-                })
+                ->join('services', 'services.id', '=', 'schedules.idlayanan')
                 ->where('schedules.idtenant', $tenant->id)
                 ->where('schedules.idlayanan', $service->id)
                 ->where('schedules.status', 'tersedia')
                 ->whereDate('schedules.tanggal', $dateStr)
-                ->groupBy('schedules.id', 'schedules.jam_mulai', 'schedules.jam_selesai', 'schedules.tanggal', 'schedules.harga_override')
                 ->orderBy('schedules.jam_mulai')
                 ->select([
                     'schedules.id',
@@ -172,8 +169,9 @@ class GetAvailableSchedules
                     'schedules.jam_selesai',
                     'schedules.tanggal',
                     'schedules.harga_override',
-                    DB::raw('count(bookings.id) as booking_count'),
+                    'services.kapasitas',
                 ])
+                ->selectRaw("{$seatsTaken} as seats_taken", $seatBindings)
                 ->get()
                 ->map(function ($row) {
                     return [
@@ -182,7 +180,7 @@ class GetAvailableSchedules
                         'jam_selesai' => $row->jam_selesai,
                         'tanggal' => $row->tanggal,
                         'harga_override' => $row->harga_override !== null ? (float) $row->harga_override : null,
-                        'booking_count' => (int) $row->booking_count,
+                        'seats_left' => max(0, max(1, (int) $row->kapasitas) - (int) $row->seats_taken),
                     ];
                 })
                 ->all();
@@ -198,8 +196,10 @@ class GetAvailableSchedules
             ? BookingRules::occupiedRanges($tenant, $service->id, $dateStr, $dateStr) : [];
 
         $priceRules = PriceRules::forTenant($tenant, $dateStr, $dateStr);
+        // Outside the cache: another service's booking on a shared unit does not clear this cache.
+        $unitBusy = BookingRules::unitBusyRanges((int) $tenant->id, (int) $service->id, $dateStr, $dateStr);
 
-        return collect($scheduleRows)->map(function (array $row) use ($isToday, $isPastDate, $nowWib, $dateStr, $wib, $service, $tenant, $occupied, $priceRules) {
+        return collect($scheduleRows)->map(function (array $row) use ($isToday, $isPastDate, $nowWib, $dateStr, $wib, $service, $tenant, $occupied, $priceRules, $unitBusy) {
             $slotDateTime = Carbon::parse($dateStr.' '.$row['jam_mulai'], $wib);
             $hour = (int) $slotDateTime->format('H');
             $session = 'evening';
@@ -211,7 +211,8 @@ class GetAvailableSchedules
             }
 
             $isPast = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
-            $isBooked = $row['booking_count'] > 0;
+            $isBooked = $row['seats_left'] < 1
+                || BookingRules::slotHitsBusyUnit($unitBusy, $row['id'], $dateStr, (string) $row['jam_mulai'], (string) $row['jam_selesai']);
             $isAvailable = ! $isPast && ! $isBooked
                 && (! BookingRules::hasSlotPolicy($tenant)
                     || BookingRules::slotAllowedByPolicy($tenant, $dateStr, $row['jam_mulai'], $row['jam_selesai'], $nowWib, $occupied));
@@ -237,6 +238,7 @@ class GetAvailableSchedules
                 'is_disabled' => ! $isAvailable,
                 'is_booked' => $isBooked,
                 'is_past' => $isPast,
+                'seats_left' => $isBooked ? 0 : $row['seats_left'],
             ];
         })->values()->all();
     }
@@ -290,25 +292,21 @@ class GetAvailableSchedules
     ): array {
         $cacheKey = "tenant:{$tenant->id}:service:{$service->id}:schedules:{$selectedDate}:reschedule:{$excludeBookingId}";
 
-        return Cache::remember($cacheKey, now()->addSeconds(300), function () use ($tenant, $service, $selectedDate, $excludeBookingId) {
+        // scope-bypass: the booking being rescheduled, already resolved for this tenant
+        $participants = max(1, (int) Booking::withoutGlobalScopes()->whereKey($excludeBookingId)->value('peserta'));
+        $unitBusy = BookingRules::unitBusyRanges((int) $tenant->id, (int) $service->id, $selectedDate, $selectedDate, $excludeBookingId);
+
+        $rows = Cache::remember($cacheKey, now()->addSeconds(300), function () use ($tenant, $service, $selectedDate, $excludeBookingId, $participants) {
+            [$hasRoom, $roomBindings] = BookingRules::hasRoomSql('schedules', $participants, $excludeBookingId);
+
             return DB::table('schedules')
-                ->leftJoin('bookings', function ($join) use ($excludeBookingId) {
-                    $join->on('schedules.id', '=', 'bookings.idschedule')
-                        ->where('bookings.id', '!=', $excludeBookingId);
-                    BookingRules::applyOccupiesSlotCondition($join, 'bookings.');
-                })
                 ->where('schedules.idtenant', $tenant->id)
                 ->where('schedules.idlayanan', $service->id)
                 ->where('schedules.status', 'tersedia')
                 ->whereDate('schedules.tanggal', $selectedDate)
-                ->groupBy('schedules.id', 'schedules.jam_mulai', 'schedules.jam_selesai', 'schedules.tanggal')
                 ->orderBy('schedules.jam_mulai')
-                ->select([
-                    'schedules.id',
-                    'schedules.jam_mulai',
-                    'schedules.jam_selesai',
-                    DB::raw('count(bookings.id) as booking_count'),
-                ])
+                ->select(['schedules.id', 'schedules.jam_mulai', 'schedules.jam_selesai'])
+                ->selectRaw("case when {$hasRoom} then 0 else 1 end as booking_count", $roomBindings)
                 ->get()
                 ->map(function ($row) use ($selectedDate) {
                     $wib = 'Asia/Jakarta';
@@ -317,7 +315,7 @@ class GetAvailableSchedules
                     $isToday = $selectedDateCarbon->isSameDay($nowWib);
                     $isPastDate = $selectedDateCarbon->lt($nowWib->copy()->startOfDay());
                     $slotDateTime = Carbon::parse($selectedDate.' '.$row->jam_mulai, $wib);
-                    $isBooked = $row->booking_count > 0;
+                    $isBooked = (int) $row->booking_count > 0;
                     $isPast = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
                     $isAvailable = ! $isBooked && ! $isPast;
 
@@ -328,10 +326,21 @@ class GetAvailableSchedules
                         'is_available' => $isAvailable,
                         'is_booked' => $isBooked,
                         'is_past' => $isPast,
+                        'jam_selesai_raw' => (string) $row->jam_selesai,
                     ];
                 })
                 ->all();
         });
+
+        return array_map(function (array $slot) use ($unitBusy, $selectedDate): array {
+            if ($slot['is_available'] && BookingRules::slotHitsBusyUnit($unitBusy, $slot['id'], $selectedDate, $slot['jam_mulai'], $slot['jam_selesai_raw'])) {
+                $slot['is_available'] = false;
+                $slot['is_booked'] = true;
+            }
+            unset($slot['jam_selesai_raw']);
+
+            return $slot;
+        }, $rows);
     }
 
     /** @return array{availabilityPayload: list<array{date: string, total_slots: int, available_slots: int}>, minDate: string, maxDate: string} */
@@ -357,12 +366,8 @@ class GetAvailableSchedules
         );
 
         $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(60), function () use ($tenantId, $serviceId, $minDate, $maxDate, $booking, $todayStr, $nowTimeStr) {
-            $rows = DB::table('schedules')
-                ->leftJoin('bookings', function ($join) use ($booking) {
-                    $join->on('schedules.id', '=', 'bookings.idschedule')
-                        ->where('bookings.id', '!=', $booking->id); // Exclude current booking's slot
-                    BookingRules::applyOccupiesSlotCondition($join, 'bookings.');
-                })
+            // The booking being moved frees its own seats (excluded).
+            $slots = DB::table('schedules')
                 ->where('schedules.idtenant', $tenantId)
                 ->where('schedules.idlayanan', $serviceId)
                 ->where('schedules.status', 'tersedia')
@@ -373,15 +378,13 @@ class GetAvailableSchedules
                         ->where('owner_blocked_dates.idtenant', $booking->idtenant)
                         ->whereRaw('substr(owner_blocked_dates.tanggal, 1, 10) = substr(schedules.tanggal, 1, 10)');
                 })
-                ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()])
-                ->groupBy('schedules.tanggal')
-                ->orderBy('schedules.tanggal')
-                ->select([
-                    'schedules.tanggal',
-                    DB::raw('count(distinct schedules.id) as total_slots'),
-                ])
-                ->selectRaw('count(distinct case when bookings.id is null and (substr(schedules.tanggal, 1, 10) > ? or (substr(schedules.tanggal, 1, 10) = ? and substr(schedules.jam_mulai, 1, 5) > ?)) then schedules.id end) as available_slots', [$todayStr, $todayStr, $nowTimeStr])
-                ->get();
+                ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()]);
+            $rows = $this->countPerDate(
+                $slots,
+                BookingRules::hasRoomSql('schedules', max(1, (int) $booking->peserta), (int) $booking->id),
+                $todayStr,
+                $nowTimeStr,
+            );
 
             return $rows->map(function ($row) {
                 return [
@@ -397,5 +400,26 @@ class GetAvailableSchedules
             'minDate' => $minDate->toDateString(),
             'maxDate' => $maxDate->toDateString(),
         ];
+    }
+
+    /**
+     * Total and bookable slots per date. Room is evaluated per slot in a derived table, then
+     * grouped: MariaDB refuses the correlated seat sum inside an aggregate.
+     *
+     * @param  array{0: string, 1: list<mixed>}  $hasRoom  from BookingRules::hasRoomSql()
+     * @return Collection<int, \stdClass> rows of `tanggal`, `total_slots`, `available_slots`
+     */
+    private function countPerDate(Builder $slots, array $hasRoom, string $todayStr, string $nowTimeStr): Collection
+    {
+        [$roomSql, $roomBindings] = $hasRoom;
+        $slots->select(['schedules.tanggal', 'schedules.jam_mulai'])
+            ->selectRaw("case when {$roomSql} then 1 else 0 end as has_room", $roomBindings);
+
+        return DB::query()->fromSub($slots, 'slots')
+            ->groupBy('slots.tanggal')
+            ->orderBy('slots.tanggal')
+            ->select(['slots.tanggal', DB::raw('count(*) as total_slots')])
+            ->selectRaw('sum(case when slots.has_room = 1 and (substr(slots.tanggal, 1, 10) > ? or (substr(slots.tanggal, 1, 10) = ? and substr(slots.jam_mulai, 1, 5) > ?)) then 1 else 0 end) as available_slots', [$todayStr, $todayStr, $nowTimeStr])
+            ->get();
     }
 }

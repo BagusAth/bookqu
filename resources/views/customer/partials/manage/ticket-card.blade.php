@@ -60,7 +60,7 @@
                                 </svg>
                                 {{ $timeRange->durationMinutes() !== null ? $timeRange->durationMinutes().' menit' : '-' }}
                             </span>
-                            @if($booking->layanan?->kapasitas)
+                            @if(($booking->layanan?->kapasitas ?? 1) > 1)
                                 <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
                                     Maks {{ $booking->layanan->kapasitas }} orang
                                 </span>

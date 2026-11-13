@@ -49,7 +49,7 @@ class ExportScheduleReport
         $slotPrices = app(PriceSlots::class)->execute($tenant, $schedules);
 
         $totalSlots = $schedules->count();
-        $bookedSlots = $schedules->filter(fn ($s) => $s->bookings->whereIn('status', ['paid', 'completed'])->isNotEmpty())->count();
+        $bookedSlots = $schedules->filter(fn ($s) => $s->bookings->whereIn('status', ['paid', 'completed', 'no_show'])->isNotEmpty())->count();
         $availableSlots = (clone $schedulesQuery)
             ->where('status', 'tersedia')
             ->whereDoesntHave('bookings', fn ($q) => BookingRules::applyOccupiesSlotCondition($q, 'bookings.'))
@@ -82,7 +82,7 @@ class ExportScheduleReport
             fputcsv($file, CsvCell::row(['Tanggal', 'Jam Mulai', 'Jam Selesai', 'Layanan', 'Tarif (Rp)', 'Status Availability', 'Nama Tamu / Pemesan']));
 
             foreach ($schedules as $s) {
-                $b = $s->bookings->whereIn('status', ['paid', 'completed'])->first();
+                $b = $s->bookings->whereIn('status', ['paid', 'completed', 'no_show'])->first();
                 fputcsv($file, CsvCell::row([
                     $s->tanggal,
                     substr($s->jam_mulai, 0, 5),

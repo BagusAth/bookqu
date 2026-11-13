@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingRules;
+use App\Domain\Booking\BookingSeats;
 use App\Models\Scopes\TenantScope;
 use App\Traits\BelongsToTenant;
 use Carbon\Carbon;
@@ -29,6 +30,7 @@ class Booking extends Model
         'email',
         'tanggalbooking',
         'jam',
+        'peserta',
         'status',
         'idpayment',
         'catatan',
@@ -47,8 +49,16 @@ class Booking extends Model
         return [
             'tanggalbooking' => 'date',
             'customer_access_version' => 'integer',
+            'peserta' => 'integer',
             'rescheduled_from_date' => 'date',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Seats follow the booking so the seat index guards every writer (ADR-0017 decision 2).
+        static::created(fn (Booking $booking) => BookingSeats::place($booking));
+        static::updated(fn (Booking $booking) => BookingSeats::sync($booking));
     }
 
     // ── Relationships ──────────────────────────────────────────────────────────

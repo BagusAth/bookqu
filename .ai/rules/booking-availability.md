@@ -17,13 +17,13 @@ paths:
 Context: `docs/domains/booking.md`, `docs/domains/schedule.md`.
 
 ## Use the single occupancy rule
-Decide "slot occupied" only through `BookingRules::isSlotOccupied()` / `applyOccupiesSlotCondition()` or `Booking::scopeOccupiesSlot()`. Capacity ("slot full") and unit conflicts belong to the same rule once ADR-0017 is implemented. Never write `subMinutes(15)` or status lists such as `['pending','paid','completed']` for occupancy (INV-BOOK-03).
+Decide "slot occupied" only through `BookingRules::isSlotOccupied()` / `applyOccupiesSlotCondition()` or `Booking::scopeOccupiesSlot()`. Capacity ("slot full", `BookingRules::hasRoomFor` / `hasRoomSql`) and unit conflicts (`BookingRules::unitConflict` / `slotHitsBusyUnit`) belong to the same rule (ADR-0017). Never write `subMinutes(15)` or status lists such as `['pending','paid','completed']` for occupancy (INV-BOOK-03).
 
 ## Use the single availability rule
 Decide "bookable" through `AvailabilityRules` / `GetAvailableSchedules`, which cover status, past time, blocked dates, inactive service and occupancy (INV-SCH-01). Calendar, reports, owner and customer reschedule must not define their own.
 
 ## Booking writes follow the locked pattern
-Inside one `DB::transaction`, claim slots with `App\Actions\Schedule\ClaimSlots` (ADR-0005). It locks the tenant row first and then the schedules, verifies ownership, reclaims stale pending bookings through the Payment lifecycle, and re-checks with `AvailabilityRules::refusal()`. A refusal throws `SlotClaimRefused`, so the operation rolls back; catch it outside the transaction. Any other writer that changes what a tenant's slots accept (schedules, closed dates, services, cancellation) calls `ClaimSlots::lockTenant()` first. Never remove the `unique_active_booking_slot` index except in the ADR-0017 migration that replaces it with the `booking_seats` seat index (INV-BOOK-04/05).
+Inside one `DB::transaction`, claim slots with `App\Actions\Schedule\ClaimSlots` (ADR-0005). It locks the tenant row first and then the schedules, verifies ownership, reclaims stale pending bookings through the Payment lifecycle, and re-checks with `AvailabilityRules::refusal()`. A refusal throws `SlotClaimRefused`, so the operation rolls back; catch it outside the transaction. Any other writer that changes what a tenant's slots accept (schedules, closed dates, services, cancellation) calls `ClaimSlots::lockTenant()` first. The seat index on `booking_seats` (`active_idschedule`, `seat_no`) is the final guard; seats follow bookings through `BookingSeats` on the Booking model, so never write bookings with query-builder inserts or updates (INV-BOOK-04/05).
 
 ## Status changes go through BookingState
 Use `BookingState::canTransition()`; cancellation goes through `CancelBooking`, rescheduling through `RescheduleBooking` (INV-BOOK-02).

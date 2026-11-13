@@ -43,6 +43,7 @@ use App\Http\Controllers\Owner\OwnerSettingController;
 use App\Http\Controllers\Owner\OwnerShellController;
 use App\Http\Controllers\Owner\OwnerSubscriptionController;
 use App\Http\Controllers\Owner\OwnerTeamController;
+use App\Http\Controllers\Owner\OwnerUnitController;
 use App\Http\Controllers\Owner\OwnerVoucherController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
@@ -176,6 +177,13 @@ Route::prefix('owner')
             Route::post('/bookings/{booking}/reschedule', [OwnerBookingController::class, 'reschedule'])->name('owner.bookings.reschedule');
             Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware(['module:analytics', 'subscription:analytics']);
             Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware(['module:analytics', 'subscription:analytics']);
+            // BQ-152: units shared by services (Pro, FR-UNIT); hidden until the module is released
+            Route::middleware(['module:units', 'subscription:units'])->group(function () {
+                Route::get('/units', [OwnerUnitController::class, 'index'])->name('owner.units');
+                Route::post('/units', [OwnerUnitController::class, 'store'])->name('owner.units.store');
+                Route::put('/units/{unit}', [OwnerUnitController::class, 'update'])->name('owner.units.update');
+                Route::delete('/units/{unit}', [OwnerUnitController::class, 'destroy'])->name('owner.units.destroy');
+            });
             Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
             Route::get('/landing-page', [OwnerLandingPageController::class, 'index'])->name('owner.landing-page')->middleware(['module:landing-page', 'subscription:landing-page']);
             Route::post('/landing-page', [OwnerLandingPageController::class, 'store'])->name('owner.landing-page.store')->middleware(['module:landing-page', 'subscription:landing-page']);

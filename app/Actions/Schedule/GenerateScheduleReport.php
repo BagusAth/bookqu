@@ -50,7 +50,7 @@ class GenerateScheduleReport
 
         $totalSlots = (clone $schedulesQuery)->count();
         $bookedSlots = (clone $schedulesQuery)
-            ->whereHas('bookings', fn ($q) => $q->whereIn('status', ['paid', 'completed']))
+            ->whereHas('bookings', fn ($q) => $q->whereIn('status', ['paid', 'completed', 'no_show']))
             ->count();
         $availableSlots = (clone $schedulesQuery)
             ->where('status', 'tersedia')
@@ -59,7 +59,7 @@ class GenerateScheduleReport
         $utilizationRate = $totalSlots > 0 ? round(($bookedSlots / $totalSlots) * 100, 1) : 0;
 
         $bookingsQuery = Booking::where('idtenant', $tenant->id)
-            ->whereIn('status', ['paid', 'completed'])
+            ->whereIn('status', ['paid', 'completed', 'no_show'])
             ->with('layanan');
 
         if ($startDate && $endDate) {

@@ -35,7 +35,8 @@ class CreateWalkInBooking
      *     nomorhp: string,
      *     email?: ?string,
      *     catatan?: ?string,
-     *     metode?: ?string
+     *     metode?: ?string,
+     *     peserta?: int|null
      * } $data
      */
     public function execute(Tenant $tenant, array $data): ?Booking
@@ -47,8 +48,10 @@ class CreateWalkInBooking
             ]);
         }
 
+        $participants = max(1, (int) ($data['peserta'] ?? 1));
+
         try {
-            $booking = DB::transaction(function () use ($tenant, $data) {
+            $booking = DB::transaction(function () use ($tenant, $data, $participants) {
                 // scope-bypass: only to read the schedule's service; ClaimSlots verifies tenant ownership under lock.
                 $serviceId = Schedule::withoutGlobalScopes()->whereKey($data['idschedule'])->value('idlayanan');
 
@@ -58,7 +61,7 @@ class CreateWalkInBooking
 
                 // Owner walk-ins use the same claim as customer bookings (ADR-0005 decision 2)
                 $schedule = app(ClaimSlots::class)
-                    ->execute($tenant, (int) $serviceId, [(int) $data['idschedule']])
+                    ->execute($tenant, (int) $serviceId, [(int) $data['idschedule']], participants: $participants)
                     ->first();
 
                 // Walk-ins use the same pricing rule as the storefront (ADR-0019 decision 6)
@@ -67,7 +70,7 @@ class CreateWalkInBooking
                     return null;
                 }
                 $slotDate = Carbon::parse($schedule->tanggal)->toDateString();
-                $quote = BookingPricing::quote($service, [$schedule], PriceRules::forTenant($tenant, $slotDate, $slotDate));
+                $quote = BookingPricing::quote($service, [$schedule], PriceRules::forTenant($tenant, $slotDate, $slotDate), $participants);
                 $amount = $quote['total'];
 
                 // Create Payment record for Walk-in
@@ -97,6 +100,7 @@ class CreateWalkInBooking
                     'email' => $data['email'] ?? null,
                     'tanggalbooking' => $schedule->tanggal,
                     'jam' => $schedule->jam_mulai,
+                    'peserta' => $participants,
                     'status' => BookingState::STATUS_PAID,
                     'catatan' => $data['catatan'] ?? 'Walk-in booking via Owner Calendar',
                 ]);

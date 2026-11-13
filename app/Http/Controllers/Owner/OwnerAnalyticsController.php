@@ -50,7 +50,7 @@ class OwnerAnalyticsController extends Controller
                 'bookingbulanini' => 0,
                 'persenbooking' => 0,
                 'toplayanan' => collect(),
-                'distribusistatus' => ['completed' => 0, 'paid' => 0, 'pending' => 0, 'cancelled' => 0],
+                'distribusistatus' => ['completed' => 0, 'paid' => 0, 'pending' => 0, 'cancelled' => 0, 'no_show' => 0],
                 'revenueperLayanan' => collect(),
                 'bookingperhari' => array_fill(0, 30, 0),
                 'labelhari' => array_map(fn ($i) => Carbon::now()->subDays(29 - $i)->format('d M'), range(0, 29)),
@@ -98,13 +98,14 @@ class OwnerAnalyticsController extends Controller
             'paid' => Booking::where('idtenant', $idtenant)->where('status', 'paid')->count(),
             'pending' => Booking::where('idtenant', $idtenant)->where('status', 'pending')->count(),
             'cancelled' => Booking::where('idtenant', $idtenant)->where('status', 'cancelled')->count(),
+            'no_show' => Booking::where('idtenant', $idtenant)->where('status', 'no_show')->count(),
         ];
 
         // ── Revenue per layanan ──
         $revenueperLayanan = Service::where('services.idtenant', $idtenant)
             ->select('services.id', 'services.namalayanan', 'services.harga')
             ->withCount(['bookings as bookingbayar' => function ($q) {
-                $q->whereIn('status', ['paid', 'completed']);
+                $q->whereIn('status', ['paid', 'completed', 'no_show']);
             }])
             ->orderByDesc('bookingbayar')
             ->limit(6)
@@ -122,7 +123,7 @@ class OwnerAnalyticsController extends Controller
 
         // ── Conversion rate ──
         $totalsemuabooking = Booking::where('idtenant', $idtenant)->count();
-        $totalbayar = Booking::where('idtenant', $idtenant)->whereIn('status', ['paid', 'completed'])->count();
+        $totalbayar = Booking::where('idtenant', $idtenant)->whereIn('status', ['paid', 'completed', 'no_show'])->count();
         $tingkatkonversi = $totalsemuabooking > 0 ? round(($totalbayar / $totalsemuabooking) * 100, 1) : 0;
 
         return view('owner.analytics', compact(

@@ -2,7 +2,7 @@
 id: BQ-152
 title: Unit page and unit conflicts across services
 type: feature
-status: approved
+status: in-progress
 priority: P1
 phase: 4
 domain: booking
@@ -50,3 +50,5 @@ INV-BOOK-03/04.
 ## Evidence (fill when done)
 
 Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.
+
+Backend 2026-11-13: `units` and `service_unit` (existing `resources` rows copied once); `BookingRules::unitConflict`/`unitBusyRanges`/`unitOverlaps` as the one conflict rule, checked inside `ClaimSlots` (checkout, walk-in, reschedule) and in listings; `SaveUnit`, `DeleteUnit`, `AssignServiceUnits` (tenant lock, refuse new overlaps, list bookings), `GetUnitsOverview` (existing conflicts); routes `owner.units*` behind `module:units` (still hidden) and `subscription:units`; `UnitPolicy`. Tests: `Booking/CapacityUnitsAndNoShowTest` (AC-UNT-01..03, isolation), `Actions/Booking/BookingSeatLockingTest` (MySQL). Remaining: Unit page, unit field in Layanan, Kalender filter, unit image.
