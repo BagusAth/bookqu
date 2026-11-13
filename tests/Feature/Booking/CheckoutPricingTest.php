@@ -60,7 +60,8 @@ class CheckoutPricingTest extends TestCase
         // scope-bypass: this test inspects the payment it created after HTTP clears tenant context.
         $payment = Payment::withoutGlobalScopes()->where('idtenant', $tenant->id)->firstOrFail();
         $this->assertSame(85000, (int) $payment->jumlah);
-        $this->assertSame($quote->json('quote'), $payment->price_breakdown);
+        // The stored breakdown equals the quote; MySQL JSON columns return object keys in their own order.
+        $this->assertSame($this->sortedKeys($quote->json('quote')), $this->sortedKeys($payment->price_breakdown));
         $this->assertDatabaseHas('additional_items', ['id' => $item->id, 'stock' => 1]);
         $this->assertDatabaseHas('vouchers', ['id' => $voucher->id, 'used_count' => 0]);
 
@@ -84,5 +85,25 @@ class CheckoutPricingTest extends TestCase
     public static function outcomes(): array
     {
         return ['duplicate success' => [true], 'expiry then late success' => [false]];
+    }
+
+    /**
+     * The same data with every object's keys in one order; list order and values stay as they are.
+     *
+     * @param  array<array-key, mixed>|null  $data
+     * @return array<array-key, mixed>|null
+     */
+    private function sortedKeys(?array $data): ?array
+    {
+        if ($data === null) {
+            return null;
+        }
+
+        $data = array_map(fn (mixed $value): mixed => is_array($value) ? $this->sortedKeys($value) : $value, $data);
+        if (! array_is_list($data)) {
+            ksort($data);
+        }
+
+        return $data;
     }
 }
