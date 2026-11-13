@@ -69,7 +69,7 @@ class OwnerUiAuditTest extends TestCase
         });
 
         $this->actingAs($tenant->user)->get(route('owner.bookings'))->assertOk()
-            ->assertSee($booking->namapelanggan)->assertSee('Standard Service');
+            ->assertSee($booking->namapelanggan)->assertSeeText('Layanan dihapus');
         $this->get(route('owner.settings'))->assertOk()->assertSee($tenant->user->email);
     }
 }

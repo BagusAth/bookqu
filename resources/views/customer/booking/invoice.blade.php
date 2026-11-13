@@ -157,7 +157,7 @@
                         <span class="text-[#64748B]">Jam Sesi ({{ $allBookings->count() }} Slot)</span>
                         <div class="text-right">
                             @foreach ($allBookings as $bItem)
-                                <span class="font-bold text-[#4F46E5] block">{{ substr($bItem->jam, 0, 5) }} WIB @if($allBookings->count() > 1)<span class="text-xs text-[#64748B] font-mono">({{ $bItem->booking_code }})</span>@endif</span>
+                                <span class="font-bold text-[#4F46E5] block">{{ substr($bItem->jam, 0, 5) }} WIB @if($allBookings->count() > 1)<span class="text-xs text-[#64748B] font-mono">({{ $bItem->booking_code }})</span>@endif @isset($invoiceSlotAmounts[$bItem->id]) · {{ $invoiceSlotAmounts[$bItem->id] }} @endisset</span>
                             @endforeach
                         </div>
                     </div>

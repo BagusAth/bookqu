@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\GetBookingTimeRanges;
+use App\Actions\Booking\GetInvoiceAmounts;
 use App\Actions\CustomerAccess\CancelCheckoutPayment;
 use App\Actions\Payment\OutcomeIntakeResult;
 use App\Actions\Payment\PaymentOutcomeIntake;
@@ -171,6 +172,6 @@ final class BookingPaymentController extends StorefrontBookingController
 
         $booking = $bookings->first();
 
-        return view('customer.booking.invoice', app(GetBookingTimeRanges::class)->execute($bookings) + compact('tenant', 'payment', 'bookings', 'booking'));
+        return view('customer.booking.invoice', app(GetInvoiceAmounts::class)->execute($payment) + app(GetBookingTimeRanges::class)->execute($bookings) + compact('tenant', 'payment', 'bookings', 'booking'));
     }
 }

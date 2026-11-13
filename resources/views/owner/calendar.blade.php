@@ -13,6 +13,11 @@
         mobileWeekDay: '{{ $currentDate->toDateString() }}',
 
         openDetail(slot) {
+            if (slot.is_booking && slot.raw_booking_id) {
+                const url = @js(route('owner.bookings.panel', ['booking' => 'BOOKING_ID'])).replace('BOOKING_ID', slot.raw_booking_id);
+                this.$dispatch('open-booking-panel', { url, trigger: document.activeElement });
+                return;
+            }
             this.selectedSlot = slot;
             this.walkinMode = false;
             this.modalOpen = true;
@@ -34,9 +39,6 @@
     {{-- Detail Modal Drawer --}}
     @include('owner.partials.calendar.detail-modal')
 </div>
-
-{{-- Owner Reschedule Booking Modal Component --}}
-<x-owner.modal-reschedule-booking />
 
 <script>
 function updateCalendarFilter(key, val) {
