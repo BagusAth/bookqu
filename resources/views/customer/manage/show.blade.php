@@ -12,7 +12,7 @@
     @vite('resources/css/app.css')
     <link rel="stylesheet" href="{{ asset('css/booking-manage.css') }}" />
 </head>
-<body class="bg-slate-50 font-sans text-slate-900 antialiased min-h-screen flex flex-col" x-data="manageBooking()" x-init="init()">
+<body class="bg-slate-50 font-sans text-slate-900 antialiased min-h-screen flex flex-col" x-data="manageBooking()">
 
     @php
         // BQ-114: the range comes from the booked slot (GetBookingTimeRanges), not the current service duration
@@ -97,9 +97,6 @@
 
     </main>
 
-    {{-- ── MODERN CANCEL CONFIRMATION MODAL ── --}}
-    @include('customer.partials.manage.cancel-modal')
-
     {{-- ── Minimalist Clean Footer ── --}}
     <footer class="border-t border-slate-200/80 bg-white py-6 mt-12 text-center text-xs text-slate-500">
         <div class="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-3 px-4 sm:px-6">
@@ -115,19 +112,12 @@
     <script>
         function manageBooking() {
             return {
-                showCancelModal: false,
-                isCancelling:    false,
                 copied:          false,
                 copyCode(code) {
                     navigator.clipboard.writeText(code).then(() => {
                         this.copied = true;
                         setTimeout(() => this.copied = false, 2000);
                     }).catch(() => {});
-                },
-                init() {
-                    @if($errors->has('cancel'))
-                        this.showCancelModal = true;
-                    @endif
                 },
             };
         }

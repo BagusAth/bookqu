@@ -7,6 +7,7 @@ use App\Actions\Booking\GetInvoiceAmounts;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\CustomerAccess\ResolveManagementTarget;
 use App\Actions\CustomerAccess\ReviewBooking;
+use App\Actions\Payment\GetCustomerRefundForm;
 use App\Actions\Payment\RequestBookingRefund;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Domain\Booking\BookingRules;
@@ -38,7 +39,7 @@ class BookingManageController extends Controller
     /**
      * Show payment-level group management page.
      */
-    public function showPaymentGroup(Request $request, string $orderId)
+    public function showPaymentGroup(Request $request, string $orderId, GetCustomerRefundForm $refundForm)
     {
         $payment = $this->targets->payment($this->access($request), $orderId);
         $bookings = $payment->bookings;
@@ -55,12 +56,13 @@ class BookingManageController extends Controller
 
         $isMultiSlot = $bookings->count() > 1;
 
-        return view('customer.manage.payment-show', app(GetBookingTimeRanges::class)->execute($bookings) + [
-            'payment' => $payment,
-            'bookings' => $bookings,
-            'tenant' => $tenant,
-            'isMultiSlot' => $isMultiSlot,
-        ]);
+        return view('customer.manage.payment-show', app(GetBookingTimeRanges::class)->execute($bookings)
+            + $refundForm->execute($this->access($request), $bookings->first()) + [
+                'payment' => $payment,
+                'bookings' => $bookings,
+                'tenant' => $tenant,
+                'isMultiSlot' => $isMultiSlot,
+            ]);
     }
 
     /**
@@ -88,7 +90,7 @@ class BookingManageController extends Controller
 
     // ── Shared token validation (Scoped) ───────────────────────────────────────
 
-    public function show(Request $request, string $bookingCode)
+    public function show(Request $request, string $bookingCode, GetCustomerRefundForm $refundForm)
     {
         $booking = $this->targets->booking($this->access($request), $bookingCode, AccessOperation::Manage);
 
@@ -100,30 +102,25 @@ class BookingManageController extends Controller
         }
 
         $isMultiSlot = $booking->isMultiSlot();
-        $canCancel = ! $isMultiSlot && $booking->canBeCancelled();
         $canReschedule = ! $isMultiSlot && $booking->canBeRescheduled();
 
         // Build cancel deadline message
-        $cancelDeadline = null;
         $rescheduleDeadline = null;
         if ($booking->status === 'paid') {
             $tenant = $booking->tenant;
             $bookingDateTime = Carbon::parse($booking->tanggalbooking->toDateString().' '.$booking->jam);
-            $cancelHours = $tenant->cancel_before_hours ?? 24;
             $rescheduleHours = $tenant->reschedule_before_hours ?? 24;
 
-            $cancelDeadline = $bookingDateTime->copy()->subHours($cancelHours);
             $rescheduleDeadline = $bookingDateTime->copy()->subHours($rescheduleHours);
         }
 
-        return view('customer.manage.show', app(GetBookingTimeRanges::class)->execute([$booking]) + [
-            'booking' => $booking,
-            'isMultiSlot' => $isMultiSlot,
-            'canCancel' => $canCancel,
-            'canReschedule' => $canReschedule,
-            'cancelDeadline' => $cancelDeadline,
-            'rescheduleDeadline' => $rescheduleDeadline,
-        ]);
+        return view('customer.manage.show', app(GetBookingTimeRanges::class)->execute([$booking])
+            + $refundForm->execute($this->access($request), $booking) + [
+                'booking' => $booking,
+                'isMultiSlot' => $isMultiSlot,
+                'canReschedule' => $canReschedule,
+                'rescheduleDeadline' => $rescheduleDeadline,
+            ]);
     }
 
     // ── Cancel booking ─────────────────────────────────────────────────────────

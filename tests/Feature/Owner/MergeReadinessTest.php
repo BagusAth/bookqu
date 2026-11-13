@@ -35,32 +35,30 @@ class MergeReadinessTest extends TestCase
         $this->actingAs($this->owner);
     }
 
-    public function test_all_four_owner_cancellation_forms_preserve_a_required_reason_through_confirmation(): void
+    public function test_shared_owner_cancellation_form_requires_reason_and_confirms_before_submit(): void
     {
         $slot = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id]);
-        Booking::factory()->create([
+        $booking = Booking::factory()->create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
             'idschedule' => $slot->id,
             'status' => 'paid',
         ]);
 
-        $count = 0;
-        foreach (['/owner/bookings', '/owner/calendar'] as $url) {
-            $html = $this->get($url)->assertOk()->getContent();
-            preg_match_all('/<form\b[^>]*>.*?<\/form>/s', $html, $forms);
-            foreach ($forms[0] as $form) {
-                if (! str_contains($form, 'name="status" value="cancelled"')) {
-                    continue;
-                }
-                $count++;
-                $this->assertMatchesRegularExpression('/<textarea\b[^>]*name="reason"[^>]*required[^>]*maxlength="500"/', $form);
-                $this->assertStringContainsString('$el.form.reportValidity()', $form);
-                $this->assertStringContainsString('formId:', $form);
-            }
-            $this->assertStringContainsString('form.requestSubmit()', $html);
-        }
-        $this->assertSame(4, $count);
+        $panelUrl = route('owner.bookings.panel', $booking->id);
+        $this->get(route('owner.bookings'))->assertOk()->assertSee('open-booking-panel');
+        $this->get(route('owner.calendar'))->assertOk()->assertSee('open-booking-panel')
+            ->assertSee('action.reason.name')->assertSee('required maxlength="500"', false)
+            ->assertSee('form.reportValidity()', false)->assertSee('form.requestSubmit()', false);
+
+        $response = $this->getJson($panelUrl)->assertOk();
+        $cancel = collect($response->json('actions'))->firstWhere('label', 'Batalkan booking');
+        $this->assertSame('cancelled', $cancel['fields']['status']);
+        $this->assertSame('reason', $cancel['reason']['name']);
+        $this->assertSame('Batalkan booking?', $cancel['confirm']['title']);
+
+        $this->patch($cancel['url'], ['status' => 'cancelled'])->assertSessionHasErrors('error');
+        $this->assertSame('paid', $booking->fresh()->status);
     }
 
     public function test_service_duration_and_bulk_slot_interval_must_be_multiples_of_five(): void

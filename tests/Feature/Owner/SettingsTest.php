@@ -37,7 +37,7 @@ class SettingsTest extends TestCase
     {
         $response = $this->actingAs($this->user)->get('/owner/settings');
         $response->assertStatus(200);
-        $response->assertSee('Business Profile');
+        $response->assertSeeText('Profil Bisnis');
     }
 
     public function test_owner_can_update_business_profile(): void
