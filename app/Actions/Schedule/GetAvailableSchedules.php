@@ -15,6 +15,7 @@ use App\Models\Service;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
 use Carbon\Carbon;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -47,17 +48,16 @@ class GetAvailableSchedules
         $cacheKey = $this->availabilityCache->getAvailabilityCacheKey((int) $tenant->id, (int) $service->id);
 
         $loadDates = function () use ($tenant, $service, $minDate, $maxDate, $todayStr, $nowTimeStr): array {
-            [$hasRoom, $roomBindings] = BookingRules::hasRoomSql();
-            $rows = DB::table('schedules')
-                ->where('schedules.idtenant', $tenant->id)
-                ->where('schedules.idlayanan', $service->id)
-                ->where('schedules.status', 'tersedia')
-                ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()])
-                ->groupBy('schedules.tanggal')
-                ->orderBy('schedules.tanggal')
-                ->select(['schedules.tanggal', DB::raw('count(distinct schedules.id) as total_slots')])
-                ->selectRaw("count(distinct case when {$hasRoom} and (substr(schedules.tanggal, 1, 10) > ? or (substr(schedules.tanggal, 1, 10) = ? and substr(schedules.jam_mulai, 1, 5) > ?)) then schedules.id end) as available_slots", [...$roomBindings, $todayStr, $todayStr, $nowTimeStr])
-                ->get();
+            $rows = $this->countPerDate(
+                DB::table('schedules')
+                    ->where('schedules.idtenant', $tenant->id)
+                    ->where('schedules.idlayanan', $service->id)
+                    ->where('schedules.status', 'tersedia')
+                    ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()]),
+                BookingRules::hasRoomSql(),
+                $todayStr,
+                $nowTimeStr,
+            );
 
             $blockedDates = DB::table('owner_blocked_dates')
                 ->where('idtenant', $tenant->id)
@@ -367,8 +367,7 @@ class GetAvailableSchedules
 
         $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(60), function () use ($tenantId, $serviceId, $minDate, $maxDate, $booking, $todayStr, $nowTimeStr) {
             // The booking being moved frees its own seats (excluded).
-            [$hasRoom, $roomBindings] = BookingRules::hasRoomSql('schedules', max(1, (int) $booking->peserta), (int) $booking->id);
-            $rows = DB::table('schedules')
+            $slots = DB::table('schedules')
                 ->where('schedules.idtenant', $tenantId)
                 ->where('schedules.idlayanan', $serviceId)
                 ->where('schedules.status', 'tersedia')
@@ -379,15 +378,13 @@ class GetAvailableSchedules
                         ->where('owner_blocked_dates.idtenant', $booking->idtenant)
                         ->whereRaw('substr(owner_blocked_dates.tanggal, 1, 10) = substr(schedules.tanggal, 1, 10)');
                 })
-                ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()])
-                ->groupBy('schedules.tanggal')
-                ->orderBy('schedules.tanggal')
-                ->select([
-                    'schedules.tanggal',
-                    DB::raw('count(distinct schedules.id) as total_slots'),
-                ])
-                ->selectRaw("count(distinct case when {$hasRoom} and (substr(schedules.tanggal, 1, 10) > ? or (substr(schedules.tanggal, 1, 10) = ? and substr(schedules.jam_mulai, 1, 5) > ?)) then schedules.id end) as available_slots", [...$roomBindings, $todayStr, $todayStr, $nowTimeStr])
-                ->get();
+                ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()]);
+            $rows = $this->countPerDate(
+                $slots,
+                BookingRules::hasRoomSql('schedules', max(1, (int) $booking->peserta), (int) $booking->id),
+                $todayStr,
+                $nowTimeStr,
+            );
 
             return $rows->map(function ($row) {
                 return [
@@ -403,5 +400,26 @@ class GetAvailableSchedules
             'minDate' => $minDate->toDateString(),
             'maxDate' => $maxDate->toDateString(),
         ];
+    }
+
+    /**
+     * Total and bookable slots per date. Room is evaluated per slot in a derived table, then
+     * grouped: MariaDB refuses the correlated seat sum inside an aggregate.
+     *
+     * @param  array{0: string, 1: list<mixed>}  $hasRoom  from BookingRules::hasRoomSql()
+     * @return Collection<int, \stdClass> rows of `tanggal`, `total_slots`, `available_slots`
+     */
+    private function countPerDate(Builder $slots, array $hasRoom, string $todayStr, string $nowTimeStr): Collection
+    {
+        [$roomSql, $roomBindings] = $hasRoom;
+        $slots->select(['schedules.tanggal', 'schedules.jam_mulai'])
+            ->selectRaw("case when {$roomSql} then 1 else 0 end as has_room", $roomBindings);
+
+        return DB::query()->fromSub($slots, 'slots')
+            ->groupBy('slots.tanggal')
+            ->orderBy('slots.tanggal')
+            ->select(['slots.tanggal', DB::raw('count(*) as total_slots')])
+            ->selectRaw('sum(case when slots.has_room = 1 and (substr(slots.tanggal, 1, 10) > ? or (substr(slots.tanggal, 1, 10) = ? and substr(slots.jam_mulai, 1, 5) > ?)) then 1 else 0 end) as available_slots', [$todayStr, $todayStr, $nowTimeStr])
+            ->get();
     }
 }
