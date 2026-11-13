@@ -7,14 +7,15 @@ use App\Actions\Booking\ExportOwnerBookings;
 use App\Actions\Booking\GetBookingTimeRanges;
 use App\Actions\Booking\GetOwnerBookingPanel;
 use App\Actions\Booking\ListOwnerBookings;
+use App\Actions\Booking\QuoteReschedule;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\Booking\UpdateBookingStatus;
 use App\Actions\Schedule\GetAvailableSchedules;
-use App\Actions\Schedule\PriceSlots;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Team\TenantPermission;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Booking\QuoteBookingRequest;
 use App\Http\Requests\Booking\RescheduleBookingRequest;
 use App\Http\Requests\Booking\UpdateBookingStatusRequest;
 use App\Models\Booking;
@@ -215,7 +216,7 @@ class OwnerBookingController extends Controller
             'metode' => ['nullable', 'string', 'in:cash,transfer,manual,qris'],
             // Room for the participants is decided by the claim (FR-BOOKING-021)
             'peserta' => ['nullable', 'integer', 'min:1', 'max:9999'],
-        ]);
+        ] + QuoteBookingRequest::addOnRules());
 
         $validated = $validator->validate();
 
@@ -253,11 +254,12 @@ class OwnerBookingController extends Controller
         $slots = app(GetAvailableSchedules::class)
             ->getSlotsForReschedule($tenant, (int) $booking->idlayanan, $tanggal, (int) $booking->id);
 
-        $slotPrices = app(PriceSlots::class)->execute($tenant, $slots->pluck('schedule')->each(fn ($slot) => $slot->setRelation('layanan', $service)));
+        $slotPrices = $service instanceof Service
+            ? app(QuoteReschedule::class)->execute($booking, $tenant, $service, $tanggal, $slots->pluck('schedule')) : [];
 
-        $mappedSlots = $slots->map(function ($item) use ($service, $slotPrices) {
+        $mappedSlots = $slots->map(function ($item) use ($slotPrices) {
             $slot = $item['schedule'];
-            $price = $slotPrices[(int) $slot->id] ?? ($slot->harga_override ?? ($service ? $service->harga : 0));
+            $price = $slotPrices[(int) $slot->id]['price'] ?? null;
 
             return [
                 'id' => $slot->id,
@@ -265,7 +267,8 @@ class OwnerBookingController extends Controller
                 'jam_selesai' => $item['jam_selesai'],
                 'formatted_time' => $item['jam_mulai'].' - '.$item['jam_selesai'],
                 'price' => $price,
-                'formatted_price' => 'Rp '.number_format($price, 0, ',', '.'),
+                'formatted_price' => $price === null ? '—' : 'Rp '.number_format($price, 0, ',', '.'),
+                'price_difference' => $slotPrices[(int) $slot->id]['price_difference'] ?? null,
                 'is_available' => $item['is_available'],
                 'is_current' => $item['is_current'],
             ];

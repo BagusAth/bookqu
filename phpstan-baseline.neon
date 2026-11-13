@@ -193,18 +193,6 @@ parameters:
 			path: app/Http/Controllers/Customer/BookingManageController.php
 
 		-
-			message: '#^Parameter \#1 \$tenant of method App\\Actions\\Schedule\\GetAvailableSchedules\:\:getCustomerRescheduleSlots\(\) expects App\\Models\\Tenant, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Customer/BookingManageController.php
-
-		-
-			message: '#^Parameter \#2 \$service of method App\\Actions\\Schedule\\GetAvailableSchedules\:\:getCustomerRescheduleSlots\(\) expects App\\Models\\Service, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Customer/BookingManageController.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>updated_at" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -235,20 +223,8 @@ parameters:
 			path: app/Http/Controllers/Owner/OwnerAnalyticsController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Owner/OwnerBookingController.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namalayanan\.$#'
 			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Owner/OwnerBookingController.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),mixed\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
 			count: 1
 			path: app/Http/Controllers/Owner/OwnerBookingController.php
 

@@ -65,7 +65,7 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 
 
 | Owner bookings list shows the service's current price instead of the charged amount, and maps payment states that do not exist | BQ-135 |
-| Reschedule does not evaluate or record slot price differences (price drift across surge/override slots) | BQ-140 |
+| The reschedule UI still needs to render the owner quote difference and the customer contact hint from the slot API | BQ-140 |
 | Unit page, capacity and unit fields in Layanan, participants input in checkout and walk-in, Kalender unit filter and the no-show panel action have backend only; the UI follows | BQ-151, BQ-152, BQ-153 |
 | The customer reschedule calendar counts capacity but not unit conflicts (advisory; the time list and the claim do) | BQ-152 |
 | The hidden staff-resources module keeps its own `resources` tables until BQ-157 removes it; units were copied from it once | BQ-157 |
@@ -89,3 +89,5 @@ BQ-087 (ADR-0023): owner status changes wait for the existing online hold. Owner
 BQ-138 backend: the management cancellation endpoint submits a request without changing booking state. Owner acceptance or a business cancellation requires a valid transition for the group, then cancels and records the appropriate refund in one tenant-locked transaction.
 
 BQ-144 backend: storefront reads and tenant-locked new booking claims use the same booking policy. Lead time and horizon are measured in WIB. The buffer applies between occupied intervals of the same service; adjacent slots in one checkout are still one booking group for this rule. A tenant without explicit limits retains the existing checkout behaviour and 30-day browsing window.
+
+Bundle C (ADR-0019): the checkout quote endpoint reads the tenant-scoped draft, validates the requested promo and linked add-ons, and signs the quote. Placement reprices and checks the signature under the tenant lock. Walk-ins use the same add-on pricing without a promo. BQ-140 compares the new slot quote against the frozen slot subtotal (legacy single-slot payment total when no breakdown exists). The slot API omits more expensive customer choices and returns the contact hint. Customer writes re-check under lock. Owner quotes and history expose the difference without changing the payment.

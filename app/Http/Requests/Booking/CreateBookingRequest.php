@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Booking;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class CreateBookingRequest extends FormRequest
 {
@@ -27,9 +28,20 @@ class CreateBookingRequest extends FormRequest
             'catatan' => ['nullable', 'string', 'max:500'],
             // Room for the participants is decided by the claim (FR-BOOKING-021)
             'peserta' => ['nullable', 'integer', 'min:1', 'max:9999'],
-            'selected_addons' => ['nullable'],
-            'voucher_code' => ['nullable'],
+            'voucher_code' => ['nullable', 'string', 'max:50'],
             'checkout_fingerprint' => ['nullable', 'string', 'max:128'],
+        ] + QuoteBookingRequest::addOnRules();
+    }
+
+    /** @return list<callable(Validator): void> */
+    public function after(): array
+    {
+        return [
+            static function (Validator $validator): void {
+                if ($validator->errors()->has('selected_addons.*')) {
+                    $validator->errors()->add('selected_addons', 'Pilihan add-on tidak valid.');
+                }
+            },
         ];
     }
 
@@ -41,25 +53,5 @@ class CreateBookingRequest extends FormRequest
         return [
             'nomorhp.regex' => 'Nomor WhatsApp / HP harus berisi 10–15 digit angka (boleh diawali +62).',
         ];
-    }
-
-    /**
-     * Configure the validator instance with business guards for disabled production features.
-     */
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator) {
-            // Guard: Add-on feature disabled in production
-            if ($this->filled('selected_addons') || (! empty($this->selected_addons))) {
-                $validator->errors()->add('selected_addons', 'Fitur item tambahan (add-on) belum tersedia.');
-                $validator->errors()->add('addons', 'Fitur item tambahan (add-on) belum tersedia.');
-            }
-
-            // Guard: Voucher feature disabled in production
-            if ($this->filled('voucher_code')) {
-                $validator->errors()->add('voucher_code', 'Fitur voucher diskon belum tersedia.');
-                $validator->errors()->add('voucher', 'Fitur voucher diskon belum tersedia.');
-            }
-        });
     }
 }
