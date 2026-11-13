@@ -78,52 +78,7 @@
                                 @endif
                             </div>
 
-                            {{-- Cancellation Action Section --}}
-                            <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                                        <svg class="w-4 h-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                        Batalkan Booking
-                                    </span>
-                                    @if($canCancel)
-                                        <span class="rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">Tersedia</span>
-                                    @else
-                                        <span class="rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">Tidak Tersedia</span>
-                                    @endif
-                                </div>
-
-                                @if($canCancel)
-                                    <p class="text-xs text-slate-500 leading-relaxed">
-                                        Pembatalan akan melepas slot jadwal dan dana Anda akan diproses untuk pengembalian (*refund*).
-                                    </p>
-                                    @if($cancelDeadline)
-                                        <p class="text-[11px] font-medium text-rose-700 bg-rose-50/90 rounded-lg px-2.5 py-1.5 border border-rose-100">
-                                            Batas pembatalan: {{ $cancelDeadline->translatedFormat('d M Y, H:i') }} WIB
-                                        </p>
-                                    @endif
-                                    <button
-                                        id="btn-cancel"
-                                        type="button"
-                                        @click="showCancelModal = true"
-                                        class="w-full flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-rose-600 hover:bg-rose-50 hover:border-rose-300 active:scale-[0.98] transition-all cursor-pointer"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                        <span>Batalkan Booking Ini</span>
-                                    </button>
-                                @else
-                                    <p class="text-xs text-slate-500 leading-relaxed">
-                                        @if(!empty($isMultiSlot))
-                                            Booking multi-slot tidak dapat dibatalkan per slot secara individual.
-                                        @else
-                                            Batas pembatalan mandiri telah berakhir (minimal {{ $booking->tenant->cancel_before_hours ?? 24 }} jam sebelum sesi).
-                                        @endif
-                                    </p>
-                                @endif
-                            </div>
+                            @include('customer.partials.manage.refund-form')
 
                         @elseif($booking->status === 'cancelled')
                             {{-- Cancelled State Card --}}

@@ -709,7 +709,7 @@
                                     1
                                 </td>
                                 <td class="cell-total" style="text-align: right; font-weight: 800; color: #0F172A; font-size: 14px; white-space: nowrap;">
-                                    <span class="mobile-inline" style="font-weight: 600; color: #64748B;">Total: </span>{{ $invoiceSlotAmount }}
+                                    <span class="mobile-inline" style="font-weight: 600; color: #64748B;">Total: </span>{{ $invoiceSlotAmounts[$booking->id] ?? $invoiceSlotAmount }}
                                 </td>
                             </tr>
                         </tbody>

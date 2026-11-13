@@ -164,6 +164,8 @@ Route::prefix('owner')
             Route::delete('/schedule/special-dates/{specialDate}', [OwnerPriceRuleController::class, 'destroySpecialDate'])->name('owner.schedule.special-dates.destroy');
             Route::get('/schedule/price-simulator', [OwnerPriceRuleController::class, 'simulate'])->name('owner.schedule.price-simulator');
             Route::post('/schedule/apply-base-price', [OwnerPriceRuleController::class, 'applyBasePrice'])->name('owner.schedule.apply-base-price');
+            Route::get('/bookings/export', [OwnerBookingController::class, 'export'])->name('owner.bookings.export');
+            Route::get('/bookings/{booking}/panel', [OwnerBookingController::class, 'panel'])->whereNumber('booking')->name('owner.bookings.panel');
             Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
             Route::post('/bookings/{booking}/cancellation-requests', [BookingCancellationController::class, 'store'])->name('owner.bookings.cancellation-requests.store');
             Route::patch('/bookings/cancellation-requests/{cancellationId}', [BookingCancellationController::class, 'decide'])->whereNumber('cancellationId')->name('owner.bookings.cancellation-requests.decide');

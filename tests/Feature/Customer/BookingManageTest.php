@@ -107,6 +107,21 @@ class BookingManageTest extends TestCase
         $response->assertSee($this->booking->booking_code);
     }
 
+    public function test_management_pages_only_offer_refund_when_policy_allows_it(): void
+    {
+        $single = route('booking.manage', $this->booking->booking_code);
+        $group = route('booking.manage.payment', $this->payment->order_id);
+        $this->grantCustomerAccess($this->payment)->get($single)->assertOk()
+            ->assertSeeText('Hubungi pemilik')->assertDontSee('name="nomor_rekening"', false);
+
+        $this->tenant->update(['refunds_enabled' => true]);
+        foreach ([$single, $group] as $url) {
+            $this->get($url)->assertOk()->assertSee('name="nomor_rekening"', false)
+                ->assertSee(route('booking.manage.cancel', $this->booking->booking_code))
+                ->assertSeeText('Booking tetap berlaku sampai pemilik menyetujui pengajuan Anda.');
+        }
+    }
+
     public function test_customer_requests_refund_then_owner_approves_half_and_admin_processes_it(): void
     {
         $payload = [

@@ -3,27 +3,35 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Booking\CreateWalkInBooking;
+use App\Actions\Booking\ExportOwnerBookings;
+use App\Actions\Booking\GetBookingTimeRanges;
+use App\Actions\Booking\GetOwnerBookingPanel;
+use App\Actions\Booking\ListOwnerBookings;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\Booking\UpdateBookingStatus;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Actions\Schedule\PriceSlots;
 use App\Domain\Booking\BookingRules;
-use App\Domain\Payment\PaymentRules;
+use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Team\TenantPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\RescheduleBookingRequest;
 use App\Http\Requests\Booking\UpdateBookingStatusRequest;
 use App\Models\Booking;
 use App\Models\Payment;
-use App\Models\Tenant;
+use App\Models\Service;
 use App\Models\TenantMember;
+use App\Support\CustomerBookingRoutes;
 use App\Traits\ClearsBookingCache;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OwnerBookingController extends Controller
 {
@@ -33,106 +41,114 @@ class OwnerBookingController extends Controller
     /**
      * Halaman daftar booking.
      */
-    public function index(Request $request)
+    public function index(Request $request, ListOwnerBookings $list, GetBookingTimeRanges $ranges): View
     {
         $tenant = $this->resolveTenant();
-        $user = auth()->user();
-        if (! $tenant) {
-            $tenant = new Tenant;
-            if ($user) {
-                $tenant->setRelation('user', $user);
-            }
-
-            $filterstatus = $request->input('status', 'semua');
-            $katakunci = $request->input('katakunci', '');
-            $daftarbooking = Booking::whereRaw('1 = 0')->paginate(15);
-
-            return view('owner.bookings', [
-                'tenant' => $tenant,
-                'daftarbooking' => $daftarbooking,
-                'totalbooking' => 0,
-                'bookingpending' => 0,
-                'bookingkonfirmasi' => 0,
-                'bookingselesai' => 0,
-                'bookingbatal' => 0,
-                'bookinghariini' => 0,
-                'filterstatus' => $filterstatus,
-                'katakunci' => $katakunci,
-            ]);
-        }
-
-        $idtenant = $tenant->id;
-        $filterstatus = $request->input('status', 'semua');
-        $katakunci = $request->input('katakunci', '');
-
-        $daftarbooking = Booking::where('bookings.idtenant', $idtenant)
-            ->with(['layanan.resources', 'payment', 'logs'])
-            ->when($filterstatus !== 'semua', function ($query) use ($filterstatus) {
-                if ($filterstatus === 'today') {
-                    $query->whereDate('tanggalbooking', Carbon::today());
-                } else {
-                    $query->where('status', $filterstatus);
-                }
-            })
-            ->when($katakunci, function ($query) use ($katakunci) {
-                $query->where(function ($q) use ($katakunci) {
-                    $q->where('namapelanggan', 'like', '%'.$katakunci.'%')
-                        ->orWhere('email', 'like', '%'.$katakunci.'%')
-                        ->orWhere('nomorhp', 'like', '%'.$katakunci.'%')
-                        ->orWhere('booking_code', 'like', '%'.$katakunci.'%')
-                        ->orWhere('bookings.id', 'like', '%'.$katakunci.'%');
-                });
-            })
-            ->orderByDesc('bookings.created_at')
-            ->paginate(15);
-
-        // Statistik
-        $totalbooking = Booking::where('idtenant', $idtenant)->count();
-        $bookingpending = Booking::where('idtenant', $idtenant)->where('status', 'pending')->count();
-        $bookingkonfirmasi = Booking::where('idtenant', $idtenant)->where('status', 'paid')->count();
-        $bookingselesai = Booking::where('idtenant', $idtenant)->where('status', 'completed')->count();
-        $bookingbatal = Booking::where('idtenant', $idtenant)->where('status', 'cancelled')->count();
-
-        // Booking hari ini
-        $bookinghariini = Booking::where('idtenant', $idtenant)
-            ->whereDate('tanggalbooking', Carbon::today())
-            ->count();
-
+        $filters = $this->listFilters($request);
+        $tab = $this->selectedTab($filters);
         $member = $request->attributes->get('tenant_member');
-        $canRequestCancellation = $member instanceof TenantMember && TenantPermission::allowsRole($member->role, 'bookings.request-cancel');
-        $canDecideCancellation = $member instanceof TenantMember && TenantPermission::allowsRole($member->role, 'bookings.cancel');
-        $cancellationRequests = $canDecideCancellation
-            ? DB::table('booking_cancellation_requests')->where('idtenant', $idtenant)->where('status', 'pending')->orderBy('id')->paginate(10, pageName: 'permintaan')
-            : null;
-
-        $onlinePayment = $daftarbooking->getCollection()->mapWithKeys(function (Booking $booking): array {
+        $can = fn (string $ability): bool => $member instanceof TenantMember && TenantPermission::allowsRole($member->role, $ability);
+        $canViewRevenue = $can('revenue.view');
+        $canReview = $can('bookings.cancel');
+        $canWalkIn = $can('bookings.walkin') && EntitlementRules::hasEffectivePlan($tenant?->subscription);
+        $base = $list->query($tenant, $filters);
+        $tabs = $this->taskTabs();
+        foreach ($tabs as $key => $label) {
+            $tabs[$key] = $label.' ('.$list->tab(clone $base, $key, $canReview)->count().')';
+        }
+        $daftarbooking = $list->tab(clone $base, $tab, $canReview)
+            ->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')->orderBy('jam', $filters['sort'] ?? 'desc')
+            ->orderBy('bookings.id')->paginate(15)->withQueryString();
+        $timeRanges = $ranges->execute($daftarbooking->items())['sessionRanges'];
+        $rows = $daftarbooking->getCollection()->mapWithKeys(function (Booking $booking) use ($list, $timeRanges): array {
             $payment = $booking->payment;
-            $linked = $payment instanceof Payment && PaymentRules::hasProviderLink($payment);
-            $holdEnd = $linked ? BookingRules::onlinePaymentHoldEnd($booking, $payment) : null;
+            $hold = $payment instanceof Payment ? BookingRules::onlinePaymentHoldEnd($booking, $payment) : null;
+            $amount = $list->paidAmount($booking);
 
             return [$booking->id => [
-                'linked' => $linked,
-                'holdUntil' => $holdEnd?->timestamp,
-                'waiting' => $holdEnd === null ? null : 'Menunggu pembayaran online, berakhir '.$holdEnd->setTimezone('Asia/Jakarta')->format('H:i').' WIB',
+                'time' => $timeRanges[$booking->id]->label(),
+                'amount' => $amount === null ? '—' : 'Rp '.number_format($amount, 0, ',', '.'),
+                'payment_status' => $payment instanceof Payment ? $payment->status : 'Belum tercatat',
+                'waiting' => $hold ? 'Menunggu pembayaran online, berakhir '.$hold->setTimezone('Asia/Jakarta')->format('H:i').' WIB' : null,
             ]];
         });
+        $services = $tenant ? Service::where('idtenant', $tenant->id)->orderBy('namalayanan')->get() : collect();
+        $cancellationRequests = $canReview && $tenant !== null && in_array($tab, ['all', 'action'], true)
+            ? DB::table('booking_cancellation_requests')->where('idtenant', $tenant->id)->where('status', 'pending')->orderBy('id')->paginate(10, pageName: 'permintaan')->withQueryString()
+            : null;
+        $exportUrl = $can('revenue.view') && EntitlementRules::canAccessFeature($tenant?->subscription, 'analytics.export')['allowed']
+            ? route('owner.bookings.export', ['tab' => $tab] + $filters)
+            : null;
+        $storefrontUrl = $tenant?->slug && ! Booking::where('idtenant', $tenant->id)->exists()
+            ? CustomerBookingRoutes::url('customer.booking.program', $tenant->slug)
+            : null;
+        $emptyTitle = match ($tab) {
+            'action' => 'Tidak ada booking yang perlu ditangani',
+            'upcoming' => 'Tidak ada booking mendatang',
+            'pending' => 'Tidak ada booking menunggu pembayaran',
+            'completed' => 'Tidak ada booking selesai',
+            'cancelled' => 'Tidak ada booking dibatalkan',
+            default => 'Tidak ada booking yang cocok',
+        };
 
         return view('owner.bookings', compact(
-            'tenant',
-            'canRequestCancellation',
-            'canDecideCancellation',
-            'cancellationRequests',
-            'onlinePayment',
-            'daftarbooking',
-            'totalbooking',
-            'bookingpending',
-            'bookingkonfirmasi',
-            'bookingselesai',
-            'bookingbatal',
-            'bookinghariini',
-            'filterstatus',
-            'katakunci',
+            'tenant', 'daftarbooking', 'filters', 'tab', 'tabs', 'rows', 'services', 'canWalkIn',
+            'cancellationRequests', 'exportUrl', 'storefrontUrl', 'emptyTitle', 'canViewRevenue',
         ));
+    }
+
+    public function panel(Request $request, int $booking, GetOwnerBookingPanel $panel): JsonResponse
+    {
+        $tenant = $this->resolveTenant() ?? abort(404);
+        $member = $request->attributes->get('tenant_member');
+        abort_unless($member instanceof TenantMember, 403);
+
+        return response()->json($panel->execute($tenant, $booking, $member));
+    }
+
+    public function export(Request $request, ListOwnerBookings $list, ExportOwnerBookings $export): StreamedResponse
+    {
+        $tenant = $this->resolveTenant() ?? abort(404);
+        $member = $request->attributes->get('tenant_member');
+        abort_unless($member instanceof TenantMember && TenantPermission::allowsRole($member->role, 'revenue.view'), 403);
+        abort_unless(EntitlementRules::canAccessFeature($tenant->subscription, 'analytics.export')['allowed'], 403);
+        $filters = $this->listFilters($request);
+        $query = $list->tab($list->query($tenant, $filters, streaming: true), $this->selectedTab($filters), TenantPermission::allowsRole($member->role, 'bookings.cancel'));
+
+        return $export->execute($query->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')
+            ->orderBy('jam', $filters['sort'] ?? 'desc')->orderBy('bookings.id'));
+    }
+
+    /** @return array<string, mixed> */
+    private function listFilters(Request $request): array
+    {
+        return Validator::make($request->query(), [
+            'katakunci' => ['nullable', 'string', 'max:150'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d'],
+            'service' => ['nullable', 'integer', 'min:1'],
+            'source' => ['nullable', 'in:online,walkin'],
+            'sort' => ['nullable', 'in:asc,desc'],
+            'tab' => ['nullable', 'string'],
+            'status' => ['nullable', 'string'],
+        ])->validate();
+    }
+
+    /** @param array<string, mixed> $filters */
+    private function selectedTab(array $filters): string
+    {
+        $tab = $filters['tab'] ?? $filters['status'] ?? 'all';
+
+        return isset($this->taskTabs()[$tab]) || in_array($tab, ['paid', 'today'], true) ? $tab : 'all';
+    }
+
+    /** @return array<string, string> */
+    private function taskTabs(): array
+    {
+        return [
+            'action' => 'Perlu tindakan', 'upcoming' => 'Mendatang', 'pending' => 'Menunggu bayar',
+            'completed' => 'Selesai', 'cancelled' => 'Dibatalkan', 'all' => 'Semua',
+        ];
     }
 
     /**

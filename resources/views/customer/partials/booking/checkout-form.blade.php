@@ -171,6 +171,6 @@
 
     {{-- Policy --}}
     <div class="mt-6">
-        <x-customer.booking-policy />
+        <x-customer.booking-policy :policy="$bookingPolicy" />
     </div>
 </section>
