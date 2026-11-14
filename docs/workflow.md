@@ -7,8 +7,8 @@ How changes to BookQu are planned, approved, implemented, verified and documente
 | Role | Responsibility |
 |---|---|
 | Product Lead | Decides what BookQu offers, priorities, pricing and when to release |
-| Tech Lead | Owns architecture, technical rules, `AGENTS.md`, `docs/*.md`, `.ai/rules` and ADRs; assigns tasks; audits and merges heavy-lane PRs into `integration`; executes releases and production operations |
-| Developer | Implements assigned tasks in their own branch; decides implementation details; audits and merges the other developer's light-lane PRs |
+| Tech Lead | Owns architecture, technical rules, `AGENTS.md`, `docs/*.md`, `.ai/rules` and ADRs; assigns tasks; audits and merges the other developer's heavy-lane PRs into `integration`; executes releases and production operations |
+| Developer | Implements assigned tasks in their own branch; decides implementation details; merges their own light-lane PRs |
 | Agent | Turns the developer's instructions into changes; asks the developer running the session; never decides what the table in `AGENTS.md` reserves for another role |
 
 Who holds each role: `AGENTS.md` → "Roles". The agent never contacts other people; the developer coordinates with the Product Lead or Tech Lead outside the repository and confirms the outcome in the session.
@@ -44,7 +44,7 @@ Findings outside the task are recorded as a new work item in either lane, never 
 ## 4. Lifecycle
 
 ```text
-instruction ─► lane ─► (heavy: work item + decision) ─► own branch ─► implement + test ─► PR into integration ─► audit (light: other developer · heavy: Tech Lead) ─► merge
+instruction ─► lane ─► (heavy: work item + decision) ─► own branch ─► implement + test ─► PR into integration ─► CI green ─► merge (light: author · heavy: Tech Lead)
 ```
 
 1. **Capture.** Heavy lane: create `docs/work/BQ-NNN-slug.md` from `docs/work/_TEMPLATE.md` with requirement IDs, domain, current code, target change, invariants at risk, tests and docs to update.
@@ -52,7 +52,7 @@ instruction ─► lane ─► (heavy: work item + decision) ─► own branch �
 3. **Implement.** Small, coherent commits on your own branch. Characterize poorly tested behaviour before changing it. A small related refactor is fine when it directly reduces risk or duplication for this task.
 4. **Verify.** Per lane (§3). Record manual checks (UI, payment sandbox, custom domain) in the PR or item.
 5. **Document.** Update only the sources whose content changed (§9).
-6. **Review.** PR into `integration` with `.github/pull_request_template.md`. A light-lane PR is audited and merged by a developer other than its author. A heavy-lane PR is audited and merged by the Tech Lead; when the Tech Lead is its author, the other developer reviews it first. Nobody merges their own PR without a review by someone else, and every merge needs the four green CI jobs.
+6. **Review.** PR into `integration` with `.github/pull_request_template.md`. Every merge needs the four green CI jobs. The author merges a light-lane PR. The Tech Lead audits and merges a heavy-lane PR of another developer, and merges their own heavy-lane PR. When unsure whether a PR is light or heavy, treat it as heavy.
 7. **Close.** Heavy lane: set `status: done`, add evidence, move the item to `docs/work/done/`. A `rejected` item (including one merged into another item, with a pointer to it) is moved there too, so `docs/work/` holds only open items.
 
 Ask for clarification only when two materially different product behaviours are plausible and the repository cannot decide between them. Difficulty is not a reason to stop; record the decision you made.
@@ -84,7 +84,7 @@ Ask for clarification only when two materially different product behaviours are 
 | Branch | Purpose | Who pushes | Changes arrive by |
 |---|---|---|---|
 | `main` | Production; every push deploys (`.github/workflows/deploy-production.yml`) | Nobody directly | Release PR from `integration` |
-| `integration` | Where all finished work is combined and tested before release (ADR-0015) | Nobody directly | PR, four green CI jobs, audit and merge per lane (light: other developer · heavy: Tech Lead) |
+| `integration` | Where all finished work is combined and tested before release (ADR-0015) | Nobody directly | PR, four green CI jobs, merge per lane (light: author · heavy: Tech Lead) |
 | `agathan`, `bagus` | Each developer's own exploration branch | Its owner, freely | Direct push |
 | `<name>/<topic>` | Optional short-lived branch for one task | Its owner | Direct push |
 
