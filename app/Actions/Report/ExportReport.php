@@ -85,6 +85,9 @@ class ExportReport
         $put(['Rata-rata rating', $summary['averageRating'] ?? '']);
         $put(['Jumlah ulasan', $summary['reviewCount']]);
         $put(['Layanan terlaris', $summary['topService'] ?? '']);
+        if ($summary['showUnits']) {
+            $put(['Unit paling sering dipakai', $summary['topUnit'] ?? '']);
+        }
     }
 
     /**
@@ -127,6 +130,8 @@ class ExportReport
     {
         $put(['Metrik', 'Nilai']);
         $put(['Tingkat okupansi (%)', $occupancy['rate']]);
+        $put(['Kursi terisi', $occupancy['seats']]);
+        $put(['Kapasitas kursi', $occupancy['capacity']]);
         $put(['Total slot', $occupancy['total']]);
         $put(['Slot terisi', $occupancy['booked']]);
         $put(['Slot kosong', $occupancy['free']]);
@@ -136,6 +141,13 @@ class ExportReport
         $put(['Hari', ...array_map(fn (int $hour): string => sprintf('%02d.00', $hour), $hours)]);
         foreach ($occupancy['heatmap']['days'] as $day => $label) {
             $put([$label, ...array_values($occupancy['heatmap']['cells'][$day])]);
+        }
+        if ($occupancy['units'] !== null) {
+            $put([]);
+            $put(['Unit', 'Menit terpakai', 'Menit terjadwal', 'Pemanfaatan (%)']);
+            foreach ($occupancy['units'] as $unit) {
+                $put([$unit['name'], $unit['usedMinutes'], $unit['offeredMinutes'], $unit['rate']]);
+            }
         }
     }
 
@@ -162,6 +174,14 @@ class ExportReport
         $put(['Pelanggan baru', $customers['new']]);
         $put(['Pelanggan kembali', $customers['returning']]);
         $put([]);
+
+        if ($customers['promos'] !== null) {
+            $put(['Pelanggan', 'Kode promo', 'Booking dengan promo', 'Total diskon']);
+            foreach ($customers['promos'] as $promo) {
+                $put([$promo['customer'], $promo['code'], $promo['uses'], $promo['discount']]);
+            }
+            $put([]);
+        }
 
         $put(['Pelanggan', 'Booking', 'Jenis']);
         foreach ($this->getReport->customerRows($tenant, $period) as $row) {

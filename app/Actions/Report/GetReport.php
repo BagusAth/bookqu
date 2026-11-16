@@ -6,17 +6,20 @@ namespace App\Actions\Report;
 
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
+use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Customer\CustomerIdentity;
 use App\Domain\Modules\ModuleRelease;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Subscription\PlanCapability;
+use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Models\Unit;
 use App\Support\ReportPeriod;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -33,7 +36,7 @@ use Illuminate\Support\Facades\DB;
  *   business (`provider = manual`); every other provider is online.
  * - **Customer:** the one customer identity (`CustomerIdentity`); new means the first booking was made in
  *   the period, returning means an earlier booking exists.
- * - **Occupancy:** slots of the period holding an occupying booking (`BookingRules`).
+ * - **Occupancy:** seats held over total slot capacity (`BookingRules`).
  */
 class GetReport
 {
@@ -65,7 +68,8 @@ class GetReport
     public function execute(Tenant $tenant, ReportPeriod $period, ?string $tab): array
     {
         $tab = $tab !== null && array_key_exists($tab, self::TABS) ? $tab : 'ringkasan';
-        $locked = ! self::isEntitled($tenant);
+        $subscription = self::subscription($tenant);
+        $locked = ! EntitlementRules::canAccessFeature($subscription, PlanCapability::FEATURE_ANALYTICS)['allowed'];
 
         $report = [
             'tab' => $tab,
@@ -95,11 +99,22 @@ class GetReport
         $revenue = $this->revenue($tenantId, $period);
         $customers = $this->customers($tenantId, $period);
 
-        $report['summary'] = $this->summary($tenantId, $period, $bookingsPerService, $revenue, $customers);
+        $showUnits = ModuleRelease::state('units') === 'released'
+            && EntitlementRules::canAccessFeature($subscription, 'units')['allowed'];
+        $slots = $tab === 'okupansi' || $showUnits ? $this->reportSlots($tenantId, $period) : new Collection;
+        $units = $showUnits ? $this->unitUtilisation($tenantId, $slots) : null;
+        $report['summary'] = $this->summary($tenantId, $period, $bookingsPerService, $revenue, $customers)
+            + ['showUnits' => $showUnits, 'topUnit' => ($units[0]['usedMinutes'] ?? 0) > 0 ? $units[0]['name'] : null];
+        if ($tab === 'pelanggan') {
+            $customers['promos'] = ModuleRelease::state('promos') === 'released'
+                && EntitlementRules::canAccessFeature($subscription, 'promos')['allowed']
+                ? $this->promoUsage($tenantId, $period)
+                : null;
+        }
 
         return match ($tab) {
             'pendapatan' => ['revenue' => $revenue] + $report,
-            'okupansi' => ['occupancy' => $this->occupancy($tenantId, $period)] + $report,
+            'okupansi' => ['occupancy' => $this->occupancy($slots) + ['units' => $units]] + $report,
             'layanan' => ['services' => $this->services($bookingsPerService, $revenue)] + $report,
             'pelanggan' => ['customers' => $customers] + $report,
             default => $report,
@@ -111,9 +126,12 @@ class GetReport
      */
     public static function isEntitled(Tenant $tenant): bool
     {
-        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
+        return EntitlementRules::canAccessFeature(self::subscription($tenant), PlanCapability::FEATURE_ANALYTICS)['allowed'];
+    }
 
-        return EntitlementRules::canAccessFeature($subscription, PlanCapability::FEATURE_ANALYTICS)['allowed'];
+    private static function subscription(Tenant $tenant): ?Subscription
+    {
+        return Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
     }
 
     /**
@@ -341,24 +359,32 @@ class GetReport
             ->groupBy('idpayment');
     }
 
+    /** @return Collection<int, Schedule> */
+    private function reportSlots(int $tenantId, ReportPeriod $period): Collection
+    {
+        [$taken, $bindings] = BookingRules::seatsTakenSql();
+
+        return Schedule::query()
+            ->join('services', fn ($join) => $join->on('services.id', '=', 'schedules.idlayanan')->on('services.idtenant', '=', 'schedules.idtenant'))
+            ->where('schedules.idtenant', $tenantId)
+            ->whereBetween('schedules.tanggal', $this->bounds($period))
+            ->select(['schedules.id', 'schedules.idlayanan', 'schedules.tanggal', 'schedules.jam_mulai', 'schedules.jam_selesai', 'schedules.status', 'services.kapasitas'])
+            ->selectRaw($taken.' AS seats_taken', $bindings)
+            ->get();
+    }
+
     /**
-     * Slots of the period: rate, booked and free slots, and booked slots per weekday and hour.
-     *
+     * @param  Collection<int, Schedule>  $slots
      * @return array<string, mixed>
      */
-    private function occupancy(int $tenantId, ReportPeriod $period): array
+    private function occupancy(Collection $slots): array
     {
-        [$from, $to] = $this->bounds($period);
-        $slots = Schedule::query()
-            ->where('idtenant', $tenantId)
-            ->whereBetween('tanggal', [$from, $to])
-            ->withExists(['bookings as occupied' => fn (EloquentBuilder $query) => BookingRules::applyOccupiesSlotCondition($query, 'bookings.')])
-            ->get(['id', 'tanggal', 'jam_mulai', 'status']);
-
-        $isOccupied = fn (Schedule $slot): bool => (bool) $slot->getAttribute('occupied');
+        $isOccupied = fn (Schedule $slot): bool => (int) $slot->getAttribute('seats_taken') > 0;
         $total = $slots->count();
         $booked = $slots->filter($isOccupied)->count();
         $free = $slots->filter(fn (Schedule $slot): bool => ! $isOccupied($slot) && $slot->status === 'tersedia')->count();
+        $seats = $slots->sum(fn (Schedule $slot): int => (int) $slot->getAttribute('seats_taken'));
+        $capacity = $slots->sum(fn (Schedule $slot): int => (int) $slot->getAttribute('kapasitas'));
 
         $hours = $slots->map(fn (Schedule $slot): int => (int) substr((string) $slot->jam_mulai, 0, 2))->unique()->sort()->values()->all();
         $cells = [];
@@ -384,7 +410,9 @@ class GetReport
             'total' => $total,
             'booked' => $booked,
             'free' => $free,
-            'rate' => $total > 0 ? round($booked / $total * 100, 1) : 0.0,
+            'seats' => $seats,
+            'capacity' => $capacity,
+            'rate' => $capacity > 0 ? round($seats / $capacity * 100, 1) : 0.0,
             'heatmap' => [
                 'days' => self::DAYS,
                 'hours' => $hours,
@@ -394,6 +422,101 @@ class GetReport
             'busiestDay' => $booked > 0 ? self::DAYS[array_key_first($perDay)] : null,
             'busiestHour' => $booked > 0 ? sprintf('%02d.00', array_key_first($perHour)) : null,
         ];
+    }
+
+    /**
+     * Current active unit links applied to the selected period. Merge overlapping slots so a shared
+     * unit has one minute of capacity per minute, including where multiple services offer it.
+     *
+     * @param  Collection<int, Schedule>  $slots
+     * @return list<array{name: string, offeredMinutes: int, usedMinutes: int, rate: float}>
+     */
+    private function unitUtilisation(int $tenantId, Collection $slots): array
+    {
+        $slotsByService = $slots->groupBy('idlayanan');
+        $rows = [];
+        $units = Unit::where('idtenant', $tenantId)->where('is_active', true)
+            ->with(['services' => fn ($query) => $query->where('services.idtenant', $tenantId)->select('services.id')])
+            ->get();
+        foreach ($units as $unit) {
+            $offered = [];
+            $used = [];
+            foreach ($unit->services as $service) {
+                foreach ($slotsByService->get($service->getKey(), []) as $slot) {
+                    $date = CarbonImmutable::parse($slot->tanggal)->toDateString();
+                    $range = BookingTimeRange::forSlot($date, (string) $slot->jam_mulai, (string) $slot->jam_selesai);
+                    if ($range->end === null) {
+                        continue;
+                    }
+
+                    $interval = [$range->start->getTimestamp(), $range->end->getTimestamp()];
+                    if ((int) $slot->getAttribute('seats_taken') > 0) {
+                        $used[] = $interval;
+                        $offered[] = $interval;
+                    } elseif ($slot->status === 'tersedia') {
+                        $offered[] = $interval;
+                    }
+                }
+            }
+            $offeredMinutes = $this->coveredMinutes($offered);
+            $usedMinutes = $this->coveredMinutes($used);
+            $rows[] = [
+                'name' => $unit->name,
+                'offeredMinutes' => $offeredMinutes,
+                'usedMinutes' => $usedMinutes,
+                'rate' => $offeredMinutes > 0 ? round($usedMinutes / $offeredMinutes * 100, 1) : 0.0,
+            ];
+        }
+        usort($rows, fn (array $a, array $b): int => [$b['usedMinutes'], $a['name']] <=> [$a['usedMinutes'], $b['name']]);
+
+        return $rows;
+    }
+
+    /** @param list<array{int, int}> $intervals */
+    private function coveredMinutes(array $intervals): int
+    {
+        sort($intervals);
+        $endOfCoverage = 0;
+        $seconds = 0;
+        foreach ($intervals as [$start, $end]) {
+            $seconds += max(0, $end - max($start, $endOfCoverage));
+            $endOfCoverage = max($end, $endOfCoverage);
+        }
+
+        return intdiv($seconds, 60);
+    }
+
+    /** @return list<array{customer: string, code: string, uses: int, discount: int}> */
+    private function promoUsage(int $tenantId, ReportPeriod $period): array
+    {
+        $customers = DB::table('bookings')->where('idtenant', $tenantId)->whereNotNull('idpayment')
+            ->select('idpayment')->selectRaw('MAX(namapelanggan) AS name')
+            ->selectRaw('MIN('.CustomerIdentity::sql().') AS identifier')->groupBy('idpayment');
+        $payments = Payment::query()
+            ->leftJoinSub($customers, 'payment_customers', 'payment_customers.idpayment', '=', 'payments.id')
+            ->where('payments.idtenant', $tenantId)->where('payments.tipe', PaymentState::TIPE_BOOKING)
+            ->where('payments.status', PaymentState::STATUS_SUKSES)->whereBetween('payments.created_at', $this->bounds($period))
+            ->whereNotNull('payments.price_breakdown')
+            ->select(['payments.id', 'payments.nama_pembayar', 'payments.price_breakdown', 'payment_customers.name AS customer_name', 'payment_customers.identifier AS customer_identifier'])
+            ->lazyById(column: 'payments.id', alias: 'id');
+        $promos = [];
+        foreach ($payments as $payment) {
+            $promo = $payment->price_breakdown['promo'] ?? null;
+            if ($promo === null) {
+                continue;
+            }
+
+            $code = (string) $promo['code'];
+            $identifier = (string) ($payment->getAttribute('customer_identifier') ?? 'payment-'.$payment->id);
+            $name = (string) ($payment->getAttribute('customer_name') ?? $payment->nama_pembayar ?? 'Pelanggan');
+            $key = $identifier.'|'.$code;
+            $promos[$key] ??= ['customer' => $name, 'code' => $code, 'uses' => 0, 'discount' => 0];
+            $promos[$key]['uses']++;
+            $promos[$key]['discount'] += (int) $promo['discount'];
+        }
+        usort($promos, fn (array $a, array $b): int => [$a['customer'], $a['code']] <=> [$b['customer'], $b['code']]);
+
+        return $promos;
     }
 
     /**

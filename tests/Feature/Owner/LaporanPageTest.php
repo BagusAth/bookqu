@@ -14,6 +14,7 @@ use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantMember;
+use App\Models\Unit;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -153,6 +154,48 @@ class LaporanPageTest extends TestCase
 
         $previous = $this->booking($this->photo, '2026-10-10', 1, 'completed', ['jumlah' => 200000], ['email' => 'rani@example.com', 'namapelanggan' => 'Rani', 'created_at' => '2026-10-01 08:00:00']);
         $this->refund($previous['payment'], $previous['bookings'][0], 40000, '2026-11-10');
+    }
+
+    public function test_occupancy_counts_seats_and_deduplicates_a_shared_units_time_for_pro(): void
+    {
+        config(['modules.units' => 'released']);
+        $this->subscribe('pro');
+        $this->photo->update(['kapasitas' => 4]);
+        $this->booking($this->photo, '2026-11-09', booking: ['peserta' => 2]);
+        $this->booking($this->makeup, '2026-11-09', status: 'cancelled');
+        $unit = Unit::factory()->create(['idtenant' => $this->tenant->id, 'name' => '=Studio', 'is_active' => true]);
+        $unit->services()->attach([$this->photo->id, $this->makeup->id]);
+        $foreign = Tenant::factory()->create();
+        Unit::factory()->create(['idtenant' => $foreign->id, 'name' => 'Unit asing', 'is_active' => true]);
+        $this->booking(Service::factory()->create(['idtenant' => $foreign->id]), '2026-11-09', tenant: $foreign);
+
+        $report = $this->report('okupansi');
+        $this->assertSame('=Studio', $report['summary']['topUnit']);
+        $this->assertSame(2, $report['occupancy']['seats']);
+        $this->assertSame(5, $report['occupancy']['capacity']);
+        $this->assertSame(40.0, $report['occupancy']['rate']);
+        $this->assertSame([['name' => '=Studio', 'offeredMinutes' => 60, 'usedMinutes' => 60, 'rate' => 100.0]], $report['occupancy']['units']);
+
+        $csv = $this->csv($this->get(route('owner.analytics.export', ['tab' => 'okupansi']))->assertOk());
+        $this->assertContains(["'=Studio", '60', '60', '100'], $csv);
+        $this->subscribe('medium');
+        $this->assertNull($this->report('okupansi')['occupancy']['units']);
+    }
+
+    public function test_promo_usage_counts_each_successful_payment_once_for_its_tenant(): void
+    {
+        config(['modules.promos' => 'released']);
+        $promo = ['promo' => ['id' => 1, 'code' => 'HEMAT', 'discount' => 20000]];
+        $this->booking($this->photo, '2026-11-09', slots: 2, payment: ['price_breakdown' => $promo], booking: ['namapelanggan' => 'Rani', 'email' => 'rani@example.test']);
+        $this->booking($this->photo, '2026-11-10', status: 'pending', payment: ['status' => 'pending', 'price_breakdown' => $promo]);
+        $foreign = Tenant::factory()->create();
+        $this->booking(Service::factory()->create(['idtenant' => $foreign->id]), '2026-11-10',
+            payment: ['price_breakdown' => $promo], tenant: $foreign);
+
+        $report = $this->report('pelanggan');
+        $this->assertSame([['customer' => 'Rani', 'code' => 'HEMAT', 'uses' => 1, 'discount' => 20000]], $report['customers']['promos']);
+        $csv = $this->csv($this->get(route('owner.analytics.export', ['tab' => 'pelanggan']))->assertOk());
+        $this->assertContains(['Rani', 'HEMAT', '1', '20000'], $csv);
     }
 
     public function test_the_page_has_one_period_filter_and_five_tabs_and_the_schedule_report_redirects(): void
