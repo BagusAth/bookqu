@@ -7,16 +7,18 @@
     'description' => null,
     'actionLabel' => null,
     'actionHref' => null,
+    'icon' => 'sparkle',
 ])
 
-<div {{ $attributes->merge(['class' => 'flex flex-col items-center gap-2 rounded-xl border border-dashed border-bq-border bg-bq-surface px-6 py-10 text-center']) }}>
-    <p class="text-sm font-semibold text-bq-text">{{ $title }}</p>
+<div {{ $attributes->merge(['class' => 'flex flex-col items-center gap-2 rounded-xl border border-dashed border-bq-border-strong bg-bq-surface px-6 py-10 text-center']) }}>
+    <span class="mb-1 flex h-11 w-11 items-center justify-center rounded-full bg-bq-primary-light text-bq-primary"><x-owner.icon :name="$icon" /></span>
+    <p class="text-base font-semibold text-bq-ink">{{ $title }}</p>
     @if ($description)
         <p class="max-w-sm text-sm text-bq-text-muted">{{ $description }}</p>
     @endif
     @isset($action)
         <div class="mt-2">{{ $action }}</div>
     @elseif ($actionLabel && $actionHref)
-        <a href="{{ $actionHref }}" class="mt-2 inline-flex items-center rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover">{{ $actionLabel }}</a>
+        <a href="{{ $actionHref }}" class="bq-btn bq-btn-primary mt-2">{{ $actionLabel }}</a>
     @endisset
 </div>

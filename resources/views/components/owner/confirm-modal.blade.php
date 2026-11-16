@@ -43,7 +43,7 @@
         show($event.detail.trigger);
     "
 >
-    <div x-show="open" x-cloak class="fixed inset-0 z-[100] bg-bq-ink/40" x-on:click="hide()" aria-hidden="true"></div>
+    <div x-show="open" x-cloak class="fixed inset-0 z-[100] bg-bq-ink/50 backdrop-blur-[2px]" x-on:click="hide()" aria-hidden="true"></div>
 
     <div x-show="open" x-cloak class="fixed inset-0 z-[110] flex items-center justify-center p-4 pointer-events-none">
         <div
@@ -55,9 +55,9 @@
             tabindex="-1"
             x-on:keydown="trap($event)"
             x-on:keydown.escape.stop="hide()"
-            class="pointer-events-auto w-full max-w-sm rounded-2xl border border-bq-border bg-bq-surface p-6 shadow-xl focus:outline-none"
+            class="pointer-events-auto w-full max-w-sm bq-panel p-6 shadow-bq focus:outline-none"
         >
-            <h2 id="owner-confirm-dialog-title" class="text-base font-semibold text-bq-text" x-text="title"></h2>
+            <h2 id="owner-confirm-dialog-title" class="text-lg font-bold text-bq-ink" x-text="title"></h2>
             <p id="owner-confirm-dialog-message" class="mt-2 text-sm text-bq-text-muted" x-text="message"></p>
 
             <form x-ref="actionForm" method="POST" x-bind:action="actionUrl" class="hidden">
@@ -66,12 +66,12 @@
             </form>
 
             <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button type="button" x-on:click="hide()" class="rounded-lg border border-bq-border bg-bq-surface px-4 py-2 text-sm font-medium text-bq-text hover:bg-bq-background" x-text="cancelText"></button>
+                <button type="button" x-on:click="hide()" class="bq-btn bq-btn-secondary" x-text="cancelText"></button>
                 <button
                     type="button"
                     x-on:click="accept()"
-                    class="rounded-lg px-4 py-2 text-sm font-medium text-white"
-                    x-bind:class="tone === 'danger' ? 'bg-bq-danger hover:opacity-90' : 'bg-bq-primary hover:bg-bq-primary-hover'"
+                    class="bq-btn"
+                    x-bind:class="tone === 'danger' ? 'bq-btn-danger-solid' : 'bq-btn-primary'"
                     x-text="confirmText"
                 ></button>
             </div>

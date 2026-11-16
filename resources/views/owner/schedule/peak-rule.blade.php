@@ -6,16 +6,16 @@
     @endif
     <div class="grid gap-3 sm:grid-cols-4">
         <label class="grid gap-1 text-sm">Nama aturan
-        <input name="name" value="{{ $rule?->name }}" required maxlength="100" class="rounded border border-bq-border bg-bq-surface p-2">
+        <input name="name" value="{{ $rule?->name }}" required maxlength="100" class="bq-input">
     </label>
         <label class="grid gap-1 text-sm">Mulai
-        <input type="time" name="starts_at" value="{{ substr($rule?->starts_at ?? '', 0, 5) }}" required class="rounded border border-bq-border bg-bq-surface p-2">
+        <input type="time" name="starts_at" value="{{ substr($rule?->starts_at ?? '', 0, 5) }}" required class="bq-input">
     </label>
         <label class="grid gap-1 text-sm">Selesai
-        <input type="time" name="ends_at" value="{{ substr($rule?->ends_at ?? '', 0, 5) }}" required class="rounded border border-bq-border bg-bq-surface p-2">
+        <input type="time" name="ends_at" value="{{ substr($rule?->ends_at ?? '', 0, 5) }}" required class="bq-input">
     </label>
         <label class="grid gap-1 text-sm">Tambahan (Rp)
-        <input type="number" name="extra_amount" value="{{ $rule?->extra_amount }}" required min="0" max="100000000" step="0.01" class="rounded border border-bq-border bg-bq-surface p-2">
+        <input type="number" name="extra_amount" value="{{ $rule?->extra_amount }}" required min="0" max="100000000" step="0.01" class="bq-input">
     </label>
     </div>
     <fieldset class="flex flex-wrap gap-3 text-sm">
@@ -30,5 +30,5 @@
             <label><input type="checkbox" name="service_ids[]" value="{{ $service->id }}" @checked($rule?->services->contains($service->id))> {{ $service->namalayanan }}</label>
         @endforeach
     </fieldset>
-    <button class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white">Simpan aturan</button>
+    <button class="bq-btn bq-btn-primary">Simpan aturan</button>
 </form>

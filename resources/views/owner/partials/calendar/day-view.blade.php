@@ -16,8 +16,8 @@
                 @php $nowShown = true; @endphp
             @endif
             <section aria-label="Slot pukul {{ $time }}">
-                <h2 class="mb-2 text-sm font-semibold">{{ $time }}</h2>
-                <div class="space-y-2">
+                <h2 class="bq-num mb-2 text-sm font-bold text-bq-ink">{{ $time }}</h2>
+                <div class="space-y-2 border-l-2 border-bq-border pl-3">
                     @foreach ($slots as $slot)
                         @include('owner.partials.calendar.slot')
                     @endforeach
@@ -28,13 +28,13 @@
     </div>
 
     @if ($gridServices->isNotEmpty())
-        <div class="hidden overflow-x-auto rounded-xl border border-bq-border bg-bq-surface lg:block">
+        <div class="bq-panel hidden overflow-x-auto lg:block">
             <table class="w-full border-collapse text-sm">
                 <thead>
                     <tr>
-                        <th scope="col" class="p-3 text-left">Jam</th>
+                        <th scope="col" class="sticky left-0 bg-bq-surface-2 p-3 text-left text-xs font-semibold text-bq-text-muted">Jam</th>
                         @foreach ($gridServices as $service)
-                            <th scope="col" class="min-w-40 p-3 text-left">{{ $service->namalayanan }}</th>
+                            <th scope="col" class="min-w-44 bg-bq-surface-2 p-3 text-left text-xs font-semibold text-bq-ink">{{ $service->namalayanan }}</th>
                         @endforeach
                     </tr>
                 </thead>
@@ -47,7 +47,7 @@
                         @endif
                         @php $byService = $slots->groupBy('service_id'); @endphp
                         <tr class="border-t border-bq-border">
-                            <th scope="row" class="p-3 text-left align-top tabular-nums">{{ $time }}</th>
+                            <th scope="row" class="bq-num sticky left-0 bg-bq-surface p-3 text-left align-top font-bold text-bq-ink">{{ $time }}</th>
                             @foreach ($gridServices as $service)
                                 <td class="space-y-2 p-2 align-top">
                                     @foreach ($byService->get($service->id, []) as $slot)

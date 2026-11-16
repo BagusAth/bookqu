@@ -2,7 +2,7 @@
 id: BQ-160
 title: Fix owner portal frontend defects and UX gaps found in the 2026-11-16 audit
 type: improvement
-status: approved           # Tech Lead 2026-11-16; D-024 approved by the Product Lead 2026-11-16
+status: done               # merged 2026-11-16 in PR #66; D-024 approved by the Product Lead 2026-11-16
 priority: P1
 phase: 5
 domain: tenancy            # cross-cutting: every owner page (docs/owner-portal.md)

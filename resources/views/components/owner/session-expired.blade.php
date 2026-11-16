@@ -35,21 +35,21 @@
     x-show="buka"
     x-cloak
     style="display: none;"
-    class="fixed inset-0 z-[130] flex items-center justify-center bg-[#231a3d]/50 p-4"
+    class="fixed inset-0 z-[130] flex items-center justify-center bg-bq-ink/50 p-4"
     role="dialog"
     aria-modal="true"
     aria-labelledby="session-expired-title"
 >
     <div class="w-full max-w-sm rounded-2xl border border-bq-border bg-white p-6 shadow-2xl">
-        <h2 id="session-expired-title" class="text-base font-bold text-[#231a3d]">Sesi Anda telah berakhir</h2>
-        <p class="mt-2 text-xs leading-relaxed text-[#6e6584]">
+        <h2 id="session-expired-title" class="text-base font-bold text-bq-ink">Sesi Anda telah berakhir</h2>
+        <p class="mt-2 text-xs leading-relaxed text-bq-text-muted">
             Perubahan terakhir belum tersimpan. Muat ulang halaman untuk melanjutkan, atau masuk lagi bila diminta.
         </p>
         <div class="mt-5 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
-            <a href="{{ route('login') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-center text-xs font-semibold text-slate-700 transition hover:bg-slate-50" id="btn-session-expired-login">
+            <a href="{{ route('login') }}" class="bq-btn bq-btn-secondary bq-btn-sm text-center" id="btn-session-expired-login">
                 Masuk lagi
             </a>
-            <button type="button" @click="window.location.reload()" class="rounded-xl bg-bq-primary px-4 py-2.5 text-xs font-bold text-white transition hover:bg-bq-primary-hover" id="btn-session-expired-reload">
+            <button type="button" @click="window.location.reload()" class="bq-btn bq-btn-primary bq-btn-sm" id="btn-session-expired-reload">
                 Muat ulang halaman
             </button>
         </div>

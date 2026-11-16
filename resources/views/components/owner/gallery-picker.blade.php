@@ -43,7 +43,7 @@
         <div class="flex items-center gap-3 text-sm">
             <button type="button" x-show="chosen !== ''" x-on:click="chosen = ''" class="text-bq-text-muted hover:text-bq-text">Hapus pilihan</button>
             @if ($galleryUrl)
-                <a href="{{ $galleryUrl }}" id="{{ $pickerId }}-gallery" class="text-bq-primary hover:text-bq-primary-hover">Kelola galeri</a>
+                <a href="{{ $galleryUrl }}" id="{{ $pickerId }}-gallery" class="bq-link">Kelola galeri</a>
             @endif
         </div>
     @endif

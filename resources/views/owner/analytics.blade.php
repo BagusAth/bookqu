@@ -11,8 +11,8 @@
 @php
     $rupiah = fn (float|int $value): string => 'Rp '.number_format((float) $value, 0, ',', '.');
     $percent = fn (float|int $value): string => number_format((float) $value, 1, ',', '.').'%';
-    $card = 'rounded-xl border border-bq-border bg-bq-surface';
-    $field = 'mt-1 block w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30';
+    $card = 'bq-panel';
+    $field = 'mt-1 block w-full bq-input';
     $tab = $report['tab'];
     $period = $report['period'];
     $summary = $report['summary'];
@@ -37,7 +37,7 @@
     <x-owner.page-header title="Laporan" purpose="Bagaimana kinerja bisnis Anda, dan apa yang bisa ditingkatkan.">
         @unless ($report['locked'])
             <x-slot:action>
-                <a href="{{ $exportUrl }}" class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm font-medium text-bq-text hover:bg-bq-background">Unduh CSV</a>
+                <a href="{{ $exportUrl }}" class="bq-btn bq-btn-secondary">Unduh CSV</a>
             </x-slot:action>
         @endunless
     </x-owner.page-header>
@@ -62,7 +62,7 @@
                 <input id="report-to" type="date" name="sampai" value="{{ $period['to'] }}" class="{{ $field }}" x-bind:disabled="periode !== 'kustom'">
             </div>
         </div>
-        <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover">Terapkan</button>
+        <button type="submit" class="bq-btn bq-btn-primary">Terapkan</button>
         <p class="w-full text-xs text-bq-text-muted">{{ $period['label'] }} · {{ \Carbon\Carbon::parse($period['from'])->translatedFormat('j M Y') }} – {{ \Carbon\Carbon::parse($period['to'])->translatedFormat('j M Y') }}. Rentang kustom paling lama 366 hari.</p>
     </form>
 
@@ -72,11 +72,11 @@
         <x-owner.upgrade-prompt feature="Laporan" plan="Medium" description="Lihat pendapatan, okupansi, layanan terlaris dan pelanggan baru per periode, lalu unduh setiap bagian sebagai CSV." />
         {{-- A sample only: no figure of the business is read below Medium. --}}
         <div class="pointer-events-none select-none blur-sm" aria-hidden="true">
-            <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div class="bq-panel grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden bg-bq-border">
                 @foreach (['Pendapatan bersih' => 'Rp 4.250.000', 'Booking' => '86', 'Pelanggan baru' => '23', 'Tingkat selesai' => '91,0%'] as $label => $value)
-                    <div class="{{ $card }} p-4">
+                    <div class="min-w-0 bg-bq-surface p-4 sm:p-5">
                         <p class="text-xs font-medium text-bq-text-muted">{{ $label }}</p>
-                        <p class="mt-1 text-xl font-semibold text-bq-text">{{ $value }}</p>
+                        <p class="bq-num mt-1 text-2xl font-bold text-bq-ink">{{ $value }}</p>
                     </div>
                 @endforeach
             </div>
@@ -88,11 +88,11 @@
                 @php $revenue = $report['revenue']; $maxNet = max([1, ...array_map(fn ($point) => abs($point['net']), $revenue['series'])]); @endphp
                 <section aria-labelledby="revenue-title" class="space-y-4">
                     <h2 id="revenue-title" class="sr-only">Pendapatan</h2>
-                    <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
+                    <div class="bq-panel grid grid-cols-2 lg:grid-cols-5 gap-px overflow-hidden bg-bq-border">
                         @foreach (['Pendapatan kotor' => $revenue['gross'], 'Online' => $revenue['online'], 'Walk-in' => $revenue['walkIn'], 'Refund' => $revenue['refunds'], 'Pendapatan bersih' => $revenue['net']] as $label => $value)
-                            <div class="{{ $card }} p-4">
+                            <div class="min-w-0 bg-bq-surface p-4 sm:p-5">
                                 <p class="text-xs font-medium text-bq-text-muted">{{ $label }}</p>
-                                <p class="mt-1 text-lg font-semibold text-bq-text">{{ $rupiah($value) }}</p>
+                                <p class="bq-num mt-1 text-2xl font-bold text-bq-ink">{{ $rupiah($value) }}</p>
                             </div>
                         @endforeach
                     </div>
@@ -155,11 +155,11 @@
                 @php $occupancy = $report['occupancy']; $heatmap = $occupancy['heatmap']; @endphp
                 <section aria-labelledby="occupancy-title" class="space-y-4">
                     <h2 id="occupancy-title" class="sr-only">Okupansi</h2>
-                    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <div class="bq-panel grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden bg-bq-border">
                         @foreach (['Tingkat okupansi' => $percent($occupancy['rate']), 'Kursi terisi / kapasitas' => number_format($occupancy['seats'], 0, ',', '.').' / '.number_format($occupancy['capacity'], 0, ',', '.'), 'Slot terisi' => number_format($occupancy['booked'], 0, ',', '.'), 'Slot kosong' => number_format($occupancy['free'], 0, ',', '.')] as $label => $value)
-                            <div class="{{ $card }} p-4">
+                            <div class="min-w-0 bg-bq-surface p-4 sm:p-5">
                                 <p class="text-xs font-medium text-bq-text-muted">{{ $label }}</p>
-                                <p class="mt-1 text-lg font-semibold text-bq-text">{{ $value }}</p>
+                                <p class="bq-num mt-1 text-2xl font-bold text-bq-ink">{{ $value }}</p>
                             </div>
                         @endforeach
                     </div>
@@ -255,11 +255,11 @@
                 @php $customers = $report['customers']; $newShare = $customers['active'] > 0 ? round($customers['new'] / $customers['active'] * 100, 1) : 0; @endphp
                 <section aria-labelledby="customers-title" class="space-y-4">
                     <h2 id="customers-title" class="sr-only">Pelanggan</h2>
-                    <div class="grid grid-cols-3 gap-3">
+                    <div class="bq-panel grid grid-cols-3 gap-px overflow-hidden bg-bq-border">
                         @foreach (['Pelanggan aktif' => $customers['active'], 'Baru' => $customers['new'], 'Kembali' => $customers['returning']] as $label => $value)
-                            <div class="{{ $card }} p-4">
+                            <div class="min-w-0 bg-bq-surface p-4 sm:p-5">
                                 <p class="text-xs font-medium text-bq-text-muted">{{ $label }}</p>
-                                <p class="mt-1 text-lg font-semibold text-bq-text">{{ number_format($value, 0, ',', '.') }}</p>
+                                <p class="bq-num mt-1 text-2xl font-bold text-bq-ink">{{ number_format($value, 0, ',', '.') }}</p>
                             </div>
                         @endforeach
                     </div>
@@ -312,9 +312,9 @@
                             $figures['Unit paling sering dipakai'] = $summary['topUnit'] ?? 'Belum ada pemakaian';
                         }
                     @endphp
-                    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <div class="bq-panel grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden bg-bq-border">
                         @foreach ($figures as $label => $value)
-                            <div class="{{ $card }} p-4">
+                            <div class="min-w-0 bg-bq-surface p-4 sm:p-5">
                                 <p class="text-xs font-medium text-bq-text-muted">{{ $label }}</p>
                                 <p class="mt-1 text-lg font-semibold text-bq-text break-words">{{ $value }}</p>
                             </div>

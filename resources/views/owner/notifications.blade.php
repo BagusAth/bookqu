@@ -9,7 +9,7 @@
 --}}
 
 @php
-    $chip = fn (bool $active): string => 'shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium '.($active ? 'border-bq-primary bg-bq-primary-light text-bq-primary' : 'border-bq-border bg-bq-surface text-bq-text-muted hover:text-bq-text');
+    $chip = fn (bool $active): string => 'shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors '.($active ? 'border-bq-primary bg-bq-primary text-white' : 'border-bq-border bg-bq-surface text-bq-ink hover:border-bq-primary');
     $query = fn (array $change): array => array_filter(array_merge(['filter' => $filter === 'unread' ? 'unread' : null, 'type' => $type], $change));
 @endphp
 
@@ -20,7 +20,7 @@
             <x-slot:action>
                 <form method="POST" action="{{ route('owner.notifications.read-all') }}">
                     @csrf
-                    <button type="submit" class="inline-flex items-center rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-sm font-medium text-bq-text hover:bg-bq-background">Tandai semua dibaca</button>
+                    <button type="submit" class="bq-btn bq-btn-secondary bq-btn-sm">Tandai semua dibaca</button>
                 </form>
             </x-slot:action>
         @endif
@@ -42,7 +42,7 @@
             description="Booking baru, perubahan status, refund, dan kabar paket muncul di sini."
         />
     @else
-        <ul class="divide-y divide-bq-border overflow-hidden rounded-xl border border-bq-border bg-bq-surface" aria-label="Daftar notifikasi">
+        <ul class="divide-y divide-bq-border overflow-hidden bq-panel" aria-label="Daftar notifikasi">
             @foreach ($notifications as $item)
                 <li class="flex items-start gap-3 px-4 py-3 {{ $item['unread'] ? 'bg-bq-primary-light/40' : '' }}">
                     <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {{ $item['unread'] ? 'bg-bq-primary' : 'bg-transparent' }}" aria-hidden="true"></span>
@@ -58,7 +58,7 @@
                     </form>
                     <button
                         type="button"
-                        class="shrink-0 rounded-lg px-2 py-1 text-xs text-bq-text-muted hover:bg-bq-background hover:text-bq-danger"
+                        class="bq-btn bq-btn-danger bq-btn-sm shrink-0"
                         aria-label="Hapus notifikasi {{ $item['title'] }}"
                         x-data
                         x-on:click="$dispatch('open-confirm', { title: 'Hapus notifikasi?', message: 'Notifikasi ini akan dihapus dari daftar Anda.', actionUrl: @js($item['destroyUrl']), method: 'DELETE', trigger: $el })"

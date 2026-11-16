@@ -30,7 +30,7 @@
     @endif
     {{ $attributes->except(['x-data']) }}
 >
-    <div x-show="open" x-cloak class="fixed inset-0 z-[100] bg-bq-ink/40" x-on:click="hide()" aria-hidden="true"></div>
+    <div x-show="open" x-cloak class="fixed inset-0 z-[100] bg-bq-ink/50 backdrop-blur-[2px]" x-on:click="hide()" aria-hidden="true"></div>
 
     <div x-show="open" x-cloak class="fixed inset-0 z-[110] flex items-end justify-center p-0 sm:items-center sm:p-4 pointer-events-none">
         <div
@@ -42,17 +42,17 @@
             tabindex="-1"
             x-on:keydown="trap($event)"
             x-on:keydown.escape.stop="hide()"
-            class="pointer-events-auto w-full {{ $width }} max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-bq-border bg-bq-surface shadow-xl focus:outline-none"
+            class="pointer-events-auto w-full {{ $width }} max-h-[90vh] overflow-y-auto rounded-t-2xl sm:bq-panel shadow-bq focus:outline-none"
         >
             <div class="flex items-start justify-between gap-4 border-b border-bq-border px-5 py-4">
                 <div>
-                    <h2 id="{{ $id }}-title" class="text-base font-semibold text-bq-text">{{ $title }}</h2>
+                    <h2 id="{{ $id }}-title" class="text-lg font-bold text-bq-ink">{{ $title }}</h2>
                     @if ($description)
                         <p id="{{ $id }}-description" class="mt-1 text-sm text-bq-text-muted">{{ $description }}</p>
                     @endif
                 </div>
-                <button type="button" x-on:click="hide()" aria-label="Tutup" class="rounded-lg p-1.5 text-bq-text-muted hover:bg-bq-background hover:text-bq-text">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                <button type="button" x-on:click="hide()" aria-label="Tutup" class="rounded-lg p-1.5 text-bq-text-muted hover:bg-bq-surface-2 hover:text-bq-text">
+                    <x-owner.icon name="x" class="h-5 w-5" />
                 </button>
             </div>
 
@@ -61,7 +61,7 @@
             </div>
 
             @isset($footer)
-                <div class="flex flex-col-reverse gap-2 border-t border-bq-border px-5 py-4 sm:flex-row sm:justify-end">
+                <div class="flex flex-col-reverse gap-2 border-t border-bq-border bg-bq-background/60 px-5 py-4 sm:flex-row sm:justify-end">
                     {{ $footer }}
                 </div>
             @endisset

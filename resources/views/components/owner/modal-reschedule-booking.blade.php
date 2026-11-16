@@ -90,7 +90,7 @@
             <div>
                 <label for="reschedule-date" class="font-medium">Tanggal baru</label>
                 <input id="reschedule-date" type="date" name="tanggal" x-model="date" :min="minDate" @change="load()" required
-                    class="mt-1 block w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 sm:w-auto">
+                    class="bq-input mt-1 block w-full sm:w-auto">
                 <x-owner.field-error name="tanggal" x-cloak x-show="@js($rescheduleForm) === 'reschedule-' + booking?.id" />
             </div>
             <fieldset class="space-y-2">
@@ -120,12 +120,12 @@
             <div>
                 <label for="reschedule-reason" class="font-medium">Alasan pindah jadwal (opsional)</label>
                 <input id="reschedule-reason" name="alasan" x-model="reason" type="text" placeholder="Contoh: Permintaan pelanggan"
-                    class="mt-1 block w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2">
+                    class="bq-input mt-1 block w-full">
                 <x-owner.field-error name="alasan" x-cloak x-show="@js($rescheduleForm) === 'reschedule-' + booking?.id" />
             </div>
             <div class="flex justify-end gap-2">
-                <button type="button" @click="hide()" class="rounded-lg border border-bq-border px-4 py-2 font-semibold">Batal</button>
-                <button type="submit" :disabled="saving || !selectedSlot" class="rounded-lg bg-bq-primary px-4 py-2 font-semibold text-white disabled:opacity-50"
+                <button type="button" @click="hide()" class="bq-btn bq-btn-secondary">Batal</button>
+                <button type="submit" :disabled="saving || !selectedSlot" class="bq-btn bq-btn-primary disabled:opacity-50"
                     x-text="saving ? 'Menyimpan…' : 'Simpan jadwal baru'">Simpan jadwal baru</button>
             </div>
         </form>

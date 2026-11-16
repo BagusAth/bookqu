@@ -1,5 +1,5 @@
 @php
-    $field = 'mt-1 block w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm';
+    $field = 'mt-1 block w-full bq-input';
     $formKey = $unit ? 'unit-edit-'.$unit['id'] : 'unit-create';
     $value = fn ($key, $default = null) => old('_form') === $formKey
         ? old($key, $unit[$key] ?? $default)
@@ -28,5 +28,5 @@
         <input type="checkbox" name="is_active" value="1" @checked($value('is_active', true))> Aktif
     </label>
     <x-owner.field-error name="is_active" :form="$formKey" />
-    <button type="submit" class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white">Simpan unit</button>
+    <button type="submit" class="bq-btn bq-btn-primary">Simpan unit</button>
 </form>

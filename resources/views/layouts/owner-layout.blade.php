@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="BookQu - Kelola bisnis booking Anda">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#4F46E5">
+    <meta name="theme-color" content="#382186">
 
     <title>@yield('title', 'Beranda') — BookQu</title>
 
     <link rel="icon" type="image/png" href="{{ asset('logo_icon.png') }}">
 
-    {{-- Only the Inter weights the owner UI uses (BQ-090) --}}
+    {{-- Plus Jakarta Sans, only the weights the owner UI uses (BQ-090, BQ-161) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     {{-- Shared owner blocks register their Alpine behaviour before Alpine starts (BQ-129) --}}
     <script defer src="{{ asset('js/owner-ui.js') }}"></script>
@@ -24,7 +24,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-bq-background font-sans text-bq-text antialiased">
+<body class="bq-owner bg-bq-background font-owner text-bq-text antialiased">
     @php $shell ??= ['ready' => false]; @endphp
 
     <div class="flex min-h-screen">

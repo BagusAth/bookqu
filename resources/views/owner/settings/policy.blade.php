@@ -1,4 +1,4 @@
-<form method="POST" action="{{ route('owner.settings.booking-policy') }}" class="space-y-4 rounded-xl border border-bq-border bg-bq-surface p-4"
+<form method="POST" action="{{ route('owner.settings.booking-policy') }}" class="space-y-4 bq-panel p-4"
     x-data="{
         formatHours(value) {
             const count = Math.max(0, Math.floor(Number(value)));
@@ -26,13 +26,13 @@
             @php $usesHours = str_ends_with($field, '_hours'); @endphp
             <label class="grid gap-1 text-sm" @if ($usesHours) x-data="{ hours: @js(old($field, $bookingPolicy[$field])) }" @endif>{{ $label }}
                 <input type="number" name="{{ $field }}" min="{{ $min }}" max="{{ $max }}" value="{{ old($field, $bookingPolicy[$field]) }}"
-                    @if ($usesHours) x-model.number="hours" @endif required class="rounded-lg border border-bq-border bg-bq-surface p-2">
+                    @if ($usesHours) x-model.number="hours" @endif required class="bq-input">
                 @if ($usesHours)<span class="text-xs text-bq-text-muted" aria-live="polite" x-text="hours === '' ? '' : formatHours(hours)"></span>@endif
                 <x-owner.field-error :name="$field" />
             </label>
         @endforeach
     </div>
-    <button class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white">Simpan kebijakan</button>
+    <button class="bq-btn bq-btn-primary">Simpan kebijakan</button>
 </form>
 <div class="mt-4 space-y-2">
     <h2 class="font-semibold">Kebijakan yang terlihat oleh pelanggan</h2>

@@ -9,7 +9,7 @@
 --}}
 
 @php
-    $card = 'rounded-xl border border-bq-border bg-bq-surface';
+    $card = 'bq-panel';
     $toneClass = fn (string $tone): string => match ($tone) {
         'success' => 'bg-bq-success-bg text-bq-success',
         'danger' => 'bg-bq-danger-bg text-bq-danger',
@@ -36,7 +36,7 @@
     <section aria-labelledby="plan-title" class="{{ $card }} p-4 sm:p-5">
         <div class="flex flex-wrap items-center gap-2">
             <h2 id="plan-title" class="text-lg font-semibold text-bq-text">{{ $langgananaktif?->plan ? ucfirst($langgananaktif->plan->namapaket) : 'Belum ada paket' }}</h2>
-            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $toneClass($statusTone) }}">{{ $statusLabel }}</span>
+            <span class="bq-badge {{ $toneClass($statusTone) }}">{{ $statusLabel }}</span>
         </div>
         <p class="mt-1 text-sm text-bq-text-muted">
             @if ($endDate)
@@ -55,7 +55,7 @@
                 @endphp
                 <div>
                     <dt class="text-sm text-bq-text-muted">{{ $title }}</dt>
-                    <dd class="mt-0.5 text-sm font-medium tabular-nums text-bq-text">
+                    <dd class="mt-0.5 text-sm font-medium bq-num text-bq-text">
                         @if ($limit === null)
                             {{ $figure['used'] }} {{ $unit }} · tanpa batas
                         @else
@@ -88,9 +88,9 @@
                             <span class="rounded-full bg-bq-primary-light px-2 py-0.5 text-xs font-medium text-bq-primary">Paket Anda</span>
                         @endif
                     </div>
-                    <p class="mt-1 text-xl font-semibold tabular-nums text-bq-text">Rp {{ number_format($paket->hargabulanan, 0, ',', '.') }}<span class="text-sm font-normal text-bq-text-muted"> / bulan</span></p>
+                    <p class="mt-1 text-xl font-semibold bq-num text-bq-text">Rp {{ number_format($paket->hargabulanan, 0, ',', '.') }}<span class="text-sm font-normal text-bq-text-muted"> / bulan</span></p>
                     <x-plan-features :plan="$paket" class="mt-3 flex-1 text-bq-text-muted" />
-                    <a href="{{ route('owner.checkout', $paket->id) }}" class="mt-4 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium {{ $isCurrent ? 'border border-bq-border bg-bq-surface text-bq-text hover:bg-bq-background' : 'bg-bq-primary text-white hover:bg-bq-primary-hover' }}">
+                    <a href="{{ route('owner.checkout', $paket->id) }}" class="mt-4 bq-btn {{ $isCurrent ? 'bq-btn-secondary' : 'bq-btn-primary' }}">
                         {{ $isCurrent ? 'Perpanjang paket' : 'Pilih paket' }}
                     </a>
                 </li>
@@ -107,15 +107,15 @@
                 @foreach ($history as $row)
                     <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
                         <div class="min-w-0">
-                            <p class="font-medium tabular-nums text-bq-text">{{ $row['amount'] }}</p>
+                            <p class="font-medium bq-num text-bq-text">{{ $row['amount'] }}</p>
                             <p class="text-xs text-bq-text-muted">{{ $row['date'] }} · {{ $row['orderId'] }}</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $toneClass($row['status']['tone']) }}">{{ $row['status']['label'] }}</span>
+                            <span class="bq-badge {{ $toneClass($row['status']['tone']) }}">{{ $row['status']['label'] }}</span>
                             @if ($row['invoiceUrl'])
-                                <a href="{{ $row['invoiceUrl'] }}" class="text-sm text-bq-primary hover:text-bq-primary-hover">Invoice</a>
+                                <a href="{{ $row['invoiceUrl'] }}" class="text-sm bq-link">Invoice</a>
                             @elseif ($row['payUrl'])
-                                <a href="{{ $row['payUrl'] }}" class="inline-flex items-center rounded-lg bg-bq-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-bq-primary-hover">Bayar sekarang</a>
+                                <a href="{{ $row['payUrl'] }}" class="bq-btn bq-btn-primary bq-btn-sm">Bayar sekarang</a>
                             @endif
                         </div>
                     </li>

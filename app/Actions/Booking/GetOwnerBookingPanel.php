@@ -19,6 +19,7 @@ use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Models\User;
+use App\Support\PaymentMethodLabel;
 use App\Support\StatusBadge;
 use Carbon\Carbon;
 
@@ -64,7 +65,7 @@ final class GetOwnerBookingPanel
             ],
             'payment' => [
                 'status' => self::badge('payment', $payment->status ?? 'Belum tercatat'),
-                'method' => $payment?->metode, 'amount' => $amount,
+                'method' => PaymentMethodLabel::for($payment?->metode), 'amount' => $amount,
                 'breakdown' => isset($breakdown['base_subtotal']) ? [
                     ['label' => 'Subtotal sesi', 'amount' => self::rupiah((float) $breakdown['base_subtotal'])],
                 ] : [],

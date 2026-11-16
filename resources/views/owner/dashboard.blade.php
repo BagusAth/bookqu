@@ -7,65 +7,84 @@
     today's schedule with tomorrow's summary, the booking link card, quick actions, and the new
     owner guide in place of sections 2–4 until it is done. Data from App\Actions\Dashboard\GetBeranda;
     sections 2–4 refresh while the page is visible and render as text only. No charts (AC-BRD-07).
+    BQ-161: today's schedule is the day rail with the marigold "now" line; the first figure is the hero.
 --}}
 
 @php
     $bannerTone = [
-        'danger' => 'border-bq-danger/30 bg-bq-danger-bg text-bq-danger',
-        'warning' => 'border-bq-warning/30 bg-bq-warning-bg text-bq-warning',
-        'info' => 'border-bq-info/30 bg-bq-info-bg text-bq-info',
+        'danger' => ['border-bq-danger/30 bg-bq-danger-bg text-bq-danger', 'alert'],
+        'warning' => ['border-bq-warning/30 bg-bq-warning-bg text-bq-warning', 'alert'],
+        'info' => ['border-bq-info/30 bg-bq-info-bg text-bq-info', 'info'],
     ];
-    $badgeTone = "{ 'bg-bq-info-bg text-bq-info': badge.tone === 'info', 'bg-bq-success-bg text-bq-success': badge.tone === 'success', 'bg-bq-warning-bg text-bq-warning': badge.tone === 'warning', 'bg-bq-danger-bg text-bq-danger': badge.tone === 'danger', 'bg-bq-background text-bq-text-muted': !['info','success','warning','danger'].includes(badge.tone) }";
-    $card = 'rounded-xl border border-bq-border bg-bq-surface';
-    $secondaryButton = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-sm font-medium text-bq-text hover:bg-bq-background';
+    $badgeTone = "{ 'bg-bq-info-bg text-bq-info': badge.tone === 'info', 'bg-bq-success-bg text-bq-success': badge.tone === 'success', 'bg-bq-warning-bg text-bq-warning': badge.tone === 'warning', 'bg-bq-danger-bg text-bq-danger': badge.tone === 'danger', 'bg-bq-surface-2 text-bq-text-muted': !['info','success','warning','danger'].includes(badge.tone) }";
+    $card = 'bq-panel';
+    $secondaryButton = 'bq-btn bq-btn-secondary bq-btn-sm';
     $greetingName = \Illuminate\Support\Str::of((string) (auth()->user()?->namalengkap ?? ''))->before(' ')->value();
+    [$bannerClass, $bannerIcon] = $banner ? ($bannerTone[$banner['tone']] ?? $bannerTone['info']) : ['', ''];
 @endphp
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6">
-    <x-owner.page-header :title="$greetingName !== '' ? 'Halo, '.$greetingName : 'Beranda'" purpose="Yang perlu Anda ketahui dan lakukan hari ini." />
+    <div class="flex flex-wrap items-end justify-between gap-2">
+        <x-owner.page-header :title="$greetingName !== '' ? 'Halo, '.$greetingName : 'Beranda'" purpose="Yang perlu Anda ketahui dan lakukan hari ini." />
+        <p class="text-sm font-medium text-bq-text-muted">{{ now('Asia/Jakarta')->translatedFormat('l, j F Y') }}</p>
+    </div>
 
     {{-- 1. One status banner (AC-BRD-01) --}}
     @if ($banner)
-        <div role="status" data-beranda-banner="{{ $banner['kind'] }}" class="flex flex-col gap-3 rounded-xl border px-4 py-3 sm:flex-row sm:items-center sm:justify-between {{ $bannerTone[$banner['tone']] ?? $bannerTone['info'] }}">
-            <div class="text-sm">
-                <p class="font-medium">{{ $banner['message'] }}</p>
-                @if ($banner['note'])
-                    <p class="mt-0.5">{{ $banner['note'] }}</p>
-                @endif
+        <div role="status" data-beranda-banner="{{ $banner['kind'] }}" class="flex flex-col gap-3 rounded-xl border px-4 py-3 sm:flex-row sm:items-center sm:justify-between {{ $bannerClass }}">
+            <div class="flex items-start gap-3 text-sm">
+                <x-owner.icon :name="$bannerIcon" class="mt-0.5 h-5 w-5" />
+                <div>
+                    <p class="font-semibold">{{ $banner['message'] }}</p>
+                    @if ($banner['note'])
+                        <p class="mt-0.5">{{ $banner['note'] }}</p>
+                    @endif
+                </div>
             </div>
             @if ($banner['action'])
-                <a href="{{ $banner['action']['url'] }}" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-bq-surface px-3 py-1.5 text-sm font-semibold text-bq-text ring-1 ring-inset ring-current/20 hover:bg-bq-background">{{ $banner['action']['label'] }}</a>
+                <a href="{{ $banner['action']['url'] }}" class="bq-btn bq-btn-secondary bq-btn-sm shrink-0">{{ $banner['action']['label'] }}</a>
             @endif
         </div>
     @endif
 
     @if ($guide)
         {{-- 7. New owner guide (AC-BRD-05), shown instead of sections 2–4 --}}
-        <section data-owner-guide aria-labelledby="owner-guide-title" class="{{ $card }} p-5">
-            <div class="flex items-baseline justify-between gap-3">
-                <h2 id="owner-guide-title" class="text-base font-semibold text-bq-text">Siapkan bisnis Anda</h2>
-                <p class="text-sm tabular-nums text-bq-text-muted">{{ $guide['done'] }} dari 4 langkah</p>
+        <section data-owner-guide aria-labelledby="owner-guide-title" class="{{ $card }} overflow-hidden">
+            <div class="flex items-center justify-between gap-3 border-b border-bq-border bg-bq-primary-light/60 px-5 py-4">
+                <div>
+                    <h2 id="owner-guide-title" class="text-lg font-bold text-bq-ink">Siapkan bisnis Anda</h2>
+                    <p class="mt-0.5 text-sm text-bq-text-muted">Empat langkah sampai pelanggan pertama bisa booking.</p>
+                </div>
+                <div class="text-right">
+                    <p class="bq-num text-sm font-semibold text-bq-primary">{{ $guide['done'] }} dari 4 langkah</p>
+                    <div class="mt-1.5 h-1.5 w-28 overflow-hidden rounded-full bg-white" aria-hidden="true">
+                        <div class="h-full rounded-full bg-bq-primary" style="width: {{ (int) round($guide['done'] / 4 * 100) }}%"></div>
+                    </div>
+                </div>
             </div>
-            <ol class="mt-4 space-y-3">
+            <ol class="divide-y divide-bq-border">
+                @php $nextStep = collect($guide['steps'])->search(fn ($step) => ! $step['done']); @endphp
                 @foreach ($guide['steps'] as $index => $step)
-                    <li class="flex items-start gap-3">
+                    <li @class(['flex items-start gap-3 px-5 py-4', 'bg-bq-accent-bg/50' => $index === $nextStep])>
                         <span @class([
-                            'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
-                            'bg-bq-success-bg text-bq-success' => $step['done'],
-                            'bg-bq-background text-bq-text-muted ring-1 ring-inset ring-bq-border' => ! $step['done'],
-                        ]) aria-hidden="true">{{ $step['done'] ? '✓' : $index + 1 }}</span>
+                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold',
+                            'bg-bq-primary text-white' => $step['done'],
+                            'bg-bq-accent text-bq-ink' => ! $step['done'] && $index === $nextStep,
+                            'bg-bq-surface-2 text-bq-text-muted' => ! $step['done'] && $index !== $nextStep,
+                        ]) aria-hidden="true">@if ($step['done'])<x-owner.icon name="check" class="h-4 w-4" />@else{{ $index + 1 }}@endif</span>
                         <div class="min-w-0 flex-1">
-                            <p class="text-sm font-medium {{ $step['done'] ? 'text-bq-text-muted line-through' : 'text-bq-text' }}">
+                            <p class="text-sm font-semibold {{ $step['done'] ? 'text-bq-text-muted line-through' : 'text-bq-ink' }}">
                                 {{ $step['label'] }}<span class="sr-only">{{ $step['done'] ? ' (selesai)' : ' (belum)' }}</span>
                             </p>
-                            <p class="text-xs text-bq-text-muted">{{ $step['hint'] }}</p>
+                            <p class="mt-0.5 text-sm text-bq-text-muted">{{ $step['hint'] }}</p>
                         </div>
                         @unless ($step['done'])
+                            @php $stepButton = $index === $nextStep ? 'bq-btn bq-btn-primary bq-btn-sm' : $secondaryButton; @endphp
                             @if ($step['event'])
-                                <button type="button" x-data x-on:click="$dispatch(@js($step['event']))" class="{{ $secondaryButton }} shrink-0">Mulai</button>
+                                <button type="button" x-data x-on:click="$dispatch(@js($step['event']))" class="{{ $stepButton }} shrink-0">Mulai</button>
                             @elseif ($step['url'])
-                                <a href="{{ $step['url'] }}" class="{{ $secondaryButton }} shrink-0">Mulai</a>
+                                <a href="{{ $step['url'] }}" class="{{ $stepButton }} shrink-0">Mulai</a>
                             @endif
                         @endunless
                     </li>
@@ -75,80 +94,108 @@
     @else
         {{-- Sections 2–4, refreshed while visible (AC-BRD-06) --}}
         <div x-data="ownerBeranda(@js($live), @js(route('owner.dashboard.polling')))" class="space-y-6">
-            {{-- 2. Today in four figures --}}
-            <section aria-label="Hari ini" class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <template x-for="figure in live.figures" x-bind:key="figure.key">
-                    <div class="{{ $card }} p-4">
+            {{-- 2. Today in four figures; the first one is the hero --}}
+            <section aria-label="Hari ini" class="{{ $card }} grid grid-cols-2 divide-bq-border max-lg:gap-px max-lg:overflow-hidden max-lg:bg-bq-border lg:grid-cols-4 lg:divide-x">
+                <template x-for="(figure, index) in live.figures" x-bind:key="figure.key">
+                    <div class="min-w-0 bg-bq-surface p-4 sm:p-5" x-bind:class="index === 0 ? 'max-lg:col-span-2' : ''">
                         <p class="text-sm text-bq-text-muted" x-text="figure.label"></p>
-                        <p class="mt-1 break-words text-xl font-semibold tabular-nums text-bq-text sm:text-2xl" x-text="figure.value"></p>
-                        <p class="mt-0.5 text-xs text-bq-text-muted" x-text="figure.hint"></p>
+                        <p class="bq-num mt-1 break-words font-bold text-bq-ink" x-bind:class="index === 0 ? 'text-4xl' : 'text-2xl'" x-text="figure.value"></p>
+                        <p class="mt-1 text-xs text-bq-text-muted" x-text="figure.hint"></p>
                     </div>
                 </template>
             </section>
 
             <div class="grid gap-6 lg:grid-cols-3">
-                {{-- 4. Today's schedule and tomorrow --}}
-                <section aria-labelledby="today-title" class="{{ $card }} lg:col-span-2">
-                    <h2 id="today-title" class="border-b border-bq-border px-4 py-3 text-base font-semibold text-bq-text">Jadwal hari ini</h2>
+                {{-- 4. Today's schedule on the day rail, and tomorrow --}}
+                <section aria-labelledby="today-title" class="{{ $card }} lg:col-span-2"
+                    x-data="{ now: '', tick() { this.now = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()); }, start(row) { return (String(row.time).match(/\d{2}[:.]\d{2}/) || ['99:99'])[0].replace('.', ':'); }, get nowIndex() { const index = live.today.findIndex(row => this.start(row) > this.now); return index === -1 ? live.today.length : index; } }"
+                    x-init="tick(); setInterval(() => tick(), 30000)">
+                    <div class="flex items-center justify-between gap-3 border-b border-bq-border px-4 py-3 sm:px-5">
+                        <h2 id="today-title" class="text-base font-semibold text-bq-ink">Jadwal hari ini</h2>
+                        <span class="bq-num rounded-full bg-bq-accent-bg px-2.5 py-0.5 text-xs font-bold text-bq-ink" x-show="now" x-text="'Sekarang ' + now.replace(':', '.')"></span>
+                    </div>
 
-                    <div x-show="live.today.length === 0" class="px-4 py-8 text-center">
-                        <p class="text-sm font-medium text-bq-text">Belum ada booking hari ini</p>
+                    <div x-show="live.today.length === 0" class="px-4 py-10 text-center">
+                        <span class="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-bq-primary-light text-bq-primary"><x-owner.icon name="calendar" /></span>
+                        <p class="text-base font-semibold text-bq-ink">Belum ada booking hari ini</p>
                         <p x-show="live.next" class="mt-1 text-sm text-bq-text-muted">
                             Booking berikutnya: <span x-text="live.next ? live.next.date + ', ' + live.next.time + ' · ' + live.next.customer : ''"></span>
                         </p>
                     </div>
 
-                    <ul x-show="live.today.length > 0" class="divide-y divide-bq-border">
-                        <template x-for="row in live.today" x-bind:key="row.id">
-                            <li class="flex items-start gap-3 px-4 py-3" x-bind:class="row.in_progress ? 'bg-bq-primary-light/40' : ''">
-                                <div class="w-24 shrink-0">
-                                    <p class="text-sm font-semibold tabular-nums text-bq-text" x-text="row.time"></p>
-                                    <p x-show="row.in_progress" class="text-xs font-medium text-bq-primary">Sedang berlangsung</p>
+                    <ol x-show="live.today.length > 0" class="px-4 py-2 sm:px-5" aria-label="Booking hari ini menurut jam">
+                        <template x-for="(row, index) in live.today" x-bind:key="row.id">
+                            <li>
+                                <div x-show="index === nowIndex" class="relative my-1 flex items-center gap-2" aria-hidden="true">
+                                    <span class="bq-num w-16 shrink-0 rounded-full bg-bq-accent px-2 py-0.5 text-center text-[11px] font-bold text-bq-ink" x-text="now.replace(':', '.')"></span>
+                                    <span class="h-0.5 flex-1 rounded-full bg-bq-accent"></span>
                                 </div>
-                                <div class="min-w-0 flex-1">
-                                    <p class="break-words text-sm font-medium text-bq-text" x-text="row.customer"></p>
-                                    <p class="truncate text-xs text-bq-text-muted" x-text="row.service"></p>
-                                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-                                        <template x-for="badge in [row.status, row.payment]">
-                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" x-bind:class="{{ $badgeTone }}" x-text="badge.label"></span>
-                                        </template>
+                                <div class="grid grid-cols-[4rem_minmax(0,1fr)] gap-3 py-2">
+                                    <p class="bq-num pt-3 text-sm font-semibold text-bq-ink" x-text="start(row).replace(':', '.')"></p>
+                                    <div class="relative border-l-2 pl-4" x-bind:class="row.in_progress ? 'border-bq-primary' : 'border-bq-border'">
+                                        <span class="absolute top-4 -left-[5px] h-2 w-2 rounded-full" x-bind:class="row.in_progress ? 'bg-bq-primary' : 'bg-bq-border-strong'" aria-hidden="true"></span>
+                                        <div class="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-start" x-bind:class="row.in_progress ? 'border-bq-primary-border bg-bq-primary-light' : 'border-bq-border bg-bq-surface'">
+                                            <div class="min-w-0 flex-1">
+                                                <p class="break-words text-sm font-semibold text-bq-ink" x-text="row.customer"></p>
+                                                <p class="truncate text-sm text-bq-text-muted"><span class="bq-num" x-text="row.time"></span> · <span x-text="row.service"></span></p>
+                                                <p x-show="row.in_progress" class="mt-0.5 text-xs font-semibold text-bq-primary">Sedang berlangsung</p>
+                                                <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                                                    <template x-for="badge in [row.status, row.payment]">
+                                                        <span class="bq-badge" x-bind:class="{{ $badgeTone }}" x-text="badge.label"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                                                <a x-bind:href="row.href" x-on:click="if (row.panel_url) { $event.preventDefault(); $dispatch('open-booking-panel', { url: row.panel_url, trigger: $el }); }" class="bq-btn bq-btn-ghost bq-btn-sm">Buka</a>
+                                                <template x-for="outcome in [
+                                                    { url: row.complete_url, status: 'completed', label: 'Tandai selesai', message: 'Pastikan sesi pelanggan sudah selesai.' },
+                                                    { url: row.no_show_url, status: 'no_show', label: 'Tidak datang', message: 'Pastikan pelanggan tidak datang pada sesi ini.' }
+                                                ].filter(outcome => outcome.url)" :key="outcome.status">
+                                                    <form method="POST" :action="outcome.url" :id="'dashboard-' + row.id + '-' + outcome.status">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <input type="hidden" name="status" :value="outcome.status">
+                                                        <button type="button" class="{{ $secondaryButton }}" x-text="outcome.label"
+                                                            @click="$dispatch('open-confirm', { title: outcome.label + '?', message: outcome.message, formId: $el.form.id, confirmText: outcome.label })"></button>
+                                                    </form>
+                                                </template>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="flex shrink-0 flex-col items-end gap-2">
-                                    <a x-bind:href="row.href" x-on:click="if (row.panel_url) { $event.preventDefault(); $dispatch('open-booking-panel', { url: row.panel_url, trigger: $el }); }" class="{{ $secondaryButton }}">Buka</a>
-                                    <template x-for="outcome in [
-                                        { url: row.complete_url, status: 'completed', label: 'Tandai selesai', message: 'Pastikan sesi pelanggan sudah selesai.' },
-                                        { url: row.no_show_url, status: 'no_show', label: 'Tidak datang', message: 'Pastikan pelanggan tidak datang pada sesi ini.' }
-                                    ].filter(outcome => outcome.url)" :key="outcome.status">
-                                        <form method="POST" :action="outcome.url" :id="'dashboard-' + row.id + '-' + outcome.status">
-                                            @csrf
-                                            @method('PATCH')
-                                            <input type="hidden" name="status" :value="outcome.status">
-                                            <button type="button" class="{{ $secondaryButton }}" x-text="outcome.label"
-                                                @click="$dispatch('open-confirm', { title: outcome.label + '?', message: outcome.message, formId: $el.form.id, confirmText: outcome.label })"></button>
-                                        </form>
-                                    </template>
                                 </div>
                             </li>
                         </template>
-                    </ul>
+                        <li x-show="nowIndex === live.today.length" class="my-1 flex items-center gap-2" aria-hidden="true">
+                            <span class="bq-num w-16 shrink-0 rounded-full bg-bq-accent px-2 py-0.5 text-center text-[11px] font-bold text-bq-ink" x-text="now.replace(':', '.')"></span>
+                            <span class="h-0.5 flex-1 rounded-full bg-bq-accent"></span>
+                        </li>
+                    </ol>
 
-                    <p class="border-t border-bq-border px-4 py-3 text-sm text-bq-text-muted">
-                        <span class="font-medium text-bq-text">Besok:</span>
+                    <p class="border-t border-bq-border px-4 py-3 text-sm text-bq-text-muted sm:px-5">
+                        <span class="font-semibold text-bq-ink">Besok:</span>
                         <span x-text="live.tomorrow.count === 0 ? 'belum ada booking' : live.tomorrow.count + ' booking, pertama ' + live.tomorrow.first_time + ' · ' + live.tomorrow.first_customer"></span>
                     </p>
                 </section>
 
                 {{-- 3. Perlu tindakan (AC-BRD-04) --}}
-                <section aria-labelledby="actions-title" class="{{ $card }}">
-                    <h2 id="actions-title" class="border-b border-bq-border px-4 py-3 text-base font-semibold text-bq-text">Perlu tindakan</h2>
-                    <p x-show="live.actions.length === 0" class="px-4 py-6 text-sm text-bq-text-muted">Tidak ada yang perlu ditindak. Semua beres.</p>
+                <section aria-labelledby="actions-title" class="{{ $card }} self-start">
+                    <div class="flex items-center justify-between gap-3 border-b border-bq-border px-4 py-3 sm:px-5">
+                        <h2 id="actions-title" class="text-base font-semibold text-bq-ink">Perlu tindakan</h2>
+                        <span x-show="live.actions.length > 0" class="bq-count" x-text="live.actions.reduce((sum, item) => sum + Number(item.count || 0), 0)"></span>
+                    </div>
+                    <div x-show="live.actions.length === 0" class="flex items-center gap-3 px-4 py-6 sm:px-5">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bq-success-bg text-bq-success"><x-owner.icon name="check" class="h-5 w-5" /></span>
+                        <p class="text-sm text-bq-text-muted">Tidak ada yang perlu ditindak. Semua beres.</p>
+                    </div>
                     <ul x-show="live.actions.length > 0" class="divide-y divide-bq-border">
                         <template x-for="item in live.actions" x-bind:key="item.key">
                             <li>
-                                <a x-bind:href="item.url" class="flex items-center justify-between gap-3 px-4 py-3 text-sm text-bq-text hover:bg-bq-background">
+                                <a x-bind:href="item.url" class="flex items-center justify-between gap-3 px-4 py-3 text-sm text-bq-ink transition-colors hover:bg-bq-primary-light/60 sm:px-5">
                                     <span x-text="item.label"></span>
-                                    <span class="inline-flex min-w-6 items-center justify-center rounded-full bg-bq-warning-bg px-2 py-0.5 text-xs font-semibold tabular-nums text-bq-warning" x-text="item.count"></span>
+                                    <span class="flex items-center gap-1.5 font-bold text-bq-primary">
+                                        <span class="bq-num" x-text="item.count"></span>
+                                        <x-owner.icon name="chevron-right" class="h-4 w-4" />
+                                    </span>
                                 </a>
                             </li>
                         </template>
@@ -161,12 +208,17 @@
     <div class="grid gap-6 lg:grid-cols-3">
         {{-- 5. Booking link card --}}
         @if ($link)
-            <section aria-labelledby="link-title" class="{{ $card }} p-4 lg:col-span-2" x-data="ownerBookingLink(@js($link), @js(route('owner.dashboard.link-shared')))">
-                <h2 id="link-title" class="text-base font-semibold text-bq-text">Link booking Anda</h2>
-                <p class="mt-1 text-sm text-bq-text-muted">Bagikan ke pelanggan lewat WhatsApp, Instagram atau Google Maps.</p>
-                <p class="mt-3 break-all rounded-lg bg-bq-background px-3 py-2 font-mono text-sm text-bq-text">{{ $link['url'] }}</p>
+            <section aria-labelledby="link-title" class="{{ $card }} p-4 sm:p-5 lg:col-span-2" x-data="ownerBookingLink(@js($link), @js(route('owner.dashboard.link-shared')))">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-bq-primary-light text-bq-primary"><x-owner.icon name="link" /></span>
+                    <div class="min-w-0">
+                        <h2 id="link-title" class="text-base font-semibold text-bq-ink">Link booking Anda</h2>
+                        <p class="mt-0.5 text-sm text-bq-text-muted">Bagikan ke pelanggan lewat WhatsApp, Instagram atau Google Maps.</p>
+                    </div>
+                </div>
+                <p class="mt-4 break-all rounded-lg border border-dashed border-bq-border-strong bg-bq-background px-3 py-2.5 text-sm font-medium text-bq-ink">{{ $link['url'] }}</p>
                 <div class="mt-3 flex flex-wrap gap-2">
-                    <button type="button" x-on:click="copy()" class="inline-flex items-center rounded-lg bg-bq-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-bq-primary-hover" x-text="copied ? 'Tersalin' : 'Salin link'">Salin link</button>
+                    <button type="button" x-on:click="copy()" class="bq-btn bq-btn-primary bq-btn-sm" x-text="copied ? 'Tersalin' : 'Salin link'">Salin link</button>
                     <button type="button" x-show="canShare" x-cloak x-on:click="share()" class="{{ $secondaryButton }}">Bagikan</button>
                     <a href="https://wa.me/?text={{ rawurlencode($link['share_text']) }}" target="_blank" rel="noopener" x-on:click="mark()" class="{{ $secondaryButton }}">Kirim lewat WhatsApp</a>
                 </div>
@@ -175,14 +227,18 @@
 
         {{-- 6. Quick actions --}}
         @if (count($quickActions) > 0)
-            <section aria-labelledby="quick-title" class="{{ $card }} p-4">
-                <h2 id="quick-title" class="text-base font-semibold text-bq-text">Aksi cepat</h2>
-                <div class="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-1">
+            <section aria-labelledby="quick-title" class="{{ $card }} p-4 sm:p-5">
+                <h2 id="quick-title" class="text-base font-semibold text-bq-ink">Aksi cepat</h2>
+                <div class="mt-3 grid grid-cols-2 gap-2">
                     @foreach ($quickActions as $action)
                         @if ($action['event'] !== '')
-                            <button type="button" data-quick-action="{{ $action['key'] }}" x-data x-on:click="$dispatch('open-dialog', { id: @js($action['event']), trigger: $el })" class="{{ $secondaryButton }} whitespace-nowrap py-2">+ {{ $action['label'] }}</button>
+                            <button type="button" data-quick-action="{{ $action['key'] }}" x-data x-on:click="$dispatch('open-dialog', { id: @js($action['event']), trigger: $el })" class="bq-btn bq-btn-secondary justify-start">
+                                <x-owner.icon name="plus" class="h-4 w-4 text-bq-primary" />{{ $action['label'] }}
+                            </button>
                         @else
-                            <a href="{{ $action['url'] }}" data-quick-action="{{ $action['key'] }}" class="{{ $secondaryButton }} whitespace-nowrap py-2">+ {{ $action['label'] }}</a>
+                            <a href="{{ $action['url'] }}" data-quick-action="{{ $action['key'] }}" class="bq-btn bq-btn-secondary justify-start">
+                                <x-owner.icon name="plus" class="h-4 w-4 text-bq-primary" />{{ $action['label'] }}
+                            </a>
                         @endif
                     @endforeach
                 </div>

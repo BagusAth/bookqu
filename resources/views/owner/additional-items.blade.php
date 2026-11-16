@@ -9,7 +9,7 @@
     $restore = ($oldForm === 'addon-create' || $editingId !== null)
         ? \Illuminate\Support\Arr::only(old(), ['name', 'description', 'price', 'stock', 'is_active', 'service_ids']) + ['id' => $editingId]
         : null;
-    $input = 'mt-1 w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm';
+    $input = 'mt-1 w-full bq-input';
 @endphp
 <div class="mx-auto max-w-7xl space-y-5" x-data="{
     item: {},
@@ -27,7 +27,7 @@
 }">
     <x-owner.page-header title="Add-on" purpose="Kelola produk tambahan yang dapat dipesan bersama layanan.">
         <x-slot:action>
-            <button id="btn-add-addon" type="button" @click="edit(null, $el)" class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white">Tambah add-on</button>
+            <button id="btn-add-addon" type="button" @click="edit(null, $el)" class="bq-btn bq-btn-primary">Tambah add-on</button>
         </x-slot:action>
     </x-owner.page-header>
 
@@ -38,7 +38,7 @@
         <label class="text-sm">Cari add-on
             <input name="search" value="{{ $search }}" class="{{ $input }}" type="search">
         </label>
-        <button class="rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm font-semibold">Cari</button>
+        <button class="bq-btn bq-btn-secondary">Cari</button>
     </form>
 
     <div class="grid gap-3 lg:grid-cols-2">
@@ -49,7 +49,7 @@
                     'service_ids' => $item->services->modelKeys(),
                 ];
             @endphp
-            <article class="flex flex-col gap-3 rounded-xl border border-bq-border bg-bq-surface p-4">
+            <article class="flex flex-col gap-3 bq-panel p-4">
                 <div class="flex flex-wrap items-start justify-between gap-2">
                     <h2 class="font-semibold">{{ $item->name }}</h2>
                     <x-owner.status-badge type="availability" :status="$item->is_active ? 'active' : 'inactive'" />
@@ -134,7 +134,7 @@
                 </select>
                 <x-owner.field-error name="is_active" x-cloak x-show="formKey === @js($oldForm)" />
             </div>
-            <button type="submit" class="rounded-lg bg-bq-primary px-4 py-2 font-semibold text-white">Simpan add-on</button>
+            <button type="submit" class="bq-btn bq-btn-primary">Simpan add-on</button>
         </form>
     </x-owner.dialog>
 </div>

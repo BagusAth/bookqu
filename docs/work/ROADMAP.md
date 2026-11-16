@@ -14,7 +14,7 @@ From the current state to a production-ready, maintainable BookQu. Each phase en
 | Track | Items | Owner | When |
 |---|---|---|---|
 | **Operations** | BQ-017 staging, BQ-019 backup and restore, BQ-020 scheduler and queue, BQ-021 mail and monitoring, BQ-022 production payment, BQ-074 step 2; TLS and `CUSTOM_DOMAIN_*` for own domains (`operations.md` §8); branch protection | Tech Lead | before the release |
-| **Owner portal audit** | [BQ-160](BQ-160-owner-portal-ui-ux-audit.md): every owner portal UI/UX fix, including the D-024 actions, in one bulk PR from `agathan-bq-160-owner-portal-fixes` (Tech Lead exception, 2026-11-16) | Tech Lead (PR audit), developer agent | before the regression pass |
+| **Owner portal look** | [BQ-161](BQ-161-owner-portal-visual-redesign.md): design system (brand aubergine and marigold, Plus Jakarta Sans, `x-ui` components) and a restyle of every owner page, presentation only, one bulk PR | Tech Lead (approval, PR audit), developer agent | before the regression pass |
 | **Release** | BQ-158: regression pass on staging against every `AC-*`, then release v1.0.0; BQ-126 closes with it | Tech Lead (execution), Product Lead (go) | after the operations track |
 | **After the release** | BQ-016, BQ-034, BQ-035, BQ-075 (phase 6), BQ-082 | Tech Lead | after launch |
 | **Open product decisions** | D-003 (admin scope beyond payouts and refunds), D-021 items | Product Lead | when decided |

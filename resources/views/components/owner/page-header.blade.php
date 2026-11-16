@@ -19,9 +19,9 @@
 
 <div {{ $attributes->merge(['class' => 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between']) }}>
     <div class="min-w-0">
-        <h1 class="text-xl font-semibold text-bq-text sm:text-2xl">{{ $heading }}</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-bq-ink">{{ $heading }}</h1>
         @if ($subheading)
-            <p class="mt-1 text-sm text-bq-text-muted">{{ $subheading }}</p>
+            <p class="mt-1 max-w-2xl text-sm text-bq-text-muted">{{ $subheading }}</p>
         @endif
     </div>
     @if ($primaryAction)

@@ -11,57 +11,70 @@
     <x-owner.page-header title="Booking" purpose="Temukan booking dan tangani permintaan pelanggan.">
         @if ($canWalkIn)
             <x-slot:action>
-                <button type="button" class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white" @click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', trigger: $el })">+ Booking</button>
+                <button type="button" class="bq-btn bq-btn-primary" @click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', trigger: $el })">+ Booking</button>
             </x-slot:action>
         @endif
     </x-owner.page-header>
     <x-owner.tabs :tabs="$tabs" :active="$tab" />
 
-    <form method="GET" action="{{ route('owner.bookings') }}" class="flex flex-wrap items-end gap-3">
+    @php
+        $activeFilters = collect(['from', 'to', 'service', 'source'])->filter(fn ($key) => filled($filters[$key] ?? null))->count()
+            + (($filters['sort'] ?? null) === 'asc' ? 1 : 0);
+    @endphp
+    <form method="GET" action="{{ route('owner.bookings') }}">
         <input type="hidden" name="tab" value="{{ $tab }}">
-        <label class="grid gap-1 text-sm">Cari booking
-            <input name="katakunci" value="{{ $filters['katakunci'] ?? '' }}" placeholder="Kode, nama, telepon, atau email" class="rounded border border-bq-border bg-bq-surface p-2">
-        </label>
-        @foreach (['from' => 'Dari', 'to' => 'Sampai'] as $field => $label)
-            <label class="grid gap-1 text-sm">{{ $label }}
-                <input type="date" name="{{ $field }}" value="{{ $filters[$field] ?? '' }}" @change="$el.form.requestSubmit()" class="rounded border border-bq-border bg-bq-surface p-2">
+        <x-ui.filter-bar :active="$activeFilters">
+            <x-slot:search>
+                <label class="grid gap-1.5"><span class="bq-label">Cari booking</span>
+                    <span class="relative block">
+                        <x-owner.icon name="search" class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" />
+                        <input name="katakunci" value="{{ $filters['katakunci'] ?? '' }}" placeholder="Kode, nama, telepon, atau email" class="bq-input w-full pl-9">
+                    </span>
+                </label>
+            </x-slot:search>
+            @foreach (['from' => 'Dari', 'to' => 'Sampai'] as $field => $label)
+                <label class="grid gap-1.5 max-md:w-[calc(50%-0.375rem)]"><span class="bq-label">{{ $label }}</span>
+                    <input type="date" name="{{ $field }}" value="{{ $filters[$field] ?? '' }}" @change="$el.form.requestSubmit()" class="bq-input">
+                </label>
+            @endforeach
+            <label class="grid gap-1.5 max-md:w-full"><span class="bq-label">Layanan</span>
+                <select name="service" @change="$el.form.requestSubmit()" class="bq-input">
+                    <option value="">Semua layanan</option>
+                    @foreach ($services as $service)
+                        <option value="{{ $service->id }}" @selected($service->id == ($filters['service'] ?? null))>{{ $service->namalayanan }}</option>
+                    @endforeach
+                </select>
             </label>
-        @endforeach
-        <label class="grid gap-1 text-sm">Layanan
-            <select name="service" @change="$el.form.requestSubmit()" class="rounded border border-bq-border bg-bq-surface p-2">
-                <option value="">Semua layanan</option>
-                @foreach ($services as $service)
-                    <option value="{{ $service->id }}" @selected($service->id == ($filters['service'] ?? null))>{{ $service->namalayanan }}</option>
-                @endforeach
-            </select>
-        </label>
-        <label class="grid gap-1 text-sm">Sumber
-            <select name="source" @change="$el.form.requestSubmit()" class="rounded border border-bq-border bg-bq-surface p-2">
-                <option value="">Semua sumber</option>
-                @foreach (['online' => 'Online', 'walkin' => 'Walk-in'] as $key => $label)
-                    <option value="{{ $key }}" @selected($key === ($filters['source'] ?? null))>{{ $label }}</option>
-                @endforeach
-            </select>
-        </label>
-        <label class="grid gap-1 text-sm">Urutan sesi
-            <select name="sort" @change="$el.form.requestSubmit()" class="rounded border border-bq-border bg-bq-surface p-2">
-                <option value="desc">Terbaru</option>
-                <option value="asc" @selected(($filters['sort'] ?? null) === 'asc')>Terlama</option>
-            </select>
-        </label>
-        <button class="rounded-lg border border-bq-border px-3 py-2 text-sm font-semibold">Cari</button>
-        <a href="{{ route('owner.bookings', ['tab' => $tab]) }}" class="px-3 py-2 text-sm text-bq-primary underline">Reset filter</a>
-        @if ($exportUrl)
-            <a class="px-3 py-2 text-sm font-semibold text-bq-primary underline" href="{{ $exportUrl }}">Ekspor CSV</a>
-        @endif
+            <label class="grid gap-1.5 max-md:w-[calc(50%-0.375rem)]"><span class="bq-label">Sumber</span>
+                <select name="source" @change="$el.form.requestSubmit()" class="bq-input">
+                    <option value="">Semua sumber</option>
+                    @foreach (['online' => 'Online', 'walkin' => 'Walk-in'] as $key => $label)
+                        <option value="{{ $key }}" @selected($key === ($filters['source'] ?? null))>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label class="grid gap-1.5 max-md:w-[calc(50%-0.375rem)]"><span class="bq-label">Urutan sesi</span>
+                <select name="sort" @change="$el.form.requestSubmit()" class="bq-input">
+                    <option value="desc">Terbaru</option>
+                    <option value="asc" @selected(($filters['sort'] ?? null) === 'asc')>Terlama</option>
+                </select>
+            </label>
+            <button class="bq-btn bq-btn-secondary">Cari</button>
+            <x-slot:actions>
+                <a href="{{ route('owner.bookings', ['tab' => $tab]) }}" class="bq-link">Reset filter</a>
+                @if ($exportUrl)
+                    <a class="bq-link inline-flex items-center gap-1" href="{{ $exportUrl }}"><x-owner.icon name="download" class="h-4 w-4" />Ekspor CSV</a>
+                @endif
+            </x-slot:actions>
+        </x-ui.filter-bar>
     </form>
 
     @if ($cancellationRequests?->isNotEmpty())
-        <section id="permintaan-pembatalan" class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
-            <h2 class="font-semibold">Permintaan pembatalan</h2>
+        <section id="permintaan-pembatalan" class="space-y-3 rounded-xl border border-bq-warning/30 bg-bq-warning-bg/50 p-4 sm:p-5">
+            <h2 class="flex items-center gap-2 text-base font-semibold text-bq-ink"><x-owner.icon name="alert" class="h-5 w-5 text-bq-warning" />Permintaan pembatalan</h2>
             @foreach ($cancellationRequests as $item)
-                <article class="space-y-2 border-t border-bq-border pt-3 text-sm">
-                    <button type="button" class="font-semibold text-bq-primary underline"
+                <article class="space-y-2 rounded-lg border border-bq-border bg-bq-surface p-3 text-sm">
+                    <button type="button" class="bq-link"
                         @click="$dispatch('open-booking-panel', { url: @js(route('owner.bookings.panel', $item->booking_id)), trigger: $el })">
                         {{ $item->booking_code ?? 'BKQ-'.$item->booking_id }}
                     </button>
@@ -73,7 +86,7 @@
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="decision" value="{{ $decision }}">
-                                <button type="button" class="font-semibold {{ $decision === 'approve' ? 'text-bq-danger' : 'text-bq-primary' }}"
+                                <button type="button" class="bq-btn bq-btn-sm {{ $decision === 'approve' ? 'bq-btn-danger' : 'bq-btn-secondary' }}"
                                     @click="$dispatch('open-confirm', { title: @js($label.'?'), message: @js($decision === 'approve' ? 'Booking akan dibatalkan.' : 'Booking tetap berlaku.'), formId: $el.form.id, confirmText: @js($label) })">{{ $label }}</button>
                             </form>
                         @endforeach
@@ -92,39 +105,39 @@
                 <x-owner.empty-state :title="$emptyTitle" description="Coba tab lain atau ubah filter." />
             @endif
         @else
-            <div class="hidden overflow-x-auto rounded-xl border border-bq-border bg-bq-surface sm:block">
+            <div class="bq-panel hidden overflow-x-auto sm:block">
                 <table class="w-full text-left text-sm">
-                    <thead class="border-b border-bq-border text-bq-text-muted">
+                    <thead class="border-b border-bq-border bg-bq-surface-2/70 text-xs text-bq-text-muted">
                         <tr>
                             @foreach (['Booking', 'Pelanggan', 'Layanan', 'Sesi (WIB)', 'Status booking', 'Pembayaran'] as $heading)
-                                <th scope="col" class="p-3 font-medium">{{ $heading }}</th>
+                                <th scope="col" class="px-4 py-3 font-semibold">{{ $heading }}</th>
                             @endforeach
-                            @if ($canViewRevenue)<th scope="col" class="p-3 font-medium">Dibayar</th>@endif
+                            @if ($canViewRevenue)<th scope="col" class="px-4 py-3 text-right font-semibold">Dibayar</th>@endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-bq-border">
                         @foreach ($daftarbooking as $booking)
-                            <tr class="cursor-pointer hover:bg-bq-background" @click="$el.querySelector('button').click()">
-                                <td class="p-3">
+                            <tr class="cursor-pointer align-top transition-colors hover:bg-bq-primary-light/50" @click="$el.querySelector('button').click()">
+                                <td class="px-4 py-3">
                                     @include('owner.partials.bookings.panel-link')
                                     @foreach ($rows[$booking->id]['reasons'] as $reason)
-                                        <p class="mt-1 text-xs font-medium text-bq-warning">{{ $reason }}</p>
+                                        <span class="bq-badge mt-1.5 bg-bq-accent-bg text-bq-ink">{{ $reason }}</span>
                                     @endforeach
                                 </td>
-                                <td class="p-3">{{ $booking->namapelanggan }}</td>
-                                <td class="p-3">
+                                <td class="px-4 py-3 font-medium text-bq-ink">{{ $booking->namapelanggan }}</td>
+                                <td class="px-4 py-3">
                                     {{ $booking->layanan?->namalayanan ?? 'Layanan dihapus' }}
                                     @include('owner.partials.bookings.participants')
                                 </td>
-                                <td class="p-3 tabular-nums">{{ $booking->tanggalbooking?->format('d/m/Y') }} · {{ $rows[$booking->id]['time'] }}</td>
+                                <td class="bq-num px-4 py-3 whitespace-nowrap">{{ $booking->tanggalbooking?->translatedFormat('j M Y') }}<span class="block text-xs text-bq-text-muted">{{ $rows[$booking->id]['time'] }}</span></td>
 
-                                <td class="p-3"><x-owner.status-badge type="booking" :status="$booking->status" /></td>
-                                <td class="p-3"><x-owner.status-badge type="payment" :status="$rows[$booking->id]['payment_status']" />
+                                <td class="px-4 py-3"><x-owner.status-badge type="booking" :status="$booking->status" /></td>
+                                <td class="px-4 py-3"><x-owner.status-badge type="payment" :status="$rows[$booking->id]['payment_status']" />
                                     @if ($rows[$booking->id]['waiting'])
                                         <p class="mt-1 text-xs">{{ $rows[$booking->id]['waiting'] }}</p>
                                     @endif
                                 </td>
-                                @if ($canViewRevenue)<td class="p-3 tabular-nums">{{ $rows[$booking->id]['amount'] }}</td>@endif
+                                @if ($canViewRevenue)<td class="bq-num px-4 py-3 text-right font-semibold whitespace-nowrap text-bq-ink">{{ $rows[$booking->id]['amount'] }}</td>@endif
                             </tr>
                         @endforeach
                     </tbody>
@@ -132,18 +145,18 @@
             </div>
             <div class="space-y-3 sm:hidden">
                 @foreach ($daftarbooking as $booking)
-                    <article class="cursor-pointer space-y-2 rounded-xl border border-bq-border bg-bq-surface p-4 text-sm" @click="$el.querySelector('button').click()">
+                    <article class="bq-panel cursor-pointer space-y-2 p-4 text-sm" @click="$el.querySelector('button').click()">
                         <div class="flex justify-between gap-2">
                             @include('owner.partials.bookings.panel-link')
                             <x-owner.status-badge type="booking" :status="$booking->status" />
                         </div>
-                        <p>{{ $booking->namapelanggan }} · {{ $booking->layanan?->namalayanan ?? 'Layanan dihapus' }}</p>
+                        <p><span class="font-semibold text-bq-ink">{{ $booking->namapelanggan }}</span> · {{ $booking->layanan?->namalayanan ?? 'Layanan dihapus' }}</p>
                         @include('owner.partials.bookings.participants')
                         @foreach ($rows[$booking->id]['reasons'] as $reason)
-                            <p class="text-xs font-medium text-bq-warning">{{ $reason }}</p>
+                            <span class="bq-badge bg-bq-accent-bg text-bq-ink">{{ $reason }}</span>
                         @endforeach
-                        <p class="tabular-nums">{{ $booking->tanggalbooking?->format('d/m/Y') }} · {{ $rows[$booking->id]['time'] }} WIB</p>
-                        <p class="tabular-nums">@if ($canViewRevenue) Dibayar: {{ $rows[$booking->id]['amount'] }} · @endif <x-owner.status-badge type="payment" :status="$rows[$booking->id]['payment_status']" /></p>
+                        <p class="bq-num text-bq-text-muted">{{ $booking->tanggalbooking?->translatedFormat('j M Y') }} · {{ $rows[$booking->id]['time'] }} WIB</p>
+                        <div class="flex items-center justify-between gap-2 border-t border-bq-border pt-2"><x-owner.status-badge type="payment" :status="$rows[$booking->id]['payment_status']" />@if ($canViewRevenue)<span class="bq-num font-semibold text-bq-ink">{{ $rows[$booking->id]['amount'] }}</span>@endif</div>
                         @if ($rows[$booking->id]['waiting'])
                             <p class="text-xs">{{ $rows[$booking->id]['waiting'] }}</p>
                         @endif

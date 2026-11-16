@@ -16,10 +16,10 @@
     $serviceDestroyUrl = route('owner.services.destroy', ['program' => '__ID__']);
     $categoryUpdateUrl = route('owner.categories.update', ['id' => '__ID__']);
     $categoryDestroyUrl = route('owner.categories.destroy', ['id' => '__ID__']);
-    $inputClass = 'mt-1 block w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30';
-    $labelClass = 'block text-sm font-medium text-bq-text';
-    $buttonSecondary = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-sm font-medium text-bq-text hover:bg-bq-background';
-    $buttonPrimary = 'inline-flex items-center justify-center gap-1.5 rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover';
+    $inputClass = 'mt-1 block w-full bq-input';
+    $labelClass = 'block bq-label';
+    $buttonSecondary = 'bq-btn bq-btn-secondary bq-btn-sm';
+    $buttonPrimary = 'bq-btn bq-btn-primary';
 @endphp
 
 @section('content')
@@ -95,7 +95,7 @@
 
     @if ($isServicesTab)
         {{-- ── Tab Layanan ── --}}
-        <section aria-labelledby="usage-meter-label" class="rounded-xl border border-bq-border bg-bq-surface p-4">
+        <section aria-labelledby="usage-meter-label" class="bq-panel p-4">
             @php
                 $percent = $usage['unlimited'] || $usage['max'] <= 0 ? 0 : min(100, (int) round($usage['used'] / $usage['max'] * 100));
             @endphp
@@ -156,17 +156,17 @@
         @else
             <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Daftar layanan">
                 @foreach ($serviceCards as $card)
-                    <li class="flex flex-col overflow-hidden rounded-xl border border-bq-border bg-bq-surface {{ $card['isActive'] ? '' : 'opacity-75' }}">
-                        <div class="relative aspect-[16/9] bg-bq-background">
+                    <li class="flex flex-col overflow-hidden bq-panel {{ $card['isActive'] ? '' : 'opacity-75' }}">
+                        <div @class(['relative', 'aspect-[16/9] bg-bq-surface-2' => $card['imageUrl'], 'h-20 bg-bq-primary-light' => ! $card['imageUrl']])>
                             @if ($card['imageUrl'])
                                 <img src="{{ $card['imageUrl'] }}" alt="" class="h-full w-full object-cover" loading="lazy">
                             @else
-                                <div class="flex h-full items-center justify-center text-bq-text-muted" aria-hidden="true">
-                                    <x-owner.icon name="services" class="h-8 w-8" />
+                                <div class="flex h-full items-center justify-end px-4 text-bq-primary/40" aria-hidden="true">
+                                    <x-owner.icon name="services" class="h-10 w-10" />
                                 </div>
                             @endif
                             @if ($card['isPopular'])
-                                <span class="absolute left-3 top-3 rounded-full bg-bq-warning-bg px-2 py-0.5 text-xs font-semibold text-bq-warning">Populer</span>
+                                <span class="absolute left-3 top-3 rounded-full bg-bq-accent px-2.5 py-0.5 text-xs font-bold text-bq-ink">Populer</span>
                             @endif
                         </div>
                         <div class="flex flex-1 flex-col gap-2 p-4">
@@ -422,7 +422,7 @@
                 </x-owner.empty-state>
             @endif
         @else
-            <ul class="divide-y divide-bq-border overflow-hidden rounded-xl border border-bq-border bg-bq-surface" aria-label="Daftar kategori">
+            <ul class="divide-y divide-bq-border overflow-hidden bq-panel" aria-label="Daftar kategori">
                 @foreach ($categories as $row)
                     <li class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                         <div class="flex min-w-0 flex-1 items-start gap-3">
