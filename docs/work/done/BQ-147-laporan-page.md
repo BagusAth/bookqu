@@ -2,7 +2,7 @@
 id: BQ-147
 title: Laporan: summary, revenue, occupancy, services and customers
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: insights
@@ -17,7 +17,7 @@ depends-on: [BQ-111, BQ-130]
 
 # BQ-147: Laporan: summary, revenue, occupancy, services and customers
 
-Epic **E5 · Medium value** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E5 · Medium value** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -60,3 +60,5 @@ Figures from payments and bookings; INV-SUB-01 for the plan gate.
 - **Charts:** CSS bars and a heat-map table; no chart library.
 - **Found on MySQL:** a negative group key on the unsigned `bookings.id` overflowed; the key is now a string (`b<id>` / `p<idpayment>`).
 - **Tests moved to the new contract (same intent):** `AnalyticsExportAndAggregationTest` (series, formula safety, one row per payment, own tenant, hidden module), `AnalyticsAndSubscriptionTest`, `CoreFlowIntegrationTest` (schedule report → Okupansi), `FiveModulesFullIntegrationTest`, `OwnerPortalFunctionalIntegrationTest`, `SubscriptionActionTest`, `SubscriptionRulesAndMechanismsTest` (Small and an ended trial now see the preview; the export is the refused data route), `ReleaseGateAndHardeningTest` (module map).
+
+Closed 2026-11-16 (Tech Lead): merged in PR #51 (`7c90492`). The page, the five tabs, the period filter and the formula-safe exports per tab are in `integration`. Metrics that belong to other items continue there: utilisation per unit with the BQ-152 UI, promo usage with the BQ-149 UI, Okupansi from seats taken over capacity (ADR-0017) with the BQ-151 UI, and the no-show rate once the `no-show` module is released.
