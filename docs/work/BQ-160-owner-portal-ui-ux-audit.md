@@ -562,3 +562,31 @@ One row per section of the bulk branch.
 
 | Section | Fixed | Skipped (why) | Tests added | Manual checks |
 |---|---|---|---|---|
+| §1 `fa3bdcf` | UX-70, UX-71, UX-72, percentage limit | none recorded | 1 test file | Edit form posts `max_discount_amount` and `applicable_services[]` (checked in the browser) |
+| §2 `729f7e3` | UX-01, 03, 04, 10, 11, 20, 30, 31, 60, 81, 111 | none recorded | 3 test files | — |
+| §3 `482975c` | UX-02, 63, 112 (`_form` key, inline errors; `owner-portal.md` §9) | none recorded | 2 test files | — |
+| §4 `b579d12` | UX-12 (`BookingRules::sessionHasStarted` on Beranda, panel and status endpoint; `docs/domains/booking.md`), UX-13, 21–27 | none recorded | 3 test files | "Perlu tindakan" tab renders at desktop width |
+| §5a `9063784` | UX-64, 65 | none recorded | 1 test file | Add-on page at 375 px |
+| §5b `98e8857` | UX-32 | none recorded | — | — |
+| §5c `cbfd1b4` | UX-110, UX-114 (without test/redeliver) | none recorded | 5 test files | Tim tab at 375 px; `/owner/settings/team`, `/integrations` and `/api` redirect to the tabs |
+| §5d `137e52f` | UX-120, 121 | none recorded | 1 test file | — |
+| §6 `48bae7e` | UX-40, 41, 42, 91, 92, 93, 95 | none recorded | 2 test files | Jam Buka & Harga renders at desktop width |
+| §7a `1311a90` | UX-06, 07, 14 | none recorded | 1 test file | Bottom nav at 375 px |
+| §7b `18747ae` | UX-50, 51, 61, 62, 66, 73, 74, 80, 82, 83 | none recorded | 2 test files | Promo list at 375 px |
+| §7c `684862a` | UX-100–104, 113, 122 | none recorded | 3 test files | — |
+| §9 `e69653f` | UX-05, 90, 94, webhook test/redeliver; `owner-portal.md` AC-BRD-08, AC-JBH-06/07, AC-SET-08 | none recorded | 3 test files | — |
+| §8 `177df96` | UX-08; legacy colours in add-on, promo, reschedule and checkout views (0 left); PHPStan type fixes | — | — | — |
+| tests `dfe0c62` | Four older tests aligned with intended changes (Tech Lead decision 2026-11-16): three complete a booking whose session had not started (now travel to the session), one expected the walk-in error on `error` instead of `idschedule` | — | — | — |
+
+Run on 2026-11-16 at `dfe0c62`: `vendor/bin/phpunit` 969 tests, 966 pass; the 3 errors need the GD
+extension, which the local PHP CLI lacks (`HalamanBookingPageTest` ×2, `LayananPageTest` ×1; CI decides).
+PHPStan: no errors. Pint on changed files: passed. `npm run build`: done. Every owner page returned 200 as
+Pemilik with no server error. `php artisan test` crashed the PHP process mid-suite on this machine;
+`vendor/bin/phpunit` ran the whole suite.
+
+The implementing agent ran out of context before writing its report, so per-item skips were not recorded;
+the Tech Lead review checks each section against its items.
+
+Found, not fixed (for the Tech Lead review): promo validity dates use English month abbreviations
+("03 Oct – 01 Jan 2027"); the booking list still has a "Cari" button next to filters that UX-27 makes apply
+on change (check that it is only the search submit).
