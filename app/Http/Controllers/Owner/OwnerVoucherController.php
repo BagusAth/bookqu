@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Owner;
 use App\Actions\Booking\BookingPricingReservations;
 use App\Actions\Booking\GetPromoFigures;
 use App\Actions\Schedule\ClaimSlots;
-use App\Domain\Modules\ModuleRelease;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\Voucher;
@@ -22,13 +21,7 @@ class OwnerVoucherController extends Controller
 
     public function legacyIndex(Request $request)
     {
-        if (ModuleRelease::state('promos') === 'released') {
-            return redirect()->route('owner.promos', $request->query(), 301);
-        }
-
-        abort_unless(ModuleRelease::state('vouchers') === 'released', 404);
-
-        return $this->index($request);
+        return redirect()->route('owner.promos', $request->query(), 301);
     }
 
     public function index(Request $request)
@@ -67,7 +60,7 @@ class OwnerVoucherController extends Controller
             ->orderBy('namalayanan')
             ->get();
 
-        $promoRoute = $request->routeIs('owner.promos') ? 'owner.promos' : 'owner.vouchers';
+        $promoRoute = 'owner.promos';
 
         return view('owner.vouchers', compact('tenant', 'vouchers', 'services', 'search', 'promoRoute', 'promoTabs', 'tab', 'promoFigures'));
     }
@@ -112,7 +105,7 @@ class OwnerVoucherController extends Controller
             'is_active' => $request->has('is_active') ? (bool) $request->input('is_active') : true,
         ]);
 
-        return redirect()->route(request()->routeIs('owner.promos.*') ? 'owner.promos' : 'owner.vouchers')
+        return redirect()->route('owner.promos')
             ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil dibuat!');
     }
 
@@ -165,7 +158,7 @@ class OwnerVoucherController extends Controller
 
         });
 
-        return redirect()->route(request()->routeIs('owner.promos.*') ? 'owner.promos' : 'owner.vouchers')
+        return redirect()->route('owner.promos')
             ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil diperbarui!');
     }
 
@@ -186,7 +179,7 @@ class OwnerVoucherController extends Controller
             $voucher->delete();
         });
 
-        return redirect()->route(request()->routeIs('owner.promos.*') ? 'owner.promos' : 'owner.vouchers')
+        return redirect()->route('owner.promos')
             ->with('sukses', 'Voucher "'.$code.'" berhasil dihapus!');
     }
 
@@ -206,7 +199,7 @@ class OwnerVoucherController extends Controller
 
         $statusText = $voucher->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
-        return redirect()->route(request()->routeIs('owner.promos.*') ? 'owner.promos' : 'owner.vouchers')
+        return redirect()->route('owner.promos')
             ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil '.$statusText.'!');
     }
 }

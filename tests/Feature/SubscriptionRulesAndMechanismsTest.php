@@ -238,14 +238,14 @@ class SubscriptionRulesAndMechanismsTest extends TestCase
         $category = Category::create(['idtenant' => $tenant->id, 'name' => 'Care']);
         app(TenantContext::class)->setTenantId($tenant->id);
         for ($i = 1; $i <= 6; $i++) {
-            $resService = $this->post('/owner/programs', [
+            $resService = $this->post('/owner/services', [
                 'namalayanan' => "Service $i",
                 'harga' => 100000,
                 'durasi' => 45,
                 'idcategory' => $category->id,
             ]);
             $resService->assertSessionHasNoErrors();
-            $resService->assertRedirect(route('owner.programs'));
+            $resService->assertRedirect(route('owner.services'));
         }
         $this->assertEquals(6, Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->count());
 

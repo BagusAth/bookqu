@@ -103,6 +103,8 @@ BookQu releases capabilities in stages to keep booking and payment stable (ADR-0
 
 | Tier | Meaning | Capabilities |
 |---|---|---|
+> **Since ADR-0024 (2026-11-16)** every module is released; the table below is history. Plan limits (`config/plans.php`, `EntitlementRules`) still decide which plan may use a capability, and `config/modules.php` is only an emergency switch per environment.
+
 | **1 — Live** | Released, in navigation | Dashboard & notifications, calendar & schedules, services & categories, bookings (status, walk-in, reschedule, cancel), customers & notes, reviews, business profile & account, unified payment gateway, customer self-service portal, subscription & checkout, platform balance & withdrawals |
 | **2 — Locked** | Visible with a "Fitur Sedang Dikembangkan" / "Coming Soon" notice | Analytics (`/owner/analytics`), schedule report (`/owner/schedule-report`), integrations (WhatsApp, Google Calendar) |
 | **3 — Hidden** | Backend exists, no navigation entry, routes answer 404 | Vouchers, additional items, staff & resources, appearance, direct payment-gateway settings, media assets, landing-page builder |

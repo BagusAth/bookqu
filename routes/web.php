@@ -142,9 +142,6 @@ Route::prefix('owner')
 
         Route::middleware('owner.profile')->group(function () {
             Route::get('/programs', [OwnerProgramController::class, 'legacyIndex'])->name('owner.programs');
-            Route::post('/programs', [OwnerProgramController::class, 'store'])->name('owner.programs.store');
-            Route::put('/programs/{program}', [OwnerProgramController::class, 'update'])->name('owner.programs.update');
-            Route::delete('/programs/{program}', [OwnerProgramController::class, 'destroy'])->name('owner.programs.destroy');
             Route::get('/schedule', [OwnerScheduleController::class, 'index'])->name('owner.schedule');
             Route::post('/schedule/bulk-slots', [OwnerScheduleController::class, 'bulkStore'])->name('owner.schedule.bulk-store');
             Route::patch('/schedule/slots/{slot}', [OwnerScheduleController::class, 'updateSlot'])->whereNumber('slot')->name('owner.schedule.slots.update');
@@ -197,7 +194,6 @@ Route::prefix('owner')
             Route::put('/services/{program}', [OwnerProgramController::class, 'update'])->name('owner.services.update');
             Route::delete('/services/{program}', [OwnerProgramController::class, 'destroy'])->name('owner.services.destroy');
             Route::match(['post', 'patch'], '/services/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.services.toggle');
-            Route::match(['post', 'patch'], '/programs/{id}/toggle', [OwnerProgramController::class, 'toggleStatus'])->name('owner.programs.toggle');
 
             // Categories
             Route::get('/categories', [OwnerCategoryController::class, 'index'])->name('owner.categories');
@@ -207,27 +203,20 @@ Route::prefix('owner')
             Route::match(['post', 'patch'], '/categories/{id}/toggle', [OwnerCategoryController::class, 'toggleStatus'])->name('owner.categories.toggle');
 
             // Additional Items
-            Route::get('/additional-items', [OwnerAdditionalItemController::class, 'index'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items');
+            // ADR-0023: the former add-on page lives in Layanan → Add-on (owner-portal.md §8.6).
+            Route::permanentRedirect('/additional-items', '/owner/services?tab=add-ons')->name('owner.additional-items');
             Route::post('/services/add-ons', [OwnerAdditionalItemController::class, 'store'])->middleware(['module:add-ons', 'subscription:add-ons'])->name('owner.services.add-ons.store');
-            Route::post('/additional-items', [OwnerAdditionalItemController::class, 'store'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items.store');
             Route::put('/services/add-ons/{id}', [OwnerAdditionalItemController::class, 'update'])->middleware(['module:add-ons', 'subscription:add-ons'])->name('owner.services.add-ons.update');
-            Route::put('/additional-items/{id}', [OwnerAdditionalItemController::class, 'update'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items.update');
             Route::delete('/services/add-ons/{id}', [OwnerAdditionalItemController::class, 'destroy'])->middleware(['module:add-ons', 'subscription:add-ons'])->name('owner.services.add-ons.destroy');
-            Route::delete('/additional-items/{id}', [OwnerAdditionalItemController::class, 'destroy'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items.destroy');
             Route::match(['post', 'patch'], '/services/add-ons/{id}/toggle', [OwnerAdditionalItemController::class, 'toggleStatus'])->middleware(['module:add-ons', 'subscription:add-ons'])->name('owner.services.add-ons.toggle');
-            Route::match(['post', 'patch'], '/additional-items/{id}/toggle', [OwnerAdditionalItemController::class, 'toggleStatus'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items.toggle');
 
             // Vouchers
             Route::get('/promos', [OwnerVoucherController::class, 'index'])->middleware(['module:promos', 'subscription:promos'])->name('owner.promos');
-            Route::get('/vouchers', [OwnerVoucherController::class, 'legacyIndex'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers');
+            Route::get('/vouchers', [OwnerVoucherController::class, 'legacyIndex'])->middleware(['module:promos', 'subscription:promos'])->name('owner.vouchers');
             Route::post('/promos', [OwnerVoucherController::class, 'store'])->middleware(['module:promos', 'subscription:promos'])->name('owner.promos.store');
-            Route::post('/vouchers', [OwnerVoucherController::class, 'store'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers.store');
             Route::put('/promos/{id}', [OwnerVoucherController::class, 'update'])->middleware(['module:promos', 'subscription:promos'])->name('owner.promos.update');
-            Route::put('/vouchers/{id}', [OwnerVoucherController::class, 'update'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers.update');
             Route::delete('/promos/{id}', [OwnerVoucherController::class, 'destroy'])->middleware(['module:promos', 'subscription:promos'])->name('owner.promos.destroy');
-            Route::delete('/vouchers/{id}', [OwnerVoucherController::class, 'destroy'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers.destroy');
             Route::match(['post', 'patch'], '/promos/{id}/toggle', [OwnerVoucherController::class, 'toggleStatus'])->middleware(['module:promos', 'subscription:promos'])->name('owner.promos.toggle');
-            Route::match(['post', 'patch'], '/vouchers/{id}/toggle', [OwnerVoucherController::class, 'toggleStatus'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers.toggle');
 
             // Reviews
             Route::get('/reviews', [OwnerReviewController::class, 'index'])->name('owner.reviews');

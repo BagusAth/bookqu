@@ -42,7 +42,7 @@ This section is the BookQu part of this file. Everything after it is the Laravel
 10. **Thin controllers.** Validate → call an Action → respond. Business rules live in `app/Domain`, operations in `app/Actions`.
 11. **Blade and JavaScript are presentation only** — no queries, no business decisions.
 12. **Never show internal errors** to users; never log passwords, secrets or tokens.
-13. **Release tiers.** Do not unhide Tier 3 modules or remove Tier 2 locks without Product Lead and Tech Lead approval (ADR-0002, ADR-0011, `config/modules.php`, `OwnerSidebarNavigationTest`). Production is released only after the owner portal redesign is complete (D-018); its module, plan and role gates follow ADR-0021.
+13. **Module registry.** Every module is released (ADR-0024); `config/modules.php` stays an emergency switch per environment (ADR-0011). Plan limits are decided by `EntitlementRules`, roles by `TenantPermission`. Hiding a module again or adding a new hidden one needs Product Lead and Tech Lead approval. Production is released only through BQ-158 with the Product Lead's go (D-018).
 14. **A failing test is evidence.** Never edit a test just to make it pass.
 15. **Smallest coherent change; no scope creep.** Record unrelated findings as a new work item. Security and data integrity beat a small diff.
 16. **Existing code is evidence, not the standard.** Follow `docs/architecture.md`; do not copy known anti-patterns (see each domain's "Known gaps").

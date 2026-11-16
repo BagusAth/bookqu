@@ -79,7 +79,7 @@ class OwnerAppShellTest extends TestCase
         $html = (string) $this->actingAs($this->owner)->get(route('owner.dashboard'))->assertOk()->getContent();
 
         $this->assertSame(
-            ['dashboard', 'calendar', 'bookings', 'customers', 'services', 'schedule', 'reviews', 'payments', 'settings', 'subscription'],
+            ['dashboard', 'calendar', 'bookings', 'customers', 'services', 'units', 'schedule', 'booking-page', 'promos', 'reviews', 'payments', 'reports', 'settings', 'subscription', 'help'],
             $this->sidebarMenus($html)
         );
         foreach (['Bisnis saya', 'Pemasaran', 'Keuangan', 'Lainnya'] as $group) {
@@ -91,11 +91,11 @@ class OwnerAppShellTest extends TestCase
     public function test_kasir_and_manajer_see_only_the_menus_their_role_may_open(): void
     {
         $kasir = (string) $this->actingAs($this->member('kasir'))->get(route('owner.dashboard'))->assertOk()->getContent();
-        $this->assertSame(['dashboard', 'calendar', 'bookings', 'customers', 'settings'], $this->sidebarMenus($kasir));
+        $this->assertSame(['dashboard', 'calendar', 'bookings', 'customers', 'settings', 'help'], $this->sidebarMenus($kasir));
         $this->assertStringContainsString('Kasir', $kasir);
 
         $manajer = (string) $this->actingAs($this->member('manajer'))->get(route('owner.dashboard'))->assertOk()->getContent();
-        $this->assertSame(['dashboard', 'calendar', 'bookings', 'customers', 'services', 'schedule', 'reviews', 'settings'], $this->sidebarMenus($manajer));
+        $this->assertSame(['dashboard', 'calendar', 'bookings', 'customers', 'services', 'units', 'schedule', 'booking-page', 'promos', 'reviews', 'reports', 'settings', 'help'], $this->sidebarMenus($manajer));
     }
 
     public function test_a_menu_above_the_plan_shows_a_lock_and_opens_the_upgrade_prompt(): void

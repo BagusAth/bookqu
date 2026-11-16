@@ -29,5 +29,6 @@ Why significant architectural decisions were made. Write one with `_TEMPLATE.md`
 | [ADR-0021](ADR-0021-release-gating-after-the-owner-portal-redesign.md) | Release, plan and role gating after the owner portal redesign | Accepted | 2026-11-04 |
 | [ADR-0022](ADR-0022-owner-integrations-api-and-webhooks.md) | Owner integrations, public API and outbound webhooks | Accepted | 2026-11-04 |
 | [ADR-0023](ADR-0023-owner-settlement-limited-to-unlinked-payments.md) | Owner settlement is limited to payments without a provider link | Accepted | 2026-11-04 |
+| [ADR-0024](ADR-0024-all-modules-released.md) | Every owner portal module is released; legacy paths are removed | Accepted | 2026-11-16 |
 
 Phase 2 package (BQ-028) complete at ADR-0015. ADR-0016 to ADR-0022 come from the owner portal redesign (BQ-126 phase 6), accepted by the Tech Lead on 2026-11-04 (gate G3).

@@ -1,6 +1,6 @@
 # ADR-0021: Release, plan and role gating after the owner portal redesign
 
-> **Status:** Accepted
+> **Status:** Accepted; the hidden-until-audited rule is superseded by [ADR-0024](ADR-0024-all-modules-released.md) (2026-11-16)
 > **Date:** 2026-11-04
 > **Decider:** Tech Lead (accepted 2026-11-04) — Product Lead for the release policy and plan contents (D-017, D-018)
 > **Work item:** BQ-126 (specification); implementation items follow in epic E7

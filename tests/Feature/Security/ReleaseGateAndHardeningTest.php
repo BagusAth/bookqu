@@ -32,8 +32,10 @@ class ReleaseGateAndHardeningTest extends TestCase
 
     public function test_hidden_module_answers_not_found_for_reads_and_writes(): void
     {
-        $this->actingAs($this->owner)->get('/owner/vouchers')->assertNotFound();
-        $this->actingAs($this->owner)->post('/owner/vouchers', ['code' => 'X'])->assertNotFound();
+        // ADR-0023: every module is released by default; an environment can still hide one.
+        config(['modules.promos' => 'hidden']);
+        $this->actingAs($this->owner)->get('/owner/promos')->assertNotFound();
+        $this->actingAs($this->owner)->post('/owner/promos', ['code' => 'X'])->assertNotFound();
         $this->actingAs($this->owner)->post('/owner/settings/payment', ['payment_mode' => 'owner'])->assertNotFound();
         $this->assertDatabaseCount('vouchers', 0);
     }
@@ -52,9 +54,8 @@ class ReleaseGateAndHardeningTest extends TestCase
     {
         // BQ-130: isolate this behavior behind an explicitly enabled development module.
         app(CreateTrialSubscription::class)->execute($this->tenant);
-        config(['modules.vouchers' => 'released']);
 
-        $this->actingAs($this->owner)->get('/owner/vouchers')->assertOk();
+        $this->actingAs($this->owner)->get('/owner/promos')->assertOk();
     }
 
     public function test_module_missing_from_registry_is_hidden(): void
@@ -67,8 +68,7 @@ class ReleaseGateAndHardeningTest extends TestCase
     public function test_every_staged_route_carries_its_module_gate(): void
     {
         $staged = [
-            'owner.vouchers' => 'vouchers',
-            'owner.additional-items' => 'additional-items',
+            'owner.vouchers' => 'promos',
             'owner.team' => 'team',
             // BQ-142: the former appearance and assets pages redirect inside Halaman Booking.
             'owner.settings.appearance' => 'booking-page',

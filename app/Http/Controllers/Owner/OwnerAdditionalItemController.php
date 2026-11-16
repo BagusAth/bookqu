@@ -43,9 +43,9 @@ class OwnerAdditionalItemController extends Controller
             ->orderBy('namalayanan')
             ->get();
 
-        $serviceTab = $request->routeIs('owner.services');
-        $itemRoute = $serviceTab ? 'owner.services.add-ons' : 'owner.additional-items';
-        $indexUrl = $serviceTab ? route('owner.services', ['tab' => 'add-ons']) : route('owner.additional-items');
+        $serviceTab = true;
+        $itemRoute = 'owner.services.add-ons';
+        $indexUrl = route('owner.services', ['tab' => 'add-ons']);
 
         return view('owner.additional-items', compact('tenant', 'items', 'services', 'search', 'serviceTab', 'itemRoute', 'indexUrl'));
     }
@@ -81,7 +81,7 @@ class OwnerAdditionalItemController extends Controller
             $item->services()->sync($validated['service_ids']);
         }
 
-        return redirect()->to(request()->routeIs('owner.services.add-ons.*') ? route('owner.services', ['tab' => 'add-ons']) : route('owner.additional-items'))
+        return redirect()->to(route('owner.services', ['tab' => 'add-ons']))
             ->with('sukses', 'Add-on "'.$item->name.'" berhasil ditambahkan!');
     }
 
@@ -126,7 +126,7 @@ class OwnerAdditionalItemController extends Controller
 
         });
 
-        return redirect()->to(request()->routeIs('owner.services.add-ons.*') ? route('owner.services', ['tab' => 'add-ons']) : route('owner.additional-items'))
+        return redirect()->to(route('owner.services', ['tab' => 'add-ons']))
             ->with('sukses', 'Add-on "'.$item->name.'" berhasil diperbarui!');
     }
 
@@ -147,7 +147,7 @@ class OwnerAdditionalItemController extends Controller
             $item->delete();
         });
 
-        return redirect()->to(request()->routeIs('owner.services.add-ons.*') ? route('owner.services', ['tab' => 'add-ons']) : route('owner.additional-items'))
+        return redirect()->to(route('owner.services', ['tab' => 'add-ons']))
             ->with('sukses', 'Add-on "'.$name.'" berhasil dihapus!');
     }
 
@@ -167,7 +167,7 @@ class OwnerAdditionalItemController extends Controller
 
         $statusText = $item->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
-        return redirect()->to(request()->routeIs('owner.services.add-ons.*') ? route('owner.services', ['tab' => 'add-ons']) : route('owner.additional-items'))
+        return redirect()->to(route('owner.services', ['tab' => 'add-ons']))
             ->with('sukses', 'Add-on "'.$item->name.'" berhasil '.$statusText.'!');
     }
 }

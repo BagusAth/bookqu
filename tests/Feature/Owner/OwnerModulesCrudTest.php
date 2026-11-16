@@ -173,16 +173,16 @@ class OwnerModulesCrudTest extends TestCase
         // Staged module under test is released explicitly (ADR-0011)
         config(['modules.additional-items' => 'released']);
 
-        $res = $this->actingAs($this->userA)->get(route('owner.additional-items'));
+        $res = $this->actingAs($this->userA)->get(route('owner.services', ['tab' => 'add-ons']));
         $res->assertStatus(200);
 
-        $res = $this->actingAs($this->userA)->post(route('owner.additional-items.store'), [
+        $res = $this->actingAs($this->userA)->post(route('owner.services.add-ons.store'), [
             'name' => 'Cetak Foto 10R',
             'price' => 35000,
             'stock' => 50,
             'service_ids' => [$this->serviceA->id],
         ]);
-        $res->assertRedirect(route('owner.additional-items'));
+        $res->assertRedirect(route('owner.services', ['tab' => 'add-ons']));
         $this->assertDatabaseHas('additional_items', [
             'idtenant' => $this->tenantA->id,
             'name' => 'Cetak Foto 10R',
@@ -197,8 +197,8 @@ class OwnerModulesCrudTest extends TestCase
         ]);
 
         // Delete
-        $res = $this->actingAs($this->userA)->delete(route('owner.additional-items.destroy', $item->id));
-        $res->assertRedirect(route('owner.additional-items'));
+        $res = $this->actingAs($this->userA)->delete(route('owner.services.add-ons.destroy', $item->id));
+        $res->assertRedirect(route('owner.services', ['tab' => 'add-ons']));
         $this->assertDatabaseMissing('additional_items', ['id' => $item->id]);
     }
 
@@ -210,17 +210,17 @@ class OwnerModulesCrudTest extends TestCase
         // Staged module under test is released explicitly (ADR-0011)
         config(['modules.vouchers' => 'released']);
 
-        $res = $this->actingAs($this->userA)->get(route('owner.vouchers'));
+        $res = $this->actingAs($this->userA)->get(route('owner.promos'));
         $res->assertStatus(200);
 
-        $res = $this->actingAs($this->userA)->post(route('owner.vouchers.store'), [
+        $res = $this->actingAs($this->userA)->post(route('owner.promos.store'), [
             'code' => 'PROMO50',
             'discount_type' => 'percentage',
             'discount_value' => 50,
             'min_order_amount' => 100000,
             'usage_limit' => 20,
         ]);
-        $res->assertRedirect(route('owner.vouchers'));
+        $res->assertRedirect(route('owner.promos'));
         $this->assertDatabaseHas('vouchers', [
             'idtenant' => $this->tenantA->id,
             'code' => 'PROMO50',
@@ -231,16 +231,16 @@ class OwnerModulesCrudTest extends TestCase
         $this->assertNotNull($voucher);
 
         // Toggle Status
-        $res = $this->actingAs($this->userA)->post(route('owner.vouchers.toggle', $voucher->id));
-        $res->assertRedirect(route('owner.vouchers'));
+        $res = $this->actingAs($this->userA)->post(route('owner.promos.toggle', $voucher->id));
+        $res->assertRedirect(route('owner.promos'));
         $this->assertDatabaseHas('vouchers', [
             'id' => $voucher->id,
             'is_active' => false,
         ]);
 
         // Delete
-        $res = $this->actingAs($this->userA)->delete(route('owner.vouchers.destroy', $voucher->id));
-        $res->assertRedirect(route('owner.vouchers'));
+        $res = $this->actingAs($this->userA)->delete(route('owner.promos.destroy', $voucher->id));
+        $res->assertRedirect(route('owner.promos'));
         $this->assertDatabaseMissing('vouchers', ['id' => $voucher->id]);
     }
 
@@ -253,7 +253,7 @@ class OwnerModulesCrudTest extends TestCase
             'discount_value' => 10000,
         ]);
 
-        $res = $this->actingAs($this->userA)->delete(route('owner.vouchers.destroy', $voucherB->id));
+        $res = $this->actingAs($this->userA)->delete(route('owner.promos.destroy', $voucherB->id));
         $res->assertStatus(404);
         $this->assertDatabaseHas('vouchers', ['id' => $voucherB->id]);
     }

@@ -17,6 +17,8 @@ Since BQ-008 (2026-11-01) the "Server-side state" column describes the code behi
 
 BQ-157 (2026-11-16): the withdrawn modules are removed. Staff and resources (models, policies, owner routes, `staff`, `service_staff`, `resources` and `service_resource` tables; resource rows became units, ADR-0017) and the direct payment gateway (`payment_mode = owner`, `UpdatePaymentSettings`, tenant keys in `MidtransPaymentGateway`; a migration erases the stored `midtrans_*` keys and puts every tenant on `platform`) are gone. `Service::hasActiveFulfillment()` no longer gates services. Unused keys left `config/modules.php`. Old paths answer per `owner-portal.md` §10.2: `/owner/staff-resources` → Tim, `/owner/settings/payments` and `/owner/settings/payment-setting` → `/owner/payments`; `/owner/resources` and `/owner/staff*` answer 404.
 
+ADR-0024 (2026-11-16): every module is released; `config/modules.php` reads `MODULE_<NAME>` with default `released` as an emergency switch. The `vouchers`, `additional-items` and `assets` keys and the legacy write routes of `/owner/programs`, `/owner/vouchers` and `/owner/additional-items` are removed; their GET paths redirect per `owner-portal.md` §10.2.
+
 ## Status
 
 Functional: Implemented, gated in the UI only · Verification: Needs Verification · Architecture: Needs Refactor
