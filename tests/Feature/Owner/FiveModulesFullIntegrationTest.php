@@ -132,7 +132,7 @@ class FiveModulesFullIntegrationTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $response->assertSessionHasErrors('error');
+        $response->assertSessionHasErrors('idschedule');
         $this->assertDatabaseMissing('bookings', ['namapelanggan' => 'Late Walkin']);
         $this->assertDatabaseMissing('payments', ['nama_pembayar' => 'Late Walkin']);
     }

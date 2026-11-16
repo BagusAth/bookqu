@@ -224,6 +224,7 @@ class PaymentLifecycleTest extends TestCase
     public function test_owner_completing_a_pending_booking_records_a_cash_payment(): void
     {
         [$payment, $bookings] = $this->pendingGroup();
+        $this->travelTo(now()->addDays(2)->setTime(10, 30));
 
         $result = app(UpdateBookingStatus::class)->execute($bookings->first(), 'completed', 'owner');
 
