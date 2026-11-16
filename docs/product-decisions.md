@@ -37,6 +37,7 @@ Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
 - *1 Nov 2026:* trial atau langganan yang sudah habis tidak lagi mendapat manfaat Pro. Perilaku setelah habis mengikuti D-002.
 - *4 Nov 2026:* satu akun hanya untuk satu bisnis. Owner yang ingin membuka bisnis lain mendaftar dengan akun terpisah.
 - *16 Nov 2026:* di Beranda, "Tandai selesai" muncul begitu sesi dimulai, sama seperti di panel booking. "Tidak datang" bisa ditandai langsung dari Beranda setelah sesi berakhir. (BQ-160)
+- *16 Nov 2026:* tampilan portal owner memakai warna BookQu (ungu dan oranye) dan huruf Plus Jakarta Sans. Jadwal hari ini di Beranda tampil sebagai garis waktu dengan penanda jam sekarang. Tombol tengah di HP bernama "Walk-in". Fitur dan alurnya tidak berubah. (BQ-161)
 
 ---
 

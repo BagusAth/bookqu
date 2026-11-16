@@ -2,7 +2,7 @@
 id: BQ-161
 title: Give the owner portal a visual design system and restyle every owner page
 type: improvement
-status: proposed
+status: approved           # Tech Lead 2026-11-16; implemented by the Tech Lead session, not by a separate agent
 priority: P1
 phase: 5
 domain: tenancy            # cross-cutting: every owner page (docs/owner-portal.md)
@@ -380,3 +380,16 @@ done per section, what was skipped and why, and the PR link.
 
 | Section | Done | Skipped (why) | Tests | Manual checks |
 |---|---|---|---|---|
+| §1 Foundation `b9c85dd` | Brand tokens (`bq-primary` → aubergine, marigold `bq-accent`, Paper, borders), `font-owner` Plus Jakarta Sans 400–700, `bq-owner` base (focus ring, selection, label style, reduced motion), one overlay shadow `shadow-bq` | Type sizes stay on Tailwind's steps (body 14 px, not 15) so shared landing CSS is untouched | — | Build passes |
+| §2 Components `b9c85dd` | `x-ui.button`, `field`, `input`, `select`, `textarea`, `panel`, `stat`, `badge`, `list-row`, `filter-bar`, `avatar`, `skeleton`; `bq-*` classes; 18 new `x-owner.icon` names | `x-ui.table` and `x-ui.day-rail` were not made components: tables keep their markup with the shared classes, the day rail lives in Beranda and the Kalender day view | `tests/Feature/Components/UiComponentsTest.php` (8 tests) | — |
+| §3 Shell `b9c85dd` | Aubergine sidebar with marigold active bar and count pills; top bar with one "Walk-in" action, quieter search, marigold unread count; phone bar with the "+ Walk-in" FAB (S-02, contract §4.2/§4.3 wording updated); dialog, drawer, confirm, toast, tabs (edge fade, active tab scrolled into view), page header, status badge, empty state | — | `OwnerAppShellTest` regex updated for the "Walk-in" label | Desktop |
+| §4 Daily pages `228ba92` | Beranda: four figures in one panel with the first as hero, day rail with marigold "now" line, "Perlu tindakan" with total, setup guide with progress bar and next step; Kalender: segmented date control, legend dots, state fills with strong left edge, today outlined; Booking: filter bar with "Filter (n)" on phones, table and phone rows, reason badges; booking panel: slip header, sectioned body, history line, skeleton, one primary action, outlined cancel, labelled payment method (`App\Support\PaymentMethodLabel`, BK-04); Pelanggan: stat strip, segmented filters, avatars | Beranda quick actions stay a panel (not a header menu); the "no open slot" banner is still separate from guide step 3 (it comes from `GetBeranda`); walk-in slot chips not built | `PaymentMethodLabelTest`; owner feature tests | Desktop: Beranda, Booking, panel, Kalender day and week |
+| §5 Catalog `0c8ff48` | Layanan placeholder band and marigold "Populer"; Unit rows with icon, service count, today's usage bar, outlined delete; Jam Buka & Harga runway as one summary (L-03); Promo discount as the lead figure and dashed code chip; Ulasan aubergine bars | Opening hours weekly grid, Halaman Booking sticky preview, simulator mini table not built | Related feature tests | Desktop (before the pane was hidden) |
+| §6 Money and account `0c8ff48` | Pembayaran available balance as an aubergine hero; Laporan stat grids as one divided panel; Paket & Tagihan plans ordered by price (Small, Medium, Pro); Profil Bisnis grouped into Identitas and Kontak with a sticky save bar; Notifikasi segmented chips; Bantuan contact as an aubergine panel | Laporan period comparison and overview chart (data not prepared by the Action); other settings tabs only got the shared classes | `PaketNotifikasiBantuanTest`, `SettingsTest`, `LaporanPageTest` | — |
+| §7 Sweep | 86 inputs and 71 buttons moved to `bq-input`/`bq-btn` by script, class variables in 11 views, 142 repeated fragments (badges, panels, links, hover, shadows, `bq-num`), raw palette and hex colours replaced except the printable poster and the landing preview | 44 inline SVGs remain (icons inside buttons and charts) | Full suite | Every owner page (30 URLs) answers 200 with the new styles as Pemilik |
+
+Measured after the change (83 owner and `ui` Blade files): 100 uses of `bq-btn-*`, 103 of `bq-input`; buttons that are not on the shared classes are menu rows in the sidebar, top bar and sheet. Raw palette uses 32 → 8 and hex colours → 7, all in the printable poster and the landing preview, which render the business's own colours.
+
+Verification on 2026-11-16: `vendor/bin/phpunit` 982 tests, 979 pass; the 3 errors need the GD extension the local PHP CLI lacks (CI has it). PHPStan: no errors. Pint: passed. `npm run build`: passed. Screenshots at 1366 px were checked during the work; the browser pane was hidden for the last pages, so the phone pass (375 px) and the Kasir pass are left for the PR review.
+
+Follow-up (not in this PR): the items in the "Skipped" column above.

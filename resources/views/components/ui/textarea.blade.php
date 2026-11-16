@@ -1,6 +1,4 @@
 {{-- Textarea (BQ-161). --}}
 @props(['name' => null])
 
-<textarea @if ($name) name="{{ $name }}" @endif
-    @if ($name && $errors->has($name)) aria-invalid="true" @endif
-    {{ $attributes->class('bq-input w-full') }}>{{ $slot }}</textarea>
+<textarea {{ $attributes->merge(array_filter(['name' => $name, 'aria-invalid' => $name && $errors->has($name) ? 'true' : null]))->class('bq-input w-full') }}>{{ $slot }}</textarea>

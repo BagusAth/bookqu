@@ -731,6 +731,12 @@ Built once (epic E1) and used by every page above.
 
 Dialog forms submit a hidden `_form` key, including the record ID for an edit. After a validation redirect, the matching form restores its previous input and shows field errors inline. The shared dialog accepts `reopen-for` for a fixed form key, and `x-owner.field-error` can scope a message to a form. The toast summarizes the error.
 
+**Visual system (BQ-161).** Every owner page uses one token set and one component set, so pages look and behave alike:
+
+- Tokens in `resources/css/app.css`: brand aubergine `bq-primary` for primary actions, active states and links; marigold `bq-accent` only for "now" and "needs you"; Paper background with white panels; the existing AA status pairs. Typeface Plus Jakarta Sans (`font-owner`). Radius 8 px controls, 12 px panels, 16 px overlays; only overlays cast a shadow (`shadow-bq`).
+- Components in `resources/views/components/ui`: `x-ui.button` (`primary`, `secondary`, `ghost`, `danger`, `danger-solid`, `accent`), `x-ui.field`, `x-ui.input`, `x-ui.select`, `x-ui.textarea`, `x-ui.panel`, `x-ui.stat`, `x-ui.badge`, `x-ui.list-row`, `x-ui.filter-bar` (filters behind "Filter (n)" on phones), `x-ui.avatar`, `x-ui.skeleton`. Markup that cannot use a component uses the same classes (`bq-btn`, `bq-input`, `bq-panel`, `bq-badge`, `bq-link`, `bq-num`).
+- Beranda's schedule and Kalender's day view share the day rail with the marigold "now" line.
+
 ## 10. From the current portal to the new one
 
 ### 10.1 Page map
