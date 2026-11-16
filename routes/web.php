@@ -172,6 +172,7 @@ Route::prefix('owner')
             Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
             Route::get('/bookings/walkin-slots', [OwnerShellController::class, 'walkInSlots'])->name('owner.bookings.walkin-slots');
             Route::get('/bookings/{booking}/available-slots', [OwnerBookingController::class, 'getAvailableSlots'])->name('owner.bookings.available-slots');
+            Route::post('/bookings/{booking}/resend-link', [OwnerBookingController::class, 'resendLink'])->middleware('throttle:3,1,owner-resend-link:')->name('owner.bookings.resend-link');
             Route::post('/bookings/{booking}/reschedule', [OwnerBookingController::class, 'reschedule'])->name('owner.bookings.reschedule');
             // BQ-147 Laporan (owner-portal.md §8.13): Small sees a preview; the export needs Medium (AC-LAP-03).
             Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('module:reports');
@@ -214,16 +215,25 @@ Route::prefix('owner')
 
             // Additional Items
             Route::get('/additional-items', [OwnerAdditionalItemController::class, 'index'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items');
+            Route::post('/services/add-ons', [OwnerAdditionalItemController::class, 'store'])->middleware(['module:add-ons', 'subscription:add-ons'])->name('owner.services.add-ons.store');
             Route::post('/additional-items', [OwnerAdditionalItemController::class, 'store'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items.store');
+            Route::put('/services/add-ons/{id}', [OwnerAdditionalItemController::class, 'update'])->middleware(['module:add-ons', 'subscription:add-ons'])->name('owner.services.add-ons.update');
             Route::put('/additional-items/{id}', [OwnerAdditionalItemController::class, 'update'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items.update');
+            Route::delete('/services/add-ons/{id}', [OwnerAdditionalItemController::class, 'destroy'])->middleware(['module:add-ons', 'subscription:add-ons'])->name('owner.services.add-ons.destroy');
             Route::delete('/additional-items/{id}', [OwnerAdditionalItemController::class, 'destroy'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items.destroy');
+            Route::match(['post', 'patch'], '/services/add-ons/{id}/toggle', [OwnerAdditionalItemController::class, 'toggleStatus'])->middleware(['module:add-ons', 'subscription:add-ons'])->name('owner.services.add-ons.toggle');
             Route::match(['post', 'patch'], '/additional-items/{id}/toggle', [OwnerAdditionalItemController::class, 'toggleStatus'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items.toggle');
 
             // Vouchers
-            Route::get('/vouchers', [OwnerVoucherController::class, 'index'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers');
+            Route::get('/promos', [OwnerVoucherController::class, 'index'])->middleware(['module:promos', 'subscription:promos'])->name('owner.promos');
+            Route::get('/vouchers', [OwnerVoucherController::class, 'legacyIndex'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers');
+            Route::post('/promos', [OwnerVoucherController::class, 'store'])->middleware(['module:promos', 'subscription:promos'])->name('owner.promos.store');
             Route::post('/vouchers', [OwnerVoucherController::class, 'store'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers.store');
+            Route::put('/promos/{id}', [OwnerVoucherController::class, 'update'])->middleware(['module:promos', 'subscription:promos'])->name('owner.promos.update');
             Route::put('/vouchers/{id}', [OwnerVoucherController::class, 'update'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers.update');
+            Route::delete('/promos/{id}', [OwnerVoucherController::class, 'destroy'])->middleware(['module:promos', 'subscription:promos'])->name('owner.promos.destroy');
             Route::delete('/vouchers/{id}', [OwnerVoucherController::class, 'destroy'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers.destroy');
+            Route::match(['post', 'patch'], '/promos/{id}/toggle', [OwnerVoucherController::class, 'toggleStatus'])->middleware(['module:promos', 'subscription:promos'])->name('owner.promos.toggle');
             Route::match(['post', 'patch'], '/vouchers/{id}/toggle', [OwnerVoucherController::class, 'toggleStatus'])->middleware(['module:vouchers', 'subscription:promos'])->name('owner.vouchers.toggle');
 
             // Reviews

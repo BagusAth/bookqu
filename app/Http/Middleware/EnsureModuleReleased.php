@@ -21,6 +21,10 @@ class EnsureModuleReleased
     {
         $state = ModuleRelease::state($module);
 
+        if ($module === 'vouchers' && $request->routeIs('owner.vouchers') && ModuleRelease::state('promos') === 'released') {
+            return $next($request);
+        }
+
         if ($state === 'released') {
             return $next($request);
         }

@@ -61,12 +61,12 @@
         <div class="mt-5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
             <div class="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
                 <span>Biaya Layanan{{ count($selectedTimes) > 1 ? ' (' . count($selectedTimes) . ' slot)' : '' }}</span>
-                <span class="font-medium text-[#0F172A]">Rp {{ number_format($hargaAkhir, 0, ',', '.') }}</span>
+                <span class="font-medium text-[#0F172A]"><span x-text="reviewed ? money(quote?.base_subtotal ?? @js($hargaAkhir)) : 'Perbarui harga'">Rp {{ number_format($hargaAkhir, 0, ',', '.') }}</span></span>
             </div>
             <div class="border-t border-[#E2E8F0] pt-2 mt-2 flex items-center justify-between">
                 <span class="text-sm font-bold text-[#0F172A]">Total Bayar</span>
                 <span id="desktop-total-display" class="text-xl font-extrabold text-[#4F46E5]">
-                    Rp {{ number_format($hargaAkhir, 0, ',', '.') }}
+                    <span x-text="reviewed ? money(quote?.total ?? @js($hargaAkhir)) : 'Perbarui harga'">Rp {{ number_format($hargaAkhir, 0, ',', '.') }}</span>
                 </span>
             </div>
             <p class="mt-1 text-[11px] text-[#94A3B8]">Sudah termasuk pajak &amp; biaya layanan</p>

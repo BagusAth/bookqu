@@ -9,6 +9,55 @@
 <div id="booking-checkout-root"
      data-tenant-slug="{{ $tenant->slug }}"
      x-data="{
+        participants: @js((int) old('peserta', 1)),
+        voucherCode: @js(old('voucher_code', '')),
+        addOnOptions: @js($addOnOptions),
+        quantities: @js(collect(old('selected_addons', []))->pluck('quantity', 'id')->all()),
+        quote: null,
+        quoteBusy: false,
+        quoteError: '',
+        quoteKey: '',
+        quoteRequest: 0,
+        get selectedAddOns() {
+            return this.addOnOptions.filter(item => Number(this.quantities[item.id]) > 0)
+                .map(item => ({ id: item.id, quantity: Number(this.quantities[item.id]) }));
+        },
+        get quoteInput() {
+            return { peserta: this.participants, voucher_code: this.voucherCode, selected_addons: this.selectedAddOns };
+        },
+        get reviewed() {
+            return this.quoteKey === JSON.stringify(this.quoteInput)
+                || (!this.quote && Number(this.participants) === 1 && !this.voucherCode && !this.selectedAddOns.length);
+        },
+        money(amount) {
+            return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+        },
+        async refreshQuote() {
+            const request = ++this.quoteRequest;
+            const input = JSON.stringify(this.quoteInput);
+            this.quoteBusy = true;
+            this.quoteError = '';
+            try {
+                const response = await fetch(@js(\App\Support\CustomerBookingRoutes::url('customer.booking.validate-voucher', $tenant->slug)), {
+                    method: 'POST',
+                    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.$refs.checkoutToken.value },
+                    body: input,
+                });
+                const data = await response.json();
+                if (request !== this.quoteRequest || input !== JSON.stringify(this.quoteInput)) return;
+                if (!response.ok) {
+                    this.quoteError = Object.values(data.errors || {}).flat()[0] || 'Harga tidak dapat diperbarui. Coba lagi.';
+                    return;
+                }
+                this.quote = data.quote;
+                this.$refs.checkoutFingerprint.value = data.checkout_fingerprint;
+                this.quoteKey = input;
+            } catch {
+                if (request === this.quoteRequest) this.quoteError = 'Harga tidak dapat diperbarui. Coba lagi.';
+            } finally {
+                if (request === this.quoteRequest) this.quoteBusy = false;
+            }
+        },
         name: {{ \Illuminate\Support\Js::from(old('namapelanggan', '')) }},
         email: {{ \Illuminate\Support\Js::from(old('email', '')) }},
         phone: {{ \Illuminate\Support\Js::from(old('nomorhp', '')) }},
@@ -57,8 +106,8 @@
         method="POST"
         action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.process-checkout', $tenant->slug) }}"
     >
-        @csrf
-        <input type="hidden" name="checkout_fingerprint" value="{{ $checkoutFingerprint }}">
+        <input type="hidden" name="_token" value="{{ csrf_token() }}" x-ref="checkoutToken">
+        <input type="hidden" name="checkout_fingerprint" value="{{ $checkoutFingerprint }}" x-ref="checkoutFingerprint">
 
         {{-- Left Column: Form Fields, Mobile Review & Policies --}}
         @include('customer.partials.booking.checkout-form')
@@ -116,6 +165,12 @@
             checkoutForm.addEventListener('submit', function (event) {
                 // Field errors shown on screen must also stop the submit; the server re-validates.
                 const form = window.Alpine ? window.Alpine.$data(document.getElementById('booking-checkout-root')) : null;
+                if (form && (!form.reviewed || form.quoteBusy)) {
+                    event.preventDefault();
+                    form.quoteError = 'Perbarui ringkasan harga sebelum membayar.';
+                    document.getElementById('refresh-checkout-quote').focus();
+                    return;
+                }
                 if (form) {
                     form.touched = { name: true, email: true, phone: true };
                     form.validateName();

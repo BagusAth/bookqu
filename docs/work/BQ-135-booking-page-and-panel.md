@@ -52,3 +52,5 @@ INV-BOOK-01/02; INV-PAY-*: amounts from payments.
 ## Evidence (fill when done)
 
 2026-11-13: Booking now uses task tabs, search and filters, responsive rows, gated formula-safe CSV, and the BQ-129 shared panel also opened from Calendar. Payment amounts, actor history, and action inputs are prepared on the server. OwnerPortalWorkflowTest and the shared cancellation regression cover the new read/action contract. Remaining: no-show (BQ-153), reschedule price difference (BQ-140), unit/participant fields where the model does not yet supply them, and owner resend and notification entry points.
+
+2026-11-16: Panel booking menampilkan peserta, unit yang dipakai layanan, no-show dan selisih reschedule. Pengiriman ulang menggunakan ADR-0006 melalui antrean dan alamat pelanggan tercatat. Sisa: entry point notifikasi untuk panel.

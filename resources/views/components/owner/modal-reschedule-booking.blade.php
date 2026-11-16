@@ -225,6 +225,8 @@
                                 </div>
                                 <div class="flex items-center justify-between text-[11px] font-semibold text-bq-text-muted">
                                     <span x-text="slot.formatted_price"></span>
+                                    <span class="block" x-show="slot.is_available && slot.price_difference != null"
+                                        x-text="'Selisih: ' + new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0, signDisplay: 'exceptZero' }).format(slot.price_difference)"></span>
                                     <template x-if="slot.is_available">
                                         <span class="text-emerald-600 text-[10px] font-bold">✓ Pilih</span>
                                     </template>

@@ -2,7 +2,7 @@
 id: BQ-149
 title: Promo page and promo codes in checkout
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: booking
@@ -17,7 +17,7 @@ depends-on: [BQ-148, BQ-130]
 
 # BQ-149: Promo page and promo codes in checkout
 
-Epic **E5 · Medium value** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E5 · Medium value** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -52,3 +52,5 @@ INV-PAY-03/04; quota exact under concurrency.
 Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.
 
 Bundle C backend: validates tenant, plan, dates, applicable service, minimum and quota. The signed quote and stored breakdown use BookingPricing; lifecycle consumes or releases quota. Evidence: BookingPricingTest, CheckoutPricingTest, CheckoutPricingLockingTest. Owner Promo page and checkout UI remain.
+
+2026-11-16: Halaman Promo menyediakan tab status, angka pemakaian dari payment, dan pengelolaan kode. URL lama mengalihkan ke Promo saat modul dirilis. Checkout meminta ulang quote untuk kode promo. Evidence: CheckoutPricingTest.

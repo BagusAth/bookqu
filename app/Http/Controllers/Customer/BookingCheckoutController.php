@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\CreateBooking;
+use App\Actions\Booking\GetBookingAddOnOptions;
 use App\Actions\Booking\QuoteBooking;
 use App\Actions\Booking\ResumeCheckout;
 use App\Actions\Booking\StorefrontCheckoutState;
@@ -11,6 +12,7 @@ use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Modules\ModuleRelease;
 use App\Domain\Schedule\PriceRules;
+use App\Domain\Subscription\EntitlementRules;
 use App\Http\Requests\Booking\CreateBookingRequest;
 use App\Http\Requests\Booking\QuoteBookingRequest;
 use App\Models\Booking;
@@ -92,6 +94,11 @@ final class BookingCheckoutController extends StorefrontBookingController
         $checkoutFingerprint = $checkoutState->fingerprint($service, $selectedDate, $schedules);
         $pendingCheckout = $checkoutState->pending($tenant);
 
+        $subscription = $tenant->subscription()->with('plan')->first();
+        $showPromo = ModuleRelease::state('promos') === 'released'
+            && EntitlementRules::canAccessFeature($subscription, 'promos')['allowed'];
+        $addOnOptions = app(GetBookingAddOnOptions::class)->execute($tenant, [$service->id])[$service->id] ?? [];
+
         return view('customer.booking.checkout', compact(
             'tenant',
             'service',
@@ -105,7 +112,9 @@ final class BookingCheckoutController extends StorefrontBookingController
             'selectedRanges',
             'selectedMinutes',
             'checkoutFingerprint',
-            'pendingCheckout'
+            'pendingCheckout',
+            'showPromo',
+            'addOnOptions',
         ) + ['bookingPolicy' => $tenant->only([
             'refunds_enabled', 'cancel_before_hours', 'reschedule_before_hours',
             'booking_min_lead_hours', 'booking_max_days_ahead', 'booking_buffer_minutes',
@@ -245,7 +254,8 @@ final class BookingCheckoutController extends StorefrontBookingController
     {
         $tenant = $this->resolveTenant($slug_usaha) ?? abort(404);
         abort_unless(ModuleRelease::state('promos') === 'released'
-            || ModuleRelease::state('add-ons') === 'released', 404);
+            || ModuleRelease::state('add-ons') === 'released'
+            || ($request->filled('peserta') && ! $request->filled('voucher_code') && ! $request->filled('selected_addons')), 404);
         $draft = $this->drafts->read();
         $service = $this->resolveService($tenant->id, (int) $draft->serviceId);
         $ids = (array) ($draft->scheduleIds ?? $draft->scheduleId);

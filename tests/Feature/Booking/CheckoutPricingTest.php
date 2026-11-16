@@ -82,6 +82,32 @@ class CheckoutPricingTest extends TestCase
         $this->assertDatabaseHas('vouchers', ['id' => $voucher->id, 'used_count' => $paid ? 1 : 0]);
     }
 
+    public function test_checkout_exposes_enabled_options_and_quotes_participants_and_promo(): void
+    {
+        config(['modules.promos' => 'released', 'modules.add-ons' => 'released']);
+        $tenant = Tenant::factory()->create();
+        app(CreateTrialSubscription::class)->execute($tenant);
+        $service = Service::factory()->create(['idtenant' => $tenant->id, 'harga' => 100000, 'kapasitas' => 4, 'is_active' => true]);
+        $slot = Schedule::factory()->create(['idtenant' => $tenant->id, 'idlayanan' => $service->id, 'tanggal' => now()->addDay()->toDateString(),
+            'jam_mulai' => '10:00', 'jam_selesai' => '10:59', 'status' => 'tersedia', 'harga_override' => null]);
+        Voucher::create(['idtenant' => $tenant->id, 'code' => 'HEMAT', 'discount_type' => 'fixed',
+            'discount_value' => 15000, 'start_date' => null, 'end_date' => null, 'is_active' => true]);
+        $item = AdditionalItem::create(['idtenant' => $tenant->id, 'name' => 'Handuk', 'price' => 5000, 'stock' => 1, 'is_unlimited' => false, 'is_active' => true]);
+        $item->services()->attach($service->id);
+        $this->withSession(['booking' => [
+            'tenant_id' => $tenant->id, 'service_id' => $service->id, 'tanggal' => $slot->tanggal->toDateString(),
+            'jam' => ['10:00'], 'schedule_ids' => [$slot->id],
+        ]]);
+        $base = '/'.$tenant->slug.'/booking';
+        $this->get($base.'/checkout')->assertOk()->assertSee('name="peserta"', false)
+            ->assertSee('name="voucher_code"', false)->assertSee('Handuk');
+        $this->postJson($base.'/validate-voucher', ['peserta' => 2, 'voucher_code' => 'HEMAT',
+            'selected_addons' => [['id' => $item->id, 'quantity' => 1]]])
+            ->assertOk()->assertJsonPath('quote.total', 190000);
+        $this->postJson($base.'/validate-voucher', ['voucher_code' => 'INVALID'])
+            ->assertUnprocessable()->assertJsonValidationErrors('voucher_code');
+    }
+
     public static function outcomes(): array
     {
         return ['duplicate success' => [true], 'expiry then late success' => [false]];

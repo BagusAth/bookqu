@@ -6,11 +6,14 @@ namespace App\Actions\Calendar;
 
 use App\Actions\Schedule\PriceSlots;
 use App\Domain\Booking\BookingRules;
+use App\Domain\Modules\ModuleRelease;
+use App\Domain\Subscription\EntitlementRules;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Models\Unit;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -60,6 +63,12 @@ class GetOwnerCalendarData
         $selectedService = $request->query('service_id', 'all');
         $selectedStatus = $request->query('status', 'all');
 
+        $units = ModuleRelease::state('units') === 'released'
+            && EntitlementRules::canAccessFeature($tenant->subscription()->with('plan')->first(), 'units')['allowed']
+            ? Unit::where('idtenant', $tenant->id)->orderBy('name')->get(['id', 'name'])
+            : collect();
+        $selectedUnit = $units->firstWhere('id', $request->integer('unit_id'))?->id;
+
         $services = Service::where('idtenant', $tenant->id)->orderBy('namalayanan')->get();
 
         // Date range covering month + edge weeks for smooth view transitions
@@ -76,6 +85,10 @@ class GetOwnerCalendarData
         $schedulesQuery = Schedule::where('idtenant', $tenant->id)
             ->whereBetween('tanggal', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
             ->with(['layanan', 'bookings.payment']);
+
+        if ($selectedUnit !== null) {
+            $schedulesQuery->whereHas('layanan.units', fn ($query) => $query->whereKey($selectedUnit));
+        }
 
         if ($selectedService !== 'all' && is_numeric($selectedService)) {
             $schedulesQuery->where('idlayanan', (int) $selectedService);
@@ -96,6 +109,10 @@ class GetOwnerCalendarData
         $bookingsQuery = Booking::where('idtenant', $tenant->id)
             ->whereBetween('tanggalbooking', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
             ->with(['layanan', 'payment', 'schedule']);
+
+        if ($selectedUnit !== null) {
+            $bookingsQuery->whereHas('layanan.units', fn ($query) => $query->whereKey($selectedUnit));
+        }
 
         if ($selectedService !== 'all' && is_numeric($selectedService)) {
             $bookingsQuery->where('idlayanan', (int) $selectedService);
@@ -135,6 +152,8 @@ class GetOwnerCalendarData
         return [
             'tenant' => $tenant,
             'services' => $services,
+            'units' => $units,
+            'selectedUnit' => $selectedUnit,
             'bookings' => $bookings,
             'schedules' => $schedules,
             'slotPrices' => app(PriceSlots::class)->execute($tenant, $schedules),

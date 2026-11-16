@@ -2,7 +2,7 @@
 id: BQ-140
 title: Reschedule price rules: customers same or cheaper, owners any slot with the difference recorded
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: booking
@@ -17,7 +17,7 @@ depends-on: [BQ-113, BQ-120, BQ-135]
 
 # BQ-140: Reschedule price rules: customers same or cheaper, owners any slot with the difference recorded
 
-Epic **E3 · Approved decisions D-001, D-002, D-006** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E3 · Approved decisions D-001, D-002, D-006** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -54,3 +54,5 @@ INV-BOOK-03/04 through `ClaimSlots`.
 Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.
 
 Bundle C backend: customer slot results omit higher prices and direct POST is rechecked under the tenant lock. The owner slot API returns the price difference and reschedule records it without changing the payment. Evidence: BookingManageTest. UI rendering of the difference and contact hint remains.
+
+2026-11-16: Modal owner memperlihatkan selisih harga dari API sebelum konfirmasi. Panel menampilkan selisih yang tercatat di riwayat. Reschedule pelanggan menampilkan petunjuk hubungi pemilik.

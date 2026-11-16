@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Owner;
 
+use App\Actions\Booking\GetBookingAddOnOptions;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Domain\Booking\BookingTimeRange;
 use App\Models\Service;
@@ -18,13 +19,14 @@ final class ListWalkInSlots
     public function __construct(private GetAvailableSchedules $availability) {}
 
     /**
-     * @return list<array{id: int, label: string}>
+     * @return list<array{id: int, label: string, add_ons?: list<array{id: int, name: string}>}>
      */
     public function execute(Tenant $tenant, string $date): array
     {
         // scope-bypass: filtered by the server-resolved tenant of the signed-in member
         $services = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->where('is_active', true)->orderBy('namalayanan')->get(['id', 'namalayanan']);
 
+        $addOns = app(GetBookingAddOnOptions::class)->execute($tenant, $services->pluck('id')->values()->all());
         $slots = [];
         foreach ($services as $service) {
             foreach ($this->availability->getSlotsForReschedule($tenant, (int) $service->id, $date) as $slot) {
@@ -36,12 +38,13 @@ final class ListWalkInSlots
                     'id' => (int) $slot['id'],
                     'label' => $service->namalayanan.' · '.$range->label(),
                     'start' => $range->startTime(),
+                    'add_ons' => $addOns[$service->id] ?? [],
                 ];
             }
         }
 
         usort($slots, fn (array $a, array $b): int => [$a['start'], $a['label']] <=> [$b['start'], $b['label']]);
 
-        return array_map(fn (array $slot): array => ['id' => $slot['id'], 'label' => $slot['label']], $slots);
+        return array_map(fn (array $slot): array => ['id' => $slot['id'], 'label' => $slot['label']] + ($slot['add_ons'] === [] ? [] : ['add_ons' => $slot['add_ons']]), $slots);
     }
 }

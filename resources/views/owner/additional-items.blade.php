@@ -1,10 +1,9 @@
 @extends('layouts.owner-layout')
 
-@section('title', 'Additional Items')
+@section('title', 'Add-on')
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6" x-data="{
-    search: '{{ addslashes($search ?? '') }}',
     addModalOpen: false,
     editModalOpen: false,
     addUnlimited: true,
@@ -45,9 +44,14 @@
         </button>
     </div>
 
+    @if ($serviceTab)
+        <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori', 'add-ons' => 'Add-on']" active="add-ons" label="Bagian halaman Layanan" />
+    @endif
+
     {{-- ── Search & Metrics ── --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-[#e7e2f7] bg-white p-3.5 shadow-[0_4px_20px_rgba(35,26,61,0.03)]">
-        <form method="GET" action="{{ route('owner.additional-items') }}" class="relative w-full sm:max-w-xs">
+        <form method="GET" action="{{ $serviceTab ? route('owner.services') : $indexUrl }}" class="relative w-full sm:max-w-xs">
+            @if ($serviceTab)<input type="hidden" name="tab" value="add-ons">@endif
             <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6e6584]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
@@ -147,7 +151,7 @@
                                 @endif
                             </td>
                             <td class="px-5 py-4 whitespace-nowrap text-center">
-                                <form method="POST" action="{{ route('owner.additional-items.toggle', $item->id) }}">
+                                <form method="POST" action="{{ route($itemRoute.'.toggle', $item->id) }}">
                                     @csrf
                                     @method('PATCH')
                                     <button
@@ -169,7 +173,7 @@
                                     >
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </button>
-                                    <form method="POST" action="{{ route('owner.additional-items.destroy', $item->id) }}" id="form-delete-item-{{ $item->id }}">
+                                    <form method="POST" action="{{ route($itemRoute.'.destroy', $item->id) }}" id="form-delete-item-{{ $item->id }}">
                                         @csrf
                                         @method('DELETE')
                                         <button
@@ -201,7 +205,7 @@
                                 </p>
                                 <div class="mt-4 flex items-center justify-center gap-2">
                                     @if(!empty($search))
-                                        <a href="{{ route('owner.additional-items') }}" class="craft-btn inline-flex items-center gap-1.5 rounded-xl border border-[#e7e2f7] bg-white px-3 py-1.5 text-xs font-bold text-[#6e6584] hover:text-[#231a3d] hover:bg-[#f7f7fa]">
+                                        <a href="{{ $indexUrl }}" class="craft-btn inline-flex items-center gap-1.5 rounded-xl border border-[#e7e2f7] bg-white px-3 py-1.5 text-xs font-bold text-[#6e6584] hover:text-[#231a3d] hover:bg-[#f7f7fa]">
                                             Reset Pencarian
                                         </a>
                                     @endif
@@ -248,7 +252,7 @@
                 </button>
             </div>
             <p class="text-xs text-[#6e6584] mt-2">Produk atau layanan opsional yang dapat dipilih customer saat booking.</p>
-            <form method="POST" action="{{ route('owner.additional-items.store') }}" class="mt-4 space-y-4" id="form-add-addon">
+            <form method="POST" action="{{ route($itemRoute.'.store') }}" class="mt-4 space-y-4" id="form-add-addon">
                 @csrf
                 <div>
                     <label class="text-xs font-bold text-[#231a3d]">Nama Item <span class="text-rose-500">*</span></label>
@@ -365,7 +369,7 @@
                 </button>
             </div>
             <p class="text-xs text-[#6e6584] mt-2">Perbarui harga, stok, atau layanan yang berlaku.</p>
-            <form method="POST" :action="`/owner/additional-items/${activeItem.id}`" class="mt-4 space-y-4" id="form-edit-addon">
+            <form method="POST" :action="@js(route($itemRoute.'.update', ['id' => '__ID__'])).replace('__ID__', encodeURIComponent(activeItem.id))" class="mt-4 space-y-4" id="form-edit-addon">
                 @csrf
                 @method('PUT')
                 <div>

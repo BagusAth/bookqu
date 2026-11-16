@@ -1,10 +1,9 @@
 @extends('layouts.owner-layout')
 
-@section('title', 'Vouchers & Discounts')
+@section('title', 'Promo')
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6" x-data="{
-    search: '{{ addslashes($search ?? '') }}',
     addModalOpen: false,
     editModalOpen: false,
     activeVoucher: {
@@ -30,23 +29,24 @@
     }
 }">
 
-    {{-- ── Header ── --}}
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold tracking-tight text-bq-text">Promo Vouchers &amp; Discounts</h1>
-            <p class="text-sm text-bq-text-muted mt-1">Buat kode promo, kupon diskon persentase atau nominal untuk mendongkrak konversi booking.</p>
-        </div>
-        <button type="button" @click="addModalOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-bq-primary px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-bq-primary-hover transition" id="btn-add-voucher">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-            </svg>
-            + Buat Voucher Baru
-        </button>
-    </div>
+    <x-owner.page-header title="Promo" purpose="Buat dan pantau kode diskon untuk booking.">
+        <x-slot:action>
+            <button type="button" @click="addModalOpen = true" class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white" id="btn-add-voucher">Buat promo</button>
+        </x-slot:action>
+    </x-owner.page-header>
+
+    <dl class="grid grid-cols-2 gap-3 rounded-xl border border-bq-border bg-bq-surface p-4 text-sm sm:grid-cols-4">
+        <div><dt>Promo aktif</dt><dd class="font-semibold">{{ $promoFigures['active'] }}</dd></div>
+        <div><dt>Pemakaian</dt><dd class="font-semibold">{{ $promoFigures['uses'] }}</dd></div>
+        <div><dt>Total diskon</dt><dd class="font-semibold">Rp {{ number_format($promoFigures['discount'], 0, ',', '.') }}</dd></div>
+        <div><dt>Pendapatan dengan promo</dt><dd class="font-semibold">Rp {{ number_format($promoFigures['revenue'], 0, ',', '.') }}</dd></div>
+    </dl>
+    <x-owner.tabs :tabs="$promoTabs" :active="$tab" label="Status promo" />
 
     {{-- ── Search & Filter ── --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <form method="GET" action="{{ route('owner.vouchers') }}" class="relative w-full sm:max-w-xs">
+        <form method="GET" action="{{ route($promoRoute) }}" class="relative w-full sm:max-w-xs">
+            <input type="hidden" name="tab" value="{{ $tab }}">
             <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
@@ -83,7 +83,7 @@
                     <div class="flex items-start justify-between gap-2">
                         <div class="flex items-center gap-2">
                             <span class="rounded-lg bg-indigo-50 px-2.5 py-1 font-mono text-xs font-bold text-indigo-700 tracking-wider">{{ $v->code }}</span>
-                            <button type="button" @click="copyCode('{{ $v->code }}')" class="-m-2 inline-flex items-center justify-center rounded-lg p-2 text-bq-text-muted hover:bg-indigo-50 hover:text-indigo-600 transition" title="Salin Kode" aria-label="Salin Kode">
+                            <button type="button" @click="copyCode(@js($v->code))" class="-m-2 inline-flex items-center justify-center rounded-lg p-2 text-bq-text-muted hover:bg-indigo-50 hover:text-indigo-600 transition" title="Salin Kode" aria-label="Salin Kode">
                                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                             </button>
                         </div>
@@ -121,7 +121,7 @@
 
                 {{-- Footer Controls --}}
                 <div class="mt-5 pt-3 border-t border-bq-border flex items-center justify-between">
-                    <form method="POST" action="{{ route('owner.vouchers.toggle', $v->id) }}">
+                    <form method="POST" action="{{ route($promoRoute.'.toggle', $v->id) }}">
                         @csrf
                         @method('PATCH')
                         <button type="submit"
@@ -133,7 +133,7 @@
                         <button type="button" @click="openEdit(@js($vPayload))" class="rounded-lg p-1.5 text-bq-text-muted hover:bg-slate-100 hover:text-bq-text transition" title="Edit" id="btn-edit-voucher-{{ $v->id }}">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                         </button>
-                        <form method="POST" action="{{ route('owner.vouchers.destroy', $v->id) }}" id="form-delete-voucher-{{ $v->id }}">
+                        <form method="POST" action="{{ route($promoRoute.'.destroy', $v->id) }}" id="form-delete-voucher-{{ $v->id }}">
                             @csrf
                             @method('DELETE')
                             <button type="button"
@@ -164,7 +164,7 @@
         <div class="my-auto w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-bq-border" @click.outside="addModalOpen = false">
             <h3 class="text-base font-bold text-bq-text">Buat Kode Promo Baru</h3>
             <p class="text-xs text-bq-text-muted mt-1">Konfigurasi nilai diskon, kuota pemakaian, dan masa berlaku kupon.</p>
-            <form method="POST" action="{{ route('owner.vouchers.store') }}" class="mt-4 space-y-3.5" id="form-add-voucher">
+            <form method="POST" action="{{ route($promoRoute.'.store') }}" class="mt-4 space-y-3.5" id="form-add-voucher">
                 @csrf
                 <div>
                     <label class="text-xs font-semibold text-bq-text">Kode Promo <span class="text-rose-500">*</span></label>
@@ -216,7 +216,7 @@
         <div class="my-auto w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-bq-border" @click.outside="editModalOpen = false">
             <h3 class="text-base font-bold text-bq-text">Edit Kode Promo</h3>
             <p class="text-xs text-bq-text-muted mt-1">Perbarui ketentuan diskon dan ketersediaan kupon.</p>
-            <form method="POST" :action="`/owner/vouchers/${activeVoucher.id}`" class="mt-4 space-y-3.5" id="form-edit-voucher">
+            <form method="POST" :action="@js(route($promoRoute.'.update', ['id' => '__ID__'])).replace('__ID__', encodeURIComponent(activeVoucher.id))" class="mt-4 space-y-3.5" id="form-edit-voucher">
                 @csrf
                 @method('PUT')
                 <div>

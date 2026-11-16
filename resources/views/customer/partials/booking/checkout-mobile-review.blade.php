@@ -55,7 +55,7 @@
                 <p class="text-[11px] text-[#94A3B8]">Termasuk biaya layanan</p>
             </div>
             <span class="text-lg font-extrabold text-[#4F46E5]">
-                Rp {{ number_format($hargaAkhir, 0, ',', '.') }}
+                <span x-text="reviewed ? money(quote?.total ?? @js($hargaAkhir)) : 'Perbarui harga'">Rp {{ number_format($hargaAkhir, 0, ',', '.') }}</span>
             </span>
         </div>
 

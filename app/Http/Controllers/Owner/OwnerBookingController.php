@@ -10,6 +10,7 @@ use App\Actions\Booking\ListOwnerBookings;
 use App\Actions\Booking\QuoteReschedule;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\Booking\UpdateBookingStatus;
+use App\Actions\CustomerAccess\RequestManagementDelivery;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Subscription\EntitlementRules;
@@ -27,6 +28,7 @@ use App\Traits\ClearsBookingCache;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -195,6 +197,17 @@ class OwnerBookingController extends Controller
     /**
      * Walk-in booking creation by owner (directly from Calendar / Booking module)
      */
+    public function resendLink(Booking $booking, RequestManagementDelivery $delivery): RedirectResponse
+    {
+        $tenant = $this->resolveTenant() ?? abort(404);
+        abort_unless((int) $booking->idtenant === (int) $tenant->id, 404);
+        if (! $delivery->execute($booking, 'owner_resend')) {
+            return back()->withErrors(['email' => 'Email pelanggan belum tercatat.']);
+        }
+
+        return back()->with('sukses', 'Tautan booking dijadwalkan untuk dikirim ulang.');
+    }
+
     public function walkinStore(Request $request, CreateWalkInBooking $createWalkInBooking)
     {
         $tenant = $this->resolveTenant();

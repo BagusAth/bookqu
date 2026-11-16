@@ -59,6 +59,8 @@
         </div>
 
         {{-- ── Error Notification ── --}}
+        <p class="mb-4 text-sm text-slate-600">Untuk pindah ke jadwal yang lebih mahal, hubungi pemilik.</p>
+
         @if($errors->has('reschedule'))
             <div class="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-xs sm:text-sm text-rose-800 flex items-center gap-3">
                 <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">

@@ -5,7 +5,7 @@
             <p class="text-[11px] text-[#64748B] truncate">{{ $service->namalayanan }}</p>
             <div class="flex items-baseline gap-1.5">
                 <p id="mobile-total-display" class="text-base font-black text-[#4F46E5]">
-                    Rp {{ number_format($hargaAkhir, 0, ',', '.') }}
+                    <span x-text="reviewed ? money(quote?.total ?? @js($hargaAkhir)) : 'Perbarui harga'">Rp {{ number_format($hargaAkhir, 0, ',', '.') }}</span>
                 </p>
             </div>
         </div>
