@@ -200,6 +200,7 @@ All must be checked before the first real customer (gate G5 in `docs/work/ROADMA
 - [ ] Production mail and error alerting working (BQ-021)
 - [ ] Production payment credentials set, webhooks registered and tested end-to-end (BQ-022)
 - [ ] `APP_DEBUG=false`, HTTPS enforced, `storage:link` present
+- [ ] Own domains (BQ-154): `CUSTOM_DOMAIN_CNAME_TARGET` and/or `CUSTOM_DOMAIN_A_RECORDS` set, TLS certificates issued by the server for custom domains (for example on-demand certificates), and `php artisan domains:check` run right after the migration, because domains saved before BQ-154 do not resolve until a check connects them and their owners have added the `_bookqu` TXT record
 - [ ] Smoke test: public page, booking with payment, management link (view/cancel/reschedule), owner portal, subscription checkout
 - [ ] Legal pages reviewed
 

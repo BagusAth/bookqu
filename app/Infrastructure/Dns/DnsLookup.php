@@ -33,9 +33,19 @@ class DnsLookup
     }
 
     /**
+     * The TXT values of a host, as published (multi-part records joined).
+     *
      * @return list<string>
      */
-    private function field(string $host, int $type, string $key): array
+    public function txt(string $host): array
+    {
+        return $this->field($host, DNS_TXT, 'txt', lowercase: false);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function field(string $host, int $type, string $key, bool $lowercase = true): array
     {
         set_error_handler(static fn (): bool => true);
         try {
@@ -53,7 +63,7 @@ class DnsLookup
         $values = [];
         foreach ($records as $record) {
             if (isset($record[$key]) && is_string($record[$key])) {
-                $values[] = rtrim(mb_strtolower($record[$key]), '.');
+                $values[] = $lowercase ? rtrim(mb_strtolower($record[$key]), '.') : $record[$key];
             }
         }
 

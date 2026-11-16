@@ -208,8 +208,8 @@ class GetReport
             'newCustomers' => $customers['new'],
             'cancellationRate' => $rate(BookingState::STATUS_CANCELLED),
             'completionRate' => $rate(BookingState::STATUS_COMPLETED),
-            // The no-show state arrives with ADR-0018 (BQ-153); its rate is shown once that module is released.
-            'noShowRate' => ModuleRelease::state('no-show') === 'released' ? $rate('no_show') : null,
+            // ADR-0018 (BQ-153): the no-show rate is shown once the no-show module is released.
+            'noShowRate' => ModuleRelease::state('no-show') === 'released' ? $rate(BookingState::STATUS_NO_SHOW) : null,
             'averageRating' => ($rating->total ?? 0) > 0 ? round((float) $rating->average, 1) : null,
             'reviewCount' => (int) ($rating->total ?? 0),
             'topService' => $topService,

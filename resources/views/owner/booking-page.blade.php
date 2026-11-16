@@ -366,6 +366,12 @@
                                 <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">A</strong> ke <code class="text-bq-text">{{ implode(', ', $domain['addresses']) }}</code></p>
                             </div>
                         @endif
+                        @if ($domain['txtValue'] !== '')
+                            <div class="rounded-lg bg-bq-background p-3 text-sm">
+                                <p class="font-medium text-bq-text">Bukti kepemilikan (wajib)</p>
+                                <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">TXT</strong> dengan nama <code class="break-all text-bq-text">{{ $domain['txtHost'] }}</code> berisi <code class="break-all text-bq-text">{{ $domain['txtValue'] }}</code></p>
+                            </div>
+                        @endif
                         <p class="text-xs text-bq-text-muted">Perubahan DNS bisa butuh beberapa jam. Halaman booking baru terbuka di domain Anda setelah statusnya Terhubung.</p>
                     @endif
                 </section>

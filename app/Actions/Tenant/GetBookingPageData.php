@@ -107,7 +107,7 @@ class GetBookingPageData
     /**
      * The own domain, its last check and the DNS instructions (BQ-154, AC-HBK-04).
      *
-     * @return array{name: string, status: ?string, statusLabel: ?string, checkedAt: ?string, cnameTarget: string, addresses: list<string>, configured: bool}
+     * @return array{name: string, status: ?string, statusLabel: ?string, checkedAt: ?string, cnameTarget: string, addresses: list<string>, configured: bool, txtHost: string, txtValue: string}
      */
     private function domain(Tenant $tenant): array
     {
@@ -126,6 +126,8 @@ class GetBookingPageData
             'cnameTarget' => $this->checkCustomDomain->target(),
             'addresses' => $this->checkCustomDomain->addresses(),
             'configured' => $this->checkCustomDomain->configured(),
+            'txtHost' => $tenant->custom_domain ? CustomDomain::verificationHost((string) $tenant->custom_domain) : '',
+            'txtValue' => $tenant->custom_domain_token ? CustomDomain::verificationValue((string) $tenant->custom_domain_token) : '',
         ];
     }
 }

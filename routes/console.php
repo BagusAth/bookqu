@@ -37,7 +37,7 @@ Schedule::call(fn () => Artisan::call('refunds:remind-open'))
 
 // BQ-154: every own domain is re-checked hourly; one that no longer points here stops resolving.
 Artisan::command('domains:check', function (CheckCustomDomain $checkCustomDomain): void {
-    Tenant::query()->whereNotNull('custom_domain')->select(['id', 'custom_domain', 'custom_domain_verified_at'])
+    Tenant::query()->whereNotNull('custom_domain')->select(['id', 'custom_domain', 'custom_domain_verified_at', 'custom_domain_token'])
         ->chunkById(100, function ($tenants) use ($checkCustomDomain): void {
             foreach ($tenants as $tenant) {
                 $checkCustomDomain->execute($tenant);

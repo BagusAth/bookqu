@@ -67,6 +67,8 @@ Before the PR: sync with `integration` (PR #46 changed `ExportScheduleReport`, `
 
 ## Evidence (fill when done)
 
+2026-11-16 (Tech Lead, Developer B unavailable): branch `agathan-bagus-sync` takes Developer B's commits, merges `integration` (conflicts: the schedule report actions removed in favour of Laporan, `OwnerAnalyticsController`, `routes/web.php`, `phpstan-baseline.neon`, this file), and adds the Tech Lead decisions: the ownership TXT record (`_bookqu.<domain>` = `bookqu-verify=<token>`, migration `add_custom_domain_token_to_tenants_table`), the stop below Pro in every check, the release step in `operations.md` §8, and `BookingState::STATUS_NO_SHOW` in Laporan. Tests: `Owner/LandingPageAndDomainTest` (TXT required, another business's token refused, new domain new token, hourly stop below Pro), `Customer/CustomDomainBookingTest`, `Customer/CustomerAccessTest`.
+
 ## Implementation notes
 
 - **Wave:** built ahead under the ROADMAP rule. Its dependencies BQ-142 and BQ-130 are done, and it touches no file of Developer A's open items.

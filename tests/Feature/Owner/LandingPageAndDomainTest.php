@@ -31,8 +31,8 @@ class LandingPageAndDomainTest extends TestCase
 
     private Tenant $tenant;
 
-    /** @var array{cname: array<string, list<string>>, a: array<string, list<string>>} */
-    private array $dns = ['cname' => [], 'a' => []];
+    /** @var array{cname: array<string, list<string>>, a: array<string, list<string>>, txt: array<string, list<string>>} */
+    private array $dns = ['cname' => [], 'a' => [], 'txt' => []];
 
     protected function setUp(): void
     {
@@ -62,6 +62,11 @@ class LandingPageAndDomainTest extends TestCase
             public function ipv4(string $host): array
             {
                 return $this->test->dnsRecords('a', $host);
+            }
+
+            public function txt(string $host): array
+            {
+                return $this->test->dnsRecords('txt', $host);
             }
         });
     }
@@ -100,6 +105,12 @@ class LandingPageAndDomainTest extends TestCase
     private function tenantRow(): Tenant
     {
         return Tenant::withoutGlobalScopes()->findOrFail($this->tenant->id);
+    }
+
+    /** The owner publishes the ownership TXT record shown on the Domain sendiri section. */
+    private function proveOwnership(string $domain): void
+    {
+        $this->dns['txt']['_bookqu.'.$domain] = ['bookqu-verify='.$this->tenantRow()->custom_domain_token];
     }
 
     public function test_ac_hbk_03_landing_page_and_domain_are_refused_below_pro(): void
@@ -230,6 +241,7 @@ class LandingPageAndDomainTest extends TestCase
         $this->get('http://studio.example.com/')->assertNotFound();
 
         $this->dns['cname']['studio.example.com'] = ['CNAME.bookqu-edge.net.'];
+        $this->proveOwnership('studio.example.com');
         $this->post(route('owner.booking-page.domain.check'))->assertSessionHas('sukses');
         $tenant = $this->tenantRow();
         $this->assertSame('connected', $tenant->custom_domain_status);
@@ -256,6 +268,7 @@ class LandingPageAndDomainTest extends TestCase
         $this->assertSame('not_connected', $this->tenantRow()->custom_domain_status);
 
         $this->dns['a']['studiorani.id'] = ['198.51.100.7', '203.0.113.10'];
+        $this->proveOwnership('studiorani.id');
         $this->post(route('owner.booking-page.domain.check'));
         $this->assertSame('connected', $this->tenantRow()->custom_domain_status);
         $this->get('http://studiorani.id/')->assertOk()->assertSee('Studio Rani');
@@ -271,6 +284,54 @@ class LandingPageAndDomainTest extends TestCase
 
         $this->post(route('owner.booking-page.domain.check'))->assertSessionHas('error');
         $this->assertSame('not_connected', $this->tenantRow()->custom_domain_status);
+    }
+
+    public function test_a_domain_pointing_here_does_not_connect_without_this_businesss_ownership_record(): void
+    {
+        Queue::fake();
+        $this->actingAs($this->owner);
+        $this->post(route('owner.booking-page.domain'), ['custom_domain' => 'studio.example.com']);
+        $this->dns['cname']['studio.example.com'] = ['cname.bookqu-edge.net'];
+        $token = (string) $this->tenantRow()->custom_domain_token;
+        $this->assertSame(32, strlen($token));
+        $this->get(route('owner.booking-page', ['section' => 'domain']))
+            ->assertSee('_bookqu.studio.example.com')->assertSee('bookqu-verify='.$token);
+
+        // Pointing the domain here is not proof of ownership.
+        $this->post(route('owner.booking-page.domain.check'))->assertSessionHas('error');
+        $this->assertSame('not_connected', $this->tenantRow()->custom_domain_status);
+
+        // Another business's token does not prove it either.
+        $this->dns['txt']['_bookqu.studio.example.com'] = ['bookqu-verify='.str_repeat('a', 32)];
+        $this->post(route('owner.booking-page.domain.check'));
+        $this->assertSame('not_connected', $this->tenantRow()->custom_domain_status);
+        $this->get('http://studio.example.com/')->assertNotFound();
+
+        $this->proveOwnership('studio.example.com');
+        $this->post(route('owner.booking-page.domain.check'))->assertSessionHas('sukses');
+        $this->get('http://studio.example.com/')->assertOk();
+
+        // A new domain needs a new record.
+        $this->post(route('owner.booking-page.domain'), ['custom_domain' => 'booking.example.com']);
+        $this->assertNotSame($token, $this->tenantRow()->custom_domain_token);
+    }
+
+    public function test_the_hourly_check_stops_a_connected_domain_once_the_business_drops_below_pro(): void
+    {
+        Queue::fake();
+        $this->actingAs($this->owner);
+        $this->post(route('owner.booking-page.domain'), ['custom_domain' => 'studio.example.com']);
+        $this->dns['cname']['studio.example.com'] = ['cname.bookqu-edge.net'];
+        $this->proveOwnership('studio.example.com');
+        $this->post(route('owner.booking-page.domain.check'));
+        $this->assertSame('connected', $this->tenantRow()->custom_domain_status);
+
+        $this->subscribe('small');
+        $this->artisan('domains:check')->assertSuccessful();
+
+        $this->assertSame('not_connected', $this->tenantRow()->custom_domain_status);
+        $this->assertSame('studio.example.com', $this->tenantRow()->custom_domain);
+        $this->get('http://studio.example.com/')->assertNotFound();
     }
 
     public function test_the_former_landing_page_path_redirects_to_its_section(): void

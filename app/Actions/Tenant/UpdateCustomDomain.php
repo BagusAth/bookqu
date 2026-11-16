@@ -7,6 +7,7 @@ namespace App\Actions\Tenant;
 use App\Domain\Tenant\CustomDomain;
 use App\Jobs\CheckCustomDomainJob;
 use App\Models\Tenant;
+use Illuminate\Support\Str;
 
 /**
  * Saves or removes a business's own domain (BQ-154). A new domain starts as `pending`, so it does
@@ -29,6 +30,8 @@ class UpdateCustomDomain
                 'custom_domain_status' => $domain === null ? null : CustomDomain::STATUS_PENDING,
                 'custom_domain_checked_at' => null,
                 'custom_domain_verified_at' => null,
+                // Ownership is proven per domain: a new domain needs a new TXT record.
+                'custom_domain_token' => $domain === null ? null : Str::lower(Str::random(32)),
             ])->save();
             $this->storefrontTenant->forget((int) $tenant->id);
         }

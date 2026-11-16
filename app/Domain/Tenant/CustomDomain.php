@@ -9,7 +9,8 @@ namespace App\Domain\Tenant;
  *
  * A domain is stored normalised (lower case, without scheme, path, port or trailing dot), is unique
  * across businesses (AC-HBK-04) and never names the platform itself. It resolves to the storefront
- * only while its last DNS check is `connected` (INV-TEN-01: one domain, one business).
+ * only while its last DNS check is `connected` (INV-TEN-01: one domain, one business). A check connects
+ * it only when the domain points at the platform and a TXT record proves the business owns it.
  */
 final class CustomDomain
 {
@@ -20,6 +21,11 @@ final class CustomDomain
     public const STATUS_NOT_CONNECTED = 'not_connected';
 
     private const PLATFORM_DOMAINS = ['bookqu.my.id', 'bookqu.test', 'localhost'];
+
+    /** The TXT record that proves ownership lives at `_bookqu.<domain>`. */
+    public const VERIFICATION_LABEL = '_bookqu';
+
+    private const VERIFICATION_PREFIX = 'bookqu-verify=';
 
     /**
      * What the owner typed, reduced to a host name; '' when nothing is left.
@@ -71,6 +77,38 @@ final class CustomDomain
 
         return ($target !== '' && in_array($target, $cnames, true))
             || array_intersect($ipv4, $configuredAddresses) !== [];
+    }
+
+    /** Where the owner adds the ownership TXT record. */
+    public static function verificationHost(string $domain): string
+    {
+        return self::VERIFICATION_LABEL.'.'.$domain;
+    }
+
+    /** The TXT value that proves this business owns the domain. */
+    public static function verificationValue(string $token): string
+    {
+        return self::VERIFICATION_PREFIX.$token;
+    }
+
+    /**
+     * Whether one of the TXT records carries the business's token. Without a token nothing is proven.
+     *
+     * @param  list<string>  $txtRecords
+     */
+    public static function ownershipProven(array $txtRecords, ?string $token): bool
+    {
+        if ($token === null || $token === '') {
+            return false;
+        }
+
+        foreach ($txtRecords as $record) {
+            if (hash_equals(self::verificationValue($token), trim($record))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

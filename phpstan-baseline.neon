@@ -181,12 +181,6 @@ parameters:
 			path: app/Http/Controllers/Customer/BookingManageController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$harga\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Owner/OwnerBookingController.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$namalayanan\.$#'
 			identifier: property.notFound
 			count: 1

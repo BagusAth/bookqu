@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $custom_domain_status `pending`, `connected` or `not_connected` (BQ-154)
  * @property Carbon|null $custom_domain_checked_at
  * @property Carbon|null $custom_domain_verified_at
+ * @property string|null $custom_domain_token ownership token for the `_bookqu` TXT record (BQ-154)
  */
 class Tenant extends Model
 {

@@ -154,9 +154,12 @@ class OwnerBookingPageController extends Controller
             return $redirect->with('sukses', 'Domain terhubung. Pelanggan sudah bisa membuka halaman booking lewat '.$tenant->custom_domain.'.');
         }
 
-        return $redirect->with('error', $result['configured']
-            ? 'Domain belum terhubung. DNS saat ini: '.($found !== [] ? implode(', ', $found) : 'tidak ada catatan CNAME atau A').'.'
-            : 'Domain belum bisa dicek karena tujuan DNS BookQu belum diatur. Hubungi tim BookQu.');
+        return $redirect->with('error', match (true) {
+            ! $result['configured'] => 'Domain belum bisa dicek karena tujuan DNS BookQu belum diatur. Hubungi tim BookQu.',
+            ! $result['pro'] => 'Domain sendiri tersedia di paket Pro. Domain tetap tersimpan dan terhubung lagi setelah paket Pro aktif.',
+            ! $result['points'] => 'Domain belum terhubung. DNS saat ini: '.($found !== [] ? implode(', ', $found) : 'tidak ada catatan CNAME atau A').'.',
+            default => 'Domain belum terhubung. Catatan TXT kepemilikan belum ditemukan di '.CustomDomain::verificationHost((string) $tenant->custom_domain).'.',
+        });
     }
 
     /**
