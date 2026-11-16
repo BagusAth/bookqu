@@ -149,6 +149,7 @@ class BookingRules
         $query = DB::table('bookings as seat_bookings')
             ->selectRaw('coalesce(sum(seat_bookings.peserta), 0)')
             ->whereColumn('seat_bookings.idschedule', $schedules.'.id')
+            ->whereColumn('seat_bookings.idtenant', $schedules.'.idtenant')
             ->when($excludeBookingId !== null, fn ($q) => $q->where('seat_bookings.id', '!=', $excludeBookingId));
         self::applyOccupiesSlotCondition($query, 'seat_bookings.');
 

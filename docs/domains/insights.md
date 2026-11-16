@@ -35,9 +35,10 @@ BQ-147: Laporan (owner-portal.md §8.13, FR-ANALYTICS-007) replaces the analytic
 - **Booking:** booking rows by service date; the slots of one checkout share a payment and count once (AC-LAP-02).
 - **Revenue:** successful booking payments created in the period minus refunds recorded in the period on successful booking payments (AC-LAP-01). Refunds of a double payment are left out (that money was never revenue). Walk-in is `provider = manual`, everything else online. Per service through the payment's booking.
 - **Customers:** `CustomerIdentity`; new when the first booking was made in the period.
-- **Occupancy:** slots of the period holding an occupying booking (`BookingRules::applyOccupiesSlotCondition`), free slots, and booked slots per weekday and hour.
+- **Occupancy:** participants holding seats (BookingRules::seatsTakenSql) divided by total slot capacity, with a separate free-slot count and heat map of occupied slots. Pro unit utilisation compares occupied minutes with scheduled minutes across the services currently assigned to each active unit. Overlapping intervals count once.
+- **Promo usage:** successful booking payments in the period contribute one use and their frozen discount to the customer and code. Pending reservations are reflected after payment succeeds.
 
-Charts are CSS bars and a heat-map table, so no chart library loads. Each tab exports its own CSV (`ExportReport`): formula-safe cells, one row per payment in the Pendapatan transactions, tenant context restored inside the stream, refused below Medium by `subscription:analytics`. Not yet shown, waiting for their items: the no-show rate (shown once the `no-show` module is released, ADR-0018/BQ-153), most used unit and utilisation per unit (BQ-152), promo usage (BQ-149). Evidence: `Owner/LaporanPageTest`, `Owner/AnalyticsExportAndAggregationTest`.
+Charts are CSS bars and a heat-map table, so no chart library loads. Each tab exports its own CSV (`ExportReport`): formula-safe cells, one row per payment in the Pendapatan transactions, tenant context restored inside the stream, refused below Medium by `subscription:analytics`. The no-show rate, unit metrics and promo usage follow their respective module release gates. Evidence: Owner/LaporanPageTest, Owner/AnalyticsExportAndAggregationTest.
 
 ## Status
 

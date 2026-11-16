@@ -156,7 +156,7 @@
                 <section aria-labelledby="occupancy-title" class="space-y-4">
                     <h2 id="occupancy-title" class="sr-only">Okupansi</h2>
                     <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                        @foreach (['Tingkat okupansi' => $percent($occupancy['rate']), 'Total slot' => number_format($occupancy['total'], 0, ',', '.'), 'Slot terisi' => number_format($occupancy['booked'], 0, ',', '.'), 'Slot kosong' => number_format($occupancy['free'], 0, ',', '.')] as $label => $value)
+                        @foreach (['Tingkat okupansi' => $percent($occupancy['rate']), 'Kursi terisi / kapasitas' => number_format($occupancy['seats'], 0, ',', '.').' / '.number_format($occupancy['capacity'], 0, ',', '.'), 'Slot terisi' => number_format($occupancy['booked'], 0, ',', '.'), 'Slot kosong' => number_format($occupancy['free'], 0, ',', '.')] as $label => $value)
                             <div class="{{ $card }} p-4">
                                 <p class="text-xs font-medium text-bq-text-muted">{{ $label }}</p>
                                 <p class="mt-1 text-lg font-semibold text-bq-text">{{ $value }}</p>
@@ -202,6 +202,21 @@
                             </div>
                         @endif
                     </div>
+                    @if ($occupancy['units'] !== null)
+                        <div class="{{ $card }} p-4">
+                            <h3 class="text-sm font-semibold text-bq-text">Pemanfaatan per unit</h3>
+                            <ul class="mt-2 divide-y divide-bq-border text-sm">
+                                @forelse ($occupancy['units'] as $unit)
+                                    <li class="flex flex-wrap justify-between gap-2 py-2">
+                                        <span>{{ $unit['name'] }}</span>
+                                        <span class="text-bq-text-muted">{{ $unit['usedMinutes'] }} / {{ $unit['offeredMinutes'] }} menit · {{ $percent($unit['rate']) }}</span>
+                                    </li>
+                                @empty
+                                    <li class="py-2 text-bq-text-muted">Belum ada unit aktif.</li>
+                                @endforelse
+                            </ul>
+                        </div>
+                    @endif
                 </section>
                 @break
 
@@ -259,6 +274,21 @@
                             <p class="mt-2 text-sm text-bq-text-muted">{{ $percent($newShare) }} pelanggan pada periode ini baru pertama kali booking.</p>
                         @endif
                     </div>
+                    @if ($customers['promos'] !== null)
+                        <div class="{{ $card }} p-4">
+                            <h3 class="text-sm font-semibold text-bq-text">Pemakaian promo</h3>
+                            <ul class="mt-2 divide-y divide-bq-border text-sm">
+                                @forelse ($customers['promos'] as $promo)
+                                    <li class="flex flex-wrap justify-between gap-2 py-2">
+                                        <span>{{ $promo['customer'] }} · {{ $promo['code'] }}</span>
+                                        <span class="text-bq-text-muted">{{ $promo['uses'] }} booking · Diskon {{ $rupiah($promo['discount']) }}</span>
+                                    </li>
+                                @empty
+                                    <li class="py-2 text-bq-text-muted">Belum ada promo terpakai pada periode ini.</li>
+                                @endforelse
+                            </ul>
+                        </div>
+                    @endif
                 </section>
                 @break
 
@@ -278,6 +308,9 @@
                         }
                         $figures['Rata-rata rating'] = $summary['averageRating'] !== null ? number_format($summary['averageRating'], 1, ',', '.').' dari '.$summary['reviewCount'].' ulasan' : 'Belum ada ulasan';
                         $figures['Layanan terlaris'] = $summary['topService'] ?? 'Belum ada booking';
+                        if ($summary['showUnits']) {
+                            $figures['Unit paling sering dipakai'] = $summary['topUnit'] ?? 'Belum ada pemakaian';
+                        }
                     @endphp
                     <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
                         @foreach ($figures as $label => $value)
