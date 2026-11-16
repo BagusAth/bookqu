@@ -178,7 +178,7 @@
                                         @method('DELETE')
                                         <button
                                             type="button"
-                                            @click="$dispatch('open-confirm', { title: 'Hapus Add-on?', message: 'Yakin ingin menghapus {{ $item->name }}?', formId: 'form-delete-item-{{ $item->id }}' })"
+                                            @click="$dispatch('open-confirm', { title: 'Hapus add-on?', message: 'Yakin ingin menghapus ' + @js($item->name) + '?', formId: $el.form.id })"
                                             class="craft-btn rounded-xl p-1.5 text-[#6e6584] hover:bg-rose-50 hover:text-rose-600 transition"
                                             title="Hapus"
                                             id="btn-delete-addon-{{ $item->id }}"

@@ -276,7 +276,7 @@ class GetBeranda
         $items = [];
 
         if (TenantPermission::allowsRole($role, 'refunds.decide')) {
-            $items[] = ['key' => 'refunds', 'label' => 'Permintaan refund menunggu keputusan', 'url' => route('owner.bookings'),
+            $items[] = ['key' => 'refunds', 'label' => 'Permintaan refund menunggu keputusan', 'url' => route('owner.bookings', ['tab' => 'action']),
                 'count' => RefundRequest::where('idtenant', $tenant->id)->where('status', 'open')->count()];
         }
 
@@ -290,7 +290,7 @@ class GetBeranda
                 ->whereDate('tanggalbooking', '<', Carbon::today())->count();
             $endedToday = $todayBookings->filter(fn (Booking $booking): bool => $booking->status === BookingState::STATUS_PAID
                 && $this->hasEnded($ranges[(int) $booking->id] ?? null, $now))->count();
-            $items[] = ['key' => 'ended', 'label' => 'Booking selesai yang belum ditandai', 'url' => route('owner.bookings', ['status' => 'paid']),
+            $items[] = ['key' => 'ended', 'label' => 'Booking selesai yang belum ditandai', 'url' => route('owner.bookings', ['tab' => 'action']),
                 'count' => $endedEarlier + $endedToday];
         }
 

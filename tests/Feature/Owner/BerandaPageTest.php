@@ -190,10 +190,11 @@ class BerandaPageTest extends TestCase
 
         $actions = collect($this->actingAs($this->owner)->getJson(route('owner.dashboard.polling'))->assertOk()->json('data.actions'))->keyBy('key');
         $this->assertSame(1, $actions['refunds']['count']);
+        $this->assertSame(route('owner.bookings', ['tab' => 'action']), $actions['refunds']['url']);
         $this->assertSame(1, $actions['cancellations']['count']);
         $this->assertSame(route('owner.bookings').'#permintaan-pembatalan', $actions['cancellations']['url']);
         $this->assertSame(1, $actions['ended']['count']);
-        $this->assertSame(route('owner.bookings', ['status' => 'paid']), $actions['ended']['url']);
+        $this->assertSame(route('owner.bookings', ['tab' => 'action']), $actions['ended']['url']);
         $this->assertSame(1, $actions['reviews']['count']);
         $this->assertSame(route('owner.reviews'), $actions['reviews']['url']);
 
@@ -204,6 +205,17 @@ class BerandaPageTest extends TestCase
 
         $this->assertSame([], $this->getJson(route('owner.dashboard.polling'))->json('data.actions'));
         $this->get(route('owner.dashboard'))->assertSee('Tidak ada yang perlu ditindak');
+    }
+
+    public function test_walk_in_validation_does_not_open_the_profile_form(): void
+    {
+        $dashboard = route('owner.dashboard');
+        $response = $this->actingAs($this->owner)->from($dashboard)->post(route('owner.bookings.walkin'), []);
+        $response->assertRedirect($dashboard)->assertSessionHasErrors('idschedule');
+
+        $cookie = config('session.cookie');
+        $this->withCookie($cookie, $response->getCookie($cookie)->getValue())->get($dashboard)
+            ->assertOk()->assertDontSee('id="form-complete-profile"', false);
     }
 
     public function test_ac_brd_05_the_guide_shows_until_its_steps_are_done_and_never_again(): void

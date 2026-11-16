@@ -185,7 +185,7 @@
     </div>
 </div>
 
-@if ($profileIncomplete || $errors->any())
+@if ($profileIncomplete || $errors->any() && old('_form') === 'complete-profile')
     @include('components.owner.modal-complete-profile', ['showProfilePrompt' => false])
 @endif
 @endsection

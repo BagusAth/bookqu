@@ -8,13 +8,13 @@
     @if ($galleryUrl)
         <a class="inline-block text-sm text-bq-primary underline" href="{{ $galleryUrl }}">Unggah gambar ke galeri</a>
     @endif
-    <details class="rounded-xl border border-bq-border bg-bq-surface p-4" @if ($errors->any()) open @endif>
+    <details id="unit-create" class="rounded-xl border border-bq-border bg-bq-surface p-4" @if ($errors->any() && old('_form') === 'unit-create') open @endif>
         <summary class="cursor-pointer font-semibold">Tambah unit</summary>
         @include('owner.partials.unit-form', ['unit' => null])
     </details>
 
     @forelse ($units as $unit)
-        <details class="rounded-xl border border-bq-border bg-bq-surface p-4">
+        <details id="unit-edit-{{ $unit['id'] }}" class="rounded-xl border border-bq-border bg-bq-surface p-4" @if ($errors->any() && old('_form') === 'unit-edit-'.$unit['id']) open @endif>
             <summary class="cursor-pointer">
                 <span class="font-semibold">{{ $unit['name'] }}</span>
                 <span class="ms-2 text-sm text-bq-text-muted">{{ $unit['type'] }} · {{ $unit['kapasitas'] }} orang</span>

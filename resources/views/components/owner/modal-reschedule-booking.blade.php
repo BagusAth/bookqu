@@ -12,12 +12,12 @@
         alasan: '',
         slots: [],
         pesanError: '',
-        minDate: new Date().toISOString().split('T')[0],
+        minDate: @js(today(config('app.timezone'))->toDateString()),
 
         bukaModal(data) {
             this.booking = data.booking || data;
             this.pesanError = '';
-            this.alasan = 'Permintaan langsung customer walk-in di tempat';
+            this.alasan = '';
             
             // Inisialisasi tanggal dengan tanggal booking saat ini jika belum lewat, atau hari ini
             const tglBooking = this.booking.tanggalbooking ? String(this.booking.tanggalbooking).split('T')[0].split(' ')[0] : '';

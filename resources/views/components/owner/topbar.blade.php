@@ -151,7 +151,7 @@
                     <p class="text-xs text-bq-text-muted">{{ $shell['user']['role'] }} · {{ $shell['business'] }}</p>
                 </div>
                 @if ($shell['canManageAccount'])
-                    <a href="{{ route('owner.settings') }}#account-settings" class="mt-1 block rounded-lg px-3 py-2 text-sm text-bq-text hover:bg-bq-background">Pengaturan akun</a>
+                    <a href="{{ route('owner.settings', ['tab' => 'account']) }}" class="mt-1 block rounded-lg px-3 py-2 text-sm text-bq-text hover:bg-bq-background">Pengaturan akun</a>
                 @endif
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

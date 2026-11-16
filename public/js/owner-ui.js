@@ -395,28 +395,33 @@
             date: today,
             slots: [],
             loading: false,
-            loaded: false,
             failed: false,
             requestNumber: 0,
+            loadingDate: null,
 
             loadWhenOpened(event) {
                 const id = event.detail && event.detail.id;
-                if (!this.loaded && id && this.$el.closest('#' + CSS.escape(id))) this.load();
+                if (id && this.$el.closest('#' + CSS.escape(id))) this.load();
             },
 
             async load() {
-                if (!this.date) return;
+                if (!this.date || (this.loading && this.loadingDate === this.date)) return;
                 const requestNumber = ++this.requestNumber;
+                this.loadingDate = this.date;
                 this.loading = true;
                 this.failed = false;
                 try {
                     const target = new URL(url, window.location.origin);
                     target.searchParams.set('date', this.date);
                     const response = await fetch(target, { headers: jsonHeaders });
-                    if (requestNumber !== this.requestNumber) return;
                     if (!response.ok) throw new Error('slots failed');
-                    this.slots = (await response.json()).slots || [];
-                    this.loaded = true;
+                    const data = await response.json();
+                    if (requestNumber !== this.requestNumber) return;
+                    this.slots = data.slots || [];
+                    if (!this.slots.some(slot => String(slot.id) === String(this.selectedSlot))) {
+                        this.selectedSlot = '';
+                        this.quantities = {};
+                    }
                 } catch (error) {
                     if (requestNumber === this.requestNumber) {
                         this.slots = [];

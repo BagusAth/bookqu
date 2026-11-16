@@ -18,6 +18,26 @@ class TeamInvitationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_activity_log_uses_indonesian_labels_and_local_time_for_known_and_unknown_events(): void
+    {
+        $tenant = Tenant::factory()->create();
+        app(CreateTrialSubscription::class)->execute($tenant);
+
+        foreach (['services.updated', 'internal.unknown'] as $event) {
+            DB::table('tenant_activity_logs')->insert([
+                'idtenant' => $tenant->id,
+                'iduser' => $tenant->iduser,
+                'role' => 'pemilik',
+                'event' => $event,
+                'created_at' => '2026-11-16 10:12:00',
+            ]);
+        }
+
+        $this->actingAs($tenant->user)->get(route('owner.team.index'))->assertOk()
+            ->assertSee('Layanan diperbarui')->assertSee('Aktivitas tercatat')->assertSee('16 Nov 2026 10.12')
+            ->assertDontSee('services.updated')->assertDontSee('internal.unknown');
+    }
+
     public function test_outstanding_invitations_reserve_seats_and_only_the_owner_can_invite(): void
     {
         $this->travelTo(now()->startOfDay());

@@ -56,7 +56,7 @@
     <section class="space-y-3 rounded-xl border p-4">
         <h2 class="text-lg font-semibold">Riwayat aktivitas</h2>
         @forelse ($activity as $entry)
-            <p>{{ $entry->created_at }} · {{ $entry->actor_name ?? 'Akun tidak tersedia' }} ({{ ucfirst($entry->role) }}) · {{ __($entry->event) }} @if ($entry->subject_id) #{{ $entry->subject_id }} @endif</p>
+            <p>{{ $entry->local_time }} · {{ $entry->actor_name ?? 'Akun tidak tersedia' }} ({{ ucfirst($entry->role) }}) · {{ $entry->label }}</p>
         @empty
             <p>Belum ada aktivitas yang tercatat.</p>
         @endforelse

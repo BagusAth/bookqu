@@ -193,6 +193,7 @@ class OwnerBookingController extends Controller
             'paid' => 'lunas / dikonfirmasi',
             'completed' => 'selesai',
             'cancelled' => 'dibatalkan',
+            'no_show' => 'tidak datang',
             default => $statusBaru,
         };
 
