@@ -52,7 +52,7 @@ final class ApiAndWebhooksTest extends TestCase
         $token = $created->viewData('credential');
         $key = DB::table('owner_api_keys')->where('idtenant', $this->tenant->id)->first();
         $this->assertSame(hash('sha256', $token), $key->digest);
-        $this->get(route('owner.api.index'))->assertOk()->assertDontSee($token);
+        $this->get(route('owner.settings.business', ['tab' => 'integrasi']))->assertOk()->assertDontSee($token);
 
         $this->withToken($token)->getJson('/api/v1/services')->assertOk()
             ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $mine->id)

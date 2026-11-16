@@ -1,14 +1,6 @@
-@extends('layouts.owner-layout')
+<div class="space-y-5">
+    <h2 class="text-lg font-semibold">Integrasi</h2>
 
-@section('title', 'Integrasi')
-
-@section('content')
-<div class="mx-auto max-w-4xl space-y-5">
-    <x-owner.page-header title="Integrasi" purpose="Hubungkan kalender dan atur pengukuran kunjungan halaman booking.">
-        @if ($apiUrl)
-            <x-slot:action><a class="text-sm font-semibold text-bq-primary underline" href="{{ $apiUrl }}">API dan Webhook</a></x-slot:action>
-        @endif
-    </x-owner.page-header>
 
     <section class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
         <h2 class="font-semibold">Google Calendar</h2>
@@ -21,10 +13,10 @@
                     @csrf
                     <button class="rounded-lg border border-bq-border px-3 py-2 text-sm">Tes koneksi</button>
                 </form>
-                <form method="POST" action="{{ route('owner.settings.integrations.calendar.disconnect') }}">
+                <form method="POST" action="{{ route('owner.settings.integrations.calendar.disconnect') }}" id="disconnect-calendar" x-data
                     @csrf
                     @method('DELETE')
-                    <button class="rounded-lg border border-bq-border px-3 py-2 text-sm text-bq-danger">Putuskan koneksi</button>
+                    <button type="button" class="rounded-lg border border-bq-border px-3 py-2 text-sm text-bq-danger" @click="$dispatch('open-confirm', { title: 'Putuskan Google Calendar?', message: 'Booking baru tidak akan disinkronkan ke Google Calendar.', formId: $el.form.id, tone: 'danger' })">Putuskan koneksi</button>
                 </form>
             </div>
         @elseif ($configured)
@@ -53,5 +45,9 @@
         </div>
         <button class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white">Simpan</button>
     </form>
+    <p class="text-sm text-bq-text-muted">Pembayaran dan email dikelola BookQu.</p>
+
+    @isset($keys)
+        @include('owner.settings.api')
+    @endisset
 </div>
-@endsection

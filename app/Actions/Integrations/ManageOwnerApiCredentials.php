@@ -23,7 +23,15 @@ final class ManageOwnerApiCredentials
                 ->get(['id', 'name', 'prefix']),
             'endpoints' => WebhookEndpoint::where('idtenant', $tenant->id)->latest('id')->get(['id', 'name', 'url']),
             'deliveries' => WebhookDelivery::where('idtenant', $tenant->id)->latest('id')->limit(20)
-                ->get(['id', 'event_id', 'event_name', 'attempts', 'http_status', 'elapsed_ms', 'status', 'created_at']),
+                ->get(['id', 'event_id', 'event_name', 'attempts', 'http_status', 'elapsed_ms', 'status', 'created_at'])
+                ->each(function (WebhookDelivery $delivery): void {
+                    $delivery->setAttribute('status_label', match ($delivery->status) {
+                        'pending' => 'Menunggu pengiriman',
+                        'delivered' => 'Terkirim',
+                        'failed' => 'Gagal dikirim',
+                        default => 'Status tidak tersedia',
+                    });
+                }),
         ];
     }
 

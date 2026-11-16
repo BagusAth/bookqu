@@ -8,6 +8,7 @@
     'param' => 'tab',
     'active' => null,
     'label' => 'Bagian halaman',
+    'baseUrl' => null,
 ])
 
 @php
@@ -21,7 +22,7 @@
         @php $isActive = (string) $key === $current; @endphp
         <a
             role="tab"
-            href="{{ request()->fullUrlWithQuery([$param => $key]) }}"
+            href="{{ $baseUrl ? url()->query($baseUrl, [$param => $key]) : request()->fullUrlWithQuery([$param => $key]) }}"
             aria-selected="{{ $isActive ? 'true' : 'false' }}"
             @if ($isActive) aria-current="page" @endif
             class="shrink-0 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium {{ $isActive ? 'border-bq-primary text-bq-primary' : 'border-transparent text-bq-text-muted hover:text-bq-text' }}"

@@ -113,7 +113,8 @@ class OwnerSidebarNavigationTest extends TestCase
         $response->assertDontSee('id="link-full-report"', false);
         // ADR-0023: Laporan and Integrasi are released.
         $this->get('/owner/analytics')->assertOk();
-        $this->get('/owner/settings/integrations')->assertOk();
+        $this->get('/owner/settings/integrations')->assertRedirect(route('owner.settings.business', ['tab' => 'integrasi']));
+        $this->get(route('owner.settings.business', ['tab' => 'integrasi']))->assertOk()->assertSeeText('Google Calendar');
     }
 
     public function test_owner_topbar_dropdown_hides_appearance_and_payment_links(): void
