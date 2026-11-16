@@ -3,10 +3,50 @@
 @section('title', 'Kalender')
 
 @section('content')
+@php
+    $slotColors = [
+        'Tersedia' => 'bg-bq-success-bg',
+        'Terisi' => 'bg-bq-info-bg',
+        'Ditutup' => 'bg-bq-warning-bg',
+        'Terlewat' => 'bg-bq-background',
+        'Tidak tersedia' => 'bg-bq-danger-bg',
+    ];
+@endphp
 <div class="mx-auto max-w-7xl space-y-5" x-data="{
     slot: null,
     busy: false,
     feedback: '',
+    slotErrors: {},
+    async saveSlot(form, submitter) {
+        if (this.busy || !this.slot) return;
+        const currentSlot = this.slot.id;
+        const fields = new FormData(form, submitter);
+        this.busy = true;
+        this.slotErrors = {};
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST', body: fields, headers: { Accept: 'application/json' },
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                this.slotErrors = payload.errors || { slot: ['Perubahan slot tidak dapat disimpan.'] };
+                return;
+            }
+            const refreshed = await fetch(window.location.href);
+            if (!refreshed.ok) throw new Error();
+            const page = new DOMParser().parseFromString(await refreshed.text(), 'text/html');
+            const results = page.querySelector('[data-calendar-results]');
+            if (!results) throw new Error();
+            const updated = results.querySelector('[data-calendar-slot-id=&quot;' + currentSlot + '&quot;]');
+            this.$refs.results.replaceWith(document.importNode(results, true));
+            if (this.slot?.id === currentSlot) this.slot = updated ? JSON.parse(updated.dataset.calendarSlot) : null;
+            $dispatch('toast', { type: 'success', message: payload.message });
+        } catch {
+            this.slotErrors = { slot: ['Status slot belum dapat diperiksa. Muat ulang Kalender.'] };
+        } finally {
+            this.busy = false;
+        }
+    },
     async saveWalkIn(form) {
         if (this.busy) return;
         this.busy = true;
@@ -48,9 +88,15 @@
     </nav>
 
     @include('owner.partials.calendar.controls')
+    <ul class="flex flex-wrap gap-2 text-xs" aria-label="Keterangan status slot">
+        @foreach ($slotColors as $label => $background)
+            <li class="rounded-md border border-bq-border px-2 py-1 {{ $background }}">{{ $label }}</li>
+        @endforeach
+    </ul>
     <p x-cloak x-show="feedback" x-text="feedback" role="status" class="text-sm"></p>
 
     <div x-ref="results" data-calendar-results>
+        <x-owner.walkin-success />
         @if ($errors->any())
             <p data-calendar-error class="text-sm text-bq-danger" role="alert">{{ $errors->first() }}</p>
         @endif

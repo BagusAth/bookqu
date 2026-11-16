@@ -6,6 +6,7 @@ namespace App\Actions\Tenant;
 
 use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Subscription\PlanCapability;
+use App\Models\Asset;
 use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -42,6 +43,18 @@ class GetLandingPage
         $landing = TenantLandingPage::query()->where('idtenant', $tenant->id)->with('banner')->first();
 
         return $landing instanceof TenantLandingPage ? $this->present($tenant, $landing) : null;
+    }
+
+    /** @param array{template: string, headline?: ?string, sections?: ?list<string>, banner_asset_id?: int|string|null} $data */
+    public function preview(Tenant $tenant, array $data): array
+    {
+        $landing = new TenantLandingPage($data + ['idtenant' => $tenant->id]);
+        $banner = isset($data['banner_asset_id'])
+            ? Asset::where('idtenant', $tenant->id)->find((int) $data['banner_asset_id'])
+            : null;
+        $landing->setRelation('banner', $banner);
+
+        return $this->present($tenant, $landing);
     }
 
     /**

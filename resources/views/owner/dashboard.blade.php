@@ -116,12 +116,18 @@
                                 </div>
                                 <div class="flex shrink-0 flex-col items-end gap-2">
                                     <a x-bind:href="row.href" x-on:click="if (row.panel_url) { $event.preventDefault(); $dispatch('open-booking-panel', { url: row.panel_url, trigger: $el }); }" class="{{ $secondaryButton }}">Buka</a>
-                                    <form x-show="row.complete_url" method="POST" x-bind:action="row.complete_url">
-                                        @csrf
-                                        <input type="hidden" name="_method" value="PATCH">
-                                        <input type="hidden" name="status" value="completed">
-                                        <button type="submit" class="{{ $secondaryButton }}">Tandai selesai</button>
-                                    </form>
+                                    <template x-for="outcome in [
+                                        { url: row.complete_url, status: 'completed', label: 'Tandai selesai', message: 'Pastikan sesi pelanggan sudah selesai.' },
+                                        { url: row.no_show_url, status: 'no_show', label: 'Tidak datang', message: 'Pastikan pelanggan tidak datang pada sesi ini.' }
+                                    ].filter(outcome => outcome.url)" :key="outcome.status">
+                                        <form method="POST" :action="outcome.url" :id="'dashboard-' + row.id + '-' + outcome.status">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="status" :value="outcome.status">
+                                            <button type="button" class="{{ $secondaryButton }}" x-text="outcome.label"
+                                                @click="$dispatch('open-confirm', { title: outcome.label + '?', message: outcome.message, formId: $el.form.id, confirmText: outcome.label })"></button>
+                                        </form>
+                                    </template>
                                 </div>
                             </li>
                         </template>
@@ -185,7 +191,7 @@
     </div>
 </div>
 
-@if ($profileIncomplete || $errors->any())
+@if ($profileIncomplete || $errors->any() && old('_form') === 'complete-profile')
     @include('components.owner.modal-complete-profile', ['showProfilePrompt' => false])
 @endif
 @endsection

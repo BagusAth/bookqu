@@ -121,7 +121,7 @@
                             </p>
                         </div>
                         <div class="flex shrink-0 flex-wrap gap-2">
-                            <button type="button" class="{{ $buttonSecondary }}" x-on:click="openReply(@js(['id' => $review['id'], 'customer' => $review['customer'], 'reply' => $review['reply'], 'tone' => $review['tone']]), $el)">
+                            <button type="button" class="{{ $buttonSecondary }}" x-on:click="openReply(@js(['id' => $review['id'], 'customer' => $review['customer'], 'reply' => $review['reply'], 'tone' => $review['tone'], 'rating' => $review['rating'], 'comment' => $review['comment']]), $el)">
                                 {{ $review['reply'] === '' ? 'Balas' : 'Ubah balasan' }}
                             </button>
                             <form method="POST" action="{{ route('owner.reviews.toggle', ['id' => $review['id']]) }}">
@@ -156,6 +156,10 @@
         <form id="review-reply-form" method="POST" x-bind:action="replyAction()" x-on:submit="saving = true" class="space-y-3">
             @csrf
             <p class="text-sm text-bq-text-muted">Balasan tampil untuk <span class="font-medium text-bq-text" x-text="review.customer"></span> dan pengunjung halaman booking.</p>
+            <blockquote class="rounded-lg border border-bq-border bg-bq-background p-3">
+                <p class="font-semibold" x-text="review.rating + ' dari 5 bintang'"></p>
+                <p class="whitespace-pre-line break-words text-bq-text-muted" x-text="review.comment || 'Ulasan tanpa komentar.'"></p>
+            </blockquote>
             <div>
                 <p class="mb-1.5 text-sm font-medium text-bq-text">Saran kalimat</p>
                 <div class="flex flex-col gap-2">

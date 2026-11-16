@@ -29,7 +29,7 @@ class UpdateScheduleAvailability
      * @param array{
      *     tanggal_block?: string|null,
      *     alasan?: string|null,
-     *     weekend_price_type: string,
+     *     weekend_price_type?: string,
      *     weekend_price_value?: float|numeric|null
      * } $data
      * @return array{
@@ -61,11 +61,13 @@ class UpdateScheduleAvailability
                 );
             }
 
-            $tenant->weekend_price_type = $data['weekend_price_type'];
-            $tenant->weekend_price_value = $data['weekend_price_type'] === 'none'
-                ? null
-                : (isset($data['weekend_price_value']) && $data['weekend_price_value'] !== '' ? (float) $data['weekend_price_value'] : null);
-            $tenant->save();
+            if (isset($data['weekend_price_type'])) {
+                $tenant->weekend_price_type = $data['weekend_price_type'];
+                $tenant->weekend_price_value = $data['weekend_price_type'] === 'none'
+                    ? null
+                    : (isset($data['weekend_price_value']) && $data['weekend_price_value'] !== '' ? (float) $data['weekend_price_value'] : null);
+                $tenant->save();
+            }
 
             return ['success' => true, 'record' => $record];
         });

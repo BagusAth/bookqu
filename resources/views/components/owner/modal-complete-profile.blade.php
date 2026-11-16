@@ -1,7 +1,9 @@
-{{-- Complete Profile Modal Component --}}
+@php
+    $profileErrors = old('_form') === 'complete-profile' ? $errors : new \Illuminate\Support\ViewErrorBag;
+@endphp
 <div
-    x-data="{ 
-        buka: {{ $errors->any() ? 'true' : ($showProfilePrompt ?? true ? 'true' : 'false') }}, 
+    x-data="{
+        buka: @js($profileErrors->any() || ($showProfilePrompt ?? true)),
         sedangkirim: false, 
         namabisnis: @js(old('namabisnis', auth()->user()?->tenant?->namabisnis ?? ''))
     }"
@@ -47,14 +49,15 @@
             </div>
 
             {{-- Form --}}
-            <form method="POST" action="/owner/profile/complete" @submit="sedangkirim = true" id="form-complete-profile" class="flex flex-col min-h-0 flex-1">
+            <form method="POST" action="{{ route('owner.profile.complete') }}" @submit="sedangkirim = true" id="form-complete-profile" class="flex flex-col min-h-0 flex-1">
                 @csrf
+                <input type="hidden" name="_form" value="complete-profile">
                 <div class="space-y-4 px-5 py-4 sm:px-6 sm:py-5 overflow-y-auto flex-1">
-                    @if ($errors->any())
+                    @if ($profileErrors->any())
                         <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
                             <p class="font-semibold text-rose-800">Mohon perbaiki isian form:</p>
                             <ul class="mt-1 list-disc space-y-0.5 pl-4">
-                                @foreach ($errors->all() as $error)
+                                @foreach ($profileErrors->all() as $error)
                                     <li>{{ $error }}</li>
                                 @endforeach
                             </ul>

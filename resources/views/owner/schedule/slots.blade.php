@@ -1,10 +1,10 @@
-<div class="space-y-4">
+<div class="space-y-4" x-data="{ slotIds: [], operation: 'close' }">
     @if ($daftarlayanan->isNotEmpty())
         <details class="rounded-xl border border-bq-border bg-bq-surface p-4" @if (request()->boolean('buat')) open @endif>
             <summary class="cursor-pointer font-semibold">Buat slot sekaligus</summary>
             <form class="mt-4 space-y-3" method="POST" action="{{ route('owner.schedule.bulk-store', ['tab' => 'slots']) }}"
                 data-preview-url="{{ route('owner.schedule.bulk-preview') }}"
-                x-data="scheduleBulkPreview" @input="preview = null" @change="preview = null" @submit="if (!canSave($el)) $event.preventDefault()">
+                x-data="scheduleBulkPreview(@js($openingHours))" @input="preview = null; openingChoices = []; openingWarning = ''" @change="preview = null" @submit="if (!canSave($el)) $event.preventDefault()">
                 @csrf
                 <div class="grid gap-3 sm:grid-cols-3">
                     <label class="grid gap-1 text-sm">Layanan
@@ -40,6 +40,18 @@
                         <input type="number" name="intervalslot" x-ref="interval" min="5" max="480" step="5" required class="rounded border border-bq-border bg-bq-surface p-2">
                     </label>
                 </div>
+                <div class="space-y-2 text-sm">
+                    <button type="button" @click="useOpeningHours($el.form)" class="rounded-lg border border-bq-border px-3 py-2 font-semibold">Isi dari jam buka</button>
+                    <p x-show="period === 'rentang'" class="text-bq-text-muted">Menggunakan jam buka pada tanggal mulai.</p>
+                    <p x-show="openingWarning" class="text-bq-warning" x-text="openingWarning" role="status"></p>
+                    <div x-show="openingChoices.length > 1" class="flex flex-wrap items-center gap-2">
+                        <span>Pilih rentang</span>
+                        <template x-for="interval in openingChoices" :key="interval.opens_at">
+                            <button type="button" class="rounded-lg bg-bq-primary-light px-3 py-1.5 font-medium text-bq-primary"
+                                @click="applyOpeningHours($el.form, interval)" x-text="interval.opens_at + ' – ' + interval.closes_at"></button>
+                        </template>
+                    </div>
+                </div>
                 <p class="text-sm" role="status" x-show="preview" x-cloak x-text="preview && (preview.to_create + ' slot baru, ' + preview.already_exist + ' slot sudah ada.')"></p>
                 <p class="text-sm" role="alert" x-show="error" x-cloak x-text="error"></p>
                 <button type="button" :disabled="busy" @click="check($el.form)" class="rounded-lg border border-bq-border px-4 py-2 text-sm font-semibold">Pratinjau slot</button>
@@ -51,23 +63,39 @@
         <input type="hidden" name="tab" value="slots">
         <input type="hidden" name="minggu" value="{{ $offsetminggu }}">
         <label class="grid gap-1 text-sm">Layanan
-            <select name="layanan" class="rounded border border-bq-border bg-bq-surface p-2">
+            <select name="layanan" @change="$el.form.requestSubmit()" class="rounded border border-bq-border bg-bq-surface p-2">
                 <option value="">Semua layanan</option>
                 @foreach ($daftarlayanan as $service)
                     <option value="{{ $service->id }}" @selected($service->id === $selectedService)>{{ $service->namalayanan }}</option>
                 @endforeach
             </select>
         </label>
-        <button class="rounded-lg border border-bq-border px-3 py-2 text-sm font-semibold">Terapkan</button>
+        <noscript><button class="rounded-lg border border-bq-border px-3 py-2 text-sm font-semibold">Terapkan</button></noscript>
     </form>
     <nav class="flex flex-wrap items-center gap-3 text-sm" aria-label="Minggu slot">
         <a class="text-bq-primary underline" href="{{ request()->fullUrlWithQuery(['minggu' => $offsetminggu - 1, 'buat' => null]) }}">Minggu sebelumnya</a>
         <span>{{ $awalminggu->format('d/m/Y') }} – {{ $akhirminggu->format('d/m/Y') }}</span>
         <a class="text-bq-primary underline" href="{{ request()->fullUrlWithQuery(['minggu' => $offsetminggu + 1, 'buat' => null]) }}">Minggu berikutnya</a>
     </nav>
+    @if ($slots->contains(fn ($slot) => ! $slot->occupied))
+        <form id="selected-slots" method="POST" action="{{ route('owner.schedule.slots.bulk') }}" class="flex flex-wrap items-center gap-3 rounded-xl border border-bq-border bg-bq-surface p-3 text-sm">
+            @csrf
+            <input type="hidden" name="operation" :value="operation">
+            <span x-text="slotIds.length + ' slot dipilih'"></span>
+            @foreach (['close' => 'Tutup slot pilihan', 'delete' => 'Hapus slot pilihan'] as $value => $label)
+                <button type="button" :disabled="!slotIds.length" class="rounded-lg border border-bq-border px-3 py-2 font-semibold disabled:opacity-40"
+                    @click="operation = @js($value); $dispatch('open-confirm', { title: @js($label.'?'), message: 'Tindakan akan diterapkan ke semua slot yang dipilih.', formId: $el.form.id, tone: @js($value === 'delete' ? 'danger' : 'primary'), confirmText: @js($label) })">{{ $label }}</button>
+            @endforeach
+            <x-owner.field-error name="slot_ids" />
+        </form>
+    @endif
     @forelse ($slots as $slot)
         <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-bq-border bg-bq-surface p-3 text-sm">
             <div>
+                @if (! $slot->occupied)
+                    <input type="checkbox" name="slot_ids[]" form="selected-slots" value="{{ $slot->id }}" x-model="slotIds"
+                        aria-label="Pilih slot {{ $slot->layanan?->namalayanan }} {{ $slot->tanggal->format('d/m/Y') }} {{ $slotTimes[$slot->id] }}">
+                @endif
                 <strong>{{ $slot->layanan?->namalayanan ?? 'Layanan dihapus' }}</strong>
                 <p class="tabular-nums">{{ $slot->tanggal->format('d/m/Y') }} · {{ $slotTimes[$slot->id] }}</p>
             </div>
@@ -75,7 +103,13 @@
                 <span class="tabular-nums">Rp {{ number_format($slotPrices[$slot->id], 0, ',', '.') }}</span>
             @endisset
             <span>{{ $slotLabels[$slot->id] }}</span>
-            @if (!$slot->occupied)
+            @if ($slot->occupied)
+                <div class="flex flex-wrap gap-2">
+                    @foreach ($slot->bookings as $booking)
+                        @include('owner.partials.bookings.panel-link')
+                    @endforeach
+                </div>
+            @else
                 <form method="POST" action="{{ route('owner.schedule.slots.update', $slot) }}">
                     @csrf
                     @method('PATCH')
@@ -91,12 +125,6 @@
                             placeholder="Ikuti aturan harga" class="w-36 rounded-lg border border-bq-border bg-bq-surface px-2 py-1.5">
                     </label>
                     <button class="rounded-lg border border-bq-border px-3 py-2 font-semibold">Simpan harga</button>
-                </form>
-                <form method="POST" action="{{ route('owner.schedule.slots.destroy', $slot) }}" id="delete-schedule-{{ $slot->id }}" x-data>
-                    @csrf
-                    @method('DELETE')
-                    <input type="hidden" name="return_to" value="slots">
-                    <button type="button" class="text-bq-primary underline" @click="$dispatch('open-confirm', { title: 'Hapus slot?', message: 'Slot ini tidak dapat dipilih pelanggan lagi.', formId: @js('delete-schedule-' . $slot->id), tone: 'danger' })">Hapus slot</button>
                 </form>
             @endif
         </div>

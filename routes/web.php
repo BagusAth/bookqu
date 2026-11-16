@@ -144,6 +144,7 @@ Route::prefix('owner')
             Route::get('/programs', [OwnerProgramController::class, 'legacyIndex'])->name('owner.programs');
             Route::get('/schedule', [OwnerScheduleController::class, 'index'])->name('owner.schedule');
             Route::post('/schedule/bulk-slots', [OwnerScheduleController::class, 'bulkStore'])->name('owner.schedule.bulk-store');
+            Route::post('/schedule/selected-slots', [OwnerScheduleController::class, 'changeSelectedSlots'])->name('owner.schedule.slots.bulk');
             Route::patch('/schedule/slots/{slot}', [OwnerScheduleController::class, 'updateSlot'])->whereNumber('slot')->name('owner.schedule.slots.update');
             Route::delete('/schedule/slots/{slot}', [OwnerScheduleController::class, 'destroy'])->name('owner.schedule.slots.destroy');
             Route::post('/schedule/default-pricing', [OwnerScheduleController::class, 'updateDefaultPricing'])->name('owner.schedule.default-pricing');
@@ -245,6 +246,7 @@ Route::prefix('owner')
                 Route::middleware('subscription:landing-page')->group(function () {
                     Route::post('/booking-page/landing', [OwnerBookingPageController::class, 'saveLanding'])->name('owner.booking-page.landing');
                     Route::get('/booking-page/landing/preview', [OwnerBookingPageController::class, 'previewLanding'])->name('owner.booking-page.landing.preview');
+                    Route::post('/booking-page/landing/preview', [OwnerBookingPageController::class, 'previewSubmittedLanding'])->name('owner.booking-page.landing.preview-form');
                     Route::post('/booking-page/domain', [OwnerBookingPageController::class, 'updateDomain'])->name('owner.booking-page.domain');
                     Route::post('/booking-page/domain/check', [OwnerBookingPageController::class, 'checkDomain'])->middleware('throttle:10,1')->name('owner.booking-page.domain.check');
                 });

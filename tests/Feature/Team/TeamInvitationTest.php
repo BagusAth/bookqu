@@ -18,6 +18,26 @@ class TeamInvitationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_activity_log_uses_indonesian_labels_and_local_time_for_known_and_unknown_events(): void
+    {
+        $tenant = Tenant::factory()->create();
+        app(CreateTrialSubscription::class)->execute($tenant);
+
+        foreach (['services.updated', 'internal.unknown'] as $event) {
+            DB::table('tenant_activity_logs')->insert([
+                'idtenant' => $tenant->id,
+                'iduser' => $tenant->iduser,
+                'role' => 'pemilik',
+                'event' => $event,
+                'created_at' => '2026-11-16 10:12:00',
+            ]);
+        }
+
+        $this->actingAs($tenant->user)->get(route('owner.settings.business', ['tab' => 'tim']))->assertOk()
+            ->assertSee('Layanan diperbarui')->assertSee('Aktivitas tercatat')->assertSee('16 Nov 2026 10.12')
+            ->assertDontSee('services.updated')->assertDontSee('internal.unknown');
+    }
+
     public function test_outstanding_invitations_reserve_seats_and_only_the_owner_can_invite(): void
     {
         $this->travelTo(now()->startOfDay());
@@ -40,7 +60,7 @@ class TeamInvitationTest extends TestCase
         $tenant = Tenant::factory()->create();
         app(CreateTrialSubscription::class)->execute($tenant);
         $email = 'cashier@example.com';
-        $this->actingAs($tenant->user)->get('/owner/settings/team')->assertOk();
+        $this->actingAs($tenant->user)->get(route('owner.settings.business', ['tab' => 'tim']))->assertOk();
         $this->post('/owner/settings/team/invitations', ['email' => $email, 'role' => 'kasir'])->assertRedirect();
         $credential = $this->credential();
         $this->actingAs(User::factory()->create())->post('/auth/undangan-tim/buka', ['credential' => $credential])->assertStatus(303);
@@ -138,7 +158,7 @@ class TeamInvitationTest extends TestCase
             'idtenant' => $tenant->id, 'iduser' => $manager->id, 'role' => 'manajer', 'event' => 'categories.created',
         ]);
         $this->get('/owner/settings/team')->assertForbidden();
-        $this->actingAs($tenant->user)->get('/owner/settings/team')->assertOk()->assertSee($manager->namalengkap);
+        $this->actingAs($tenant->user)->get(route('owner.settings.business', ['tab' => 'tim']))->assertOk()->assertSee($manager->namalengkap);
     }
 
     public function test_existing_account_accepts_with_its_invited_email_without_creating_another_user(): void

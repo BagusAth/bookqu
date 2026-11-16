@@ -190,10 +190,11 @@ class BerandaPageTest extends TestCase
 
         $actions = collect($this->actingAs($this->owner)->getJson(route('owner.dashboard.polling'))->assertOk()->json('data.actions'))->keyBy('key');
         $this->assertSame(1, $actions['refunds']['count']);
+        $this->assertSame(route('owner.bookings', ['tab' => 'action']), $actions['refunds']['url']);
         $this->assertSame(1, $actions['cancellations']['count']);
         $this->assertSame(route('owner.bookings').'#permintaan-pembatalan', $actions['cancellations']['url']);
         $this->assertSame(1, $actions['ended']['count']);
-        $this->assertSame(route('owner.bookings', ['status' => 'paid']), $actions['ended']['url']);
+        $this->assertSame(route('owner.bookings', ['tab' => 'action']), $actions['ended']['url']);
         $this->assertSame(1, $actions['reviews']['count']);
         $this->assertSame(route('owner.reviews'), $actions['reviews']['url']);
 
@@ -204,6 +205,33 @@ class BerandaPageTest extends TestCase
 
         $this->assertSame([], $this->getJson(route('owner.dashboard.polling'))->json('data.actions'));
         $this->get(route('owner.dashboard'))->assertSee('Tidak ada yang perlu ditindak');
+    }
+
+    public function test_walk_in_validation_does_not_open_the_profile_form(): void
+    {
+        $dashboard = route('owner.dashboard');
+        $response = $this->actingAs($this->owner)->from($dashboard)->post(route('owner.bookings.walkin'), []);
+        $response->assertRedirect($dashboard)->assertSessionHasErrors('idschedule');
+
+        $cookie = config('session.cookie');
+        $this->withCookie($cookie, $response->getCookie($cookie)->getValue())->get($dashboard)
+            ->assertOk()->assertDontSee('id="form-complete-profile"', false);
+    }
+
+    public function test_walk_in_validation_reopens_its_dialog_and_restores_input_with_inline_error(): void
+    {
+        $dashboard = route('owner.dashboard');
+        $response = $this->actingAs($this->owner)->from($dashboard)->post(route('owner.bookings.walkin'), [
+            '_form' => 'shell-walkin',
+            'namapelanggan' => 'Rani dari form',
+            'nomorhp' => '08123456789',
+        ])->assertRedirect($dashboard)->assertSessionHasErrors('idschedule');
+
+        $cookie = config('session.cookie');
+        $this->withCookie($cookie, $response->getCookie($cookie)->getValue())->get($dashboard)->assertOk()
+            ->assertSee('data-reopen-dialog="owner-walkin-dialog"', false)
+            ->assertSee('value="Rani dari form"', false)
+            ->assertSee('id="shell-walkin-slot-error"', false);
     }
 
     public function test_ac_brd_05_the_guide_shows_until_its_steps_are_done_and_never_again(): void
@@ -300,6 +328,35 @@ class BerandaPageTest extends TestCase
             ->assertSee('Minggu Depan');
     }
 
+    public function test_dashboard_and_panel_offer_booking_outcomes_at_the_same_session_boundaries(): void
+    {
+        $this->finishGuide();
+        $booking = $this->booking('2026-11-20', '11:00:00', '11:59:00');
+        $panel = route('owner.bookings.panel', $booking);
+        $polling = route('owner.dashboard.polling');
+        $status = route('owner.bookings.status', $booking);
+
+        $this->actingAs($this->member('kasir'))->getJson($polling)->assertOk()
+            ->assertJsonPath('data.today.0.complete_url', null)->assertJsonPath('data.today.0.no_show_url', null);
+        $this->getJson($panel)->assertOk()->assertJsonMissing(['label' => 'Tandai selesai']);
+        $this->patch($status, ['status' => 'completed'])->assertSessionHasErrors('error');
+        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'paid']);
+
+        $this->travelTo(now()->setTime(11, 0));
+        $this->getJson($polling)->assertOk()
+            ->assertJsonPath('data.today.0.complete_url', $status)->assertJsonPath('data.today.0.no_show_url', null);
+        $this->getJson($panel)->assertOk()
+            ->assertJsonFragment(['label' => 'Tandai selesai'])
+            ->assertJsonMissing(['label' => 'Tidak datang'])
+            ->assertJsonMissing(['label' => 'Batalkan booking']);
+
+        $this->travelTo(now()->setTime(12, 0));
+        $this->getJson($polling)->assertOk()
+            ->assertJsonPath('data.today.0.complete_url', $status)->assertJsonPath('data.today.0.no_show_url', $status);
+        $this->getJson($panel)->assertOk()->assertJsonFragment(['label' => 'Tidak datang']);
+        $this->patch($status, ['status' => 'no_show'])->assertSessionHas('sukses');
+    }
+
     public function test_the_link_card_and_quick_actions_follow_role_and_plan(): void
     {
         $this->finishGuide();
@@ -311,6 +368,9 @@ class BerandaPageTest extends TestCase
             ->assertSee('data-quick-action="walkin"', false)
             ->assertSee('data-quick-action="service"', false)
             ->assertSee('data-quick-action="team"', false);
+        $actions = collect($this->get(route('owner.dashboard'))->viewData('quickActions'))->keyBy('key');
+        $this->assertSame(route('owner.services', ['buat' => 1]), $actions['service']['url']);
+        $this->assertSame(route('owner.promos', ['buat' => 1]), $actions['promo']['url']);
 
         $this->actingAs($this->member('kasir'))->get(route('owner.dashboard'))
             ->assertOk()

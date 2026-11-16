@@ -27,6 +27,8 @@
     title="Detail pelanggan"
     behaviour="ownerPanel('owner-customer-panel')"
     x-on:open-customer-panel.window="load($event)"
+    x-on:customer-note-dirty="noteDirty = $event.detail"
+    x-on:beforeunload.window="if (open && noteDirty) { $event.preventDefault(); $event.returnValue = true; }"
 >
     <x-slot:heading>
         <span x-text="data ? data.name : 'Detail pelanggan'">Detail pelanggan</span>
@@ -34,6 +36,7 @@
 
     <div x-show="loading" class="py-10 text-center text-sm text-bq-text-muted" role="status">Memuat data pelanggan…</div>
     <div x-show="failed" x-cloak class="rounded-lg bg-bq-danger-bg px-4 py-3 text-sm text-bq-danger" role="alert">Data pelanggan tidak dapat dimuat. Coba lagi.</div>
+    <form id="discard-customer-note" @submit.prevent="discardNote()" hidden></form>
 
     <template x-if="data">
         <div class="space-y-5">
@@ -49,9 +52,10 @@
                             type="button"
                             class="inline-flex items-center gap-1.5 rounded-lg bg-bq-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-bq-primary-hover"
                             x-on:click="
-                                $dispatch('walkin-prefill', data.walkin);
-                                hide();
-                                $dispatch('open-dialog', { id: 'owner-walkin-dialog' });
+                                hide(() => {
+                                    $dispatch('walkin-prefill', data.walkin);
+                                    $dispatch('open-dialog', { id: 'owner-walkin-dialog' });
+                                });
                             "
                         >Buat booking</button>
                     @endif
@@ -67,7 +71,8 @@
                 </template>
             </dl>
 
-            <section aria-labelledby="customer-panel-note" x-data="ownerCustomerNote(data)">
+            <section aria-labelledby="customer-panel-note" x-data="ownerCustomerNote(data)"
+                x-effect="$dispatch('customer-note-dirty', text !== (data.note || ''))">
                 <h3 id="customer-panel-note" class="mb-1 text-sm font-semibold text-bq-text">Catatan internal</h3>
                 <p class="mb-2 text-xs text-bq-text-muted">Hanya terlihat oleh tim Anda.</p>
                 <form x-on:submit.prevent="save()" class="space-y-2">

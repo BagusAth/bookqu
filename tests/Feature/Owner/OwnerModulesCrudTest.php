@@ -7,6 +7,7 @@ use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
 use App\Models\Category;
+use App\Models\Payment;
 use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -16,6 +17,7 @@ use App\Models\Voucher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Js;
 use Tests\TestCase;
 
 class OwnerModulesCrudTest extends TestCase
@@ -202,6 +204,22 @@ class OwnerModulesCrudTest extends TestCase
         $this->assertDatabaseMissing('additional_items', ['id' => $item->id]);
     }
 
+    public function test_add_on_sold_count_uses_only_paid_booking_quantities_for_the_current_tenant(): void
+    {
+        $item = AdditionalItem::create([
+            'idtenant' => $this->tenantA->id, 'name' => 'Cetak Foto', 'price' => 35000,
+            'is_unlimited' => true, 'is_active' => true,
+        ]);
+        foreach ([[$this->tenantA, 'sukses', 3], [$this->tenantA, 'pending', 2], [$this->tenantB, 'sukses', 4]] as [$tenant, $status, $quantity]) {
+            Payment::factory()->create([
+                'idtenant' => $tenant->id, 'tipe' => 'booking', 'status' => $status,
+                'price_breakdown' => ['add_ons' => [['id' => $item->id, 'quantity' => $quantity, 'unlimited' => true]]],
+            ]);
+        }
+        $this->actingAs($this->userA)->get(route('owner.services', ['tab' => 'add-ons']))
+            ->assertOk()->assertSeeText('Terjual 3');
+    }
+
     // ──────────────────────────────────────────
     // 4. VOUCHERS TEST
     // ──────────────────────────────────────────
@@ -242,6 +260,92 @@ class OwnerModulesCrudTest extends TestCase
         $res = $this->actingAs($this->userA)->delete(route('owner.promos.destroy', $voucher->id));
         $res->assertRedirect(route('owner.promos'));
         $this->assertDatabaseMissing('vouchers', ['id' => $voucher->id]);
+    }
+
+    public function test_promo_update_with_legacy_form_fields_keeps_discount_cap_and_services(): void
+    {
+        $otherService = Service::factory()->create(['idtenant' => $this->tenantA->id]);
+        $serviceIds = $this->serviceA->id.','.$otherService->id;
+        $voucher = Voucher::create([
+            'idtenant' => $this->tenantA->id,
+            'code' => 'REBATE',
+            'discount_type' => 'percentage',
+            'discount_value' => 15,
+            'max_discount' => 20000,
+            'applicable_services' => $serviceIds,
+        ]);
+
+        $this->actingAs($this->userA)->put(route('owner.promos.update', $voucher), [
+            'code' => 'REBATE',
+            'discount_type' => 'percentage',
+            'discount_value' => 20,
+            'is_active' => 1,
+        ])->assertRedirect(route('owner.promos'))->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('vouchers', [
+            'id' => $voucher->id,
+            'discount_value' => 20,
+            'max_discount' => 20000,
+            'applicable_services' => $serviceIds,
+        ]);
+    }
+
+    public function test_promo_forms_save_and_clear_discount_cap_and_service_selection(): void
+    {
+        $payload = [
+            'code' => 'REBATE',
+            'discount_type' => 'percentage',
+            'discount_value' => 20,
+            'max_discount_amount' => 20000,
+            'applicable_services' => [$this->serviceA->id],
+            'is_active' => 1,
+        ];
+
+        $this->actingAs($this->userA)->post(route('owner.promos.store'), $payload)
+            ->assertRedirect(route('owner.promos'))->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('vouchers', [
+            'code' => 'REBATE',
+            'max_discount' => 20000,
+            'applicable_services' => (string) $this->serviceA->id,
+        ]);
+
+        $voucher = Voucher::withoutGlobalScopes()->where('idtenant', $this->tenantA->id)->where('code', 'REBATE')->firstOrFail();
+        $this->put(route('owner.promos.update', $voucher), array_replace($payload, [
+            'max_discount_amount' => '',
+            'applicable_services' => '',
+        ]))->assertRedirect(route('owner.promos'))->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('vouchers', [
+            'id' => $voucher->id,
+            'max_discount' => null,
+            'applicable_services' => 'all',
+        ]);
+    }
+
+    public function test_promo_rejects_another_tenants_service_and_percentage_above_one_hundred(): void
+    {
+        $otherService = Service::factory()->create(['idtenant' => $this->tenantB->id]);
+        $this->actingAs($this->userA)->post(route('owner.promos.store'), [
+            'code' => 'REBATE',
+            'discount_type' => 'percentage',
+            'discount_value' => 101,
+            'applicable_services' => [$otherService->id],
+        ])->assertSessionHasErrors(['discount_value', 'applicable_services.0']);
+
+        $this->assertDatabaseMissing('vouchers', ['code' => 'REBATE']);
+    }
+
+    public function test_promo_delete_confirmation_escapes_a_legacy_code_with_a_quote(): void
+    {
+        $voucher = Voucher::create([
+            'idtenant' => $this->tenantA->id,
+            'code' => "REBATE'S",
+            'discount_type' => 'percentage',
+            'discount_value' => 15,
+        ]);
+
+        $this->actingAs($this->userA)->get(route('owner.promos'))
+            ->assertOk()
+            ->assertSee("Yakin ingin menghapus promo ' + ".Js::from($voucher->code), false);
     }
 
     public function test_voucher_tenant_isolation(): void

@@ -30,7 +30,6 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -59,17 +58,29 @@ class OwnerBookingController extends Controller
         foreach ($tabs as $key => $label) {
             $tabs[$key] = $label.' ('.$list->tab(clone $base, $key, $canReview)->count().')';
         }
-        $daftarbooking = $list->tab(clone $base, $tab, $canReview)
+        $selection = $list->tab(clone $base, $tab, $canReview);
+        if ($tab === 'action') {
+            $list->withActionReasons($selection, $canReview);
+        }
+        $showUnits = EntitlementRules::canAccessFeature($tenant?->subscription, 'units')['allowed'] && config('modules.units') === 'released';
+        if ($showUnits) {
+            $selection->with('layanan.units');
+        }
+        $daftarbooking = $selection
             ->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')->orderBy('jam', $filters['sort'] ?? 'desc')
             ->orderBy('bookings.id')->paginate(15)->withQueryString();
         $timeRanges = $ranges->execute($daftarbooking->items())['sessionRanges'];
-        $rows = $daftarbooking->getCollection()->mapWithKeys(function (Booking $booking) use ($list, $timeRanges): array {
+        $rows = $daftarbooking->getCollection()->mapWithKeys(function (Booking $booking) use ($list, $timeRanges, $showUnits, $tab): array {
             $payment = $booking->payment;
             $hold = $payment instanceof Payment ? BookingRules::onlinePaymentHoldEnd($booking, $payment) : null;
             $amount = $list->paidAmount($booking);
+            $service = $booking->layanan;
 
             return [$booking->id => [
                 'time' => $timeRanges[$booking->id]->label(),
+                'participants' => $booking->peserta,
+                'units' => $showUnits && $service instanceof Service ? $service->units->pluck('name')->implode(', ') : null,
+                'reasons' => $tab === 'action' ? $list->reasons($booking) : [],
                 'amount' => $amount === null ? '—' : 'Rp '.number_format($amount, 0, ',', '.'),
                 'payment_status' => $payment instanceof Payment ? $payment->status : 'Belum tercatat',
                 'waiting' => $hold ? 'Menunggu pembayaran online, berakhir '.$hold->setTimezone('Asia/Jakarta')->format('H:i').' WIB' : null,
@@ -77,7 +88,7 @@ class OwnerBookingController extends Controller
         });
         $services = $tenant ? Service::where('idtenant', $tenant->id)->orderBy('namalayanan')->get() : collect();
         $cancellationRequests = $canReview && $tenant !== null && in_array($tab, ['all', 'action'], true)
-            ? DB::table('booking_cancellation_requests')->where('idtenant', $tenant->id)->where('status', 'pending')->orderBy('id')->paginate(10, pageName: 'permintaan')->withQueryString()
+            ? $list->cancellationRequests($tenant)
             : null;
         $exportUrl = $can('revenue.view') && EntitlementRules::canAccessFeature($tenant?->subscription, 'analytics.export')['allowed']
             ? route('owner.bookings.export', ['tab' => $tab] + $filters)
@@ -184,7 +195,7 @@ class OwnerBookingController extends Controller
         $result = $updateBookingStatus->execute($booking, $statusBaru, 'owner', $validated['reason'] ?? null);
 
         if (! $result['success']) {
-            return back()->withErrors([
+            return back()->withInput()->withErrors([
                 'error' => $result['error'],
             ]);
         }
@@ -193,6 +204,7 @@ class OwnerBookingController extends Controller
             'paid' => 'lunas / dikonfirmasi',
             'completed' => 'selesai',
             'cancelled' => 'dibatalkan',
+            'no_show' => 'tidak datang',
             default => $statusBaru,
         };
 
@@ -241,10 +253,16 @@ class OwnerBookingController extends Controller
         $booking = $createWalkInBooking->execute($tenant, $validated);
 
         if (! $booking) {
-            return back()->withErrors(['error' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.']);
+            return back()->withInput()->withErrors(['idschedule' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.']);
         }
 
-        return back()->with('sukses', "Walk-in booking atas nama {$booking->namapelanggan} berhasil dibuat!");
+        return back()
+            ->with('sukses', "Walk-in booking atas nama {$booking->namapelanggan} berhasil dibuat!")
+            ->with('walkin_booking', [
+                'code' => $booking->booking_code,
+                'panelUrl' => route('owner.bookings.panel', $booking->id),
+                'href' => route('owner.bookings', ['panel' => $booking->id]),
+            ]);
     }
 
     /**
@@ -327,7 +345,7 @@ class OwnerBookingController extends Controller
                 return response()->json(['success' => false, 'message' => $result['error']], 422);
             }
 
-            return back()->withErrors(['error' => $result['error']]);
+            return back()->withInput()->withErrors(['error' => $result['error']]);
         }
 
         $tglFormatted = Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y');

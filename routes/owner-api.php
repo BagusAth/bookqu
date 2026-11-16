@@ -13,4 +13,8 @@ Route::prefix('owner/settings/api')->name('owner.api.')->middleware([
     Route::delete('/keys/{id}', [OwnerApiController::class, 'revokeKey'])->whereNumber('id')->name('keys.revoke');
     Route::post('/webhooks', [OwnerApiController::class, 'createWebhook'])->name('webhooks.store');
     Route::delete('/webhooks/{id}', [OwnerApiController::class, 'deleteWebhook'])->whereNumber('id')->name('webhooks.destroy');
+    Route::post('/webhooks/{id}/test', [OwnerApiController::class, 'testWebhook'])->whereNumber('id')
+        ->middleware(['subscription:webhooks', 'throttle:10,1,owner-webhook-manual'])->name('webhooks.test');
+    Route::post('/deliveries/{id}/redeliver', [OwnerApiController::class, 'redeliverWebhook'])->whereNumber('id')
+        ->middleware(['subscription:webhooks', 'throttle:10,1,owner-webhook-manual'])->name('webhooks.redeliver');
 });

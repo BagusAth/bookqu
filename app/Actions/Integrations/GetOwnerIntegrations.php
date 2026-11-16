@@ -12,7 +12,7 @@ use App\Models\Tenant;
 
 final class GetOwnerIntegrations
 {
-    /** @return array{connected: bool, configured: bool, googleAnalytics: ?string, metaPixel: ?string, apiUrl: ?string} */
+    /** @return array{connected: bool, configured: bool, googleAnalytics: ?string, metaPixel: ?string} */
     public function execute(Tenant $tenant, GoogleCalendar $calendar): array
     {
         $settings = OwnerIntegration::where('idtenant', $tenant->id)->first();
@@ -22,9 +22,6 @@ final class GetOwnerIntegrations
             'configured' => $calendar->configured(),
             'googleAnalytics' => $settings?->google_analytics_id,
             'metaPixel' => $settings?->meta_pixel_id,
-            'apiUrl' => ModuleRelease::state('api') === 'released'
-                && EntitlementRules::canAccessFeature($tenant->subscription()->with('plan')->first(), 'api')['allowed']
-                ? route('owner.api.index') : null,
         ];
     }
 

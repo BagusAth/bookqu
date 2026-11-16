@@ -4,19 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Service;
 
-use App\Traits\ResolvesOwnerTenant;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateServiceRequest extends FormRequest
+class UpdateServiceRequest extends StoreServiceRequest
 {
-    use ResolvesOwnerTenant;
-
-    public function authorize(): bool
-    {
-        return $this->resolveTenant() !== null;
-    }
-
     /**
      * @return array<string, mixed>
      */

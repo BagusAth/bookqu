@@ -71,7 +71,7 @@ class DeleteSchedule
             ];
         }
 
-        $this->availabilityCache->clearScheduleCache((int) $tenant->id, $idlayanan, [$tanggal]);
+        DB::afterCommit(fn () => $this->availabilityCache->clearScheduleCache((int) $tenant->id, $idlayanan, [$tanggal]));
 
         return [
             'success' => true,

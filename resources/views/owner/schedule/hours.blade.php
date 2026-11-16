@@ -7,14 +7,20 @@
     @foreach ($weekdays as $day => $label)
         <fieldset class="space-y-2 border-t border-bq-border pt-2">
             <legend class="font-medium">{{ $label }}</legend>
+            <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" x-model="closed[@js($day)]" @change="toggle(@js($day))"> Tutup
+            </label>
             <template x-for="(interval, index) in days[{{ $day }}]" :key="interval.key">
-                <div class="flex flex-wrap items-end gap-2">
-                    <label class="grid text-sm">Buka <input class="rounded border border-bq-border bg-bq-surface p-2" type="time" x-model="interval.opens_at" required></label>
-                    <label class="grid text-sm">Tutup <input class="rounded border border-bq-border bg-bq-surface p-2" type="time" x-model="interval.closes_at" required></label>
+                <div x-show="!closed[@js($day)]" class="flex flex-wrap items-end gap-2">
+                    <label class="grid text-sm">Buka <input class="rounded border border-bq-border bg-bq-surface p-2" type="time" x-model="interval.opens_at" :disabled="closed[@js($day)]" required></label>
+                    <label class="grid text-sm">Tutup <input class="rounded border border-bq-border bg-bq-surface p-2" type="time" x-model="interval.closes_at" :disabled="closed[@js($day)]" required></label>
                     <button type="button" class="p-2 text-sm text-bq-primary" @click="days[{{ $day }}].splice(index, 1)">Hapus rentang</button>
                 </div>
             </template>
-            <button type="button" class="text-sm font-semibold text-bq-primary" :disabled="days[{{ $day }}].length >= 6" @click="add({{ $day }})">Tambah rentang</button>
+            <div class="flex flex-wrap gap-3">
+                <button type="button" x-show="!closed[@js($day)]" class="text-sm font-semibold text-bq-primary" :disabled="days[@js($day)].length >= 6" @click="add(@js($day))">Tambah rentang</button>
+                <button type="button" class="text-sm font-semibold text-bq-primary" @click="copyToAll(@js($day))">Salin ke semua hari</button>
+            </div>
         </fieldset>
     @endforeach
     <label class="grid max-w-xs gap-1 text-sm">Batas buka slot (hari ke depan)

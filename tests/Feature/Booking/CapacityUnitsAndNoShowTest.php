@@ -333,6 +333,30 @@ class CapacityUnitsAndNoShowTest extends TestCase
         $this->assertDatabaseHas('units', ['id' => $unit->id, 'image_path' => 'media/lapangan.png']);
     }
 
+    public function test_failed_unit_edit_reopens_the_same_unit_with_old_input(): void
+    {
+        $this->asPro();
+        $unit = $this->shareUnit($this->service());
+        $url = route('owner.units');
+
+        $invalid = $this->actingAs($this->owner)->from($url)->put(route('owner.units.update', $unit), [
+            '_form' => 'unit-edit-'.$unit->id,
+            'name' => 'Nama dari form',
+            'type' => $unit->type,
+            'kapasitas' => 0,
+        ])->assertRedirect($url)->assertSessionHasErrors('kapasitas')->assertSessionHasInput('name', 'Nama dari form');
+
+        $cookie = config('session.cookie');
+        $response = $this->withCookie($cookie, $invalid->getCookie($cookie)->getValue())->get($url)->assertOk();
+        $this->assertTrue($response->viewData('errors')->has('kapasitas'), 'The validation error should reach the view.');
+        $html = (string) $response->getContent();
+        $this->assertTrue(str_contains($html, 'value="Nama dari form"'), 'The submitted name should be restored.');
+        $this->assertTrue(str_contains($html, 'id="unit-edit-'.$unit->id.'-kapasitas-error"'));
+        preg_match('/<details [^>]*id="unit-edit-'.$unit->id.'"[^>]*>/', $html, $edit);
+        $this->assertStringContainsString(' open', $edit[0] ?? 'Unit editor missing');
+        $this->assertSame(0, preg_match('/<details [^>]*id="unit-create"[^>]*\bopen\b/', $html));
+    }
+
     public function test_unit_routes_are_refused_below_pro(): void
     {
         config(['modules.units' => 'released']);
@@ -386,7 +410,8 @@ class CapacityUnitsAndNoShowTest extends TestCase
         $kasir = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         TenantMember::create(['idtenant' => $this->tenant->id, 'iduser' => $kasir->id, 'role' => 'kasir', 'accepted_at' => now()]);
 
-        $this->actingAs($kasir)->patch(route('owner.bookings.status', $booking), ['status' => 'no_show'])->assertSessionHasNoErrors();
+        $this->actingAs($kasir)->patch(route('owner.bookings.status', $booking), ['status' => 'no_show'])
+            ->assertSessionHasNoErrors()->assertSessionHas('sukses', fn (string $message) => str_contains($message, 'ditandai sebagai tidak datang.'));
         $this->assertSame('no_show', $booking->fresh()->status);
     }
 }

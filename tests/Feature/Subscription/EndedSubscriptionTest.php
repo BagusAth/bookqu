@@ -130,6 +130,7 @@ class EndedSubscriptionTest extends TestCase
         $schedule = Schedule::factory()->create(['idtenant' => $tenant->id, 'idlayanan' => $service->id, 'tanggal' => '2026-11-06']);
         $booking = Booking::factory()->create(['idtenant' => $tenant->id, 'idlayanan' => $service->id, 'idschedule' => $schedule->id, 'idpayment' => $payment->id, 'status' => 'paid']);
         Notification::fake([BookingStatusChangedOwnerNotification::class]);
+        $this->travelTo(Carbon::parse('2026-11-06 10:30:00', 'Asia/Jakarta'));
         $this->actingAs($tenant->user)->patch('/owner/bookings/'.$booking->id.'/status', ['status' => 'completed'])->assertRedirect()->assertSessionHas('sukses');
         $this->assertSame('completed', $booking->fresh()->status);
         Notification::assertSentTo($tenant->user, BookingStatusChangedOwnerNotification::class);

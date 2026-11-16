@@ -13,7 +13,7 @@
                 <details>
                     <summary class="cursor-pointer break-words text-sm font-semibold">
                         <span class="sm:hidden">{{ $day['label'] }}</span><span class="hidden sm:inline">{{ $day['number'] }}</span>
-                        <span class="block text-xs font-normal text-bq-text-muted">{{ count($day['slots']) }} slot</span>
+                        <span class="block text-xs font-normal text-bq-text-muted">{{ count($day['slots']) }} slot · {{ $day['bookingCount'] ?? 0 }} booking</span>
                     </summary>
                     @include('owner.partials.calendar.day-entries')
                 </details>

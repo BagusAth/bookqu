@@ -56,13 +56,27 @@ class OwnerVoucherController extends Controller
             ->get();
 
         $services = Service::where('idtenant', $tenant->id)
-            ->where('is_active', true)
             ->orderBy('namalayanan')
             ->get();
 
         $promoRoute = 'owner.promos';
+        $serviceNames = $services->pluck('namalayanan', 'id');
+        $cards = $vouchers->mapWithKeys(function (Voucher $promo) use ($today, $serviceNames): array {
+            $services = $promo->applicable_services;
 
-        return view('owner.vouchers', compact('tenant', 'vouchers', 'services', 'search', 'promoRoute', 'promoTabs', 'tab', 'promoFigures'));
+            return [$promo->id => [
+                'state' => match (true) {
+                    $promo->end_date !== null && Carbon::parse($promo->end_date)->toDateString() < $today => 'Berakhir',
+                    ! $promo->is_active => 'Nonaktif',
+                    $promo->start_date !== null && Carbon::parse($promo->start_date)->toDateString() > $today => 'Terjadwal',
+                    default => 'Aktif',
+                },
+                'services' => ! $services || $services === 'all' ? 'Semua layanan' : collect(explode(',', $services))
+                    ->map(fn (string $id): string => $serviceNames->get((int) $id, 'Layanan dihapus'))->implode(', '),
+            ]];
+        });
+
+        return view('owner.vouchers', compact('vouchers', 'services', 'search', 'promoRoute', 'promoTabs', 'tab', 'promoFigures', 'cards'));
     }
 
     public function store(Request $request)
@@ -75,7 +89,7 @@ class OwnerVoucherController extends Controller
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('vouchers', 'code')->where('idtenant', $tenant->id)],
             'discount_type' => 'required|in:fixed,percentage',
-            'discount_value' => 'required|numeric|min:1',
+            'discount_value' => ['required', 'numeric', 'min:1', Rule::when($request->input('discount_type') === 'percentage', 'max:100')],
             'min_order_amount' => 'nullable|numeric|min:0',
             'max_discount_amount' => 'nullable|numeric|min:0',
             'usage_limit' => 'nullable|integer|min:1',
@@ -121,7 +135,7 @@ class OwnerVoucherController extends Controller
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('vouchers', 'code')->where('idtenant', $tenant->id)->ignore($voucher->id)],
             'discount_type' => 'required|in:fixed,percentage',
-            'discount_value' => 'required|numeric|min:1',
+            'discount_value' => ['required', 'numeric', 'min:1', Rule::when($request->input('discount_type') === 'percentage', 'max:100')],
             'min_order_amount' => 'nullable|numeric|min:0',
             'max_discount_amount' => 'nullable|numeric|min:0',
             'usage_limit' => 'nullable|integer|min:1',
@@ -148,11 +162,15 @@ class OwnerVoucherController extends Controller
                 'discount_type' => $validated['discount_type'],
                 'discount_value' => $validated['discount_value'],
                 'min_spending' => $validated['min_order_amount'] ?? 0,
-                'max_discount' => $validated['max_discount_amount'] ?? null,
+                'max_discount' => array_key_exists('max_discount_amount', $validated)
+                    ? $validated['max_discount_amount']
+                    : $voucher->max_discount,
                 'usage_limit' => $validated['usage_limit'] ?? null,
                 'start_date' => $validated['start_date'] ?? null,
                 'end_date' => $validated['end_date'] ?? null,
-                'applicable_services' => $applicableServices,
+                'applicable_services' => array_key_exists('applicable_services', $validated)
+                    ? $applicableServices
+                    : $voucher->applicable_services,
                 'is_active' => (bool) $validated['is_active'],
             ]);
 

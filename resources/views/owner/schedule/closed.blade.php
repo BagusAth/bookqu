@@ -1,10 +1,9 @@
 <div class="space-y-4">
     <form method="POST" action="{{ route('owner.schedule.availability', ['tab' => 'closed']) }}" class="flex flex-wrap items-end gap-3 rounded-xl border border-bq-border bg-bq-surface p-4">
         @csrf
-        <input type="hidden" name="weekend_price_type" value="{{ $tenant->weekend_price_type ?? 'none' }}">
-        <input type="hidden" name="weekend_price_value" value="{{ $tenant->weekend_price_value }}">
         <label class="grid gap-1 text-sm">Tanggal tutup
             <input class="rounded border border-bq-border bg-bq-surface p-2" type="date" name="tanggal_block" value="{{ old('tanggal_block') }}" required>
+            <x-owner.field-error name="tanggal_block" />
         </label>
         <label class="grid gap-1 text-sm">Alasan
             <input class="rounded border border-bq-border bg-bq-surface p-2" name="alasan" value="{{ old('alasan') }}" maxlength="200">
@@ -24,10 +23,11 @@
     @forelse ($blockedDates as $date)
         <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-bq-border bg-bq-surface p-4">
             <span>{{ $date->tanggal->format('d/m/Y') }} {{ $date->alasan }}</span>
-            <form method="POST" action="{{ route('owner.schedule.blocked-dates.delete', ['blockedDate' => $date, 'tab' => 'closed']) }}">
+            <form method="POST" id="reopen-date-{{ $date->id }}" x-data action="{{ route('owner.schedule.blocked-dates.delete', ['blockedDate' => $date, 'tab' => 'closed']) }}">
                 @csrf
                 @method('DELETE')
-                <button class="text-sm font-semibold text-bq-primary">Buka kembali tanggal</button>
+                <button type="button" class="text-sm font-semibold text-bq-primary"
+                    @click="$dispatch('open-confirm', { title: 'Buka kembali tanggal?', message: 'Slot yang tersedia pada tanggal ini dapat dipesan kembali.', formId: $el.form.id, tone: 'primary', confirmText: 'Buka tanggal' })">Buka kembali tanggal</button>
             </form>
         </div>
     @empty

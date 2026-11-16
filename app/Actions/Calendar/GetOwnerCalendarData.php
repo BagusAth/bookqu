@@ -148,7 +148,11 @@ final class GetOwnerCalendarData
         $shownSlotIds = array_fill_keys($schedules->modelKeys(), true);
         foreach ($bookings as $booking) {
             $key = CarbonImmutable::parse($booking->tanggalbooking)->toDateString();
-            if (isset($days[$key]) && ! isset($shownSlotIds[$booking->idschedule])) {
+            if (! isset($days[$key])) {
+                continue;
+            }
+            $days[$key]['bookingCount'] = ($days[$key]['bookingCount'] ?? 0) + 1;
+            if (! isset($shownSlotIds[$booking->idschedule])) {
                 $days[$key]['bookings'][] = $this->bookingCard($booking);
             }
         }

@@ -19,6 +19,21 @@ class OwnerPortalWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_legacy_team_integration_and_api_pages_redirect_to_the_settings_tabs(): void
+    {
+        $tenant = Tenant::factory()->create();
+        app(CreateTrialSubscription::class)->execute($tenant);
+        $this->actingAs($tenant->user);
+
+        $team = route('owner.settings.business', ['tab' => 'tim']);
+        $integrations = route('owner.settings.business', ['tab' => 'integrasi']);
+        $this->get(route('owner.team.index'))->assertRedirect($team);
+        $this->get(route('owner.settings.integrations'))->assertRedirect($integrations);
+        $this->get(route('owner.api.index'))->assertRedirect($integrations.'#api');
+        $this->get($team)->assertOk()->assertSeeText('Riwayat aktivitas');
+        $this->get($integrations)->assertOk()->assertSeeText('Google Calendar')->assertSeeText('Kunci API');
+    }
+
     public function test_schedule_tabs_show_live_preview_endpoints_and_runway(): void
     {
         $this->travelTo(Carbon::parse('2026-11-05 10:20', 'Asia/Jakarta'));
@@ -54,7 +69,8 @@ class OwnerPortalWorkflowTest extends TestCase
         BookingLog::record($booking->id, 'paid', 'Pembayaran tercatat.');
 
         $this->actingAs($tenant->user)->get(route('owner.bookings', ['tab' => 'action', 'katakunci' => 'panel@example.test']))
-            ->assertOk()->assertSeeText('Perlu tindakan (1)')->assertSeeText('Rp 75.001')->assertDontSeeText('999.000');
+            ->assertOk()->assertSeeText('Perlu tindakan (1)')->assertSeeText('Rp 75.001')->assertDontSeeText('999.000')
+            ->assertSeeText('Permintaan refund menunggu keputusan');
         $panel = route('owner.bookings.panel', $booking->id);
         $response = $this->getJson($panel)->assertOk()
             ->assertJsonPath('payment.amount', 'Rp 75.001')
@@ -65,6 +81,7 @@ class OwnerPortalWorkflowTest extends TestCase
         $this->assertSame('Pelanggan mendapat refund penuh Rp 75.001.', $actions['Batalkan booking']['confirm']['message']);
         $this->assertSame('accepted_half', $actions['Terima 50%']['fields']['decision']);
         $this->assertSame(route('owner.refunds.decide', $refund->id), $actions['Terima 50%']['url']);
+        $this->assertStringContainsString('Rp 37.500', $actions['Terima 50%']['confirm']['message']);
         $this->actingAs(Tenant::factory()->create()->user)->getJson($panel)->assertNotFound();
     }
 

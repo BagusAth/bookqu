@@ -52,6 +52,7 @@
             hide() {
                 if (!this.open) return;
                 this.open = false;
+                this.$dispatch('dialog-closed', { id: this.dialogId });
                 const target = this.returnTo;
                 this.returnTo = null;
                 if (target && typeof target.focus === 'function' && document.contains(target)) {
@@ -106,10 +107,38 @@
             failed: false,
             data: null,
             requestNumber: 0,
+            noteDirty: false,
+            afterDiscard: null,
+
+            hide(next = null) {
+                if (this.noteDirty) {
+                    this.afterDiscard = next;
+                    this.$dispatch('open-confirm', {
+                        title: 'Buang perubahan catatan?',
+                        message: 'Perubahan catatan pelanggan belum disimpan.',
+                        formId: 'discard-customer-note',
+                        confirmText: 'Buang perubahan',
+                    });
+                    return;
+                }
+                dialogBehaviour(id).hide.call(this);
+                next?.();
+            },
+
+            discardNote() {
+                const next = this.afterDiscard;
+                this.afterDiscard = null;
+                this.noteDirty = false;
+                this.hide(next);
+            },
 
             async load(event) {
                 const url = event.detail && event.detail.url;
                 if (!url) return;
+                if (this.noteDirty) {
+                    this.hide(() => this.load(event));
+                    return;
+                }
                 const requestNumber = ++this.requestNumber;
                 this.data = null;
                 this.failed = false;
@@ -140,14 +169,15 @@
             async save() {
                 if (this.saving) return;
                 this.saving = true;
+                const submitted = this.text;
                 try {
                     const response = await fetch(customer.note_url, {
                         method: 'POST',
                         headers: { ...jsonHeaders, 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
-                        body: JSON.stringify({ customer_identifier: customer.identifier, notes: this.text }),
+                        body: JSON.stringify({ customer_identifier: customer.identifier, notes: submitted }),
                     });
                     if (!response.ok) throw new Error('note save failed');
-                    customer.note = this.text;
+                    customer.note = submitted;
                     window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Catatan disimpan.' } }));
                 } catch (error) {
                     window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Catatan gagal disimpan. Coba lagi.' } }));
@@ -261,13 +291,36 @@
             failed: false,
             results: { bookings: [], customers: [] },
             requestNumber: 0,
+            activeIndex: -1,
+
+            get entries() {
+                return [
+                    ...this.results.bookings.map(result => ({ result, kind: 'booking' })),
+                    ...this.results.customers.map(result => ({ result, kind: 'customer' })),
+                ];
+            },
+
+            get activeId() {
+                return this.open && this.activeIndex >= 0 ? 'owner-search-option-' + this.activeIndex : null;
+            },
+
+            move(step) {
+                if (this.loading || this.entries.length === 0) return;
+                this.open = true;
+                const last = this.entries.length - 1;
+                if (this.activeIndex < 0) this.activeIndex = step > 0 ? 0 : last;
+                else this.activeIndex = Math.max(0, Math.min(last, this.activeIndex + step));
+                this.$nextTick(() => document.getElementById(this.activeId)?.scrollIntoView({ block: 'nearest' }));
+            },
 
             async search() {
                 const term = this.query.trim();
                 const requestNumber = ++this.requestNumber;
+                this.activeIndex = -1;
+                this.results = { bookings: [], customers: [] };
                 if (term.length < 2) {
                     this.open = false;
-                    this.results = { bookings: [], customers: [] };
+                    this.loading = false;
                     return;
                 }
                 this.open = true;
@@ -277,9 +330,9 @@
                     const target = new URL(url, window.location.origin);
                     target.searchParams.set('q', term);
                     const response = await fetch(target, { headers: jsonHeaders });
-                    if (requestNumber !== this.requestNumber) return;
                     if (!response.ok) throw new Error('search failed');
                     const data = await response.json();
+                    if (requestNumber !== this.requestNumber || this.query.trim() !== term) return;
                     this.results = { bookings: data.bookings || [], customers: data.customers || [] };
                 } catch (error) {
                     if (requestNumber === this.requestNumber) this.failed = true;
@@ -297,13 +350,15 @@
                 }
             },
 
-            openFirst() {
-                const first = this.results.bookings[0] || this.results.customers[0];
-                if (first) this.choose(first, this.results.bookings[0] ? 'booking' : 'customer');
+            openSelection() {
+                if (!this.open || this.loading) return;
+                const entry = this.entries[Math.max(this.activeIndex, 0)];
+                if (entry) this.choose(entry.result, entry.kind);
             },
 
             close() {
                 this.open = false;
+                this.activeIndex = -1;
             },
         }));
 
@@ -382,9 +437,9 @@
         }));
 
         // BQ-128: "+ Booking" picks a date and loads that day's free slots, first when its dialog opens.
-        window.Alpine.data('ownerWalkInSlots', (url, today) => ({
-            selectedSlot: '',
-            quantities: {},
+        window.Alpine.data('ownerWalkInSlots', (url, today, oldDate, oldSlot, oldAddOns) => ({
+            selectedSlot: String(oldSlot ?? ''),
+            quantities: Object.fromEntries(Array.isArray(oldAddOns) ? oldAddOns.filter(item => item?.id).map(item => [item.id, item.quantity]) : []),
             get addOns() {
                 return this.slots.find(slot => String(slot.id) === String(this.selectedSlot))?.add_ons ?? [];
             },
@@ -392,31 +447,36 @@
                 return this.addOns.filter(item => Number(this.quantities[item.id]) > 0);
             },
             today,
-            date: today,
+            date: typeof oldDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(oldDate) ? oldDate : today,
             slots: [],
             loading: false,
-            loaded: false,
             failed: false,
             requestNumber: 0,
+            loadingDate: null,
 
             loadWhenOpened(event) {
                 const id = event.detail && event.detail.id;
-                if (!this.loaded && id && this.$el.closest('#' + CSS.escape(id))) this.load();
+                if (id && this.$el.closest('#' + CSS.escape(id))) this.load();
             },
 
             async load() {
-                if (!this.date) return;
+                if (!this.date || (this.loading && this.loadingDate === this.date)) return;
                 const requestNumber = ++this.requestNumber;
+                this.loadingDate = this.date;
                 this.loading = true;
                 this.failed = false;
                 try {
                     const target = new URL(url, window.location.origin);
                     target.searchParams.set('date', this.date);
                     const response = await fetch(target, { headers: jsonHeaders });
-                    if (requestNumber !== this.requestNumber) return;
                     if (!response.ok) throw new Error('slots failed');
-                    this.slots = (await response.json()).slots || [];
-                    this.loaded = true;
+                    const data = await response.json();
+                    if (requestNumber !== this.requestNumber) return;
+                    this.slots = data.slots || [];
+                    if (!this.slots.some(slot => String(slot.id) === String(this.selectedSlot))) {
+                        this.selectedSlot = '';
+                        this.quantities = {};
+                    }
                 } catch (error) {
                     if (requestNumber === this.requestNumber) {
                         this.slots = [];

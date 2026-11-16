@@ -70,6 +70,21 @@ class BlockedDateActiveBookingConflictTest extends TestCase
             ->exists());
     }
 
+    public function test_date_closure_ignores_stale_weekend_fields_and_keeps_weekend_pricing(): void
+    {
+        $this->tenant->forceFill(['weekend_price_type' => 'multiplier', 'weekend_price_value' => 1.5])->save();
+        $date = now()->addDays(4)->toDateString();
+        $closed = route('owner.schedule', ['tab' => 'closed']);
+        $this->actingAs($this->owner)->from($closed)->post(route('owner.schedule.availability', ['tab' => 'closed']), [
+            'tanggal_block' => $date,
+            'weekend_price_type' => 'multiplier',
+            'weekend_price_value' => -1,
+        ])->assertRedirect($closed)->assertSessionHasNoErrors();
+
+        $this->assertTrue(OwnerBlockedDate::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->whereDate('tanggal', $date)->exists());
+        $this->assertDatabaseHas('tenants', ['id' => $this->tenant->id, 'weekend_price_type' => 'multiplier', 'weekend_price_value' => 1.5]);
+    }
+
     public function test_closing_a_date_with_paid_bookings_is_refused_with_the_affected_bookings(): void
     {
         $first = $this->bookingOnDate($this->date, ['status' => 'paid', 'namapelanggan' => 'Ani'], '09:00:00');

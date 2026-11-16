@@ -228,7 +228,7 @@ Home of the rule: `product.md` §7 (D-017). Entitlement is decided only by `Enti
      3. set opening hours and open slots;
      4. share the booking link.
 - **Live refresh:** while the page is visible, sections 2–4 refresh every 60 seconds. Values are rendered as text, never as HTML (BQ-089).
-- **Actions:** open the booking panel; mark complete or no-show from a row; follow links.
+- **Actions:** open the booking panel; mark complete or no-show from a row; follow links. After creating a walk-in, show its booking code as a link to the booking panel (D-024, also from the shared form and Kalender).
 - **Not here:** charts, trends, period toggles, service ranking, export (Laporan); lists beyond today and tomorrow (Booking).
 - **Empty states:**
   - a new owner sees the guide;
@@ -243,6 +243,7 @@ Home of the rule: `product.md` §7 (D-017). Entitlement is decided only by `Enti
   - **AC-BRD-05:** The guide shows until all four steps are true from data, and never again afterwards.
   - **AC-BRD-06:** Polling stops while the page is hidden, and the refreshed content is rendered as text.
   - **AC-BRD-07:** The page contains no chart.
+  - **AC-BRD-08:** A successful walk-in shows its booking code and opens that booking's authorized detail panel from the confirmation link.
 
 ### 8.2 Kalender
 
@@ -449,7 +450,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - **weekend rule:** type `none`, `multiplier` or `fixed`, with a value;
   - **peak-hour rules:** name, days, from and to, extra amount, services;
   - **special-date prices:** date, price, services;
-  - **price simulator:** for a chosen service and date, shows the price of each hour;
+  - **price simulator:** for a chosen service and date, shows the price of each hour and the rules that produced it (D-024), including a slot override or any peak extras;
   - **"Terapkan harga dasar ke slot terbuka":** sets the base price on existing future free slots of a service. This replaces the old default-pricing action (YATIM-1).
 - **Tab Libur & Tutup:**
   - closed dates with reason;
@@ -461,6 +462,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
     - service;
     - `harian` (one date) or `rentang` (from–to, capped);
     - start time, end time;
+    - **Isi dari jam buka** fills the times using an opening-hours interval for the selected date (D-024). For a range, it starts with the opening hours of the first date. The owner reviews and saves the slots;
     - interval of 5–480 minutes, defaulting to the service duration;
     - a preview of how many slots will be created and how many already exist, before saving (BQ-107).
   - Deleting a free slot is allowed. A slot with an active booking can be neither deleted nor closed (INV-BOOK-03).
@@ -474,6 +476,8 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - **AC-JBH-03:** A closed date with active bookings is refused until they are handled.
   - **AC-JBH-04:** "Terapkan harga dasar" changes only future free slots.
   - **AC-JBH-05:** The runway warning appears when a service has no free slot in the next 7 days.
+  - **AC-JBH-06:** Filling times from opening hours keeps breaks between intervals distinct and creates no slots until the owner saves.
+  - **AC-JBH-07:** Each simulator result identifies the effective base, weekend, special date or slot override and names each applied peak rule.
 
 ### 8.9 Halaman Booking
 
@@ -644,6 +648,8 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - §2.20: the integrations route;
   - §2.8: the staff routes are replaced by Tim.
 - **Requirements:** FR-TENANT-004, FR-TENANT-005, FR-TENANT-008, FR-BOOKING-012, FR-BOOKING-013, FR-BOOKING-022, FR-NOTIFICATION-001 to FR-NOTIFICATION-007, FR-AUTH-006, FR-INTEGRATION, FR-API, FR-TEAM, FR-REFUND.
+- **Pro webhook actions (D-024):** send a signed test event to a saved endpoint and redeliver a terminal delivery to its original endpoint when the event data is available. The event ID stays the same on redelivery. Booking and refund replay data is retained for up to seven days.
+- **Requirements:** FR-TENANT-004, FR-TENANT-005, FR-TENANT-008, FR-BOOKING-012, FR-BOOKING-013, FR-BOOKING-022, FR-NOTIFICATION-001 to FR-NOTIFICATION-007, FR-AUTH-006, FR-INTEGRATION, FR-API, FR-TEAM, FR-REFUND.
 - **Acceptance criteria:**
   - **AC-SET-01:** The cancellation and reschedule deadlines saved here are the ones `BookingRules` and the customer access page enforce.
   - **AC-SET-02:** Notification preferences survive a reload and another device.
@@ -652,6 +658,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - **AC-SET-05:** Inviting beyond the plan's seats is refused on the server.
   - **AC-SET-06:** A revoked member's session ends at their next request.
   - **AC-SET-07:** Integration secrets are never shown again after saving and are never logged.
+  - **AC-SET-08:** A permitted Pro user can queue a signed test and redeliver an eligible event for their own endpoint. Delivery rechecks the endpoint and plan. The UI explains when replay data has expired or is unavailable.
 
 ### 8.15 Paket & Tagihan
 
@@ -721,6 +728,8 @@ Built once (epic E1) and used by every page above.
 | Empty state (what it is, how to start, one button) | every list | — |
 | Confirm dialog, toast | every destructive or important action | No native `alert` or `confirm` |
 | Permission denied page | every route refused by role | Does not reveal whether the record exists |
+
+Dialog forms submit a hidden `_form` key, including the record ID for an edit. After a validation redirect, the matching form restores its previous input and shows field errors inline. The shared dialog accepts `reopen-for` for a fixed form key, and `x-owner.field-error` can scope a message to a form. The toast summarizes the error.
 
 ## 10. From the current portal to the new one
 

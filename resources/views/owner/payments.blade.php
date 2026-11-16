@@ -122,8 +122,29 @@
 
     {{-- ── Transaksi ── --}}
     @if ($activeTab === 'transaksi')
+        <form method="GET" action="{{ route('owner.payments') }}" class="{{ $card }} flex flex-wrap items-end gap-3 p-4">
+            <input type="hidden" name="tab" value="transaksi">
+            <label class="grid gap-1 text-sm">Cari transaksi
+                <input type="search" name="search" maxlength="100" value="{{ $transactionFilters['search'] }}" placeholder="Nomor pesanan, booking, pelanggan" class="{{ $field }}">
+            </label>
+            <label class="grid gap-1 text-sm">Status pembayaran
+                <select name="status" class="{{ $field }}">
+                    <option value="">Semua status</option>
+                    @foreach ($transactionStatuses as $value => $label)
+                        <option value="{{ $value }}" @selected($transactionFilters['status'] === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </label>
+            @foreach (['from' => 'Dari tanggal', 'to' => 'Sampai tanggal'] as $key => $label)
+                <label class="grid gap-1 text-sm">{{ $label }}
+                    <input type="date" name="{{ $key }}" value="{{ $transactionFilters[$key] }}" class="{{ $field }}">
+                </label>
+            @endforeach
+            <button class="{{ $buttonSecondary }}">Cari</button>
+            <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="px-2 py-2 text-sm text-bq-primary underline">Reset filter</a>
+        </form>
         <section aria-label="Semua transaksi" class="{{ $card }}">
-            @include('owner.partials.payments.transactions', ['rows' => $transactions, 'toneClass' => $toneClass, 'emptyText' => 'Belum ada pembayaran pelanggan.'])
+            @include('owner.partials.payments.transactions', ['rows' => $transactions, 'toneClass' => $toneClass, 'emptyText' => array_filter($transactionFilters) ? 'Tidak ada transaksi yang cocok.' : 'Belum ada pembayaran pelanggan.'])
         </section>
         <div>{{ $transactions->links() }}</div>
     @endif
@@ -158,7 +179,7 @@
         <section aria-labelledby="ledger-title" class="{{ $card }}">
             <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-bq-border px-4 py-3">
                 <h2 id="ledger-title" class="text-base font-semibold text-bq-text">Mutasi saldo</h2>
-                <p class="text-sm text-bq-text-muted">Jumlah mutasi: <span class="font-medium tabular-nums text-bq-text">{{ $rupiah($ledger['total']) }}</span></p>
+                <p class="text-sm text-bq-text-muted">Saldo bersih dari riwayat mutasi <span class="font-medium tabular-nums text-bq-text">{{ $rupiah($ledger['total']) }}</span></p>
             </div>
             @if ($ledger['rows']->total() === 0)
                 <p class="px-4 py-6 text-sm text-bq-text-muted">Belum ada mutasi. Saldo bertambah saat pembayaran booking online berhasil.</p>

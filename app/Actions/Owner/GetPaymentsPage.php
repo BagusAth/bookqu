@@ -8,6 +8,7 @@ use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Payout\PayoutEligibility;
 use App\Domain\Payout\PayoutState;
+use App\Models\Booking;
 use App\Models\OwnerPayout;
 use App\Models\Payment;
 use App\Models\Refund;
@@ -17,6 +18,7 @@ use App\Models\User;
 use App\Support\StatusBadge;
 use App\Support\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -38,15 +40,28 @@ class GetPaymentsPage
     public function __construct(private GetBalanceLedger $getBalanceLedger) {}
 
     /**
+     * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
-    public function execute(Tenant $tenant, User $user, ?string $tab): array
+    public function execute(Tenant $tenant, User $user, ?string $tab, array $filters = []): array
     {
         app(TenantContext::class)->setTenantId($tenant->id);
 
         $activeTab = array_key_exists((string) $tab, self::TABS) ? (string) $tab : 'ringkasan';
         $accounts = TenantPayoutAccount::where('idtenant', $tenant->id)->orderByDesc('is_default')->latest()->get();
         $eligibilityReasons = PayoutEligibility::reasons($tenant, $user);
+        $transactionStatuses = [
+            PaymentState::STATUS_SUKSES => 'Berhasil',
+            PaymentState::STATUS_PENDING => 'Menunggu pembayaran',
+            PaymentState::STATUS_GAGAL => 'Gagal',
+        ];
+        $status = is_string($filters['status'] ?? null) ? $filters['status'] : '';
+        $transactionFilters = [
+            'search' => is_string($filters['search'] ?? null) ? mb_substr(trim($filters['search']), 0, 100) : '',
+            'status' => isset($transactionStatuses[$status]) ? $status : '',
+            'from' => self::validDate($filters['from'] ?? null),
+            'to' => self::validDate($filters['to'] ?? null),
+        ];
 
         $page = [
             'activeTab' => $activeTab,
@@ -60,7 +75,11 @@ class GetPaymentsPage
 
         return $page + match ($activeTab) {
             'ringkasan' => ['latest' => $this->transactions($tenant, 5, 'transaksi', false)],
-            'transaksi' => ['transactions' => $this->transactions($tenant, 20, 'page', true)],
+            'transaksi' => [
+                'transactions' => $this->transactions($tenant, 20, 'page', true, $transactionFilters),
+                'transactionFilters' => $transactionFilters,
+                'transactionStatuses' => $transactionStatuses,
+            ],
             'saldo' => [
                 'ledger' => $this->getBalanceLedger->execute($tenant),
                 'payouts' => OwnerPayout::where('idtenant', $tenant->id)->with('payoutAccount')
@@ -70,6 +89,15 @@ class GetPaymentsPage
             'pengaturan' => ['explanation' => $this->explanation($tenant)],
             default => [],
         };
+    }
+
+    private static function validDate(mixed $value): ?string
+    {
+        if (! is_string($value) || ! preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $value, $parts)) {
+            return null;
+        }
+
+        return checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]) ? $value : null;
     }
 
     /**
@@ -96,12 +124,25 @@ class GetPaymentsPage
     /**
      * Customer payments with their booking, service and refunded amount.
      *
+     * @param  array{search?: string, status?: string, from?: ?string, to?: ?string}  $filters
      * @return LengthAwarePaginator<int, mixed>
      */
-    private function transactions(Tenant $tenant, int $perPage, string $pageName, bool $withQuery): LengthAwarePaginator
+    private function transactions(Tenant $tenant, int $perPage, string $pageName, bool $withQuery, array $filters = []): LengthAwarePaginator
     {
         $payments = Payment::where('idtenant', $tenant->id)
             ->where('tipe', PaymentState::TIPE_BOOKING)
+            ->when($filters['status'] ?? '', fn (Builder $query, string $status) => $query->where('status', $status))
+            ->when($filters['from'] ?? null, fn (Builder $query, string $from) => $query->whereDate('created_at', '>=', $from))
+            ->when($filters['to'] ?? null, fn (Builder $query, string $to) => $query->whereDate('created_at', '<=', $to))
+            ->when($filters['search'] ?? '', function (Builder $query, string $search): void {
+                $term = '%'.$search.'%';
+                $matchBooking = fn (Builder $bookings): Builder => $bookings->where(fn (Builder $details) => $details
+                    ->whereLike('booking_code', $term)->orWhereLike('namapelanggan', $term));
+                $query->where(fn (Builder $matching) => $matching->whereLike('order_id', $term)
+                    ->orWhereLike('nama_pembayar', $term)
+                    ->orWhereHas('bookings', $matchBooking)
+                    ->orWhereHas('booking', $matchBooking));
+            })
             ->with(['bookings:id,idpayment,idlayanan,booking_code,namapelanggan', 'bookings.layanan:id,namalayanan', 'booking:id,idlayanan,booking_code,namapelanggan', 'booking.layanan:id,namalayanan'])
             ->latest('created_at')
             ->latest('id')
@@ -127,6 +168,8 @@ class GetPaymentsPage
                 'customer' => (string) ($first->namapelanggan ?? '-'),
                 'service' => $bookings->map(fn ($booking): string => (string) ($booking->layanan->namalayanan ?? ''))->filter()->unique()->implode(', ') ?: '-',
                 'bookingCode' => (string) ($first->booking_code ?? ''),
+                'bookingPanel' => $first instanceof Booking && filled($first->booking_code) ? route('owner.bookings.panel', $first->id) : null,
+                'bookingHref' => $first instanceof Booking ? route('owner.bookings', ['panel' => $first->id]) : null,
                 'amount' => 'Rp '.number_format((float) $payment->jumlah, 0, ',', '.'),
                 'method' => (string) ($payment->metode ?: '-'),
                 'status' => array_combine(['label', 'tone'], StatusBadge::for('payment', (string) $payment->status)),

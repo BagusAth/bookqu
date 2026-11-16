@@ -102,8 +102,11 @@ class BookingManagementTest extends TestCase
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
             'idschedule' => $this->schedule->id,
+            'tanggalbooking' => $this->schedule->tanggal,
+            'jam' => $this->schedule->jam_mulai,
             'status' => 'paid',
         ]);
+        $this->travelTo(Carbon::parse($this->schedule->tanggal->toDateString().' '.$this->schedule->jam_mulai, 'Asia/Jakarta')->addMinute());
 
         $response = $this->actingAs($this->user)->patch("/owner/bookings/{$booking->id}/status", [
             'status' => 'completed',

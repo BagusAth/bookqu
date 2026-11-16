@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Actions\Service;
 
+use App\Domain\Booking\BookingState;
 use App\Domain\Modules\ModuleRelease;
 use App\Domain\Subscription\EntitlementRules;
+use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Category;
 use App\Models\Service;
@@ -52,10 +54,17 @@ class GetLayananPage
         $search = trim((string) ($filters['search'] ?? ''));
         $status = in_array($filters['status'] ?? 'all', ['all', 'active', 'inactive'], true) ? (string) ($filters['status'] ?? 'all') : 'all';
         $sort = in_array($filters['sort'] ?? 'order', ['order', 'newest', 'name_asc', 'name_desc', 'services'], true) ? (string) ($filters['sort'] ?? 'order') : 'order';
+        $now = now();
+        $showAddOns = ModuleRelease::state('add-ons') === 'released'
+            && EntitlementRules::canAccessFeature($tenant->subscription, 'add-ons')['allowed'];
 
         $services = Service::where('idtenant', $tenant->id)
             ->with(['category', 'units:units.id'])
-            ->withCount('bookings')
+            ->when($showAddOns, fn ($query) => $query->with('additionalItems:additional_items.id'))
+            ->withCount(['bookings', 'bookings as future_booking_count' => fn ($query) => $query
+                ->whereIn('status', [BookingState::STATUS_PAID, BookingState::STATUS_PENDING])
+                ->where(fn ($dates) => $dates->whereDate('tanggalbooking', '>', $now->toDateString())
+                    ->orWhere(fn ($today) => $today->whereDate('tanggalbooking', $now->toDateString())->where('jam', '>=', $now->format('H:i:s'))))])
             ->when($katakunci !== '', fn ($query) => $query->where('namalayanan', 'like', '%'.$katakunci.'%'))
             ->when($categoryFilter !== null, fn ($query) => $query->where('idcategory', $categoryFilter))
             ->orderByDesc('is_active')
@@ -93,6 +102,7 @@ class GetLayananPage
 
         return [
             'unitOptions' => $unitOptions,
+            'addOnOptions' => $showAddOns ? AdditionalItem::where('idtenant', $tenant->id)->orderBy('name')->get(['id', 'name']) : null,
             'services' => $services,
             'serviceCards' => $services->getCollection()->map(fn (Service $service): array => $this->serviceCard($service) + ['imageAssetId' => $assetIdsByPath[(string) $service->image_url] ?? null])->values()->all(),
             'galleryUrl' => Route::has('owner.booking-page') && ModuleRelease::state('booking-page') !== 'hidden' ? route('owner.booking-page', ['section' => 'galeri']) : null,
@@ -128,6 +138,8 @@ class GetLayananPage
             'isActive' => (bool) $service->is_active,
             'isPopular' => (bool) $service->is_popular,
             'bookingCount' => (int) $service->bookings_count,
+            'futureBookingCount' => (int) $service->getAttribute('future_booking_count'),
+            'addOnIds' => $service->relationLoaded('additionalItems') ? $service->additionalItems->pluck('id')->map(fn ($id): string => (string) $id)->all() : [],
             'capacity' => (int) $service->kapasitas,
             'unitIds' => $service->units->pluck('id')->map(fn ($id): string => (string) $id)->all(),
             // AC-LYN-02: a service with any booking can only be deactivated.

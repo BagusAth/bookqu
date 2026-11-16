@@ -123,6 +123,15 @@ class PriceRulesAndOpeningHoursTest extends TestCase
 
         $this->assertSame(['09:00', '10:00', '13:00'], array_column($hours, 'time'));
         $this->assertSame([80000, 80000, 105000], array_column($hours, 'price'));
+        $this->assertSame(['Harga tanggal khusus', 'Harga tanggal khusus', 'Harga tanggal khusus + jam sibuk: Siang'], array_column($hours, 'rule_label'));
+    }
+
+    public function test_simulator_labels_existing_slot_overrides_at_their_exact_start_time(): void
+    {
+        $this->slot('2026-11-07', '09:30', 90500);
+        $this->actingAs($this->owner)
+            ->getJson(route('owner.schedule.price-simulator', ['idlayanan' => $this->service->id, 'tanggal' => '2026-11-07']))
+            ->assertOk()->assertJsonFragment(['time' => '09:30', 'price' => 90500, 'source' => 'override', 'rule_label' => 'Harga khusus slot']);
     }
 
     public function test_apply_base_price_changes_only_future_free_slots(): void

@@ -3,6 +3,7 @@
 namespace App\Actions\Booking;
 
 use App\Domain\Booking\BookingPricing;
+use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Payment\PaymentState;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -12,6 +13,9 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+use stdClass;
 
 final class ListOwnerBookings
 {
@@ -57,19 +61,9 @@ final class ListOwnerBookings
         $time = $now->format('H:i:s');
 
         return match ($tab) {
-            'action' => $query->where(function (Builder $rows) use ($date, $time, $canReview): void {
-                $rows->where(fn (Builder $paid) => $paid->where('status', 'paid')->where(function (Builder $past) use ($date, $time): void {
-                    $past->whereDate('tanggalbooking', '<', $date)
-                        ->orWhere(fn (Builder $sameDay) => $sameDay->whereDate('tanggalbooking', $date)
-                            ->whereExists(fn (QueryBuilder $slot) => $slot->selectRaw('1')->from('schedules')
-                                ->whereColumn('schedules.idtenant', 'bookings.idtenant')->whereColumn('schedules.id', 'bookings.idschedule')
-                                ->where('jam_selesai', '<', $time)));
-                }));
-                if ($canReview) {
-                    $rows->orWhereExists(fn (QueryBuilder $refund) => $refund->selectRaw('1')->from('refund_requests')
-                        ->whereColumn('refund_requests.idtenant', 'bookings.idtenant')->whereColumn('refund_requests.idpayment', 'bookings.idpayment')->where('refund_requests.status', 'open'))
-                        ->orWhereExists(fn (QueryBuilder $cancel) => $cancel->selectRaw('1')->from('booking_cancellation_requests')
-                            ->whereColumn('booking_cancellation_requests.idtenant', 'bookings.idtenant')->whereColumn('booking_id', 'bookings.id')->where('booking_cancellation_requests.status', 'pending'));
+            'action' => $query->where(function (Builder $rows) use ($canReview): void {
+                foreach ($this->actionQueries($canReview) as $reason) {
+                    $rows->orWhereExists($reason);
                 }
             }),
             'upcoming' => $query->where('status', 'paid')->where(fn (Builder $rows) => $rows->whereDate('tanggalbooking', '>', $date)
@@ -79,6 +73,80 @@ final class ListOwnerBookings
             'pending', 'paid', 'cancelled' => $query->where('status', $tab),
             default => $query,
         };
+    }
+
+    /** @return array<string, QueryBuilder> */
+    private function actionQueries(bool $canReview): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        $date = $now->toDateString();
+        $time = $now->format('H:i:s');
+        $ended = DB::query()->selectRaw('1')->from('bookings', 'ended')
+            ->whereColumn('ended.id', 'bookings.id')->where('ended.status', 'paid')
+            ->where(function (QueryBuilder $past) use ($date, $time): void {
+                $past->whereDate('ended.tanggalbooking', '<', $date)
+                    ->orWhere(fn (QueryBuilder $sameDay) => $sameDay->whereDate('ended.tanggalbooking', $date)
+                        ->whereExists(DB::table('schedules')->selectRaw('1')
+                            ->whereColumn('schedules.idtenant', 'ended.idtenant')->whereColumn('schedules.id', 'ended.idschedule')
+                            ->where('jam_selesai', '<', $time)));
+            });
+        $queries = ['needs_outcome' => $ended];
+        if ($canReview) {
+            $queries['needs_refund'] = DB::table('refund_requests')->selectRaw('1')
+                ->whereColumn('refund_requests.idtenant', 'bookings.idtenant')
+                ->whereColumn('refund_requests.idpayment', 'bookings.idpayment')->where('refund_requests.status', 'open');
+            $queries['needs_cancellation'] = DB::table('booking_cancellation_requests')->selectRaw('1')
+                ->whereColumn('booking_cancellation_requests.idtenant', 'bookings.idtenant')
+                ->whereColumn('booking_cancellation_requests.booking_id', 'bookings.id')->where('booking_cancellation_requests.status', 'pending');
+        }
+
+        return $queries;
+    }
+
+    /**
+     * @param  Builder<Booking>  $query
+     * @return Builder<Booking>
+     */
+    public function withActionReasons(Builder $query, bool $canReview): Builder
+    {
+        return $query->select('bookings.*')->addSelect(array_map(
+            fn (QueryBuilder $reason): QueryBuilder => $reason->limit(1),
+            $this->actionQueries($canReview),
+        ));
+    }
+
+    /** @return list<string> */
+    public function reasons(Booking $booking): array
+    {
+        return array_values(array_filter([
+            $booking->getAttribute('needs_outcome') ? 'Sesi berakhir, hasil belum ditandai' : null,
+            $booking->getAttribute('needs_refund') ? 'Permintaan refund menunggu keputusan' : null,
+            $booking->getAttribute('needs_cancellation') ? 'Permintaan pembatalan dari Kasir' : null,
+        ]));
+    }
+
+    /** @return LengthAwarePaginator<int, stdClass> */
+    public function cancellationRequests(Tenant $tenant): LengthAwarePaginator
+    {
+        return DB::table('booking_cancellation_requests as requests')
+            ->join('bookings', fn ($join) => $join->on('bookings.id', '=', 'requests.booking_id')->on('bookings.idtenant', '=', 'requests.idtenant'))
+            ->leftJoin('schedules', fn ($join) => $join->on('schedules.id', '=', 'bookings.idschedule')->on('schedules.idtenant', '=', 'requests.idtenant'))
+            ->leftJoin('tenant_members', fn ($join) => $join->on('tenant_members.iduser', '=', 'requests.requested_by')->on('tenant_members.idtenant', '=', 'requests.idtenant'))
+            ->leftJoin('users', 'users.id', '=', 'tenant_members.iduser')
+            ->where('requests.idtenant', $tenant->id)->where('requests.status', 'pending')->orderBy('requests.id')
+            ->paginate(10, ['requests.id', 'requests.booking_id', 'requests.reason', 'bookings.booking_code', 'bookings.namapelanggan',
+                'bookings.tanggalbooking', 'bookings.jam', 'schedules.jam_mulai', 'schedules.jam_selesai', 'users.namalengkap as requester'],
+                pageName: 'permintaan')
+            ->withQueryString()
+            ->through(function (stdClass $item): stdClass {
+                $date = Carbon::parse($item->tanggalbooking);
+                $range = $item->jam_mulai !== null && $item->jam_selesai !== null
+                    ? BookingTimeRange::forSlot($date->toDateString(), $item->jam_mulai, $item->jam_selesai)
+                    : BookingTimeRange::withoutSlot($date->toDateString(), (string) $item->jam);
+                $item->session = $date->format('d/m/Y').' · '.$range->label().' WIB';
+
+                return $item;
+            });
     }
 
     public function paidAmount(Booking $booking): ?int

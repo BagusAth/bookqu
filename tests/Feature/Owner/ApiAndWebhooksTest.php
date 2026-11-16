@@ -13,6 +13,7 @@ use App\Models\OwnerApiKey;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\WebhookEndpoint;
 use App\Notifications\OwnerWebhookFailed;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,7 +53,7 @@ final class ApiAndWebhooksTest extends TestCase
         $token = $created->viewData('credential');
         $key = DB::table('owner_api_keys')->where('idtenant', $this->tenant->id)->first();
         $this->assertSame(hash('sha256', $token), $key->digest);
-        $this->get(route('owner.api.index'))->assertOk()->assertDontSee($token);
+        $this->get(route('owner.settings.business', ['tab' => 'integrasi']))->assertOk()->assertDontSee($token);
 
         $this->withToken($token)->getJson('/api/v1/services')->assertOk()
             ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $mine->id)
@@ -91,6 +92,36 @@ final class ApiAndWebhooksTest extends TestCase
                 && $request['subject_id'] === 321;
         });
         $this->assertDatabaseHas('webhook_deliveries', ['id' => $job->deliveryId, 'attempts' => 2, 'http_status' => 204, 'status' => 'delivered']);
+    }
+
+    public function test_owner_can_test_an_endpoint_and_redeliver_the_same_event(): void
+    {
+        Bus::fake([DeliverOwnerWebhook::class]);
+        Http::preventStrayRequests();
+        Http::fake(['https://8.8.8.8/*' => Http::response(status: 204)]);
+        $endpoint = WebhookEndpoint::factory()->create([
+            'idtenant' => $this->tenant->id, 'url' => 'https://8.8.8.8/hook',
+        ]);
+        $foreign = WebhookEndpoint::factory()->create(['idtenant' => Tenant::factory()->create()->id]);
+        $this->actingAs($this->owner)->post('/owner/settings/api/webhooks/'.$foreign->id.'/test')->assertNotFound();
+        $this->post('/owner/settings/api/webhooks/'.$endpoint->id.'/test')->assertSessionHasNoErrors();
+        $test = Bus::dispatched(DeliverOwnerWebhook::class)->sole();
+        $test->handle(app(TenantContext::class), app(SignedWebhook::class));
+        Http::assertSent(fn (Request $request): bool => $request['event'] === 'webhook.test' && $request['subject_id'] === null);
+
+        event(new BookingIntegrationEvent('booking.paid', $this->tenant->id, 321));
+        $original = Bus::dispatched(DeliverOwnerWebhook::class)->last();
+        $original->handle(app(TenantContext::class), app(SignedWebhook::class));
+        $eventId = DB::table('webhook_deliveries')->where('id', $original->deliveryId)->value('event_id');
+        $url = '/owner/settings/api/deliveries/'.$original->deliveryId.'/redeliver';
+        $this->post($url)->assertSessionHasNoErrors();
+        $this->post($url)->assertSessionHasErrors('delivery');
+        $retry = Bus::dispatched(DeliverOwnerWebhook::class)->last();
+        $this->assertSame($original->deliveryId, $retry->deliveryId);
+        $this->assertSame(321, $retry->subjectId);
+        $retry->handle(app(TenantContext::class), app(SignedWebhook::class));
+        $this->assertDatabaseHas('webhook_deliveries', ['id' => $retry->deliveryId, 'event_id' => $eventId, 'status' => 'delivered']);
+        Http::assertSentCount(3);
     }
 
     public function test_exhausted_webhook_notifies_the_owner_and_logs_are_pruned_after_30_days(): void

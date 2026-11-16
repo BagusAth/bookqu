@@ -33,6 +33,7 @@ class OwnerCustomerController extends Controller
             (string) $request->query('search', ''),
             is_string($request->query('filter')) ? $request->query('filter') : null,
             $canViewRevenue,
+            $request->string('sort')->toString(),
         );
 
         return view('owner.customers', $page + ['tenant' => $tenant, 'canViewRevenue' => $canViewRevenue]);

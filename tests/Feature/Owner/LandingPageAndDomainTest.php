@@ -186,6 +186,14 @@ class LandingPageAndDomainTest extends TestCase
         $this->assertSame(0, TenantLandingPage::withoutGlobalScopes()->count());
     }
 
+    public function test_landing_preview_renders_unsaved_fields_without_persisting_them(): void
+    {
+        $this->actingAs($this->owner)->post('/owner/booking-page/landing/preview', [
+            'template' => 'modern', 'headline' => 'Judul belum disimpan', 'sections' => ['layanan'], 'action' => 'save',
+        ])->assertOk()->assertSeeText('Judul belum disimpan');
+        $this->assertDatabaseMissing('tenant_landing_pages', ['idtenant' => $this->tenant->id, 'headline' => 'Judul belum disimpan']);
+    }
+
     public function test_a_published_landing_page_disappears_when_the_plan_drops_below_pro_and_its_banner_follows_the_gallery(): void
     {
         $banner = $this->asset();

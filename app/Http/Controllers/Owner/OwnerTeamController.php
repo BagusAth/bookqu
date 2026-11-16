@@ -3,32 +3,18 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Team\ManageTeam;
-use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
-use App\Models\TenantMember;
 use App\Models\User;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\View\View;
 
 final class OwnerTeamController extends Controller
 {
-    public function index(TenantContext $context, ManageTeam $team): View
+    public function index(): RedirectResponse
     {
-        $tenant = $context->tenant();
-        abort_if($tenant === null, 403);
-
-        return view('owner.team', [
-            'members' => TenantMember::with('user')->whereNotNull('accepted_at')->whereNull('revoked_at')->orderBy('id')->get(),
-            'invitations' => $team->pending()->where('idtenant', $tenant->id)->get(['id', 'email', 'role', 'expires_at']),
-            'activity' => DB::table('tenant_activity_logs')->leftJoin('users', 'users.id', '=', 'tenant_activity_logs.iduser')
-                ->where('tenant_activity_logs.idtenant', $tenant->id)->orderByDesc('tenant_activity_logs.id')
-                ->paginate(20, ['tenant_activity_logs.*', 'users.namalengkap as actor_name']),
-            'seatLimit' => EntitlementRules::teamLimit($tenant->subscription),
-        ]);
+        return redirect()->route('owner.settings.business', ['tab' => 'tim'], 301);
     }
 
     public function invite(Request $request, TenantContext $context, ManageTeam $team): RedirectResponse

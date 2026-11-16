@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Schedule\BulkCreateSchedules;
+use App\Actions\Schedule\ChangeSelectedSlots;
 use App\Actions\Schedule\DeleteBlockedDate;
 use App\Actions\Schedule\DeleteSchedule;
 use App\Actions\Schedule\GetSlotRunway;
@@ -15,6 +16,7 @@ use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingTimeRange;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Schedule\BulkCreateScheduleRequest;
+use App\Http\Requests\Schedule\ChangeSelectedSlotsRequest;
 use App\Http\Requests\Schedule\UpdateAvailabilityRequest;
 use App\Http\Requests\Schedule\UpdateSlotRequest;
 use App\Models\Booking;
@@ -28,6 +30,7 @@ use App\Services\Schedule\ScheduleAvailabilityCache;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -56,11 +59,7 @@ class OwnerScheduleController extends Controller
         $data = compact('tenant', 'tabs', 'tab', 'weekdays', 'runway', 'daftarlayanan');
 
         if ($tab === 'hours') {
-            $data['openingHours'] = OpeningHour::where('idtenant', $tenant->id)->orderBy('opens_at')->get()->groupBy('day_of_week')
-                ->map(fn ($intervals) => $intervals->map(fn ($interval) => [
-                    'opens_at' => substr((string) $interval->opens_at, 0, 5),
-                    'closes_at' => substr((string) $interval->closes_at, 0, 5),
-                ])->values());
+            $data['openingHours'] = $this->openingHours($tenant);
         } elseif ($tab === 'prices') {
             $data['peakRules'] = PeakHourRule::where('idtenant', $tenant->id)->with('services')->orderBy('name')->get();
             $data['specialDates'] = SpecialDatePrice::where('idtenant', $tenant->id)->with('service')->orderBy('tanggal')->get();
@@ -68,9 +67,20 @@ class OwnerScheduleController extends Controller
             $data['blockedDates'] = $tenant->blockedDates()->orderByDesc('tanggal')->get();
         } else {
             $data += $this->slotPage($request, $tenant, $priceSlots);
+            $data['openingHours'] = $this->openingHours($tenant);
         }
 
         return view('owner.schedule', $data);
+    }
+
+    /** @return array<int, list<array{opens_at: string, closes_at: string}>> */
+    private function openingHours(Tenant $tenant): array
+    {
+        return OpeningHour::where('idtenant', $tenant->id)->orderBy('opens_at')->get()->groupBy('day_of_week')
+            ->map(fn ($intervals) => $intervals->map(fn (OpeningHour $interval): array => [
+                'opens_at' => substr((string) $interval->opens_at, 0, 5),
+                'closes_at' => substr((string) $interval->closes_at, 0, 5),
+            ])->values()->all())->all();
     }
 
     /** @return array<string, mixed> */
@@ -85,6 +95,7 @@ class OwnerScheduleController extends Controller
             ->when($selectedService > 0, fn (Builder $query) => $query->where('idlayanan', $selectedService))
             ->with('layanan')
             ->withExists(['bookings as occupied' => fn (Builder $query) => BookingRules::applyOccupiesSlotCondition($query)])
+            ->with(['bookings' => fn ($query) => BookingRules::applyOccupiesSlotCondition($query->getQuery())->select(['id', 'idschedule', 'booking_code'])])
             ->orderBy('tanggal')->orderBy('jam_mulai')->get();
         $slotPrices = $prices->execute($tenant, $slots);
         $slotTimes = $slots->mapWithKeys(fn (Schedule $slot): array => [
@@ -122,13 +133,25 @@ class OwnerScheduleController extends Controller
         );
     }
 
-    public function updateSlot(UpdateSlotRequest $request, int $slot, UpdateSlot $updateSlot): RedirectResponse
+    public function updateSlot(UpdateSlotRequest $request, int $slot, UpdateSlot $updateSlot): RedirectResponse|JsonResponse
     {
         $tenant = $this->resolveTenant() ?? abort(404);
         $price = $request->validated('harga_override');
         $updateSlot->execute($tenant, $slot, (string) $request->validated('operation'), $price === null ? null : (int) $price);
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Slot berhasil diperbarui.']);
+        }
+
         return back()->with('sukses', 'Slot berhasil diperbarui.');
+    }
+
+    public function changeSelectedSlots(ChangeSelectedSlotsRequest $request, ChangeSelectedSlots $change): RedirectResponse
+    {
+        $tenant = $this->resolveTenant() ?? abort(404);
+        $change->execute($tenant, $request->validated('slot_ids'), (string) $request->validated('operation'));
+
+        return back()->with('sukses', 'Slot yang dipilih berhasil diperbarui.');
     }
 
     /**

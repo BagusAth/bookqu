@@ -15,22 +15,34 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('scheduleOpeningHours', (openingHours) => ({
         nextKey: 0,
         days: {},
+        closed: {},
         errors: [],
         busy: false,
         init() {
             for (let day = 1; day <= 7; day++) {
                 this.days[day] = (openingHours[day] ?? []).map(interval => ({ ...interval, key: ++this.nextKey }));
+                this.closed[day] = this.days[day].length === 0;
             }
         },
         add(day) {
             this.days[day].push({ key: ++this.nextKey, opens_at: '', closes_at: '' });
+        },
+        toggle(day) {
+            if (!this.closed[day] && this.days[day].length === 0) this.add(day);
+        },
+        copyToAll(source) {
+            for (let day = 1; day <= 7; day++) {
+                if (day === source) continue;
+                this.days[day] = this.days[source].map(interval => ({ ...interval, key: ++this.nextKey }));
+                this.closed[day] = this.closed[source];
+            }
         },
         async save(form) {
             this.busy = true;
             this.errors = [];
             const fields = new FormData(form);
             const days = Object.fromEntries(Object.entries(this.days).map(([day, intervals]) => [
-                day, intervals.map(({ opens_at, closes_at }) => ({ opens_at, closes_at })),
+                day, this.closed[day] ? [] : intervals.map(({ opens_at, closes_at }) => ({ opens_at, closes_at })),
             ]));
             try {
                 const response = await fetch(form.action, {
@@ -58,12 +70,32 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    Alpine.data('scheduleBulkPreview', () => ({
+    Alpine.data('scheduleBulkPreview', (openingHours) => ({
         period: 'harian',
         preview: null,
         checkedFields: '',
         error: '',
         busy: false,
+        openingChoices: [],
+        openingWarning: '',
+        useOpeningHours(form) {
+            const value = this.period === 'harian' ? form.elements.tanggal.value : form.elements.tanggalmulai.value;
+            if (!value) {
+                this.openingWarning = 'Pilih tanggal terlebih dahulu.';
+                return;
+            }
+            const weekday = new Date(value + 'T00:00:00Z').getUTCDay() || 7;
+            this.openingChoices = openingHours[weekday] || [];
+            this.openingWarning = this.openingChoices.length ? '' : 'Jam buka untuk hari ini belum diatur.';
+            if (this.openingChoices.length === 1) this.applyOpeningHours(form, this.openingChoices[0]);
+        },
+        applyOpeningHours(form, interval) {
+            form.elements.jammulai.value = interval.opens_at;
+            form.elements.jamselesai.value = interval.closes_at;
+            this.preview = null;
+            this.openingChoices = [];
+            this.openingWarning = '';
+        },
         fingerprint(form) {
             return new URLSearchParams(new FormData(form)).toString();
         },

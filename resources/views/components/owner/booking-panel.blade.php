@@ -21,6 +21,10 @@
 @php
     $panelBadge = "{ 'bg-bq-info-bg text-bq-info': %s === 'info', 'bg-bq-success-bg text-bq-success': %s === 'success', 'bg-bq-warning-bg text-bq-warning': %s === 'warning', 'bg-bq-danger-bg text-bq-danger': %s === 'danger', 'bg-bq-background text-bq-text-muted': !['info','success','warning','danger'].includes(%s) }";
     $badge = fn (string $expression) => sprintf($panelBadge, $expression, $expression, $expression, $expression, $expression);
+    $bookingForm = $errors->any() && is_string(old('_form')) ? old('_form') : '';
+    $reopenBooking = preg_match('/^booking-reason-([1-9][0-9]*)-/', $bookingForm, $bookingFormMatch)
+        ? route('owner.bookings.panel', (int) $bookingFormMatch[1])
+        : null;
 @endphp
 
 <x-owner.drawer
@@ -28,6 +32,7 @@
     title="Detail booking"
     behaviour="ownerPanel('owner-booking-panel')"
     x-on:open-booking-panel.window="load($event)"
+    x-init="if (@js($reopenBooking)) $nextTick(() => $dispatch('open-booking-panel', { url: @js($reopenBooking) }))"
 >
     <x-slot:heading>
         <span x-text="data ? data.code : 'Detail booking'">Detail booking</span>
@@ -111,10 +116,11 @@
     </template>
 
     <x-slot:footer>
+        <p x-show="data?.action_hint" class="w-full text-sm text-bq-text-muted" x-text="data?.action_hint"></p>
         <template x-if="data && data.actions && data.actions.length">
             <div class="flex w-full flex-col gap-3">
                 <template x-for="(action, index) in data.actions" x-bind:key="index">
-                    <div>
+                    <div x-data="{ showReason: action.reason && action.form_key === @js($bookingForm) }">
                         <template x-if="action.reschedule">
                             <button type="button" class="w-full rounded-lg border border-bq-border px-4 py-2 text-sm font-medium"
                                 @click="hide(); $dispatch('open-owner-reschedule', { booking: action.reschedule })" x-text="action.label"></button>
@@ -127,15 +133,25 @@
                                     <input type="hidden" :name="name" :value="value">
                                 </template>
                                 <template x-if="action.reason">
-                                    <div>
+                                    <div x-show="showReason">
+                                        <input type="hidden" name="_form" :value="action.form_key">
                                         <label class="mb-1 block text-sm font-medium text-bq-text" x-bind:for="'booking-panel-reason-' + index" x-text="action.reason.label"></label>
-                                        <textarea x-bind:id="'booking-panel-reason-' + index" x-bind:name="action.reason.name" required maxlength="500" rows="2" class="w-full rounded-lg border border-bq-border px-3 py-2 text-sm"></textarea>
+                                        <textarea x-bind:id="'booking-panel-reason-' + index" x-bind:name="action.reason.name" :value="action.form_key === @js($bookingForm) ? @js(old('reason')) : ''" :disabled="!showReason" required maxlength="500" rows="2" class="w-full rounded-lg border border-bq-border px-3 py-2 text-sm"></textarea>
+                                        @if ($reopenBooking)
+                                            <x-owner.field-error name="reason" x-cloak x-show="action.form_key === @js($bookingForm)" />
+                                            <x-owner.field-error name="error" x-cloak x-show="action.form_key === @js($bookingForm)" />
+                                        @endif
                                     </div>
                                 </template>
                                 <button
                                     type="button"
                                     x-on:click="
                                         const form = $el.form;
+                                        if (action.reason && !showReason) {
+                                            showReason = true;
+                                            $nextTick(() => form.querySelector('textarea').focus());
+                                            return;
+                                        }
                                         if (!form.reportValidity()) return;
                                         if (action.confirm) {
                                             $dispatch('open-confirm', { title: action.confirm.title, message: action.confirm.message, formId: form.id, confirmText: action.label, tone: action.tone === 'danger' ? 'danger' : 'primary' });

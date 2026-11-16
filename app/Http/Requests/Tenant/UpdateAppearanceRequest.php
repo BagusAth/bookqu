@@ -34,7 +34,6 @@ class UpdateAppearanceRequest extends FormRequest
             'button_style' => ['nullable', 'string', Rule::in(array_keys(StorefrontBranding::BUTTON_STYLES))],
             'card_style' => ['nullable', 'string', Rule::in(array_keys(StorefrontBranding::CARD_STYLES))],
             'font_family' => ['nullable', 'string', Rule::in(StorefrontBranding::FONTS)],
-            'deskripsi' => ['nullable', 'string', 'max:1000'],
             'logo_asset_id' => ['nullable', 'integer', $ownAsset],
             'cover_asset_id' => ['nullable', 'integer', $ownAsset],
         ];

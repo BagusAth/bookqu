@@ -27,7 +27,7 @@
                         </td>
                         <td class="px-4 py-3 text-bq-text">
                             {{ $row['customer'] }}
-                            @if ($row['bookingCode'] !== '')<span class="block text-xs text-bq-text-muted">{{ $row['bookingCode'] }}</span>@endif
+                            @include('owner.partials.payments.booking-link')
                         </td>
                         <td class="px-4 py-3 text-bq-text-muted">{{ $row['service'] }}</td>
                         <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums text-bq-text">
@@ -51,6 +51,7 @@
                 </div>
                 <p class="text-xs text-bq-text-muted">{{ $row['orderId'] }} · {{ $row['time'] }}</p>
                 <p class="text-xs text-bq-text-muted">{{ $row['service'] }} · {{ $row['method'] }}</p>
+                @include('owner.partials.payments.booking-link')
                 <p class="tabular-nums text-bq-text">{{ $row['amount'] }}@if ($row['refund']) <span class="text-xs text-bq-danger">· {{ $row['refund'] }}</span>@endif</p>
             </li>
         @endforeach

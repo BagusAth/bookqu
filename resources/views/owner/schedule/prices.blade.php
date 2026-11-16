@@ -26,6 +26,7 @@
         x-data="{ type: @js(old('weekend_price_type', $tenant->weekend_price_type ?? 'none')) }">
         @csrf
         <h2 class="font-semibold">Harga akhir pekan</h2>
+        <p class="text-sm text-bq-text-muted">Berlaku pada Sabtu dan Minggu.</p>
         <div class="flex flex-wrap items-end gap-3">
             <label class="grid gap-1 text-sm">Aturan
         <select name="weekend_price_type" x-model="type" class="rounded border border-bq-border bg-bq-surface p-2">
@@ -48,10 +49,11 @@
             <details class="rounded border border-bq-border p-3">
                 <summary class="cursor-pointer">{{ $rule->name }} · +Rp {{ number_format($rule->extra_amount, 0, ',', '.') }}</summary>
                 @include('owner.schedule.peak-rule', ['rule' => $rule])
-                <form method="POST" action="{{ route('owner.schedule.peak-rules.destroy', $rule) }}" class="mt-2">
+                <form method="POST" id="delete-peak-{{ $rule->id }}" x-data action="{{ route('owner.schedule.peak-rules.destroy', $rule) }}" class="mt-2">
                     @csrf
                     @method('DELETE')
-                    <button class="text-sm text-bq-primary underline">Hapus aturan</button>
+                    <button type="button" class="text-sm text-bq-danger underline"
+                        @click="$dispatch('open-confirm', { title: 'Hapus aturan jam sibuk?', message: 'Tambahan harga dari aturan ini akan berhenti berlaku.', formId: $el.form.id })">Hapus aturan</button>
                 </form>
             </details>
         @endforeach
@@ -65,11 +67,12 @@
         <section class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
             <h2 class="font-semibold">Harga tanggal khusus</h2>
             @foreach ($specialDates as $special)
-                <form method="POST" action="{{ route('owner.schedule.special-dates.destroy', $special) }}" class="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <form method="POST" id="delete-special-{{ $special->id }}" x-data action="{{ route('owner.schedule.special-dates.destroy', $special) }}" class="flex flex-wrap items-center justify-between gap-2 text-sm">
                     @csrf
                     @method('DELETE')
                     <span>{{ $special->tanggal->format('d/m/Y') }} · {{ $special->service?->namalayanan }} · Rp {{ number_format($special->price, 0, ',', '.') }}</span>
-                    <button class="text-bq-primary underline">Hapus harga khusus</button>
+                    <button type="button" class="text-bq-danger underline"
+                        @click="$dispatch('open-confirm', { title: 'Hapus harga khusus?', message: 'Tanggal ini kembali mengikuti aturan harga lain yang berlaku.', formId: $el.form.id })">Hapus harga khusus</button>
                 </form>
             @endforeach
             <form method="POST" action="{{ route('owner.schedule.special-dates.store') }}" class="grid gap-3 sm:grid-cols-3">
@@ -80,13 +83,17 @@
                 <label class="grid gap-1 text-sm">Harga (Rp)
         <input type="number" name="price" required min="0" max="100000000" class="rounded border border-bq-border bg-bq-surface p-2">
     </label>
-                <label class="grid gap-1 text-sm">Layanan
-        <select name="service_ids[]" multiple required class="rounded border border-bq-border bg-bq-surface p-2">
-                        @foreach ($daftarlayanan as $service)
-                            <option value="{{ $service->id }}">{{ $service->namalayanan }}</option>
-                        @endforeach
-                    </select>
-    </label>
+                <fieldset class="space-y-2 text-sm">
+                    <legend class="font-semibold">Layanan</legend>
+                    @foreach ($daftarlayanan as $service)
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" @checked(in_array($service->id, (array) old('service_ids', [])))>
+                            {{ $service->namalayanan }}
+                        </label>
+                    @endforeach
+                    <x-owner.field-error name="service_ids" />
+                    <x-owner.field-error name="service_ids.*" />
+                </fieldset>
                 <div><button class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white">Simpan harga khusus</button></div>
             </form>
         </section>
@@ -111,7 +118,10 @@
             <p x-show="error" x-cloak x-text="error" role="alert" class="text-sm"></p>
             <ul class="grid gap-2 text-sm sm:grid-cols-3" aria-live="polite">
                 <template x-for="hour in hours" :key="hour.time">
-                    <li class="rounded border border-bq-border p-2 tabular-nums" x-text="hour.time + ' · ' + rupiah.format(hour.price)"></li>
+                    <li class="rounded border border-bq-border p-2">
+                        <span class="font-medium tabular-nums" x-text="hour.time + ' · ' + rupiah.format(hour.price)"></span>
+                        <span class="block text-xs text-bq-text-muted" x-text="hour.rule_label"></span>
+                    </li>
                 </template>
             </ul>
         </form>

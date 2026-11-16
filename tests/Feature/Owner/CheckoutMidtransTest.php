@@ -3,14 +3,17 @@
 namespace Tests\Feature\Owner;
 
 use App\Domain\Payment\ProviderOutcome;
+use App\Domain\Subscription\SubscriptionState;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -357,13 +360,12 @@ class CheckoutMidtransTest extends TestCase
         $response->assertSee('Nomor WhatsApp');
 
         // Stepper
-        $response->assertSee('Review Pesanan');
+        $response->assertSee('Periksa pesanan');
         $response->assertSee('Pembayaran');
         $response->assertSee('Invoice');
 
         // Plan details
         $response->assertSee('Paket Pro');
-        $response->assertSee('PRO TIER');
         $response->assertSee('Rp 100.000');
         $response->assertSee('Masa Aktif Langganan');
         $response->assertSee('1 Bulan');
@@ -372,11 +374,11 @@ class CheckoutMidtransTest extends TestCase
         // Trust badges & buttons
         $response->assertSee('Aktivasi Instan Otomatis');
         $response->assertSee('Transaksi Aman & Terenkripsi 256-bit SSL');
-        $response->assertSee('Lanjut ke Pembayaran →');
+        $response->assertSee('Lanjut ke pembayaran');
         $response->assertSee('id="btn-checkout-submit"', false);
         $response->assertSee('id="btn-checkout-submit-mobile"', false);
         $response->assertSee('id="btn-back-subscription"', false);
-        $response->assertSee('Kembali ke Subscription');
+        $response->assertSee('Kembali ke Paket & Tagihan');
 
         // Double-submit protection
         $response->assertSee('isSubmitting', false);
@@ -387,6 +389,17 @@ class CheckoutMidtransTest extends TestCase
         $response->assertDontSee('Selesaikan dalam');
         $response->assertDontSee('name="catatan"', false);
         $response->assertDontSee('Catatan Tambahan');
+    }
+
+    public function test_checkout_links_to_the_business_connected_storefront_domain(): void
+    {
+        $this->tenant->forceFill([
+            'custom_domain' => 'studio.example.test',
+            'custom_domain_status' => 'connected',
+        ])->save();
+
+        $this->actingAs($this->user)->get(route('owner.checkout', $this->plan))
+            ->assertOk()->assertSee('href="https://studio.example.test', false);
     }
 
     public function test_owner_checkout_review_page_renders_small_and_medium_tier_styling_correctly(): void
@@ -404,11 +417,13 @@ class CheckoutMidtransTest extends TestCase
             ->get("/owner/checkout/{$smallPlan->id}");
 
         $responseSmall->assertStatus(200);
-        $responseSmall->assertSee('STARTER');
         $responseSmall->assertSee('Paket Small');
-        $responseSmall->assertSee('5 layanan aktif');
-        $responseSmall->assertSee('Hingga 300 booking / bulan');
+        $responseSmall->assertSee('Hingga 5 layanan');
+        $responseSmall->assertSee('Hingga 300 booking/bulan');
         $responseSmall->assertSee('Rp 149.000');
+        // Plan text comes from the one plan capability list (D-017), never from copy written in the view.
+        $responseSmall->assertDontSee('1 admin + 2 staf');
+        $responseSmall->assertDontSee('e-invoice');
 
         $mediumPlan = Plan::create([
             'namapaket' => 'medium',
@@ -423,11 +438,36 @@ class CheckoutMidtransTest extends TestCase
             ->get("/owner/checkout/{$mediumPlan->id}");
 
         $responseMedium->assertStatus(200);
-        $responseMedium->assertSee('POPULER');
+        $responseMedium->assertSee('Populer');
         $responseMedium->assertSee('Paket Medium');
-        $responseMedium->assertSee('Unlimited layanan katalog');
-        $responseMedium->assertSee('Hingga 500 booking / bulan');
+        $responseMedium->assertSee('Layanan tanpa batas');
+        $responseMedium->assertSee('Hingga 500 booking/bulan');
         $responseMedium->assertSee('Rp 299.000');
+        $responseMedium->assertDontSee('Hingga 15 akun staf');
+        $responseMedium->assertDontSee('fitur CRM');
+    }
+
+    public function test_checkout_shows_the_period_a_renewal_extends_from_the_current_end_date(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-16 10:00:00', 'Asia/Jakarta'));
+        Subscription::create(['idtenant' => $this->tenant->id, 'idplan' => $this->plan->id, 'status' => SubscriptionState::STATUS_ACTIVE,
+            'langganan_mulai' => now()->subDays(20), 'langganan_berakhir' => Carbon::parse('2026-11-26 10:00:00', 'Asia/Jakarta')]);
+
+        $this->actingAs($this->user)->get(route('owner.checkout', $this->plan))->assertOk()
+            ->assertSeeText('1 Bulan (26 Nov 2026 – 26 Des 2026)')
+            ->assertSeeText('Perpanjangan disambung dari tanggal berakhir paket Anda sekarang.');
+    }
+
+    public function test_checkout_shows_a_new_plan_starting_when_the_payment_succeeds(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-16 10:00:00', 'Asia/Jakarta'));
+        $other = Plan::create(['namapaket' => 'medium', 'hargabulanan' => 299000, 'maxlayanan' => 0, 'maxbooking' => 500, 'isunlimited' => false]);
+        Subscription::create(['idtenant' => $this->tenant->id, 'idplan' => $other->id, 'status' => SubscriptionState::STATUS_ACTIVE,
+            'langganan_mulai' => now()->subDays(20), 'langganan_berakhir' => now()->addDays(10)]);
+
+        $this->actingAs($this->user)->get(route('owner.checkout', $this->plan))->assertOk()
+            ->assertSeeText('1 Bulan (16 Nov 2026 – 16 Des 2026)')
+            ->assertSeeText('Mulai berlaku saat pembayaran berhasil.');
     }
 
     public function test_owner_checkout_displays_existing_pending_payment_alert_banner(): void

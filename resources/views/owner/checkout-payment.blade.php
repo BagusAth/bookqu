@@ -11,7 +11,7 @@
             <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-md shadow-bq-primary/30">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
-            <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Review</span>
+            <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pesanan</span>
         </div>
         <div class="mx-3 h-0.5 w-8 rounded bg-bq-primary sm:w-16"></div>
         <div class="flex items-center gap-2">
@@ -39,20 +39,20 @@
             <div class="rounded-xl border border-bq-border bg-bq-surface p-4 sm:p-6 space-y-5">
 
                 {{-- Status Indicator --}}
-                <div class="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-4">
+                <div class="flex items-center justify-between gap-3 rounded-xl border border-bq-warning bg-bq-warning-bg/80 p-4">
                     <div class="flex min-w-0 items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 shrink-0">
-                            <svg class="h-5 w-5 text-amber-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-bq-warning-bg shrink-0">
+                            <svg class="h-5 w-5 text-bq-warning animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-amber-800">Menunggu Pembayaran</p>
-                            <p class="text-xs text-amber-700 break-all">Order ID: <span class="font-mono font-bold">{{ $payment->order_id }}</span></p>
+                            <p class="text-sm font-semibold text-bq-warning">Menunggu Pembayaran</p>
+                            <p class="text-xs text-bq-warning break-all">Nomor pesanan: <span class="font-mono font-bold">{{ $payment->order_id }}</span></p>
                         </div>
                     </div>
-                    <div class="hidden sm:flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
+                    <div class="hidden sm:flex items-center gap-1.5 text-xs font-medium text-bq-success bg-bq-success-bg border border-bq-success px-3 py-1.5 rounded-full">
                         <span class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-bq-success opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-bq-success"></span>
                         </span>
                         Auto-detect aktif
                     </div>
@@ -95,7 +95,7 @@
                     <button type="button" id="btn-check-status"
                         @click="checkStatus(false)"
                         :disabled="isChecking"
-                        class="w-full rounded-xl border border-emerald-200 bg-emerald-50 py-3 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100 hover:border-emerald-300 flex items-center justify-center gap-2 disabled:opacity-50">
+                        class="w-full rounded-xl border border-bq-success bg-bq-success-bg py-3 text-sm font-semibold text-bq-success transition-all hover:bg-bq-success-bg hover:border-bq-success flex items-center justify-center gap-2 disabled:opacity-50">
                         <template x-if="!isChecking">
                             <span class="flex items-center gap-2">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -114,13 +114,13 @@
                 {{-- Status Message --}}
                 <div x-show="statusMessage" x-transition
                     :class="{
-                        'bg-emerald-50 border-emerald-200 text-emerald-800': statusType === 'sukses',
-                        'bg-amber-50 border-amber-200 text-amber-800': statusType === 'pending',
-                        'bg-rose-50 border-rose-200 text-rose-800': statusType === 'gagal' || statusType === 'error'
+                        'bg-bq-success-bg border-bq-success text-bq-success': statusType === 'sukses',
+                        'bg-bq-warning-bg border-bq-warning text-bq-warning': statusType === 'pending',
+                        'bg-bq-danger-bg border-bq-danger text-bq-danger': statusType === 'gagal' || statusType === 'error'
                     }"
                     class="rounded-lg border p-3.5 text-sm font-medium flex items-center gap-2">
                     <template x-if="statusType === 'sukses'">
-                        <svg class="h-5 w-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <svg class="h-5 w-5 text-bq-success shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </template>
                     <span x-text="statusMessage"></span>
                 </div>
@@ -155,17 +155,17 @@
         <div class="lg:col-span-2 space-y-4">
 
             {{-- Countdown Timer --}}
-            <div class="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4">
+            <div class="rounded-xl border border-bq-warning bg-gradient-to-r from-bq-warning-bg to-bq-warning-bg p-4">
                 <div class="flex items-center gap-2">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">
-                        <svg class="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-bq-warning/20">
+                        <svg class="h-4 w-4 text-bq-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                     <div>
-                        <p class="text-xs font-medium text-amber-700">Batas waktu pembayaran</p>
-                        <p class="text-lg font-bold tabular-nums" :class="countdown <= 300 ? 'text-red-600' : 'text-amber-800'" x-text="countdownDisplay">--:--</p>
+                        <p class="text-xs font-medium text-bq-warning">Batas waktu pembayaran</p>
+                        <p class="text-lg font-bold tabular-nums" :class="countdown <= 300 ? 'text-bq-danger' : 'text-bq-warning'" x-text="countdownDisplay">--:--</p>
                     </div>
                 </div>
-                <p x-show="countdown <= 300 && countdown > 0" class="mt-2 text-xs font-medium text-red-600 animate-pulse">⚠️ Waktu hampir habis! Segera selesaikan pembayaran.</p>
+                <p x-show="countdown <= 300 && countdown > 0" class="mt-2 text-xs font-medium text-bq-danger animate-pulse">⚠️ Waktu hampir habis! Segera selesaikan pembayaran.</p>
             </div>
 
             {{-- Order Summary --}}
@@ -197,7 +197,7 @@
             {{-- Back Link --}}
             <a href="{{ route('owner.subscription') }}" class="flex items-center gap-1.5 text-sm font-medium text-bq-text-muted transition-colors hover:text-bq-primary" id="btn-back-subscription">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                Kembali ke Subscription
+                Kembali ke Paket &amp; Tagihan
             </a>
         </div>
     </div>

@@ -57,6 +57,7 @@ class P0SecurityTest extends TestCase
         $booking2 = Booking::factory()->create(['idtenant' => $tenant2->id, 'status' => 'paid']);
 
         $this->actingAs($owner1);
+        $this->travelTo(now()->addDays(2)->setTime(10, 30));
 
         // Owner 1 accessing their own booking
         $response = $this->patch("/owner/bookings/{$booking1->id}/status", ['status' => 'completed']);

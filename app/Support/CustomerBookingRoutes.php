@@ -5,10 +5,22 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Actions\CustomerAccess\CustomerAccessLinks;
+use App\Models\Tenant;
 use Illuminate\Http\RedirectResponse;
 
 final class CustomerBookingRoutes
 {
+    public static function storefront(Tenant $tenant): ?string
+    {
+        if ($tenant->custom_domain_status === 'connected' && filled($tenant->custom_domain)) {
+            $url = route('customer.booking.program', ['custom_domain' => $tenant->custom_domain]);
+
+            return str_starts_with($url, 'http://') ? 'https://'.substr($url, 7) : $url;
+        }
+
+        return $tenant->slug ? self::url('customer.booking.program', $tenant->slug) : null;
+    }
+
     /** Private storefront URLs always use the configured platform origin. */
     public static function canonical(string $routeName, array $parameters): string
     {

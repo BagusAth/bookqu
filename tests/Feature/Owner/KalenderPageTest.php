@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Models\TenantMember;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,6 +18,25 @@ use Tests\TestCase;
 final class KalenderPageTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_kasir_walk_in_confirmation_links_to_the_new_booking_panel(): void
+    {
+        $tenant = Tenant::factory()->create();
+        app(CreateTrialSubscription::class)->execute($tenant);
+        $cashier = User::factory()->create(['role' => 'owner']);
+        TenantMember::create(['idtenant' => $tenant->id, 'iduser' => $cashier->id, 'role' => 'kasir', 'accepted_at' => now()]);
+        $service = Service::factory()->create(['idtenant' => $tenant->id]);
+        $slot = Schedule::factory()->create(['idtenant' => $tenant->id, 'idlayanan' => $service->id]);
+        $calendar = route('owner.calendar', ['date' => $slot->tanggal->toDateString()]);
+
+        $response = $this->actingAs($cashier)->from($calendar)->post(route('owner.bookings.walkin'), [
+            'idschedule' => $slot->id, 'namapelanggan' => 'Rani Walk-In', 'nomorhp' => '081234567890',
+        ])->assertRedirect($calendar)->assertSessionHasNoErrors()->assertSessionHas('walkin_booking');
+        $booking = Booking::withoutGlobalScopes()->where('idtenant', $tenant->id)->where('idschedule', $slot->id)->sole();
+        $cookie = config('session.cookie');
+        $this->withCookie($cookie, $response->getCookie($cookie)->getValue())->get($calendar)->assertOk()
+            ->assertSee('href="'.route('owner.bookings', ['panel' => $booking->id]).'"', false);
+    }
 
     public function test_views_show_the_same_bookings_and_only_count_occupying_seats(): void
     {

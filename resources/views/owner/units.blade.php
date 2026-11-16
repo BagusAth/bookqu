@@ -8,13 +8,13 @@
     @if ($galleryUrl)
         <a class="inline-block text-sm text-bq-primary underline" href="{{ $galleryUrl }}">Unggah gambar ke galeri</a>
     @endif
-    <details class="rounded-xl border border-bq-border bg-bq-surface p-4" @if ($errors->any()) open @endif>
+    <details id="unit-create" class="rounded-xl border border-bq-border bg-bq-surface p-4" @if ($errors->any() && old('_form') === 'unit-create') open @endif>
         <summary class="cursor-pointer font-semibold">Tambah unit</summary>
         @include('owner.partials.unit-form', ['unit' => null])
     </details>
 
     @forelse ($units as $unit)
-        <details class="rounded-xl border border-bq-border bg-bq-surface p-4">
+        <details id="unit-edit-{{ $unit['id'] }}" class="rounded-xl border border-bq-border bg-bq-surface p-4" @if ($errors->any() && old('_form') === 'unit-edit-'.$unit['id']) open @endif>
             <summary class="cursor-pointer">
                 <span class="font-semibold">{{ $unit['name'] }}</span>
                 <span class="ms-2 text-sm text-bq-text-muted">{{ $unit['type'] }} · {{ $unit['kapasitas'] }} orang</span>
@@ -23,11 +23,19 @@
             @if ($unit['image_url'])
                 <img src="{{ $unit['image_url'] }}" alt="" class="mt-3 h-24 w-24 rounded-lg object-cover" loading="lazy">
             @endif
+            <p class="mt-3 text-sm text-bq-text-muted">Layanan yang memakai unit: {{ implode(', ', $unit['service_names']) ?: 'Belum ada' }}</p>
+            @if ($unit['usage_today'])
+                <p class="mt-1 text-sm text-bq-text-muted">
+                    Pemakaian hari ini: {{ number_format($unit['usage_today']['rate'], 1, ',', '.') }}%
+                    ({{ $unit['usage_today']['usedMinutes'] }} dari {{ $unit['usage_today']['offeredMinutes'] }} menit)
+                </p>
+            @endif
             @include('owner.partials.unit-form', ['unit' => $unit])
-            <form method="POST" action="{{ route('owner.units.destroy', $unit['id']) }}" class="mt-4">
+            <form method="POST" id="delete-unit-{{ $unit['id'] }}" x-data action="{{ route('owner.units.destroy', $unit['id']) }}" class="mt-4">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="text-sm font-semibold text-bq-danger">Hapus unit</button>
+                <button type="button" class="text-sm font-semibold text-bq-danger"
+                    @click="$dispatch('open-confirm', { title: 'Hapus unit?', message: @js('Hapus unit '.$unit['name'].'?'), formId: $el.form.id })">Hapus unit</button>
             </form>
         </details>
     @empty
@@ -41,8 +49,13 @@
                 <li>
                     {{ collect($units)->firstWhere('id', $conflict['unit_id'])['name'] }}
                     @foreach ($conflict['booking_ids'] as $bookingId)
-                        <button type="button" class="text-bq-primary" x-data
-                            @click="$dispatch('open-booking-panel', { url: @js(route('owner.bookings.panel', $bookingId)), trigger: $el })">#{{ $bookingId }}</button>
+                        @if ($detail = $bookingDetails[$bookingId] ?? null)
+                            <p class="ms-3">
+                                <button type="button" class="text-bq-primary underline" x-data
+                                    @click="$dispatch('open-booking-panel', { url: @js($detail['url']), trigger: $el })">{{ $detail['code'] }}</button>
+                                · {{ $detail['customer'] }} · {{ $detail['session'] }}
+                            </p>
+                        @endif
                     @endforeach
                 </li>
             @empty

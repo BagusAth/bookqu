@@ -28,7 +28,7 @@
         @else
             <p class="mt-1 text-sm text-bq-text-muted">Kontak bantuan belum diatur.</p>
         @endif
-        <p class="mt-3 text-sm text-bq-text-muted">Baru mulai? <a href="{{ $guideUrl }}" class="text-bq-primary hover:text-bq-primary-hover">Buka panduan awal di Beranda</a>.</p>
+        <p class="mt-3 text-sm text-bq-text-muted"><a href="{{ $guideUrl }}" class="text-bq-primary hover:text-bq-primary-hover">Buka Beranda</a> untuk melihat langkah penyiapan atau jadwal hari ini.</p>
     </section>
 
     <section aria-labelledby="faq-title" class="space-y-4">

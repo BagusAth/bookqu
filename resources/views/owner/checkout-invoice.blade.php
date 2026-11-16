@@ -11,7 +11,7 @@
             <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-md shadow-bq-primary/30">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
-            <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Review</span>
+            <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pesanan</span>
         </div>
         <div class="mx-3 h-0.5 w-8 rounded bg-bq-primary sm:w-16"></div>
         <div class="flex items-center gap-2">
@@ -22,26 +22,26 @@
         </div>
         <div class="mx-3 h-0.5 w-8 rounded bg-bq-primary sm:w-16"></div>
         <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-white shadow-md shadow-emerald-500/30">
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-success text-sm font-bold text-white shadow-md shadow-bq-success/30">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
-            <span class="hidden text-sm font-semibold text-emerald-600 sm:inline">Selesai</span>
+            <span class="hidden text-sm font-semibold text-bq-success sm:inline">Selesai</span>
         </div>
     </div>
 
     {{-- Success Banner --}}
-    <div class="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 p-6 text-center">
+    <div class="rounded-2xl border border-bq-success bg-gradient-to-br from-bq-success-bg via-bq-success-bg to-bq-success-bg p-6 text-center">
         {{-- Animated Checkmark --}}
-        <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 shadow-lg shadow-emerald-200/50">
+        <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-bq-success-bg shadow-lg shadow-bq-success/50">
             <div class="invoice-checkmark">
-                <svg class="h-10 w-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                <svg class="h-10 w-10 text-bq-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" class="checkmark-path"/>
                 </svg>
             </div>
         </div>
-        <h1 class="text-2xl font-bold text-emerald-800">Pembayaran Berhasil! 🎉</h1>
-        <p class="mt-2 text-sm text-emerald-700">Terima kasih! Subscription Anda telah aktif.</p>
-        <p class="mt-1 text-xs text-emerald-600/70">Konfirmasi pembayaran dan invoice telah dikirim ke email Anda.</p>
+        <h1 class="text-2xl font-bold text-bq-success">Pembayaran Berhasil! 🎉</h1>
+        <p class="mt-2 text-sm text-bq-success">Terima kasih! Langganan Anda telah aktif.</p>
+        <p class="mt-1 text-xs text-bq-success/70">Konfirmasi pembayaran dan invoice telah dikirim ke email Anda.</p>
     </div>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -52,7 +52,7 @@
             {{-- Invoice Card --}}
             <div class="rounded-xl border border-bq-border bg-bq-surface overflow-hidden" id="invoice-card">
                 {{-- Invoice Header --}}
-                <div class="bg-gradient-to-r from-bq-primary to-violet-600 px-4 sm:px-6 py-5 text-white">
+                <div class="bg-gradient-to-r from-bq-primary to-bq-primary px-4 sm:px-6 py-5 text-white">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <p class="text-xs font-medium text-white/70 uppercase tracking-wider">Invoice</p>
@@ -78,14 +78,14 @@
                         </div>
                         <div class="sm:text-right">
                             <p class="text-xs font-medium text-bq-text-muted uppercase tracking-wider mb-1">Tanggal Pembayaran</p>
-                            <p class="text-sm font-semibold text-bq-text">{{ $payment->updated_at->format('d M Y') }}</p>
+                            <p class="text-sm font-semibold text-bq-text">{{ $payment->updated_at->translatedFormat('j M Y') }}</p>
                             <p class="text-xs text-bq-text-muted">{{ $payment->updated_at->format('H:i') }} WIB</p>
                         </div>
                     </div>
 
                     {{-- Status Badge --}}
                     <div class="flex items-center gap-2">
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-bq-success-bg px-3 py-1.5 text-xs font-bold text-bq-success ring-1 ring-inset ring-bq-success/20">
                             <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                             LUNAS
                         </span>
@@ -104,7 +104,7 @@
                             <tbody class="divide-y divide-bq-border">
                                 <tr>
                                     <td class="px-4 py-3">
-                                        <p class="font-medium text-bq-text">Subscription Plan {{ ucfirst($plan->namapaket) }}</p>
+                                        <p class="font-medium text-bq-text">Paket {{ ucfirst($plan->namapaket) }}</p>
                                         <p class="text-xs text-bq-text-muted">Durasi 1 bulan</p>
                                     </td>
                                     {{-- AC-PKT-04: the invoice shows what was paid, never the plan's current price --}}
@@ -127,12 +127,12 @@
                             <div class="flex items-center gap-3">
                                 <div class="text-center">
                                     <p class="text-xs text-bq-text-muted">Mulai</p>
-                                    <p class="text-sm font-bold text-bq-text">{{ $subscription->langganan_mulai->format('d M Y') }}</p>
+                                    <p class="text-sm font-bold text-bq-text">{{ $subscription->langganan_mulai->translatedFormat('j M Y') }}</p>
                                 </div>
                                 <div class="flex-1 border-t border-dashed border-bq-primary/30"></div>
                                 <div class="text-center">
                                     <p class="text-xs text-bq-text-muted">Berakhir</p>
-                                    <p class="text-sm font-bold text-bq-text">{{ $subscription->langganan_berakhir->format('d M Y') }}</p>
+                                    <p class="text-sm font-bold text-bq-text">{{ $subscription->langganan_berakhir->translatedFormat('j M Y') }}</p>
                                 </div>
                             </div>
                         </div>
@@ -140,9 +140,9 @@
 
                     {{-- Notes --}}
                     @if($payment->catatan)
-                        <div class="rounded-lg bg-amber-50 border border-amber-200 p-3">
-                            <p class="text-xs font-semibold text-amber-700 mb-1">Catatan:</p>
-                            <p class="text-xs text-amber-700">{{ $payment->catatan }}</p>
+                        <div class="rounded-lg bg-bq-warning-bg border border-bq-warning p-3">
+                            <p class="text-xs font-semibold text-bq-warning mb-1">Catatan:</p>
+                            <p class="text-xs text-bq-warning">{{ $payment->catatan }}</p>
                         </div>
                     @endif
                 </div>
@@ -160,7 +160,7 @@
                 <button type="button" id="btn-download-invoice" onclick="window.print()"
                     class="w-full rounded-lg border border-bq-border bg-bq-background py-3 text-sm font-semibold text-bq-text transition-all hover:bg-bq-surface hover:border-bq-primary hover:text-bq-primary flex items-center justify-center gap-2">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    Download Invoice
+                    Unduh invoice
                 </button>
 
                 {{-- Back to Dashboard --}}
@@ -174,12 +174,12 @@
                 <a href="{{ route('owner.subscription') }}" id="btn-back-subscription"
                     class="w-full rounded-lg border border-bq-border bg-bq-background py-3 text-sm font-semibold text-bq-text transition-all hover:bg-bq-surface flex items-center justify-center gap-2">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                    Lihat Subscription
+                    Lihat Paket &amp; Tagihan
                 </a>
             </div>
 
             {{-- Arrival Info --}}
-            <div class="rounded-xl border border-bq-primary/20 bg-gradient-to-br from-bq-primary/5 to-violet-500/5 p-5">
+            <div class="rounded-xl border border-bq-primary/20 bg-gradient-to-br from-bq-primary/5 to-bq-primary/5 p-5">
                 <div class="flex items-start gap-3">
                     <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-bq-primary/10 shrink-0">
                         <svg class="h-5 w-5 text-bq-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -187,7 +187,7 @@
                     <div>
                         <p class="text-sm font-semibold text-bq-text">Informasi Penting</p>
                         <ul class="mt-2 space-y-1.5 text-xs text-bq-text-muted">
-                            <li>• Subscription Anda langsung aktif setelah pembayaran diverifikasi.</li>
+                            <li>• Langganan Anda langsung aktif setelah pembayaran diverifikasi.</li>
                             <li>• Simpan kode booking <strong class="text-bq-primary font-mono">{{ $payment->order_id }}</strong> sebagai referensi.</li>
                             <li>• Invoice juga dikirim ke <strong>{{ $payment->email_pembayar }}</strong>.</li>
                             <li>• Hubungi support jika ada kendala.</li>

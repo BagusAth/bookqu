@@ -27,7 +27,12 @@
 
     @if ($item = $primary->get('bookings'))
         <a href="{{ $item['href'] }}" @if ($item['active']) aria-current="page" @endif class="{{ $navItem }} {{ $item['active'] ? 'text-bq-primary' : 'text-bq-text-muted' }}">
-            <x-owner.icon :name="$item['icon']" />
+            <span class="relative">
+                <x-owner.icon :name="$item['icon']" />
+                @if ($item['badge'])
+                    <span class="absolute -right-3 -top-1 min-w-4 rounded-full bg-bq-warning-bg px-1 text-center text-[10px] font-bold leading-4 text-bq-warning" title="{{ $item['badge']['label'] ?? 'Booking perlu tindakan' }}">{{ $item['badge']['text'] }}</span>
+                @endif
+            </span>
             {{ $item['label'] }}
         </a>
     @endif

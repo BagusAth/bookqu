@@ -18,11 +18,19 @@ class UpdateAvailabilityRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'tanggal_block'       => ['nullable', 'date'],
-            'alasan'              => ['nullable', 'string', 'max:200'],
-            'weekend_price_type'  => ['required', 'in:none,multiplier,fixed'],
+        $dates = [
+            'tanggal_block' => ['nullable', 'date'],
+            'alasan' => ['nullable', 'string', 'max:200'],
+        ];
+        $pricing = [
+            'weekend_price_type' => ['required', 'in:none,multiplier,fixed'],
             'weekend_price_value' => ['nullable', 'numeric', 'min:0'],
         ];
+
+        return match ($this->query('tab')) {
+            'closed' => array_replace($dates, ['tanggal_block' => ['required', 'date']]),
+            'prices' => $pricing,
+            default => $dates + $pricing,
+        };
     }
 }

@@ -8,10 +8,10 @@ use App\Models\Tenant;
 
 final class GetPromoFigures
 {
-    /** @return array{uses: int, discount: int, revenue: int} */
+    /** @return array{uses: int, discount: int, revenue: int, discountByPromo: array<int, int>} */
     public function execute(Tenant $tenant): array
     {
-        $figures = ['uses' => 0, 'discount' => 0, 'revenue' => 0];
+        $figures = ['uses' => 0, 'discount' => 0, 'revenue' => 0, 'discountByPromo' => []];
         $payments = Payment::where('idtenant', $tenant->id)->where('tipe', 'booking')
             ->where('status', PaymentState::STATUS_SUKSES)->whereNotNull('price_breakdown')
             ->lazyById(500, 'id');
@@ -21,6 +21,10 @@ final class GetPromoFigures
                 $figures['uses']++;
                 $figures['discount'] += (int) $promo['discount'];
                 $figures['revenue'] += (int) $payment->jumlah;
+                if (isset($promo['id'])) {
+                    $id = (int) $promo['id'];
+                    $figures['discountByPromo'][$id] = ($figures['discountByPromo'][$id] ?? 0) + (int) $promo['discount'];
+                }
             }
         }
 

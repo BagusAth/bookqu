@@ -27,7 +27,7 @@ final class DeliverOwnerWebhook implements ShouldQueue
 
     public int $timeout = 20;
 
-    public function __construct(public int $tenantId, public int $deliveryId, public int $subjectId) {}
+    public function __construct(public int $tenantId, public int $deliveryId, public ?int $subjectId) {}
 
     /** @return list<int> */
     public function backoff(): array
