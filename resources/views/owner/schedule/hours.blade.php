@@ -1,4 +1,4 @@
-<form class="space-y-4 rounded-xl border border-bq-border bg-bq-surface p-4" x-data="scheduleOpeningHours(@js($openingHours))"
+<form class="space-y-4 bq-panel p-4" x-data="scheduleOpeningHours(@js($openingHours))"
     action="{{ route('owner.schedule.opening-hours') }}" method="POST" @submit.prevent="save($event.currentTarget)">
     @csrf
     @method('PUT')

@@ -19,7 +19,7 @@
     Values are rendered as text only.
 --}}
 @php
-    $panelBadge = "{ 'bg-bq-info-bg text-bq-info': %s === 'info', 'bg-bq-success-bg text-bq-success': %s === 'success', 'bg-bq-warning-bg text-bq-warning': %s === 'warning', 'bg-bq-danger-bg text-bq-danger': %s === 'danger', 'bg-bq-background text-bq-text-muted': !['info','success','warning','danger'].includes(%s) }";
+    $panelBadge = "{ 'bg-bq-info-bg text-bq-info': %s === 'info', 'bg-bq-success-bg text-bq-success': %s === 'success', 'bg-bq-warning-bg text-bq-warning': %s === 'warning', 'bg-bq-danger-bg text-bq-danger': %s === 'danger', 'bg-bq-surface-2 text-bq-text-muted': !['info','success','warning','danger'].includes(%s) }";
     $badge = fn (string $expression) => sprintf($panelBadge, $expression, $expression, $expression, $expression, $expression);
     $bookingForm = $errors->any() && is_string(old('_form')) ? old('_form') : '';
     $reopenBooking = preg_match('/^booking-reason-([1-9][0-9]*)-/', $bookingForm, $bookingFormMatch)
@@ -38,58 +38,63 @@
         <span x-text="data ? data.code : 'Detail booking'">Detail booking</span>
     </x-slot:heading>
 
-    <div x-show="loading" class="py-10 text-center text-sm text-bq-text-muted" role="status">Memuat detail booking…</div>
+    <div x-show="loading" class="space-y-6 py-2" role="status"><span class="sr-only">Memuat detail booking…</span><x-ui.skeleton :lines="3" /><x-ui.skeleton :lines="4" /><x-ui.skeleton :lines="2" /></div>
     <div x-show="failed" x-cloak class="rounded-lg bg-bq-danger-bg px-4 py-3 text-sm text-bq-danger" role="alert">Detail booking tidak dapat dimuat. Coba lagi.</div>
 
     <template x-if="data">
-        <div class="space-y-5">
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium" x-bind:class="{{ $badge('data.status.tone') }}" x-text="data.status.label"></span>
-                <span class="text-sm text-bq-text-muted" x-text="data.source"></span>
-            </div>
-
+        <div class="divide-y divide-bq-border [&>section]:py-5 [&>section:first-child]:pt-0">
             <section aria-labelledby="booking-panel-session">
-                <h3 id="booking-panel-session" class="mb-2 text-sm font-semibold text-bq-text">Sesi</h3>
-                <p class="text-sm text-bq-text" x-text="data.service"></p>
-                <ul class="mt-1 space-y-0.5">
-                    <template x-for="(session, index) in data.sessions" x-bind:key="index">
-                        <li class="text-sm tabular-nums text-bq-text-muted"><span x-text="session.date"></span>, <span x-text="session.time"></span> WIB</li>
-                    </template>
-                </ul>
-                <p x-show="data.participants" class="mt-1 text-sm text-bq-text-muted">Peserta: <span x-text="data.participants"></span></p>
-                <p x-show="data.unit" class="mt-1 text-sm text-bq-text-muted">Unit: <span x-text="data.unit"></span></p>
+                <div class="overflow-hidden rounded-xl border border-bq-primary-border bg-bq-primary-light">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-dashed border-bq-primary-border px-4 py-3">
+                        <span class="bq-badge" x-bind:class="{{ $badge('data.status.tone') }}" x-text="data.status.label"></span>
+                        <span class="text-xs font-semibold text-bq-primary" x-text="data.source"></span>
+                    </div>
+                    <div class="px-4 py-3">
+                        <h3 id="booking-panel-session" class="sr-only">Sesi</h3>
+                        <p class="text-base font-bold text-bq-ink" x-text="data.service"></p>
+                        <ul class="mt-1 space-y-0.5">
+                            <template x-for="(session, index) in data.sessions" x-bind:key="index">
+                                <li class="bq-num text-sm font-semibold text-bq-primary"><span x-text="session.date"></span>, <span x-text="session.time"></span> WIB</li>
+                            </template>
+                        </ul>
+                        <p class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-bq-text-muted">
+                            <span x-show="data.participants">Peserta: <span class="font-semibold text-bq-ink" x-text="data.participants"></span></span>
+                            <span x-show="data.unit">Unit: <span class="font-semibold text-bq-ink" x-text="data.unit"></span></span>
+                        </p>
+                    </div>
+                </div>
             </section>
 
             <section aria-labelledby="booking-panel-customer">
-                <h3 id="booking-panel-customer" class="mb-2 text-sm font-semibold text-bq-text">Pelanggan</h3>
-                <p class="text-sm text-bq-text" x-text="data.customer.name"></p>
+                <h3 id="booking-panel-customer" class="mb-2 text-xs font-semibold text-bq-text-muted">Pelanggan</h3>
+                <p class="text-base font-semibold text-bq-ink" x-text="data.customer.name"></p>
                 <p class="text-sm text-bq-text-muted">
                     <span x-text="data.customer.phone"></span>
-                    <a x-show="data.customer.whatsapp_url" x-bind:href="data.customer.whatsapp_url" target="_blank" rel="noopener" class="ml-2 text-bq-primary hover:text-bq-primary-hover">WhatsApp</a>
+                    <a x-show="data.customer.whatsapp_url" x-bind:href="data.customer.whatsapp_url" target="_blank" rel="noopener" class="bq-link ml-2">WhatsApp</a>
                 </p>
                 <p x-show="data.customer.email" class="text-sm text-bq-text-muted" x-text="data.customer.email"></p>
-                <button type="button" x-show="data.customer.panel_url" x-on:click="$dispatch('open-customer-panel', { url: data.customer.panel_url })" class="mt-1 text-sm text-bq-primary hover:text-bq-primary-hover">Lihat pelanggan</button>
+                <button type="button" x-show="data.customer.panel_url" x-on:click="$dispatch('open-customer-panel', { url: data.customer.panel_url })" class="bq-link mt-1 text-sm">Lihat pelanggan</button>
             </section>
 
             <section aria-labelledby="booking-panel-payment">
-                <h3 id="booking-panel-payment" class="mb-2 text-sm font-semibold text-bq-text">Pembayaran</h3>
+                <h3 id="booking-panel-payment" class="mb-2 text-xs font-semibold text-bq-text-muted">Pembayaran</h3>
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium" x-bind:class="{{ $badge('data.payment.status.tone') }}" x-text="data.payment.status.label"></span>
+                    <span class="bq-badge" x-bind:class="{{ $badge('data.payment.status.tone') }}" x-text="data.payment.status.label"></span>
                     <span class="text-sm text-bq-text-muted" x-text="data.payment.method"></span>
                 </div>
                 <dl class="mt-2 space-y-1 text-sm">
                     <template x-for="(line, index) in data.payment.breakdown" x-bind:key="index">
-                        <div class="flex justify-between gap-4"><dt class="text-bq-text-muted" x-text="line.label"></dt><dd class="tabular-nums text-bq-text" x-text="line.amount"></dd></div>
+                        <div class="flex justify-between gap-4"><dt class="text-bq-text-muted" x-text="line.label"></dt><dd class="bq-num text-bq-text" x-text="line.amount"></dd></div>
                     </template>
-                    <div class="flex justify-between gap-4 font-semibold"><dt>Dibayar</dt><dd class="tabular-nums" x-text="data.payment.amount"></dd></div>
+                    <div class="flex justify-between gap-4 border-t border-bq-border pt-2 text-base font-bold text-bq-ink"><dt>Dibayar</dt><dd class="bq-num" x-text="data.payment.amount"></dd></div>
                     <div x-show="data.payment.paid_at" class="flex justify-between gap-4"><dt class="text-bq-text-muted">Waktu bayar</dt><dd x-text="data.payment.paid_at"></dd></div>
                     <div x-show="data.payment.deadline" class="flex justify-between gap-4"><dt class="text-bq-text-muted">Batas bayar</dt><dd x-text="data.payment.deadline"></dd></div>
                 </dl>
                 <template x-if="data.payment.refund">
                     <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
                         <span class="text-bq-text-muted">Refund</span>
-                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium" x-bind:class="{{ $badge('data.payment.refund.status.tone') }}" x-text="data.payment.refund.status.label"></span>
-                        <span class="tabular-nums" x-text="data.payment.refund.amount"></span>
+                        <span class="bq-badge" x-bind:class="{{ $badge('data.payment.refund.status.tone') }}" x-text="data.payment.refund.status.label"></span>
+                        <span class="bq-num" x-text="data.payment.refund.amount"></span>
                     </div>
                 </template>
                 <p x-show="data.refund_reason" class="mt-1 text-sm text-bq-text-muted">Alasan pengajuan: <span x-text="data.refund_reason"></span></p>
@@ -97,16 +102,17 @@
             </section>
 
             <section x-show="data.note" aria-labelledby="booking-panel-note">
-                <h3 id="booking-panel-note" class="mb-1 text-sm font-semibold text-bq-text">Catatan pelanggan</h3>
+                <h3 id="booking-panel-note" class="mb-1 text-xs font-semibold text-bq-text-muted">Catatan pelanggan</h3>
                 <p class="whitespace-pre-line text-sm text-bq-text-muted" x-text="data.note"></p>
             </section>
 
             <section aria-labelledby="booking-panel-history">
-                <h3 id="booking-panel-history" class="mb-2 text-sm font-semibold text-bq-text">Riwayat</h3>
-                <ol class="space-y-2">
+                <h3 id="booking-panel-history" class="mb-3 text-xs font-semibold text-bq-text-muted">Riwayat</h3>
+                <ol class="space-y-3 border-l-2 border-bq-border pl-4">
                     <template x-for="(entry, index) in data.history" x-bind:key="index">
-                        <li class="text-sm">
-                            <p class="text-bq-text" x-text="entry.text"></p>
+                        <li class="relative text-sm">
+                            <span class="absolute top-1.5 -left-[21px] h-2 w-2 rounded-full bg-bq-border-strong" aria-hidden="true"></span>
+                            <p class="text-bq-ink" x-text="entry.text"></p>
                             <p class="text-xs text-bq-text-muted"><span x-text="entry.at"></span> · <span x-text="entry.actor"></span></p>
                         </li>
                     </template>
@@ -118,7 +124,7 @@
     <x-slot:footer>
         <p x-show="data?.action_hint" class="w-full text-sm text-bq-text-muted" x-text="data?.action_hint"></p>
         <template x-if="data && data.actions && data.actions.length">
-            <div class="flex w-full flex-col gap-3">
+            <div class="flex w-full flex-col gap-2">
                 <template x-for="(action, index) in data.actions" x-bind:key="index">
                     <div x-data="{ showReason: action.reason && action.form_key === @js($bookingForm) }">
                         <template x-if="action.reschedule">
@@ -135,7 +141,7 @@
                                 <template x-if="action.reason">
                                     <div x-show="showReason">
                                         <input type="hidden" name="_form" :value="action.form_key">
-                                        <label class="mb-1 block text-sm font-medium text-bq-text" x-bind:for="'booking-panel-reason-' + index" x-text="action.reason.label"></label>
+                                        <label class="bq-label mb-1 block" x-bind:for="'booking-panel-reason-' + index" x-text="action.reason.label"></label>
                                         <textarea x-bind:id="'booking-panel-reason-' + index" x-bind:name="action.reason.name" :value="action.form_key === @js($bookingForm) ? @js(old('reason')) : ''" :disabled="!showReason" required maxlength="500" rows="2" class="bq-input w-full"></textarea>
                                         @if ($reopenBooking)
                                             <x-owner.field-error name="reason" x-cloak x-show="action.form_key === @js($bookingForm)" />
@@ -159,8 +165,8 @@
                                             form.requestSubmit();
                                         }
                                     "
-                                    class="w-full rounded-lg px-4 py-2 text-sm font-medium"
-                                    x-bind:class="action.tone === 'danger' ? 'bg-bq-danger text-white hover:opacity-90' : 'border border-bq-border bg-bq-surface text-bq-text hover:bg-bq-background'"
+                                    class="bq-btn w-full"
+                                    x-bind:class="action.tone === 'danger' ? 'bq-btn-danger' : (data.actions.findIndex(item => item.url && item.tone !== 'danger') === index ? 'bq-btn-primary' : 'bq-btn-secondary')"
                                     x-text="action.label"
                                 ></button>
                             </form>

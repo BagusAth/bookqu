@@ -23,19 +23,19 @@
                     <tr>
                         <td class="px-4 py-3">
                             <span class="block text-bq-text">{{ $row['orderId'] }}</span>
-                            <span class="block text-xs tabular-nums text-bq-text-muted">{{ $row['time'] }}</span>
+                            <span class="block text-xs bq-num text-bq-text-muted">{{ $row['time'] }}</span>
                         </td>
                         <td class="px-4 py-3 text-bq-text">
                             {{ $row['customer'] }}
                             @include('owner.partials.payments.booking-link')
                         </td>
                         <td class="px-4 py-3 text-bq-text-muted">{{ $row['service'] }}</td>
-                        <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums text-bq-text">
+                        <td class="whitespace-nowrap px-4 py-3 text-right bq-num text-bq-text">
                             {{ $row['amount'] }}
                             @if ($row['refund'])<span class="block text-xs text-bq-danger">{{ $row['refund'] }}</span>@endif
                         </td>
                         <td class="px-4 py-3 text-bq-text-muted">{{ $row['method'] }}</td>
-                        <td class="px-4 py-3"><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $toneClass($row['status']['tone']) }}">{{ $row['status']['label'] }}</span></td>
+                        <td class="px-4 py-3"><span class="bq-badge {{ $toneClass($row['status']['tone']) }}">{{ $row['status']['label'] }}</span></td>
                     </tr>
                 @endforeach
             </tbody>
@@ -47,12 +47,12 @@
             <li class="space-y-1 px-4 py-3 text-sm">
                 <div class="flex items-center justify-between gap-2">
                     <span class="truncate text-bq-text">{{ $row['customer'] }}</span>
-                    <span class="inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $toneClass($row['status']['tone']) }}">{{ $row['status']['label'] }}</span>
+                    <span class="bq-badge {{ $toneClass($row['status']['tone']) }}">{{ $row['status']['label'] }}</span>
                 </div>
                 <p class="text-xs text-bq-text-muted">{{ $row['orderId'] }} · {{ $row['time'] }}</p>
                 <p class="text-xs text-bq-text-muted">{{ $row['service'] }} · {{ $row['method'] }}</p>
                 @include('owner.partials.payments.booking-link')
-                <p class="tabular-nums text-bq-text">{{ $row['amount'] }}@if ($row['refund']) <span class="text-xs text-bq-danger">· {{ $row['refund'] }}</span>@endif</p>
+                <p class="bq-num text-bq-text">{{ $row['amount'] }}@if ($row['refund']) <span class="text-xs text-bq-danger">· {{ $row['refund'] }}</span>@endif</p>
             </li>
         @endforeach
     </ul>

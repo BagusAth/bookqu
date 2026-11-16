@@ -46,7 +46,7 @@
                 x-cloak
                 role="listbox"
                 aria-label="Hasil pencarian"
-                class="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-xl border border-bq-border bg-bq-surface p-2 shadow-bq"
+                class="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto bq-panel p-2 shadow-bq"
             >
                 <p x-show="loading" class="px-3 py-2 text-sm text-bq-text-muted" role="status">Mencari…</p>
                 <p x-show="!loading && failed" class="px-3 py-2 text-sm text-bq-danger" role="alert">Pencarian gagal. Coba lagi.</p>
@@ -119,14 +119,14 @@
             <button type="button" x-on:click="toggle()" x-bind:aria-expanded="open ? 'true' : 'false'" aria-controls="owner-notification-list" class="relative rounded-lg p-2 text-bq-text-muted hover:bg-bq-surface-2 hover:text-bq-text">
                 <x-owner.icon name="bell" />
                 <span class="sr-only">Notifikasi</span>
-                <span x-show="unread > 0" x-cloak class="absolute right-1 top-1 min-w-4 rounded-full bg-bq-accent px-1 text-center text-[11px] font-bold leading-4 text-bq-ink tabular-nums" x-text="unread > 99 ? '99+' : unread"></span>
+                <span x-show="unread > 0" x-cloak class="absolute right-1 top-1 min-w-4 rounded-full bg-bq-accent px-1 text-center text-[11px] font-bold leading-4 text-bq-ink bq-num" x-text="unread > 99 ? '99+' : unread"></span>
                 <span class="sr-only" x-text="unread + ' belum dibaca'"></span>
             </button>
 
-            <div id="owner-notification-list" x-show="open" x-cloak class="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-bq-border bg-bq-surface shadow-bq">
+            <div id="owner-notification-list" x-show="open" x-cloak class="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-1.5rem)] bq-panel shadow-bq">
                 <div class="flex items-center justify-between border-b border-bq-border px-4 py-3">
                     <p class="text-sm font-semibold text-bq-text">Notifikasi</p>
-                    <button type="button" x-show="unread > 0" x-on:click="markAllRead()" class="text-xs font-medium text-bq-primary hover:text-bq-primary-hover">Tandai semua dibaca</button>
+                    <button type="button" x-show="unread > 0" x-on:click="markAllRead()" class="text-xs font-medium bq-link">Tandai semua dibaca</button>
                 </div>
                 <p x-show="loading" class="px-4 py-6 text-center text-sm text-bq-text-muted" role="status">Memuat…</p>
                 <p x-show="!loading && items.length === 0" class="px-4 py-6 text-center text-sm text-bq-text-muted">Belum ada notifikasi.</p>
@@ -141,7 +141,7 @@
                         </li>
                     </template>
                 </ul>
-                <a href="{{ route('owner.notifications') }}" class="block px-4 py-3 text-center text-sm font-medium text-bq-primary hover:text-bq-primary-hover">Lihat semua</a>
+                <a href="{{ route('owner.notifications') }}" class="block px-4 py-3 text-center text-sm font-medium bq-link">Lihat semua</a>
             </div>
         </div>
 
@@ -154,7 +154,7 @@
                 </span>
                 <span class="sr-only">Menu akun</span>
             </button>
-            <div id="owner-account-menu" x-show="open" x-cloak class="absolute right-0 top-full z-50 mt-2 w-60 rounded-2xl border border-bq-border bg-bq-surface p-2 shadow-bq">
+            <div id="owner-account-menu" x-show="open" x-cloak class="absolute right-0 top-full z-50 mt-2 w-60 bq-panel p-2 shadow-bq">
                 <div class="border-b border-bq-border px-3 pb-2 pt-1">
                     <p class="truncate text-sm font-medium text-bq-text">{{ $shell['user']['name'] }}</p>
                     <p class="text-xs text-bq-text-muted">{{ $shell['user']['role'] }} · {{ $shell['business'] }}</p>

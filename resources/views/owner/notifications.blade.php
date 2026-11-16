@@ -42,7 +42,7 @@
             description="Booking baru, perubahan status, refund, dan kabar paket muncul di sini."
         />
     @else
-        <ul class="divide-y divide-bq-border overflow-hidden rounded-xl border border-bq-border bg-bq-surface" aria-label="Daftar notifikasi">
+        <ul class="divide-y divide-bq-border overflow-hidden bq-panel" aria-label="Daftar notifikasi">
             @foreach ($notifications as $item)
                 <li class="flex items-start gap-3 px-4 py-3 {{ $item['unread'] ? 'bg-bq-primary-light/40' : '' }}">
                     <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {{ $item['unread'] ? 'bg-bq-primary' : 'bg-transparent' }}" aria-hidden="true"></span>

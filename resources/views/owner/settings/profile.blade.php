@@ -7,7 +7,7 @@
             $dispatch('open-dialog', { id: 'settings-rename', trigger: $event.submitter });
         }
     "
-    class="space-y-4 rounded-xl border border-bq-border bg-bq-surface p-4">
+    class="space-y-4 bq-panel p-4">
     @csrf
     <h2 class="font-semibold">Profil Bisnis</h2>
     <div class="grid gap-3 sm:grid-cols-2">
@@ -47,7 +47,7 @@
     </div>
     <p class="text-sm text-bq-text-muted">Zona waktu: WIB.</p>
     @if ($storefrontUrl)
-        <p class="text-sm">Tautan booking: <a class="break-all text-bq-primary underline" href="{{ $storefrontUrl }}">{{ $storefrontUrl }}</a></p>
+        <p class="text-sm">Tautan booking: <a class="break-all bq-link" href="{{ $storefrontUrl }}">{{ $storefrontUrl }}</a></p>
         <p class="text-sm text-bq-text-muted">Jika alamat booking berubah, tautan, kode QR, dan poster lama akan berhenti berfungsi.</p>
     @endif
     <button class="bq-btn bq-btn-primary">Simpan profil</button>
@@ -56,5 +56,5 @@
     <button form="settings-profile" type="submit" data-rename-confirmed class="bq-btn bq-btn-primary">Simpan alamat booking baru</button>
 </x-owner.dialog>
 @if ($canManageTeam)
-    <a href="{{ route('owner.team.index') }}" class="mt-4 inline-block text-sm font-semibold text-bq-primary underline">Kelola tim</a>
+    <a href="{{ route('owner.team.index') }}" class="mt-4 inline-block text-sm bq-link">Kelola tim</a>
 @endif

@@ -42,7 +42,7 @@
             tabindex="-1"
             x-on:keydown="trap($event)"
             x-on:keydown.escape.stop="hide()"
-            class="pointer-events-auto w-full {{ $width }} max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-bq-border bg-bq-surface shadow-bq focus:outline-none"
+            class="pointer-events-auto w-full {{ $width }} max-h-[90vh] overflow-y-auto rounded-t-2xl sm:bq-panel shadow-bq focus:outline-none"
         >
             <div class="flex items-start justify-between gap-4 border-b border-bq-border px-5 py-4">
                 <div>

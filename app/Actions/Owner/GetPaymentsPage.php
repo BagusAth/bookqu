@@ -17,6 +17,7 @@ use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use App\Support\StatusBadge;
 use App\Support\TenantContext;
+use App\Support\PaymentMethodLabel;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -171,7 +172,7 @@ class GetPaymentsPage
                 'bookingPanel' => $first instanceof Booking && filled($first->booking_code) ? route('owner.bookings.panel', $first->id) : null,
                 'bookingHref' => $first instanceof Booking ? route('owner.bookings', ['panel' => $first->id]) : null,
                 'amount' => 'Rp '.number_format((float) $payment->jumlah, 0, ',', '.'),
-                'method' => (string) ($payment->metode ?: '-'),
+                'method' => PaymentMethodLabel::for($payment->metode) ?? '-',
                 'status' => array_combine(['label', 'tone'], StatusBadge::for('payment', (string) $payment->status)),
                 'refund' => $refund > 0 ? 'Refund Rp '.number_format($refund, 0, ',', '.') : null,
             ];

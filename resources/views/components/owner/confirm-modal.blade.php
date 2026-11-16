@@ -55,7 +55,7 @@
             tabindex="-1"
             x-on:keydown="trap($event)"
             x-on:keydown.escape.stop="hide()"
-            class="pointer-events-auto w-full max-w-sm rounded-2xl border border-bq-border bg-bq-surface p-6 shadow-bq focus:outline-none"
+            class="pointer-events-auto w-full max-w-sm bq-panel p-6 shadow-bq focus:outline-none"
         >
             <h2 id="owner-confirm-dialog-title" class="text-lg font-bold text-bq-ink" x-text="title"></h2>
             <p id="owner-confirm-dialog-message" class="mt-2 text-sm text-bq-text-muted" x-text="message"></p>

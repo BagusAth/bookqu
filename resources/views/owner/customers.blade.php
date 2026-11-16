@@ -27,25 +27,25 @@
 <div class="mx-auto max-w-7xl space-y-6">
     <x-owner.page-header title="Pelanggan" purpose="Siapa pelanggan Anda dan bagaimana menghubungi mereka." />
 
-    <section aria-label="Ringkasan pelanggan" class="grid grid-cols-3 gap-3">
+    <section aria-label="Ringkasan pelanggan" class="bq-panel grid grid-cols-3 divide-x divide-bq-border">
         @foreach ([['Total pelanggan', $summary['total']], ['Baru bulan ini', $summary['new']], ['Kembali lagi', $summary['returning']]] as [$label, $value])
-            <div class="rounded-xl border border-bq-border bg-bq-surface p-3 sm:p-4">
+            <div class="min-w-0 p-3 sm:p-5">
                 <p class="text-xs text-bq-text-muted sm:text-sm">{{ $label }}</p>
-                <p class="mt-1 text-lg font-semibold tabular-nums text-bq-text sm:text-2xl">{{ number_format($value, 0, ',', '.') }}</p>
+                <p class="bq-num mt-1 text-xl font-bold text-bq-ink sm:text-3xl">{{ number_format($value, 0, ',', '.') }}</p>
             </div>
         @endforeach
     </section>
 
     <div class="space-y-3">
-        <nav aria-label="Filter cepat" class="flex flex-wrap gap-2 pb-1">
+        <nav aria-label="Filter cepat" class="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
             @foreach ($filters as $key => $label)
                 @php $isActive = ($filter ?? null) === ($key === '' ? null : $key); @endphp
                 <a
                     href="{{ route('owner.customers', array_filter(['filter' => $key ?: null, 'search' => $search !== '' ? $search : null, 'sort' => $sort === 'recent' ? null : $sort])) }}"
                     @if ($isActive) aria-current="page" @endif
-                    class="rounded-lg border px-3 py-1.5 text-sm font-medium {{ $isActive ? 'border-bq-primary bg-bq-primary-light text-bq-primary' : 'border-bq-border bg-bq-surface text-bq-text-muted hover:text-bq-text' }}"
+                    class="shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors {{ $isActive ? 'border-bq-primary bg-bq-primary text-white' : 'border-bq-border bg-bq-surface text-bq-ink hover:border-bq-primary' }}"
                 >{{ $label }}
-                    @isset($filterHints[$key])<span class="block text-xs font-normal">{{ $filterHints[$key] }}</span>@endisset
+                    @isset($filterHints[$key])<span class="block text-xs font-normal {{ $isActive ? 'text-white/80' : 'text-bq-text-muted' }}">{{ $filterHints[$key] }}</span>@endisset
                 </a>
             @endforeach
         </nav>
@@ -74,9 +74,9 @@
         @endif
     @else
         {{-- Desktop table --}}
-        <div class="hidden overflow-hidden rounded-xl border border-bq-border bg-bq-surface md:block">
+        <div class="bq-panel hidden overflow-hidden md:block">
             <table class="w-full text-left text-sm">
-                <thead class="border-b border-bq-border bg-bq-background text-xs text-bq-text-muted">
+                <thead class="border-b border-bq-border bg-bq-surface-2/70 text-xs text-bq-text-muted">
                     <tr>
                         <th scope="col" class="px-4 py-3 font-medium">Pelanggan</th>
                         <th scope="col" class="px-4 py-3 font-medium">Kontak</th>
@@ -92,19 +92,19 @@
                 <tbody class="divide-y divide-bq-border">
                     @foreach ($customers as $customer)
                         <tr>
-                            <td class="px-4 py-3 font-medium text-bq-text">{{ $customer->name ?: 'Tanpa nama' }}</td>
+                            <td class="px-4 py-3"><span class="flex items-center gap-3"><x-ui.avatar :name="$customer->name" /><span class="font-semibold text-bq-ink">{{ $customer->name ?: 'Tanpa nama' }}</span></span></td>
                             <td class="px-4 py-3 text-bq-text-muted">
-                                <span class="block tabular-nums">{{ $customer->phone ?: '-' }}</span>
+                                <span class="block bq-num">{{ $customer->phone ?: '-' }}</span>
                                 @if ($customer->email)
                                     <span class="block break-all text-xs">{{ $customer->email }}</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-right tabular-nums">{{ $customer->total_bookings }}</td>
+                            <td class="px-4 py-3 text-right bq-num">{{ $customer->total_bookings }}</td>
                             @if ($canViewRevenue)
-                                <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ $customer->formatted_spent }}</td>
+                                <td class="bq-num whitespace-nowrap px-4 py-3 text-right font-semibold text-bq-ink">{{ $customer->formatted_spent }}</td>
                             @endif
-                            <td class="whitespace-nowrap px-4 py-3 tabular-nums text-bq-text-muted">{{ $customer->last_booking }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 tabular-nums text-bq-text-muted">{{ $customer->upcoming_booking ?? '-' }}</td>
+                            <td class="whitespace-nowrap px-4 py-3 bq-num text-bq-text-muted">{{ $customer->last_booking }}</td>
+                            <td class="whitespace-nowrap px-4 py-3 bq-num text-bq-text-muted">{{ $customer->upcoming_booking ?? '-' }}</td>
                             <td class="px-4 py-3 text-right">
                                 <button type="button" class="{{ $openButton }}" x-data x-on:click="$dispatch('open-customer-panel', { url: @js($customer->panel_url), trigger: $el })">Detail</button>
                             </td>
@@ -117,24 +117,24 @@
         {{-- Phone cards (BQ-100 finding 2) --}}
         <ul class="space-y-3 md:hidden" aria-label="Daftar pelanggan">
             @foreach ($customers as $customer)
-                <li class="rounded-xl border border-bq-border bg-bq-surface p-4">
+                <li class="bq-panel p-4">
                     <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <p class="break-words font-medium text-bq-text">{{ $customer->name ?: 'Tanpa nama' }}</p>
-                            <p class="text-sm tabular-nums text-bq-text-muted">{{ $customer->phone ?: '-' }}</p>
+                        <div class="flex min-w-0 gap-3"><x-ui.avatar :name="$customer->name" /><div class="min-w-0">
+                            <p class="break-words font-semibold text-bq-ink">{{ $customer->name ?: 'Tanpa nama' }}</p>
+                            <p class="text-sm bq-num text-bq-text-muted">{{ $customer->phone ?: '-' }}</p>
                             @if ($customer->email)
                                 <p class="break-all text-xs text-bq-text-muted">{{ $customer->email }}</p>
                             @endif
-                        </div>
+                        </div></div>
                         <button type="button" class="{{ $openButton }} shrink-0" x-data x-on:click="$dispatch('open-customer-panel', { url: @js($customer->panel_url), trigger: $el })">Detail</button>
                     </div>
-                    <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                        <dt class="text-bq-text-muted">Booking</dt><dd class="text-right tabular-nums text-bq-text">{{ $customer->total_bookings }}</dd>
+                    <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-bq-border pt-3 text-xs">
+                        <dt class="text-bq-text-muted">Booking</dt><dd class="text-right bq-num text-bq-text">{{ $customer->total_bookings }}</dd>
                         @if ($canViewRevenue)
-                            <dt class="text-bq-text-muted">Total dibayar</dt><dd class="text-right tabular-nums text-bq-text">{{ $customer->formatted_spent }}</dd>
+                            <dt class="text-bq-text-muted">Total dibayar</dt><dd class="text-right bq-num text-bq-text">{{ $customer->formatted_spent }}</dd>
                         @endif
-                        <dt class="text-bq-text-muted">Terakhir</dt><dd class="text-right tabular-nums text-bq-text">{{ $customer->last_booking }}</dd>
-                        <dt class="text-bq-text-muted">Berikutnya</dt><dd class="text-right tabular-nums text-bq-text">{{ $customer->upcoming_booking ?? '-' }}</dd>
+                        <dt class="text-bq-text-muted">Terakhir</dt><dd class="text-right bq-num text-bq-text">{{ $customer->last_booking }}</dd>
+                        <dt class="text-bq-text-muted">Berikutnya</dt><dd class="text-right bq-num text-bq-text">{{ $customer->upcoming_booking ?? '-' }}</dd>
                     </dl>
                 </li>
             @endforeach

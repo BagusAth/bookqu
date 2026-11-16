@@ -39,10 +39,10 @@
 
     {{-- ── Average and distribution ── --}}
     <section aria-label="Ringkasan ulasan" class="grid gap-4 lg:grid-cols-3">
-        <div class="rounded-xl border border-bq-border bg-bq-surface p-5">
+        <div class="bq-panel p-5">
             <p class="text-sm text-bq-text-muted">Rata-rata rating</p>
             <p class="mt-1 flex items-baseline gap-1">
-                <span class="text-3xl font-semibold tabular-nums text-bq-text">{{ number_format($summary['average'], 1, ',', '.') }}</span>
+                <span class="text-3xl font-semibold bq-num text-bq-text">{{ number_format($summary['average'], 1, ',', '.') }}</span>
                 <span class="text-sm text-bq-text-muted">/ 5</span>
             </p>
             <div class="mt-1 flex items-center gap-0.5" aria-hidden="true">
@@ -53,18 +53,18 @@
             <p class="mt-1 text-sm text-bq-text-muted">Dari {{ $summary['total'] }} ulasan</p>
         </div>
 
-        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 lg:col-span-2">
+        <div class="bq-panel p-5 lg:col-span-2">
             <p class="text-sm text-bq-text-muted">Sebaran rating</p>
             <dl class="mt-3 space-y-2">
                 @foreach ($summary['distribution'] as $stars => $count)
                     @php $share = $summary['total'] > 0 ? (int) round($count / $summary['total'] * 100) : 0; @endphp
                     <div class="flex items-center gap-3 text-sm">
-                        <dt class="w-14 shrink-0 tabular-nums text-bq-text">{{ $stars }} bintang</dt>
+                        <dt class="w-14 shrink-0 bq-num text-bq-text">{{ $stars }} bintang</dt>
                         <dd class="flex flex-1 items-center gap-3">
                             <span class="h-2 flex-1 overflow-hidden rounded-full bg-bq-background" aria-hidden="true">
                                 <span class="block h-full rounded-full bg-bq-warning" style="width: {{ $share }}%"></span>
                             </span>
-                            <span class="w-8 shrink-0 text-right tabular-nums text-bq-text-muted">{{ $count }}</span>
+                            <span class="w-8 shrink-0 text-right bq-num text-bq-text-muted">{{ $count }}</span>
                         </dd>
                     </div>
                 @endforeach
@@ -94,7 +94,7 @@
     @else
         <ul class="space-y-3" aria-label="Ulasan">
             @foreach ($reviews as $review)
-                <li class="rounded-xl border border-bq-border bg-bq-surface p-4 {{ $review['hidden'] ? 'opacity-75' : '' }}">
+                <li class="bq-panel p-4 {{ $review['hidden'] ? 'opacity-75' : '' }}">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
@@ -115,7 +115,7 @@
                                     · <a
                                         href="{{ $review['bookingUrl'] }}"
                                         @if ($review['panelUrl']) x-on:click.prevent="$dispatch('open-booking-panel', { url: @js($review['panelUrl']), trigger: $el })" @endif
-                                        class="text-bq-primary hover:text-bq-primary-hover"
+                                        class="bq-link"
                                     >{{ $review['bookingCode'] }}</a>
                                 @endif
                             </p>
@@ -171,7 +171,7 @@
             <div>
                 <label for="review-reply-text" class="block text-sm font-medium text-bq-text">Balasan</label>
                 <textarea id="review-reply-text" name="balasan" rows="4" required maxlength="{{ \App\Actions\Review\ReplyToReview::MAX_LENGTH }}" x-model="review.reply" class="bq-input mt-1 block w-full"></textarea>
-                <p class="mt-1 text-right text-xs tabular-nums text-bq-text-muted" x-text="(review.reply || '').length + '/{{ \App\Actions\Review\ReplyToReview::MAX_LENGTH }}'"></p>
+                <p class="mt-1 text-right text-xs bq-num text-bq-text-muted" x-text="(review.reply || '').length + '/{{ \App\Actions\Review\ReplyToReview::MAX_LENGTH }}'"></p>
             </div>
         </form>
         <x-slot:footer>

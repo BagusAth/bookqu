@@ -96,7 +96,7 @@
             @foreach ([['Saldo tersedia', $summary['available'], 'Bisa dicairkan ke rekening Anda'], ['Sedang diproses', $summary['inProcess'], 'Pencairan menunggu review atau transfer'], ['Total dicairkan', $summary['withdrawn'], 'Sudah ditransfer ke rekening Anda']] as [$title, $value, $hint])
                 <div class="{{ $card }} p-4">
                     <p class="text-sm text-bq-text-muted">{{ $title }}</p>
-                    <p class="mt-1 text-2xl font-semibold tabular-nums text-bq-text">{{ $rupiah($value) }}</p>
+                    <p class="mt-1 text-2xl font-semibold bq-num text-bq-text">{{ $rupiah($value) }}</p>
                     <p class="mt-0.5 text-xs text-bq-text-muted">{{ $hint }}</p>
                 </div>
             @endforeach
@@ -106,7 +106,7 @@
             @foreach ([['Berhasil', 'sukses'], ['Menunggu', 'pending'], ['Gagal', 'gagal'], ['Direfund', 'refund']] as [$title, $key])
                 <div class="{{ $card }} p-4">
                     <p class="text-sm text-bq-text-muted">Pembayaran {{ mb_strtolower($title) }}</p>
-                    <p class="mt-1 text-xl font-semibold tabular-nums text-bq-text">{{ $summary['counts'][$key] }}</p>
+                    <p class="mt-1 text-xl font-semibold bq-num text-bq-text">{{ $summary['counts'][$key] }}</p>
                 </div>
             @endforeach
         </section>
@@ -114,7 +114,7 @@
         <section aria-labelledby="latest-title" class="{{ $card }}">
             <div class="flex items-center justify-between border-b border-bq-border px-4 py-3">
                 <h2 id="latest-title" class="text-base font-semibold text-bq-text">Transaksi terbaru</h2>
-                <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="text-sm text-bq-primary hover:text-bq-primary-hover">Semua transaksi</a>
+                <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="text-sm bq-link">Semua transaksi</a>
             </div>
             @include('owner.partials.payments.transactions', ['rows' => $latest, 'toneClass' => $toneClass, 'emptyText' => 'Belum ada pembayaran pelanggan.'])
         </section>
@@ -141,7 +141,7 @@
                 </label>
             @endforeach
             <button class="{{ $buttonSecondary }}">Cari</button>
-            <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="px-2 py-2 text-sm text-bq-primary underline">Reset filter</a>
+            <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="px-2 py-2 text-sm bq-link">Reset filter</a>
         </form>
         <section aria-label="Semua transaksi" class="{{ $card }}">
             @include('owner.partials.payments.transactions', ['rows' => $transactions, 'toneClass' => $toneClass, 'emptyText' => array_filter($transactionFilters) ? 'Tidak ada transaksi yang cocok.' : 'Belum ada pembayaran pelanggan.'])
@@ -154,7 +154,7 @@
         <section aria-labelledby="balance-title" class="{{ $card }} flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p id="balance-title" class="text-sm text-bq-text-muted">Saldo tersedia</p>
-                <p class="mt-1 text-2xl font-semibold tabular-nums text-bq-text">{{ $rupiah($summary['available']) }}</p>
+                <p class="mt-1 text-2xl font-semibold bq-num text-bq-text">{{ $rupiah($summary['available']) }}</p>
                 <p class="mt-0.5 text-xs text-bq-text-muted">
                     Minimal {{ $rupiah($payoutRules['min']) }}@if ($payoutRules['cap'] !== null) · maksimal {{ $rupiah($payoutRules['cap']) }} per pengajuan @endif
                 </p>
@@ -179,7 +179,7 @@
         <section aria-labelledby="ledger-title" class="{{ $card }}">
             <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-bq-border px-4 py-3">
                 <h2 id="ledger-title" class="text-base font-semibold text-bq-text">Mutasi saldo</h2>
-                <p class="text-sm text-bq-text-muted">Saldo bersih dari riwayat mutasi <span class="font-medium tabular-nums text-bq-text">{{ $rupiah($ledger['total']) }}</span></p>
+                <p class="text-sm text-bq-text-muted">Saldo bersih dari riwayat mutasi <span class="font-medium bq-num text-bq-text">{{ $rupiah($ledger['total']) }}</span></p>
             </div>
             @if ($ledger['rows']->total() === 0)
                 <p class="px-4 py-6 text-sm text-bq-text-muted">Belum ada mutasi. Saldo bertambah saat pembayaran booking online berhasil.</p>
@@ -199,9 +199,9 @@
                         <li class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
                             <div class="min-w-0">
                                 <p class="text-bq-text">{{ $kind }}@if ($row->booking_code) · {{ $row->booking_code }}@endif</p>
-                                <p class="text-xs tabular-nums text-bq-text-muted">{{ \Illuminate\Support\Carbon::parse($row->occurred_at)->timezone('Asia/Jakarta')->translatedFormat('j M Y, H:i') }}@if ($row->reference) · {{ $row->reference }}@endif</p>
+                                <p class="text-xs bq-num text-bq-text-muted">{{ \Illuminate\Support\Carbon::parse($row->occurred_at)->timezone('Asia/Jakarta')->translatedFormat('j M Y, H:i') }}@if ($row->reference) · {{ $row->reference }}@endif</p>
                             </div>
-                            <p class="shrink-0 font-medium tabular-nums {{ $amount >= 0 ? 'text-bq-success' : 'text-bq-danger' }}">{{ $amount >= 0 ? '+' : '−' }}{{ $rupiah(abs($amount)) }}</p>
+                            <p class="shrink-0 font-medium bq-num {{ $amount >= 0 ? 'text-bq-success' : 'text-bq-danger' }}">{{ $amount >= 0 ? '+' : '−' }}{{ $rupiah(abs($amount)) }}</p>
                         </li>
                     @endforeach
                 </ul>
@@ -218,8 +218,8 @@
                     @foreach ($payouts as $payout)
                         <li class="space-y-2 px-4 py-3 text-sm">
                             <div class="flex flex-wrap items-center justify-between gap-2">
-                                <p class="font-medium tabular-nums text-bq-text">{{ $payout['amount'] }} <span class="font-normal text-bq-text-muted">· {{ $payout['account'] }}</span></p>
-                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $toneClass($payout['tone']) }}">{{ $payout['label'] }}</span>
+                                <p class="font-medium bq-num text-bq-text">{{ $payout['amount'] }} <span class="font-normal text-bq-text-muted">· {{ $payout['account'] }}</span></p>
+                                <span class="bq-badge {{ $toneClass($payout['tone']) }}">{{ $payout['label'] }}</span>
                             </div>
                             <ol class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs" aria-label="Tahap pencairan">
                                 @foreach ($payout['stages'] as $index => $stage)
@@ -232,7 +232,7 @@
                                 <p class="text-xs text-bq-danger">{{ $payout['rejectionReason'] }}</p>
                             @endif
                             @if ($payout['proofUrl'])
-                                <a href="{{ $payout['proofUrl'] }}" class="text-xs text-bq-primary hover:text-bq-primary-hover">Unduh bukti transfer</a>
+                                <a href="{{ $payout['proofUrl'] }}" class="text-xs bq-link">Unduh bukti transfer</a>
                             @endif
                         </li>
                     @endforeach
@@ -248,7 +248,7 @@
                 <div>
                     <div class="flex items-center justify-between">
                         <label for="withdraw-amount" class="{{ $label }}">Jumlah (Rp, tanpa sen)</label>
-                        <button type="button" class="text-sm text-bq-primary hover:text-bq-primary-hover" x-on:click="amount = max">Semua yang bisa</button>
+                        <button type="button" class="text-sm bq-link" x-on:click="amount = max">Semua yang bisa</button>
                     </div>
                     <input id="withdraw-amount" type="number" inputmode="numeric" step="1" x-model="amount" min="{{ $payoutRules['min'] }}" max="{{ $maxAmount }}" class="{{ $field }}">
                     <p class="mt-1 text-xs text-bq-text-muted">Saldo tersedia {{ $rupiah($summary['available']) }} · Minimal {{ $rupiah($payoutRules['min']) }}@if ($payoutRules['cap'] !== null) · maksimal {{ $rupiah($payoutRules['cap']) }} per pengajuan @endif</p>
@@ -288,9 +288,9 @@
             <div x-show="step === 3" x-cloak class="space-y-3">
                 <p class="text-xs text-bq-text-muted">Langkah 3 dari 3: konfirmasi</p>
                 <dl class="space-y-1.5 rounded-lg bg-bq-background px-3 py-2 text-sm">
-                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Jumlah</dt><dd class="font-medium tabular-nums text-bq-text">Rp <span x-text="formatted(amount)"></span></dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Jumlah</dt><dd class="font-medium bq-num text-bq-text">Rp <span x-text="formatted(amount)"></span></dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Bank</dt><dd class="text-bq-text" x-text="selectedAccount()?.bank_nama"></dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Nomor rekening</dt><dd class="tabular-nums text-bq-text" x-text="selectedAccount()?.masked_number"></dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Nomor rekening</dt><dd class="bq-num text-bq-text" x-text="selectedAccount()?.masked_number"></dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Atas nama</dt><dd class="text-bq-text" x-text="selectedAccount()?.nama_pemilik_rekening"></dd></div>
                 </dl>
                 <p class="text-xs text-bq-text-muted">Jumlah ini langsung ditahan dari saldo Anda. Admin BookQu meninjau lalu mentransfer secara manual pada jam kerja.</p>
@@ -325,7 +325,7 @@
                     @foreach ($accounts as $account)
                         <li class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                             <div class="min-w-0 text-sm">
-                                <p class="text-bq-text">{{ $account->bank_nama }} · <span class="tabular-nums">{{ $account->masked_number }}</span>
+                                <p class="text-bq-text">{{ $account->bank_nama }} · <span class="bq-num">{{ $account->masked_number }}</span>
                                     @if ($account->is_default)<span class="ml-1 inline-flex items-center rounded-full bg-bq-primary-light px-2 py-0.5 text-xs font-medium text-bq-primary">Utama</span>@endif
                                 </p>
                                 <p class="text-xs text-bq-text-muted">a.n. {{ $account->nama_pemilik_rekening }}</p>

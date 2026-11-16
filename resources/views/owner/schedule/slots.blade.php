@@ -1,6 +1,6 @@
 <div class="space-y-4" x-data="{ slotIds: [], operation: 'close' }">
     @if ($daftarlayanan->isNotEmpty())
-        <details class="rounded-xl border border-bq-border bg-bq-surface p-4" @if (request()->boolean('buat')) open @endif>
+        <details class="bq-panel p-4" @if (request()->boolean('buat')) open @endif>
             <summary class="cursor-pointer font-semibold">Buat slot sekaligus</summary>
             <form class="mt-4 space-y-3" method="POST" action="{{ route('owner.schedule.bulk-store', ['tab' => 'slots']) }}"
                 data-preview-url="{{ route('owner.schedule.bulk-preview') }}"
@@ -73,12 +73,12 @@
         <noscript><button class="bq-btn bq-btn-secondary">Terapkan</button></noscript>
     </form>
     <nav class="flex flex-wrap items-center gap-3 text-sm" aria-label="Minggu slot">
-        <a class="text-bq-primary underline" href="{{ request()->fullUrlWithQuery(['minggu' => $offsetminggu - 1, 'buat' => null]) }}">Minggu sebelumnya</a>
+        <a class="bq-link" href="{{ request()->fullUrlWithQuery(['minggu' => $offsetminggu - 1, 'buat' => null]) }}">Minggu sebelumnya</a>
         <span>{{ $awalminggu->format('d/m/Y') }} – {{ $akhirminggu->format('d/m/Y') }}</span>
-        <a class="text-bq-primary underline" href="{{ request()->fullUrlWithQuery(['minggu' => $offsetminggu + 1, 'buat' => null]) }}">Minggu berikutnya</a>
+        <a class="bq-link" href="{{ request()->fullUrlWithQuery(['minggu' => $offsetminggu + 1, 'buat' => null]) }}">Minggu berikutnya</a>
     </nav>
     @if ($slots->contains(fn ($slot) => ! $slot->occupied))
-        <form id="selected-slots" method="POST" action="{{ route('owner.schedule.slots.bulk') }}" class="flex flex-wrap items-center gap-3 rounded-xl border border-bq-border bg-bq-surface p-3 text-sm">
+        <form id="selected-slots" method="POST" action="{{ route('owner.schedule.slots.bulk') }}" class="flex flex-wrap items-center gap-3 bq-panel p-3 text-sm">
             @csrf
             <input type="hidden" name="operation" :value="operation">
             <span x-text="slotIds.length + ' slot dipilih'"></span>
@@ -90,17 +90,17 @@
         </form>
     @endif
     @forelse ($slots as $slot)
-        <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-bq-border bg-bq-surface p-3 text-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 bq-panel p-3 text-sm">
             <div>
                 @if (! $slot->occupied)
                     <input type="checkbox" name="slot_ids[]" form="selected-slots" value="{{ $slot->id }}" x-model="slotIds"
                         aria-label="Pilih slot {{ $slot->layanan?->namalayanan }} {{ $slot->tanggal->format('d/m/Y') }} {{ $slotTimes[$slot->id] }}">
                 @endif
                 <strong>{{ $slot->layanan?->namalayanan ?? 'Layanan dihapus' }}</strong>
-                <p class="tabular-nums">{{ $slot->tanggal->format('d/m/Y') }} · {{ $slotTimes[$slot->id] }}</p>
+                <p class="bq-num">{{ $slot->tanggal->format('d/m/Y') }} · {{ $slotTimes[$slot->id] }}</p>
             </div>
             @isset($slotPrices[$slot->id])
-                <span class="tabular-nums">Rp {{ number_format($slotPrices[$slot->id], 0, ',', '.') }}</span>
+                <span class="bq-num">Rp {{ number_format($slotPrices[$slot->id], 0, ',', '.') }}</span>
             @endisset
             <span>{{ $slotLabels[$slot->id] }}</span>
             @if ($slot->occupied)

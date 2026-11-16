@@ -84,7 +84,7 @@
             </div>
 
             {{-- Card 1: Konteks Bisnis & Tenant --}}
-            <div class="rounded-xl border border-bq-border bg-bq-surface p-5 space-y-4 ">
+            <div class="bq-panel p-5 space-y-4 ">
                 <div class="flex items-center justify-between border-b border-bq-border pb-3">
                     <div class="flex items-center gap-2.5">
                         <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-bq-primary/10 text-bq-primary">
@@ -117,7 +117,7 @@
 
                     <div class="rounded-lg border border-bq-border/60 bg-bq-background p-3.5 space-y-1 min-w-0">
                         <p class="text-xs font-medium uppercase tracking-wider text-bq-text-subtle">Portal Booking Publik</p>
-                        <a href="{{ $storefrontUrl }}" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-1.5 text-sm font-semibold text-bq-primary hover:text-bq-primary-hover truncate" title="Buka Halaman Booking Publik">
+                        <a href="{{ $storefrontUrl }}" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-1.5 text-sm font-semibold bq-link truncate" title="Buka Halaman Booking Publik">
                             <span class="truncate">{{ preg_replace('#^https?://#', '', $storefrontUrl) }}</span>
                             <svg class="h-3.5 w-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -134,7 +134,7 @@
                 <input type="hidden" name="plan_id" value="{{ $plan->id }}">
 
                 {{-- Card 2: Data Kontak Pembayar --}}
-                <div class="rounded-xl border border-bq-border bg-bq-surface p-5 space-y-4 ">
+                <div class="bq-panel p-5 space-y-4 ">
                     <div class="flex items-center gap-2.5 border-b border-bq-border pb-3">
                         <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-bq-primary/10 text-bq-primary">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>

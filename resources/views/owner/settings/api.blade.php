@@ -2,7 +2,7 @@
     <h3 class="text-base font-semibold">API dan Webhook</h3>
     <x-owner.field-error name="delivery" />
     @isset($credential)
-        <section class="rounded-xl border border-bq-border bg-bq-surface p-4" role="status">
+        <section class="bq-panel p-4" role="status">
             <h2 class="font-semibold">{{ $label }}</h2>
             <p class="text-sm text-bq-text-muted">Salin sekarang. Nilai ini hanya tampil sekali.</p>
             <div x-data class="space-y-2">
@@ -19,7 +19,7 @@
         </section>
     @endisset
 
-    <section class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
+    <section class="space-y-3 bq-panel p-4">
         <h2 class="font-semibold">Kunci API</h2>
         <form method="POST" action="{{ route('owner.api.keys.store') }}" class="flex flex-wrap items-end gap-2">
             @csrf
@@ -42,7 +42,7 @@
         </ul>
     </section>
 
-    <section class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
+    <section class="space-y-3 bq-panel p-4">
         <h2 class="font-semibold">Endpoint webhook</h2>
         <form method="POST" action="{{ route('owner.api.webhooks.store') }}" class="flex flex-wrap items-end gap-2">
             @csrf
@@ -72,7 +72,7 @@
         </ul>
     </section>
 
-    <section class="space-y-2 rounded-xl border border-bq-border bg-bq-surface p-4">
+    <section class="space-y-2 bq-panel p-4">
         <h2 class="font-semibold">Pengiriman terakhir</h2>
         <ul class="divide-y divide-bq-border text-sm">
             @forelse ($deliveries as $delivery)

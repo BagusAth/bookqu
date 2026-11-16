@@ -1,4 +1,4 @@
-<form method="POST" action="{{ route('owner.settings.booking-policy') }}" class="space-y-4 rounded-xl border border-bq-border bg-bq-surface p-4"
+<form method="POST" action="{{ route('owner.settings.booking-policy') }}" class="space-y-4 bq-panel p-4"
     x-data="{
         formatHours(value) {
             const count = Math.max(0, Math.floor(Number(value)));

@@ -3,7 +3,7 @@
 
 
     @isset($configured)
-    <section class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
+    <section class="space-y-3 bq-panel p-4">
         <h2 class="font-semibold">Google Calendar</h2>
         <p class="text-sm text-bq-text-muted">Booking terkonfirmasi dan perubahan jadwal dikirim dari BookQu ke kalender utama Google Anda.</p>
         @error('calendar')<p class="text-sm text-bq-danger" role="alert">{{ $message }}</p>@enderror
@@ -30,7 +30,7 @@
         @endif
     </section>
 
-    <form method="POST" action="{{ route('owner.settings.integrations.tracking') }}" class="space-y-4 rounded-xl border border-bq-border bg-bq-surface p-4">
+    <form method="POST" action="{{ route('owner.settings.integrations.tracking') }}" class="space-y-4 bq-panel p-4">
         @csrf
         @method('PUT')
         <h2 class="font-semibold">Pengukuran halaman booking</h2>

@@ -4,13 +4,15 @@
 
 @section('content')
 @php
+    // BQ-161 (audit K-03): each state has a fill and a strong left edge, so states differ by more than text.
     $slotColors = [
-        'Tersedia' => 'bg-bq-success-bg',
-        'Terisi' => 'bg-bq-info-bg',
-        'Ditutup' => 'bg-bq-warning-bg',
-        'Terlewat' => 'bg-bq-background',
-        'Tidak tersedia' => 'bg-bq-danger-bg',
+        'Tersedia' => 'border-l-4 border-l-bq-success bg-bq-success-bg/70',
+        'Terisi' => 'border-l-4 border-l-bq-primary bg-bq-primary-light',
+        'Ditutup' => 'border-l-4 border-l-bq-warning bg-bq-warning-bg/70',
+        'Terlewat' => 'border-l-4 border-l-bq-border-strong bg-bq-surface-2 text-bq-text-muted',
+        'Tidak tersedia' => 'border-l-4 border-l-bq-danger bg-bq-danger-bg/70',
     ];
+    $legendDots = ['Tersedia' => 'bg-bq-success', 'Terisi' => 'bg-bq-primary', 'Ditutup' => 'bg-bq-warning', 'Terlewat' => 'bg-bq-border-strong', 'Tidak tersedia' => 'bg-bq-danger'];
 @endphp
 <div class="mx-auto max-w-7xl space-y-5" x-data="{
     slot: null,
@@ -75,22 +77,24 @@
 }">
     <x-owner.page-header title="Kalender" purpose="Lihat jadwal layanan dan kelola slot.">
         @if ($scheduleUrl)
-            <x-slot:action><a href="{{ $scheduleUrl }}" class="text-sm font-semibold text-bq-primary underline">Atur jam buka</a></x-slot:action>
+            <x-slot:action><a href="{{ $scheduleUrl }}" class="bq-btn bq-btn-secondary"><x-owner.icon name="clock" class="h-4 w-4" />Atur jam buka</a></x-slot:action>
         @endif
     </x-owner.page-header>
     <x-owner.tabs :tabs="$views" :active="$view" param="view" label="Tampilan kalender" />
 
-    <nav class="flex flex-wrap items-center gap-3 text-sm" aria-label="Navigasi tanggal">
-        <a class="text-bq-primary underline" href="{{ route('owner.calendar', ['view' => $view, 'date' => $previous->toDateString()] + $filters) }}">Sebelumnya</a>
-        <span class="font-semibold">{{ $view === 'day' ? 'Jadwal Harian · ' : '' }}{{ $dateLabel }}</span>
-        <a class="text-bq-primary underline" href="{{ route('owner.calendar', ['view' => $view, 'date' => $next->toDateString()] + $filters) }}">Berikutnya</a>
-        <a class="bq-btn bq-btn-secondary bq-btn-sm" href="{{ route('owner.calendar', ['view' => $view, 'date' => $today] + $filters) }}">Hari ini</a>
+    <nav class="flex flex-wrap items-center justify-between gap-3" aria-label="Navigasi tanggal">
+        <div class="flex items-center gap-1 bq-panel p-1">
+            <a class="bq-btn bq-btn-ghost bq-btn-icon bq-btn-sm" href="{{ route('owner.calendar', ['view' => $view, 'date' => $previous->toDateString()] + $filters) }}" aria-label="Sebelumnya" title="Sebelumnya"><x-owner.icon name="chevron-left" class="h-5 w-5" /><span class="sr-only">Sebelumnya</span></a>
+            <a class="bq-btn bq-btn-ghost bq-btn-sm" href="{{ route('owner.calendar', ['view' => $view, 'date' => $today] + $filters) }}">Hari ini</a>
+            <a class="bq-btn bq-btn-ghost bq-btn-icon bq-btn-sm" href="{{ route('owner.calendar', ['view' => $view, 'date' => $next->toDateString()] + $filters) }}" aria-label="Berikutnya" title="Berikutnya"><x-owner.icon name="chevron-right" class="h-5 w-5" /><span class="sr-only">Berikutnya</span></a>
+        </div>
+        <p class="text-lg font-bold text-bq-ink"><span class="sr-only">{{ $view === 'day' ? 'Jadwal Harian · ' : '' }}</span>{{ $dateLabel }}</p>
     </nav>
 
     @include('owner.partials.calendar.controls')
-    <ul class="flex flex-wrap gap-2 text-xs" aria-label="Keterangan status slot">
-        @foreach ($slotColors as $label => $background)
-            <li class="rounded-md border border-bq-border px-2 py-1 {{ $background }}">{{ $label }}</li>
+    <ul class="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-bq-text-muted" aria-label="Keterangan status slot">
+        @foreach ($legendDots as $label => $dot)
+            <li class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full {{ $dot }}" aria-hidden="true"></span>{{ $label }}</li>
         @endforeach
     </ul>
     <p x-cloak x-show="feedback" x-text="feedback" role="status" class="text-sm"></p>

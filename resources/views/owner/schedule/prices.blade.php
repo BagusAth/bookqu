@@ -1,5 +1,5 @@
 <div class="space-y-4">
-    <div class="rounded-xl border border-bq-border bg-bq-surface p-4">
+    <div class="bq-panel p-4">
         <h2 class="font-semibold">Harga dasar</h2>
         <p class="text-sm text-bq-text-muted">Ubah harga dasar di <a class="underline" href="{{ route('owner.services') }}">Layanan</a>.</p>
         <ul class="mt-2 space-y-1 text-sm">
@@ -22,7 +22,7 @@
         @endif
     </div>
 
-    <form method="POST" action="{{ route('owner.schedule.availability', ['tab' => 'prices']) }}" class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4"
+    <form method="POST" action="{{ route('owner.schedule.availability', ['tab' => 'prices']) }}" class="space-y-3 bq-panel p-4"
         x-data="{ type: @js(old('weekend_price_type', $tenant->weekend_price_type ?? 'none')) }">
         @csrf
         <h2 class="font-semibold">Harga akhir pekan</h2>
@@ -43,7 +43,7 @@
         </div>
     </form>
 
-    <section class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
+    <section class="space-y-3 bq-panel p-4">
         <h2 class="font-semibold">Aturan jam sibuk</h2>
         @foreach ($peakRules as $rule)
             <details class="rounded border border-bq-border p-3">
@@ -64,7 +64,7 @@
     </section>
 
     @if ($daftarlayanan->isNotEmpty())
-        <section class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
+        <section class="space-y-3 bq-panel p-4">
             <h2 class="font-semibold">Harga tanggal khusus</h2>
             @foreach ($specialDates as $special)
                 <form method="POST" id="delete-special-{{ $special->id }}" x-data action="{{ route('owner.schedule.special-dates.destroy', $special) }}" class="flex flex-wrap items-center justify-between gap-2 text-sm">
@@ -100,7 +100,7 @@
 
         <form action="{{ route('owner.schedule.price-simulator') }}" method="GET" x-data="schedulePriceSimulator"
             @submit.prevent="simulate($el)" @change="hours = []"
-            class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
+            class="space-y-3 bq-panel p-4">
             <h2 class="font-semibold">Simulator harga</h2>
             <div class="flex flex-wrap items-end gap-3">
                 <label class="grid gap-1 text-sm">Layanan
@@ -119,7 +119,7 @@
             <ul class="grid gap-2 text-sm sm:grid-cols-3" aria-live="polite">
                 <template x-for="hour in hours" :key="hour.time">
                     <li class="rounded border border-bq-border p-2">
-                        <span class="font-medium tabular-nums" x-text="hour.time + ' · ' + rupiah.format(hour.price)"></span>
+                        <span class="font-medium bq-num" x-text="hour.time + ' · ' + rupiah.format(hour.price)"></span>
                         <span class="block text-xs text-bq-text-muted" x-text="hour.rule_label"></span>
                     </li>
                 </template>

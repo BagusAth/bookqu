@@ -1,4 +1,4 @@
-<form method="POST" action="{{ route('owner.settings.account') }}" class="space-y-4 rounded-xl border border-bq-border bg-bq-surface p-4"
+<form method="POST" action="{{ route('owner.settings.account') }}" class="space-y-4 bq-panel p-4"
     x-data="{ password: '' }">
     @csrf
     <h2 class="font-semibold">Akun</h2>
@@ -34,7 +34,7 @@
 </form>
 
 @if ($canDeleteBusiness)
-    <div x-data class="mt-4 rounded-xl border border-bq-border bg-bq-surface p-4">
+    <div x-data class="mt-4 bq-panel p-4">
         <h2 class="font-semibold">Hapus akun bisnis</h2>
         <p class="my-2 text-sm text-bq-text-muted">Tindakan ini menghapus akun dan data bisnis secara permanen.</p>
         <button type="button" @click="$dispatch('open-dialog', { id: 'settings-delete-business' })" class="text-sm font-semibold text-bq-danger">Hapus akun bisnis</button>

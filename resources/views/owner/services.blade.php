@@ -95,7 +95,7 @@
 
     @if ($isServicesTab)
         {{-- ── Tab Layanan ── --}}
-        <section aria-labelledby="usage-meter-label" class="rounded-xl border border-bq-border bg-bq-surface p-4">
+        <section aria-labelledby="usage-meter-label" class="bq-panel p-4">
             @php
                 $percent = $usage['unlimited'] || $usage['max'] <= 0 ? 0 : min(100, (int) round($usage['used'] / $usage['max'] * 100));
             @endphp
@@ -156,7 +156,7 @@
         @else
             <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Daftar layanan">
                 @foreach ($serviceCards as $card)
-                    <li class="flex flex-col overflow-hidden rounded-xl border border-bq-border bg-bq-surface {{ $card['isActive'] ? '' : 'opacity-75' }}">
+                    <li class="flex flex-col overflow-hidden bq-panel {{ $card['isActive'] ? '' : 'opacity-75' }}">
                         <div class="relative aspect-[16/9] bg-bq-background">
                             @if ($card['imageUrl'])
                                 <img src="{{ $card['imageUrl'] }}" alt="" class="h-full w-full object-cover" loading="lazy">
@@ -422,7 +422,7 @@
                 </x-owner.empty-state>
             @endif
         @else
-            <ul class="divide-y divide-bq-border overflow-hidden rounded-xl border border-bq-border bg-bq-surface" aria-label="Daftar kategori">
+            <ul class="divide-y divide-bq-border overflow-hidden bq-panel" aria-label="Daftar kategori">
                 @foreach ($categories as $row)
                     <li class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                         <div class="flex min-w-0 flex-1 items-start gap-3">

@@ -48,7 +48,7 @@
         </x-slot:action>
     </x-owner.page-header>
 
-    <dl class="grid grid-cols-2 gap-3 rounded-xl border border-bq-border bg-bq-surface p-4 text-sm sm:grid-cols-4">
+    <dl class="grid grid-cols-2 gap-3 bq-panel p-4 text-sm sm:grid-cols-4">
         <div><dt>Promo aktif</dt><dd class="font-semibold">{{ $promoFigures['active'] }}</dd></div>
         <div><dt>Pemakaian</dt><dd class="font-semibold">{{ $promoFigures['uses'] }}</dd></div>
         <div><dt>Total diskon</dt><dd class="font-semibold">Rp {{ number_format($promoFigures['discount'], 0, ',', '.') }}</dd></div>
@@ -88,7 +88,7 @@
                     'applicable_services' => is_string($v->applicable_services) ? ($v->applicable_services === 'all' ? [] : explode(',', $v->applicable_services)) : ($v->applicable_services ?? []),
                 ];
             @endphp
-            <div class="relative rounded-2xl border border-bq-border bg-bq-surface p-5 transition hover:border-bq-border-strong hover: flex flex-col justify-between overflow-hidden">
+            <div class="relative bq-panel p-5 transition hover:border-bq-border-strong hover: flex flex-col justify-between overflow-hidden">
                 <div class="absolute -right-6 -bottom-6 h-24 w-24 rounded-full bg-bq-primary-light/50 pointer-events-none"></div>
 
                 <div>
@@ -144,11 +144,11 @@
                         <form method="POST" action="{{ route($promoRoute.'.toggle', $v->id) }}">
                             @csrf
                             @method('PATCH')
-                            <button type="submit" class="text-xs font-semibold text-bq-primary underline">{{ $v->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
+                            <button type="submit" class="text-xs bq-link">{{ $v->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
                         </form>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button type="button" @click="openEdit(@js($vPayload))" class="rounded-lg p-1.5 text-bq-text-muted hover:bg-bq-background hover:text-bq-text transition" title="Edit" id="btn-edit-voucher-{{ $v->id }}">
+                        <button type="button" @click="openEdit(@js($vPayload))" class="rounded-lg p-1.5 text-bq-text-muted hover:bg-bq-surface-2 hover:text-bq-text transition" title="Edit" id="btn-edit-voucher-{{ $v->id }}">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                         </button>
                         <form method="POST" action="{{ route($promoRoute.'.destroy', $v->id) }}" id="form-delete-voucher-{{ $v->id }}">
@@ -231,7 +231,7 @@
                 </div>
                 @include('owner.partials.promo-limits', ['model' => 'newVoucher', 'errorForm' => 'promo-create'])
                 <div class="flex items-center justify-end gap-2 pt-2 border-t border-bq-border">
-                    <button type="button" @click="addModalOpen = false" class="rounded-xl px-3.5 py-2 text-xs font-semibold text-bq-text-muted hover:bg-bq-background transition">Batal</button>
+                    <button type="button" @click="addModalOpen = false" class="rounded-xl px-3.5 py-2 text-xs font-semibold text-bq-text-muted hover:bg-bq-surface-2 transition">Batal</button>
                     <button type="submit" class="bq-btn bq-btn-primary bq-btn-sm">Simpan promo</button>
                 </div>
             </form>
@@ -301,7 +301,7 @@
                 </div>
                 @include('owner.partials.promo-limits', ['model' => 'activeVoucher', 'errorForm' => $promoErrorForm])
                 <div class="flex items-center justify-end gap-2 pt-2 border-t border-bq-border">
-                    <button type="button" @click="editModalOpen = false" class="rounded-xl px-3.5 py-2 text-xs font-semibold text-bq-text-muted hover:bg-bq-background transition">Batal</button>
+                    <button type="button" @click="editModalOpen = false" class="rounded-xl px-3.5 py-2 text-xs font-semibold text-bq-text-muted hover:bg-bq-surface-2 transition">Batal</button>
                     <button type="submit" class="bq-btn bq-btn-primary bq-btn-sm">Simpan Perubahan</button>
                 </div>
             </form>

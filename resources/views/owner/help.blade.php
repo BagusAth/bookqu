@@ -11,7 +11,7 @@
 <div class="mx-auto max-w-4xl space-y-6">
     <x-owner.page-header title="Bantuan" purpose="Jawaban cepat untuk pertanyaan umum, dan cara menghubungi tim BookQu." />
 
-    <section aria-labelledby="contact-title" class="rounded-xl border border-bq-border bg-bq-surface p-4">
+    <section aria-labelledby="contact-title" class="bq-panel p-4">
         <h2 id="contact-title" class="text-base font-semibold text-bq-text">Hubungi BookQu</h2>
         @if ($contacts['whatsappUrl'] || $contacts['email'])
             <div class="mt-3 flex flex-wrap gap-2">
@@ -28,13 +28,13 @@
         @else
             <p class="mt-1 text-sm text-bq-text-muted">Kontak bantuan belum diatur.</p>
         @endif
-        <p class="mt-3 text-sm text-bq-text-muted"><a href="{{ $guideUrl }}" class="text-bq-primary hover:text-bq-primary-hover">Buka Beranda</a> untuk melihat langkah penyiapan atau jadwal hari ini.</p>
+        <p class="mt-3 text-sm text-bq-text-muted"><a href="{{ $guideUrl }}" class="bq-link">Buka Beranda</a> untuk melihat langkah penyiapan atau jadwal hari ini.</p>
     </section>
 
     <section aria-labelledby="faq-title" class="space-y-4">
         <h2 id="faq-title" class="text-base font-semibold text-bq-text">Pertanyaan umum</h2>
         @foreach ($faq as $page => $questions)
-            <div class="rounded-xl border border-bq-border bg-bq-surface">
+            <div class="bq-panel">
                 <h3 class="border-b border-bq-border px-4 py-3 text-sm font-semibold text-bq-text">{{ $page }}</h3>
                 <div class="divide-y divide-bq-border">
                     @foreach ($questions as $item)

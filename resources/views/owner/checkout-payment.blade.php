@@ -36,7 +36,7 @@
             </div>
 
             {{-- Payment Card --}}
-            <div class="rounded-xl border border-bq-border bg-bq-surface p-4 sm:p-6 space-y-5">
+            <div class="bq-panel p-4 sm:p-6 space-y-5">
 
                 {{-- Status Indicator --}}
                 <div class="flex items-center justify-between gap-3 rounded-xl border border-bq-warning bg-bq-warning-bg/80 p-4">
@@ -158,14 +158,14 @@
                     </div>
                     <div>
                         <p class="text-xs font-medium text-bq-warning">Batas waktu pembayaran</p>
-                        <p class="text-lg font-bold tabular-nums" :class="countdown <= 300 ? 'text-bq-danger' : 'text-bq-warning'" x-text="countdownDisplay">--:--</p>
+                        <p class="text-lg font-bold bq-num" :class="countdown <= 300 ? 'text-bq-danger' : 'text-bq-warning'" x-text="countdownDisplay">--:--</p>
                     </div>
                 </div>
                 <p x-show="countdown <= 300 && countdown > 0" class="mt-2 text-xs font-medium text-bq-danger animate-pulse">⚠️ Waktu hampir habis! Segera selesaikan pembayaran.</p>
             </div>
 
             {{-- Order Summary --}}
-            <div class="rounded-xl border border-bq-border bg-bq-surface p-5 space-y-4">
+            <div class="bq-panel p-5 space-y-4">
                 <div class="border-b border-bq-border pb-3">
                     <h2 class="text-base font-semibold text-bq-text">Ringkasan Pesanan</h2>
                 </div>

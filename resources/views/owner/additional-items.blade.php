@@ -49,7 +49,7 @@
                     'service_ids' => $item->services->modelKeys(),
                 ];
             @endphp
-            <article class="flex flex-col gap-3 rounded-xl border border-bq-border bg-bq-surface p-4">
+            <article class="flex flex-col gap-3 bq-panel p-4">
                 <div class="flex flex-wrap items-start justify-between gap-2">
                     <h2 class="font-semibold">{{ $item->name }}</h2>
                     <x-owner.status-badge type="availability" :status="$item->is_active ? 'active' : 'inactive'" />

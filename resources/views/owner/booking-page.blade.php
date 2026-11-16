@@ -155,7 +155,7 @@
 
                 <p class="text-sm text-bq-text-muted">
                     Deskripsi bisnis ditampilkan pada pratinjau.
-                    <a @click="confirmSection($event)" href="{{ route('owner.settings.business', ['tab' => 'profile']) }}" class="font-medium text-bq-primary underline">Ubah di Profil Bisnis</a>
+                    <a @click="confirmSection($event)" href="{{ route('owner.settings.business', ['tab' => 'profile']) }}" class="bq-link">Ubah di Profil Bisnis</a>
                 </p>
 
                 <div class="flex justify-end">
@@ -166,7 +166,7 @@
             {{-- Live phone-sized preview (D-009) --}}
             <section aria-label="Pratinjau di HP" class="lg:sticky lg:top-20 lg:self-start">
                 <p class="mb-2 text-sm text-bq-text-muted">Pratinjau di HP</p>
-                <div class="mx-auto w-72 overflow-hidden rounded-[2rem] border-8 border-bq-ink bg-white shadow-lg" x-bind:style="'font-family: \'' + look.font_family + '\', system-ui, sans-serif'">
+                <div class="mx-auto w-72 overflow-hidden rounded-[2rem] border-8 border-bq-ink bg-white shadow-bq" x-bind:style="'font-family: \'' + look.font_family + '\', system-ui, sans-serif'">
                     <div class="flex items-center gap-2 border-b border-bq-border px-3 py-2">
                         <template x-if="image(look.logo_asset_id)"><img x-bind:src="image(look.logo_asset_id)" alt="" class="h-7 w-7 rounded-lg object-cover"></template>
                         <template x-if="!image(look.logo_asset_id)"><span class="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-white" x-bind:style="'background-color:' + look.theme_color">{{ mb_strtoupper(mb_substr($tenant->namabisnis ?: 'BQ', 0, 2)) }}</span></template>
@@ -360,7 +360,7 @@
                             <p class="text-sm text-bq-text-muted">DNS {{ $domain['name'] }} saat ini: {{ session('domain_dns') !== [] ? implode(', ', session('domain_dns')) : 'tidak ada catatan CNAME atau A' }}.</p>
                         @endif
                         @if ($domain['status'] === 'connected')
-                            <p class="text-sm text-bq-text">Pelanggan bisa membuka halaman booking Anda di <a href="https://{{ $domain['name'] }}" target="_blank" rel="noopener" class="font-medium text-bq-primary hover:text-bq-primary-hover">{{ $domain['name'] }}</a>.</p>
+                            <p class="text-sm text-bq-text">Pelanggan bisa membuka halaman booking Anda di <a href="https://{{ $domain['name'] }}" target="_blank" rel="noopener" class="font-medium bq-link">{{ $domain['name'] }}</a>.</p>
                         @endif
                     @endif
                 </section>
@@ -374,7 +374,7 @@
                         @if ($domain['cnameTarget'] !== '')
                             <div class="rounded-lg bg-bq-background p-3 text-sm">
                                 <p class="font-medium text-bq-text">Subdomain (mis. booking.namabisnis.com)</p>
-                                <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">CNAME</strong> ke <code class="break-all text-bq-text">{{ $domain['cnameTarget'] }}</code> <button type="button" x-data="ownerCopyText(@js($domain['cnameTarget']))" @click="copy()" class="ms-1 font-medium text-bq-primary underline" x-text="copied ? 'Disalin' : 'Salin tujuan CNAME'">Salin tujuan CNAME</button></p>
+                                <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">CNAME</strong> ke <code class="break-all text-bq-text">{{ $domain['cnameTarget'] }}</code> <button type="button" x-data="ownerCopyText(@js($domain['cnameTarget']))" @click="copy()" class="ms-1 bq-link" x-text="copied ? 'Disalin' : 'Salin tujuan CNAME'">Salin tujuan CNAME</button></p>
                             </div>
                         @endif
                         @if ($domain['addresses'] !== [])
@@ -383,7 +383,7 @@
                                 <ul class="mt-1 space-y-1 text-bq-text-muted">
                                     @foreach ($domain['addresses'] as $address)
                                         <li>A ke <code class="text-bq-text">{{ $address }}</code>
-                                            <button type="button" x-data="ownerCopyText(@js($address))" @click="copy()" class="ms-1 font-medium text-bq-primary underline" x-text="copied ? 'Disalin' : 'Salin alamat A'">Salin alamat A</button>
+                                            <button type="button" x-data="ownerCopyText(@js($address))" @click="copy()" class="ms-1 bq-link" x-text="copied ? 'Disalin' : 'Salin alamat A'">Salin alamat A</button>
                                         </li>
                                     @endforeach
                                 </ul>
@@ -392,7 +392,7 @@
                         @if ($domain['txtValue'] !== '')
                             <div class="rounded-lg bg-bq-background p-3 text-sm">
                                 <p class="font-medium text-bq-text">Bukti kepemilikan (wajib)</p>
-                                <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">TXT</strong> dengan nama <code class="break-all text-bq-text">{{ $domain['txtHost'] }}</code> <button type="button" x-data="ownerCopyText(@js($domain['txtHost']))" @click="copy()" class="ms-1 font-medium text-bq-primary underline" x-text="copied ? 'Disalin' : 'Salin nama TXT'">Salin nama TXT</button> berisi <code class="break-all text-bq-text">{{ $domain['txtValue'] }}</code> <button type="button" x-data="ownerCopyText(@js($domain['txtValue']))" @click="copy()" class="ms-1 font-medium text-bq-primary underline" x-text="copied ? 'Disalin' : 'Salin nilai TXT'">Salin nilai TXT</button></p>
+                                <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">TXT</strong> dengan nama <code class="break-all text-bq-text">{{ $domain['txtHost'] }}</code> <button type="button" x-data="ownerCopyText(@js($domain['txtHost']))" @click="copy()" class="ms-1 bq-link" x-text="copied ? 'Disalin' : 'Salin nama TXT'">Salin nama TXT</button> berisi <code class="break-all text-bq-text">{{ $domain['txtValue'] }}</code> <button type="button" x-data="ownerCopyText(@js($domain['txtValue']))" @click="copy()" class="ms-1 bq-link" x-text="copied ? 'Disalin' : 'Salin nilai TXT'">Salin nilai TXT</button></p>
                             </div>
                         @endif
                         <p class="text-xs text-bq-text-muted">Perubahan DNS bisa butuh beberapa jam. Halaman booking baru terbuka di domain Anda setelah statusnya Terhubung.</p>

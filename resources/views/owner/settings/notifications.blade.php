@@ -1,4 +1,4 @@
-<form method="POST" action="{{ route('owner.settings.notification-preferences') }}" class="space-y-4 rounded-xl border border-bq-border bg-bq-surface p-4">
+<form method="POST" action="{{ route('owner.settings.notification-preferences') }}" class="space-y-4 bq-panel p-4">
     @csrf
     @method('PATCH')
     <h2 class="font-semibold">Notifikasi</h2>
