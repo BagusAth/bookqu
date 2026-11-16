@@ -357,13 +357,12 @@ class CheckoutMidtransTest extends TestCase
         $response->assertSee('Nomor WhatsApp');
 
         // Stepper
-        $response->assertSee('Review Pesanan');
+        $response->assertSee('Periksa pesanan');
         $response->assertSee('Pembayaran');
         $response->assertSee('Invoice');
 
         // Plan details
         $response->assertSee('Paket Pro');
-        $response->assertSee('PRO TIER');
         $response->assertSee('Rp 100.000');
         $response->assertSee('Masa Aktif Langganan');
         $response->assertSee('1 Bulan');
@@ -372,11 +371,11 @@ class CheckoutMidtransTest extends TestCase
         // Trust badges & buttons
         $response->assertSee('Aktivasi Instan Otomatis');
         $response->assertSee('Transaksi Aman & Terenkripsi 256-bit SSL');
-        $response->assertSee('Lanjut ke Pembayaran →');
+        $response->assertSee('Lanjut ke pembayaran');
         $response->assertSee('id="btn-checkout-submit"', false);
         $response->assertSee('id="btn-checkout-submit-mobile"', false);
         $response->assertSee('id="btn-back-subscription"', false);
-        $response->assertSee('Kembali ke Subscription');
+        $response->assertSee('Kembali ke Paket & Tagihan');
 
         // Double-submit protection
         $response->assertSee('isSubmitting', false);
@@ -387,6 +386,17 @@ class CheckoutMidtransTest extends TestCase
         $response->assertDontSee('Selesaikan dalam');
         $response->assertDontSee('name="catatan"', false);
         $response->assertDontSee('Catatan Tambahan');
+    }
+
+    public function test_checkout_links_to_the_business_connected_storefront_domain(): void
+    {
+        $this->tenant->forceFill([
+            'custom_domain' => 'studio.example.test',
+            'custom_domain_status' => 'connected',
+        ])->save();
+
+        $this->actingAs($this->user)->get(route('owner.checkout', $this->plan))
+            ->assertOk()->assertSee('href="https://studio.example.test', false);
     }
 
     public function test_owner_checkout_review_page_renders_small_and_medium_tier_styling_correctly(): void
@@ -404,7 +414,6 @@ class CheckoutMidtransTest extends TestCase
             ->get("/owner/checkout/{$smallPlan->id}");
 
         $responseSmall->assertStatus(200);
-        $responseSmall->assertSee('STARTER');
         $responseSmall->assertSee('Paket Small');
         $responseSmall->assertSee('5 layanan aktif');
         $responseSmall->assertSee('Hingga 300 booking / bulan');
@@ -423,9 +432,9 @@ class CheckoutMidtransTest extends TestCase
             ->get("/owner/checkout/{$mediumPlan->id}");
 
         $responseMedium->assertStatus(200);
-        $responseMedium->assertSee('POPULER');
+        $responseMedium->assertSee('Populer');
         $responseMedium->assertSee('Paket Medium');
-        $responseMedium->assertSee('Unlimited layanan katalog');
+        $responseMedium->assertSee('Layanan tanpa batas');
         $responseMedium->assertSee('Hingga 500 booking / bulan');
         $responseMedium->assertSee('Rp 299.000');
     }

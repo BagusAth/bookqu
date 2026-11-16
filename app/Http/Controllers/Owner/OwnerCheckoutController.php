@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Support\CustomerBookingRoutes;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -44,6 +45,7 @@ class OwnerCheckoutController extends Controller
 
         return view('owner.checkout', [
             'tenant' => $tenant,
+            'storefrontUrl' => CustomerBookingRoutes::storefront($tenant),
             'plan' => $plan,
             'user' => $user,
             'existingPayment' => $existingPayment,
