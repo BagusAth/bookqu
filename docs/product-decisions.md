@@ -4,7 +4,7 @@ Dokumen ini berisi keputusan yang perlu divalidasi Product Lead, dan catatan kep
 
 **Cara menjawab:** balas dengan nomor entri dan poinnya, misalnya "D-001 setuju semua" atau "D-001 setuju kecuali poin 3: …". Setelah disetujui, Tech Lead membuat pekerjaannya. Keputusan yang sudah diambil bisa dibuka lagi kapan saja dengan menyebut nomornya.
 
-Terakhir diperbarui: 5 November 2026
+Terakhir diperbarui: 16 November 2026
 
 ---
 
@@ -22,6 +22,23 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 2. Menonaktifkan bisnis, masuk sebagai owner, dan mengubah langganan secara manual ditunda setelah rilis.
 
 *Catatan 4 Nov 2026:* D-001 sudah disetujui, jadi pemrosesan refund oleh admin ikut dikerjakan sebagai bagian dari D-001. Yang masih menunggu di sini hanya fitur admin di luar pencairan saldo dan refund. Product Lead sengaja menunda entri ini.
+
+*Jawaban Product Lead:* —
+
+### D-024 · Empat tombol bantu baru di portal owner
+
+*Status:* Menunggu · *Diajukan:* 16 Nov 2026 · *Menahan rilis:* tidak
+
+*Masalah*
+Pemeriksaan portal owner menemukan beberapa langkah yang merepotkan owner. Empat perbaikannya menambah tombol atau informasi baru yang belum ada di rancangan halaman yang sudah disetujui (D-007), jadi perlu persetujuan dulu. Perbaikan lain dari pemeriksaan yang sama tidak menambah fitur, jadi dikerjakan tanpa menunggu entri ini.
+
+*Usulan keputusan*
+1. Setelah mencatat booking walk-in, owner langsung mendapat tautan ke booking itu, agar kode booking bisa langsung ditunjukkan atau dikirim ke pelanggan.
+2. Di form "Buat slot sekaligus" ada tombol "Isi dari jam buka" yang mengisi jam mulai dan selesai dari jam buka yang sudah diatur. Owner tetap memeriksa dan menyimpan sendiri. Ini berbeda dengan slot otomatis dari jam buka yang ditunda di D-021: tidak ada slot yang dibuat tanpa owner menekan simpan.
+3. Simulasi harga di menu Jam Buka & Harga menampilkan aturan yang menentukan harganya (harga dasar, akhir pekan, jam sibuk, tanggal khusus, atau harga slot), agar owner paham kenapa harganya begitu.
+4. Di pengaturan webhook (paket Pro), owner bisa mengirim pesan uji dan mengirim ulang pesan yang gagal.
+
+*Sampai diputuskan:* keempatnya tidak dikerjakan. Portal tetap berjalan seperti sekarang.
 
 *Jawaban Product Lead:* —
 
