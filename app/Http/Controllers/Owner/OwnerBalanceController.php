@@ -32,6 +32,7 @@ class OwnerBalanceController extends Controller
             $tenant,
             $request->user() ?? abort(403),
             is_string($request->query('tab')) ? $request->query('tab') : null,
+            $request->only(['search', 'status', 'from', 'to']),
         ) + ['tenant' => $tenant]);
     }
 

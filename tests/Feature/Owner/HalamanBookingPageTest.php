@@ -131,10 +131,17 @@ class HalamanBookingPageTest extends TestCase
             'button_style' => 'pill',
             'card_style' => 'outline',
             'font_family' => 'Poppins',
-            'deskripsi' => 'Studio foto keluarga di Bandung.',
             'logo_asset_id' => $logo->id,
             'cover_asset_id' => $cover->id,
         ])->assertRedirect(route('owner.booking-page', ['section' => 'tampilan']))->assertSessionHasNoErrors();
+
+        $this->post(route('owner.settings.profile'), [
+            'namabisnis' => $this->tenant->namabisnis,
+            'jenisbisnis' => $this->tenant->jenisbisnis,
+            'nomorhp' => $this->tenant->nomorhp,
+            'alamat' => $this->tenant->alamat,
+            'deskripsi' => 'Studio foto keluarga di Bandung.',
+        ])->assertSessionHasNoErrors();
 
         auth()->logout();
         $this->get('/studio-cahaya')

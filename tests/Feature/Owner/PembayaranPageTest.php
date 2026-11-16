@@ -230,6 +230,17 @@ class PembayaranPageTest extends TestCase
             ->assertDontSee('ORD-ASING');
     }
 
+    public function test_transaction_filters_search_booking_codes_and_keep_the_booking_panel_link(): void
+    {
+        $match = $this->paidBooking(60000, 'Rani', 'BKQ-CARI');
+        $this->paidBooking(75000, 'Dewi', 'BKQ-LAIN');
+
+        $this->actingAs($this->owner)->get(route('owner.payments', [
+            'tab' => 'transaksi', 'search' => 'BKQ-CARI', 'status' => 'sukses', 'from' => '2026-11-20', 'to' => '2026-11-20',
+        ]))->assertOk()->assertSee('BKQ-CARI')->assertDontSee('BKQ-LAIN')
+            ->assertSee(route('owner.bookings', ['panel' => $match->bookings()->withoutGlobalScopes()->value('id')]));
+    }
+
     public function test_saldo_tab_shows_the_request_steps_eligibility_and_payout_stages(): void
     {
         $this->tenant->update(['saldo_platform' => 0]);

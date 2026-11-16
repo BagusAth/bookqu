@@ -19,10 +19,23 @@
 @endphp
 
 @section('content')
-<div class="mx-auto max-w-7xl space-y-6">
+<div class="mx-auto max-w-7xl space-y-6" x-data="{
+    dirtyAppearance: false,
+    pendingSection: null,
+    confirmSection(event) {
+        const link = event.target.closest('a[href]');
+        if (!link || !this.dirtyAppearance || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        this.pendingSection = link.href;
+        $dispatch('open-confirm', { title: 'Buang perubahan tampilan?', message: 'Perubahan tampilan belum disimpan.', formId: 'leave-booking-page-section', confirmText: 'Buang perubahan' });
+    }
+}">
     <x-owner.page-header title="Halaman Booking" purpose="Bagaimana pelanggan menemukan Anda, dan apa yang mereka lihat." />
 
-    <x-owner.tabs :tabs="$sections->all()" param="section" :active="$activeSection" label="Bagian Halaman Booking" />
+    <div @click.capture="confirmSection($event)">
+        <x-owner.tabs :tabs="$sections->all()" param="section" :active="$activeSection" label="Bagian Halaman Booking" />
+    </div>
+    <form id="leave-booking-page-section" @submit.prevent="if (pendingSection) window.location.assign(pendingSection)" hidden></form>
 
     {{-- ── Link & QR (FR-PUBLIC-006, AC-HBK-02) ── --}}
     @if ($activeSection === 'link')
@@ -67,12 +80,15 @@
         <div
             class="grid gap-6 lg:grid-cols-[1fr_20rem]"
             x-data="{
-                look: @js(['theme_color' => old('theme_color', $appearance['theme_color']), 'button_style' => old('button_style', $appearance['button_style']), 'card_style' => old('card_style', $appearance['card_style']), 'font_family' => old('font_family', $appearance['font_family']), 'deskripsi' => old('deskripsi', $appearance['deskripsi']), 'logo_asset_id' => (string) old('logo_asset_id', $appearance['logo_asset_id'] ?? ''), 'cover_asset_id' => (string) old('cover_asset_id', $appearance['cover_asset_id'] ?? '')]),
+                look: @js(['theme_color' => old('theme_color', $appearance['theme_color']), 'button_style' => old('button_style', $appearance['button_style']), 'card_style' => old('card_style', $appearance['card_style']), 'font_family' => old('font_family', $appearance['font_family']), 'logo_asset_id' => (string) old('logo_asset_id', $appearance['logo_asset_id'] ?? ''), 'cover_asset_id' => (string) old('cover_asset_id', $appearance['cover_asset_id'] ?? '')]),
+                initialLook: null,
+                init() { this.initialLook = JSON.stringify(this.look); },
                 images: @js($pickerImages),
                 radius: @js(collect($branding['buttons'])->map(fn ($style) => $style['radius'])),
                 cards: @js($branding['cards']),
                 image(id) { const found = this.images.find(i => String(i.id) === String(id)); return found ? found.url : null; },
             }"
+            x-effect="dirtyAppearance = initialLook !== null && JSON.stringify(look) !== initialLook"
         >
             <form method="POST" action="{{ route('owner.booking-page.appearance') }}" class="{{ $card }} space-y-5 p-4">
                 @csrf
@@ -137,11 +153,10 @@
                     @error('font_family')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
                 </div>
 
-                <div>
-                    <label for="business-description" class="{{ $label }}">Deskripsi <span class="font-normal text-bq-text-muted">(tampil di halaman booking)</span></label>
-                    <textarea id="business-description" name="deskripsi" rows="3" maxlength="1000" x-model="look.deskripsi" class="{{ $field }}"></textarea>
-                    @error('deskripsi')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
-                </div>
+                <p class="text-sm text-bq-text-muted">
+                    Deskripsi bisnis ditampilkan pada pratinjau.
+                    <a @click="confirmSection($event)" href="{{ route('owner.settings.business', ['tab' => 'profile']) }}" class="font-medium text-bq-primary underline">Ubah di Profil Bisnis</a>
+                </p>
 
                 <div class="flex justify-end">
                     <button type="submit" class="{{ $buttonPrimary }}">Simpan tampilan</button>
@@ -158,7 +173,9 @@
                         <span class="truncate text-sm font-semibold text-slate-900">{{ $tenant->namabisnis }}</span>
                     </div>
                     <template x-if="image(look.cover_asset_id)"><img x-bind:src="image(look.cover_asset_id)" alt="" class="h-24 w-full object-cover"></template>
-                    <p x-show="look.deskripsi" class="whitespace-pre-line border-b border-slate-100 px-3 py-2 text-xs text-slate-600" x-text="look.deskripsi"></p>
+                    @if ($appearance['deskripsi'])
+                        <p class="whitespace-pre-line border-b border-slate-100 px-3 py-2 text-xs text-slate-600">{{ $appearance['deskripsi'] }}</p>
+                    @endif
                     <div class="space-y-2 bg-slate-50 p-3">
                         <div class="rounded-xl bg-white p-3" x-bind:style="'box-shadow:' + (cards[look.card_style] || cards.elevated).shadow + ';border:' + (cards[look.card_style] || cards.elevated).border">
                             <p class="text-sm font-semibold text-slate-900">Contoh layanan</p>
@@ -240,7 +257,7 @@
         @if (! $isPro)
             <x-owner.upgrade-prompt feature="Landing page" plan="Pro" description="Buka halaman booking dengan judul, banner dan bagian pilihan Anda, dari tiga template siap pakai." />
         @else
-            <form method="POST" action="{{ route('owner.booking-page.landing') }}" class="{{ $card }} space-y-5 p-4" x-data="{ sending: false }" x-on:submit="sending = true">
+            <form method="POST" action="{{ route('owner.booking-page.landing') }}" class="{{ $card }} space-y-5 p-4" x-data="{ sending: false }" x-on:submit="if ($event.submitter?.formTarget !== '_blank') sending = true">
                 @csrf
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <h2 class="text-base font-semibold text-bq-text">Landing page</h2>
@@ -289,7 +306,7 @@
 
                 <div class="flex flex-wrap items-center gap-2 border-t border-bq-border pt-4">
                     <button type="submit" name="action" value="save" class="{{ $buttonSecondary }}" x-bind:disabled="sending">Simpan</button>
-                    <a href="{{ route('owner.booking-page.landing.preview') }}" target="_blank" rel="noopener" class="{{ $buttonSecondary }}">Pratinjau</a>
+                    <button type="submit" name="action" value="save" formaction="{{ route('owner.booking-page.landing.preview-form') }}" formtarget="_blank" class="{{ $buttonSecondary }}">Pratinjau</button>
                     @if ($landing['published'])
                         <button type="submit" name="action" value="publish" class="{{ $buttonPrimary }}" x-bind:disabled="sending">Simpan dan terbitkan</button>
                         <button type="submit" name="action" value="unpublish" class="{{ $buttonSecondary }}" x-bind:disabled="sending">Sembunyikan</button>
@@ -297,7 +314,7 @@
                         <button type="submit" name="action" value="publish" class="{{ $buttonPrimary }}" x-bind:disabled="sending">Terbitkan</button>
                     @endif
                 </div>
-                <p class="text-xs text-bq-text-muted">Pratinjau menampilkan versi yang terakhir disimpan.</p>
+                <p class="text-xs text-bq-text-muted">Pratinjau membuka isian saat ini di tab baru.</p>
             </form>
         @endif
     @endif
@@ -357,19 +374,25 @@
                         @if ($domain['cnameTarget'] !== '')
                             <div class="rounded-lg bg-bq-background p-3 text-sm">
                                 <p class="font-medium text-bq-text">Subdomain (mis. booking.namabisnis.com)</p>
-                                <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">CNAME</strong> ke <code class="break-all text-bq-text">{{ $domain['cnameTarget'] }}</code></p>
+                                <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">CNAME</strong> ke <code class="break-all text-bq-text">{{ $domain['cnameTarget'] }}</code> <button type="button" x-data="ownerCopyText(@js($domain['cnameTarget']))" @click="copy()" class="ms-1 font-medium text-bq-primary underline" x-text="copied ? 'Disalin' : 'Salin tujuan CNAME'">Salin tujuan CNAME</button></p>
                             </div>
                         @endif
                         @if ($domain['addresses'] !== [])
                             <div class="rounded-lg bg-bq-background p-3 text-sm">
                                 <p class="font-medium text-bq-text">Domain utama (mis. namabisnis.com)</p>
-                                <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">A</strong> ke <code class="text-bq-text">{{ implode(', ', $domain['addresses']) }}</code></p>
+                                <ul class="mt-1 space-y-1 text-bq-text-muted">
+                                    @foreach ($domain['addresses'] as $address)
+                                        <li>A ke <code class="text-bq-text">{{ $address }}</code>
+                                            <button type="button" x-data="ownerCopyText(@js($address))" @click="copy()" class="ms-1 font-medium text-bq-primary underline" x-text="copied ? 'Disalin' : 'Salin alamat A'">Salin alamat A</button>
+                                        </li>
+                                    @endforeach
+                                </ul>
                             </div>
                         @endif
                         @if ($domain['txtValue'] !== '')
                             <div class="rounded-lg bg-bq-background p-3 text-sm">
                                 <p class="font-medium text-bq-text">Bukti kepemilikan (wajib)</p>
-                                <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">TXT</strong> dengan nama <code class="break-all text-bq-text">{{ $domain['txtHost'] }}</code> berisi <code class="break-all text-bq-text">{{ $domain['txtValue'] }}</code></p>
+                                <p class="mt-1 text-bq-text-muted">Tipe <strong class="text-bq-text">TXT</strong> dengan nama <code class="break-all text-bq-text">{{ $domain['txtHost'] }}</code> <button type="button" x-data="ownerCopyText(@js($domain['txtHost']))" @click="copy()" class="ms-1 font-medium text-bq-primary underline" x-text="copied ? 'Disalin' : 'Salin nama TXT'">Salin nama TXT</button> berisi <code class="break-all text-bq-text">{{ $domain['txtValue'] }}</code> <button type="button" x-data="ownerCopyText(@js($domain['txtValue']))" @click="copy()" class="ms-1 font-medium text-bq-primary underline" x-text="copied ? 'Disalin' : 'Salin nilai TXT'">Salin nilai TXT</button></p>
                             </div>
                         @endif
                         <p class="text-xs text-bq-text-muted">Perubahan DNS bisa butuh beberapa jam. Halaman booking baru terbuka di domain Anda setelah statusnya Terhubung.</p>

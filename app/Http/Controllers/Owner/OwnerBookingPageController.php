@@ -22,6 +22,7 @@ use App\Http\Requests\Tenant\UpdateCustomDomainRequest;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -119,6 +120,16 @@ class OwnerBookingPageController extends Controller
         $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
 
         return view('owner.booking-page-landing-preview', ['tenant' => $tenant, 'landing' => $getLandingPage->draft($tenant)]);
+    }
+
+    public function previewSubmittedLanding(SaveLandingPageRequest $request, GetLandingPage $getLandingPage): Response
+    {
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+
+        return response()->view('owner.booking-page-landing-preview', [
+            'tenant' => $tenant,
+            'landing' => $getLandingPage->preview($tenant, $request->safe()->except('action')),
+        ])->header('Cache-Control', 'private, no-store');
     }
 
     /**

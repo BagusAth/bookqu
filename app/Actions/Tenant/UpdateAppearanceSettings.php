@@ -26,7 +26,6 @@ class UpdateAppearanceSettings
             'button_style' => $data['button_style'] ?? $tenant->button_style,
             'font_family' => $data['font_family'] ?? $tenant->font_family,
             'card_style' => $data['card_style'] ?? $tenant->card_style,
-            'deskripsi' => array_key_exists('deskripsi', $data) ? $data['deskripsi'] : $tenant->deskripsi,
         ];
 
         foreach (['logo_asset_id' => 'logo_path', 'cover_asset_id' => 'banner_path'] as $input => $column) {
