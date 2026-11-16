@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Booking\BookingPricingReservations;
+use App\Actions\Booking\GetAddOnSales;
 use App\Actions\Schedule\ClaimSlots;
 use App\Http\Controllers\Controller;
 use App\Models\AdditionalItem;
@@ -39,15 +40,13 @@ class OwnerAdditionalItemController extends Controller
             ->get();
 
         $services = Service::where('idtenant', $tenant->id)
-            ->where('is_active', true)
             ->orderBy('namalayanan')
             ->get();
 
-        $serviceTab = true;
+        $sales = app(GetAddOnSales::class)->execute($tenant);
         $itemRoute = 'owner.services.add-ons';
-        $indexUrl = route('owner.services', ['tab' => 'add-ons']);
 
-        return view('owner.additional-items', compact('tenant', 'items', 'services', 'search', 'serviceTab', 'itemRoute', 'indexUrl'));
+        return view('owner.additional-items', compact('items', 'services', 'sales', 'search', 'itemRoute'));
     }
 
     public function store(Request $request)

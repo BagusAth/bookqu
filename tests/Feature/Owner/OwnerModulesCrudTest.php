@@ -7,6 +7,7 @@ use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
 use App\Models\Category;
+use App\Models\Payment;
 use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -201,6 +202,22 @@ class OwnerModulesCrudTest extends TestCase
         $res = $this->actingAs($this->userA)->delete(route('owner.services.add-ons.destroy', $item->id));
         $res->assertRedirect(route('owner.services', ['tab' => 'add-ons']));
         $this->assertDatabaseMissing('additional_items', ['id' => $item->id]);
+    }
+
+    public function test_add_on_sold_count_uses_only_paid_booking_quantities_for_the_current_tenant(): void
+    {
+        $item = AdditionalItem::create([
+            'idtenant' => $this->tenantA->id, 'name' => 'Cetak Foto', 'price' => 35000,
+            'is_unlimited' => true, 'is_active' => true,
+        ]);
+        foreach ([[$this->tenantA, 'sukses', 3], [$this->tenantA, 'pending', 2], [$this->tenantB, 'sukses', 4]] as [$tenant, $status, $quantity]) {
+            Payment::factory()->create([
+                'idtenant' => $tenant->id, 'tipe' => 'booking', 'status' => $status,
+                'price_breakdown' => ['add_ons' => [['id' => $item->id, 'quantity' => $quantity, 'unlimited' => true]]],
+            ]);
+        }
+        $this->actingAs($this->userA)->get(route('owner.services', ['tab' => 'add-ons']))
+            ->assertOk()->assertSeeText('Terjual 3');
     }
 
     // ──────────────────────────────────────────
