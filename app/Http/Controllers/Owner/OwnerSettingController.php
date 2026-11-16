@@ -8,7 +8,6 @@ use App\Actions\Owner\DeleteOwnerAccount;
 use App\Actions\Owner\UpdateOwnerAccount;
 use App\Actions\Tenant\CreateInitialProfile;
 use App\Actions\Tenant\UpdateBusinessProfile;
-use App\Actions\Tenant\UpdatePaymentSettings;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Modules\ModuleRelease;
 use App\Domain\Subscription\EntitlementRules;
@@ -17,7 +16,6 @@ use App\Http\Requests\Owner\DeleteOwnerAccountRequest;
 use App\Http\Requests\Owner\UpdateOwnerAccountRequest;
 use App\Http\Requests\Tenant\StoreInitialProfileRequest;
 use App\Http\Requests\Tenant\UpdateBusinessProfileRequest;
-use App\Http\Requests\Tenant\UpdatePaymentSettingsRequest;
 use App\Models\Tenant;
 use App\Policies\TenantResourcePolicy;
 use App\Support\CustomerBookingRoutes;
@@ -145,23 +143,6 @@ class OwnerSettingController extends Controller
         return redirect()->route('owner.settings')->with('sukses', $emailChanged
             ? 'Akun berhasil diperbarui. Cek email baru Anda untuk verifikasi.'
             : 'Akun berhasil diperbarui.');
-    }
-
-    public function updatePaymentSettings(UpdatePaymentSettingsRequest $request, UpdatePaymentSettings $updatePaymentSettings): RedirectResponse
-    {
-        $user = $request->user();
-        if (! $user) {
-            abort(403, 'User tidak ditemukan.');
-        }
-
-        $tenant = $this->resolveTenant();
-        if (! $tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
-
-        $updatePaymentSettings->execute($tenant, $request->validated());
-
-        return redirect()->route('owner.settings')->with('sukses', 'Pengaturan pembayaran berhasil diperbarui.');
     }
 
     /**

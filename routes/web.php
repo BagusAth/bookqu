@@ -264,6 +264,10 @@ Route::prefix('owner')
             // BQ-141 (owner-portal.md §8.12): one Pembayaran page; the former balance page redirects to its Saldo tab.
             Route::get('/payments', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.payments');
             Route::get('/settings/balance', [OwnerBalanceController::class, 'legacyBalance'])->middleware('module:balance')->name('owner.settings.balance');
+            // BQ-157 (owner-portal.md §10.2): removed gateway settings (D-016) and the withdrawn staff page.
+            Route::permanentRedirect('/settings/payments', '/owner/payments')->name('owner.payments.legacy-settings');
+            Route::permanentRedirect('/settings/payment-setting', '/owner/payments')->name('owner.payments.legacy-setting');
+            Route::permanentRedirect('/staff-resources', '/owner/settings/business?tab=tim')->name('owner.settings.staff-resources');
             Route::get('/payouts/{payout}/proof', [OwnerBalanceController::class, 'proof'])->whereNumber('payout')->middleware('module:balance')->name('owner.payouts.proof');
             Route::prefix('payout-accounts')->middleware('module:balance')->group(function () {
                 // BQ-127: the strict limit guards account changes only; switching the primary account has its own.

@@ -83,7 +83,7 @@ class TenantPermissionTest extends TestCase
         $tenant = Tenant::factory()->create(['iduser' => $owner->id]);
         $foreign = Tenant::factory()->create();
         $this->actingAs($owner);
-        foreach (['Booking', 'Service', 'Category', 'Schedule', 'OwnerBlockedDate', 'CustomerNote', 'Review', 'OwnerPayout', 'TenantPayoutAccount', 'Tenant', 'Staff', 'Asset', 'Voucher', 'AdditionalItem', 'Payment', 'Subscription', 'TenantMember'] as $name) {
+        foreach (['Booking', 'Service', 'Category', 'Schedule', 'OwnerBlockedDate', 'CustomerNote', 'Review', 'OwnerPayout', 'TenantPayoutAccount', 'Tenant', 'Asset', 'Voucher', 'AdditionalItem', 'Payment', 'Subscription', 'TenantMember'] as $name) {
             $class = 'App\\Models\\'.$name;
             $record = (new $class)->forceFill(['idtenant' => $foreign->id, 'id' => $foreign->id]);
             $result = Gate::inspect('operate', [$record, 'settings.manage']);

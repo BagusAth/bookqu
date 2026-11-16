@@ -5,16 +5,11 @@ namespace Tests\Feature\Tenancy;
 use App\Actions\Tenant\GetStorefrontTenant;
 use App\Actions\Tenant\UpdateAppearanceSettings;
 use App\Actions\Tenant\UpdateBusinessProfile;
-use App\Actions\Tenant\UpdatePaymentSettings;
-use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
-use App\Models\Payment;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
-use Midtrans\Config as MidtransConfig;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class TenantGatewayCredentialsTest extends TestCase
@@ -50,43 +45,10 @@ class TenantGatewayCredentialsTest extends TestCase
         }
     }
 
-    public function test_settings_update_encrypts_new_values_and_preserves_masked_server_keys(): void
-    {
-        $tenant = Tenant::factory()->create(self::KEYS);
-        $originalServer = $tenant->getRawOriginal('midtrans_sandbox_server_key');
-
-        app(UpdatePaymentSettings::class)->execute($tenant, [
-            'payment_mode' => 'owner', 'midtrans_environment' => 'sandbox',
-            'midtrans_sandbox_client_key' => 'replacement-client', 'midtrans_sandbox_server_key' => '********',
-        ]);
-
-        $fresh = $tenant->fresh();
-        $this->assertSame('replacement-client', $fresh->midtrans_sandbox_client_key);
-        $this->assertNotSame('replacement-client', $fresh->getRawOriginal('midtrans_sandbox_client_key'));
-        $this->assertSame($originalServer, $fresh->getRawOriginal('midtrans_sandbox_server_key'));
-    }
-
     /** @return array<string, array{string, string}> */
     public static function environments(): array
     {
         return ['sandbox' => ['sandbox', 'sandbox'], 'production' => ['production', 'prod']];
-    }
-
-    #[DataProvider('environments')]
-    public function test_gateway_reads_decrypted_tenant_server_credentials(string $environment, string $columnPrefix): void
-    {
-        $tenant = Tenant::factory()->create([
-            ...self::KEYS, 'payment_mode' => 'owner', 'midtrans_environment' => $environment, 'midtrans_status' => 'approved',
-        ]);
-        $payment = Payment::factory()->create(['idtenant' => $tenant->id, 'provider' => 'midtrans']);
-        $original = [MidtransConfig::$serverKey, MidtransConfig::$clientKey, MidtransConfig::$isProduction];
-        try {
-            app(MidtransPaymentGateway::class)->configureForPayment($payment);
-            $this->assertSame(self::KEYS['midtrans_'.$columnPrefix.'_server_key'], MidtransConfig::$serverKey);
-            $this->assertSame($environment === 'production', MidtransConfig::$isProduction);
-        } finally {
-            [MidtransConfig::$serverKey, MidtransConfig::$clientKey, MidtransConfig::$isProduction] = $original;
-        }
     }
 
     public function test_storefront_caches_only_public_fields_for_its_verified_tenant(): void

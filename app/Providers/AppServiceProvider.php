@@ -24,7 +24,6 @@ use App\Models\Payment;
 use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantMember;
@@ -89,7 +88,7 @@ class AppServiceProvider extends ServiceProvider
                 || NotificationPreferences::allowsMail($event->notifiable, $event->notification);
         });
         Gate::define('tenant-ability', fn (User $user, ?string $ability) => app(TenantResourcePolicy::class)->ability($user, $ability));
-        foreach ([Booking::class, Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class, Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class, Staff::class, Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class, TenantMember::class, Unit::class] as $resource) {
+        foreach ([Booking::class, Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class, Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class, Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class, TenantMember::class, Unit::class] as $resource) {
             Gate::policy($resource, 'App\\Policies\\'.class_basename($resource).'Policy');
         }
 

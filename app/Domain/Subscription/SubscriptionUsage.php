@@ -7,7 +7,6 @@ namespace App\Domain\Subscription;
 use App\Domain\Booking\BookingState;
 use App\Models\Booking;
 use App\Models\Service;
-use App\Models\Staff;
 use Carbon\Carbon;
 
 final class SubscriptionUsage
@@ -31,15 +30,6 @@ final class SubscriptionUsage
     {
         // scope-bypass: filtered by the given tenant id
         return Service::withoutGlobalScopes()->where('idtenant', $tenantId)->count();
-    }
-
-    /**
-     * Count staff currently configured for the tenant.
-     */
-    public static function countStaff(int $tenantId): int
-    {
-        // scope-bypass: filtered by the given tenant id
-        return Staff::withoutGlobalScopes()->where('idtenant', $tenantId)->count();
     }
 
     /**

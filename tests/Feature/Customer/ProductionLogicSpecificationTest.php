@@ -12,7 +12,6 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
@@ -724,31 +723,6 @@ class ProductionLogicSpecificationTest extends TestCase
 
         $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/studio-foto-logic/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertRedirect('/studio-foto-logic');
-    }
-
-    /**
-     * 18. Customer cannot select staff
-     */
-    public function test_18_customer_cannot_select_staff(): void
-    {
-        $staff = Staff::create([
-            'idtenant' => $this->tenant->id,
-            'name' => 'Photographer Pro',
-            'is_active' => true,
-        ]);
-
-        $this->setBookingSession([$this->slot10->id], ['10:00']);
-
-        $response = $this->post('/studio-foto-logic/booking/checkout', [
-            'namapelanggan' => 'Joko',
-            'email' => 'joko@example.com',
-            'nomorhp' => '081234567800',
-            'staff_id' => $staff->id, // Attempt to select staff
-        ]);
-
-        $booking = Booking::withoutGlobalScopes()->where('namapelanggan', 'Joko')->first();
-        $this->assertNotNull($booking);
-        $this->assertNull($booking->idstaff);
     }
 
     /**
