@@ -76,6 +76,22 @@
             @endisset
             <span>{{ $slotLabels[$slot->id] }}</span>
             @if (!$slot->occupied)
+                <form method="POST" action="{{ route('owner.schedule.slots.update', $slot) }}">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" name="operation" value="{{ $slot->status === 'tersedia' ? 'close' : 'open' }}"
+                        class="rounded-lg border border-bq-border px-3 py-2 font-semibold">{{ $slot->status === 'tersedia' ? 'Tutup slot' : 'Buka slot' }}</button>
+                </form>
+                <form method="POST" action="{{ route('owner.schedule.slots.update', $slot) }}" class="flex flex-wrap items-end gap-2">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="operation" value="price">
+                    <label class="grid gap-1 text-xs">Harga khusus (Rp)
+                        <input name="harga_override" type="number" min="0" max="9999999999" step="1" value="{{ $slot->harga_override === null ? '' : (int) $slot->harga_override }}"
+                            placeholder="Ikuti aturan harga" class="w-36 rounded-lg border border-bq-border bg-bq-surface px-2 py-1.5">
+                    </label>
+                    <button class="rounded-lg border border-bq-border px-3 py-2 font-semibold">Simpan harga</button>
+                </form>
                 <form method="POST" action="{{ route('owner.schedule.slots.destroy', $slot) }}" id="delete-schedule-{{ $slot->id }}" x-data>
                     @csrf
                     @method('DELETE')

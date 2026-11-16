@@ -62,15 +62,17 @@ class AccountChangeRequiresCurrentPasswordTest extends TestCase
             ->assertSee('name="delete_password"', false);
     }
 
-    public function test_name_and_phone_change_needs_no_password(): void
+    public function test_name_and_phone_change_requires_the_current_password(): void
     {
-        $this->actingAs($this->user)
-            ->post(route('owner.settings.account'), $this->accountPayload([
-                'namalengkap' => 'Owner Baru',
-                'nomorhp' => '081200000002',
-            ]))
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('owner.settings'));
+        $payload = $this->accountPayload(['namalengkap' => 'Owner Baru', 'nomorhp' => '081200000002']);
+
+        $this->actingAs($this->user)->post(route('owner.settings.account'), $payload)
+            ->assertSessionHasErrors('current_password');
+        $this->assertSame('Owner Lama', $this->user->fresh()->namalengkap);
+        $this->assertSame('081200000001', $this->user->fresh()->nomorhp);
+
+        $this->post(route('owner.settings.account'), $payload + ['current_password' => 'password'])
+            ->assertSessionHasNoErrors()->assertRedirect(route('owner.settings'));
 
         $this->assertSame('Owner Baru', $this->user->fresh()->namalengkap);
         $this->assertSame('081200000002', $this->user->fresh()->nomorhp);

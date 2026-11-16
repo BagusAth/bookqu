@@ -2,7 +2,7 @@
 id: BQ-133
 title: Jam Buka & Harga: opening hours, price rules, closed dates and slots
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: schedule
@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-107, BQ-108]
 
 # BQ-133: Jam Buka & Harga: opening hours, price rules, closed dates and slots
 
-Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -61,3 +61,5 @@ Order of rules (Tech Lead to confirm): slot override wins; otherwise a special-d
 Tech Lead decision 2026-11-07: the bulk interval follows FR-SCHEDULE-014 (5–480 minutes, multiples of 5, defaulting to the service duration on the page) and may differ from the duration; `ServicesDomainEndToEndTest` was updated to the requirement. Remaining: the page tabs (needs BQ-129), removing the old default-pricing form, and moving occupancy out of the schedule Blade. Status stays in-progress.
 
 2026-11-13: UI uses the shared page header and URL tabs for opening hours, prices, closed dates and slots. The runway, simulator and bulk preview use the existing server results. Slot occupancy is prepared from BookingRules. Verified by OwnerPortalWorkflowTest and the existing schedule feature tests. Remaining: closing, reopening and overriding the price of one slot require a write endpoint; the existing date-level controls and free-slot deletion are available.
+
+2026-11-16: Tab Slot dapat menutup, membuka dan mengatur atau mereset harga satu slot. PATCH mengunci tenant sebelum memeriksa slot dan menolak slot berisi booking aktif atau milik bisnis lain. Evidence: SingleSlotManagementTest.

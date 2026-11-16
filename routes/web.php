@@ -148,6 +148,7 @@ Route::prefix('owner')
             Route::delete('/programs/{program}', [OwnerProgramController::class, 'destroy'])->name('owner.programs.destroy');
             Route::get('/schedule', [OwnerScheduleController::class, 'index'])->name('owner.schedule');
             Route::post('/schedule/bulk-slots', [OwnerScheduleController::class, 'bulkStore'])->name('owner.schedule.bulk-store');
+            Route::patch('/schedule/slots/{slot}', [OwnerScheduleController::class, 'updateSlot'])->whereNumber('slot')->name('owner.schedule.slots.update');
             Route::delete('/schedule/slots/{slot}', [OwnerScheduleController::class, 'destroy'])->name('owner.schedule.slots.destroy');
             Route::post('/schedule/default-pricing', [OwnerScheduleController::class, 'updateDefaultPricing'])->name('owner.schedule.default-pricing');
             Route::post('/schedule/availability', [OwnerScheduleController::class, 'updateAvailability'])->name('owner.schedule.availability');

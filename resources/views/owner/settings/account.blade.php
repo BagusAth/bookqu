@@ -1,5 +1,5 @@
 <form method="POST" action="{{ route('owner.settings.account') }}" class="space-y-4 rounded-xl border border-bq-border bg-bq-surface p-4"
-    x-data="{ email: @js(old('email', $accountUser?->email)), password: '', needsPassword: @js($errors->has('current_password')) }">
+    x-data="{ password: '' }">
     @csrf
     <h2 class="font-semibold">Akun</h2>
     <div class="grid gap-3 sm:grid-cols-2">
@@ -7,15 +7,15 @@
             <input name="namalengkap" required value="{{ old('namalengkap', $accountUser?->namalengkap) }}" autocomplete="name" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
         </label>
         <label class="grid gap-1 text-sm">Email
-            <input type="email" name="email" required x-model="email" value="{{ old('email', $accountUser?->email) }}" autocomplete="email" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
+            <input type="email" name="email" required value="{{ old('email', $accountUser?->email) }}" autocomplete="email" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
         </label>
         <label class="grid gap-1 text-sm">Nomor telepon
             <input type="tel" name="nomorhp" required value="{{ old('nomorhp', $accountUser?->nomorhp) }}" autocomplete="tel" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
         </label>
         <label class="grid gap-1 text-sm">Kata sandi saat ini
             <input type="password" name="current_password" autocomplete="current-password"
-                :required="needsPassword || password !== '' || (email || '').trim().toLowerCase() !== @js(strtolower(trim($accountUser?->email ?? '')))" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
-            <span class="text-bq-text-muted">Wajib untuk mengubah email atau kata sandi.</span>
+                required class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
+            <span class="text-bq-text-muted">Wajib untuk menyimpan perubahan akun.</span>
         </label>
         <label class="grid gap-1 text-sm">Kata sandi baru (opsional)
             <input type="password" name="password" x-model="password" autocomplete="new-password" minlength="8" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
