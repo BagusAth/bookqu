@@ -1,126 +1,31 @@
-{{-- Controls Bar: View Switcher, Date Navigator, Filters --}}
-<div class="rounded-2xl border border-[#e7e2f7] bg-white p-3.5 sm:p-5 shadow-[0_4px_20px_rgba(35,26,61,0.03)] space-y-3.5">
-    <div class="flex flex-col xl:flex-row gap-3 xl:items-center xl:justify-between">
-        {{-- Left cluster: View Switcher & Date Navigation --}}
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
-            {{-- Segmented View Switcher Tabs (Day / Week / Month) --}}
-            <div class="flex items-center gap-1 rounded-xl bg-[#f7f7fa] p-1 border border-[#e7e2f7] w-full sm:w-auto justify-between sm:justify-start shrink-0">
-                <a
-                    href="{{ route('owner.calendar', ['view' => 'day', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
-                    class="flex-1 sm:flex-none text-center rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer {{ $view === 'day' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d] hover:bg-white/60' }}"
-                >
-                    Day
-                </a>
-                <a
-                    href="{{ route('owner.calendar', ['view' => 'week', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
-                    class="flex-1 sm:flex-none text-center rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer {{ $view === 'week' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d] hover:bg-white/60' }}"
-                >
-                    Week
-                </a>
-                <a
-                    href="{{ route('owner.calendar', ['view' => 'month', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
-                    class="flex-1 sm:flex-none text-center rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer {{ $view === 'month' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d] hover:bg-white/60' }}"
-                >
-                    Month
-                </a>
-            </div>
-
-            {{-- Date Navigation --}}
-            <div class="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-                <a
-                    href="{{ route('owner.calendar', ['view' => $view, 'date' => $todayDate, 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
-                    class="craft-btn rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] hover:bg-[#e7e2f7] px-3 py-1.5 text-xs font-bold text-[#382186] shadow-2xs active:scale-95 shrink-0"
-                >
-                    Hari Ini
-                </a>
-                <div class="flex-1 sm:flex-none flex items-center justify-between rounded-xl border border-[#e7e2f7] bg-white shadow-2xs overflow-hidden">
-                    <a
-                        href="{{ route('owner.calendar', ['view' => $view, 'date' => $prevDate, 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
-                        class="p-2 text-[#6e6584] hover:text-[#382186] hover:bg-[#f7f7fa] transition border-r border-[#e7e2f7] active:scale-95"
-                        aria-label="Previous"
-                    >
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                    </a>
-                    <span class="min-w-0 flex-1 sm:flex-none px-2 sm:px-3.5 py-1.5 text-xs font-bold text-[#231a3d] sm:min-w-[150px] text-center leading-tight sm:tracking-wide">
-                        {{ $dateLabel }}
-                    </span>
-                    <a
-                        href="{{ route('owner.calendar', ['view' => $view, 'date' => $nextDate, 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
-                        class="p-2 text-[#6e6584] hover:text-[#382186] hover:bg-[#f7f7fa] transition border-l border-[#e7e2f7] active:scale-95"
-                        aria-label="Next"
-                    >
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        {{-- Right cluster: Service & Status Filters --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:flex items-center gap-2 w-full xl:w-auto">
-            <select
-                onchange="window.location.href = updateCalendarFilter('service_id', this.value)"
-                class="w-full xl:w-44 rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] hover:bg-white px-3 py-1.5 text-xs font-semibold text-[#231a3d] focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 focus:outline-none transition shadow-2xs truncate"
-            >
-                <option value="all" {{ $selectedService === 'all' ? 'selected' : '' }}>Semua Layanan</option>
-                @foreach ($services as $service)
-                    <option value="{{ $service->id }}" {{ (string)$selectedService === (string)$service->id ? 'selected' : '' }}>{{ $service->namalayanan }}</option>
+<form method="GET" action="{{ route('owner.calendar') }}" class="flex flex-wrap items-end gap-3">
+    <input type="hidden" name="view" value="{{ $view }}">
+    <input type="hidden" name="date" value="{{ $date->toDateString() }}">
+    <label class="grid gap-1 text-sm">Layanan
+        <select name="service_id" class="rounded-lg border border-bq-border bg-bq-surface p-2">
+            <option value="">Semua layanan</option>
+            @foreach ($services as $service)
+                <option value="{{ $service->id }}" @selected(($filters['service_id'] ?? null) === $service->id)>{{ $service->namalayanan }}</option>
+            @endforeach
+        </select>
+    </label>
+    @if ($units->isNotEmpty())
+        <label class="grid gap-1 text-sm">Unit
+            <select name="unit_id" class="rounded-lg border border-bq-border bg-bq-surface p-2">
+                <option value="">Semua unit</option>
+                @foreach ($units as $unit)
+                    <option value="{{ $unit->id }}" @selected(($filters['unit_id'] ?? null) === $unit->id)>{{ $unit->name }}</option>
                 @endforeach
             </select>
-
-            @if ($units->isNotEmpty())
-                <select aria-label="Unit" onchange="window.location.href = updateCalendarFilter('unit_id', this.value)"
-                    class="w-full rounded-xl border border-bq-border bg-bq-surface px-3 py-1.5 text-xs xl:w-44">
-                    <option value="all">Semua Unit</option>
-                    @foreach ($units as $unit)
-                        <option value="{{ $unit->id }}" @selected($selectedUnit === $unit->id)>{{ $unit->name }}</option>
-                    @endforeach
-                </select>
-            @endif
-            <select
-                onchange="window.location.href = updateCalendarFilter('status', this.value)"
-                class="w-full xl:w-44 rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] hover:bg-white px-3 py-1.5 text-xs font-semibold text-[#231a3d] focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 focus:outline-none transition shadow-2xs truncate"
-            >
-                <option value="all" {{ $selectedStatus === 'all' ? 'selected' : '' }}>Semua Status</option>
-                <option value="available" {{ $selectedStatus === 'available' ? 'selected' : '' }}>Slot Kosong (Available)</option>
-                <option value="paid" {{ $selectedStatus === 'paid' ? 'selected' : '' }}>Confirmed (Lunas)</option>
-                <option value="pending" {{ $selectedStatus === 'pending' ? 'selected' : '' }}>Pending (Menunggu Bayar)</option>
-                <option value="completed" {{ $selectedStatus === 'completed' ? 'selected' : '' }}>Completed (Selesai)</option>
-                <option value="cancelled" {{ $selectedStatus === 'cancelled' ? 'selected' : '' }}>Cancelled (Dibatalkan)</option>
-                <option value="blocked" {{ $selectedStatus === 'blocked' ? 'selected' : '' }}>Blocked (Libur / Tutup)</option>
-            </select>
-        </div>
-    </div>
-
-    {{-- Legend Indicators (wraps so every status stays visible on mobile) --}}
-    <div class="flex flex-wrap items-center gap-x-3 gap-y-2 pt-3.5 border-t border-[#e7e2f7] text-xs text-[#6e6584]">
-        <span class="font-extrabold text-[#231a3d] shrink-0">Indikator:</span>
-        <div class="flex items-center gap-1.5 shrink-0">
-            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-2xs"></span>
-            <span class="font-medium">Confirmed</span>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0">
-            <span class="h-2.5 w-2.5 rounded-full bg-[#ffb84d] shadow-2xs"></span>
-            <span class="font-medium">Pending</span>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0">
-            <span class="h-2.5 w-2.5 rounded-full bg-sky-500 shadow-2xs"></span>
-            <span class="font-medium">Completed</span>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0">
-            <span class="h-2.5 w-2.5 rounded-full bg-[#b499ff] shadow-2xs"></span>
-            <span class="font-medium">Slot Tersedia</span>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0">
-            <span class="h-2.5 w-2.5 rounded-full bg-rose-400 shadow-2xs"></span>
-            <span class="font-medium">Cancelled</span>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0">
-            <span class="h-2.5 w-2.5 rounded-full bg-[#6e6584] shadow-2xs"></span>
-            <span class="font-medium">Libur</span>
-        </div>
-    </div>
-</div>
+        </label>
+    @endif
+    <label class="grid gap-1 text-sm">Status
+        <select name="status" class="rounded-lg border border-bq-border bg-bq-surface p-2">
+            <option value="">Semua status</option>
+            @foreach ($statuses as $value => $statusLabel)
+                <option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value)>{{ $statusLabel }}</option>
+            @endforeach
+        </select>
+    </label>
+    <button class="rounded-lg border border-bq-border px-3 py-2 text-sm font-semibold">Terapkan</button>
+</form>

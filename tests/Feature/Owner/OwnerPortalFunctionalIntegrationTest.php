@@ -247,7 +247,7 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
         $calendarRes->assertStatus(200);
         $calendarRes->assertSee('Bella Customer');
         $calendarRes->assertSee('Facial Treatment');
-        $calendarRes->assertSee('Confirmed');
+        $calendarRes->assertSee('Terkonfirmasi');
 
         // 2. Customer CRM displays Bella with total spending Rp 200.000
         $customerRes = $this->get(route('owner.customers'));

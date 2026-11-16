@@ -693,7 +693,7 @@ class CoreFlowIntegrationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Calender Customer');
-        $response->assertSee('Confirmed');
+        $response->assertSee('Terkonfirmasi');
     }
 
     /**

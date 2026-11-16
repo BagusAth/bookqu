@@ -2,7 +2,7 @@
 id: BQ-134
 title: Kalender: day, week and month views with walk-in and slot actions
 type: feature
-status: proposed
+status: done
 priority: P1
 phase: 4
 domain: schedule
@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-133]
 
 # BQ-134: Kalender: day, week and month views with walk-in and slot actions
 
-Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -50,3 +50,5 @@ INV-BOOK-03: a slot with an active booking cannot be closed.
 - `docs/domains/schedule.md`
 
 ## Evidence (fill when done)
+
+2026-11-16: Day, week and month use the same slot and booking data. The day view uses a time-by-service grid and an hourly list on phones. Walk-ins use the shared form and refresh the calendar results in place. Close, reopen and price actions reuse BQ-133. Evidence: KalenderPageTest, SingleSlotManagementTest and CoreFlowIntegrationTest.
