@@ -152,7 +152,7 @@ class ServicesDomainEndToEndTest extends TestCase
         ]);
 
         // 1. Create Service with assignments
-        $res = $this->actingAs($this->ownerA)->post('/owner/programs', [
+        $res = $this->actingAs($this->ownerA)->post('/owner/services', [
             'namalayanan' => 'Tibetan Singing Bowl Therapy',
             'harga' => 250000,
             'durasi' => 60,
@@ -160,7 +160,7 @@ class ServicesDomainEndToEndTest extends TestCase
             'deskripsi' => 'Deep vibrational relaxation session',
             'additional_item_ids' => [$addon->id],
         ]);
-        $res->assertRedirect(route('owner.programs'));
+        $res->assertRedirect(route('owner.services'));
 
         $service = DB::table('services')->where('idtenant', $this->tenantA->id)->where('namalayanan', 'Tibetan Singing Bowl Therapy')->first();
         $this->assertNotNull($service);
@@ -180,7 +180,7 @@ class ServicesDomainEndToEndTest extends TestCase
         app(TenantContext::class)->clear();
 
         // 2. Update Service assignments
-        $this->actingAs($this->ownerA)->put("/owner/programs/{$service->id}", [
+        $this->actingAs($this->ownerA)->put("/owner/services/{$service->id}", [
             'namalayanan' => 'Tibetan Singing Bowl Therapy (Advanced)',
             'harga' => 300000,
             'durasi' => 90,
@@ -195,7 +195,7 @@ class ServicesDomainEndToEndTest extends TestCase
         ]);
 
         // 3. Delete Service - asserts pivot records are detached
-        $this->actingAs($this->ownerA)->delete("/owner/programs/{$service->id}");
+        $this->actingAs($this->ownerA)->delete("/owner/services/{$service->id}");
         $this->assertDatabaseMissing('services', ['id' => $service->id]);
         $this->assertDatabaseMissing('additional_item_service', ['idservice' => $service->id]);
     }

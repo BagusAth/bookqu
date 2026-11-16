@@ -111,15 +111,9 @@ class OwnerSidebarNavigationTest extends TestCase
 
         // Full report link has locked indicator
         $response->assertDontSee('id="link-full-report"', false);
-        $this->get('/owner/analytics')->assertNotFound();
-        $this->get('/owner/schedule-report')->assertNotFound();
-        $this->get('/owner/settings/integrations')->assertNotFound();
-    }
-
-    public function test_unbuilt_redesign_report_routes_are_hidden_instead_of_showing_development_teasers(): void
-    {
-        $this->actingAs($this->user)->get('/owner/analytics')->assertNotFound();
-        $this->get('/owner/schedule-report')->assertNotFound();
+        // ADR-0023: Laporan and Integrasi are released.
+        $this->get('/owner/analytics')->assertOk();
+        $this->get('/owner/settings/integrations')->assertOk();
     }
 
     public function test_owner_topbar_dropdown_hides_appearance_and_payment_links(): void

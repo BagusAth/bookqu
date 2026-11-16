@@ -260,6 +260,7 @@ class BookingFlowTest extends TestCase
 
     public function test_customer_cannot_validate_voucher_while_feature_disabled(): void
     {
+        config(['modules.promos' => 'hidden', 'modules.add-ons' => 'hidden']);
         $voucher = Voucher::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'code' => 'HEMAT20',
@@ -284,6 +285,7 @@ class BookingFlowTest extends TestCase
 
     public function test_checkout_with_voucher_is_rejected_while_feature_disabled(): void
     {
+        config(['modules.promos' => 'hidden']);
         $voucher = Voucher::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'code' => 'POTONG50',

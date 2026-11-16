@@ -64,13 +64,13 @@ class MergeReadinessTest extends TestCase
     public function test_service_duration_and_bulk_slot_interval_must_be_multiples_of_five(): void
     {
         $payload = ['namalayanan' => 'Sesi baru', 'harga' => 100000, 'durasi' => 61, 'is_active' => true];
-        $this->post('/owner/programs', $payload)->assertSessionHasErrors('durasi');
-        $this->put('/owner/programs/'.$this->service->id, $payload)->assertSessionHasErrors('durasi');
+        $this->post('/owner/services', $payload)->assertSessionHasErrors('durasi');
+        $this->put('/owner/services/'.$this->service->id, $payload)->assertSessionHasErrors('durasi');
         $this->assertDatabaseMissing('services', ['namalayanan' => 'Sesi baru']);
 
         $payload['durasi'] = 65;
-        $this->post('/owner/programs', $payload)->assertSessionHasNoErrors();
-        $this->put('/owner/programs/'.$this->service->id, $payload)->assertSessionHasNoErrors();
+        $this->post('/owner/services', $payload)->assertSessionHasNoErrors();
+        $this->put('/owner/services/'.$this->service->id, $payload)->assertSessionHasNoErrors();
         $this->assertDatabaseHas('services', ['id' => $this->service->id, 'durasi' => 65]);
 
         $slots = [

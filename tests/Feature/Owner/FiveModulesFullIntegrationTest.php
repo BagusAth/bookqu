@@ -342,7 +342,6 @@ class FiveModulesFullIntegrationTest extends TestCase
     public function test_additional_items_linked_to_service_and_public_checkout(): void
     {
         // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.additional-items' => 'released']);
 
         $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
         // 1. Owner creates Additional Item and assigns it to service
@@ -350,7 +349,7 @@ class FiveModulesFullIntegrationTest extends TestCase
         session(['current_tenant_id' => $this->tenant->id]);
         app(TenantContext::class)->setTenantId($this->tenant->id);
 
-        $resAddon = $this->post(route('owner.additional-items.store'), [
+        $resAddon = $this->post(route('owner.services.add-ons.store'), [
             'name' => 'Pomade Premium Matte',
             'description' => 'Pomade wangi maskulin natural',
             'price' => 35000,
@@ -358,7 +357,7 @@ class FiveModulesFullIntegrationTest extends TestCase
             'is_unlimited' => 0,
             'service_ids' => [$this->service->id],
         ]);
-        $resAddon->assertRedirect(route('owner.additional-items'));
+        $resAddon->assertRedirect(route('owner.services', ['tab' => 'add-ons']));
 
         $this->assertDatabaseHas('additional_items', [
             'idtenant' => $this->tenant->id,
@@ -393,6 +392,8 @@ class FiveModulesFullIntegrationTest extends TestCase
             ],
         ];
 
+        // ADR-0023: add-ons are released by default; this checks the customer side when an environment hides them.
+        config(['modules.add-ons' => 'hidden']);
         $checkoutPageRes = $this->withSession($sessionData)
             ->get(route('customer.booking.slug.checkout', $this->tenant->slug));
         $checkoutPageRes->assertStatus(200);

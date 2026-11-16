@@ -48,14 +48,14 @@ class ProgramManagementTest extends TestCase
 
     public function test_owner_can_create_a_program(): void
     {
-        $response = $this->actingAs($this->user)->post('/owner/programs', [
+        $response = $this->actingAs($this->user)->post('/owner/services', [
             'namalayanan' => 'Layanan Test 1',
             'harga' => 150000,
             'durasi' => 60,
             'deskripsi' => 'Deskripsi layanan test',
         ]);
 
-        $response->assertRedirect('/owner/programs');
+        $response->assertRedirect('/owner/services');
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('services', [
@@ -76,7 +76,7 @@ class ProgramManagementTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->actingAs($this->user)->put("/owner/programs/{$service->id}", [
+        $response = $this->actingAs($this->user)->put("/owner/services/{$service->id}", [
             'namalayanan' => 'Updated Service',
             'harga' => 200000,
             'durasi' => 45,
@@ -84,7 +84,7 @@ class ProgramManagementTest extends TestCase
             'is_active' => false, // Turning it off
         ]);
 
-        $response->assertRedirect('/owner/programs');
+        $response->assertRedirect('/owner/services');
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('services', [
@@ -106,9 +106,9 @@ class ProgramManagementTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->actingAs($this->user)->delete("/owner/programs/{$service->id}");
+        $response = $this->actingAs($this->user)->delete("/owner/services/{$service->id}");
 
-        $response->assertRedirect('/owner/programs');
+        $response->assertRedirect('/owner/services');
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseMissing('services', [
@@ -120,7 +120,7 @@ class ProgramManagementTest extends TestCase
     {
         $fakeSvg = UploadedFile::fake()->create('malicious.svg', 10, 'image/svg+xml');
 
-        $response = $this->actingAs($this->user)->post('/owner/programs', [
+        $response = $this->actingAs($this->user)->post('/owner/services', [
             'namalayanan' => 'Layanan XSS SVG',
             'harga' => 150000,
             'durasi' => 60,

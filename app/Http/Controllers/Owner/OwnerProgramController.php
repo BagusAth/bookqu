@@ -72,9 +72,7 @@ class OwnerProgramController extends Controller
             $request->file('cover_image')
         );
 
-        $redirectRoute = ($request->is('*programs*') && ! str_contains($request->headers->get('referer', ''), '/services'))
-            ? 'owner.programs'
-            : 'owner.services';
+        $redirectRoute = 'owner.services';
 
         return redirect()->route($redirectRoute)->with('sukses', 'Layanan "'.$service->namalayanan.'" berhasil ditambahkan!');
     }
@@ -97,9 +95,7 @@ class OwnerProgramController extends Controller
             $request->input('remove_image') === '1'
         );
 
-        $redirectRoute = ($request->is('*programs*') && ! str_contains($request->headers->get('referer', ''), '/services'))
-            ? 'owner.programs'
-            : 'owner.services';
+        $redirectRoute = 'owner.services';
 
         return redirect()->route($redirectRoute)->with('sukses', 'Layanan "'.$service->namalayanan.'" berhasil diperbarui!');
     }
@@ -116,9 +112,7 @@ class OwnerProgramController extends Controller
 
         $namalayanan = $deleteService->execute($tenant, $program);
 
-        $redirectRoute = (request()->is('*programs*') && ! str_contains(request()->headers->get('referer', ''), '/services'))
-            ? 'owner.programs'
-            : 'owner.services';
+        $redirectRoute = 'owner.services';
 
         return redirect()->route($redirectRoute)->with('sukses', 'Layanan "'.$namalayanan.'" berhasil dihapus!');
     }
@@ -136,9 +130,7 @@ class OwnerProgramController extends Controller
         $service = $toggleServiceStatus->execute($tenant, $id);
         $statusText = $service->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
-        $redirectRoute = (request()->is('*programs*') && ! str_contains(request()->headers->get('referer', ''), '/services'))
-            ? 'owner.programs'
-            : 'owner.services';
+        $redirectRoute = 'owner.services';
 
         return redirect()->route($redirectRoute)->with('sukses', 'Layanan "'.$service->namalayanan.'" berhasil '.$statusText.'!');
     }

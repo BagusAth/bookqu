@@ -1,6 +1,6 @@
 # ADR-0002: Modular Release Staging and UI Gating Policy
 
-> **Status:** Accepted  
+> **Status:** Accepted; the Tier 2/3 table is superseded by [ADR-0024](ADR-0024-all-modules-released.md) (2026-11-16)  
 > **Date:** 2026-10-18  
 > **Authority:** Architectural Decision Record  
 > **Context:** BookQu Multi-Tenant SaaS Platform  

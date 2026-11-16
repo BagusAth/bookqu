@@ -71,7 +71,8 @@ class AnalyticsExportAndAggregationTest extends TestCase
         DB::disableQueryLog();
         $month = app(GetReport::class)->execute($this->tenant, ReportPeriod::fromQuery([]), 'pendapatan');
 
-        $this->assertLessThanOrEqual(10, $queries);
+        // ADR-0023: with units and promos released, their usage metrics add one grouped query each.
+        $this->assertLessThanOrEqual(12, $queries);
         $this->assertCount(12, $year['revenue']['series']);
         $this->assertEquals(200000, $year['revenue']['series'][11]['gross']);
         $this->assertEquals(0, $year['revenue']['series'][10]['gross']);

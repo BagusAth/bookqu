@@ -42,10 +42,11 @@ class ReleasePlanGatesTest extends TestCase
         }
     }
 
-    public function test_redesign_capabilities_start_hidden(): void
+    public function test_every_redesign_capability_is_released(): void
     {
-        foreach (['units', 'promos', 'add-ons', 'team', 'booking-page', 'integrations', 'api', 'reports', 'refunds', 'help'] as $module) {
-            $this->assertSame('hidden', config('modules.'.$module), $module);
+        // ADR-0023: every module is released; plan limits stay in EntitlementRules.
+        foreach (['units', 'capacity', 'no-show', 'promos', 'add-ons', 'team', 'booking-page', 'integrations', 'api', 'reports', 'refunds', 'help'] as $module) {
+            $this->assertSame('released', config('modules.'.$module), $module);
         }
     }
 
@@ -91,7 +92,7 @@ class ReleasePlanGatesTest extends TestCase
         $cashier = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         TenantMember::create(['idtenant' => $tenant->id, 'iduser' => $cashier->id, 'role' => 'kasir', 'accepted_at' => now()]);
         $items = app(GetOwnerNavigation::class)->execute($cashier);
-        $this->assertSame(['dashboard', 'calendar', 'bookings', 'customers', 'settings'], array_column($items, 'id'));
+        $this->assertSame(['dashboard', 'calendar', 'bookings', 'customers', 'settings', 'help'], array_column($items, 'id'));
         $this->actingAs($cashier)->get('/owner/dashboard')->assertOk()->assertDontSee('id="nav-layanan"', false)->assertDontSee('id="nav-pembayaran"', false);
     }
 }

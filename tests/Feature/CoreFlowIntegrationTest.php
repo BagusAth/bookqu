@@ -433,7 +433,7 @@ class CoreFlowIntegrationTest extends TestCase
         session(['current_tenant_id' => $this->tenantA->id]);
 
         // Voucher B IDOR
-        $response = $this->put(route('owner.vouchers.update', $voucherB->id), [
+        $response = $this->put(route('owner.promos.update', $voucherB->id), [
             'code' => 'DISC50B-HACK',
             'discount_type' => 'percentage',
             'discount_value' => 50,
