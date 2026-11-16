@@ -63,9 +63,6 @@ class CreateService
             DB::transaction(fn () => app(AssignServiceUnits::class)->execute($tenant, $service, $data['unit_ids']));
         }
 
-        if (! empty($data['resource_ids'])) {
-            $service->resources()->sync($data['resource_ids']);
-        }
         if (! empty($data['additional_item_ids'])) {
             $service->additionalItems()->sync($data['additional_item_ids']);
         }

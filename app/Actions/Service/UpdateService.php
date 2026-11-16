@@ -72,12 +72,11 @@ class UpdateService
                 app(AssignServiceUnits::class)->execute($tenant, $layanan, $data['unit_ids'] ?? []);
             }
 
-            $resources = $layanan->resources()->sync($data['resource_ids'] ?? []);
             $items = [];
             if (array_key_exists('additional_item_ids', $data)) {
                 $items = $layanan->additionalItems()->sync($data['additional_item_ids'] ?? []);
             }
-            if (array_filter($resources) || array_filter($items)) {
+            if (array_filter($items)) {
                 app(TenantActor::class)->record($layanan, 'assignments_updated');
             }
         });

@@ -36,6 +36,10 @@ return new class extends Migration
             $table->index('idunit');
         });
 
+        if (! Schema::hasTable('resources')) {
+            return; // dropped by BQ-157 once its rows were copied here
+        }
+
         $unitOf = [];
         foreach (DB::table('resources')->orderBy('id')->get() as $resource) {
             $capacity = (int) preg_replace('/\D/', '', (string) $resource->capacity);

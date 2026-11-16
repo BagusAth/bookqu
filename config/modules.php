@@ -23,16 +23,10 @@ return [
     // Tier 3
     'vouchers' => env('MODULE_VOUCHERS', 'hidden'),
     'additional-items' => env('MODULE_ADDITIONAL_ITEMS', 'hidden'),
-    'staff-resources' => env('MODULE_STAFF_RESOURCES', 'hidden'),
-    'appearance' => env('MODULE_APPEARANCE', 'hidden'),
-    'direct-payment' => env('MODULE_DIRECT_PAYMENT', 'hidden'),
     'assets' => env('MODULE_ASSETS', 'hidden'),
-    'landing-page' => env('MODULE_LANDING_PAGE', 'hidden'),
 
     // Tier 2
     'integrations' => env('MODULE_INTEGRATIONS', 'hidden'),
-    'analytics' => env('MODULE_ANALYTICS', 'hidden'),
-    'schedule-report' => env('MODULE_SCHEDULE_REPORT', 'hidden'),
     // Released by BQ-015 (lead decision 2026-11-01: withdraw in v1, fee 0%)
     'balance' => env('MODULE_BALANCE', 'released'),
 ];

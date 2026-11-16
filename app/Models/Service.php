@@ -66,28 +66,17 @@ class Service extends Model
         return $this->belongsToMany(Unit::class, 'service_unit', 'idservice', 'idunit');
     }
 
-    public function resources(): BelongsToMany
-    {
-        return $this->belongsToMany(Resource::class, 'service_resource', 'idservice', 'idresource')->withTimestamps();
-    }
-
     public function additionalItems(): BelongsToMany
     {
         return $this->belongsToMany(AdditionalItem::class, 'additional_item_service', 'idservice', 'idadditional_item')->withTimestamps();
     }
 
     /**
-     * Checks if this service has active resource fulfillment.
-     * If resources are assigned to this service, at least one must be active.
+     * Withdrawn staff resources no longer gate a service (BQ-157). An inactive unit only stops
+     * counting as a conflict (ADR-0017), so it does not make the service unbookable.
      */
     public function hasActiveFulfillment(): bool
     {
-        // scope-bypass: pivot rows of this service only; resource ids are tenant-validated on write
-        $resourceQuery = $this->resources()->withoutGlobalScopes();
-        if ($resourceQuery->exists() && ! $this->resources()->withoutGlobalScopes()->where('resources.is_active', true)->exists()) {
-            return false;
-        }
-
         return true;
     }
 

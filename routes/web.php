@@ -34,7 +34,6 @@ use App\Http\Controllers\Owner\OwnerPayoutAccountController;
 use App\Http\Controllers\Owner\OwnerPriceRuleController;
 use App\Http\Controllers\Owner\OwnerProgramController;
 use App\Http\Controllers\Owner\OwnerRefundController;
-use App\Http\Controllers\Owner\OwnerResourceController;
 use App\Http\Controllers\Owner\OwnerReviewController;
 use App\Http\Controllers\Owner\OwnerScheduleController;
 use App\Http\Controllers\Owner\OwnerSettingController;
@@ -206,13 +205,6 @@ Route::prefix('owner')
             Route::put('/categories/{id}', [OwnerCategoryController::class, 'update'])->name('owner.categories.update');
             Route::delete('/categories/{id}', [OwnerCategoryController::class, 'destroy'])->name('owner.categories.destroy');
             Route::match(['post', 'patch'], '/categories/{id}/toggle', [OwnerCategoryController::class, 'toggleStatus'])->name('owner.categories.toggle');
-
-            // Staff & Resources
-            Route::get('/resources', [OwnerResourceController::class, 'index'])->middleware('module:staff-resources')->name('owner.resources.index');
-            Route::post('/resources', [OwnerResourceController::class, 'storeResource'])->middleware('module:staff-resources')->name('owner.resources.store');
-            Route::put('/resources/{id}', [OwnerResourceController::class, 'updateResource'])->middleware('module:staff-resources')->name('owner.resources.update');
-            Route::delete('/resources/{id}', [OwnerResourceController::class, 'destroyResource'])->middleware('module:staff-resources')->name('owner.resources.destroy');
-            Route::match(['post', 'patch'], '/resources/{id}/toggle', [OwnerResourceController::class, 'toggleResourceStatus'])->middleware('module:staff-resources')->name('owner.resources.toggle');
 
             // Additional Items
             Route::get('/additional-items', [OwnerAdditionalItemController::class, 'index'])->middleware(['module:additional-items', 'subscription:add-ons'])->name('owner.additional-items');

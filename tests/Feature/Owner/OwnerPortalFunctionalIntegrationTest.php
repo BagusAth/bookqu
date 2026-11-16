@@ -7,7 +7,6 @@ use App\Models\Booking;
 use App\Models\Category;
 use App\Models\Payment;
 use App\Models\Plan;
-use App\Models\Resource;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Subscription;
@@ -100,7 +99,7 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
 
     /**
      * 1. Functional Data Flow:
-     * Category -> Service -> Staff & Resource -> Additional Items
+     * Category -> Service -> Additional Items
      */
     public function test_business_domain_bidirectional_relationships(): void
     {
@@ -112,14 +111,6 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
         $category = Category::create([
             'idtenant' => $this->tenantA->id,
             'name' => 'Hair Treatments',
-        ]);
-
-        // Create Resource
-        $resource = Resource::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Styling Chair 1',
-            'type' => 'Chair',
-            'is_active' => true,
         ]);
 
         // Create Additional Item
@@ -140,14 +131,11 @@ class OwnerPortalFunctionalIntegrationTest extends TestCase
             'durasi' => 60,
             'is_active' => true,
         ]);
-        $service->resources()->attach($resource->id);
         $service->additionalItems()->attach($item->id);
 
         // Verify relationships
-        $loadedService = Service::with(['category', 'resources', 'additionalItems'])->find($service->id);
+        $loadedService = Service::with(['category', 'additionalItems'])->find($service->id);
         $this->assertEquals('Hair Treatments', $loadedService->category->name);
-        $this->assertCount(1, $loadedService->resources);
-        $this->assertEquals('Styling Chair 1', $loadedService->resources->first()->name);
         $this->assertCount(1, $loadedService->additionalItems);
         $this->assertEquals('Organic Hair Serum', $loadedService->additionalItems->first()->name);
     }

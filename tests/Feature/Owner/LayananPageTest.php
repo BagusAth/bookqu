@@ -8,7 +8,6 @@ use App\Models\Booking;
 use App\Models\Category;
 use App\Models\Payment;
 use App\Models\Plan;
-use App\Models\Resource;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Subscription;
@@ -151,24 +150,6 @@ class LayananPageTest extends TestCase
         $this->assertSame('10:00:00', $booking->fresh()->jam);
         $this->assertSame('10:59:00', $slot->fresh()->jam_selesai);
         $this->get(route('owner.services'))->assertSee('hanya berlaku untuk booking baru');
-    }
-
-    public function test_the_service_form_sends_back_the_unit_links_it_does_not_show(): void
-    {
-        $service = $this->service();
-        $resource = Resource::create(['idtenant' => $this->tenant->id, 'name' => 'Studio A', 'type' => 'Ruang', 'is_active' => true]);
-        $service->resources()->attach($resource->id);
-
-        // Units are edited on the Unit page; a save without `resource_ids` detaches them (BQ-045),
-        // so the Layanan form carries the current links as hidden fields.
-        $this->actingAs($this->owner)->get(route('owner.services'))
-            ->assertSee('name="resource_ids[]"', false)
-            ->assertSee('\u0022resource_ids\u0022:['.$resource->id.']', false);
-
-        $this->put(route('owner.services.update', $service->id), $this->payload(['namalayanan' => 'Nama Baru', 'resource_ids' => [$resource->id]]))
-            ->assertSessionHasNoErrors();
-
-        $this->assertDatabaseHas('service_resource', ['idservice' => $service->id, 'idresource' => $resource->id]);
     }
 
     public function test_old_programs_page_redirects_permanently_to_layanan(): void

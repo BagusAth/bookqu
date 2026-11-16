@@ -54,7 +54,7 @@ class GetLayananPage
         $sort = in_array($filters['sort'] ?? 'order', ['order', 'newest', 'name_asc', 'name_desc', 'services'], true) ? (string) ($filters['sort'] ?? 'order') : 'order';
 
         $services = Service::where('idtenant', $tenant->id)
-            ->with(['category', 'resources:resources.id', 'units:units.id'])
+            ->with(['category', 'units:units.id'])
             ->withCount('bookings')
             ->when($katakunci !== '', fn ($query) => $query->where('namalayanan', 'like', '%'.$katakunci.'%'))
             ->when($categoryFilter !== null, fn ($query) => $query->where('idcategory', $categoryFilter))
@@ -128,11 +128,8 @@ class GetLayananPage
             'isActive' => (bool) $service->is_active,
             'isPopular' => (bool) $service->is_popular,
             'bookingCount' => (int) $service->bookings_count,
-            // Unit links are edited on the Unit page (BQ-152); the form sends them back unchanged because
-            // a save without `resource_ids` detaches every unit (BQ-045).
             'capacity' => (int) $service->kapasitas,
             'unitIds' => $service->units->pluck('id')->map(fn ($id): string => (string) $id)->all(),
-            'resourceIds' => $service->resources->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
             // AC-LYN-02: a service with any booking can only be deactivated.
             'canDelete' => ! $hasHistory,
         ];

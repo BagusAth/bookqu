@@ -7,7 +7,6 @@ use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
 use App\Models\Category;
-use App\Models\Resource;
 use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -155,48 +154,13 @@ class OwnerModulesCrudTest extends TestCase
     // ──────────────────────────────────────────
     // 2. STAFF & RESOURCES TEST
     // ──────────────────────────────────────────
-    public function test_owner_can_crud_resources(): void
+    public function test_retired_staff_and_resource_routes_are_gone(): void
     {
-        // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.staff-resources' => 'released']);
-
-        // View page
-        $res = $this->actingAs($this->userA)->get(route('owner.resources.index'));
-        $res->assertStatus(200);
-
-        // Create Resource
-        $res = $this->actingAs($this->userA)->post(route('owner.resources.store'), [
-            'name' => 'Studio Room 1',
-            'type' => 'Studio Ruangan',
-            'capacity' => 10,
-            'service_ids' => [$this->serviceA->id],
-        ]);
-        $res->assertRedirect();
-        $this->assertDatabaseHas('resources', [
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Studio Room 1',
-        ]);
-
-        $resource = Resource::withoutGlobalScopes()->where('idtenant', $this->tenantA->id)->first();
-        $this->assertNotNull($resource);
-        $this->assertDatabaseHas('service_resource', [
-            'idresource' => $resource->id,
-            'idservice' => $this->serviceA->id,
-        ]);
-
-        $this->actingAs($this->userA)->delete(route('owner.resources.destroy', $resource->id));
-        $this->assertDatabaseMissing('resources', ['id' => $resource->id]);
-    }
-
-    public function test_resource_tenant_isolation_and_retired_staff_routes(): void
-    {
-        config(['modules.staff-resources' => 'released']);
-        $resource = Resource::create(['idtenant' => $this->tenantB->id, 'name' => 'Ruang B', 'type' => 'Studio', 'capacity' => 1]);
-        $this->actingAs($this->userA)->delete(route('owner.resources.destroy', $resource->id))->assertNotFound();
+        $this->actingAs($this->userA)->get('/owner/resources')->assertNotFound();
+        $this->delete('/owner/resources/1')->assertNotFound();
         $this->get('/owner/staff-resources')->assertNotFound();
         $this->post('/owner/staff', ['name' => 'Nama lama'])->assertNotFound();
         $this->delete('/owner/staff/1')->assertNotFound();
-        $this->assertDatabaseHas('resources', ['id' => $resource->id]);
     }
 
     // ──────────────────────────────────────────
