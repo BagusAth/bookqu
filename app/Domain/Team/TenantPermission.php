@@ -5,6 +5,7 @@ namespace App\Domain\Team;
 use App\Notifications\BookingStatusChangedOwnerNotification;
 use App\Notifications\NewBookingOwnerNotification;
 use App\Notifications\OwnerPayoutStatusChangedNotification;
+use App\Notifications\OwnerWebhookFailed;
 use App\Notifications\PaymentRefundOwedOwnerNotification;
 use App\Notifications\RefundTeamNotification;
 use App\Notifications\SubscriptionReminderNotification;
@@ -95,6 +96,7 @@ final class TenantPermission
     public static function notificationMap(): array
     {
         return [
+            OwnerWebhookFailed::class => 'integrations.manage',
             RefundTeamNotification::class => 'refunds.decide',
             NewBookingOwnerNotification::class => 'bookings.view',
             BookingStatusChangedOwnerNotification::class => 'bookings.view',

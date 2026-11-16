@@ -4,7 +4,11 @@
 
 @section('content')
 <div class="mx-auto max-w-4xl space-y-5">
-    <x-owner.page-header title="Integrasi" purpose="Hubungkan kalender dan atur pengukuran kunjungan halaman booking." />
+    <x-owner.page-header title="Integrasi" purpose="Hubungkan kalender dan atur pengukuran kunjungan halaman booking.">
+        @if ($apiUrl)
+            <x-slot:action><a class="text-sm font-semibold text-bq-primary underline" href="{{ $apiUrl }}">API dan Webhook</a></x-slot:action>
+        @endif
+    </x-owner.page-header>
 
     <section class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
         <h2 class="font-semibold">Google Calendar</h2>

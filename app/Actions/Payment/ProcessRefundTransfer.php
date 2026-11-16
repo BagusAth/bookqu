@@ -3,6 +3,7 @@
 namespace App\Actions\Payment;
 
 use App\Actions\Schedule\ClaimSlots;
+use App\Domain\Integrations\RefundIntegrationEvent;
 use App\Jobs\SendRefundCustomerUpdate;
 use App\Models\Payment;
 use App\Models\Refund;
@@ -31,6 +32,9 @@ final class ProcessRefundTransfer
                 'refund_reference' => $result === 'processed' ? $reference : null,
                 'catatan' => $result === 'failed' ? $reason : $current->catatan,
             ]);
+            if ($result === 'processed') {
+                DB::afterCommit(fn () => event(new RefundIntegrationEvent('refund.processed', $tenantId, (int) $current->id)));
+            }
             if ($result !== 'pending') {
                 DB::afterCommit(fn () => $this->notify->execute($tenantId, $current->id, 'refund_'.$result));
                 if ($current->booking_id !== null) {

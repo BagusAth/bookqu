@@ -32,6 +32,12 @@ class DnsLookup
         return $this->field($host, DNS_A, 'ip');
     }
 
+    /** @return list<string> */
+    public function ipv6(string $host): array
+    {
+        return $this->field($host, DNS_AAAA, 'ipv6');
+    }
+
     /**
      * The TXT values of a host, as published (multi-part records joined).
      *
