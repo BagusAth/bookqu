@@ -56,7 +56,6 @@ class OwnerVoucherController extends Controller
             ->get();
 
         $services = Service::where('idtenant', $tenant->id)
-            ->where('is_active', true)
             ->orderBy('namalayanan')
             ->get();
 
@@ -75,7 +74,7 @@ class OwnerVoucherController extends Controller
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('vouchers', 'code')->where('idtenant', $tenant->id)],
             'discount_type' => 'required|in:fixed,percentage',
-            'discount_value' => 'required|numeric|min:1',
+            'discount_value' => ['required', 'numeric', 'min:1', Rule::when($request->input('discount_type') === 'percentage', 'max:100')],
             'min_order_amount' => 'nullable|numeric|min:0',
             'max_discount_amount' => 'nullable|numeric|min:0',
             'usage_limit' => 'nullable|integer|min:1',
@@ -121,7 +120,7 @@ class OwnerVoucherController extends Controller
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('vouchers', 'code')->where('idtenant', $tenant->id)->ignore($voucher->id)],
             'discount_type' => 'required|in:fixed,percentage',
-            'discount_value' => 'required|numeric|min:1',
+            'discount_value' => ['required', 'numeric', 'min:1', Rule::when($request->input('discount_type') === 'percentage', 'max:100')],
             'min_order_amount' => 'nullable|numeric|min:0',
             'max_discount_amount' => 'nullable|numeric|min:0',
             'usage_limit' => 'nullable|integer|min:1',
@@ -148,11 +147,15 @@ class OwnerVoucherController extends Controller
                 'discount_type' => $validated['discount_type'],
                 'discount_value' => $validated['discount_value'],
                 'min_spending' => $validated['min_order_amount'] ?? 0,
-                'max_discount' => $validated['max_discount_amount'] ?? null,
+                'max_discount' => array_key_exists('max_discount_amount', $validated)
+                    ? $validated['max_discount_amount']
+                    : $voucher->max_discount,
                 'usage_limit' => $validated['usage_limit'] ?? null,
                 'start_date' => $validated['start_date'] ?? null,
                 'end_date' => $validated['end_date'] ?? null,
-                'applicable_services' => $applicableServices,
+                'applicable_services' => array_key_exists('applicable_services', $validated)
+                    ? $applicableServices
+                    : $voucher->applicable_services,
                 'is_active' => (bool) $validated['is_active'],
             ]);
 

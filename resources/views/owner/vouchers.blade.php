@@ -6,6 +6,7 @@
 <div class="mx-auto max-w-7xl space-y-6" x-data="{
     addModalOpen: false,
     editModalOpen: false,
+    newVoucher: { discount_type: 'percentage', max_discount_amount: null, applicable_services: [] },
     activeVoucher: {
         id: null,
         code: '',
@@ -67,7 +68,7 @@
                     'discount_type'       => $v->discount_type,
                     'discount_value'      => (float) $v->discount_value,
                     'min_order_amount'    => (float) ($v->min_spending ?? $v->min_order_amount ?? 0),
-                    'max_discount_amount' => ($v->max_discount ?? $v->max_discount_amount) ? (float) ($v->max_discount ?? $v->max_discount_amount) : null,
+                    'max_discount_amount' => $v->max_discount !== null ? (float) $v->max_discount : null,
                     'usage_limit'         => $v->usage_limit,
                     'start_date'          => $v->start_date ? \Carbon\Carbon::parse($v->start_date)->format('Y-m-d') : '',
                     'end_date'            => $v->end_date ? \Carbon\Carbon::parse($v->end_date)->format('Y-m-d') : '',
@@ -137,7 +138,7 @@
                             @csrf
                             @method('DELETE')
                             <button type="button"
-                                @click="$dispatch('open-confirm', { title: 'Hapus Voucher?', message: 'Yakin ingin menghapus voucher {{ $v->code }}?', formId: 'form-delete-voucher-{{ $v->id }}' })"
+                                @click="$dispatch('open-confirm', { title: 'Hapus promo?', message: 'Yakin ingin menghapus promo ' + @js($v->code) + '?', formId: $el.form.id })"
                                 class="rounded-lg p-1.5 text-bq-text-muted hover:bg-rose-50 hover:text-rose-600 transition" title="Hapus" id="btn-delete-voucher-{{ $v->id }}">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                             </button>
@@ -173,14 +174,14 @@
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <label class="text-xs font-semibold text-bq-text">Tipe Diskon <span class="text-rose-500">*</span></label>
-                        <select name="discount_type" class="mt-1 w-full rounded-xl border border-bq-border px-3 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
+                        <select name="discount_type" x-model="newVoucher.discount_type" class="mt-1 w-full rounded-xl border border-bq-border px-3 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
                             <option value="percentage">Persentase (%)</option>
                             <option value="fixed">Nominal Tetap (Rp)</option>
                         </select>
                     </div>
                     <div>
                         <label class="text-xs font-semibold text-bq-text">Nilai Diskon <span class="text-rose-500">*</span></label>
-                        <input type="number" name="discount_value" required min="1" placeholder="20 atau 25000" class="mt-1 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
+                        <input type="number" name="discount_value" required min="1" step="0.01" :max="newVoucher.discount_type === 'percentage' ? 100 : null" placeholder="20 atau 25000" class="mt-1 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -203,6 +204,7 @@
                         <input type="date" name="end_date" class="mt-1 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
                     </div>
                 </div>
+                @include('owner.partials.promo-limits', ['model' => 'newVoucher'])
                 <div class="flex items-center justify-end gap-2 pt-2 border-t border-bq-border">
                     <button type="button" @click="addModalOpen = false" class="rounded-xl px-3.5 py-2 text-xs font-semibold text-bq-text-muted hover:bg-slate-100 transition">Batal</button>
                     <button type="submit" class="rounded-xl bg-bq-primary px-4 py-2 text-xs font-semibold text-white hover:bg-bq-primary-hover transition">Simpan Voucher</button>
@@ -233,7 +235,7 @@
                     </div>
                     <div>
                         <label class="text-xs font-semibold text-bq-text">Nilai Diskon <span class="text-rose-500">*</span></label>
-                        <input type="number" name="discount_value" x-model="activeVoucher.discount_value" required min="1" class="mt-1 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
+                        <input type="number" name="discount_value" x-model="activeVoucher.discount_value" required min="1" step="0.01" :max="activeVoucher.discount_type === 'percentage' ? 100 : null" class="mt-1 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -263,6 +265,7 @@
                         <option :value="0">Non-Aktif</option>
                     </select>
                 </div>
+                @include('owner.partials.promo-limits', ['model' => 'activeVoucher'])
                 <div class="flex items-center justify-end gap-2 pt-2 border-t border-bq-border">
                     <button type="button" @click="editModalOpen = false" class="rounded-xl px-3.5 py-2 text-xs font-semibold text-bq-text-muted hover:bg-slate-100 transition">Batal</button>
                     <button type="submit" class="rounded-xl bg-bq-primary px-4 py-2 text-xs font-semibold text-white hover:bg-bq-primary-hover transition">Simpan Perubahan</button>
