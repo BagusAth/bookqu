@@ -52,6 +52,7 @@
             hide() {
                 if (!this.open) return;
                 this.open = false;
+                this.$dispatch('dialog-closed', { id: this.dialogId });
                 const target = this.returnTo;
                 this.returnTo = null;
                 if (target && typeof target.focus === 'function' && document.contains(target)) {
