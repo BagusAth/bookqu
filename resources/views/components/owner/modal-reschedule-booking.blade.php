@@ -1,4 +1,9 @@
-{{-- Owner Direct Reschedule Booking Modal Component --}}
+@php
+    $rescheduleForm = $errors->any() && is_string(old('_form')) ? old('_form') : '';
+    $reopenReschedule = preg_match('/^reschedule-([1-9][0-9]*)$/', $rescheduleForm, $rescheduleFormMatch)
+        ? route('owner.bookings.panel', (int) $rescheduleFormMatch[1])
+        : null;
+@endphp
 <div
     id="modal-owner-reschedule"
     x-data="{
@@ -14,10 +19,22 @@
         pesanError: '',
         minDate: @js(today(config('app.timezone'))->toDateString()),
 
-        bukaModal(data) {
+        async restore(url) {
+            try {
+                const response = await fetch(url, { headers: { Accept: 'application/json' } });
+                if (!response.ok) throw new Error();
+                const data = await response.json();
+                const action = data.actions.find(action => action.reschedule);
+                if (action) this.bukaModal(action.reschedule, true);
+            } catch {
+                $dispatch('toast', { type: 'error', message: 'Detail booking tidak dapat dimuat.' });
+            }
+        },
+
+        bukaModal(data, restore = false) {
             this.booking = data.booking || data;
             this.pesanError = '';
-            this.alasan = '';
+            this.alasan = restore ? @js($reopenReschedule ? old('alasan', '') : '') : '';
             
             // Inisialisasi tanggal dengan tanggal booking saat ini jika belum lewat, atau hari ini
             const tglBooking = this.booking.tanggalbooking ? String(this.booking.tanggalbooking).split('T')[0].split(' ')[0] : '';
@@ -27,12 +44,13 @@
                 this.selectedDate = this.minDate;
             }
             
-            this.selectedScheduleId = this.booking.idschedule || null;
+            if (restore) this.selectedDate = @js($reopenReschedule ? old('tanggal') : null) || this.selectedDate;
+            this.selectedScheduleId = restore ? @js($reopenReschedule ? old('schedule_id') : null) : this.booking.idschedule;
             this.buka = true;
-            this.muatSlot();
+            this.muatSlot(this.selectedScheduleId);
         },
 
-        async muatSlot() {
+        async muatSlot(preferredSlot = null) {
             if (!this.booking || !this.selectedDate) return;
             const request = ++this.slotRequest;
             const bookingId = this.booking.id;
@@ -55,10 +73,7 @@
                 if (data.success) {
                     this.slots = data.slots || [];
                     // Jika slot saat ini berada di tanggal ini, pastikan terpilih secara default
-                    const adaSlotTerpilih = this.slots.some(s => s.id === this.selectedScheduleId);
-                    if (!adaSlotTerpilih) {
-                        this.selectedScheduleId = null;
-                    }
+                    this.selectedScheduleId = this.slots.find(slot => String(slot.id) === String(preferredSlot))?.id ?? null;
                 } else {
                     this.pesanError = data.message || 'Gagal memuat slot jadwal.';
                 }
@@ -80,6 +95,7 @@
         }
     }"
     @open-owner-reschedule.window="bukaModal($event.detail)"
+    @if ($reopenReschedule) x-init="restore(@js($reopenReschedule))" @endif
     @keydown.escape.window="buka = false; slotRequest++; selectedScheduleId = null"
     x-cloak
 >
@@ -128,6 +144,10 @@
             {{-- Body Scrollable --}}
             <form :action="'/owner/bookings/' + (booking?.id || '') + '/reschedule'" method="POST" @submit="sedangKirim = true" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4.5">
                 @csrf
+                <input type="hidden" name="_form" :value="'reschedule-' + booking?.id">
+                @if ($reopenReschedule)
+                    <x-owner.field-error name="error" x-show="@js($rescheduleForm) === 'reschedule-' + booking?.id" />
+                @endif
 
                 {{-- Alert Error --}}
                 <template x-if="pesanError">
@@ -167,6 +187,9 @@
                         class="w-full rounded-xl border border-bq-border bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-bq-text shadow-2xs focus:border-bq-primary focus:ring-1 focus:ring-bq-primary"
                         required
                     />
+                    @if ($reopenReschedule)
+                        <x-owner.field-error name="tanggal" x-show="@js($rescheduleForm) === 'reschedule-' + booking?.id" />
+                    @endif
                 </div>
 
                 {{-- Pemilih Slot Waktu --}}
@@ -236,6 +259,10 @@
                     </div>
                 </div>
 
+                @if ($reopenReschedule)
+                    <x-owner.field-error name="schedule_id" x-show="@js($rescheduleForm) === 'reschedule-' + booking?.id" />
+                @endif
+
                 {{-- Input Alasan Reschedule --}}
                 <div class="space-y-1.5 pt-1">
                     <label class="block text-xs font-bold text-bq-text">
@@ -248,6 +275,9 @@
                         placeholder="Contoh: Permintaan langsung customer walk-in di kasir"
                         class="w-full rounded-xl border border-bq-border bg-white px-3.5 py-2.5 text-xs sm:text-sm text-bq-text shadow-2xs focus:border-bq-primary focus:ring-1 focus:ring-bq-primary"
                     />
+                    @if ($reopenReschedule)
+                        <x-owner.field-error name="alasan" x-show="@js($rescheduleForm) === 'reschedule-' + booking?.id" />
+                    @endif
                 </div>
 
                 {{-- Footer Aksi --}}

@@ -57,7 +57,7 @@
         @include('components.owner.bottom-nav')
 
         @if ($shell['canWalkIn'])
-            <x-owner.dialog id="owner-walkin-dialog" title="Booking walk-in" description="Catat pelanggan yang datang langsung." size="lg">
+            <x-owner.dialog id="owner-walkin-dialog" title="Booking walk-in" description="Catat pelanggan yang datang langsung." size="lg" reopen-for="shell-walkin">
                 <x-owner.walkin-form :slots-url="route('owner.bookings.walkin-slots')" id-prefix="shell-walkin" />
             </x-owner.dialog>
         @endif

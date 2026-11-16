@@ -5,6 +5,7 @@
                x-model="{{ $model }}.max_discount_amount"
                placeholder="Kosongkan jika tanpa batas"
                class="w-full rounded-xl border border-bq-border px-3 py-2 text-xs">
+        <x-owner.field-error name="max_discount_amount" :form="$errorForm" />
     </label>
 </div>
 
@@ -21,4 +22,6 @@
             </label>
         @endforeach
     </div>
+    <x-owner.field-error name="applicable_services" :form="$errorForm" />
+    <x-owner.field-error name="applicable_services.*" :form="$errorForm" />
 </fieldset>

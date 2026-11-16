@@ -218,6 +218,22 @@ class BerandaPageTest extends TestCase
             ->assertOk()->assertDontSee('id="form-complete-profile"', false);
     }
 
+    public function test_walk_in_validation_reopens_its_dialog_and_restores_input_with_inline_error(): void
+    {
+        $dashboard = route('owner.dashboard');
+        $response = $this->actingAs($this->owner)->from($dashboard)->post(route('owner.bookings.walkin'), [
+            '_form' => 'shell-walkin',
+            'namapelanggan' => 'Rani dari form',
+            'nomorhp' => '08123456789',
+        ])->assertRedirect($dashboard)->assertSessionHasErrors('idschedule');
+
+        $cookie = config('session.cookie');
+        $this->withCookie($cookie, $response->getCookie($cookie)->getValue())->get($dashboard)->assertOk()
+            ->assertSee('data-reopen-dialog="owner-walkin-dialog"', false)
+            ->assertSee('value="Rani dari form"', false)
+            ->assertSee('id="shell-walkin-slot-error"', false);
+    }
+
     public function test_ac_brd_05_the_guide_shows_until_its_steps_are_done_and_never_again(): void
     {
         $this->tenant->forceFill(['namabisnis' => '', 'alamat' => ''])->save();

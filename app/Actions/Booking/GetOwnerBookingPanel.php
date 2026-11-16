@@ -153,7 +153,15 @@ final class GetOwnerBookingPanel
             $actions[] = ['label' => 'Kirim ulang link booking', 'url' => route('owner.bookings.resend-link', $booking->id)];
         }
 
-        return $actions;
+        return array_map(function (array $action) use ($booking): array {
+            if (isset($action['reason'])) {
+                $action['form_key'] = 'booking-reason-'.$booking->id.'-'.(
+                    $action['fields']['decision'] ?? $action['fields']['status'] ?? 'request-cancel'
+                );
+            }
+
+            return $action;
+        }, $actions);
     }
 
     /** @param list<BookingLog> $logs

@@ -722,6 +722,8 @@ Built once (epic E1) and used by every page above.
 | Confirm dialog, toast | every destructive or important action | No native `alert` or `confirm` |
 | Permission denied page | every route refused by role | Does not reveal whether the record exists |
 
+Dialog forms submit a hidden `_form` key, including the record ID for an edit. After a validation redirect, the matching form restores its previous input and shows field errors inline. The shared dialog accepts `reopen-for` for a fixed form key, and `x-owner.field-error` can scope a message to a form. The toast summarizes the error.
+
 ## 10. From the current portal to the new one
 
 ### 10.1 Page map

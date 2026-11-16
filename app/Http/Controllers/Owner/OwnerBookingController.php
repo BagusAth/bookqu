@@ -184,7 +184,7 @@ class OwnerBookingController extends Controller
         $result = $updateBookingStatus->execute($booking, $statusBaru, 'owner', $validated['reason'] ?? null);
 
         if (! $result['success']) {
-            return back()->withErrors([
+            return back()->withInput()->withErrors([
                 'error' => $result['error'],
             ]);
         }
@@ -242,7 +242,7 @@ class OwnerBookingController extends Controller
         $booking = $createWalkInBooking->execute($tenant, $validated);
 
         if (! $booking) {
-            return back()->withErrors(['error' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.']);
+            return back()->withInput()->withErrors(['idschedule' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.']);
         }
 
         return back()->with('sukses', "Walk-in booking atas nama {$booking->namapelanggan} berhasil dibuat!");
@@ -328,7 +328,7 @@ class OwnerBookingController extends Controller
                 return response()->json(['success' => false, 'message' => $result['error']], 422);
             }
 
-            return back()->withErrors(['error' => $result['error']]);
+            return back()->withInput()->withErrors(['error' => $result['error']]);
         }
 
         $tglFormatted = Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y');

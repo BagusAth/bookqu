@@ -4,6 +4,7 @@
     <h2 class="font-semibold">Kebijakan Booking</h2>
     <input type="hidden" name="refunds_enabled" value="0">
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="refunds_enabled" value="1" @checked(old('refunds_enabled', $bookingPolicy['refunds_enabled']))> Izinkan pelanggan mengajukan refund</label>
+    <x-owner.field-error name="refunds_enabled" />
     <div class="grid gap-3 sm:grid-cols-2">
         @foreach ([
             'cancel_before_hours' => ['Batas pengajuan refund (jam sebelum sesi)', 0, 8760],
@@ -14,6 +15,7 @@
         ] as $field => [$label, $min, $max])
             <label class="grid gap-1 text-sm">{{ $label }}
                 <input type="number" name="{{ $field }}" min="{{ $min }}" max="{{ $max }}" value="{{ old($field, $bookingPolicy[$field]) }}" required class="rounded-lg border border-bq-border bg-bq-surface p-2">
+                <x-owner.field-error :name="$field" />
             </label>
         @endforeach
     </div>

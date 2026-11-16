@@ -9,7 +9,8 @@
 
 @php
     $isServicesTab = $activeTab === 'layanan';
-    $oldContext = old('form_context');
+    $oldForm = $errors->any() ? (string) old('_form') : '';
+    $oldContext = str_starts_with($oldForm, 'service-') ? 'service' : (str_starts_with($oldForm, 'category-') ? 'category' : null);
     $serviceUpdateUrl = route('owner.services.update', ['program' => '__ID__']);
     $serviceToggleUrl = route('owner.services.toggle', ['id' => '__ID__']);
     $serviceDestroyUrl = route('owner.services.destroy', ['program' => '__ID__']);
@@ -51,15 +52,16 @@
             if (!old) return;
             const toBool = (value) => value === true || value === '1' || value === 1;
             this.$nextTick(() => {
-                if (old.form_context === 'service') {
+                if (@js($oldContext) === 'service') {
                     this.openService({
                         id: old.editing_id || null, namalayanan: old.namalayanan || '', idcategory: old.idcategory || '',
                         harga: old.harga || '', satuan_harga: old.satuan_harga || 'sesi', durasi: old.durasi || 60,
                         satuan_durasi: old.satuan_durasi || 'menit', deskripsi: old.deskripsi || '',
                         is_popular: toBool(old.is_popular), is_active: toBool(old.is_active),
+                        image_asset_id: String(old.image_asset_id ?? ''), remove_image: toBool(old.remove_image),
                         kapasitas: old.kapasitas ?? 1, unit_ids: Array.isArray(old.unit_ids) ? old.unit_ids : [],
                     }, null);
-                } else if (old.form_context === 'category') {
+                } else if (@js($oldContext) === 'category') {
                     this.openCategory({
                         id: old.editing_id || null, name: old.name || '', description: old.description || '',
                         color: old.color || 'purple', sort_order: old.sort_order || 0, is_active: toBool(old.is_active),
@@ -227,7 +229,7 @@
                   x-bind:action="service.id ? url(@js($serviceUpdateUrl), service.id) : @js(route('owner.services.store'))">
                 @csrf
                 <input type="hidden" name="_method" value="PUT" x-bind:disabled="!service.id">
-                <input type="hidden" name="form_context" value="service">
+                <input type="hidden" name="_form" :value="service.id ? 'service-edit-' + service.id : 'service-create'">
                 <input type="hidden" name="editing_id" x-bind:value="service.id || ''">
                 {{-- Unit links are managed on the Unit page; send the current ones back unchanged (BQ-045). --}}
 
@@ -236,6 +238,7 @@
                 <div>
                     <label for="service-name" class="{{ $labelClass }}">Nama layanan</label>
                     <input id="service-name" name="namalayanan" type="text" required maxlength="255" x-model="service.namalayanan" class="{{ $inputClass }}">
+                    <x-owner.field-error name="namalayanan" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                 </div>
 
                 <div>
@@ -246,26 +249,31 @@
                             <option value="{{ $option['id'] }}">{{ $option['name'] }}</option>
                         @endforeach
                     </select>
+                    <x-owner.field-error name="idcategory" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                 </div>
 
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label for="service-price" class="{{ $labelClass }}">Harga dasar (Rp)</label>
                         <input id="service-price" name="harga" type="number" min="0" step="1" required x-model="service.harga" class="{{ $inputClass }}">
+                    <x-owner.field-error name="harga" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                     </div>
                     <div>
                         <label for="service-price-unit" class="{{ $labelClass }}">Satuan harga</label>
                         <input id="service-price-unit" name="satuan_harga" type="text" maxlength="20" list="service-price-units" x-model="service.satuan_harga" class="{{ $inputClass }}">
+                    <x-owner.field-error name="satuan_harga" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                         <datalist id="service-price-units"><option value="sesi"><option value="orang"><option value="jam"><option value="paket"></datalist>
                         <p class="mt-1 text-xs text-bq-text-muted">Tampil ke pelanggan, misalnya "Rp 150.000 / sesi".</p>
                     </div>
                     <div>
                         <label for="service-duration" class="{{ $labelClass }}">Durasi (menit)</label>
                         <input id="service-duration" name="durasi" type="number" min="5" max="480" step="5" required x-model="service.durasi" class="{{ $inputClass }}">
+                    <x-owner.field-error name="durasi" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                     </div>
                     <div>
                         <label for="service-duration-unit" class="{{ $labelClass }}">Satuan durasi</label>
                         <input id="service-duration-unit" name="satuan_durasi" type="text" maxlength="20" list="service-duration-units" x-model="service.satuan_durasi" class="{{ $inputClass }}">
+                    <x-owner.field-error name="satuan_durasi" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                         <datalist id="service-duration-units"><option value="menit"><option value="jam"><option value="sesi"></datalist>
                     </div>
                 </div>
@@ -274,6 +282,7 @@
                 <div>
                     <label for="service-capacity" class="{{ $labelClass }}">Kapasitas per slot</label>
                     <input id="service-capacity" name="kapasitas" type="number" min="1" max="9999" required x-model="service.kapasitas" class="{{ $inputClass }}">
+                    <x-owner.field-error name="kapasitas" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                 </div>
                 @if ($unitOptions !== null)
                     <fieldset>
@@ -287,6 +296,7 @@
                         @empty
                             <p class="text-sm text-bq-text-muted">Belum ada unit. <a class="text-bq-primary" href="{{ route('owner.units') }}">Kelola unit</a></p>
                         @endforelse
+                        <x-owner.field-error name="unit_ids.*" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                     </fieldset>
                 @endif
 
@@ -297,6 +307,7 @@
                 <div>
                     <label for="service-description" class="{{ $labelClass }}">Deskripsi <span class="font-normal text-bq-text-muted">(opsional)</span></label>
                     <textarea id="service-description" name="deskripsi" rows="3" maxlength="1000" x-model="service.deskripsi" class="{{ $inputClass }}"></textarea>
+                    <x-owner.field-error name="deskripsi" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                 </div>
 
                 {{-- BQ-142 (FR-ASSET-005): pick from the gallery, or upload a new image into it --}}
@@ -309,8 +320,10 @@
                         label="Pilih gambar layanan dari galeri"
                         :gallery-url="$galleryUrl"
                     />
+                    <x-owner.field-error name="image_asset_id" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                     <label for="service-image" class="block text-xs text-bq-text-muted">Atau unggah gambar baru ke galeri (JPG, PNG, WEBP, maks. 10 MB)</label>
                     <input id="service-image" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-bq-text-muted">
+                    <x-owner.field-error name="cover_image" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                     <label x-show="service.imageUrl" class="inline-flex items-center gap-2 text-sm text-bq-text">
                         <input type="checkbox" name="remove_image" value="1" x-model="service.remove_image" class="rounded border-bq-border text-bq-primary"> Lepas gambar dari layanan
                     </label>
@@ -320,11 +333,13 @@
                     <label class="inline-flex items-center gap-2 text-sm text-bq-text">
                         <input type="hidden" name="is_popular" value="0">
                         <input type="checkbox" name="is_popular" value="1" x-model="service.is_popular" class="rounded border-bq-border text-bq-primary">
+                    <x-owner.field-error name="is_popular" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                         Tandai populer di halaman booking
                     </label>
                     <label class="inline-flex items-center gap-2 text-sm text-bq-text">
                         <input type="hidden" name="is_active" value="0">
                         <input type="checkbox" name="is_active" value="1" x-model="service.is_active" class="rounded border-bq-border text-bq-primary">
+                    <x-owner.field-error name="is_active" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                         Aktif (bisa dibooking)
                     </label>
                 </div>
@@ -437,7 +452,7 @@
                   x-bind:action="category.id ? url(@js($categoryUpdateUrl), category.id) : @js(route('owner.categories.store'))">
                 @csrf
                 <input type="hidden" name="_method" value="PUT" x-bind:disabled="!category.id">
-                <input type="hidden" name="form_context" value="category">
+                <input type="hidden" name="_form" :value="category.id ? 'category-edit-' + category.id : 'category-create'">
                 <input type="hidden" name="editing_id" x-bind:value="category.id || ''">
 
                 <p class="text-sm font-semibold text-bq-text" x-text="category.id ? 'Ubah kategori' : 'Tambah kategori'"></p>
@@ -445,10 +460,12 @@
                 <div>
                     <label for="category-name" class="{{ $labelClass }}">Nama kategori</label>
                     <input id="category-name" name="name" type="text" required maxlength="100" x-model="category.name" class="{{ $inputClass }}">
+                    <x-owner.field-error name="name" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                 </div>
                 <div>
                     <label for="category-description" class="{{ $labelClass }}">Deskripsi <span class="font-normal text-bq-text-muted">(opsional)</span></label>
                     <textarea id="category-description" name="description" rows="2" maxlength="500" x-model="category.description" class="{{ $inputClass }}"></textarea>
+                    <x-owner.field-error name="description" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                 </div>
                 <fieldset>
                     <legend class="{{ $labelClass }}">Label warna</legend>
@@ -456,6 +473,7 @@
                         @foreach ($colors as $key => $color)
                             <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-bq-border px-2.5 py-1 text-xs text-bq-text has-[:checked]:border-bq-primary has-[:checked]:ring-2 has-[:checked]:ring-bq-primary/30">
                                 <input type="radio" name="color" value="{{ $key }}" x-model="category.color" class="sr-only">
+                    <x-owner.field-error name="color" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                                 <span class="h-3 w-3 rounded-full" style="background-color: {{ $color['hex'] }}" aria-hidden="true"></span>
                                 {{ $color['label'] }}
                             </label>
@@ -465,6 +483,7 @@
                 <div>
                     <label for="category-order" class="{{ $labelClass }}">Urutan tampil</label>
                     <input id="category-order" name="sort_order" type="number" min="0" max="9999" step="1" x-model="category.sort_order" class="{{ $inputClass }} sm:w-32">
+                    <x-owner.field-error name="sort_order" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                     <p class="mt-1 text-xs text-bq-text-muted">Angka kecil tampil lebih dulu di halaman booking.</p>
                 </div>
                 <div>
@@ -473,6 +492,7 @@
                         <img x-bind:src="category.imageUrl" alt="" class="mt-2 h-16 w-16 rounded-lg object-cover">
                     </template>
                     <input id="category-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm text-bq-text-muted">
+                    <x-owner.field-error name="image" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                     <label x-show="category.imageUrl" class="mt-2 inline-flex items-center gap-2 text-sm text-bq-text">
                         <input type="checkbox" name="remove_image" value="1" x-model="category.remove_image" class="rounded border-bq-border text-bq-primary"> Hapus gambar
                     </label>
@@ -480,6 +500,7 @@
                 <label class="inline-flex items-center gap-2 text-sm text-bq-text">
                     <input type="hidden" name="is_active" value="0">
                     <input type="checkbox" name="is_active" value="1" x-model="category.is_active" class="rounded border-bq-border text-bq-primary">
+                    <x-owner.field-error name="is_active" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                     Aktif (tampil di halaman booking)
                 </label>
             </form>

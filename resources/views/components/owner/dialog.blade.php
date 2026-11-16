@@ -8,6 +8,7 @@
     'title',
     'description' => null,
     'size' => 'md',
+    'reopenFor' => null,
 ])
 
 @php
@@ -23,6 +24,10 @@
     x-data="ownerDialog(@js($id))"
     x-on:open-dialog.window="onOpenEvent($event)"
     x-on:close-dialog.window="onCloseEvent($event)"
+    @if ($reopenFor !== null && $errors->any() && old('_form') === $reopenFor)
+        data-reopen-dialog="{{ $id }}"
+        x-init="$nextTick(() => $dispatch('open-dialog', { id: $el.dataset.reopenDialog }))"
+    @endif
     {{ $attributes->except(['x-data']) }}
 >
     <div x-show="open" x-cloak class="fixed inset-0 z-[100] bg-bq-ink/40" x-on:click="hide()" aria-hidden="true"></div>

@@ -351,6 +351,7 @@ class CapacityUnitsAndNoShowTest extends TestCase
         $this->assertTrue($response->viewData('errors')->has('kapasitas'), 'The validation error should reach the view.');
         $html = (string) $response->getContent();
         $this->assertTrue(str_contains($html, 'value="Nama dari form"'), 'The submitted name should be restored.');
+        $this->assertTrue(str_contains($html, 'id="unit-edit-'.$unit->id.'-kapasitas-error"'));
         preg_match('/<details [^>]*id="unit-edit-'.$unit->id.'"[^>]*>/', $html, $edit);
         $this->assertStringContainsString(' open', $edit[0] ?? 'Unit editor missing');
         $this->assertSame(0, preg_match('/<details [^>]*id="unit-create"[^>]*\bopen\b/', $html));

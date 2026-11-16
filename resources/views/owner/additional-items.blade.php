@@ -3,12 +3,19 @@
 @section('title', 'Add-on')
 
 @section('content')
+@php
+    $addonErrorForm = $errors->any() && is_string(old('_form')) ? old('_form') : '';
+    $creatingAddon = $addonErrorForm === 'addon-create';
+    $editingAddon = preg_match('/^addon-edit-([1-9][0-9]*)$/', $addonErrorForm, $addonMatch) ? (int) $addonMatch[1] : null;
+    $addonInput = \Illuminate\Support\Arr::only(old(), ['name', 'description', 'price', 'stock', 'is_active', 'service_ids']);
+    $addonInput['service_ids'] = array_values(array_filter((array) ($addonInput['service_ids'] ?? []), 'is_scalar'));
+@endphp
 <div class="mx-auto max-w-7xl space-y-6" x-data="{
-    addModalOpen: false,
-    editModalOpen: false,
-    addUnlimited: true,
-    editUnlimited: true,
-    activeItem: { id: null, name: '', description: '', price: 0, stock: null, is_active: 1, service_ids: [] },
+    addModalOpen: @js($creatingAddon),
+    editModalOpen: @js($editingAddon !== null),
+    addUnlimited: @js(! $creatingAddon || old('stock') === null),
+    editUnlimited: @js($editingAddon === null || old('stock') === null),
+    activeItem: { id: null, name: '', description: '', price: 0, stock: null, is_active: 1, service_ids: [], ...@js($editingAddon ? $addonInput + ['id' => $editingAddon] : []) },
     openEdit(item) {
         this.activeItem = { ...item, service_ids: Array.isArray(item.service_ids) ? [...item.service_ids] : [] };
         this.editUnlimited = (item.stock === null || item.stock === undefined || item.stock === '');
@@ -254,15 +261,17 @@
             <p class="text-xs text-[#6e6584] mt-2">Produk atau layanan opsional yang dapat dipilih customer saat booking.</p>
             <form method="POST" action="{{ route($itemRoute.'.store') }}" class="mt-4 space-y-4" id="form-add-addon">
                 @csrf
+                <input type="hidden" name="_form" value="addon-create">
                 <div>
                     <label class="text-xs font-bold text-[#231a3d]">Nama Item <span class="text-rose-500">*</span></label>
                     <input
                         type="text"
-                        name="name"
+                        name="name" value="{{ $creatingAddon ? old('name') : '' }}"
                         required
                         placeholder="Contoh: Sewa Raket Tambahan"
                         class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     >
+                    <x-owner.field-error name="name" form="addon-create" />
                     <p class="mt-1 text-[11px] text-[#6e6584]">Gunakan nama produk atau layanan tambahan yang menarik saat checkout.</p>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -270,13 +279,14 @@
                         <label class="text-xs font-bold text-[#231a3d]">Harga (Rp) <span class="text-rose-500">*</span></label>
                         <input
                             type="number"
-                            name="price"
+                            name="price" value="{{ $creatingAddon ? old('price') : '' }}"
                             required
                             min="0"
                             step="500"
                             placeholder="25000"
                             class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                         >
+                    <x-owner.field-error name="price" form="addon-create" />
                     </div>
                     <div>
                         <div class="flex items-center justify-between">
@@ -288,12 +298,13 @@
                         </div>
                         <input
                             type="number"
-                            name="stock"
+                            name="stock" value="{{ $creatingAddon ? old('stock') : '' }}"
                             min="0"
                             :disabled="addUnlimited"
                             :placeholder="addUnlimited ? 'Tak Terbatas' : 'Contoh: 20'"
                             class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition disabled:bg-[#f7f7fa] disabled:text-[#6e6584] disabled:cursor-not-allowed"
                         >
+                    <x-owner.field-error name="stock" form="addon-create" />
                         <p class="mt-1 text-[10px] text-[#6e6584]" x-text="addUnlimited ? 'Item ini dapat dipesan tanpa batasan kuantitas.' : 'Kuantitas akan berkurang setiap kali dipesan customer.'"></p>
                     </div>
                 </div>
@@ -304,8 +315,9 @@
                         class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     >
                         <option value="1" selected>Active (Tersedia untuk Dipesan)</option>
-                        <option value="0">Inactive (Disembunyikan)</option>
+                        <option value="0" @selected($creatingAddon && old('is_active') === '0')>Inactive (Disembunyikan)</option>
                     </select>
+                    <x-owner.field-error name="is_active" form="addon-create" />
                 </div>
                 <div>
                     <label class="text-xs font-bold text-[#231a3d]">Deskripsi</label>
@@ -314,7 +326,8 @@
                         rows="2"
                         placeholder="Keterangan singkat item..."
                         class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
-                    ></textarea>
+                    >{{ $creatingAddon ? old('description') : '' }}</textarea>
+                    <x-owner.field-error name="description" form="addon-create" />
                 </div>
                 <div>
                     <div class="flex items-center justify-between">
@@ -324,7 +337,7 @@
                     <div class="mt-2 max-h-32 overflow-y-auto space-y-1.5 rounded-2xl border border-[#e7e2f7] bg-[#f7f7fa]/60 p-3">
                         @foreach($services as $svc)
                             <label class="flex items-center gap-2 text-xs text-[#231a3d] font-semibold cursor-pointer">
-                                <input type="checkbox" name="service_ids[]" value="{{ $svc->id }}" class="rounded border-[#e7e2f7] text-[#382186] focus:ring-[#b499ff]">
+                                <input type="checkbox" name="service_ids[]" @checked($creatingAddon && in_array($svc->id, $addonInput['service_ids'])) value="{{ $svc->id }}" class="rounded border-[#e7e2f7] text-[#382186] focus:ring-[#b499ff]">
                                 <span>{{ $svc->namalayanan }}</span>
                             </label>
                         @endforeach
@@ -334,6 +347,8 @@
                     <button type="button" @click="addModalOpen = false" class="craft-btn rounded-xl px-4 py-2 text-xs font-bold text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#231a3d] transition">Batal</button>
                     <button type="submit" class="craft-btn rounded-xl bg-[#382186] px-4 py-2 text-xs font-bold text-white hover:bg-[#2d1a6d] shadow-xs transition">Simpan Add-on</button>
                 </div>
+                <x-owner.field-error name="service_ids" form="addon-create" />
+                <x-owner.field-error name="service_ids.*" form="addon-create" />
             </form>
         </div>
     </div>
@@ -371,6 +386,7 @@
             <p class="text-xs text-[#6e6584] mt-2">Perbarui harga, stok, atau layanan yang berlaku.</p>
             <form method="POST" :action="@js(route($itemRoute.'.update', ['id' => '__ID__'])).replace('__ID__', encodeURIComponent(activeItem.id))" class="mt-4 space-y-4" id="form-edit-addon">
                 @csrf
+                <input type="hidden" name="_form" :value="'addon-edit-' + activeItem.id">
                 @method('PUT')
                 <div>
                     <label class="text-xs font-bold text-[#231a3d]">Nama Item <span class="text-rose-500">*</span></label>
@@ -381,6 +397,7 @@
                         required
                         class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     >
+                    <x-owner.field-error name="name" :form="$addonErrorForm" x-cloak x-show="@js($addonErrorForm) === 'addon-edit-' + activeItem.id" />
                     <p class="mt-1 text-[11px] text-[#6e6584]">Nama add-on diperbarui pada formulir pemesanan tamu.</p>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -395,6 +412,7 @@
                             step="500"
                             class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                         >
+                    <x-owner.field-error name="price" :form="$addonErrorForm" x-cloak x-show="@js($addonErrorForm) === 'addon-edit-' + activeItem.id" />
                     </div>
                     <div>
                         <div class="flex items-center justify-between">
@@ -418,6 +436,7 @@
                             :placeholder="editUnlimited ? 'Tak Terbatas' : 'Contoh: 20'"
                             class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition disabled:bg-[#f7f7fa] disabled:text-[#6e6584] disabled:cursor-not-allowed"
                         >
+                    <x-owner.field-error name="stock" :form="$addonErrorForm" x-cloak x-show="@js($addonErrorForm) === 'addon-edit-' + activeItem.id" />
                         <p class="mt-1 text-[10px] text-[#6e6584]" x-text="editUnlimited ? 'Item ini dapat dipesan tanpa batasan kuantitas.' : 'Kuantitas akan berkurang setiap kali dipesan customer.'"></p>
                     </div>
                 </div>
@@ -429,6 +448,7 @@
                         rows="2"
                         class="mt-1.5 w-full rounded-xl border border-[#e7e2f7] bg-white px-3.5 py-2 text-xs text-[#231a3d] placeholder-[#6e6584] focus:border-[#382186] focus:outline-none focus:ring-2 focus:ring-[#b499ff]/30 shadow-2xs transition"
                     ></textarea>
+                    <x-owner.field-error name="description" :form="$addonErrorForm" x-cloak x-show="@js($addonErrorForm) === 'addon-edit-' + activeItem.id" />
                 </div>
                 <div>
                     <label class="text-xs font-bold text-[#231a3d]">Status</label>
@@ -440,6 +460,7 @@
                         <option :value="1">Active</option>
                         <option :value="0">Inactive</option>
                     </select>
+                    <x-owner.field-error name="is_active" :form="$addonErrorForm" x-cloak x-show="@js($addonErrorForm) === 'addon-edit-' + activeItem.id" />
                 </div>
                 <div>
                     <label class="text-xs font-bold text-[#231a3d]">Berlaku untuk Layanan</label>
@@ -463,6 +484,8 @@
                     <button type="button" @click="editModalOpen = false" class="craft-btn rounded-xl px-4 py-2 text-xs font-bold text-[#6e6584] hover:bg-[#f7f7fa] hover:text-[#231a3d] transition">Batal</button>
                     <button type="submit" class="craft-btn rounded-xl bg-[#382186] px-4 py-2 text-xs font-bold text-white hover:bg-[#2d1a6d] shadow-xs transition">Simpan Perubahan</button>
                 </div>
+                <x-owner.field-error name="service_ids" :form="$addonErrorForm" />
+                <x-owner.field-error name="service_ids.*" :form="$addonErrorForm" />
             </form>
         </div>
     </div>

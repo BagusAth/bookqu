@@ -14,16 +14,25 @@
                     <form method="POST" :action="selected.updateUrl">
                         @csrf
                         @method('PATCH')
+                        <input type="hidden" name="_form" :value="'calendar-state-' + selected.id">
+                        @if (is_string(old('_form')) && str_starts_with(old('_form'), 'calendar-state-'))
+                            <x-owner.field-error name="operation" x-cloak x-show="@js(old('_form')) === 'calendar-state-' + selected.id" />
+                            <x-owner.field-error name="slot" x-cloak x-show="@js(old('_form')) === 'calendar-state-' + selected.id" />
+                        @endif
                         <button name="operation" :value="selected.closed ? 'open' : 'close'" class="rounded-lg border border-bq-border px-3 py-2 text-sm font-semibold"
                             x-text="selected.closed ? 'Buka lagi' : 'Tutup slot ini'"></button>
                     </form>
                     <form method="POST" :action="selected.updateUrl" class="flex flex-wrap items-end gap-2">
                         @csrf
                         @method('PATCH')
+                        <input type="hidden" name="_form" :value="'calendar-price-' + selected.id">
                         <input type="hidden" name="operation" value="price">
                         <label class="grid gap-1 text-sm">Harga khusus (Rp)
-                            <input name="harga_override" type="number" min="0" max="9999999999" step="1" :value="selected.override"
+                            <input name="harga_override" type="number" min="0" max="9999999999" step="1" :value="@js(old('_form')) === 'calendar-price-' + selected.id ? @js(old('harga_override')) : selected.override"
                                 placeholder="Ikuti aturan harga" class="w-36 rounded-lg border border-bq-border px-3 py-2">
+                            @if (is_string(old('_form')) && str_starts_with(old('_form'), 'calendar-price-'))
+                                <x-owner.field-error name="harga_override" x-cloak x-show="@js(old('_form')) === 'calendar-price-' + selected.id" />
+                            @endif
                         </label>
                         <button class="rounded-lg border border-bq-border px-3 py-2 text-sm font-semibold">Ubah harga slot ini</button>
                     </form>

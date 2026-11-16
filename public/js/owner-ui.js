@@ -382,9 +382,9 @@
         }));
 
         // BQ-128: "+ Booking" picks a date and loads that day's free slots, first when its dialog opens.
-        window.Alpine.data('ownerWalkInSlots', (url, today) => ({
-            selectedSlot: '',
-            quantities: {},
+        window.Alpine.data('ownerWalkInSlots', (url, today, oldDate, oldSlot, oldAddOns) => ({
+            selectedSlot: String(oldSlot ?? ''),
+            quantities: Object.fromEntries(Array.isArray(oldAddOns) ? oldAddOns.filter(item => item?.id).map(item => [item.id, item.quantity]) : []),
             get addOns() {
                 return this.slots.find(slot => String(slot.id) === String(this.selectedSlot))?.add_ons ?? [];
             },
@@ -392,7 +392,7 @@
                 return this.addOns.filter(item => Number(this.quantities[item.id]) > 0);
             },
             today,
-            date: today,
+            date: typeof oldDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(oldDate) ? oldDate : today,
             slots: [],
             loading: false,
             failed: false,
