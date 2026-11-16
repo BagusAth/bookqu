@@ -101,7 +101,8 @@ class GetBeranda
             ->orderBy('jam')
             ->get();
         $todayBookings = $allToday->where('status', '!=', BookingState::STATUS_CANCELLED);
-        $paymentGroups = $allToday->whereNotNull('idpayment')->groupBy('idpayment');
+        $paymentGroups = $allToday->whereNotNull('idpayment')->toBase()->groupBy('idpayment')
+            ->map(fn (Collection $group): array => $group->values()->all())->all();
         $ranges = $todayBookings->isEmpty() ? [] : $this->getBookingTimeRanges->execute($todayBookings)['sessionRanges'];
 
         return [
@@ -270,7 +271,6 @@ class GetBeranda
      *
      * @param  Collection<int, Booking>  $todayBookings
      * @param  array<int, BookingTimeRange>  $ranges
-     * @param  Collection<int, Collection<int, Booking>>  $paymentGroups
      * @return list<array<string, mixed>>
      */
     private function actions(Tenant $tenant, User $user, string $role, Collection $todayBookings, array $ranges, Carbon $now): array
@@ -312,9 +312,10 @@ class GetBeranda
     /**
      * @param  Collection<int, Booking>  $bookings
      * @param  array<int, BookingTimeRange>  $ranges
+     * @param  array<int|string, list<Booking>>  $paymentGroups
      * @return list<array<string, mixed>>
      */
-    private function todayRows(Collection $bookings, array $ranges, Collection $paymentGroups, string $role, Carbon $now): array
+    private function todayRows(Collection $bookings, array $ranges, array $paymentGroups, string $role, Carbon $now): array
     {
         $canComplete = TenantPermission::allowsRole($role, 'bookings.complete');
         $canNoShow = TenantPermission::allowsRole($role, 'bookings.no_show');
@@ -326,7 +327,7 @@ class GetBeranda
             $payment = $booking->payment;
             $hasActions = $booking->status === BookingState::STATUS_PAID
                 && ($booking->idpayment === null || $payment instanceof Payment && BookingRules::onlinePaymentHoldEnd($booking, $payment) === null);
-            $group = $paymentGroups->get($booking->idpayment, collect([$booking]));
+            $group = $paymentGroups[$booking->idpayment] ?? [$booking];
             $statusUrl = route('owner.bookings.status', $booking->id);
 
             return [
@@ -347,8 +348,8 @@ class GetBeranda
                 'complete_url' => $hasActions && $canComplete && $range !== null && BookingRules::sessionHasStarted($range, $now)
                     ? $statusUrl : null,
                 'no_show_url' => $hasActions && $canNoShow
-                    && $group->every(fn (Booking $row): bool => BookingState::canTransition($row->status, BookingState::STATUS_NO_SHOW))
-                    && BookingRules::sessionHasEnded($group->values()->all(), $now) ? $statusUrl : null,
+                    && array_all($group, fn (Booking $row): bool => BookingState::canTransition($row->status, BookingState::STATUS_NO_SHOW))
+                    && BookingRules::sessionHasEnded($group, $now) ? $statusUrl : null,
             ];
         })->values()->all();
     }

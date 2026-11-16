@@ -8,6 +8,7 @@ use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Domain\Payout\PayoutEligibility;
 use App\Domain\Payout\PayoutState;
+use App\Models\Booking;
 use App\Models\OwnerPayout;
 use App\Models\Payment;
 use App\Models\Refund;
@@ -167,8 +168,8 @@ class GetPaymentsPage
                 'customer' => (string) ($first->namapelanggan ?? '-'),
                 'service' => $bookings->map(fn ($booking): string => (string) ($booking->layanan->namalayanan ?? ''))->filter()->unique()->implode(', ') ?: '-',
                 'bookingCode' => (string) ($first->booking_code ?? ''),
-                'bookingPanel' => $first && filled($first->booking_code) ? route('owner.bookings.panel', $first->id) : null,
-                'bookingHref' => $first ? route('owner.bookings', ['panel' => $first->id]) : null,
+                'bookingPanel' => $first instanceof Booking && filled($first->booking_code) ? route('owner.bookings.panel', $first->id) : null,
+                'bookingHref' => $first instanceof Booking ? route('owner.bookings', ['panel' => $first->id]) : null,
                 'amount' => 'Rp '.number_format((float) $payment->jumlah, 0, ',', '.'),
                 'method' => (string) ($payment->metode ?: '-'),
                 'status' => array_combine(['label', 'tone'], StatusBadge::for('payment', (string) $payment->status)),

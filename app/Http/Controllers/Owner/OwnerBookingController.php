@@ -74,11 +74,12 @@ class OwnerBookingController extends Controller
             $payment = $booking->payment;
             $hold = $payment instanceof Payment ? BookingRules::onlinePaymentHoldEnd($booking, $payment) : null;
             $amount = $list->paidAmount($booking);
+            $service = $booking->layanan;
 
             return [$booking->id => [
                 'time' => $timeRanges[$booking->id]->label(),
                 'participants' => $booking->peserta,
-                'units' => $showUnits ? $booking->layanan?->units->pluck('name')->implode(', ') : null,
+                'units' => $showUnits && $service instanceof Service ? $service->units->pluck('name')->implode(', ') : null,
                 'reasons' => $tab === 'action' ? $list->reasons($booking) : [],
                 'amount' => $amount === null ? '—' : 'Rp '.number_format($amount, 0, ',', '.'),
                 'payment_status' => $payment instanceof Payment ? $payment->status : 'Belum tercatat',

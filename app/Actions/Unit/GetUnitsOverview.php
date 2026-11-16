@@ -13,6 +13,7 @@ use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Tenant;
 use App\Models\Unit;
+use Carbon\Carbon;
 
 /**
  * Units of a tenant with the services that use them, and the existing bookings that already
@@ -53,7 +54,7 @@ class GetUnitsOverview
                 'service_ids' => $serviceIds,
                 'service_names' => $unit->services->pluck('namalayanan')->all(),
                 'usage_today' => $unit->is_active
-                    ? UnitUtilisation::forSlots($unit->services->flatMap(fn ($service) => $slotsByService->get($service->id, [])))
+                    ? UnitUtilisation::forSlots($unit->services->flatMap(fn ($service) => $slotsByService->get($service->getKey(), [])))
                     : null,
             ];
             if ($unit->is_active) {
@@ -71,7 +72,7 @@ class GetUnitsOverview
                 'url' => route('owner.bookings.panel', $booking->id),
                 'code' => $booking->booking_code ?: 'BKQ-'.$booking->id,
                 'customer' => $booking->namapelanggan,
-                'session' => $booking->tanggalbooking?->format('d/m/Y').' · '.$timeRanges[$booking->id]->label().' WIB',
+                'session' => Carbon::parse($booking->tanggalbooking)->format('d/m/Y').' · '.$timeRanges[$booking->id]->label().' WIB',
             ];
         }
 

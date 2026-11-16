@@ -66,9 +66,9 @@ class OwnerVoucherController extends Controller
 
             return [$promo->id => [
                 'state' => match (true) {
-                    $promo->end_date !== null && $promo->end_date->toDateString() < $today => 'Berakhir',
+                    $promo->end_date !== null && Carbon::parse($promo->end_date)->toDateString() < $today => 'Berakhir',
                     ! $promo->is_active => 'Nonaktif',
-                    $promo->start_date !== null && $promo->start_date->toDateString() > $today => 'Terjadwal',
+                    $promo->start_date !== null && Carbon::parse($promo->start_date)->toDateString() > $today => 'Terjadwal',
                     default => 'Aktif',
                 },
                 'services' => ! $services || $services === 'all' ? 'Semua layanan' : collect(explode(',', $services))
