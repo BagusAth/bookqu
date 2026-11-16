@@ -412,14 +412,14 @@ class GetBeranda
             $actions[] = ['key' => 'walkin', 'label' => 'Booking', 'event' => 'owner-walkin-dialog', 'url' => ''];
         }
         if (TenantPermission::allowsRole($role, 'services.manage')) {
-            $actions[] = ['key' => 'service', 'label' => 'Layanan', 'event' => '', 'url' => route('owner.services')];
+            $actions[] = ['key' => 'service', 'label' => 'Layanan', 'event' => '', 'url' => route('owner.services', ['buat' => 1])];
         }
         $promos = collect($this->getOwnerNavigation->execute($user))->firstWhere('id', 'promos');
         if ($promos !== null && ! $promos['locked']) {
-            $actions[] = ['key' => 'promo', 'label' => 'Promo', 'event' => '', 'url' => (string) $promos['url']];
+            $actions[] = ['key' => 'promo', 'label' => 'Promo', 'event' => '', 'url' => route('owner.promos', ['buat' => 1])];
         }
         if (TenantPermission::allowsRole($role, 'team.manage') && EntitlementRules::teamLimit($subscription) > 0 && Route::has('owner.team.index')) {
-            $actions[] = ['key' => 'team', 'label' => 'Anggota tim', 'event' => '', 'url' => route('owner.team.index')];
+            $actions[] = ['key' => 'team', 'label' => 'Anggota tim', 'event' => '', 'url' => route('owner.settings.business', ['tab' => 'tim'])];
         }
 
         return $actions;

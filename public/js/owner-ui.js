@@ -262,13 +262,36 @@
             failed: false,
             results: { bookings: [], customers: [] },
             requestNumber: 0,
+            activeIndex: -1,
+
+            get entries() {
+                return [
+                    ...this.results.bookings.map(result => ({ result, kind: 'booking' })),
+                    ...this.results.customers.map(result => ({ result, kind: 'customer' })),
+                ];
+            },
+
+            get activeId() {
+                return this.open && this.activeIndex >= 0 ? 'owner-search-option-' + this.activeIndex : null;
+            },
+
+            move(step) {
+                if (this.loading || this.entries.length === 0) return;
+                this.open = true;
+                const last = this.entries.length - 1;
+                if (this.activeIndex < 0) this.activeIndex = step > 0 ? 0 : last;
+                else this.activeIndex = Math.max(0, Math.min(last, this.activeIndex + step));
+                this.$nextTick(() => document.getElementById(this.activeId)?.scrollIntoView({ block: 'nearest' }));
+            },
 
             async search() {
                 const term = this.query.trim();
                 const requestNumber = ++this.requestNumber;
+                this.activeIndex = -1;
+                this.results = { bookings: [], customers: [] };
                 if (term.length < 2) {
                     this.open = false;
-                    this.results = { bookings: [], customers: [] };
+                    this.loading = false;
                     return;
                 }
                 this.open = true;
@@ -278,9 +301,9 @@
                     const target = new URL(url, window.location.origin);
                     target.searchParams.set('q', term);
                     const response = await fetch(target, { headers: jsonHeaders });
-                    if (requestNumber !== this.requestNumber) return;
                     if (!response.ok) throw new Error('search failed');
                     const data = await response.json();
+                    if (requestNumber !== this.requestNumber || this.query.trim() !== term) return;
                     this.results = { bookings: data.bookings || [], customers: data.customers || [] };
                 } catch (error) {
                     if (requestNumber === this.requestNumber) this.failed = true;
@@ -298,13 +321,15 @@
                 }
             },
 
-            openFirst() {
-                const first = this.results.bookings[0] || this.results.customers[0];
-                if (first) this.choose(first, this.results.bookings[0] ? 'booking' : 'customer');
+            openSelection() {
+                if (!this.open || this.loading) return;
+                const entry = this.entries[Math.max(this.activeIndex, 0)];
+                if (entry) this.choose(entry.result, entry.kind);
             },
 
             close() {
                 this.open = false;
+                this.activeIndex = -1;
             },
         }));
 

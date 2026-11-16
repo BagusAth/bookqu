@@ -11,7 +11,7 @@
     $promoInput['applicable_services'] = array_map('strval', array_filter((array) ($promoInput['applicable_services'] ?? []), 'is_scalar'));
 @endphp
 <div class="mx-auto max-w-7xl space-y-6" x-data="{
-    addModalOpen: @js($promoCreating),
+    addModalOpen: @js($promoCreating || ($promoEditId === null && request()->boolean('buat'))),
     editModalOpen: @js($promoEditId > 0),
     newVoucher: { discount_type: 'percentage', max_discount_amount: null, applicable_services: [], ...@js($promoCreating ? $promoInput : []) },
     activeVoucher: {

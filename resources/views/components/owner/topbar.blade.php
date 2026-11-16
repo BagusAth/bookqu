@@ -25,12 +25,17 @@
                     aria-autocomplete="list"
                     aria-controls="owner-search-results"
                     x-bind:aria-expanded="open ? 'true' : 'false'"
+                    x-bind:aria-activedescendant="activeId"
                     autocomplete="off"
                     maxlength="100"
                     placeholder="Cari kode booking, nama, atau nomor HP"
                     x-model="query"
+                    x-on:input="close()"
                     x-on:input.debounce.300ms="search()"
-                    x-on:keydown.enter.prevent="openFirst()"
+                    x-on:keydown.down.prevent="move(1)"
+                    x-on:keydown.up.prevent="move(-1)"
+                    x-on:keydown.enter.prevent="openSelection()"
+                    x-on:keydown.tab="close()"
                     class="h-9 w-full min-w-0 border-0 bg-transparent p-0 text-sm text-bq-text placeholder:text-bq-text-subtle focus:outline-none focus:ring-0"
                 >
             </div>
@@ -50,8 +55,10 @@
                 <template x-if="results.bookings.length">
                     <div>
                         <p class="px-3 pb-1 pt-2 text-xs font-medium text-bq-text-muted">Booking</p>
-                        <template x-for="booking in results.bookings" x-bind:key="booking.code">
-                            <button type="button" role="option" x-on:click="choose(booking, 'booking')" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-bq-background">
+                        <template x-for="(booking, index) in results.bookings" x-bind:key="booking.code">
+                            <button type="button" role="option" tabindex="-1" :id="'owner-search-option-' + index"
+                                :aria-selected="activeIndex === index" :class="{ 'bg-bq-primary-light': activeIndex === index }"
+                                x-on:click="choose(booking, 'booking')" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-bq-background">
                                 <span class="min-w-0">
                                     <span class="block font-medium text-bq-text" x-text="booking.code"></span>
                                     <span class="block truncate text-bq-text-muted"><span x-text="booking.customer"></span> · <span x-text="booking.date"></span> <span x-text="booking.time"></span></span>
@@ -65,8 +72,10 @@
                 <template x-if="results.customers.length">
                     <div>
                         <p class="px-3 pb-1 pt-2 text-xs font-medium text-bq-text-muted">Pelanggan</p>
-                        <template x-for="customer in results.customers" x-bind:key="customer.name + customer.phone">
-                            <button type="button" role="option" x-on:click="choose(customer, 'customer')" class="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-bq-background">
+                        <template x-for="(customer, index) in results.customers" x-bind:key="customer.name + customer.phone">
+                            <button type="button" role="option" tabindex="-1" :id="'owner-search-option-' + (results.bookings.length + index)"
+                                :aria-selected="activeIndex === results.bookings.length + index" :class="{ 'bg-bq-primary-light': activeIndex === results.bookings.length + index }"
+                                x-on:click="choose(customer, 'customer')" class="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-bq-background">
                                 <span class="block font-medium text-bq-text" x-text="customer.name"></span>
                                 <span class="block text-bq-text-muted" x-text="customer.phone"></span>
                             </button>

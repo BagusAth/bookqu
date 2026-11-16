@@ -49,7 +49,12 @@
             this.service = this.blankService();
             this.category = this.blankCategory();
             const old = @js($oldContext ? old() : null);
-            if (!old) return;
+            if (!old) {
+                if (@js($isServicesTab && $usage['canCreate'] && request()->boolean('buat'))) {
+                    this.$nextTick(() => this.openService(null));
+                }
+                return;
+            }
             const toBool = (value) => value === true || value === '1' || value === 1;
             this.$nextTick(() => {
                 if (@js($oldContext) === 'service') {

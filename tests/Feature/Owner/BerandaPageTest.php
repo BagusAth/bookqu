@@ -368,6 +368,9 @@ class BerandaPageTest extends TestCase
             ->assertSee('data-quick-action="walkin"', false)
             ->assertSee('data-quick-action="service"', false)
             ->assertSee('data-quick-action="team"', false);
+        $actions = collect($this->get(route('owner.dashboard'))->viewData('quickActions'))->keyBy('key');
+        $this->assertSame(route('owner.services', ['buat' => 1]), $actions['service']['url']);
+        $this->assertSame(route('owner.promos', ['buat' => 1]), $actions['promo']['url']);
 
         $this->actingAs($this->member('kasir'))->get(route('owner.dashboard'))
             ->assertOk()
