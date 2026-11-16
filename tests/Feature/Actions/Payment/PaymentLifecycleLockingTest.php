@@ -84,6 +84,7 @@ class PaymentLifecycleLockingTest extends TestCase
         }
 
         DB::connection(self::SECOND_CONNECTION)->commit();
+        $this->travelTo(now()->addDays(2)->setTime(10, 30));
         $this->assertTrue(app(UpdateBookingStatus::class)->execute($booking, 'completed')['success']);
         $this->assertSame('completed', $booking->fresh()->status);
         $this->assertSame('qris', $payment->fresh()->metode);
