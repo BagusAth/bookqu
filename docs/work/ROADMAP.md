@@ -103,6 +103,8 @@ An agent can take an item end to end. Give it the item file as the prompt; the i
 
 **Progress (2026-11-12):** PR #45 (`cd41f24`) delivered BQ-129, BQ-128, BQ-132, BQ-137, BQ-136, BQ-143, BQ-141, BQ-142 and BQ-145 (Developer B), absorbing BQ-090 to BQ-094, BQ-099 to BQ-102 and BQ-104 to BQ-106. **Wave 2 is done** for Developer B. Halaman Booking and Bantuan stay behind their hidden modules until release. Still open for Developer B: BQ-134 (after BQ-133), BQ-147, BQ-154 and BQ-155 (after BQ-144).
 
+**Progress (2026-11-16):** backends of BQ-133 and BQ-148 (PR #44), BQ-151, BQ-152 and BQ-153 (PR #46) and BQ-149, BQ-150 and BQ-140 (PR #49); owner UI of booking, schedule, refund and settings (PR #47); BQ-147 Laporan and BQ-154 landing page and own domain with TXT ownership (PR #51, Developer B's branch finished by the Tech Lead); `laravel/framework` 13.42.0 for GHSA-63hm-g96r-2m2q (PR #52). Closed: BQ-147, BQ-148, BQ-154. Tech Lead decisions: BQ-154, BQ-155 and BQ-156 approved (PR #48); merge rule per lane, authors merge light PRs and the Tech Lead merges heavy PRs (PR #50). Open in waves 3-6: BQ-134 (Developer B), the UI parts of BQ-133, BQ-135, BQ-140, BQ-144, BQ-149, BQ-150, BQ-151, BQ-152 and BQ-153 (Developer A), BQ-155 then BQ-156 (Developer B). The ops track stays deferred.
+
 ### Rules for the waves
 
 - **An item may move forward a wave** when all its `depends-on` are done and it touches no file of the other developer's open item.

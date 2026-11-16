@@ -2,7 +2,7 @@
 id: BQ-148
 title: One booking pricing rule with a frozen price breakdown
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: booking
@@ -17,7 +17,7 @@ depends-on: [BQ-088, BQ-133]
 
 # BQ-148: One booking pricing rule with a frozen price breakdown
 
-Epic **E5 · Medium value** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E5 · Medium value** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -57,3 +57,5 @@ Backend (bundle A, 2026-11-07): `BookingPricing::quote` (slot price × participa
 Remaining: owner lists, invoices and reports that still show current prices move to the breakdown with their pages (BQ-135, BQ-147). Status stays in-progress.
 
 2026-11-13: Owner bookings and the shared panel read the payment and its frozen breakdown. Customer invoices show frozen slot amounts where present; older groups retain the transaction-level fallback. Verified by OwnerPortalWorkflowTest and BookingManageTest. Remaining: reports migrate with BQ-147.
+
+Closed 2026-11-16 (Tech Lead): the pricing rule and the frozen breakdown (PR #44), owner lists, panel and invoices (PR #47), promos and add-ons in the quote (PR #49), and reports from the paid payment amounts (BQ-147, PR #51) are in `integration`.

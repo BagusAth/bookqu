@@ -2,7 +2,7 @@
 id: BQ-154
 title: Landing page and custom domain for Pro
 type: feature
-status: in-progress
+status: done
 priority: P2
 phase: 4
 domain: public-site
@@ -17,7 +17,7 @@ depends-on: [BQ-142, BQ-130]
 
 # BQ-154: Landing page and custom domain for Pro
 
-Epic **E6 · Pro value and core rules** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E6 · Pro value and core rules** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -81,3 +81,5 @@ Before the PR: sync with `integration` (PR #46 changed `ExportScheduleReport`, `
   - a business that drops below Pro keeps a connected domain resolving; whether the hourly check should also stop it is open;
   - set `CUSTOM_DOMAIN_CNAME_TARGET` and `CUSTOM_DOMAIN_A_RECORDS` per environment.
 - **Tests moved to the new contract (same intent):** `CustomDomainBookingTest` and `CustomerAccessTest` mark their domain connected (plus a new case: a pending or failing domain answers 404); `AnalyticsAndSubscriptionTest`, `OwnerPortalFunctionalIntegrationTest` and `SubscriptionRulesAndMechanismsTest` use the new Pro routes; `ReleaseGateAndHardeningTest` maps the old path to `booking-page`.
+
+Closed 2026-11-16 (Tech Lead): merged in PR #51 (`7c90492`), including the TXT ownership proof and the stop below Pro. Before release, the ops steps in `operations.md` §8 apply: DNS targets per environment, TLS certificates for custom domains, and `php artisan domains:check` right after the migration.
