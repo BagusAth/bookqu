@@ -120,6 +120,38 @@ class CapacityUnitsAndNoShowTest extends TestCase
         config(['modules.units' => 'released']);
     }
 
+    public function test_service_form_submits_capacity_and_tenant_units(): void
+    {
+        $this->asPro();
+        $service = $this->service();
+        $unit = $this->shareUnit();
+        $foreign = Unit::factory()->create(['idtenant' => Tenant::factory()->create()->id]);
+        $this->actingAs($this->owner)->get(route('owner.services'))
+            ->assertOk()->assertSee('name="kapasitas"', false)->assertSee('name="unit_ids[]"', false);
+
+        $payload = ['namalayanan' => $service->namalayanan, 'harga' => 0, 'durasi' => 60, 'kapasitas' => 3, 'is_active' => true];
+        $url = route('owner.services.update', $service->id);
+        $this->put($url, $payload + ['unit_ids' => [$unit->id]])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('services', ['id' => $service->id, 'kapasitas' => 3]);
+        $this->assertDatabaseHas('service_unit', ['idservice' => $service->id, 'idunit' => $unit->id]);
+        $this->put($url, $payload + ['unit_ids' => [$foreign->id]])->assertSessionHasErrors('unit_ids.0');
+    }
+
+    public function test_booking_panel_offers_no_show_after_the_session_ends(): void
+    {
+        $slot = $this->slot($this->service());
+        $booking = $this->paidBooking($slot);
+        $panel = route('owner.bookings.panel', $booking->id);
+        $status = route('owner.bookings.status', $booking->id);
+
+        $this->actingAs($this->owner)->getJson($panel)->assertOk()->assertJsonMissing(['status' => 'no_show']);
+        $this->patch($status, ['status' => 'no_show'])->assertSessionHasErrors();
+        $this->travelTo(Carbon::parse('2026-11-03 12:00', 'Asia/Jakarta'));
+        $this->getJson($panel)->assertOk()->assertJsonFragment(['fields' => ['status' => 'no_show']]);
+        $this->patch($status, ['status' => 'no_show'])->assertSessionHasNoErrors();
+        $this->get(route('owner.bookings', ['tab' => 'completed']))->assertOk()->assertSee('Tidak datang');
+    }
+
     // ── BQ-151: capacity and seats ────────────────────────────────────────────
 
     public function test_seat_index_status_list_equals_the_occupancy_statuses(): void

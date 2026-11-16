@@ -14,6 +14,8 @@ use App\Models\Unit;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 /**
  * Unit backend (BQ-152, owner-portal §8.7). Gated by the `units` module and the Pro plan
@@ -23,9 +25,11 @@ class OwnerUnitController extends Controller
 {
     use ResolvesOwnerTenant;
 
-    public function index(GetUnitsOverview $action): JsonResponse
+    public function index(Request $request, GetUnitsOverview $action): JsonResponse|View
     {
-        return response()->json($action->execute($this->tenant()));
+        $data = $action->execute($this->tenant());
+
+        return $request->expectsJson() ? response()->json($data) : view('owner.units', $data);
     }
 
     public function store(SaveUnitRequest $request, SaveUnit $action): RedirectResponse

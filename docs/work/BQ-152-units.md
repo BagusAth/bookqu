@@ -52,3 +52,5 @@ INV-BOOK-03/04.
 Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.
 
 Backend 2026-11-13: `units` and `service_unit` (existing `resources` rows copied once); `BookingRules::unitConflict`/`unitBusyRanges`/`unitOverlaps` as the one conflict rule, checked inside `ClaimSlots` (checkout, walk-in, reschedule) and in listings; `SaveUnit`, `DeleteUnit`, `AssignServiceUnits` (tenant lock, refuse new overlaps, list bookings), `GetUnitsOverview` (existing conflicts); routes `owner.units*` behind `module:units` (still hidden) and `subscription:units`; `UnitPolicy`. Tests: `Booking/CapacityUnitsAndNoShowTest` (AC-UNT-01..03, isolation), `Actions/Booking/BookingSeatLockingTest` (MySQL). Remaining: Unit page, unit field in Layanan, Kalender filter, unit image.
+
+2026-11-16: Halaman Unit memakai rute yang sudah ada untuk daftar, simpan, aktif/nonaktif, hapus dan lihat konflik. Form Layanan mengirim unit_ids dan Kalender dapat difilter per unit. Evidence: CapacityUnitsAndNoShowTest. Sisa: unggah gambar unit.

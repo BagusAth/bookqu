@@ -183,7 +183,7 @@
                                     {{-- Time Display (e.g. 08:00 - 09:00) --}}
                                     <span class="text-sm sm:text-base font-extrabold tracking-tight leading-tight"
                                           :class="isSlotSelected(slot) ? 'text-white' : (slot.is_available ? 'text-[#0F172A]' : 'text-slate-400')"
-                                          x-text="slot.time_range || (slot.time + ' – ' + slot.end_time)">
+                                          x-text="(slot.time_range || (slot.time + ' – ' + slot.end_time)) + (slot.is_available && slot.seats_left != null ? ' · Sisa ' + slot.seats_left + ' tempat' : '')">
                                     </span>
 
                                     {{-- Period (AM/PM) --}}
@@ -244,7 +244,7 @@
                                         class="flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl transition-all duration-150 text-center select-none cursor-pointer focus:outline-none relative">
                                     <span class="text-sm sm:text-base font-extrabold tracking-tight leading-tight"
                                           :class="isSlotSelected(slot) ? 'text-white' : (slot.is_available ? 'text-[#0F172A]' : 'text-slate-400')"
-                                          x-text="slot.time_range || (slot.time + ' – ' + slot.end_time)">
+                                          x-text="(slot.time_range || (slot.time + ' – ' + slot.end_time)) + (slot.is_available && slot.seats_left != null ? ' · Sisa ' + slot.seats_left + ' tempat' : '')">
                                     </span>
                                     <span class="text-[11px] font-bold uppercase tracking-wider mt-0.5"
                                           :class="isSlotSelected(slot) ? 'text-white/80' : 'text-slate-400'"
@@ -300,7 +300,7 @@
                                         class="flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl transition-all duration-150 text-center select-none cursor-pointer focus:outline-none relative">
                                     <span class="text-sm sm:text-base font-extrabold tracking-tight leading-tight"
                                           :class="isSlotSelected(slot) ? 'text-white' : (slot.is_available ? 'text-[#0F172A]' : 'text-slate-400')"
-                                          x-text="slot.time_range || (slot.time + ' – ' + slot.end_time)">
+                                          x-text="(slot.time_range || (slot.time + ' – ' + slot.end_time)) + (slot.is_available && slot.seats_left != null ? ' · Sisa ' + slot.seats_left + ' tempat' : '')">
                                     </span>
                                     <span class="text-[11px] font-bold uppercase tracking-wider mt-0.5"
                                           :class="isSlotSelected(slot) ? 'text-white/80' : 'text-slate-400'"

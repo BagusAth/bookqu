@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Booking\BookingPricingReservations;
+use App\Actions\Booking\GetPromoFigures;
 use App\Actions\Schedule\ClaimSlots;
+use App\Domain\Modules\ModuleRelease;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\Voucher;
 use App\Traits\ResolvesOwnerTenant;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -16,6 +19,17 @@ use Illuminate\Validation\ValidationException;
 class OwnerVoucherController extends Controller
 {
     use ResolvesOwnerTenant;
+
+    public function legacyIndex(Request $request)
+    {
+        if (ModuleRelease::state('promos') === 'released') {
+            return redirect()->route('owner.promos', $request->query(), 301);
+        }
+
+        abort_unless(ModuleRelease::state('vouchers') === 'released', 404);
+
+        return $this->index($request);
+    }
 
     public function index(Request $request)
     {
@@ -26,7 +40,22 @@ class OwnerVoucherController extends Controller
 
         $search = $request->input('search', '');
 
-        $vouchers = Voucher::where('idtenant', $tenant->id)
+        $today = Carbon::today()->toDateString();
+        $promoTabs = ['active' => 'Aktif', 'scheduled' => 'Terjadwal', 'expired' => 'Berakhir', 'all' => 'Semua'];
+        $requestedTab = $request->string('tab')->toString();
+        $tab = isset($promoTabs[$requestedTab]) ? $requestedTab : 'all';
+        $allVouchers = Voucher::where('idtenant', $tenant->id);
+        $active = (clone $allVouchers)->where('is_active', true)
+            ->where(fn ($query) => $query->whereNull('start_date')->orWhereDate('start_date', '<=', $today))
+            ->where(fn ($query) => $query->whereNull('end_date')->orWhereDate('end_date', '>=', $today));
+        $promoFigures = app(GetPromoFigures::class)->execute($tenant) + ['active' => $active->count()];
+        $vouchers = match ($tab) {
+            'active' => $active,
+            'scheduled' => $allVouchers->where('is_active', true)->whereDate('start_date', '>', $today),
+            'expired' => $allVouchers->whereDate('end_date', '<', $today),
+            default => $allVouchers,
+        };
+        $vouchers = $vouchers
             ->when($search, function ($q) use ($search) {
                 $q->where('code', 'like', "%{$search}%");
             })
@@ -38,7 +67,9 @@ class OwnerVoucherController extends Controller
             ->orderBy('namalayanan')
             ->get();
 
-        return view('owner.vouchers', compact('tenant', 'vouchers', 'services', 'search'));
+        $promoRoute = $request->routeIs('owner.promos') ? 'owner.promos' : 'owner.vouchers';
+
+        return view('owner.vouchers', compact('tenant', 'vouchers', 'services', 'search', 'promoRoute', 'promoTabs', 'tab', 'promoFigures'));
     }
 
     public function store(Request $request)
@@ -81,7 +112,7 @@ class OwnerVoucherController extends Controller
             'is_active' => $request->has('is_active') ? (bool) $request->input('is_active') : true,
         ]);
 
-        return redirect()->route('owner.vouchers')
+        return redirect()->route(request()->routeIs('owner.promos.*') ? 'owner.promos' : 'owner.vouchers')
             ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil dibuat!');
     }
 
@@ -134,7 +165,7 @@ class OwnerVoucherController extends Controller
 
         });
 
-        return redirect()->route('owner.vouchers')
+        return redirect()->route(request()->routeIs('owner.promos.*') ? 'owner.promos' : 'owner.vouchers')
             ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil diperbarui!');
     }
 
@@ -155,7 +186,7 @@ class OwnerVoucherController extends Controller
             $voucher->delete();
         });
 
-        return redirect()->route('owner.vouchers')
+        return redirect()->route(request()->routeIs('owner.promos.*') ? 'owner.promos' : 'owner.vouchers')
             ->with('sukses', 'Voucher "'.$code.'" berhasil dihapus!');
     }
 
@@ -175,7 +206,7 @@ class OwnerVoucherController extends Controller
 
         $statusText = $voucher->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
-        return redirect()->route('owner.vouchers')
+        return redirect()->route(request()->routeIs('owner.promos.*') ? 'owner.promos' : 'owner.vouchers')
             ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil '.$statusText.'!');
     }
 }

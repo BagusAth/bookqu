@@ -2,7 +2,7 @@
 id: BQ-150
 title: Layanan → Add-on tab and add-ons in checkout
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: catalog
@@ -17,7 +17,7 @@ depends-on: [BQ-148, BQ-132]
 
 # BQ-150: Layanan → Add-on tab and add-ons in checkout
 
-Epic **E5 · Medium value** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E5 · Medium value** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -53,3 +53,5 @@ INV-PAY-04; stock exact under concurrency.
 Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ-148, B = BQ-151 + BQ-152 + BQ-153, C = BQ-149 + BQ-150 + BQ-140). UI menyusul setelah BQ-129.
 
 Bundle C backend: linked tenant add-ons contribute to the signed checkout quote and walk-in amount. Pending payments reserve finite stock; settlement consumes it and failure releases it. Evidence: CheckoutPricingTest, CheckoutPricingLockingTest. Layanan tab and checkout/walk-in UI remain.
+
+2026-11-16: Tab Add-on memakai kontrol stok dan tautan layanan. Checkout dan walk-in menampilkan add-on aktif dengan stok tersedia atau tanpa batas. Checkout mengikat pilihan pada fingerprint quote. Evidence: CheckoutPricingTest.

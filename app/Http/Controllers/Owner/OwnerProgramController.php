@@ -9,6 +9,8 @@ use App\Actions\Service\DeleteService;
 use App\Actions\Service\GetLayananPage;
 use App\Actions\Service\ToggleServiceStatus;
 use App\Actions\Service\UpdateService;
+use App\Domain\Modules\ModuleRelease;
+use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Service\StoreServiceRequest;
 use App\Http\Requests\Service\UpdateServiceRequest;
@@ -24,14 +26,25 @@ class OwnerProgramController extends Controller
     /**
      * The Layanan page (owner-portal.md §8.6): tab Layanan by default, tab Kategori with `?tab=kategori`.
      */
-    public function index(Request $request, GetLayananPage $getLayananPage): View
+    public function index(Request $request, GetLayananPage $getLayananPage, OwnerAdditionalItemController $addOns): View|RedirectResponse
     {
         $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $showAddOns = ModuleRelease::state('add-ons') === 'released'
+            && EntitlementRules::canAccessFeature($tenant->subscription()->with('plan')->first(), 'add-ons')['allowed'];
+        if ($request->query('tab') === 'add-ons') {
+            abort_unless(ModuleRelease::state('add-ons') === 'released', 404);
+            if (! $showAddOns) {
+                return redirect()->route('owner.subscription')->with('error', 'Add-on tersedia mulai paket Medium.');
+            }
+
+            return $addOns->index($request);
+        }
+
         $tab = $request->query('tab') === GetLayananPage::TAB_CATEGORIES ? GetLayananPage::TAB_CATEGORIES : GetLayananPage::TAB_SERVICES;
 
         return view('owner.services', array_merge(
             $getLayananPage->execute($tenant, $request->only(['katakunci', 'category', 'search', 'status', 'sort'])),
-            ['tenant' => $tenant, 'activeTab' => $tab],
+            ['tenant' => $tenant, 'activeTab' => $tab, 'showAddOns' => $showAddOns],
         ));
     }
 

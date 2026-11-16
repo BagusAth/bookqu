@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Models\Unit;
 use App\Support\CategoryColor;
 use App\Support\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -32,6 +33,7 @@ class GetLayananPage
      * @return array{
      *     services: LengthAwarePaginator<int, Service>,
      *     serviceCards: list<array<string, mixed>>,
+     *     unitOptions: list<array{id: string, name: string}>|null,
      *     pickerImages: list<array{id: int, url: string, alt: string}>,
      *     galleryUrl: string|null,
      *     categoryOptions: list<array{id: int, name: string}>,
@@ -52,7 +54,7 @@ class GetLayananPage
         $sort = in_array($filters['sort'] ?? 'order', ['order', 'newest', 'name_asc', 'name_desc', 'services'], true) ? (string) ($filters['sort'] ?? 'order') : 'order';
 
         $services = Service::where('idtenant', $tenant->id)
-            ->with(['category', 'resources:resources.id'])
+            ->with(['category', 'resources:resources.id', 'units:units.id'])
             ->withCount('bookings')
             ->when($katakunci !== '', fn ($query) => $query->where('namalayanan', 'like', '%'.$katakunci.'%'))
             ->when($categoryFilter !== null, fn ($query) => $query->where('idcategory', $categoryFilter))
@@ -82,7 +84,15 @@ class GetLayananPage
             ->when($sort === 'services', fn ($query) => $query->orderByDesc('services_count'))
             ->get();
 
+        $unitOptions = null;
+        if (ModuleRelease::state('units') === 'released'
+            && EntitlementRules::canAccessFeature($tenant->subscription()->with('plan')->first(), 'units')['allowed']) {
+            $unitOptions = Unit::where('idtenant', $tenant->id)->orderBy('name')->get()
+                ->map(fn (Unit $unit): array => ['id' => (string) $unit->id, 'name' => $unit->name])->all();
+        }
+
         return [
+            'unitOptions' => $unitOptions,
             'services' => $services,
             'serviceCards' => $services->getCollection()->map(fn (Service $service): array => $this->serviceCard($service) + ['imageAssetId' => $assetIdsByPath[(string) $service->image_url] ?? null])->values()->all(),
             'galleryUrl' => Route::has('owner.booking-page') && ModuleRelease::state('booking-page') !== 'hidden' ? route('owner.booking-page', ['section' => 'galeri']) : null,
@@ -120,6 +130,8 @@ class GetLayananPage
             'bookingCount' => (int) $service->bookings_count,
             // Unit links are edited on the Unit page (BQ-152); the form sends them back unchanged because
             // a save without `resource_ids` detaches every unit (BQ-045).
+            'capacity' => (int) $service->kapasitas,
+            'unitIds' => $service->units->pluck('id')->map(fn ($id): string => (string) $id)->all(),
             'resourceIds' => $service->resources->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
             // AC-LYN-02: a service with any booking can only be deactivated.
             'canDelete' => ! $hasHistory,

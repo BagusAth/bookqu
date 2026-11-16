@@ -28,7 +28,7 @@
         service: {},
         category: {},
         blankService() {
-            return { id: null, namalayanan: '', idcategory: '', harga: '', satuan_harga: 'sesi', durasi: 60, satuan_durasi: 'menit', deskripsi: '', is_popular: false, is_active: true, imageUrl: null, remove_image: false, resource_ids: [], image_asset_id: '' };
+            return { id: null, namalayanan: '', idcategory: '', harga: '', satuan_harga: 'sesi', durasi: 60, satuan_durasi: 'menit', deskripsi: '', is_popular: false, is_active: true, imageUrl: null, remove_image: false, resource_ids: [], kapasitas: 1, unit_ids: [], image_asset_id: '' };
         },
         blankCategory() {
             return { id: null, name: '', description: '', color: 'purple', sort_order: 0, is_active: true, imageUrl: null, remove_image: false };
@@ -57,6 +57,7 @@
                         harga: old.harga || '', satuan_harga: old.satuan_harga || 'sesi', durasi: old.durasi || 60,
                         satuan_durasi: old.satuan_durasi || 'menit', deskripsi: old.deskripsi || '',
                         is_popular: toBool(old.is_popular), is_active: toBool(old.is_active),
+                        kapasitas: old.kapasitas ?? 1, unit_ids: Array.isArray(old.unit_ids) ? old.unit_ids : [],
                         resource_ids: Array.isArray(old.resource_ids) ? old.resource_ids : [],
                     }, null);
                 } else if (old.form_context === 'category') {
@@ -83,7 +84,7 @@
         </x-slot:action>
     </x-owner.page-header>
 
-    <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori']" :active="$activeTab" label="Bagian halaman Layanan" />
+    <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori'] + (($showAddOns ?? false) ? ['add-ons' => 'Add-on'] : [])" :active="$activeTab" label="Bagian halaman Layanan" />
 
     @if ($isServicesTab)
         {{-- ── Tab Layanan ── --}}
@@ -185,6 +186,7 @@
                                     'satuan_durasi' => $card['durationUnit'], 'deskripsi' => $card['description'],
                                     'is_popular' => $card['isPopular'], 'is_active' => $card['isActive'], 'imageUrl' => $card['imageUrl'],
                                     'image_asset_id' => $card['imageAssetId'] !== null ? (string) $card['imageAssetId'] : '',
+                                    'kapasitas' => $card['capacity'], 'unit_ids' => $card['unitIds'],
                                     'resource_ids' => $card['resourceIds'],
                                 ]), $el)">Ubah</button>
 
@@ -274,6 +276,25 @@
                 </div>
 
                 {{-- AC-LYN-03 --}}
+                <div>
+                    <label for="service-capacity" class="{{ $labelClass }}">Kapasitas per slot</label>
+                    <input id="service-capacity" name="kapasitas" type="number" min="1" max="9999" required x-model="service.kapasitas" class="{{ $inputClass }}">
+                </div>
+                @if ($unitOptions !== null)
+                    <fieldset>
+                        <legend class="{{ $labelClass }}">Unit</legend>
+                        <input type="hidden" name="unit_ids" value="">
+                        @forelse ($unitOptions as $unit)
+                            <label class="mt-2 flex items-center gap-2 text-sm">
+                                <input type="checkbox" name="unit_ids[]" value="{{ $unit['id'] }}" x-model="service.unit_ids">
+                                {{ $unit['name'] }}
+                            </label>
+                        @empty
+                            <p class="text-sm text-bq-text-muted">Belum ada unit. <a class="text-bq-primary" href="{{ route('owner.units') }}">Kelola unit</a></p>
+                        @endforelse
+                    </fieldset>
+                @endif
+
                 <p x-show="service.id" class="rounded-lg bg-bq-warning-bg px-3 py-2 text-xs text-bq-warning">
                     Perubahan harga dan durasi hanya berlaku untuk booking baru. Booking yang sudah ada tetap memakai jam dan nominalnya.
                 </p>

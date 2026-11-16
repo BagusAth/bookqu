@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Log;
 
 final class RequestManagementDelivery
 {
-    public function execute(Payment|Booking $subject, string $reason, ?AccessContext $source = null): void
+    public function execute(Payment|Booking $subject, string $reason, ?AccessContext $source = null): bool
     {
-        DB::transaction(function () use ($subject, $reason, $source): void {
+        return DB::transaction(function () use ($subject, $reason, $source): bool {
             ClaimSlots::lockTenant((int) $subject->idtenant);
             $subject->refresh();
             if ($subject instanceof Booking && $subject->idpayment !== null) {
@@ -31,7 +31,7 @@ final class RequestManagementDelivery
             abort_if($bookings->isEmpty() || $bookings->contains(fn (Booking $booking) => (int) $booking->idtenant !== (int) $subject->idtenant), 404);
             $recipient = $source?->grant->recipient ?? ($subject instanceof Payment ? $subject->email_pembayar : $subject->email);
             if (! $recipient) {
-                return;
+                return false;
             }
             $delivery = CustomerAccessDelivery::create([
                 'idtenant' => $subject->idtenant,
@@ -50,6 +50,8 @@ final class RequestManagementDelivery
                     Log::warning('Customer access delivery failed after commit', ['delivery_id' => $delivery->id]);
                 }
             });
+
+            return true;
         });
     }
 }

@@ -6,19 +6,19 @@
             {{-- Segmented View Switcher Tabs (Day / Week / Month) --}}
             <div class="flex items-center gap-1 rounded-xl bg-[#f7f7fa] p-1 border border-[#e7e2f7] w-full sm:w-auto justify-between sm:justify-start shrink-0">
                 <a
-                    href="{{ route('owner.calendar', ['view' => 'day', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
+                    href="{{ route('owner.calendar', ['view' => 'day', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
                     class="flex-1 sm:flex-none text-center rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer {{ $view === 'day' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d] hover:bg-white/60' }}"
                 >
                     Day
                 </a>
                 <a
-                    href="{{ route('owner.calendar', ['view' => 'week', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
+                    href="{{ route('owner.calendar', ['view' => 'week', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
                     class="flex-1 sm:flex-none text-center rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer {{ $view === 'week' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d] hover:bg-white/60' }}"
                 >
                     Week
                 </a>
                 <a
-                    href="{{ route('owner.calendar', ['view' => 'month', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
+                    href="{{ route('owner.calendar', ['view' => 'month', 'date' => $currentDate->toDateString(), 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
                     class="flex-1 sm:flex-none text-center rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer {{ $view === 'month' ? 'bg-[#382186] text-white shadow-2xs' : 'text-[#6e6584] hover:text-[#231a3d] hover:bg-white/60' }}"
                 >
                     Month
@@ -28,14 +28,14 @@
             {{-- Date Navigation --}}
             <div class="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
                 <a
-                    href="{{ route('owner.calendar', ['view' => $view, 'date' => $todayDate, 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
+                    href="{{ route('owner.calendar', ['view' => $view, 'date' => $todayDate, 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
                     class="craft-btn rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] hover:bg-[#e7e2f7] px-3 py-1.5 text-xs font-bold text-[#382186] shadow-2xs active:scale-95 shrink-0"
                 >
                     Hari Ini
                 </a>
                 <div class="flex-1 sm:flex-none flex items-center justify-between rounded-xl border border-[#e7e2f7] bg-white shadow-2xs overflow-hidden">
                     <a
-                        href="{{ route('owner.calendar', ['view' => $view, 'date' => $prevDate, 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
+                        href="{{ route('owner.calendar', ['view' => $view, 'date' => $prevDate, 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
                         class="p-2 text-[#6e6584] hover:text-[#382186] hover:bg-[#f7f7fa] transition border-r border-[#e7e2f7] active:scale-95"
                         aria-label="Previous"
                     >
@@ -47,7 +47,7 @@
                         {{ $dateLabel }}
                     </span>
                     <a
-                        href="{{ route('owner.calendar', ['view' => $view, 'date' => $nextDate, 'service_id' => $selectedService, 'status' => $selectedStatus]) }}"
+                        href="{{ route('owner.calendar', ['view' => $view, 'date' => $nextDate, 'service_id' => $selectedService, 'status' => $selectedStatus, 'unit_id' => $selectedUnit]) }}"
                         class="p-2 text-[#6e6584] hover:text-[#382186] hover:bg-[#f7f7fa] transition border-l border-[#e7e2f7] active:scale-95"
                         aria-label="Next"
                     >
@@ -71,6 +71,15 @@
                 @endforeach
             </select>
 
+            @if ($units->isNotEmpty())
+                <select aria-label="Unit" onchange="window.location.href = updateCalendarFilter('unit_id', this.value)"
+                    class="w-full rounded-xl border border-bq-border bg-bq-surface px-3 py-1.5 text-xs xl:w-44">
+                    <option value="all">Semua Unit</option>
+                    @foreach ($units as $unit)
+                        <option value="{{ $unit->id }}" @selected($selectedUnit === $unit->id)>{{ $unit->name }}</option>
+                    @endforeach
+                </select>
+            @endif
             <select
                 onchange="window.location.href = updateCalendarFilter('status', this.value)"
                 class="w-full xl:w-44 rounded-xl border border-[#e7e2f7] bg-[#f7f7fa] hover:bg-white px-3 py-1.5 text-xs font-semibold text-[#231a3d] focus:border-[#382186] focus:ring-2 focus:ring-[#b499ff]/30 focus:outline-none transition shadow-2xs truncate"

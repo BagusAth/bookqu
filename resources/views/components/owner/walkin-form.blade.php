@@ -41,12 +41,29 @@
         @elseif ($slotsUrl)
             <div x-data="ownerWalkInSlots(@js($slotsUrl), @js(now()->timezone('Asia/Jakarta')->toDateString()))" x-on:open-dialog.window="loadWhenOpened($event)" class="grid grid-cols-1 gap-2 sm:grid-cols-[10rem_1fr]">
                 <input type="date" x-model="date" x-on:change="load()" x-bind:min="today" aria-label="Tanggal" class="{{ $field }}">
-                <select id="{{ $idPrefix }}-slot" name="idschedule" required x-bind:disabled="loading" class="{{ $field }}">
+                <select id="{{ $idPrefix }}-slot" name="idschedule" required x-model="selectedSlot" x-on:change="quantities = {}" x-bind:disabled="loading" class="{{ $field }}">
                     <option value="" x-text="loading ? 'Memuat slot…' : (slots.length ? 'Pilih slot' : 'Tidak ada slot kosong')">Pilih slot</option>
                     <template x-for="slot in slots" x-bind:key="slot.id">
                         <option x-bind:value="slot.id" x-text="slot.label"></option>
                     </template>
                 </select>
+                <fieldset x-show="addOns.length" x-cloak class="space-y-2 sm:col-span-2">
+                    <legend class="{{ $labelClass }}">Add-on</legend>
+                    <template x-for="item in addOns" :key="item.id">
+                        <label class="flex items-center justify-between gap-3 text-sm">
+                            <span x-text="item.name"></span>
+                            <input type="number" min="0" max="9999" placeholder="0" x-model.number="quantities[item.id]"
+                                :aria-label="'Jumlah ' + item.name" class="{{ $field }} max-w-24">
+                        </label>
+                    </template>
+                    <template x-for="(item, index) in selectedAddOns" :key="item.id">
+                        <div>
+                            <input type="hidden" :name="'selected_addons[' + index + '][id]'" :value="item.id">
+                            <input type="hidden" :name="'selected_addons[' + index + '][quantity]'" :value="quantities[item.id]">
+                        </div>
+                    </template>
+                </fieldset>
+                @error('selected_addons')<p class="text-xs text-bq-danger">{{ $message }}</p>@enderror
                 <p x-show="failed" x-cloak class="text-xs text-bq-danger sm:col-span-2" role="alert">Slot tidak dapat dimuat. Coba lagi.</p>
             </div>
         @else
@@ -77,6 +94,12 @@
         <label for="{{ $idPrefix }}-email" class="{{ $labelClass }}">Email <span class="font-normal text-bq-text-muted">(opsional)</span></label>
         <input id="{{ $idPrefix }}-email" x-ref="email" type="email" name="email" maxlength="100" value="{{ old('email') }}" autocomplete="off" class="{{ $field }}">
         @error('email')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
+    </div>
+
+    <div>
+        <label for="{{ $idPrefix }}-participants" class="{{ $labelClass }}">Jumlah peserta</label>
+        <input id="{{ $idPrefix }}-participants" type="number" name="peserta" min="1" max="9999" required value="{{ old('peserta', 1) }}" class="{{ $field }}">
+        @error('peserta')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
     </div>
 
     <fieldset>

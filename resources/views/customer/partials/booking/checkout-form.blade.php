@@ -166,6 +166,54 @@
         </div>
     </div>
 
+    <div class="mt-6 space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-7">
+        <div>
+            <label for="checkout-participants" class="block text-sm font-bold">Jumlah peserta</label>
+            <input id="checkout-participants" name="peserta" type="number" min="1" max="{{ $service->kapasitas }}" required
+                value="{{ old('peserta', 1) }}" x-model.number="participants" class="mt-1 w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm">
+        </div>
+        @if ($addOnOptions !== [])
+            <fieldset class="space-y-2">
+                <legend class="text-sm font-bold">Add-on</legend>
+                @foreach ($addOnOptions as $item)
+                    <label class="flex items-center justify-between gap-3 text-sm">
+                        {{ $item['name'] }}
+                        <input type="number" min="0" max="9999" placeholder="0" aria-label="Jumlah {{ $item['name'] }}"
+                            x-model.number="quantities[{{ $item['id'] }}]" class="w-24 rounded-xl border border-slate-300 px-3 py-2">
+                    </label>
+                @endforeach
+                <template x-for="(item, index) in selectedAddOns" :key="item.id">
+                    <div>
+                        <input type="hidden" :name="'selected_addons[' + index + '][id]'" :value="item.id">
+                        <input type="hidden" :name="'selected_addons[' + index + '][quantity]'" :value="item.quantity">
+                    </div>
+                </template>
+            </fieldset>
+        @endif
+        @if ($showPromo)
+            <div>
+                <label for="checkout-promo" class="block text-sm font-bold">Kode promo</label>
+                <input id="checkout-promo" name="voucher_code" maxlength="50" x-model.trim="voucherCode"
+                    class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+            </div>
+        @endif
+        <button id="refresh-checkout-quote" type="button" @click="refreshQuote()" :disabled="quoteBusy"
+            class="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold">
+            <span x-text="quoteBusy ? 'Memuat harga…' : 'Perbarui ringkasan harga'">Perbarui ringkasan harga</span>
+        </button>
+        <p x-show="quoteError" x-text="quoteError" x-cloak class="text-sm text-red-700" role="alert"></p>
+        <template x-if="quote && reviewed">
+            <dl class="space-y-1 text-sm" aria-live="polite">
+                <div class="flex justify-between gap-3"><dt>Subtotal sesi</dt><dd x-text="money(quote.base_subtotal)"></dd></div>
+                <template x-for="item in quote.add_ons" :key="item.id">
+                    <div class="flex justify-between gap-3"><dt x-text="item.name + ' × ' + item.quantity"></dt><dd x-text="money(item.amount)"></dd></div>
+                </template>
+                <div x-show="quote.promo" class="flex justify-between gap-3"><dt>Diskon promo</dt><dd x-text="quote.promo ? '−' + money(quote.promo.discount) : ''"></dd></div>
+                <div class="flex justify-between gap-3 font-semibold"><dt>Total</dt><dd x-text="money(quote.total)"></dd></div>
+            </dl>
+        </template>
+    </div>
+
     {{-- Mobile Reservation Review Card --}}
     @include('customer.partials.booking.checkout-mobile-review')
 

@@ -29,11 +29,11 @@ final class GetOwnerBookingPanel
     /** @return array<string, mixed> */
     public function execute(Tenant $tenant, int $id, TenantMember $member): array
     {
-        $booking = Booking::where('idtenant', $tenant->id)->with('layanan')->findOrFail($id);
+        $booking = Booking::where('idtenant', $tenant->id)->with(['layanan.units' => fn ($query) => $query->where('units.is_active', true)])->findOrFail($id);
         $payment = Payment::where('idtenant', $tenant->id)->find($booking->idpayment);
         $family = $payment
-            ? $payment->bookings()->where('idtenant', $tenant->id)->with('logs')->orderBy('tanggalbooking')->orderBy('jam')->get()
-            : collect([$booking->load('logs')]);
+            ? $payment->bookings()->where('idtenant', $tenant->id)->with(['logs', 'schedule'])->orderBy('tanggalbooking')->orderBy('jam')->get()
+            : collect([$booking->load(['logs', 'schedule'])]);
         $timeRanges = $this->ranges->execute($family)['sessionRanges'];
         $request = $payment ? RefundRequest::where('idtenant', $tenant->id)->where('idpayment', $payment->id)->latest('id')->first() : null;
         $refund = $payment ? Refund::where('payment_id', $payment->id)->first() : null;
@@ -55,8 +55,8 @@ final class GetOwnerBookingPanel
                 'date' => Carbon::parse($row->tanggalbooking)->format('d/m/Y'),
                 'time' => $timeRanges[$row->id]->label(),
             ])->values()->all(),
-            'participants' => $breakdown['lines'][0]['participants'] ?? null,
-            'unit' => null,
+            'participants' => $booking->peserta,
+            'unit' => $service instanceof Service ? $service->units->pluck('name')->implode(', ') : null,
             'customer' => [
                 'name' => $booking->namapelanggan, 'phone' => $booking->nomorhp, 'email' => $booking->email,
                 'whatsapp_url' => $phone === '' ? null : 'https://wa.me/'.$phone,
@@ -112,6 +112,15 @@ final class GetOwnerBookingPanel
             $actions[] = ['label' => 'Tandai selesai', 'url' => $statusUrl, 'method' => 'PATCH', 'fields' => ['status' => 'completed']];
         }
 
+        if ($allowed('bookings.no_show') && $booking->status === BookingState::STATUS_PAID
+            && collect($family)->every(fn (Booking $row): bool => BookingState::canTransition($row->status, BookingState::STATUS_NO_SHOW))
+            && BookingRules::sessionHasEnded(collect($family)->values()->all())) {
+            $actions[] = [
+                'label' => 'Tidak datang', 'url' => $statusUrl, 'method' => 'PATCH',
+                'fields' => ['status' => BookingState::STATUS_NO_SHOW],
+            ];
+        }
+
         if (collect($family)->every(fn (Booking $row): bool => BookingState::canTransition($row->status, BookingState::STATUS_CANCELLED))
             && ($booking->status === BookingState::STATUS_PAID || ($payment && PaymentRules::providerOf($payment) === 'manual'))) {
             $reason = ['name' => 'reason', 'label' => 'Alasan pembatalan'];
@@ -140,6 +149,10 @@ final class GetOwnerBookingPanel
             }
         }
 
+        if ($allowed('bookings.view') && filled($payment ? $payment->email_pembayar : $booking->email)) {
+            $actions[] = ['label' => 'Kirim ulang link booking', 'url' => route('owner.bookings.resend-link', $booking->id)];
+        }
+
         return $actions;
     }
 
@@ -161,7 +174,13 @@ final class GetOwnerBookingPanel
                 default => ($names[$metadata['actor_iduser'] ?? 0] ?? 'Anggota tim').' ('.ucfirst((string) $role).')',
             };
 
-            return ['at' => $log->created_at ? Carbon::parse($log->created_at)->format('d/m/Y H:i') : null, 'text' => $log->description ?? $log->event_label, 'actor' => $actor];
+            $description = $log->description ?? $log->event_label;
+            if (isset($metadata['price_difference'])) {
+                $difference = (int) $metadata['price_difference'];
+                $description .= ' Selisih harga: '.($difference < 0 ? '−' : ($difference > 0 ? '+' : '')).self::rupiah(abs($difference)).'.';
+            }
+
+            return ['at' => $log->created_at ? Carbon::parse($log->created_at)->format('d/m/Y H:i') : null, 'text' => $description, 'actor' => $actor];
         })->values()->all();
     }
 
