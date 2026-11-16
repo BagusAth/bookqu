@@ -7,7 +7,7 @@
     <x-owner.page-header title="Pengaturan" purpose="Kelola profil bisnis, kebijakan booking, dan akun Anda." />
     <x-owner.tabs :tabs="$tabs" :active="$tab" />
 
-    @foreach ($tabs as $key => $label)
+    @foreach (array_diff_key($tabs, ['integrations' => true]) as $key => $label)
         <section role="tabpanel" aria-label="{{ $label }}" @if ($tab !== $key) hidden @endif>
             @include('owner.settings.' . $key)
         </section>

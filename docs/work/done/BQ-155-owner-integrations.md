@@ -2,7 +2,7 @@
 id: BQ-155
 title: Pengaturan → Integrasi: Google Calendar, Google Analytics, Meta Pixel
 type: feature
-status: approved
+status: done
 priority: P2
 phase: 4
 domain: tenancy
@@ -17,7 +17,7 @@ depends-on: [BQ-130, BQ-144]
 
 # BQ-155: Pengaturan → Integrasi: Google Calendar, Google Analytics, Meta Pixel
 
-Epic **E6 · Pro value and core rules** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E6 · Pro value and core rules** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -56,3 +56,5 @@ Approved to start, following ADR-0022.
 4. **Rules:** a booking succeeds when an integration fails; external calls run after commit; tokens and secrets are never logged.
 
 ## Evidence (fill when done)
+
+2026-11-16: Implemented encrypted Google Calendar credentials and OAuth, queued one-way delivery, and validated Google Analytics and Meta Pixel IDs on the public booking page. Evidence: OwnerIntegrationsTest. Live OAuth depends on environment credentials.

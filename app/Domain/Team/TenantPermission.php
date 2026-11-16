@@ -71,7 +71,7 @@ final class TenantPermission
             'search' => 'bookings.view',
             'settings' => match ($route) {
                 'settings.balance','settings.payments','settings.payment','settings.payment-setting' => 'payouts.manage',
-                'settings.integrations' => 'integrations.manage', default => 'settings.manage',
+                default => str_starts_with((string) $route, 'settings.integrations.') || $route === 'settings.integrations' ? 'integrations.manage' : 'settings.manage',
             },
             'units' => 'units.manage', 'promos' => 'promos.manage', 'booking-page' => 'booking-page.manage',
             'payments' => 'payouts.manage', 'reports' => 'reports.view', 'api' => 'integrations.manage',

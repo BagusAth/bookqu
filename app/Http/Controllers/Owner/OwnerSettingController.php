@@ -10,6 +10,7 @@ use App\Actions\Tenant\CreateInitialProfile;
 use App\Actions\Tenant\UpdateBusinessProfile;
 use App\Actions\Tenant\UpdatePaymentSettings;
 use App\Domain\Booking\BookingRules;
+use App\Domain\Modules\ModuleRelease;
 use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\DeleteOwnerAccountRequest;
@@ -33,7 +34,7 @@ class OwnerSettingController extends Controller
     /**
      * Halaman pengaturan bisnis.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $tenant = $this->resolveTenant();
         $user = auth()->user();
@@ -54,6 +55,14 @@ class OwnerSettingController extends Controller
         $tabs = $canManageBusiness ? ['profile' => 'Profil Bisnis', 'policy' => 'Kebijakan Booking'] : [];
         $tabs += ['notifications' => 'Notifikasi', 'account' => 'Akun'];
         $requestedTab = $request->string('tab')->toString();
+        if ($tenant->exists && $user !== null && $policy->ability($user, 'integrations.manage')
+            && ModuleRelease::state('integrations') === 'released'
+            && EntitlementRules::canAccessFeature($tenant->subscription, 'integrations')['allowed']) {
+            if ($requestedTab === 'integrations') {
+                return redirect()->route('owner.settings.integrations');
+            }
+            $tabs['integrations'] = 'Integrasi';
+        }
         $tab = isset($tabs[$requestedTab]) ? $requestedTab : array_key_first($tabs);
         $storefrontUrl = $tenant->slug ? CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) : null;
 

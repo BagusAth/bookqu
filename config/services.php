@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    'google_calendar' => [
+        'client_id' => env('GOOGLE_CALENDAR_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CALENDAR_CLIENT_SECRET'),
+    ],
+
     'singapay' => [
         'base_url' => env('SINGAPAY_BASE_URL', 'https://payment-b2b.singapay.id'),
         'client_id' => env('SINGAPAY_CLIENT_ID'),

@@ -284,6 +284,9 @@
 @endsection
 
 @section('scripts')
+    @if ($tracking ?? null)
+        @include('customer.booking.partials.tracking')
+    @endif
 <script defer src="{{ asset('js/booking-program.js') }}"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 @endsection
