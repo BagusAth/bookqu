@@ -60,6 +60,27 @@ class SettingsTest extends TestCase
         ]);
     }
 
+    public function test_business_slug_and_contact_fields_can_change_independently_of_the_name(): void
+    {
+        $oldSlug = $this->tenant->slug;
+        $payload = [
+            'namabisnis' => $this->tenant->namabisnis,
+            'jenisbisnis' => $this->tenant->jenisbisnis,
+            'alamat' => $this->tenant->alamat,
+            'nomorhp' => $this->tenant->nomorhp,
+            'slug' => 'alamat-booking-baru',
+            'business_email' => 'bisnis@example.test',
+            'map_url' => 'https://maps.example.test/123',
+        ];
+        $this->actingAs($this->user)->post(route('owner.settings.profile'), $payload)
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('tenants', ['id' => $this->tenant->id, 'slug' => $payload['slug'],
+            'business_email' => $payload['business_email'], 'map_url' => $payload['map_url']]);
+        $this->get('/'.$oldSlug)->assertNotFound();
+        $this->post(route('owner.settings.profile'), array_replace($payload, ['slug' => 'owner']))
+            ->assertSessionHasErrors('slug');
+    }
+
     public function test_gateway_settings_can_no_longer_be_saved_from_the_owner_portal(): void
     {
         // D-016, BQ-141 (AC-PAY-05): the gateway form is removed, even where the module is released.

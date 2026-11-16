@@ -36,6 +36,8 @@ class Tenant extends Model
         'custom_domain',
         'jenisbisnis',
         'alamat',
+        'business_email',
+        'map_url',
         'deskripsi',
         'logo_path',
         'banner_path',

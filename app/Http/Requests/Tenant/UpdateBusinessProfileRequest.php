@@ -27,7 +27,7 @@ class UpdateBusinessProfileRequest extends FormRequest
             }
             $phone = ltrim($phone, '0');
             if ($phone !== '') {
-                $phone = '0' . $phone;
+                $phone = '0'.$phone;
             }
             $this->merge(['nomorhp' => $phone]);
         }
@@ -39,12 +39,15 @@ class UpdateBusinessProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'namabisnis'  => ['required', 'string', 'max:150'],
+            'namabisnis' => ['required', 'string', 'max:150'],
             'jenisbisnis' => ['required', 'string', 'max:150'],
-            'nomorhp'     => ['required', 'string', 'max:20'],
-            'alamat'      => ['required', 'string', 'max:255'],
-            'deskripsi'   => ['nullable', 'string', 'max:1000'],
-            'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
+            'nomorhp' => ['required', 'string', 'max:20'],
+            'alamat' => ['required', 'string', 'max:255'],
+            'slug' => ['sometimes', 'required', 'string', 'max:150', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D'],
+            'business_email' => ['sometimes', 'nullable', 'email', 'max:150'],
+            'map_url' => ['sometimes', 'nullable', 'url:http,https', 'max:2048'],
+            'deskripsi' => ['nullable', 'string', 'max:1000'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
         ];
     }
 }

@@ -10,11 +10,13 @@ use App\Actions\Schedule\DeleteSchedule;
 use App\Actions\Schedule\GetSlotRunway;
 use App\Actions\Schedule\PriceSlots;
 use App\Actions\Schedule\UpdateScheduleAvailability;
+use App\Actions\Schedule\UpdateSlot;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingTimeRange;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Schedule\BulkCreateScheduleRequest;
 use App\Http\Requests\Schedule\UpdateAvailabilityRequest;
+use App\Http\Requests\Schedule\UpdateSlotRequest;
 use App\Models\Booking;
 use App\Models\OpeningHour;
 use App\Models\PeakHourRule;
@@ -118,6 +120,15 @@ class OwnerScheduleController extends Controller
             'sukses',
             $result['created_count'].' slot jadwal berhasil dibuat untuk '.$result['days_count'].' hari!'
         );
+    }
+
+    public function updateSlot(UpdateSlotRequest $request, int $slot, UpdateSlot $updateSlot): RedirectResponse
+    {
+        $tenant = $this->resolveTenant() ?? abort(404);
+        $price = $request->validated('harga_override');
+        $updateSlot->execute($tenant, $slot, (string) $request->validated('operation'), $price === null ? null : (int) $price);
+
+        return back()->with('sukses', 'Slot berhasil diperbarui.');
     }
 
     /**

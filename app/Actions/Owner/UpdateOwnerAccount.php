@@ -19,8 +19,8 @@ class UpdateOwnerAccount
     /**
      * Update user credentials and profile details.
      *
-     * The caller has already verified the current password for an email or password change
-     * (BQ-098). A new email loses its verification and both addresses are told; a new
+     * The account form verifies the current password for profile and credential changes
+     * (BQ-098, AC-SET-03). A new email loses its verification and both addresses are told; a new
      * password ends every other session of the user.
      *
      * @param  array<string, mixed>  $data
@@ -32,10 +32,10 @@ class UpdateOwnerAccount
         $passwordChanged = ! empty($data['password']);
 
         $user->namalengkap = $data['namalengkap'];
-        $user->email = $data['email'];
         $user->nomorhp = $data['nomorhp'];
 
         if ($emailChanged) {
+            $user->email = $data['email'];
             $user->email_verified_at = null;
         }
 

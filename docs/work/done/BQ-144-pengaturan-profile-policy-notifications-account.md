@@ -2,7 +2,7 @@
 id: BQ-144
 title: Pengaturan: Profil Bisnis, Kebijakan Booking, Notifikasi and Akun
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: tenancy
@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-131, BQ-098]
 
 # BQ-144: Pengaturan: Profil Bisnis, Kebijakan Booking, Notifikasi and Akun
 
-Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -60,3 +60,5 @@ Backend persists tenant booking policy and per-user email preferences. The store
 Remaining: settings tabs, checkout policy rendering, slug warning flow and password/account UI. Status remains in-progress.
 
 2026-11-13: Settings now uses shared URL tabs, posts policy and email preferences to the existing endpoints, previews the same policy component rendered at checkout, and warns before a rename can change the booking URL. Account forms use the existing BQ-098 password checks. OwnerPortalWorkflowTest covers persisted settings display. Remaining: independent slug, map link and business email fields have no write contract here; AC-SET-03 requires a password for every change while BQ-098 currently requires it for email/password changes and deletion.
+
+2026-11-16: Profil Bisnis menyimpan slug independen, link peta dan email bisnis. UI meminta konfirmasi sebelum slug berubah dan URL lama berhenti berlaku. Akun meminta kata sandi saat ini untuk setiap perubahan. Evidence: SettingsTest dan AccountChangeRequiresCurrentPasswordTest.

@@ -26,8 +26,7 @@ class UpdateOwnerAccountRequest extends FormRequest
             'email' => ['required', 'email', 'max:100', Rule::unique('users', 'email')->ignore($userId)],
             'nomorhp' => ['required', 'string', 'max:20'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-            // BQ-098: changing the email or the password needs proof of the current password.
-            'current_password' => [Rule::requiredIf(fn (): bool => $this->changesCredentials()), 'nullable', 'string', 'current_password'],
+            'current_password' => [Rule::requiredIf(fn (): bool => $this->changesAccount()), 'nullable', 'string', 'current_password'],
         ];
     }
 
@@ -37,19 +36,19 @@ class UpdateOwnerAccountRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'current_password.required' => 'Masukkan password saat ini untuk mengganti email atau password.',
+            'current_password.required' => 'Masukkan kata sandi saat ini untuk menyimpan perubahan akun.',
             'current_password.current_password' => 'Password saat ini salah.',
         ];
     }
 
-    /**
-     * Whether the request changes the sign-in email or sets a new password.
-     */
-    public function changesCredentials(): bool
+    private function changesAccount(): bool
     {
-        $currentEmail = (string) ($this->user()->email ?? '');
+        $user = $this->user();
+        $currentEmail = (string) ($user->email ?? '');
 
         return $this->filled('password')
+            || (string) $this->input('namalengkap') !== (string) $user?->namalengkap
+            || (string) $this->input('nomorhp') !== (string) $user?->nomorhp
             || strcasecmp(trim((string) $this->input('email')), trim($currentEmail)) !== 0;
     }
 }
