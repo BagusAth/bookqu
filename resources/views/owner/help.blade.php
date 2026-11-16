@@ -11,24 +11,25 @@
 <div class="mx-auto max-w-4xl space-y-6">
     <x-owner.page-header title="Bantuan" purpose="Jawaban cepat untuk pertanyaan umum, dan cara menghubungi tim BookQu." />
 
-    <section aria-labelledby="contact-title" class="bq-panel p-4">
-        <h2 id="contact-title" class="text-base font-semibold text-bq-text">Hubungi BookQu</h2>
+    <section aria-labelledby="contact-title" class="rounded-xl bg-bq-primary p-5 text-white sm:p-6">
+        <h2 id="contact-title" class="text-lg font-bold text-white">Hubungi BookQu</h2>
+        <p class="mt-1 text-sm text-white/80">Tim kami membantu lewat WhatsApp atau email.</p>
         @if ($contacts['whatsappUrl'] || $contacts['email'])
             <div class="mt-3 flex flex-wrap gap-2">
                 @if ($contacts['whatsappUrl'])
-                    <a href="{{ $contacts['whatsappUrl'] }}" target="_blank" rel="noopener" class="bq-btn bq-btn-primary">WhatsApp {{ $contacts['whatsapp'] }}</a>
+                    <a href="{{ $contacts['whatsappUrl'] }}" target="_blank" rel="noopener" class="bq-btn bq-btn-accent"><x-owner.icon name="whatsapp" class="h-4 w-4" />WhatsApp {{ $contacts['whatsapp'] }}</a>
                 @endif
                 @if ($contacts['email'])
-                    <a href="mailto:{{ $contacts['email'] }}" class="bq-btn bq-btn-secondary">{{ $contacts['email'] }}</a>
+                    <a href="mailto:{{ $contacts['email'] }}" class="bq-btn border border-white/40 text-white hover:bg-white/10">{{ $contacts['email'] }}</a>
                 @endif
             </div>
             @if ($contacts['hours'] !== '')
-                <p class="mt-2 text-xs text-bq-text-muted">{{ $contacts['hours'] }}</p>
+                <p class="mt-2 text-xs text-white/80">{{ $contacts['hours'] }}</p>
             @endif
         @else
-            <p class="mt-1 text-sm text-bq-text-muted">Kontak bantuan belum diatur.</p>
+            <p class="mt-1 text-sm text-white/80">Kontak bantuan belum diatur.</p>
         @endif
-        <p class="mt-3 text-sm text-bq-text-muted"><a href="{{ $guideUrl }}" class="bq-link">Buka Beranda</a> untuk melihat langkah penyiapan atau jadwal hari ini.</p>
+        <p class="mt-4 text-sm text-white/80"><a href="{{ $guideUrl }}" class="font-semibold text-white underline underline-offset-2">Buka Beranda</a> untuk melihat langkah penyiapan atau jadwal hari ini.</p>
     </section>
 
     <section aria-labelledby="faq-title" class="space-y-4">
@@ -42,7 +43,7 @@
                             <summary class="cursor-pointer list-none text-sm font-medium text-bq-text marker:hidden">
                                 <span class="flex items-center justify-between gap-3">
                                     {{ $item['q'] }}
-                                    <span class="text-bq-text-muted transition group-open:rotate-45" aria-hidden="true">+</span>
+                                    <x-owner.icon name="chevron-down" class="h-4 w-4 shrink-0 text-bq-text-muted transition-transform group-open:rotate-180" />
                                 </span>
                             </summary>
                             <p class="mt-2 text-sm text-bq-text-muted">{{ $item['a'] }}</p>

@@ -8,7 +8,7 @@
 --}}
 
 @section('content')
-    <div class="mx-auto mb-6 w-full max-w-5xl rounded-xl border border-amber-200 bg-bq-warning-bg p-4 text-sm text-amber-900" role="status">
+    <div class="mx-auto mb-6 w-full max-w-5xl rounded-xl border border-bq-warning/30 bg-bq-warning-bg p-4 text-sm text-bq-warning" role="status">
         Pratinjau. Pelanggan hanya melihat landing page setelah Anda menerbitkannya.
         <a href="{{ route('owner.booking-page', ['section' => 'landing']) }}" class="font-semibold underline">Kembali ke pengaturan</a>
     </div>

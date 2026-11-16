@@ -9,7 +9,7 @@
 --}}
 
 @php
-    $chip = fn (bool $active): string => 'shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium '.($active ? 'border-bq-primary bg-bq-primary-light text-bq-primary' : 'border-bq-border bg-bq-surface text-bq-text-muted hover:text-bq-text');
+    $chip = fn (bool $active): string => 'shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors '.($active ? 'border-bq-primary bg-bq-primary text-white' : 'border-bq-border bg-bq-surface text-bq-ink hover:border-bq-primary');
     $query = fn (array $change): array => array_filter(array_merge(['filter' => $filter === 'unread' ? 'unread' : null, 'type' => $type], $change));
 @endphp
 

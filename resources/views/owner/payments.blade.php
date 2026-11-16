@@ -94,10 +94,11 @@
     @if ($activeTab === 'ringkasan')
         <section aria-label="Saldo" class="grid gap-4 sm:grid-cols-3">
             @foreach ([['Saldo tersedia', $summary['available'], 'Bisa dicairkan ke rekening Anda'], ['Sedang diproses', $summary['inProcess'], 'Pencairan menunggu review atau transfer'], ['Total dicairkan', $summary['withdrawn'], 'Sudah ditransfer ke rekening Anda']] as [$title, $value, $hint])
-                <div class="{{ $card }} p-4">
-                    <p class="text-sm text-bq-text-muted">{{ $title }}</p>
-                    <p class="mt-1 text-2xl font-semibold bq-num text-bq-text">{{ $rupiah($value) }}</p>
-                    <p class="mt-0.5 text-xs text-bq-text-muted">{{ $hint }}</p>
+                {{-- BQ-161 (audit PY-01): the available balance is the page's hero figure --}}
+                <div @class(['rounded-xl p-5', 'bg-bq-primary text-white' => $loop->first, $card => ! $loop->first])>
+                    <p @class(['text-sm', 'text-white/80' => $loop->first, 'text-bq-text-muted' => ! $loop->first])>{{ $title }}</p>
+                    <p @class(['bq-num mt-1 font-bold', 'text-3xl text-white' => $loop->first, 'text-2xl text-bq-ink' => ! $loop->first])>{{ $rupiah($value) }}</p>
+                    <p @class(['mt-1 text-xs', 'text-white/80' => $loop->first, 'text-bq-text-muted' => ! $loop->first])>{{ $hint }}</p>
                 </div>
             @endforeach
         </section>
@@ -154,7 +155,7 @@
         <section aria-labelledby="balance-title" class="{{ $card }} flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p id="balance-title" class="text-sm text-bq-text-muted">Saldo tersedia</p>
-                <p class="mt-1 text-2xl font-semibold bq-num text-bq-text">{{ $rupiah($summary['available']) }}</p>
+                <p class="bq-num mt-1 text-3xl font-bold text-bq-ink">{{ $rupiah($summary['available']) }}</p>
                 <p class="mt-0.5 text-xs text-bq-text-muted">
                     Minimal {{ $rupiah($payoutRules['min']) }}@if ($payoutRules['cap'] !== null) · maksimal {{ $rupiah($payoutRules['cap']) }} per pengajuan @endif
                 </p>

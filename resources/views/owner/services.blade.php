@@ -157,16 +157,16 @@
             <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Daftar layanan">
                 @foreach ($serviceCards as $card)
                     <li class="flex flex-col overflow-hidden bq-panel {{ $card['isActive'] ? '' : 'opacity-75' }}">
-                        <div class="relative aspect-[16/9] bg-bq-background">
+                        <div @class(['relative', 'aspect-[16/9] bg-bq-surface-2' => $card['imageUrl'], 'h-20 bg-bq-primary-light' => ! $card['imageUrl']])>
                             @if ($card['imageUrl'])
                                 <img src="{{ $card['imageUrl'] }}" alt="" class="h-full w-full object-cover" loading="lazy">
                             @else
-                                <div class="flex h-full items-center justify-center text-bq-text-muted" aria-hidden="true">
-                                    <x-owner.icon name="services" class="h-8 w-8" />
+                                <div class="flex h-full items-center justify-end px-4 text-bq-primary/40" aria-hidden="true">
+                                    <x-owner.icon name="services" class="h-10 w-10" />
                                 </div>
                             @endif
                             @if ($card['isPopular'])
-                                <span class="absolute left-3 top-3 rounded-full bg-bq-warning-bg px-2 py-0.5 text-xs font-semibold text-bq-warning">Populer</span>
+                                <span class="absolute left-3 top-3 rounded-full bg-bq-accent px-2.5 py-0.5 text-xs font-bold text-bq-ink">Populer</span>
                             @endif
                         </div>
                         <div class="flex flex-1 flex-col gap-2 p-4">

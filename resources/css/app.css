@@ -117,6 +117,11 @@
         color: var(--color-bq-ink);
         letter-spacing: -0.01em;
     }
+    /* Form labels written as <label class="grid ...">Text <input></label> get the label style; controls keep theirs. */
+    .bq-owner label.grid {
+        font-weight: 500;
+        color: var(--color-bq-ink);
+    }
     .bq-owner input[type='checkbox'],
     .bq-owner input[type='radio'] {
         accent-color: var(--color-bq-primary);
@@ -177,7 +182,7 @@
         @apply text-xs text-bq-text-muted;
     }
     .bq-input {
-        @apply min-h-10 rounded-lg border border-bq-border-strong bg-bq-surface px-3 py-2 text-sm text-bq-ink transition-colors duration-150 placeholder:text-bq-text-subtle hover:border-bq-text-subtle focus:border-bq-primary focus:ring-2 focus:ring-bq-primary/20 focus:outline-none disabled:bg-bq-surface-2 disabled:text-bq-text-muted max-md:min-h-11 max-md:text-base;
+        @apply min-h-10 rounded-lg border border-bq-border-strong bg-bq-surface px-3 py-2 text-sm font-normal text-bq-ink transition-colors duration-150 placeholder:text-bq-text-subtle hover:border-bq-text-subtle focus:border-bq-primary focus:ring-2 focus:ring-bq-primary/20 focus:outline-none disabled:bg-bq-surface-2 disabled:text-bq-text-muted max-md:min-h-11 max-md:text-base;
     }
     textarea.bq-input {
         @apply min-h-24 leading-relaxed;

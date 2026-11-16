@@ -61,10 +61,10 @@
                     <div class="flex items-center gap-3 text-sm">
                         <dt class="w-14 shrink-0 bq-num text-bq-text">{{ $stars }} bintang</dt>
                         <dd class="flex flex-1 items-center gap-3">
-                            <span class="h-2 flex-1 overflow-hidden rounded-full bg-bq-background" aria-hidden="true">
-                                <span class="block h-full rounded-full bg-bq-warning" style="width: {{ $share }}%"></span>
+                            <span class="h-2.5 flex-1 overflow-hidden rounded-full bg-bq-surface-2" aria-hidden="true">
+                                <span class="block h-full rounded-full bg-bq-primary" style="width: {{ $share }}%"></span>
                             </span>
-                            <span class="w-8 shrink-0 text-right bq-num text-bq-text-muted">{{ $count }}</span>
+                            <span class="w-8 shrink-0 text-right bq-num font-semibold text-bq-ink">{{ $count }}</span>
                         </dd>
                     </div>
                 @endforeach

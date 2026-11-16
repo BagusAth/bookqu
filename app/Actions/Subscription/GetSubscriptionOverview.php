@@ -44,7 +44,7 @@ class GetSubscriptionOverview
             return [
                 'langgananaktif' => null,
                 'recommendedPlanId' => Plan::where('namapaket', PlanCapability::PLAN_MEDIUM)->value('id'),
-                'semuapaket' => Plan::all(),
+                'semuapaket' => Plan::orderBy('hargabulanan')->get(),
                 'jumlahlayanan' => 0,
                 'jumlahbookingbulanini' => 0,
                 'maxlayanan' => 0,
@@ -72,7 +72,7 @@ class GetSubscriptionOverview
             ->latest('id')
             ->first();
 
-        $semuapaket = Plan::all();
+        $semuapaket = Plan::orderBy('hargabulanan')->get();
 
         $jumlahlayanan = SubscriptionUsage::countServices($idtenant);
         $jumlahbookingbulanini = SubscriptionUsage::countMonthlyBookings($idtenant);

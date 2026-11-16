@@ -55,7 +55,7 @@
                 <div class="space-y-4 px-5 py-4 sm:px-6 sm:py-5 overflow-y-auto flex-1">
                     @if ($profileErrors->any())
                         <div class="rounded-xl border border-bq-danger/50 bg-bq-danger-bg px-4 py-3 text-xs text-bq-danger">
-                            <p class="font-semibold text-rose-800">Mohon perbaiki isian form:</p>
+                            <p class="font-semibold text-bq-danger">Mohon perbaiki isian form:</p>
                             <ul class="mt-1 list-disc space-y-0.5 pl-4">
                                 @foreach ($profileErrors->all() as $error)
                                     <li>{{ $error }}</li>
@@ -65,7 +65,7 @@
                     @endif
 
                     <div>
-                        <label for="input-complete-namabisnis" class="mb-1.5 block text-sm font-medium text-bq-text">Nama Bisnis <span class="text-rose-500">*</span></label>
+                        <label for="input-complete-namabisnis" class="mb-1.5 block text-sm font-medium text-bq-text">Nama Bisnis <span class="text-bq-danger">*</span></label>
                         <input
                             type="text"
                             name="namabisnis"
@@ -82,7 +82,7 @@
                     </div>
 
                     <div>
-                        <label for="input-complete-jenisbisnis" class="mb-1.5 block text-sm font-medium text-bq-text">Jenis Bisnis <span class="text-rose-500">*</span></label>
+                        <label for="input-complete-jenisbisnis" class="mb-1.5 block text-sm font-medium text-bq-text">Jenis Bisnis <span class="text-bq-danger">*</span></label>
                         <input
                             type="text"
                             name="jenisbisnis"
@@ -98,7 +98,7 @@
                     </div>
 
                     <div>
-                        <label for="input-complete-nomorhp" class="mb-1.5 block text-sm font-medium text-bq-text">Nomor Telepon <span class="text-rose-500">*</span></label>
+                        <label for="input-complete-nomorhp" class="mb-1.5 block text-sm font-medium text-bq-text">Nomor Telepon <span class="text-bq-danger">*</span></label>
                         <input
                             type="text"
                             name="nomorhp"
@@ -114,7 +114,7 @@
                     </div>
 
                     <div>
-                        <label for="input-complete-alamat" class="mb-1.5 block text-sm font-medium text-bq-text">Alamat <span class="text-rose-500">*</span></label>
+                        <label for="input-complete-alamat" class="mb-1.5 block text-sm font-medium text-bq-text">Alamat <span class="text-bq-danger">*</span></label>
                         <textarea
                             name="alamat"
                             id="input-complete-alamat"
