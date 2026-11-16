@@ -2,7 +2,7 @@
 id: BQ-151
 title: Booking seats and capacity per slot
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: booking
@@ -17,7 +17,7 @@ depends-on: [BQ-148]
 
 # BQ-151: Booking seats and capacity per slot
 
-Epic **E6 · Pro value and core rules** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E6 · Pro value and core rules** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -56,3 +56,5 @@ Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ
 Backend 2026-11-13: `booking_seats` with backfill (seat 0 per existing booking) replaces `unique_active_booking_slot` in one migration; `BookingSeats` keeps seats in step through the Booking model; `services.kapasitas` (existing display values reset to 1, confirmed by the Tech Lead 2026-11-13) and `bookings.peserta`; `BookingRules::hasRoomFor`/`hasRoomSql` used by the claim, checkout validation and every listing (`seats_left`); participants in checkout, walk-in and reschedule; price per participant through `BookingPricing::quote`. Tests: `Booking/CapacityUnitsAndNoShowTest` (AC-KAL-05, capacity, seat index, per-participant charge), `Database/BookingSeatsMigrationTest` (backfill), `Actions/Booking/BookingSeatLockingTest` (MySQL, last seat). Remaining: capacity field in Layanan, participants in checkout/walk-in UI, remaining capacity shown in listings UI.
 
 2026-11-16: Form Layanan mengirim kapasitas, checkout dan walk-in mengirim peserta, dan daftar slot storefront memperlihatkan seats_left. Evidence: CapacityUnitsAndNoShowTest dan CheckoutPricingTest. Sisa: peserta terhadap kapasitas di Kalender (AC-KAL-05).
+
+2026-11-16: Kalender displays occupying participants against the service capacity and uses BookingRules for the seat count. Evidence: KalenderPageTest and CapacityUnitsAndNoShowTest.

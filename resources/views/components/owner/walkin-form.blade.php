@@ -7,6 +7,7 @@
 --}}
 @props([
     'fixedSlot' => null,
+    'fixedSlotModel' => null,
     'slots' => [],
     'slotsUrl' => null,
     'idPrefix' => 'walkin',
@@ -35,7 +36,25 @@
 
     <div>
         <label for="{{ $idPrefix }}-slot" class="{{ $labelClass }}">Slot</label>
-        @if ($fixedSlot)
+        @if ($fixedSlotModel)
+            <input type="hidden" name="idschedule" x-bind:value="{{ $fixedSlotModel }}.id">
+            <p id="{{ $idPrefix }}-slot" class="rounded-lg bg-bq-background px-3 py-2 text-sm" x-text="{{ $fixedSlotModel }}.walkInLabel"></p>
+            <fieldset class="mt-2 space-y-2" x-show="{{ $fixedSlotModel }}.addOns.length" x-data="{ quantities: {} }">
+                <legend class="{{ $labelClass }}">Add-on</legend>
+                <template x-for="item in {{ $fixedSlotModel }}.addOns" :key="item.id">
+                    <label class="flex items-center justify-between gap-2 text-sm">
+                        <span x-text="item.name"></span>
+                        <input type="number" min="0" max="9999" placeholder="0" x-model.number="quantities[item.id]" :aria-label="'Jumlah ' + item.name" class="{{ $field }} max-w-24">
+                    </label>
+                </template>
+                <template x-for="(item, index) in {{ $fixedSlotModel }}.addOns.filter(item => Number(quantities[item.id]) > 0)" :key="item.id">
+                    <div>
+                        <input type="hidden" :name="'selected_addons[' + index + '][id]'" :value="item.id">
+                        <input type="hidden" :name="'selected_addons[' + index + '][quantity]'" :value="quantities[item.id]">
+                    </div>
+                </template>
+            </fieldset>
+        @elseif ($fixedSlot)
             <input type="hidden" name="idschedule" value="{{ $fixedSlot['id'] }}">
             <p id="{{ $idPrefix }}-slot" class="rounded-lg bg-bq-background px-3 py-2 text-sm text-bq-text">{{ $fixedSlot['label'] }}</p>
         @elseif ($slotsUrl)
@@ -98,7 +117,7 @@
 
     <div>
         <label for="{{ $idPrefix }}-participants" class="{{ $labelClass }}">Jumlah peserta</label>
-        <input id="{{ $idPrefix }}-participants" type="number" name="peserta" min="1" max="9999" required value="{{ old('peserta', 1) }}" class="{{ $field }}">
+        <input id="{{ $idPrefix }}-participants" type="number" name="peserta" min="1" max="9999" @if ($fixedSlotModel) :max="{{ $fixedSlotModel }}.seatsLeft" @endif required value="{{ old('peserta', 1) }}" class="{{ $field }}">
         @error('peserta')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
     </div>
 
@@ -122,6 +141,6 @@
     </div>
 
     <div class="flex justify-end">
-        <button type="submit" class="inline-flex items-center rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover">Simpan walk-in</button>
+        <button type="submit" @if ($fixedSlotModel) :disabled="busy" @endif class="inline-flex items-center rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover">Simpan walk-in</button>
     </div>
 </form>

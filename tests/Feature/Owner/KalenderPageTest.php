@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Owner;
+
+use App\Actions\Subscription\CreateTrialSubscription;
+use App\Models\Booking;
+use App\Models\Schedule;
+use App\Models\Service;
+use App\Models\Tenant;
+use App\Models\User;
+use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+final class KalenderPageTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_views_show_the_same_bookings_and_only_count_occupying_seats(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2028-01-31 08:00:00', 'Asia/Jakarta'));
+        $owner = User::factory()->create(['role' => 'owner']);
+        $tenant = Tenant::factory()->create(['iduser' => $owner->id]);
+        app(CreateTrialSubscription::class)->execute($tenant);
+        $service = Service::factory()->create(['idtenant' => $tenant->id, 'kapasitas' => 5]);
+        $slot = Schedule::factory()->create([
+            'idtenant' => $tenant->id, 'idlayanan' => $service->id, 'tanggal' => '2028-01-31',
+            'jam_mulai' => '10:00', 'jam_selesai' => '10:59', 'status' => 'tersedia',
+        ]);
+        $booking = Booking::factory()->create([
+            'idtenant' => $tenant->id, 'idlayanan' => $service->id, 'idschedule' => $slot->id,
+            'tanggalbooking' => $slot->tanggal, 'jam' => $slot->jam_mulai, 'status' => 'paid', 'peserta' => 3,
+        ]);
+        Booking::factory()->create([
+            'idtenant' => $tenant->id, 'idlayanan' => $service->id, 'idschedule' => $slot->id,
+            'tanggalbooking' => $slot->tanggal, 'jam' => $slot->jam_mulai, 'status' => 'cancelled', 'peserta' => 2,
+        ]);
+
+        $this->actingAs($owner);
+        foreach (['day', 'week', 'month'] as $view) {
+            $page = $this->get(route('owner.calendar', ['view' => $view, 'date' => '2028-01-31']))->assertOk();
+            $page->assertSee($booking->namapelanggan)->assertSee('3/5 peserta');
+            $card = $page->viewData('days')['2028-01-31']['slots'][0];
+            $this->assertContains(route('owner.bookings.panel', $booking->id), array_column($card['bookings'], 'url'));
+            $this->assertFalse($card['edit']);
+        }
+        $month = $this->get(route('owner.calendar', ['view' => 'month', 'date' => '2028-01-31']))->assertOk();
+        $this->assertSame('2028-02-01', $month->viewData('next')->toDateString());
+        $leapMonth = $this->get(route('owner.calendar', ['view' => 'month', 'date' => '2028-02-29']))->assertOk();
+        $this->assertSame('2028-01-01', $leapMonth->viewData('previous')->toDateString());
+        $this->assertSame('2028-03-01', $leapMonth->viewData('next')->toDateString());
+    }
+}
