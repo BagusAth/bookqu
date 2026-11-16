@@ -158,7 +158,9 @@ class OwnerModulesCrudTest extends TestCase
     {
         $this->actingAs($this->userA)->get('/owner/resources')->assertNotFound();
         $this->delete('/owner/resources/1')->assertNotFound();
-        $this->get('/owner/staff-resources')->assertNotFound();
+        $this->get('/owner/staff-resources')->assertRedirect('/owner/settings/business?tab=tim');
+        $this->get('/owner/settings/payments')->assertRedirect('/owner/payments');
+        $this->get('/owner/settings/payment-setting')->assertRedirect('/owner/payments');
         $this->post('/owner/staff', ['name' => 'Nama lama'])->assertNotFound();
         $this->delete('/owner/staff/1')->assertNotFound();
     }

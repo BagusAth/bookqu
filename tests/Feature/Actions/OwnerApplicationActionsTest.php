@@ -12,7 +12,6 @@ use App\Actions\Owner\RequestOwnerPayout;
 use App\Actions\Owner\UpdateOwnerAccount;
 use App\Actions\Tenant\UpdateAppearanceSettings;
 use App\Actions\Tenant\UpdateBusinessProfile;
-use App\Actions\Tenant\UpdatePaymentSettings;
 use App\Models\Booking;
 use App\Models\CustomerNote;
 use App\Models\Payment;
@@ -167,23 +166,6 @@ class OwnerApplicationActionsTest extends TestCase
 
         $this->assertEquals('Glow Beauty Aesthetic', $updated->namabisnis);
         $this->assertEquals('glow-beauty-aesthetic', $updated->slug);
-    }
-
-    public function test_update_payment_settings_action(): void
-    {
-        $action = app(UpdatePaymentSettings::class);
-
-        $updated = $action->execute($this->tenant, [
-            'payment_mode' => 'owner',
-            'midtrans_environment' => 'sandbox',
-            'midtrans_sandbox_merchant_id' => 'M123456',
-            'midtrans_sandbox_client_key' => 'SB-Mid-client-xxx',
-            'midtrans_sandbox_server_key' => 'SB-Mid-server-yyy',
-        ]);
-
-        $this->assertEquals('owner', $updated->payment_mode);
-        $this->assertEquals('pending', $updated->midtrans_status);
-        $this->assertEquals('M123456', $updated->midtrans_sandbox_merchant_id);
     }
 
     public function test_request_owner_payout_action(): void

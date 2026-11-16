@@ -5,8 +5,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * BQ-157: the withdrawn staff-resources module is removed. Its rows were copied to `units`
- * by 2026_11_13_000002_create_units_tables (ADR-0017), so the old tables are dropped.
+ * BQ-157: the withdrawn staff-resources module is removed. Resource rows were copied to `units`
+ * by 2026_11_13_000002_create_units_tables (ADR-0017); staff was never bookable and team
+ * accounts replace it (BQ-146), so the old tables are dropped.
  */
 return new class extends Migration
 {
@@ -17,6 +18,8 @@ return new class extends Migration
     {
         Schema::dropIfExists('service_resource');
         Schema::dropIfExists('resources');
+        Schema::dropIfExists('service_staff');
+        Schema::dropIfExists('staff');
     }
 
     /**
@@ -24,6 +27,29 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::create('staff', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('idtenant')->constrained('tenants')->cascadeOnDelete();
+            $table->string('name', 150);
+            $table->string('email', 150)->nullable();
+            $table->string('phone', 30)->nullable();
+            $table->string('role', 100)->nullable();
+            $table->string('availability_schedule', 255)->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+
+            $table->index(['idtenant', 'is_active']);
+        });
+
+        Schema::create('service_staff', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('idservice')->constrained('services')->cascadeOnDelete();
+            $table->foreignId('idstaff')->constrained('staff')->cascadeOnDelete();
+            $table->timestamps();
+
+            $table->unique(['idservice', 'idstaff']);
+        });
+
         Schema::create('resources', function (Blueprint $table) {
             $table->id();
             $table->foreignId('idtenant')->constrained('tenants')->cascadeOnDelete();

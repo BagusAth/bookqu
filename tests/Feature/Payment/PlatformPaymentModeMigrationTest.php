@@ -21,4 +21,16 @@ class PlatformPaymentModeMigrationTest extends TestCase
         $this->assertSame('SB-Mid-server-x', $owner->fresh()->midtrans_sandbox_server_key);
         $this->assertSame('platform', $platform->fresh()->payment_mode);
     }
+
+    public function test_bq157_erases_stored_tenant_gateway_credentials(): void
+    {
+        $tenant = Tenant::factory()->create(['payment_mode' => 'owner', 'midtrans_sandbox_server_key' => 'SB-Mid-server-x', 'midtrans_prod_client_key' => 'Mid-client-y']);
+
+        (require database_path('migrations/2026_11_16_170000_erase_tenant_gateway_credentials.php'))->up();
+
+        $fresh = $tenant->fresh();
+        $this->assertSame('platform', $fresh->payment_mode);
+        $this->assertNull($fresh->midtrans_sandbox_server_key);
+        $this->assertNull($fresh->midtrans_prod_client_key);
+    }
 }

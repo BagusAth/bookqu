@@ -8,7 +8,6 @@ use App\Models\Booking;
 use App\Models\Category;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\CustomerBookingRoutes;
@@ -135,20 +134,13 @@ class ServicesDomainEndToEndTest extends TestCase
     }
 
     /**
-     * Test Service CRUD with Category, Staff and Additional Item assignment.
+     * Test Service CRUD with Category and Additional Item assignment.
      */
     public function test_service_crud_with_bidirectional_relationships(): void
     {
         $cat = Category::create([
             'idtenant' => $this->tenantA->id,
             'name' => 'Sound Healing',
-            'is_active' => true,
-        ]);
-
-        $staff = Staff::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Maya Pratama',
-            'role' => 'Lead Practitioner',
             'is_active' => true,
         ]);
 
@@ -166,7 +158,6 @@ class ServicesDomainEndToEndTest extends TestCase
             'durasi' => 60,
             'idcategory' => $cat->id,
             'deskripsi' => 'Deep vibrational relaxation session',
-            'staff_ids' => [$staff->id],
             'additional_item_ids' => [$addon->id],
         ]);
         $res->assertRedirect(route('owner.programs'));
@@ -175,10 +166,6 @@ class ServicesDomainEndToEndTest extends TestCase
         $this->assertNotNull($service);
 
         // Verify pivot tables
-        $this->assertDatabaseMissing('service_staff', [
-            'idservice' => $service->id,
-            'idstaff' => $staff->id,
-        ]);
         $this->assertDatabaseHas('additional_item_service', [
             'idservice' => $service->id,
             'idadditional_item' => $addon->id,
@@ -199,7 +186,6 @@ class ServicesDomainEndToEndTest extends TestCase
             'durasi' => 90,
             'idcategory' => $cat->id,
             'is_active' => 1,
-            'staff_ids' => [$staff->id],
             'additional_item_ids' => [$addon->id],
         ]);
 
@@ -211,7 +197,6 @@ class ServicesDomainEndToEndTest extends TestCase
         // 3. Delete Service - asserts pivot records are detached
         $this->actingAs($this->ownerA)->delete("/owner/programs/{$service->id}");
         $this->assertDatabaseMissing('services', ['id' => $service->id]);
-        $this->assertDatabaseMissing('service_staff', ['idservice' => $service->id]);
         $this->assertDatabaseMissing('additional_item_service', ['idservice' => $service->id]);
     }
 

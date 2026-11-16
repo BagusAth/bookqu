@@ -105,6 +105,8 @@ An agent can take an item end to end. Give it the item file as the prompt; the i
 
 **Progress (2026-11-16):** backends of BQ-133 and BQ-148 (PR #44), BQ-151, BQ-152 and BQ-153 (PR #46) and BQ-149, BQ-150 and BQ-140 (PR #49); owner UI of booking, schedule, refund and settings (PR #47); BQ-147 Laporan and BQ-154 landing page and own domain with TXT ownership (PR #51, Developer B's branch finished by the Tech Lead); `laravel/framework` 13.42.0 for GHSA-63hm-g96r-2m2q (PR #52). Closed: BQ-147, BQ-148, BQ-154. Tech Lead decisions: BQ-154, BQ-155 and BQ-156 approved (PR #48); merge rule per lane, authors merge light PRs and the Tech Lead merges heavy PRs (PR #50). Open in waves 3-6: BQ-134 (Developer B), the UI parts of BQ-133, BQ-135, BQ-140, BQ-144, BQ-149, BQ-150, BQ-151, BQ-152 and BQ-153 (Developer A), BQ-155 then BQ-156 (Developer B). The ops track stays deferred.
 
+**Progress (2026-11-16, later):** waves 3-6 complete: owner UI flows (PR #54), slot editing and settings security (PR #55), Laporan metrics (PR #56), unit images and notifications (PR #57), Kalender (PR #58), integrations BQ-155 (PR #59), API and webhooks BQ-156 (PR #60), and BQ-157 removed the withdrawn modules (PR #61). Every E0-E6 item is in `done/`. Left: the ops track (BQ-017, BQ-019, BQ-020, BQ-021, BQ-022, BQ-074 step 2, TLS and `CUSTOM_DOMAIN_*`), the module release decision (Product Lead and Tech Lead), BQ-158 with the staging regression pass, and the post-release items BQ-016, BQ-034, BQ-035, BQ-075 and BQ-082. BQ-126 closes with BQ-158.
+
 ### Rules for the waves
 
 - **An item may move forward a wave** when all its `depends-on` are done and it touches no file of the other developer's open item.

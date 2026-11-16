@@ -332,54 +332,6 @@ class CheckoutMidtransTest extends TestCase
         $this->assertStringContainsString("/owner/checkout/{$payment->order_id}/invoice", $response->json('redirect'));
     }
 
-    public function test_midtrans_webhook_validates_signature_with_owner_custom_keys(): void
-    {
-        $customServerKey = 'SB-Mid-server-CUSTOM-SECRET-12345';
-
-        // Set tenant to custom owner payment mode with custom server key
-        $this->tenant->update([
-            'payment_mode' => 'owner',
-            'midtrans_environment' => 'sandbox',
-            'midtrans_sandbox_server_key' => $customServerKey,
-        ]);
-
-        $payment = Payment::create([
-            'idtenant' => $this->tenant->id,
-            'idplan' => $this->plan->id,
-            'tipe' => 'booking',
-            'jumlah' => 75000,
-            'status' => 'pending',
-            'metode' => 'midtrans',
-            'order_id' => 'BKG-CUSTOM-KEY-001',
-            'expired_at' => now()->addHour(),
-        ]);
-
-        $statusCode = '200';
-        $grossAmount = '75000.00';
-
-        // Sign with CUSTOM server key (not platform key)
-        $signatureKey = hash('sha512', $payment->order_id.$statusCode.$grossAmount.$customServerKey);
-
-        $payload = [
-            'order_id' => $payment->order_id,
-            'status_code' => $statusCode,
-            'gross_amount' => $grossAmount,
-            'signature_key' => $signatureKey,
-            'transaction_status' => 'settlement',
-            'fraud_status' => 'accept',
-            'payment_type' => 'gopay',
-        ];
-
-        $response = $this->postJson('/midtrans/webhook', $payload);
-        $response->assertStatus(200);
-
-        $this->assertDatabaseHas('payments', [
-            'id' => $payment->id,
-            'status' => 'sukses',
-            'metode' => 'gopay',
-        ]);
-    }
-
     public function test_owner_checkout_review_page_renders_with_tenant_context_and_without_dummy_timer_or_notes(): void
     {
         $response = $this->actingAs($this->user)

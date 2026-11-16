@@ -6,15 +6,16 @@ Modules whose backend exists but which are not fully released. The release polic
 |---|---|---|---|---|
 | Vouchers | `owner.vouchers*`; storefront `validate-voucher` | `Owner/OwnerVoucherController`, `Models/Voucher`; `BookingController::validateVoucher` returns HTTP 422 | 3 (hidden) | Owner CRUD reachable by URL |
 | Additional items | `owner.additional-items*` | `Owner/OwnerAdditionalItemController`, `Models/AdditionalItem` | 3 | Owner CRUD reachable by URL |
-| Staff & resources | `owner.staff*`, `owner.resources*`, `owner.staff-resources` | `Owner/OwnerStaffResourceController` (292 lines), `Models/Staff`, `Models/Resource` | 3 | Reachable; links also affect `Service::hasActiveFulfillment()` |
 | Halaman Booking (BQ-142, replaces Appearance and Media assets) | `owner.booking-page*`; `owner.settings.appearance` and `owner.settings.assets` answer 301 into it | `Owner/OwnerBookingPageController`, `Actions/Tenant/GetBookingPageData`, `UpdateAppearanceSettings`, `BuildBookingQr`, `Actions/Media/*` | redesign module `booking-page` (hidden until the Tech Lead releases it, ADR-0021) | Built; the storefront applies the look through `Support/StorefrontBranding` |
-| Direct payment gateway | none since BQ-141 (D-016: the owner gateway form and its routes are removed) | Backend left: `OwnerSettingController::updatePaymentSettings` (unrouted), `Actions/Tenant/UpdatePaymentSettings`, `tenants.payment_mode` and the Midtrans key columns | 3 | No owner route; `payment_mode = owner` still changes checkout behaviour for tenants that already have it |
 | Landing page and own domain | `owner.booking-page.landing*`, `owner.booking-page.domain*` (`subscription:landing-page`); `owner.landing-page` redirects | `Owner/OwnerBookingPageController` (BQ-154) | module `booking-page` | Pro only |
 | Integrations | `owner.settings.integrations` | `Owner/OwnerIntegrationController` | 2 ("Coming soon") | Display only |
 | Analytics, schedule report | see `insights.md` | | 2 (locked) | Reachable |
 | Platform balance | see `balance-payout.md` | | 1 (released by BQ-015) | Released: withdraw request and admin review |
 
 Since BQ-008 (2026-11-01) the "Server-side state" column describes the code behind the gate: `module:<name>` (`config/modules.php`) answers 404 for every Tier 3 route and refuses Tier 2 writes with 403, unless an environment releases the module.
+
+
+BQ-157 (2026-11-16): the withdrawn modules are removed. Staff and resources (models, policies, owner routes, `staff`, `service_staff`, `resources` and `service_resource` tables; resource rows became units, ADR-0017) and the direct payment gateway (`payment_mode = owner`, `UpdatePaymentSettings`, tenant keys in `MidtransPaymentGateway`; a migration erases the stored `midtrans_*` keys and puts every tenant on `platform`) are gone. `Service::hasActiveFulfillment()` no longer gates services. Unused keys left `config/modules.php`. Old paths answer per `owner-portal.md` §10.2: `/owner/staff-resources` → Tim, `/owner/settings/payments` and `/owner/settings/payment-setting` → `/owner/payments`; `/owner/resources` and `/owner/staff*` answer 404.
 
 ## Status
 
@@ -24,9 +25,6 @@ Functional: Implemented, gated in the UI only · Verification: Needs Verificatio
 
 | Gap | Item |
 |---|---|
-| Direct-gateway keys stored unencrypted | BQ-004 |
-| Audit P0: staff/resource relations never detached when unchecked | BQ-045 |
-| Staff, resource and add-on UI still shown in released owner pages (services, service modals, bookings) | BQ-157 |
 
 Target decision: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) — module registry `config/modules.php` with `module:<name>` middleware (`hidden` → 404, `locked` → lock page only), implemented by BQ-008 (2026-11-01): Tier 3 routes answer 404, Tier 2 routes refuse writes with 403.
 

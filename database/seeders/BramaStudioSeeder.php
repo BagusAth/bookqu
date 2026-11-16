@@ -13,7 +13,6 @@ use App\Models\Plan;
 use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\Unit;
@@ -389,82 +388,6 @@ class BramaStudioSeeder extends Seeder
                 array_merge($sData, ['idtenant' => $tenant->id])
             );
             $services[$sData['namalayanan']] = $service;
-        }
-
-        // ── 6. Staff & Pivots ────────────────────────────────────────────────
-        $staffData = [
-            [
-                'name' => 'Bramantyo',
-                'role' => 'Lead Creative Director',
-                'email' => 'bramantyo@bramadigital.com',
-                'phone' => '081299887766',
-                'availability_schedule' => 'Shift Pagi & Siang (08:00 - 17:00)',
-                'is_active' => true,
-                'service_names' => ['Studio Foto Tematik VIP (2 Jam)', 'Creative Music Video Production (Half Day)', 'Product & Catalog Commercial Shoot'],
-            ],
-            [
-                'name' => 'Bella Kartika',
-                'role' => 'Senior Studio Photographer',
-                'email' => 'bella@bramadigital.com',
-                'phone' => '081299887711',
-                'availability_schedule' => 'Shift Fleksibel (09:00 - 18:00)',
-                'is_active' => true,
-                'service_names' => ['Studio Foto Basic (1 Jam)', 'Studio Foto Tematik VIP (2 Jam)', 'Graduation & Family Photoshoot'],
-            ],
-            [
-                'name' => 'Dimas Audio',
-                'role' => 'Sound Engineer & Podcast Specialist',
-                'email' => 'dimas@bramadigital.com',
-                'phone' => '081299887722',
-                'availability_schedule' => 'Shift Siang & Malam (13:00 - 21:00)',
-                'is_active' => true,
-                'service_names' => ['Studio Podcast Multi-Mic 4 Orang (2 Jam)', 'Audio Voice Over & Dubbing Session (1 Jam)', 'Webinar & Corporate Broadcast Room (2 Jam)'],
-            ],
-            [
-                'name' => 'Rian Videographer',
-                'role' => 'Video Production Specialist',
-                'email' => 'rian@bramadigital.com',
-                'phone' => '081299887733',
-                'availability_schedule' => 'Shift Pagi & Siang (08:00 - 17:00)',
-                'is_active' => true,
-                'service_names' => ['Studio Video Green Screen 4K (2 Jam)', 'Creative Music Video Production (Half Day)', 'Live Streaming Broadcast Hub (3 Jam)'],
-            ],
-            [
-                'name' => 'Siti Wardrobe & MUA',
-                'role' => 'Stylist & Makeup Artist',
-                'email' => 'siti@bramadigital.com',
-                'phone' => '081299887744',
-                'availability_schedule' => 'Shift Penuh (08:00 - 18:00)',
-                'is_active' => true,
-                'service_names' => ['Studio Foto Tematik VIP (2 Jam)', 'Graduation & Family Photoshoot'],
-            ],
-            [
-                'name' => 'Fajar Broadcast Tech',
-                'role' => 'Streaming & Broadcast Operator',
-                'email' => 'fajar@bramadigital.com',
-                'phone' => '081299887755',
-                'availability_schedule' => 'Shift Malam (15:00 - 22:00)',
-                'is_active' => true,
-                'service_names' => ['Live Streaming Broadcast Hub (3 Jam)', 'Webinar & Corporate Broadcast Room (2 Jam)'],
-            ],
-        ];
-
-        foreach ($staffData as $st) {
-            $sNames = $st['service_names'];
-            unset($st['service_names']);
-
-            $staffObj = Staff::updateOrCreate(
-                ['idtenant' => $tenant->id, 'name' => $st['name']],
-                array_merge($st, ['idtenant' => $tenant->id])
-            );
-
-            $targetServiceIds = [];
-            foreach ($sNames as $sName) {
-                if (isset($services[$sName])) {
-                    $targetServiceIds[] = $services[$sName]->id;
-                }
-            }
-            $staffObj->services()->sync($targetServiceIds);
         }
 
         // ── 7. Physical Resources & Rooms ────────────────────────────────────

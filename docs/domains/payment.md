@@ -80,6 +80,8 @@ Additional payer-cancel evidence: tests/Feature/Customer/CancelCheckoutPaymentTe
 
 BQ-005: subscription checkout returns a generic payment failure to the owner; the failed payment still uses InitiationFailed. Midtrans/SingaPay initiation, status and cancellation diagnostics retain payment/order identifiers, exception type or HTTP status, without raw remote response bodies/messages. `tests/Feature/Customer/SafeOperationErrorsTest.php` covers both gateway layers and user-facing responses. BQ-077: `bookings:expire-payments` reports a failed expiry with the payment and tenant ids and the exception type/location, in the log and on the console, and continues with the next payment; `CreateService` does the same for a failed usage record. Neither writes the exception message. Evidence: `tests/Feature/Console/RedactedOperationalDiagnosticsTest.php`.
 
+BQ-157 (D-011, D-016): every payment uses the platform gateway keys. `MidtransPaymentGateway` no longer reads tenant keys, the owner payment mode and its settings action are removed, and a migration erases the stored `tenants.midtrans_*` keys.
+
 ## Status
 
 Functional: Implemented · Verification: Verified (partial) · Architecture: Partially aligned (lifecycle module, outcome intake and one payment deadline done; Slot bookability BQ-012 and payer-cancel BQ-002 verified)

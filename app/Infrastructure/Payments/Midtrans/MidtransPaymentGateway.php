@@ -217,48 +217,18 @@ class MidtransPaymentGateway implements PaymentGatewayInterface
     }
 
     /**
-     * Configure Midtrans global config for a specific Payment.
-     * Supports tenant-specific custom keys when tenant is in owner payment mode.
+     * Configure Midtrans for a payment. Every payment uses the platform keys (D-011, D-016).
      */
     public function configureForPayment(Payment $payment): void
     {
-        $tenant = $payment->tenant;
-        if ($tenant && $tenant->payment_mode === 'owner' && $payment->tipe === 'booking') {
-            $isProd = $tenant->midtrans_environment === 'production';
-            $serverKey = $isProd
-                ? $tenant->midtrans_prod_server_key
-                : $tenant->midtrans_sandbox_server_key;
-
-            if ($serverKey) {
-                MidtransConfig::$serverKey = $serverKey;
-                MidtransConfig::$isProduction = $isProd;
-                MidtransConfig::$isSanitized = true;
-                MidtransConfig::$is3ds = true;
-
-                return;
-            }
-        }
-
         $this->setDefaultConfig();
     }
 
     /**
-     * Resolve server key for a given Payment (owner tenant key or platform key).
+     * Resolve the server key for a payment: always the platform key (D-011, D-016).
      */
     public function resolveServerKey(Payment $payment): string
     {
-        $tenant = $payment->tenant;
-        if ($tenant && $tenant->payment_mode === 'owner' && $payment->tipe === 'booking') {
-            $isProd = $tenant->midtrans_environment === 'production';
-            $customKey = $isProd
-                ? $tenant->midtrans_prod_server_key
-                : $tenant->midtrans_sandbox_server_key;
-
-            if (! empty($customKey)) {
-                return (string) $customKey;
-            }
-        }
-
         return (string) config('payment.drivers.midtrans.server_key');
     }
 

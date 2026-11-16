@@ -205,30 +205,6 @@ parameters:
 			path: app/Http/Requests/Schedule/BulkCreateScheduleRequest.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$midtrans_environment\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$midtrans_prod_server_key\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$midtrans_sandbox_server_key\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$payment_mode\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Infrastructure/Payments/Midtrans/MidtransPaymentGateway.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
 			identifier: property.notFound
 			count: 1
