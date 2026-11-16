@@ -43,8 +43,6 @@ class UpdateServiceRequest extends FormRequest
             'kapasitas' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'unit_ids' => ['nullable', 'array'],
             'unit_ids.*' => ['integer', Rule::exists('units', 'id')->where('idtenant', $tenantId)],
-            'resource_ids' => ['nullable', 'array'],
-            'resource_ids.*' => ['integer', Rule::exists('resources', 'id')->where('idtenant', $tenantId)],
             'additional_item_ids' => ['nullable', 'array'],
             'additional_item_ids.*' => ['integer', Rule::exists('additional_items', 'id')->where('idtenant', $tenantId)],
         ];

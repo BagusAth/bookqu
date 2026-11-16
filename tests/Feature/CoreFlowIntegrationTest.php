@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Plan;
-use App\Models\Resource;
 use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -450,43 +449,6 @@ class CoreFlowIntegrationTest extends TestCase
             'reply' => 'Unauthorized reply',
         ]);
         $response->assertStatus(404);
-    }
-
-    /**
-     * 9. Resource Inactive Fulfillment Check
-     * When a service has assigned resources but all are inactive,
-     * the customer cannot select or book that service
-     */
-    public function test_inactive_resource_blocks_customer_booking(): void
-    {
-        $resource = Resource::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Therapist John',
-            'type' => 'Room',
-            'capacity' => 1,
-            'is_active' => false, // Inactive
-        ]);
-
-        $this->serviceA->resources()->attach($resource->id);
-
-        $this->assertFalse($this->serviceA->fresh()->hasActiveFulfillment());
-
-        // Selecting this program must fail with an error
-        $response = $this->post('/studio-a/booking/select-program', [
-            'service_id' => $this->serviceA->id,
-        ]);
-
-        $response->assertSessionHasErrors(['service']);
-
-        // Now activate the resource
-        $resource->update(['is_active' => true]);
-        $this->assertTrue($this->serviceA->fresh()->hasActiveFulfillment());
-
-        // Now selecting this program succeeds
-        $response2 = $this->post('/studio-a/booking/select-program', [
-            'service_id' => $this->serviceA->id,
-        ]);
-        $response2->assertRedirect('/studio-a/booking/schedule');
     }
 
     /**

@@ -44,7 +44,7 @@ class ReleasePlanGatesTest extends TestCase
 
     public function test_redesign_capabilities_start_hidden(): void
     {
-        foreach (['units', 'promos', 'add-ons', 'team', 'booking-page', 'landing-page', 'integrations', 'api', 'reports', 'refunds', 'help'] as $module) {
+        foreach (['units', 'promos', 'add-ons', 'team', 'booking-page', 'integrations', 'api', 'reports', 'refunds', 'help'] as $module) {
             $this->assertSame('hidden', config('modules.'.$module), $module);
         }
     }

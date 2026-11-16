@@ -89,7 +89,7 @@ class AppServiceProvider extends ServiceProvider
                 || NotificationPreferences::allowsMail($event->notifiable, $event->notification);
         });
         Gate::define('tenant-ability', fn (User $user, ?string $ability) => app(TenantResourcePolicy::class)->ability($user, $ability));
-        foreach ([Booking::class, Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class, Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class, Staff::class, \App\Models\Resource::class, Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class, TenantMember::class, Unit::class] as $resource) {
+        foreach ([Booking::class, Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class, Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class, Staff::class, Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class, TenantMember::class, Unit::class] as $resource) {
             Gate::policy($resource, 'App\\Policies\\'.class_basename($resource).'Policy');
         }
 
@@ -112,7 +112,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         foreach ([Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class,
-            Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class, \App\Models\Resource::class,
+            Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class,
             Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class] as $record) {
             foreach (['created', 'updated', 'deleted'] as $event) {
                 Event::listen("eloquent.{$event}: {$record}", fn ($model) => app(TenantActor::class)->record($model, $event));

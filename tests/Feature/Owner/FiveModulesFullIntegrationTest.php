@@ -7,7 +7,6 @@ use App\Models\Booking;
 use App\Models\Category;
 use App\Models\Payment;
 use App\Models\Plan;
-use App\Models\Resource;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Subscription;
@@ -335,38 +334,6 @@ class FiveModulesFullIntegrationTest extends TestCase
     // =========================================================================
     // 4. STAFF & RESOURCES MODULE TESTS
     // =========================================================================
-
-    public function test_resource_crud_and_pivot_relationship(): void
-    {
-        // Staged module under test is released explicitly (ADR-0011)
-        config(['modules.staff-resources' => 'released']);
-
-        $this->actingAs($this->owner);
-        session(['current_tenant_id' => $this->tenant->id]);
-        app(TenantContext::class)->setTenantId($this->tenant->id);
-
-        // Create Resource
-        $resResource = $this->post(route('owner.resources.store'), [
-            'name' => 'Kursi Barber Hidrolik #1',
-            'type' => 'Barber Chair',
-            'capacity' => 1,
-            'service_ids' => [$this->service->id],
-        ]);
-        $resResource->assertRedirect();
-
-        $this->assertDatabaseHas('resources', [
-            'idtenant' => $this->tenant->id,
-            'name' => 'Kursi Barber Hidrolik #1',
-        ]);
-
-        $resource = Resource::withoutGlobalScopes()->where('name', 'Kursi Barber Hidrolik #1')->first();
-        $this->assertNotNull($resource);
-        $this->assertDatabaseHas('service_resource', [
-            'idresource' => $resource->id,
-            'idservice' => $this->service->id,
-        ]);
-
-    }
 
     // =========================================================================
     // 5. ADDITIONAL ITEMS & PUBLIC CHECKOUT INTEGRATION TESTS

@@ -6,7 +6,6 @@ use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\AdditionalItem;
 use App\Models\Booking;
 use App\Models\Category;
-use App\Models\Resource;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Staff;
@@ -136,7 +135,7 @@ class ServicesDomainEndToEndTest extends TestCase
     }
 
     /**
-     * Test Service CRUD with Category, Staff, Resource, and Additional Item assignment.
+     * Test Service CRUD with Category, Staff and Additional Item assignment.
      */
     public function test_service_crud_with_bidirectional_relationships(): void
     {
@@ -150,14 +149,6 @@ class ServicesDomainEndToEndTest extends TestCase
             'idtenant' => $this->tenantA->id,
             'name' => 'Maya Pratama',
             'role' => 'Lead Practitioner',
-            'is_active' => true,
-        ]);
-
-        $resource = Resource::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Studio Lotus',
-            'type' => 'Private Studio',
-            'capacity' => 4,
             'is_active' => true,
         ]);
 
@@ -176,7 +167,6 @@ class ServicesDomainEndToEndTest extends TestCase
             'idcategory' => $cat->id,
             'deskripsi' => 'Deep vibrational relaxation session',
             'staff_ids' => [$staff->id],
-            'resource_ids' => [$resource->id],
             'additional_item_ids' => [$addon->id],
         ]);
         $res->assertRedirect(route('owner.programs'));
@@ -189,10 +179,6 @@ class ServicesDomainEndToEndTest extends TestCase
             'idservice' => $service->id,
             'idstaff' => $staff->id,
         ]);
-        $this->assertDatabaseHas('service_resource', [
-            'idservice' => $service->id,
-            'idresource' => $resource->id,
-        ]);
         $this->assertDatabaseHas('additional_item_service', [
             'idservice' => $service->id,
             'idadditional_item' => $addon->id,
@@ -202,8 +188,6 @@ class ServicesDomainEndToEndTest extends TestCase
         app(TenantContext::class)->setTenantId($this->tenantA->id);
         $serviceModel = Service::find($service->id);
         $this->assertEquals($cat->name, $serviceModel->category->name);
-        $this->assertEquals(1, $serviceModel->resources->count());
-        $this->assertEquals('Studio Lotus', $serviceModel->resources->first()->name);
         $this->assertEquals(1, $serviceModel->additionalItems->count());
         $this->assertEquals('Essential Oil Aromatherapy', $serviceModel->additionalItems->first()->name);
         app(TenantContext::class)->clear();
@@ -216,17 +200,12 @@ class ServicesDomainEndToEndTest extends TestCase
             'idcategory' => $cat->id,
             'is_active' => 1,
             'staff_ids' => [$staff->id],
-            'resource_ids' => [], // Unassign resource
             'additional_item_ids' => [$addon->id],
         ]);
 
         $this->assertDatabaseHas('services', [
             'id' => $service->id,
             'durasi' => 90,
-        ]);
-        $this->assertDatabaseMissing('service_resource', [
-            'idservice' => $service->id,
-            'idresource' => $resource->id,
         ]);
 
         // 3. Delete Service - asserts pivot records are detached
@@ -323,7 +302,7 @@ class ServicesDomainEndToEndTest extends TestCase
 
     /**
      * Test Full End-to-End Pipeline:
-     * Category -> Service -> Staff & Resource -> Additional Item -> Schedule -> Customer Booking
+     * Category -> Service -> Additional Item -> Schedule -> Customer Booking
      */
     public function test_full_pipeline_from_owner_catalog_to_customer_booking(): void
     {
@@ -343,15 +322,6 @@ class ServicesDomainEndToEndTest extends TestCase
             'idcategory' => $cat->id,
             'is_active' => true,
         ]);
-
-        // 3. Owner creates & assigns a resource
-        $resource = Resource::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Reflexology Pod 1',
-            'type' => 'Pod',
-            'is_active' => true,
-        ]);
-        $service->resources()->attach($resource->id);
 
         // 4. Owner creates & assigns Additional Item
         $addon = AdditionalItem::create([

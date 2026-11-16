@@ -28,7 +28,7 @@
         service: {},
         category: {},
         blankService() {
-            return { id: null, namalayanan: '', idcategory: '', harga: '', satuan_harga: 'sesi', durasi: 60, satuan_durasi: 'menit', deskripsi: '', is_popular: false, is_active: true, imageUrl: null, remove_image: false, resource_ids: [], kapasitas: 1, unit_ids: [], image_asset_id: '' };
+            return { id: null, namalayanan: '', idcategory: '', harga: '', satuan_harga: 'sesi', durasi: 60, satuan_durasi: 'menit', deskripsi: '', is_popular: false, is_active: true, imageUrl: null, remove_image: false, kapasitas: 1, unit_ids: [], image_asset_id: '' };
         },
         blankCategory() {
             return { id: null, name: '', description: '', color: 'purple', sort_order: 0, is_active: true, imageUrl: null, remove_image: false };
@@ -58,7 +58,6 @@
                         satuan_durasi: old.satuan_durasi || 'menit', deskripsi: old.deskripsi || '',
                         is_popular: toBool(old.is_popular), is_active: toBool(old.is_active),
                         kapasitas: old.kapasitas ?? 1, unit_ids: Array.isArray(old.unit_ids) ? old.unit_ids : [],
-                        resource_ids: Array.isArray(old.resource_ids) ? old.resource_ids : [],
                     }, null);
                 } else if (old.form_context === 'category') {
                     this.openCategory({
@@ -187,7 +186,6 @@
                                     'is_popular' => $card['isPopular'], 'is_active' => $card['isActive'], 'imageUrl' => $card['imageUrl'],
                                     'image_asset_id' => $card['imageAssetId'] !== null ? (string) $card['imageAssetId'] : '',
                                     'kapasitas' => $card['capacity'], 'unit_ids' => $card['unitIds'],
-                                    'resource_ids' => $card['resourceIds'],
                                 ]), $el)">Ubah</button>
 
                                 <form method="POST" x-bind:action="url(@js($serviceToggleUrl), @js($card['id']))">
@@ -232,9 +230,6 @@
                 <input type="hidden" name="form_context" value="service">
                 <input type="hidden" name="editing_id" x-bind:value="service.id || ''">
                 {{-- Unit links are managed on the Unit page; send the current ones back unchanged (BQ-045). --}}
-                <template x-for="resourceId in service.resource_ids" x-bind:key="resourceId">
-                    <input type="hidden" name="resource_ids[]" x-bind:value="resourceId">
-                </template>
 
                 <p class="text-sm font-semibold text-bq-text" x-text="service.id ? 'Ubah layanan' : 'Tambah layanan'"></p>
 
