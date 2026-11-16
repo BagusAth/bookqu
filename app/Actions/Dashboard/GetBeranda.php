@@ -95,18 +95,19 @@ class GetBeranda
         $today = Carbon::today();
         $now = Carbon::now();
 
-        $todayBookings = Booking::where('idtenant', $tenant->id)
-            ->with(['layanan:id,namalayanan', 'payment:id,status'])
+        $allToday = Booking::where('idtenant', $tenant->id)
+            ->with(['layanan:id,namalayanan', 'payment', 'schedule'])
             ->whereDate('tanggalbooking', $today)
-            ->where('status', '!=', BookingState::STATUS_CANCELLED)
             ->orderBy('jam')
             ->get();
+        $todayBookings = $allToday->where('status', '!=', BookingState::STATUS_CANCELLED);
+        $paymentGroups = $allToday->whereNotNull('idpayment')->groupBy('idpayment');
         $ranges = $todayBookings->isEmpty() ? [] : $this->getBookingTimeRanges->execute($todayBookings)['sessionRanges'];
 
         return [
             'figures' => $this->figures($tenant, $todayBookings->count(), $canViewRevenue),
             'actions' => $this->actions($tenant, $user, $role, $todayBookings, $ranges, $now),
-            'today' => $this->todayRows($todayBookings, $ranges, $role, $now),
+            'today' => $this->todayRows($todayBookings, $ranges, $paymentGroups, $role, $now),
             'tomorrow' => $this->tomorrow($tenant),
             'next' => $todayBookings->isEmpty() ? $this->nextBooking($tenant) : null,
         ];
@@ -269,6 +270,7 @@ class GetBeranda
      *
      * @param  Collection<int, Booking>  $todayBookings
      * @param  array<int, BookingTimeRange>  $ranges
+     * @param  Collection<int, Collection<int, Booking>>  $paymentGroups
      * @return list<array<string, mixed>>
      */
     private function actions(Tenant $tenant, User $user, string $role, Collection $todayBookings, array $ranges, Carbon $now): array
@@ -312,15 +314,20 @@ class GetBeranda
      * @param  array<int, BookingTimeRange>  $ranges
      * @return list<array<string, mixed>>
      */
-    private function todayRows(Collection $bookings, array $ranges, string $role, Carbon $now): array
+    private function todayRows(Collection $bookings, array $ranges, Collection $paymentGroups, string $role, Carbon $now): array
     {
         $canComplete = TenantPermission::allowsRole($role, 'bookings.complete');
+        $canNoShow = TenantPermission::allowsRole($role, 'bookings.no_show');
 
-        return $bookings->map(function (Booking $booking) use ($ranges, $now, $canComplete): array {
+        return $bookings->map(function (Booking $booking) use ($ranges, $now, $canComplete, $canNoShow, $paymentGroups): array {
             $range = $ranges[(int) $booking->id] ?? null;
             $start = $range?->startTime() ?? substr((string) $booking->jam, 0, 5);
             $end = $range?->endTime();
-            $ended = $this->hasEnded($range, $now);
+            $payment = $booking->payment;
+            $hasActions = $booking->status === BookingState::STATUS_PAID
+                && ($booking->idpayment === null || $payment instanceof Payment && BookingRules::onlinePaymentHoldEnd($booking, $payment) === null);
+            $group = $paymentGroups->get($booking->idpayment, collect([$booking]));
+            $statusUrl = route('owner.bookings.status', $booking->id);
 
             return [
                 'id' => (int) $booking->id,
@@ -337,8 +344,11 @@ class GetBeranda
                     && in_array($booking->status, [BookingState::STATUS_PAID, BookingState::STATUS_PENDING], true),
                 'panel_url' => Route::has('owner.bookings.panel') ? route('owner.bookings.panel', $booking->id) : null,
                 'href' => route('owner.bookings', ['katakunci' => $booking->booking_code ?: $booking->id]),
-                'complete_url' => $canComplete && $booking->status === BookingState::STATUS_PAID && $ended
-                    ? route('owner.bookings.status', $booking->id) : null,
+                'complete_url' => $hasActions && $canComplete && $range !== null && BookingRules::sessionHasStarted($range, $now)
+                    ? $statusUrl : null,
+                'no_show_url' => $hasActions && $canNoShow
+                    && $group->every(fn (Booking $row): bool => BookingState::canTransition($row->status, BookingState::STATUS_NO_SHOW))
+                    && BookingRules::sessionHasEnded($group->values()->all(), $now) ? $statusUrl : null,
             ];
         })->values()->all();
     }

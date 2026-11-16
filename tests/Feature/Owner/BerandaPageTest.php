@@ -328,6 +328,35 @@ class BerandaPageTest extends TestCase
             ->assertSee('Minggu Depan');
     }
 
+    public function test_dashboard_and_panel_offer_booking_outcomes_at_the_same_session_boundaries(): void
+    {
+        $this->finishGuide();
+        $booking = $this->booking('2026-11-20', '11:00:00', '11:59:00');
+        $panel = route('owner.bookings.panel', $booking);
+        $polling = route('owner.dashboard.polling');
+        $status = route('owner.bookings.status', $booking);
+
+        $this->actingAs($this->member('kasir'))->getJson($polling)->assertOk()
+            ->assertJsonPath('data.today.0.complete_url', null)->assertJsonPath('data.today.0.no_show_url', null);
+        $this->getJson($panel)->assertOk()->assertJsonMissing(['label' => 'Tandai selesai']);
+        $this->patch($status, ['status' => 'completed'])->assertSessionHasErrors('error');
+        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'paid']);
+
+        $this->travelTo(now()->setTime(11, 0));
+        $this->getJson($polling)->assertOk()
+            ->assertJsonPath('data.today.0.complete_url', $status)->assertJsonPath('data.today.0.no_show_url', null);
+        $this->getJson($panel)->assertOk()
+            ->assertJsonFragment(['label' => 'Tandai selesai'])
+            ->assertJsonMissing(['label' => 'Tidak datang'])
+            ->assertJsonMissing(['label' => 'Batalkan booking']);
+
+        $this->travelTo(now()->setTime(12, 0));
+        $this->getJson($polling)->assertOk()
+            ->assertJsonPath('data.today.0.complete_url', $status)->assertJsonPath('data.today.0.no_show_url', $status);
+        $this->getJson($panel)->assertOk()->assertJsonFragment(['label' => 'Tidak datang']);
+        $this->patch($status, ['status' => 'no_show'])->assertSessionHas('sukses');
+    }
+
     public function test_the_link_card_and_quick_actions_follow_role_and_plan(): void
     {
         $this->finishGuide();

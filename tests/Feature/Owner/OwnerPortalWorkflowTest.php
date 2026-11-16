@@ -54,7 +54,8 @@ class OwnerPortalWorkflowTest extends TestCase
         BookingLog::record($booking->id, 'paid', 'Pembayaran tercatat.');
 
         $this->actingAs($tenant->user)->get(route('owner.bookings', ['tab' => 'action', 'katakunci' => 'panel@example.test']))
-            ->assertOk()->assertSeeText('Perlu tindakan (1)')->assertSeeText('Rp 75.001')->assertDontSeeText('999.000');
+            ->assertOk()->assertSeeText('Perlu tindakan (1)')->assertSeeText('Rp 75.001')->assertDontSeeText('999.000')
+            ->assertSeeText('Permintaan refund menunggu keputusan');
         $panel = route('owner.bookings.panel', $booking->id);
         $response = $this->getJson($panel)->assertOk()
             ->assertJsonPath('payment.amount', 'Rp 75.001')
@@ -65,6 +66,7 @@ class OwnerPortalWorkflowTest extends TestCase
         $this->assertSame('Pelanggan mendapat refund penuh Rp 75.001.', $actions['Batalkan booking']['confirm']['message']);
         $this->assertSame('accepted_half', $actions['Terima 50%']['fields']['decision']);
         $this->assertSame(route('owner.refunds.decide', $refund->id), $actions['Terima 50%']['url']);
+        $this->assertStringContainsString('Rp 37.500', $actions['Terima 50%']['confirm']['message']);
         $this->actingAs(Tenant::factory()->create()->user)->getJson($panel)->assertNotFound();
     }
 

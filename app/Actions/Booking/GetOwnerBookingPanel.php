@@ -4,6 +4,7 @@ namespace App\Actions\Booking;
 
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
+use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Customer\CustomerIdentity;
 use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
@@ -20,7 +21,6 @@ use App\Models\TenantMember;
 use App\Models\User;
 use App\Support\StatusBadge;
 use Carbon\Carbon;
-use Carbon\CarbonImmutable;
 
 final class GetOwnerBookingPanel
 {
@@ -77,7 +77,14 @@ final class GetOwnerBookingPanel
             'note' => $booking->catatan,
             'walkin_method' => $walkIn ? $payment->metode : null,
             'history' => $this->history($family->flatMap(fn (Booking $row) => $row->logs)->filter(fn ($log) => $log instanceof BookingLog)->values()->all(), $tenant),
-            'actions' => $this->actions($booking, $payment, $request, $member, $timeRanges[$booking->id]->start, $family),
+            'actions' => $this->actions($booking, $payment, $request, $member, $timeRanges[$booking->id], $family),
+            'action_hint' => match (true) {
+                $payment !== null && BookingRules::onlinePaymentHoldEnd($booking, $payment) !== null => 'Tindakan tersedia setelah pembayaran selesai.',
+                $family->count() > 1 && $booking->status === BookingState::STATUS_PAID
+                    && $timeRanges[$booking->id]->start->isFuture()
+                    && TenantPermission::allowsRole($member->role, 'bookings.reschedule') => 'Booking beberapa slot tidak dapat dipindah jadwal.',
+                default => null,
+            },
         ];
     }
 
@@ -85,7 +92,7 @@ final class GetOwnerBookingPanel
      * @param  iterable<Booking>  $family
      * @return list<array<string, mixed>>
      */
-    private function actions(Booking $booking, ?Payment $payment, ?RefundRequest $request, TenantMember $member, CarbonImmutable $start, iterable $family): array
+    private function actions(Booking $booking, ?Payment $payment, ?RefundRequest $request, TenantMember $member, BookingTimeRange $range, iterable $family): array
     {
         if ($booking->idpayment && $payment === null || $payment && BookingRules::onlinePaymentHoldEnd($booking, $payment) !== null) {
             return [];
@@ -96,7 +103,7 @@ final class GetOwnerBookingPanel
         $service = $booking->layanan;
         $actions = [];
         if ($allowed('bookings.reschedule') && $booking->status === BookingState::STATUS_PAID
-            && $start->isFuture() && count(collect($family)) === 1 && $service instanceof Service) {
+            && $range->start->isFuture() && count(collect($family)) === 1 && $service instanceof Service) {
             $actions[] = [
                 'label' => 'Pindah jadwal',
                 'reschedule' => [
@@ -107,9 +114,12 @@ final class GetOwnerBookingPanel
                 ],
             ];
         }
-        if ($allowed('bookings.complete') && $booking->status === BookingState::STATUS_PAID && $start->isPast()
+        if ($allowed('bookings.complete') && $booking->status === BookingState::STATUS_PAID && BookingRules::sessionHasStarted($range)
             && BookingState::canTransition($booking->status, BookingState::STATUS_COMPLETED)) {
-            $actions[] = ['label' => 'Tandai selesai', 'url' => $statusUrl, 'method' => 'PATCH', 'fields' => ['status' => 'completed']];
+            $actions[] = [
+                'label' => 'Tandai selesai', 'url' => $statusUrl, 'method' => 'PATCH', 'fields' => ['status' => 'completed'],
+                'confirm' => ['title' => 'Tandai booking selesai?', 'message' => 'Pastikan sesi pelanggan sudah selesai.'],
+            ];
         }
 
         if ($allowed('bookings.no_show') && $booking->status === BookingState::STATUS_PAID
@@ -118,6 +128,7 @@ final class GetOwnerBookingPanel
             $actions[] = [
                 'label' => 'Tidak datang', 'url' => $statusUrl, 'method' => 'PATCH',
                 'fields' => ['status' => BookingState::STATUS_NO_SHOW],
+                'confirm' => ['title' => 'Tandai tidak datang?', 'message' => 'Pastikan pelanggan tidak datang pada sesi ini.'],
             ];
         }
 
@@ -140,11 +151,14 @@ final class GetOwnerBookingPanel
 
         if ($request?->status === RefundRequestState::Open && $allowed('refunds.decide')) {
             foreach (['accepted_full' => 'Terima 100%', 'accepted_half' => 'Terima 50%', 'rejected' => 'Tolak refund'] as $decision => $label) {
+                $refundAmount = RefundRequestState::from($decision)->amount((float) $payment?->jumlah);
                 $actions[] = [
                     'label' => $label, 'url' => route('owner.refunds.decide', $request->id), 'method' => 'PATCH',
                     'fields' => ['decision' => $decision],
                     'reason' => $decision === 'rejected' ? ['name' => 'reason', 'label' => 'Alasan penolakan'] : null,
-                    'confirm' => ['title' => $label.'?', 'message' => $decision === 'rejected' ? 'Booking tetap berlaku.' : 'Booking dibatalkan dan refund diproses oleh admin.'],
+                    'confirm' => ['title' => $label.'?', 'message' => $refundAmount === null
+                        ? 'Booking tetap berlaku.'
+                        : 'Booking dibatalkan. Admin akan memproses refund '.self::rupiah($refundAmount).'.'],
                 ];
             }
         }

@@ -26,6 +26,7 @@ class UpdateBookingStatus
         protected CancelBooking $cancelBooking,
         protected PaymentLifecycle $paymentLifecycle,
         protected MarkBookingNoShow $markBookingNoShow,
+        protected GetBookingTimeRanges $ranges,
     ) {}
 
     /**
@@ -71,6 +72,11 @@ class UpdateBookingStatus
                 && ($booking->status === BookingState::STATUS_PENDING || $payment->status !== PaymentState::STATUS_SUKSES)) {
                 return ['success' => false, 'error' => 'Pembayaran online tidak dapat dicatat lunas secara manual.'];
             }
+        }
+
+        if ($newStatus === BookingState::STATUS_COMPLETED && $booking->status !== BookingState::STATUS_COMPLETED
+            && ! BookingRules::sessionHasStarted($this->ranges->execute([$booking])['timeRange'])) {
+            return ['success' => false, 'error' => 'Booking baru bisa ditandai selesai setelah sesinya dimulai.'];
         }
 
         // Marking paid or completed records an open payment as settled by the owner for the

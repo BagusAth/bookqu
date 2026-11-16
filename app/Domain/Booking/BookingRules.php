@@ -291,6 +291,11 @@ class BookingRules
         return self::slotHitsBusyUnit($busy, (int) $schedule->id, $date, (string) $schedule->jam_mulai, (string) $schedule->jam_selesai);
     }
 
+    public static function sessionHasStarted(BookingTimeRange $range, ?Carbon $now = null): bool
+    {
+        return $range->start->lte($now ?? Carbon::now('Asia/Jakarta'));
+    }
+
     /**
      * Whether the session of a booking group has ended, the time condition of `no_show`
      * (ADR-0018 decision 3). A group without a known end has not ended.
