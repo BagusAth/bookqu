@@ -2,7 +2,7 @@
 id: BQ-135
 title: Booking page with task tabs and the shared booking panel actions
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: booking
@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-131, BQ-087, BQ-121]
 
 # BQ-135: Booking page with task tabs and the shared booking panel actions
 
-Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -54,3 +54,5 @@ INV-BOOK-01/02; INV-PAY-*: amounts from payments.
 2026-11-13: Booking now uses task tabs, search and filters, responsive rows, gated formula-safe CSV, and the BQ-129 shared panel also opened from Calendar. Payment amounts, actor history, and action inputs are prepared on the server. OwnerPortalWorkflowTest and the shared cancellation regression cover the new read/action contract. Remaining: no-show (BQ-153), reschedule price difference (BQ-140), unit/participant fields where the model does not yet supply them, and owner resend and notification entry points.
 
 2026-11-16: Panel booking menampilkan peserta, unit yang dipakai layanan, no-show dan selisih reschedule. Pengiriman ulang menggunakan ADR-0006 melalui antrean dan alamat pelanggan tercatat. Sisa: entry point notifikasi untuk panel.
+
+2026-11-16: Notif booking menandai notifikasi dibaca dan membuka panel bersama di halaman Booking. Target booking diperiksa dalam tenant aktif. Evidence: PaketNotifikasiBantuanTest.

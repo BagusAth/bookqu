@@ -3,7 +3,11 @@
 @section('title', 'Booking')
 
 @section('content')
-<div class="mx-auto max-w-7xl space-y-5" x-data>
+<div class="mx-auto max-w-7xl space-y-5" x-data
+    @if ($initialPanelUrl)
+        x-init="$nextTick(() => $dispatch('open-booking-panel', { url: @js($initialPanelUrl) }))"
+    @endif
+>
     <x-owner.page-header title="Booking" purpose="Temukan booking dan tangani permintaan pelanggan.">
         @if ($canWalkIn)
             <x-slot:action>

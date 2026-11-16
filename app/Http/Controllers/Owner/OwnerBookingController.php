@@ -94,9 +94,14 @@ class OwnerBookingController extends Controller
             default => 'Tidak ada booking yang cocok',
         };
 
+        $panelId = $request->integer('panel');
+        $initialPanelUrl = $panelId > 0 && Booking::whereKey($panelId)->exists()
+            ? route('owner.bookings.panel', $panelId)
+            : null;
+
         return view('owner.bookings', compact(
             'tenant', 'daftarbooking', 'filters', 'tab', 'tabs', 'rows', 'services', 'canWalkIn',
-            'cancellationRequests', 'exportUrl', 'storefrontUrl', 'emptyTitle', 'canViewRevenue',
+            'cancellationRequests', 'exportUrl', 'storefrontUrl', 'emptyTitle', 'canViewRevenue', 'initialPanelUrl',
         ));
     }
 

@@ -6,6 +6,7 @@ namespace App\Actions\Unit;
 
 use App\Actions\Schedule\ClaimSlots;
 use App\Domain\Booking\BookingRules;
+use App\Models\Asset;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\Unit;
@@ -21,7 +22,7 @@ use Illuminate\Validation\ValidationException;
 class SaveUnit
 {
     /**
-     * @param  array{name: string, type: string, kapasitas: int, lokasi?: ?string, image_path?: ?string, is_active?: bool, service_ids?: list<int>}  $data
+     * @param  array{name: string, type: string, kapasitas: int, lokasi?: ?string, image_asset_id?: int|null, is_active?: bool, service_ids?: list<int>}  $data
      *
      * @throws ValidationException
      */
@@ -40,12 +41,19 @@ class SaveUnit
             self::refuseNewConflicts($tenant, $before, $active ? $serviceIds : []);
 
             $unit ??= new Unit(['idtenant' => $tenant->id]);
+            if (array_key_exists('image_asset_id', $data)) {
+                $id = $data['image_asset_id'];
+                $asset = $id === null ? null : Asset::where('idtenant', $tenant->id)->find($id);
+                if ($id !== null && $asset === null) {
+                    throw ValidationException::withMessages(['image_asset_id' => 'Pilih gambar dari galeri bisnis Anda.']);
+                }
+                $unit->image_path = $asset?->file_path;
+            }
             $unit->fill([
                 'name' => $data['name'],
                 'type' => $data['type'],
                 'kapasitas' => $data['kapasitas'],
                 'lokasi' => $data['lokasi'] ?? null,
-                'image_path' => $data['image_path'] ?? $unit->image_path,
                 'is_active' => $active,
             ])->save();
             $unit->services()->sync($serviceIds);

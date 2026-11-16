@@ -5,6 +5,9 @@
 @section('content')
 <div class="mx-auto max-w-7xl space-y-5">
     <x-owner.page-header title="Unit" purpose="Kelola ruang, lapangan, atau peralatan yang dipakai bersama." />
+    @if ($galleryUrl)
+        <a class="inline-block text-sm text-bq-primary underline" href="{{ $galleryUrl }}">Unggah gambar ke galeri</a>
+    @endif
     <details class="rounded-xl border border-bq-border bg-bq-surface p-4" @if ($errors->any()) open @endif>
         <summary class="cursor-pointer font-semibold">Tambah unit</summary>
         @include('owner.partials.unit-form', ['unit' => null])
@@ -17,6 +20,9 @@
                 <span class="ms-2 text-sm text-bq-text-muted">{{ $unit['type'] }} · {{ $unit['kapasitas'] }} orang</span>
                 <x-owner.status-badge type="availability" :status="$unit['is_active'] ? 'active' : 'inactive'" />
             </summary>
+            @if ($unit['image_url'])
+                <img src="{{ $unit['image_url'] }}" alt="" class="mt-3 h-24 w-24 rounded-lg object-cover" loading="lazy">
+            @endif
             @include('owner.partials.unit-form', ['unit' => $unit])
             <form method="POST" action="{{ route('owner.units.destroy', $unit['id']) }}" class="mt-4">
                 @csrf

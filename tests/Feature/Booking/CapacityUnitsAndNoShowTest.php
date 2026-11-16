@@ -10,6 +10,7 @@ use App\Actions\Booking\RescheduleBooking;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Actions\Subscription\CreateTrialSubscription;
 use App\Domain\Booking\BookingSeats;
+use App\Models\Asset;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -312,6 +313,24 @@ class CapacityUnitsAndNoShowTest extends TestCase
 
         $other = Unit::factory()->create();
         $this->actingAs($this->owner)->put(route('owner.units.update', $other), ['name' => 'X', 'type' => 'Y', 'kapasitas' => 1])->assertNotFound();
+    }
+
+    public function test_unit_image_must_be_from_the_business_gallery(): void
+    {
+        $this->asPro();
+        $unit = $this->shareUnit($this->service());
+        $foreignTenant = Tenant::factory()->create();
+        $image = Asset::create(['idtenant' => $this->tenant->id, 'title' => 'Foto lapangan', 'file_path' => 'media/lapangan.png']);
+        $foreign = Asset::create(['idtenant' => $foreignTenant->id, 'title' => 'Foto asing', 'file_path' => 'media/asing.png']);
+        $form = ['name' => $unit->name, 'type' => $unit->type, 'kapasitas' => $unit->kapasitas];
+        $url = route('owner.units.update', $unit);
+
+        $this->actingAs($this->owner)->put($url, $form + ['image_asset_id' => $image->id])
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('units', ['id' => $unit->id, 'image_path' => 'media/lapangan.png']);
+        $this->get(route('owner.units'))->assertOk()->assertSee('Foto lapangan')->assertDontSee('Foto asing');
+        $this->put($url, $form + ['image_asset_id' => $foreign->id])->assertSessionHasErrors('image_asset_id');
+        $this->assertDatabaseHas('units', ['id' => $unit->id, 'image_path' => 'media/lapangan.png']);
     }
 
     public function test_unit_routes_are_refused_below_pro(): void

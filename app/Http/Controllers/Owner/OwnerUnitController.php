@@ -29,7 +29,7 @@ class OwnerUnitController extends Controller
     {
         $data = $action->execute($this->tenant());
 
-        return $request->expectsJson() ? response()->json($data) : view('owner.units', $data);
+        return $request->expectsJson() ? response()->json(['units' => $data['units'], 'conflicts' => $data['conflicts']]) : view('owner.units', $data);
     }
 
     public function store(SaveUnitRequest $request, SaveUnit $action): RedirectResponse
