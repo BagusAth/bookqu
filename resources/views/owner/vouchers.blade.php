@@ -126,9 +126,9 @@
                             <span class="text-bq-text-muted">Masa Berlaku:</span>
                             <span class="font-medium text-bq-text-subtle font-mono text-[11px]">
                                 @if($v->start_date && $v->end_date)
-                                    {{ \Carbon\Carbon::parse($v->start_date)->format('d M') }} - {{ \Carbon\Carbon::parse($v->end_date)->format('d M Y') }}
+                                    {{ \Carbon\Carbon::parse($v->start_date)->translatedFormat('j M') }} - {{ \Carbon\Carbon::parse($v->end_date)->translatedFormat('j M Y') }}
                                 @elseif($v->end_date)
-                                    s/d {{ \Carbon\Carbon::parse($v->end_date)->format('d M Y') }}
+                                    s/d {{ \Carbon\Carbon::parse($v->end_date)->translatedFormat('j M Y') }}
                                 @else
                                     Selamanya
                                 @endif

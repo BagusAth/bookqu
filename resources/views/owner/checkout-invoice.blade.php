@@ -78,7 +78,7 @@
                         </div>
                         <div class="sm:text-right">
                             <p class="text-xs font-medium text-bq-text-muted uppercase tracking-wider mb-1">Tanggal Pembayaran</p>
-                            <p class="text-sm font-semibold text-bq-text">{{ $payment->updated_at->format('d M Y') }}</p>
+                            <p class="text-sm font-semibold text-bq-text">{{ $payment->updated_at->translatedFormat('j M Y') }}</p>
                             <p class="text-xs text-bq-text-muted">{{ $payment->updated_at->format('H:i') }} WIB</p>
                         </div>
                     </div>
@@ -127,12 +127,12 @@
                             <div class="flex items-center gap-3">
                                 <div class="text-center">
                                     <p class="text-xs text-bq-text-muted">Mulai</p>
-                                    <p class="text-sm font-bold text-bq-text">{{ $subscription->langganan_mulai->format('d M Y') }}</p>
+                                    <p class="text-sm font-bold text-bq-text">{{ $subscription->langganan_mulai->translatedFormat('j M Y') }}</p>
                                 </div>
                                 <div class="flex-1 border-t border-dashed border-bq-primary/30"></div>
                                 <div class="text-center">
                                     <p class="text-xs text-bq-text-muted">Berakhir</p>
-                                    <p class="text-sm font-bold text-bq-text">{{ $subscription->langganan_berakhir->format('d M Y') }}</p>
+                                    <p class="text-sm font-bold text-bq-text">{{ $subscription->langganan_berakhir->translatedFormat('j M Y') }}</p>
                                 </div>
                             </div>
                         </div>

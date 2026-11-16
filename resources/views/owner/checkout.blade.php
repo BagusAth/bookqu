@@ -280,32 +280,7 @@
                 {{-- Plan Features List --}}
                 <div class="space-y-2">
                     <p class="text-xs font-semibold uppercase tracking-wider text-bq-text-subtle">Fitur Utama Paket</p>
-                    <ul class="space-y-2 text-xs text-bq-text">
-                        <li class="flex items-center gap-2">
-                            <div class="flex h-4 w-4 items-center justify-center rounded-full bg-bq-success-bg text-bq-success shrink-0">
-                                <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            </div>
-                            <span>{{ $plan->maxlayanan > 0 ? $plan->maxlayanan . ' layanan aktif' : 'Layanan tanpa batas' }}</span>
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <div class="flex h-4 w-4 items-center justify-center rounded-full bg-bq-success-bg text-bq-success shrink-0">
-                                <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            </div>
-                            <span>{{ ($plan->isunlimited || $plan->maxbooking == 0) ? 'Unlimited booking/bulan' : 'Hingga ' . number_format($plan->maxbooking, 0, ',', '.') . ' booking / bulan' }}</span>
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <div class="flex h-4 w-4 items-center justify-center rounded-full bg-bq-success-bg text-bq-success shrink-0">
-                                <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            </div>
-                            <span>{{ $tierName === 'pro' ? 'Unlimited staf & operator' : ($tierName === 'medium' ? 'Hingga 15 akun staf' : '1 admin + 2 staf') }}</span>
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <div class="flex h-4 w-4 items-center justify-center rounded-full bg-bq-success-bg text-bq-success shrink-0">
-                                <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            </div>
-                            <span>{{ $tierName === 'pro' ? 'Multi-cabang & custom domain' : ($tierName === 'medium' ? 'Laporan analytics & fitur CRM' : 'Online booking & e-invoice') }}</span>
-                        </li>
-                    </ul>
+                    <x-plan-features :plan="$plan" class="text-xs text-bq-text" />
                 </div>
 
                 {{-- Subscription Period --}}
@@ -317,10 +292,14 @@
                     </div>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold uppercase tracking-wider text-bq-text-subtle">Masa Aktif Langganan</p>
-                        <p class="text-xs font-bold text-bq-text">
-                            1 Bulan ({{ now()->format('d M Y') }} — {{ now()->addMonth()->format('d M Y') }})
+                        <p class="text-xs font-bold text-bq-text" data-checkout-period>
+                            1 Bulan ({{ $periodStart->translatedFormat('j M Y') }} – {{ $periodEnd->translatedFormat('j M Y') }})
                         </p>
-                        <p class="text-[11px] text-bq-text-subtle">Berlaku selama 1 bulan kalender penuh</p>
+                        <p class="text-[11px] text-bq-text-subtle">
+                            {{ $extendsCurrentPeriod
+                                ? 'Perpanjangan disambung dari tanggal berakhir paket Anda sekarang.'
+                                : 'Mulai berlaku saat pembayaran berhasil.' }}
+                        </p>
                     </div>
                 </div>
 

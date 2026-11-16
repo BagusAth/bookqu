@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Owner;
 use App\Actions\Payment\CreateSubscriptionPayment;
 use App\Actions\Payment\OutcomeIntakeResult;
 use App\Actions\Payment\PaymentOutcomeIntake;
+use App\Domain\Subscription\SubscriptionState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscription\ProcessSubscriptionCheckoutRequest;
 use App\Models\Payment;
@@ -43,9 +44,16 @@ class OwnerCheckoutController extends Controller
             ->where('expired_at', '>', now())
             ->first();
 
+        $current = Subscription::where('idtenant', $tenant->id)->latest('id')->first();
+        $paidAt = now();
+        $periodEnd = SubscriptionState::paidPeriodEnd($current, (int) $plan->id, $paidAt);
+
         return view('owner.checkout', [
             'tenant' => $tenant,
             'storefrontUrl' => CustomerBookingRoutes::storefront($tenant),
+            'periodStart' => $periodEnd->copy()->subMonthNoOverflow(),
+            'periodEnd' => $periodEnd,
+            'extendsCurrentPeriod' => $periodEnd->copy()->subMonthNoOverflow()->greaterThan($paidAt),
             'plan' => $plan,
             'user' => $user,
             'existingPayment' => $existingPayment,

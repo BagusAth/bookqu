@@ -28,17 +28,13 @@ class ActivateSubscription
             }
             // scope-bypass: renewal reads only the verified payment tenant under its tenant-first lock.
             $current = Subscription::withoutGlobalScopes()->where('idtenant', $payment->idtenant)->latest('id')->lockForUpdate()->first();
-            $start = now();
-            if ($current && $current->status === SubscriptionState::STATUS_ACTIVE && (int) $current->idplan === (int) $payment->idplan
-                && $current->langganan_berakhir !== null && $current->langganan_berakhir->isFuture()) {
-                $start = $current->langganan_berakhir->copy();
-            }
+            $end = SubscriptionState::paidPeriodEnd($current, (int) $payment->idplan, now());
             // scope-bypass: only older periods of this verified payment tenant are superseded.
             Subscription::withoutGlobalScopes()->where('idtenant', $payment->idtenant)
                 ->whereIn('status', [SubscriptionState::STATUS_TRIAL, SubscriptionState::STATUS_ACTIVE])->update(['status' => SubscriptionState::STATUS_EXPIRED]);
 
             return Subscription::create(['idtenant' => $payment->idtenant, 'idplan' => $payment->idplan, 'source_payment_id' => $payment->id,
-                'status' => SubscriptionState::STATUS_ACTIVE, 'langganan_mulai' => now(), 'langganan_berakhir' => $start->addMonthNoOverflow()]);
+                'status' => SubscriptionState::STATUS_ACTIVE, 'langganan_mulai' => now(), 'langganan_berakhir' => $end]);
         });
     }
 }

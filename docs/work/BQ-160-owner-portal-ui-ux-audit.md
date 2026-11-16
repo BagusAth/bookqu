@@ -587,6 +587,19 @@ Pemilik with no server error. `php artisan test` crashed the PHP process mid-sui
 The implementing agent ran out of context before writing its report, so per-item skips were not recorded;
 the Tech Lead review checks each section against its items.
 
-Found, not fixed (for the Tech Lead review): promo validity dates use English month abbreviations
-("03 Oct – 01 Jan 2027"); the booking list still has a "Cari" button next to filters that UX-27 makes apply
-on change (check that it is only the search submit).
+Tech Lead audit (2026-11-16) after the bulk run: every severity-A item and almost every B/C/D item is in the
+code. New routes map to existing abilities in `TenantPermission`; manual webhooks are tenant-scoped, locked
+and throttled; no migration, no new dependency, no weakened test. Gaps found and fixed in the same PR:
+
+| Follow-up | Fixed | Tests |
+|---|---|---|
+| CI (MySQL, MariaDB) | `PaymentLifecycleLockingTest` completed a booking before its session started; it now travels to the session | `--group mysql` 19/19 |
+| UX-120 (was not done) | The renewal rule moved from `ActivateSubscription` into `SubscriptionState::paidPeriodEnd()` and is used by activation and checkout; checkout shows the real period and says whether it extends the current one (D-002) | Unit test for the rule; two checkout tests (renewal, plan change); MySQL subscription tests 63/63 |
+| Checkout plan text (new) | The hard-coded feature list ("Hingga 15 akun staf", "1 admin + 2 staf", "Multi-cabang", "fitur CRM", "e-invoice") contradicted D-017; checkout now renders `<x-plan-features>` from `config/plans.php`, like Paket & Tagihan | Checkout tests assert the shared text and the absence of the old claims |
+| UX-62 (was half done) | Duration stays in minutes and its label stays free text (contract §8.6); the service form previews what customers see and warns when the label is "jam" or "hari" | — |
+| Copy | Promo and invoice dates use Indonesian month names; "Unlimited booking/layanan" became "Booking/Layanan tanpa batas" | — |
+
+Full suite: 972 tests, 969 pass, 3 GD errors (local environment only; CI passes). PHPStan: no errors.
+
+Left as is: checkout badge colours are still chosen by plan name in the view (presentation only); the booking
+list "Cari" button submits the keyword search.

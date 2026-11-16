@@ -11,6 +11,19 @@ use Tests\TestCase;
 
 class SubscriptionStateTest extends TestCase
 {
+    public function test_paid_period_extends_only_a_running_period_of_the_same_plan(): void
+    {
+        $paidAt = Carbon::parse('2026-11-16 10:00:00');
+        $running = new Subscription(['status' => SubscriptionState::STATUS_ACTIVE, 'idplan' => 2, 'langganan_berakhir' => Carbon::parse('2026-11-26 10:00:00')]);
+        $ended = new Subscription(['status' => SubscriptionState::STATUS_ACTIVE, 'idplan' => 2, 'langganan_berakhir' => Carbon::parse('2026-11-10 10:00:00')]);
+
+        $this->assertSame('2026-12-26 10:00:00', SubscriptionState::paidPeriodEnd($running, 2, $paidAt)->toDateTimeString());
+        $this->assertSame('2026-12-16 10:00:00', SubscriptionState::paidPeriodEnd($running, 3, $paidAt)->toDateTimeString());
+        $this->assertSame('2026-12-16 10:00:00', SubscriptionState::paidPeriodEnd($ended, 2, $paidAt)->toDateTimeString());
+        $this->assertSame('2026-12-16 10:00:00', SubscriptionState::paidPeriodEnd(null, 2, $paidAt)->toDateTimeString());
+        $this->assertSame('2026-11-16 10:00:00', $paidAt->toDateTimeString(), 'The payment time is not changed.');
+    }
+
     public function test_null_subscription_is_expired_and_not_active(): void
     {
         $this->assertTrue(SubscriptionState::isExpired(null));
@@ -21,7 +34,7 @@ class SubscriptionStateTest extends TestCase
     public function test_active_trial_is_active_and_not_expired(): void
     {
         $sub = new Subscription([
-            'status'         => SubscriptionState::STATUS_TRIAL,
+            'status' => SubscriptionState::STATUS_TRIAL,
             'trial_berakhir' => Carbon::now()->addDays(5),
         ]);
 
@@ -33,7 +46,7 @@ class SubscriptionStateTest extends TestCase
     public function test_expired_trial_is_expired_and_not_active(): void
     {
         $sub = new Subscription([
-            'status'         => SubscriptionState::STATUS_TRIAL,
+            'status' => SubscriptionState::STATUS_TRIAL,
             'trial_berakhir' => Carbon::now()->subDay(),
         ]);
 
@@ -57,7 +70,7 @@ class SubscriptionStateTest extends TestCase
     public function test_active_paid_subscription_with_future_date_is_active(): void
     {
         $sub = new Subscription([
-            'status'             => SubscriptionState::STATUS_ACTIVE,
+            'status' => SubscriptionState::STATUS_ACTIVE,
             'langganan_berakhir' => Carbon::now()->addMonth(),
         ]);
 
@@ -68,7 +81,7 @@ class SubscriptionStateTest extends TestCase
     public function test_active_paid_subscription_past_end_date_is_expired(): void
     {
         $sub = new Subscription([
-            'status'             => SubscriptionState::STATUS_ACTIVE,
+            'status' => SubscriptionState::STATUS_ACTIVE,
             'langganan_berakhir' => Carbon::now()->subMinute(),
         ]);
 

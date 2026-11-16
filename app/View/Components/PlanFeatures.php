@@ -18,9 +18,9 @@ class PlanFeatures extends Component
     {
         $this->key = strtolower(trim((string) ($plan->namapaket ?? $planKey)));
         $bookings = ! $plan ? 'Booking bulanan sesuai paket' : (($plan->isunlimited || $plan->maxbooking <= 0)
-            ? 'Unlimited booking' : 'Hingga '.number_format((int) $plan->maxbooking).' booking/bulan');
+            ? 'Booking tanpa batas' : 'Hingga '.number_format((int) $plan->maxbooking).' booking/bulan');
         $services = ! $plan ? 'Layanan sesuai paket' : ($plan->maxlayanan <= 0
-            ? 'Unlimited layanan' : 'Hingga '.number_format((int) $plan->maxlayanan).' layanan');
+            ? 'Layanan tanpa batas' : 'Hingga '.number_format((int) $plan->maxlayanan).' layanan');
         $labels = EntitlementRules::advertisedFeatures($this->key);
         $this->features = array_values(array_map(fn (string $feature): string => strtr($feature, [':bookings' => $bookings, ':services' => $services]), $labels));
     }

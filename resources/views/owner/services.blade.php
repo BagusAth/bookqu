@@ -288,6 +288,12 @@
                     <x-owner.field-error name="satuan_durasi" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                         <datalist id="service-duration-units"><option value="menit"><option value="jam"><option value="sesi"></datalist>
                     </div>
+                    <div class="sm:col-span-2 text-xs" data-duration-preview>
+                        <p class="text-bq-text-muted">Pelanggan melihat: <strong class="text-bq-text" x-text="(service.durasi || 0) + ' ' + ((service.satuan_durasi || '').trim() || 'menit')"></strong></p>
+                        <p x-cloak x-show="['jam', 'hari'].includes((service.satuan_durasi || '').trim().toLowerCase())" class="mt-1 text-bq-warning">
+                            Durasi diisi dalam menit. Dengan label ini pelanggan melihat angka menit diikuti "<span x-text="(service.satuan_durasi || '').trim()"></span>". Pakai label "menit", atau label seperti "sesi".
+                        </p>
+                    </div>
                 </div>
 
                 {{-- AC-LYN-03 --}}

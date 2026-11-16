@@ -103,4 +103,19 @@ final class SubscriptionState
     {
         return $subscription->langganan_berakhir ?? $subscription->trial_berakhir;
     }
+
+    /**
+     * End of the period a paid plan gets when its payment settles at $paidAt (D-002): renewing the
+     * same active plan extends from its current end date; a new or different plan starts at $paidAt.
+     */
+    public static function paidPeriodEnd(?Subscription $current, int $planId, Carbon $paidAt): Carbon
+    {
+        $start = $paidAt->copy();
+        if ($current && $current->status === self::STATUS_ACTIVE && (int) $current->idplan === $planId
+            && $current->langganan_berakhir !== null && $current->langganan_berakhir->greaterThan($paidAt)) {
+            $start = $current->langganan_berakhir->copy();
+        }
+
+        return $start->addMonthNoOverflow();
+    }
 }
