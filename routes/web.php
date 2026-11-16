@@ -41,6 +41,7 @@ use App\Http\Controllers\Owner\OwnerSettingController;
 use App\Http\Controllers\Owner\OwnerShellController;
 use App\Http\Controllers\Owner\OwnerSubscriptionController;
 use App\Http\Controllers\Owner\OwnerTeamController;
+use App\Http\Controllers\Owner\OwnerUnitController;
 use App\Http\Controllers\Owner\OwnerVoucherController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
@@ -161,6 +162,8 @@ Route::prefix('owner')
             Route::delete('/schedule/special-dates/{specialDate}', [OwnerPriceRuleController::class, 'destroySpecialDate'])->name('owner.schedule.special-dates.destroy');
             Route::get('/schedule/price-simulator', [OwnerPriceRuleController::class, 'simulate'])->name('owner.schedule.price-simulator');
             Route::post('/schedule/apply-base-price', [OwnerPriceRuleController::class, 'applyBasePrice'])->name('owner.schedule.apply-base-price');
+            Route::get('/bookings/export', [OwnerBookingController::class, 'export'])->name('owner.bookings.export');
+            Route::get('/bookings/{booking}/panel', [OwnerBookingController::class, 'panel'])->whereNumber('booking')->name('owner.bookings.panel');
             Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('owner.bookings');
             Route::post('/bookings/{booking}/cancellation-requests', [BookingCancellationController::class, 'store'])->name('owner.bookings.cancellation-requests.store');
             Route::patch('/bookings/cancellation-requests/{cancellationId}', [BookingCancellationController::class, 'decide'])->whereNumber('cancellationId')->name('owner.bookings.cancellation-requests.decide');
@@ -173,6 +176,13 @@ Route::prefix('owner')
             // BQ-147 Laporan (owner-portal.md §8.13): Small sees a preview; the export needs Medium (AC-LAP-03).
             Route::get('/analytics', [OwnerAnalyticsController::class, 'index'])->name('owner.analytics')->middleware('module:reports');
             Route::get('/analytics/export', [OwnerAnalyticsController::class, 'export'])->name('owner.analytics.export')->middleware(['module:reports', 'subscription:analytics']);
+            // BQ-152: units shared by services (Pro, FR-UNIT); hidden until the module is released
+            Route::middleware(['module:units', 'subscription:units'])->group(function () {
+                Route::get('/units', [OwnerUnitController::class, 'index'])->name('owner.units');
+                Route::post('/units', [OwnerUnitController::class, 'store'])->name('owner.units.store');
+                Route::put('/units/{unit}', [OwnerUnitController::class, 'update'])->name('owner.units.update');
+                Route::delete('/units/{unit}', [OwnerUnitController::class, 'destroy'])->name('owner.units.destroy');
+            });
             Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('owner.subscription');
 
             // ── Extended Core Business Modules (Tahap 2) ──
@@ -352,7 +362,7 @@ $bookingSubRoutes = function (string $namePrefix) {
         ->name($namePrefix.'process-checkout');
 
     Route::post('/booking/validate-voucher', [BookingCheckoutController::class, 'validateVoucher'])
-        ->middleware(['module:vouchers', 'subscription:promos'])
+        ->middleware('throttle:60,1')
         ->name($namePrefix.'validate-voucher');
 
     Route::get('/booking/payment/{payment:order_id}', [BookingPaymentController::class, 'showPayment'])

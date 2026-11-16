@@ -29,6 +29,7 @@ class UpdateBookingStatusRequest extends FormRequest
                     BookingState::STATUS_PAID,
                     BookingState::STATUS_COMPLETED,
                     BookingState::STATUS_CANCELLED,
+                    BookingState::STATUS_NO_SHOW,
                 ]),
             ],
         ];

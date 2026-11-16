@@ -6,9 +6,7 @@ use App\Actions\CustomerAccess\RequestManagementDelivery;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
-use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingState;
-use App\Domain\Schedule\PriceRules;
 use App\Domain\Subscription\EntitlementRules;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -35,7 +33,9 @@ class CreateWalkInBooking
      *     nomorhp: string,
      *     email?: ?string,
      *     catatan?: ?string,
-     *     metode?: ?string
+     *     metode?: ?string,
+     *     selected_addons?: list<array{id: int, quantity: int}>|null,
+     *     peserta?: int|null
      * } $data
      */
     public function execute(Tenant $tenant, array $data): ?Booking
@@ -47,8 +47,11 @@ class CreateWalkInBooking
             ]);
         }
 
+        $participants = max(1, (int) ($data['peserta'] ?? 1));
+
         try {
-            $booking = DB::transaction(function () use ($tenant, $data) {
+            $booking = DB::transaction(function () use ($tenant, $data, $participants) {
+                ClaimSlots::lockTenant((int) $tenant->id);
                 // scope-bypass: only to read the schedule's service; ClaimSlots verifies tenant ownership under lock.
                 $serviceId = Schedule::withoutGlobalScopes()->whereKey($data['idschedule'])->value('idlayanan');
 
@@ -58,7 +61,7 @@ class CreateWalkInBooking
 
                 // Owner walk-ins use the same claim as customer bookings (ADR-0005 decision 2)
                 $schedule = app(ClaimSlots::class)
-                    ->execute($tenant, (int) $serviceId, [(int) $data['idschedule']])
+                    ->execute($tenant, (int) $serviceId, [(int) $data['idschedule']], participants: $participants)
                     ->first();
 
                 // Walk-ins use the same pricing rule as the storefront (ADR-0019 decision 6)
@@ -67,7 +70,7 @@ class CreateWalkInBooking
                     return null;
                 }
                 $slotDate = Carbon::parse($schedule->tanggal)->toDateString();
-                $quote = BookingPricing::quote($service, [$schedule], PriceRules::forTenant($tenant, $slotDate, $slotDate));
+                $quote = app(QuoteBooking::class)->execute($tenant, $service, $slotDate, [$schedule], $participants, selection: $data['selected_addons'] ?? []);
                 $amount = $quote['total'];
 
                 // Create Payment record for Walk-in
@@ -86,6 +89,9 @@ class CreateWalkInBooking
                     'price_breakdown' => $quote,
                 ]);
 
+                app(BookingPricingReservations::class)->reserve($payment);
+                app(BookingPricingReservations::class)->finish($payment, paid: true);
+
                 // Create Booking record
                 $booking = Booking::create([
                     'idtenant' => $tenant->id,
@@ -97,6 +103,7 @@ class CreateWalkInBooking
                     'email' => $data['email'] ?? null,
                     'tanggalbooking' => $schedule->tanggal,
                     'jam' => $schedule->jam_mulai,
+                    'peserta' => $participants,
                     'status' => BookingState::STATUS_PAID,
                     'catatan' => $data['catatan'] ?? 'Walk-in booking via Owner Calendar',
                 ]);

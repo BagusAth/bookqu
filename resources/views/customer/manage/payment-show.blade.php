@@ -38,7 +38,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col" x-data="{ showCancelModal: false }">
+<body class="bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col">
 
     @php
         $firstBooking = $bookings->first();
@@ -83,8 +83,6 @@
         $invoiceUrl = route('booking.manage.payment.invoice', ['order_id' => $payment->order_id]);
 
         $canReschedule = !$isMultiSlot && $firstBooking && $firstBooking->canBeRescheduled();
-        $canCancel = !$isMultiSlot && $firstBooking && $firstBooking->canBeCancelled();
-        $cancelHours = $tenant->cancel_before_hours ?? 24;
         $rescheduleHours = $tenant->reschedule_before_hours ?? 24;
     @endphp
 
@@ -275,7 +273,7 @@
             </div>
 
             {{-- Single-Slot Eligible Management Actions (Section 18) --}}
-            @if(!$isMultiSlot && $payment->status === 'sukses' && $firstBooking)
+            @if($payment->status === 'sukses' && $firstBooking)
                 <div class="mt-6 pt-6 border-t border-slate-100">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Tindakan Reservasi</h3>
                     <div class="flex flex-wrap items-center gap-3">
@@ -291,24 +289,8 @@
                             </a>
                         @endif
 
-                        @if($canCancel)
-                            <button
-                                type="button"
-                                @click="showCancelModal = true"
-                                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-xs font-bold text-rose-600 shadow-xs hover:bg-rose-50 hover:border-rose-300 transition-all cursor-pointer"
-                            >
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                                <span>Batalkan Reservasi</span>
-                            </button>
-                        @endif
                     </div>
-                    @if(!$canReschedule && !$canCancel)
-                        <p class="text-xs text-slate-500 mt-2">
-                            Batas waktu perubahan jadwal atau pembatalan mandiri telah berakhir (minimal {{ $cancelHours }} jam sebelum sesi).
-                        </p>
-                    @endif
+                    @include('customer.partials.manage.refund-form')
                 </div>
             @endif
 
@@ -353,86 +335,6 @@
             </div>
         </div>
     </main>
-
-    {{-- Modal Konfirmasi Batalkan Reservasi (Single-Slot) --}}
-    @if(!$isMultiSlot && $firstBooking && $canCancel)
-        <div
-            x-show="showCancelModal"
-            x-cloak
-            class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4"
-            role="dialog"
-            aria-modal="true"
-        >
-            <div
-                x-show="showCancelModal"
-                x-transition:enter="ease-out duration-200"
-                x-transition:enter-start="opacity-0"
-                x-transition:enter-end="opacity-100"
-                x-transition:leave="ease-in duration-150"
-                x-transition:leave-start="opacity-100"
-                x-transition:leave-end="opacity-0"
-                @click="showCancelModal = false"
-                class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
-            ></div>
-
-            <div
-                x-show="showCancelModal"
-                x-transition:enter="ease-out duration-200"
-                x-transition:enter-start="opacity-0 scale-95"
-                x-transition:enter-end="opacity-100 scale-100"
-                x-transition:leave="ease-in duration-150"
-                x-transition:leave-start="opacity-100 scale-100"
-                x-transition:leave-end="opacity-0 scale-95"
-                class="my-auto relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 shadow-2xl transition-all z-10"
-            >
-                <div class="flex items-start gap-4">
-                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="text-base font-bold text-[#0F172A]">
-                            Yakin ingin membatalkan reservasi ini?
-                        </h3>
-                        <p class="mt-1 text-xs text-[#64748B] leading-relaxed">
-                            Slot jadwal akan dilepaskan dan reservasi Anda akan dibatalkan. Pembatalan tersedia hingga {{ $cancelHours }} jam sebelum sesi.
-                        </p>
-
-                        <div class="mt-3 rounded-xl bg-[#F8FAFC] p-3 border border-[#E2E8F0] text-xs text-[#475569] space-y-1">
-                            <div class="flex justify-between">
-                                <span class="text-[#64748B]">Booking Code:</span>
-                                <span class="font-mono font-medium text-[#0F172A]">{{ $firstBooking->booking_code }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-[#64748B]">Layanan:</span>
-                                <span class="font-medium text-[#0F172A]">{{ $layanan->namalayanan ?? 'Layanan' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
-                    <button
-                        type="button"
-                        @click="showCancelModal = false"
-                        class="inline-flex justify-center rounded-xl border border-[#CBD5E1] bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#334155] hover:bg-[#F8FAFC] transition-colors cursor-pointer"
-                    >
-                        Kembali
-                    </button>
-                    <form method="POST" action="{{ route('booking.manage.cancel', ['booking_code' => $firstBooking->booking_code]) }}" class="inline">
-                        @csrf
-                        <button
-                            type="submit"
-                            class="w-full inline-flex justify-center rounded-xl bg-rose-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-rose-700 transition-colors cursor-pointer"
-                        >
-                            Ya, Batalkan Reservasi
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    @endif
 
     {{-- Footer --}}
     <footer class="mt-auto border-t border-slate-200/80 bg-white px-4 py-6 text-center text-xs text-slate-500">

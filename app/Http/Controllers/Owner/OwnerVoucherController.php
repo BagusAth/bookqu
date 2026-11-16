@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Booking\BookingPricingReservations;
+use App\Actions\Schedule\ClaimSlots;
 use App\Http\Controllers\Controller;
-
 use App\Models\Service;
 use App\Models\Voucher;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class OwnerVoucherController extends Controller
 {
@@ -17,7 +20,7 @@ class OwnerVoucherController extends Controller
     public function index(Request $request)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
@@ -41,119 +44,138 @@ class OwnerVoucherController extends Controller
     public function store(Request $request)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $validated = $request->validate([
-            'code'                => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('vouchers', 'code')->where('idtenant', $tenant->id)],
-            'discount_type'       => 'required|in:fixed,percentage',
-            'discount_value'      => 'required|numeric|min:1',
-            'min_order_amount'    => 'nullable|numeric|min:0',
+            'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('vouchers', 'code')->where('idtenant', $tenant->id)],
+            'discount_type' => 'required|in:fixed,percentage',
+            'discount_value' => 'required|numeric|min:1',
+            'min_order_amount' => 'nullable|numeric|min:0',
             'max_discount_amount' => 'nullable|numeric|min:0',
-            'usage_limit'         => 'nullable|integer|min:1',
-            'start_date'          => 'nullable|date',
-            'end_date'            => 'nullable|date|after_or_equal:start_date',
-            'is_active'           => 'nullable|boolean',
+            'usage_limit' => 'nullable|integer|min:1',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'is_active' => 'nullable|boolean',
             'applicable_services' => 'nullable|array',
-            'applicable_services.*'=> ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            'applicable_services.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
-        $applicableServices = !empty($validated['applicable_services'])
+        $applicableServices = ! empty($validated['applicable_services'])
             ? implode(',', $validated['applicable_services'])
             : 'all';
 
         $voucher = Voucher::create([
-            'idtenant'            => $tenant->id,
-            'code'                => strtoupper($validated['code']),
-            'discount_type'       => $validated['discount_type'],
-            'discount_value'      => $validated['discount_value'],
-            'min_spending'        => $validated['min_order_amount'] ?? 0,
-            'max_discount'        => $validated['max_discount_amount'] ?? null,
-            'usage_limit'         => $validated['usage_limit'] ?? null,
-            'used_count'          => 0,
-            'start_date'          => $validated['start_date'] ?? null,
-            'end_date'            => $validated['end_date'] ?? null,
+            'idtenant' => $tenant->id,
+            'code' => strtoupper($validated['code']),
+            'discount_type' => $validated['discount_type'],
+            'discount_value' => $validated['discount_value'],
+            'min_spending' => $validated['min_order_amount'] ?? 0,
+            'max_discount' => $validated['max_discount_amount'] ?? null,
+            'usage_limit' => $validated['usage_limit'] ?? null,
+            'used_count' => 0,
+            'start_date' => $validated['start_date'] ?? null,
+            'end_date' => $validated['end_date'] ?? null,
             'applicable_services' => $applicableServices,
-            'is_active'           => $request->has('is_active') ? (bool) $request->input('is_active') : true,
+            'is_active' => $request->has('is_active') ? (bool) $request->input('is_active') : true,
         ]);
 
         return redirect()->route('owner.vouchers')
-            ->with('sukses', 'Voucher "' . $voucher->code . '" berhasil dibuat!');
+            ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil dibuat!');
     }
 
     public function update(Request $request, int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $voucher = Voucher::where('idtenant', $tenant->id)->findOrFail($id);
 
         $validated = $request->validate([
-            'code'                => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('vouchers', 'code')->where('idtenant', $tenant->id)->ignore($voucher->id)],
-            'discount_type'       => 'required|in:fixed,percentage',
-            'discount_value'      => 'required|numeric|min:1',
-            'min_order_amount'    => 'nullable|numeric|min:0',
+            'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('vouchers', 'code')->where('idtenant', $tenant->id)->ignore($voucher->id)],
+            'discount_type' => 'required|in:fixed,percentage',
+            'discount_value' => 'required|numeric|min:1',
+            'min_order_amount' => 'nullable|numeric|min:0',
             'max_discount_amount' => 'nullable|numeric|min:0',
-            'usage_limit'         => 'nullable|integer|min:1',
-            'start_date'          => 'nullable|date',
-            'end_date'            => 'nullable|date|after_or_equal:start_date',
-            'is_active'           => 'required|boolean',
+            'usage_limit' => 'nullable|integer|min:1',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'is_active' => 'required|boolean',
             'applicable_services' => 'nullable|array',
-            'applicable_services.*'=> ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            'applicable_services.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
-        $applicableServices = !empty($validated['applicable_services'])
+        $applicableServices = ! empty($validated['applicable_services'])
             ? implode(',', $validated['applicable_services'])
             : 'all';
 
-        $voucher->update([
-            'code'                => strtoupper($validated['code']),
-            'discount_type'       => $validated['discount_type'],
-            'discount_value'      => $validated['discount_value'],
-            'min_spending'        => $validated['min_order_amount'] ?? 0,
-            'max_discount'        => $validated['max_discount_amount'] ?? null,
-            'usage_limit'         => $validated['usage_limit'] ?? null,
-            'start_date'          => $validated['start_date'] ?? null,
-            'end_date'            => $validated['end_date'] ?? null,
-            'applicable_services' => $applicableServices,
-            'is_active'           => (bool) $validated['is_active'],
-        ]);
+        DB::transaction(function () use ($tenant, $voucher, $validated, $applicableServices): void {
+            ClaimSlots::lockTenant((int) $tenant->id);
+            $voucher->refresh();
+            $held = app(BookingPricingReservations::class)->held('voucher_id', $voucher->id);
+            if (isset($validated['usage_limit']) && (int) $validated['usage_limit'] < $voucher->used_count + $held) {
+                throw ValidationException::withMessages(['usage_limit' => 'Kuota lebih kecil dari pemakaian dan pesanan aktif.']);
+            }
+            $voucher->update([
+                'code' => strtoupper($validated['code']),
+                'discount_type' => $validated['discount_type'],
+                'discount_value' => $validated['discount_value'],
+                'min_spending' => $validated['min_order_amount'] ?? 0,
+                'max_discount' => $validated['max_discount_amount'] ?? null,
+                'usage_limit' => $validated['usage_limit'] ?? null,
+                'start_date' => $validated['start_date'] ?? null,
+                'end_date' => $validated['end_date'] ?? null,
+                'applicable_services' => $applicableServices,
+                'is_active' => (bool) $validated['is_active'],
+            ]);
+
+        });
 
         return redirect()->route('owner.vouchers')
-            ->with('sukses', 'Voucher "' . $voucher->code . '" berhasil diperbarui!');
+            ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil diperbarui!');
     }
 
     public function destroy(int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $voucher = Voucher::where('idtenant', $tenant->id)->findOrFail($id);
         $code = $voucher->code;
-        $voucher->delete();
+        DB::transaction(function () use ($tenant, $voucher): void {
+            ClaimSlots::lockTenant((int) $tenant->id);
+            if (app(BookingPricingReservations::class)->held('voucher_id', $voucher->id) > 0) {
+                throw ValidationException::withMessages(['voucher' => 'Promo masih dipesan oleh pembayaran aktif.']);
+            }
+            $voucher->delete();
+        });
 
         return redirect()->route('owner.vouchers')
-            ->with('sukses', 'Voucher "' . $code . '" berhasil dihapus!');
+            ->with('sukses', 'Voucher "'.$code.'" berhasil dihapus!');
     }
 
     public function toggleStatus(int $id)
     {
         $tenant = $this->resolveTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant tidak ditemukan.');
         }
 
         $voucher = Voucher::where('idtenant', $tenant->id)->findOrFail($id);
-        $voucher->update(['is_active' => !$voucher->is_active]);
+        DB::transaction(function () use ($tenant, $voucher): void {
+            ClaimSlots::lockTenant((int) $tenant->id);
+            $voucher->refresh();
+            $voucher->update(['is_active' => ! $voucher->is_active]);
+        });
 
         $statusText = $voucher->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
         return redirect()->route('owner.vouchers')
-            ->with('sukses', 'Voucher "' . $voucher->code . '" berhasil ' . $statusText . '!');
+            ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil '.$statusText.'!');
     }
 }
-

@@ -111,7 +111,7 @@
                                     {{ $bk->booking_code }}
                                 </td>
                                 <td class="py-2.5 align-top text-right font-bold text-slate-900 whitespace-nowrap">
-                                    {{ $invoiceSlotAmount }}
+                                    {{ $invoiceSlotAmounts[$bk->id] ?? $invoiceSlotAmount }}
                                 </td>
                             </tr>
                         @endforeach

@@ -58,3 +58,5 @@ Disetujui Tech Lead 2026-11-04 untuk sesi agen.
 
 Backend persists tenant booking policy and per-user email preferences. The storefront read paths and the tenant-locked slot claim share the policy. Buffer is per service and only between booking groups. BookingPolicyTest covers stale policy reloading, visible availability, persistence and in-app delivery. SQLite 715, MySQL group 15, Pint and PHPStan passed.
 Remaining: settings tabs, checkout policy rendering, slug warning flow and password/account UI. Status remains in-progress.
+
+2026-11-13: Settings now uses shared URL tabs, posts policy and email preferences to the existing endpoints, previews the same policy component rendered at checkout, and warns before a rename can change the booking URL. Account forms use the existing BQ-098 password checks. OwnerPortalWorkflowTest covers persisted settings display. Remaining: independent slug, map link and business email fields have no write contract here; AC-SET-03 requires a password for every change while BQ-098 currently requires it for email/password changes and deletion.

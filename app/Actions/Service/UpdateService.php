@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Service;
 
 use App\Actions\Schedule\ClaimSlots;
+use App\Actions\Unit\AssignServiceUnits;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Support\TenantActor;
@@ -64,7 +65,12 @@ class UpdateService
                 'is_popular' => array_key_exists('is_popular', $data) ? (bool) $data['is_popular'] : $layanan->is_popular,
                 'is_active' => (bool) ($data['is_active'] ?? true),
                 'image_url' => $imageUrl,
+                'kapasitas' => array_key_exists('kapasitas', $data) && $data['kapasitas'] !== null ? (int) $data['kapasitas'] : $layanan->kapasitas,
             ]);
+
+            if (array_key_exists('unit_ids', $data)) {
+                app(AssignServiceUnits::class)->execute($tenant, $layanan, $data['unit_ids'] ?? []);
+            }
 
             $resources = $layanan->resources()->sync($data['resource_ids'] ?? []);
             $items = [];

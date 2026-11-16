@@ -33,10 +33,21 @@ final class StorefrontCheckoutState
         $day = Carbon::parse($date)->toDateString();
         $tenant = $service->tenant;
         $rules = $tenant instanceof Tenant ? PriceRules::forTenant($tenant, $day, $day) : PriceRules::none();
-        $lines = BookingPricing::quote($service, $schedules, $rules)['lines'];
+
+        return $this->fingerprintOfQuote($service, $day, BookingPricing::quote($service, $schedules, $rules));
+    }
+
+    /** @param array<string, mixed> $quote */
+    public function fingerprintOfQuote(Service $service, string $day, array $quote): string
+    {
+        $lines = $quote['lines'];
+        usort($lines, fn (array $a, array $b): int => $a['schedule_id'] <=> $b['schedule_id']);
         $parts = [(int) $service->id, $day];
-        foreach ($schedules as $index => $schedule) {
-            $parts[] = (int) $schedule->id.'@'.number_format($lines[$index]['amount'], 2, '.', '');
+        foreach ($lines as $line) {
+            $parts[] = $line['schedule_id'].'@'.number_format($line['amount'], 2, '.', '');
+        }
+        if ($quote['add_ons'] !== [] || $quote['promo'] !== null || ($lines[0]['participants'] ?? 1) > 1) {
+            $parts[] = json_encode([$lines[0]['participants'] ?? 1, $quote['add_ons'], $quote['promo']], JSON_THROW_ON_ERROR);
         }
 
         return hash_hmac('sha256', implode('|', $parts), (string) config('app.key'));

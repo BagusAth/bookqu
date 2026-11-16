@@ -101,3 +101,5 @@ Target decisions: [ADR-0004](../adr/ADR-0004-payment-lifecycle-module.md) (one l
 BQ-087 (ADR-0023): owner status changes wait for the existing online hold. Owner settlement is limited to unlinked payments, and cancellation after the hold expires the payment in the same transaction. A verified provider success after a historical cash settlement records one double-payment refund and alerts the owner.
 
 BQ-138 backend: Management grants can submit one open refund request per payment group when the tenant policy allows it. Bank data is encrypted and omitted from model serialization. The lifecycle records the agreed amount and debits credited balance once. Admin transfer details are exposed only for pending refunds, through a CSRF-protected request with no-store response.
+
+Bundle C (ADR-0019): checkout stores promo and add-on lines in the frozen breakdown. The payment total equals the quote. Tenant-locked reservations hold promo quota and finite item stock until the payment succeeds or fails. Success consumes them once, failure releases them, and late success does not reserve again. Free bookings and walk-ins consume applicable reservations within placement.

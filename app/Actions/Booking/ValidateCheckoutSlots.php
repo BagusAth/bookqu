@@ -16,7 +16,7 @@ final class ValidateCheckoutSlots
      * @param  list<int|string>  $scheduleIdArray
      * @return array{ids: list<int>, times: list<string>}
      */
-    public function execute(Tenant $tenant, Service $service, string $selectedDate, array $jamArray, array $scheduleIdArray): array
+    public function execute(Tenant $tenant, Service $service, string $selectedDate, array $jamArray, array $scheduleIdArray, int $participants = 1): array
     {
         $selectedDate = Carbon::parse($selectedDate)->toDateString();
         $wib = 'Asia/Jakarta';
@@ -29,7 +29,7 @@ final class ValidateCheckoutSlots
         foreach ($jamArray as $index => $jamValue) {
             $scheduleId = (int) $scheduleIdArray[$index];
 
-            $schedule = DB::transaction(function () use ($tenant, $service, $scheduleId, $selectedDate) {
+            $schedule = DB::transaction(function () use ($tenant, $service, $scheduleId, $selectedDate, $participants) {
                 $row = DB::table('schedules')
                     ->where('id', $scheduleId)
                     ->where('idtenant', $tenant->id)
@@ -43,7 +43,8 @@ final class ValidateCheckoutSlots
                     return null;
                 }
 
-                $isBooked = BookingRules::isSlotOccupied((int) $scheduleId);
+                $isBooked = ! BookingRules::hasRoomFor((int) $scheduleId, $participants)
+                    || BookingRules::unitConflict($row);
 
                 return $isBooked ? null : $row;
             });

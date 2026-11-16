@@ -54,7 +54,7 @@ final class SubscriptionUsage
             ->where('idtenant', $tenantId)
             ->whereYear('tanggalbooking', $date->year)
             ->whereMonth('tanggalbooking', $date->month)
-            ->whereIn('status', [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
+            ->whereIn('status', [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED, BookingState::STATUS_NO_SHOW])
             ->count();
     }
 }

@@ -33,9 +33,9 @@ This section is the BookQu part of this file. Everything after it is the Laravel
 1. **Tenant isolation.** No tenant may read or change another tenant's data (INV-TEN-01). Tenant context comes only from `TenantMiddleware`/`TenantContext`; never trust a tenant id from the request.
 2. **User-supplied identifiers are untrusted.** Check existence, ownership, tenant and eligibility for every id, `order_id` and `booking_code`. A public identifier alone never grants access — require a customer access grant (ADR-0006).
 3. **Authorization is server-side.** A hidden menu, disabled button or Alpine state is not authorization. Team roles (Pemilik, Manajer, Kasir) are decided only by `TenantPermission` (ADR-0016, once implemented); never compare role names elsewhere.
-4. **Booking states** are `pending`, `paid`, `cancelled`, `completed`, plus `no_show` once ADR-0018 is implemented; change them only through `BookingState::canTransition` (INV-BOOK-01/02).
+4. **Booking states** are `pending`, `paid`, `cancelled`, `completed` and `no_show` (ADR-0018); change them only through `BookingState::canTransition` (INV-BOOK-01/02).
 5. **One occupancy rule.** "Slot occupied", "slot full" (capacity), unit conflicts (ADR-0017) and the pending hold (payment deadline + settlement margin, ADR-0009) live only in `App\Domain\Booking\BookingRules`; never re-implement them (INV-BOOK-03).
-6. **No double booking.** Booking writes lock the tenant and schedules in a transaction, evict stale pending first, and rely on the `unique_active_booking_slot` index, which ADR-0017 replaces with the seat index on `booking_seats` (INV-BOOK-04/05).
+6. **No double booking.** Booking writes lock the tenant and schedules in a transaction, evict stale pending first, and rely on the seat index on `booking_seats` (ADR-0017) as the final guard (INV-BOOK-04/05).
 7. **Payment is separate from booking.** Payment states are `pending`, `sukses`, `gagal`. Success comes only from a verified webhook or a server-side status query; repeated events must be idempotent (INV-PAY-*).
 8. **Provider code stays behind** `PaymentGatewayInterface` / `PaymentGatewayManager`.
 9. **Entitlement** (features, limits) is decided only by `EntitlementRules` (INV-SUB-01).
@@ -54,8 +54,8 @@ Trade-off order: security → data integrity → tenant isolation → business c
 | Role | Person | Decides |
 |---|---|---|
 | Product Lead | Brammy | What BookQu offers: features outside `docs/product.md` / `docs/requirements.md`, pricing, priorities, whether to release |
-| Tech Lead | agathan | Architecture and technical rules, task assignment, audits and merges into `integration`, executes releases and production operations |
-| Developer | Bagus, agathan | How a task is implemented, inside their own branch |
+| Tech Lead | agathan | Architecture and technical rules, task assignment, audits and merges the other developer's heavy-lane PRs into `integration`, executes releases and production operations |
+| Developer | Bagus, agathan | How a task is implemented, inside their own branch; merges their own light-lane PRs |
 | Agent | Claude Code, Codex, Antigravity, Cursor, … | Nothing on its own: executes for the developer who runs the session |
 
 People change; roles do not. Documents name roles. Names in older documents (`docs/work/done/`, ADRs) are history.
@@ -76,7 +76,7 @@ The agent asks **the developer running the session**. When the decision belongs 
 2. **Light lane** (UI, copy, tests, non-authority docs, behaviour-preserving refactors): implement, run related tests, then the full suite once.
 3. **Heavy lane** (domain rules, schema, security/auth, payment, tenancy, product changes): write a work item `docs/work/BQ-NNN-slug.md` from `docs/work/_TEMPLATE.md`, get the decision from the table above, then implement with full verification. A product change starts as a `D-NNN` entry in `docs/product-decisions.md`; its work item is written only after the Product Lead approves.
 4. Update the domain file, requirement or ADR only where their content changed.
-5. Sync from `integration` again, then open a PR into `integration` using `.github/pull_request_template.md`. The Tech Lead audits and merges. Never push to `integration` or `main` directly.
+5. Sync from `integration` again, then open a PR into `integration` using `.github/pull_request_template.md`. Every merge needs the four green CI jobs. The author merges a light-lane PR. The Tech Lead audits and merges a heavy-lane PR of another developer, and merges their own heavy-lane PR. When unsure whether a PR is light or heavy, treat it as heavy. Never push to `integration` or `main` directly.
 
 Full process, lanes, branches and definition of done: `docs/workflow.md`.
 

@@ -60,6 +60,12 @@ class Service extends Model
         return $this->hasMany(Schedule::class, 'idlayanan');
     }
 
+    /** Units this service uses (FR-UNIT-002). */
+    public function units(): BelongsToMany
+    {
+        return $this->belongsToMany(Unit::class, 'service_unit', 'idservice', 'idunit');
+    }
+
     public function resources(): BelongsToMany
     {
         return $this->belongsToMany(Resource::class, 'service_resource', 'idservice', 'idresource')->withTimestamps();

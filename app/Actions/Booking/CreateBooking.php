@@ -8,12 +8,10 @@ use App\Actions\Payment\CreateBookingPayment;
 use App\Actions\Payment\PaymentLifecycle;
 use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
-use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
 use App\Domain\CustomerAccess\AccessProfile;
 use App\Domain\Payment\PaymentTransition;
-use App\Domain\Schedule\PriceRules;
 use App\Domain\Subscription\EntitlementRules;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -25,6 +23,7 @@ use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class CreateBooking
 {
@@ -50,6 +49,7 @@ class CreateBooking
      * Execute the customer booking checkout workflow.
      *
      * @param  array{namapelanggan: string, nomorhp: string, email: string, catatan: ?string}  $customerData
+     * @param  list<array{id: int, quantity: int}>  $addOns
      */
     public function execute(
         Tenant $tenant,
@@ -57,13 +57,18 @@ class CreateBooking
         string $selectedDate,
         array $selectedTimes,
         array $scheduleIds,
-        array $customerData
+        array $customerData,
+        int $participants = 1,
+        ?string $voucherCode = null,
+        array $addOns = [],
+        ?string $fingerprint = null,
     ): array {
         $slotCount = count($scheduleIds);
+        $participants = max(1, $participants);
 
         // Wrap slot availability check, atomic quota check, and booking/payment creation in a transaction
         try {
-            $result = DB::transaction(function () use ($tenant, $service, $selectedDate, $scheduleIds, $customerData, $slotCount) {
+            $result = DB::transaction(function () use ($tenant, $service, $selectedDate, $scheduleIds, $customerData, $slotCount, $participants, $voucherCode, $addOns, $fingerprint) {
                 $wib = 'Asia/Jakarta';
 
                 // Tenant-first synchronization before any child row (ADR-0005 decision 4)
@@ -89,7 +94,7 @@ class CreateBooking
                         ->where('idtenant', $tenant->id)
                         ->whereYear('tanggalbooking', $dateCarbon->year)
                         ->whereMonth('tanggalbooking', $dateCarbon->month)
-                        ->whereIn('status', [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
+                        ->whereIn('status', [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED, BookingState::STATUS_NO_SHOW])
                         ->count();
 
                     $bookingQuota = EntitlementRules::canCreateBooking($subscription, $totalMonthlyBookings, $slotCount);
@@ -104,7 +109,7 @@ class CreateBooking
                 // 2. Claim the selected schedules: lock, verify ownership, reclaim stale pending
                 // bookings and re-check them with the rule listings use (ADR-0005)
                 $orderedSchedules = $this->claimSlots
-                    ->execute($tenant, (int) $service->id, $scheduleIds, $selectedDate)
+                    ->execute($tenant, (int) $service->id, $scheduleIds, $selectedDate, participants: $participants)
                     ->all();
 
                 // 3. Contiguous validation: Sort schedules by jam_mulai ascending
@@ -115,7 +120,17 @@ class CreateBooking
                 }
 
                 // 4. Quote through the single booking pricing rule, inside the lock (ADR-0019)
-                $quote = BookingPricing::quote($service, $orderedSchedules, PriceRules::forTenant($tenant, $selectedDate, $selectedDate));
+                $currentService = $orderedSchedules[0]->layanan;
+                if (! $currentService instanceof Service) {
+                    throw ValidationException::withMessages(['checkout' => 'Layanan tidak tersedia.']);
+                }
+                $quote = app(QuoteBooking::class)->execute($tenant, $currentService, $selectedDate, $orderedSchedules, $participants, $voucherCode, $addOns);
+                if (($quote['promo'] !== null || $quote['add_ons'] !== []) && $fingerprint === null) {
+                    throw ValidationException::withMessages(['checkout' => 'Periksa ringkasan harga sebelum melanjutkan.']);
+                }
+                if ($fingerprint !== null && ! hash_equals($fingerprint, app(StorefrontCheckoutState::class)->fingerprintOfQuote($currentService, $selectedDate, $quote))) {
+                    throw ValidationException::withMessages(['checkout' => 'Harga atau pilihan jadwal berubah. Periksa kembali ringkasan pesanan.']);
+                }
                 $hargaAkhir = $quote['total'];
 
                 $fullCatatan = trim($customerData['catatan'] ?? '');
@@ -140,6 +155,7 @@ class CreateBooking
                             'email' => $customerData['email'],
                             'tanggalbooking' => $selectedDate,
                             'jam' => $slotTime.':00',
+                            'peserta' => $participants,
                             'status' => BookingState::STATUS_PAID,
                             'idpayment' => $payment->id,
                             'booking_code' => Booking::generateBookingCode(),
@@ -153,6 +169,8 @@ class CreateBooking
                         $payment->update(['idbooking' => $createdBookings[0]->id, 'price_breakdown' => $quote]);
                     }
 
+                    app(BookingPricingReservations::class)->reserve($payment);
+                    app(BookingPricingReservations::class)->finish($payment, paid: true);
                     app(RequestManagementDelivery::class)->execute($payment, 'confirmed');
 
                     return [
@@ -181,6 +199,7 @@ class CreateBooking
                         'email' => $customerData['email'],
                         'tanggalbooking' => $selectedDate,
                         'jam' => $slotTime.':00',
+                        'peserta' => $participants,
                         'status' => BookingState::STATUS_PENDING,
                         'idpayment' => $payment->id,
                         'booking_code' => Booking::generateBookingCode(),
@@ -193,6 +212,8 @@ class CreateBooking
                 if (! empty($createdBookings)) {
                     $payment->update(['idbooking' => $createdBookings[0]->id, 'price_breakdown' => $quote]);
                 }
+
+                app(BookingPricingReservations::class)->reserve($payment);
 
                 return [
                     'access' => app(IssueCustomerAccess::class)->execute($payment, AccessProfile::Checkout),

@@ -24,6 +24,7 @@ Owns bookable time slots, blocked dates, slot pricing, and the definition of "av
 | `App\Domain\Schedule\SlotPricing` (with `PriceRules`) | A slot's price: override, else special-date price, else base with the weekend rule; plus matching peak-hour extras; whole rupiah (FR-SCHEDULE-012) |
 | `App\Domain\Schedule\SlotCompatibilityRules` | Contiguous / compatible multi-slot selection |
 | `App\Domain\Booking\BookingRules::isSlotOccupied` | Occupancy (see `booking.md`, INV-BOOK-03) |
+| `App\Domain\Booking\BookingRules::hasRoomFor` / `hasRoomSql` / `unitBusyRanges` | Room for the participants against `services.kapasitas`, and unit conflicts; listings show `seats_left` (ADR-0017 decision 7) |
 
 ## Data
 
@@ -35,7 +36,7 @@ Owns bookable time slots, blocked dates, slot pricing, and the definition of "av
 
 ## Invariants
 
-- **INV-SCH-01** — bookable only if `tersedia`, in the future, not blocked, service active with active fulfillment, and not occupied.
+- **INV-SCH-01** — bookable only if `tersedia`, in the future, not blocked, service active with active fulfillment, with room for the participants, and no shared unit busy at that time.
 
 ## Evidence
 

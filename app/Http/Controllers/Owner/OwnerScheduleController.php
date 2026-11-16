@@ -7,18 +7,25 @@ namespace App\Http\Controllers\Owner;
 use App\Actions\Schedule\BulkCreateSchedules;
 use App\Actions\Schedule\DeleteBlockedDate;
 use App\Actions\Schedule\DeleteSchedule;
+use App\Actions\Schedule\GetSlotRunway;
 use App\Actions\Schedule\PriceSlots;
 use App\Actions\Schedule\UpdateScheduleAvailability;
+use App\Domain\Booking\BookingRules;
+use App\Domain\Booking\BookingTimeRange;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Schedule\BulkCreateScheduleRequest;
 use App\Http\Requests\Schedule\UpdateAvailabilityRequest;
 use App\Models\Booking;
-use App\Models\OwnerBlockedDate;
+use App\Models\OpeningHour;
+use App\Models\PeakHourRule;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Models\SpecialDatePrice;
+use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -31,96 +38,61 @@ class OwnerScheduleController extends Controller
     /**
      * Halaman manajemen jadwal.
      */
-    public function index(Request $request): View
+    public function index(Request $request, GetSlotRunway $getSlotRunway, PriceSlots $priceSlots): View
     {
-        $tenant = $this->resolveTenant();
-        if (! $tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
+        $tenant = $this->resolveTenant() ?? abort(404);
+        $tabs = ['hours' => 'Jam Buka', 'prices' => 'Harga', 'closed' => 'Libur & Tutup', 'slots' => 'Slot'];
+        $requestedTab = $request->string('tab')->toString();
+        $tab = isset($tabs[$requestedTab]) ? $requestedTab : 'hours';
+        if ($request->session()->has('blocked_date_conflicts')) {
+            $tab = 'closed';
         }
 
-        $idtenant = $tenant->id;
+        $weekdays = [1 => 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+        $runway = $getSlotRunway->execute($tenant);
+        $daftarlayanan = Service::where('idtenant', $tenant->id)->orderBy('namalayanan')->get();
+        $data = compact('tenant', 'tabs', 'tab', 'weekdays', 'runway', 'daftarlayanan');
 
-        // Navigasi minggu
-        $offsetminggu = (int) $request->input('minggu', 0);
+        if ($tab === 'hours') {
+            $data['openingHours'] = OpeningHour::where('idtenant', $tenant->id)->orderBy('opens_at')->get()->groupBy('day_of_week')
+                ->map(fn ($intervals) => $intervals->map(fn ($interval) => [
+                    'opens_at' => substr((string) $interval->opens_at, 0, 5),
+                    'closes_at' => substr((string) $interval->closes_at, 0, 5),
+                ])->values());
+        } elseif ($tab === 'prices') {
+            $data['peakRules'] = PeakHourRule::where('idtenant', $tenant->id)->with('services')->orderBy('name')->get();
+            $data['specialDates'] = SpecialDatePrice::where('idtenant', $tenant->id)->with('service')->orderBy('tanggal')->get();
+        } elseif ($tab === 'closed') {
+            $data['blockedDates'] = $tenant->blockedDates()->orderByDesc('tanggal')->get();
+        } else {
+            $data += $this->slotPage($request, $tenant, $priceSlots);
+        }
+
+        return view('owner.schedule', $data);
+    }
+
+    /** @return array<string, mixed> */
+    private function slotPage(Request $request, Tenant $tenant, PriceSlots $prices): array
+    {
+        $offsetminggu = max(-520, min(520, $request->integer('minggu')));
         $awalminggu = Carbon::now()->startOfWeek()->addWeeks($offsetminggu);
         $akhirminggu = $awalminggu->copy()->endOfWeek();
-
-        // Daftar hari dalam minggu
-        $daftarhari = [];
-        for ($i = 0; $i < 7; $i++) {
-            $daftarhari[] = $awalminggu->copy()->addDays($i);
-        }
-
-        // Slot jadwal minggu ini
-        $jadwalminggu = Schedule::where('idtenant', $idtenant)
-            ->whereBetween('tanggal', [$awalminggu->format('Y-m-d'), $akhirminggu->format('Y-m-d')])
-            ->with(['layanan', 'bookings.layanan'])
-            ->orderBy('tanggal')
-            ->orderBy('jam_mulai')
-            ->get()
-            ->groupBy(function ($jadwal) {
-                return $jadwal->tanggal->format('Y-m-d');
-            });
-
-        // Statistik
-        $totalslot = Schedule::where('idtenant', $idtenant)
-            ->whereBetween('tanggal', [$awalminggu->format('Y-m-d'), $akhirminggu->format('Y-m-d')])
-            ->count();
-
-        $slotterboking = Schedule::where('schedules.idtenant', $idtenant)
-            ->whereBetween('tanggal', [$awalminggu->format('Y-m-d'), $akhirminggu->format('Y-m-d')])
-            ->whereHas('bookings', fn ($q) => $q->whereIn('status', ['paid', 'completed']))
-            ->count();
-
-        $rasioterboking = $totalslot > 0 ? round(($slotterboking / $totalslot) * 100) : 0;
-
-        $estimasirevenue = Booking::where('bookings.idtenant', $idtenant)
-            ->whereBetween('tanggalbooking', [$awalminggu->format('Y-m-d'), $akhirminggu->format('Y-m-d')])
-            ->whereIn('status', ['paid', 'completed'])
+        $selectedService = $request->integer('layanan');
+        $slots = Schedule::where('idtenant', $tenant->id)
+            ->whereBetween('tanggal', [$awalminggu->toDateString(), $akhirminggu->toDateString()])
+            ->when($selectedService > 0, fn (Builder $query) => $query->where('idlayanan', $selectedService))
             ->with('layanan')
-            ->get()
-            ->sum(fn ($b) => $b->layanan->harga ?? 0);
+            ->withExists(['bookings as occupied' => fn (Builder $query) => BookingRules::applyOccupiesSlotCondition($query)])
+            ->orderBy('tanggal')->orderBy('jam_mulai')->get();
+        $slotPrices = $prices->execute($tenant, $slots);
+        $slotTimes = $slots->mapWithKeys(fn (Schedule $slot): array => [
+            $slot->id => BookingTimeRange::forSlot(Carbon::parse($slot->tanggal)->toDateString(), (string) $slot->jam_mulai, (string) $slot->jam_selesai)->label(),
+        ]);
+        $slotLabels = $slots->mapWithKeys(fn (Schedule $slot): array => [
+            $slot->id => $slot->getAttribute('occupied') ? 'Terisi' : ($slot->status === 'tersedia' ? 'Terbuka' : 'Tutup'),
+        ]);
 
-        $bookingberikutnya = Booking::where('idtenant', $idtenant)
-            ->where('tanggalbooking', '>=', Carbon::today()->format('Y-m-d'))
-            ->where('status', 'paid')
-            ->orderBy('tanggalbooking')
-            ->orderBy('jam')
-            ->first();
-
-        // Aktivitas terbaru
-        $aktivitasjadwal = Booking::where('bookings.idtenant', $idtenant)
-            ->with('layanan')
-            ->orderByDesc('bookings.created_at')
-            ->limit(5)
-            ->get();
-
-        // Daftar layanan untuk referensi harga
-        $daftarlayanan = Service::where('idtenant', $idtenant)->get();
-
-        $blockedDates = OwnerBlockedDate::where('idtenant', $idtenant)
-            ->orderByDesc('tanggal')
-            ->limit(10)
-            ->get();
-
-        $slotPrices = app(PriceSlots::class)->execute($tenant, $jadwalminggu->flatten());
-
-        return view('owner.schedule', compact(
-            'tenant',
-            'slotPrices',
-            'daftarhari',
-            'jadwalminggu',
-            'awalminggu',
-            'akhirminggu',
-            'offsetminggu',
-            'totalslot',
-            'rasioterboking',
-            'estimasirevenue',
-            'bookingberikutnya',
-            'aktivitasjadwal',
-            'daftarlayanan',
-            'blockedDates',
-        ));
+        return compact('slots', 'slotPrices', 'slotTimes', 'slotLabels', 'selectedService', 'offsetminggu', 'awalminggu', 'akhirminggu');
     }
 
     /**
@@ -135,13 +107,14 @@ class OwnerScheduleController extends Controller
 
         $result = $bulkCreateSchedules->execute($tenant, $request->validated());
 
+        $destination = $request->query('tab') === 'slots' ? route('owner.schedule', ['tab' => 'slots']) : '/owner/schedule';
         if (! $result['success']) {
-            return redirect('/owner/schedule')->withErrors([
+            return redirect($destination)->withErrors([
                 $result['error_field'] ?? 'idlayanan' => $result['error'],
             ]);
         }
 
-        return redirect('/owner/schedule')->with(
+        return redirect($destination)->with(
             'sukses',
             $result['created_count'].' slot jadwal berhasil dibuat untuk '.$result['days_count'].' hari!'
         );
@@ -163,7 +136,11 @@ class OwnerScheduleController extends Controller
             abort($result['code'] ?? 403, $result['error'] ?? 'Tidak dapat menghapus slot.');
         }
 
-        $destination = $request->input('return_to') === 'calendar' ? '/owner/calendar' : '/owner/schedule';
+        $destination = match ($request->input('return_to')) {
+            'calendar' => '/owner/calendar',
+            'slots' => route('owner.schedule', ['tab' => 'slots']),
+            default => '/owner/schedule',
+        };
 
         return redirect($destination)->with('sukses', 'Slot berhasil dihapus.');
     }
@@ -207,9 +184,11 @@ class OwnerScheduleController extends Controller
         }
 
         $result = $updateScheduleAvailability->execute($tenant, $request->validated());
+        $tab = $request->query('tab');
+        $destination = in_array($tab, ['prices', 'closed'], true) ? route('owner.schedule', ['tab' => $tab]) : '/owner/schedule';
 
         if (! $result['success']) {
-            return redirect('/owner/schedule')
+            return redirect($destination)
                 ->withErrors(['tanggal_block' => $result['error']])
                 ->withInput()
                 ->with('blocked_date_conflicts', [
@@ -223,13 +202,13 @@ class OwnerScheduleController extends Controller
                 ]);
         }
 
-        return redirect('/owner/schedule')->with('sukses', 'Pengaturan availability berhasil disimpan.');
+        return redirect($destination)->with('sukses', 'Pengaturan jadwal berhasil disimpan.');
     }
 
     /**
      * Hapus tanggal blokir.
      */
-    public function deleteBlockedDate($blockedDate, DeleteBlockedDate $deleteBlockedDate): RedirectResponse
+    public function deleteBlockedDate(Request $request, $blockedDate, DeleteBlockedDate $deleteBlockedDate): RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (! $tenant) {
@@ -242,6 +221,8 @@ class OwnerScheduleController extends Controller
             abort($result['code'] ?? 404, $result['error'] ?? 'Tanggal blokir tidak ditemukan.');
         }
 
-        return redirect('/owner/schedule')->with('sukses', 'Tanggal blokir berhasil dihapus.');
+        $destination = $request->query('tab') === 'closed' ? route('owner.schedule', ['tab' => 'closed']) : '/owner/schedule';
+
+        return redirect($destination)->with('sukses', 'Tanggal dibuka kembali.');
     }
 }

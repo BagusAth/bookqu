@@ -14,6 +14,7 @@ use App\Domain\Schedule\SlotRefusal;
 use App\Models\Booking;
 use App\Models\BookingLog;
 use App\Models\Schedule;
+use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\BookingStatusChangedOwnerNotification;
@@ -102,9 +103,10 @@ class RescheduleBooking
                         [$newScheduleId],
                         $targetDate ? Carbon::parse($targetDate)->toDateString() : null,
                         (int) $booking->id,
+                        max(1, (int) $booking->peserta),
                     )->first();
                 } catch (SlotClaimRefused $refused) {
-                    throw new Exception($refused->refusal === SlotRefusal::Occupied ? 'SLOT_TAKEN' : 'SLOT_NOT_FOUND');
+                    throw new Exception(in_array($refused->refusal, [SlotRefusal::Occupied, SlotRefusal::NotEnoughRoom, SlotRefusal::UnitBusy], true) ? 'SLOT_TAKEN' : 'SLOT_NOT_FOUND');
                 }
 
                 // Reload the source booking after synchronization; it may have changed meanwhile
@@ -117,6 +119,15 @@ class RescheduleBooking
                     ? $schedule->tanggal->toDateString()
                     : Carbon::parse($schedule->tanggal)->toDateString();
                 $newTime = substr($schedule->jam_mulai, 0, 5);
+
+                $currentService = $schedule->layanan;
+                if (! $currentService instanceof Service) {
+                    throw new Exception('SLOT_NOT_FOUND');
+                }
+                $price = app(QuoteReschedule::class)->execute($booking, $tenant, $currentService, $newDate, [$schedule])[$schedule->id];
+                if ($actor === 'customer' && ($price['price_difference'] ?? 0) > 0) {
+                    throw new Exception('SLOT_MORE_EXPENSIVE');
+                }
 
                 // Update booking
                 $newJam = $actor === 'customer' ? substr($schedule->jam_mulai, 0, 5) : $schedule->jam_mulai;
@@ -145,6 +156,8 @@ class RescheduleBooking
                         'to_date' => $newDate,
                         'to_time' => $schedule->jam_mulai,
                         'to_schedule' => $newScheduleId,
+                        'target_price' => $price['price'],
+                        'price_difference' => $price['price_difference'],
                         'actor' => $actor === 'owner' ? (auth()->user()->namalengkap ?? 'Owner') : 'customer',
                         'role' => $actor,
                     ]
@@ -192,6 +205,9 @@ class RescheduleBooking
             throw $e;
         } catch (\Throwable $e) {
             $msg = $e->getMessage();
+            if ($msg === 'SLOT_MORE_EXPENSIVE') {
+                return ['success' => false, 'error' => 'Harga slot lebih tinggi. Hubungi pemilik.', 'error_code' => $msg];
+            }
             if ($msg === 'SLOT_NOT_FOUND' || $msg === 'SLOT_TAKEN') {
                 $userMsg = $actor === 'owner'
                     ? ($msg === 'SLOT_NOT_FOUND' ? 'Slot jadwal baru tidak ditemukan atau statusnya tidak tersedia.' : 'Slot jadwal yang dipilih sudah terisi oleh pelanggan lain.')

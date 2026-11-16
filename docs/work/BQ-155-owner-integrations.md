@@ -2,7 +2,7 @@
 id: BQ-155
 title: Pengaturan → Integrasi: Google Calendar, Google Analytics, Meta Pixel
 type: feature
-status: proposed
+status: approved
 priority: P2
 phase: 4
 domain: tenancy
@@ -45,5 +45,14 @@ Secrets encrypted and never logged; external calls after commit.
 ## Docs to update
 
 - new `docs/domains/integrations.md`
+
+## Approval (Tech Lead, 2026-11-13)
+
+Approved to start, following ADR-0022.
+
+1. **Dependency:** the Google Calendar adapter uses Laravel's HTTP client for OAuth and the Calendar API. A new package needs a separate Tech Lead approval naming the package and version.
+2. **Schema:** `owner_integrations` with encrypted casts for tokens (ADR-0022 decision 2).
+3. **Credentials:** the Google OAuth client id and secret are created and kept outside the repository by the Tech Lead, per environment.
+4. **Rules:** a booking succeeds when an integration fails; external calls run after commit; tokens and secrets are never logged.
 
 ## Evidence (fill when done)

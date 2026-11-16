@@ -14,7 +14,7 @@
       note, walkin_method,
       history: [{ at, text, actor }],                 // actor = "Nama (Peran)", §5.3
       actions: [{ label, url, method, tone, confirm: { title, message }|null,
-                  reason: { name, label }|null }]      // only actions the server allows
+                  fields: { name: value }, reason: { name, label }|null }]      // only actions the server allows
     }
     Values are rendered as text only.
 --}}
@@ -87,6 +87,7 @@
                         <span class="tabular-nums" x-text="data.payment.refund.amount"></span>
                     </div>
                 </template>
+                <p x-show="data.refund_reason" class="mt-1 text-sm text-bq-text-muted">Alasan pengajuan: <span x-text="data.refund_reason"></span></p>
                 <p x-show="data.walkin_method" class="mt-1 text-sm text-bq-text-muted">Metode walk-in: <span x-text="data.walkin_method"></span></p>
             </section>
 
@@ -113,31 +114,42 @@
         <template x-if="data && data.actions && data.actions.length">
             <div class="flex w-full flex-col gap-3">
                 <template x-for="(action, index) in data.actions" x-bind:key="index">
-                    <form method="POST" x-bind:action="action.url" x-bind:id="'booking-panel-action-' + index" class="space-y-2">
-                        <input type="hidden" name="_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="_method" x-bind:value="action.method || 'POST'">
-                        <template x-if="action.reason">
-                            <div>
-                                <label class="mb-1 block text-sm font-medium text-bq-text" x-bind:for="'booking-panel-reason-' + index" x-text="action.reason.label"></label>
-                                <textarea x-bind:id="'booking-panel-reason-' + index" x-bind:name="action.reason.name" required maxlength="500" rows="2" class="w-full rounded-lg border border-bq-border px-3 py-2 text-sm"></textarea>
-                            </div>
+                    <div>
+                        <template x-if="action.reschedule">
+                            <button type="button" class="w-full rounded-lg border border-bq-border px-4 py-2 text-sm font-medium"
+                                @click="hide(); $dispatch('open-owner-reschedule', { booking: action.reschedule })" x-text="action.label"></button>
                         </template>
-                        <button
-                            type="button"
-                            x-on:click="
-                                const form = $el.form;
-                                if (!form.reportValidity()) return;
-                                if (action.confirm) {
-                                    $dispatch('open-confirm', { title: action.confirm.title, message: action.confirm.message, formId: form.id, confirmText: action.label, tone: action.tone === 'danger' ? 'danger' : 'primary' });
-                                } else {
-                                    form.requestSubmit();
-                                }
-                            "
-                            class="w-full rounded-lg px-4 py-2 text-sm font-medium"
-                            x-bind:class="action.tone === 'danger' ? 'bg-bq-danger text-white hover:opacity-90' : 'border border-bq-border bg-bq-surface text-bq-text hover:bg-bq-background'"
-                            x-text="action.label"
-                        ></button>
-                    </form>
+                        <template x-if="action.url">
+                            <form method="POST" x-bind:action="action.url" x-bind:id="'booking-panel-action-' + index" class="space-y-2">
+                                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="_method" x-bind:value="action.method || 'POST'">
+                                <template x-for="(value, name) in (action.fields || {})" :key="name">
+                                    <input type="hidden" :name="name" :value="value">
+                                </template>
+                                <template x-if="action.reason">
+                                    <div>
+                                        <label class="mb-1 block text-sm font-medium text-bq-text" x-bind:for="'booking-panel-reason-' + index" x-text="action.reason.label"></label>
+                                        <textarea x-bind:id="'booking-panel-reason-' + index" x-bind:name="action.reason.name" required maxlength="500" rows="2" class="w-full rounded-lg border border-bq-border px-3 py-2 text-sm"></textarea>
+                                    </div>
+                                </template>
+                                <button
+                                    type="button"
+                                    x-on:click="
+                                        const form = $el.form;
+                                        if (!form.reportValidity()) return;
+                                        if (action.confirm) {
+                                            $dispatch('open-confirm', { title: action.confirm.title, message: action.confirm.message, formId: form.id, confirmText: action.label, tone: action.tone === 'danger' ? 'danger' : 'primary' });
+                                        } else {
+                                            form.requestSubmit();
+                                        }
+                                    "
+                                    class="w-full rounded-lg px-4 py-2 text-sm font-medium"
+                                    x-bind:class="action.tone === 'danger' ? 'bg-bq-danger text-white hover:opacity-90' : 'border border-bq-border bg-bq-surface text-bq-text hover:bg-bq-background'"
+                                    x-text="action.label"
+                                ></button>
+                            </form>
+                        </template>
+                    </div>
                 </template>
             </div>
         </template>

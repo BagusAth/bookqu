@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Booking\BookingPricingReservations;
+use App\Actions\Schedule\ClaimSlots;
 use App\Http\Controllers\Controller;
 use App\Models\AdditionalItem;
 use App\Models\Service;
 use App\Support\TenantActor;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class OwnerAdditionalItemController extends Controller
 {
@@ -65,6 +69,7 @@ class OwnerAdditionalItemController extends Controller
             'description' => $validated['description'] ?? null,
             'price' => $validated['price'],
             'stock' => $validated['stock'] ?? null,
+            'is_unlimited' => ! isset($validated['stock']),
             'is_active' => $request->has('is_active') ? (bool) $request->input('is_active') : true,
         ]);
 
@@ -95,18 +100,27 @@ class OwnerAdditionalItemController extends Controller
             'service_ids.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
         ]);
 
-        $item->update([
-            'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'price' => $validated['price'],
-            'stock' => $validated['stock'] ?? null,
-            'is_active' => (bool) $validated['is_active'],
-        ]);
+        DB::transaction(function () use ($tenant, $item, $validated): void {
+            ClaimSlots::lockTenant((int) $tenant->id);
+            $held = app(BookingPricingReservations::class)->held('additional_item_id', $item->id);
+            if ($held > 0 && (int) ($validated['stock'] ?? 0) < $held) {
+                throw ValidationException::withMessages(['stock' => 'Stok masih dipesan oleh pembayaran aktif.']);
+            }
+            $item->update([
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'price' => $validated['price'],
+                'stock' => $validated['stock'] ?? null,
+                'is_unlimited' => ! isset($validated['stock']),
+                'is_active' => (bool) $validated['is_active'],
+            ]);
 
-        $changes = $item->services()->sync($validated['service_ids'] ?? []);
-        if (array_filter($changes)) {
-            app(TenantActor::class)->record($item, 'assignments_updated');
-        }
+            $changes = $item->services()->sync($validated['service_ids'] ?? []);
+            if (array_filter($changes)) {
+                app(TenantActor::class)->record($item, 'assignments_updated');
+            }
+
+        });
 
         return redirect()->route('owner.additional-items')
             ->with('sukses', 'Add-on "'.$item->name.'" berhasil diperbarui!');
@@ -121,8 +135,13 @@ class OwnerAdditionalItemController extends Controller
 
         $item = AdditionalItem::where('idtenant', $tenant->id)->findOrFail($id);
         $name = $item->name;
-        $item->services()->detach();
-        $item->delete();
+        DB::transaction(function () use ($tenant, $item): void {
+            ClaimSlots::lockTenant((int) $tenant->id);
+            if (app(BookingPricingReservations::class)->held('additional_item_id', $item->id) > 0) {
+                throw ValidationException::withMessages(['stock' => 'Add-on masih dipesan oleh pembayaran aktif.']);
+            }
+            $item->delete();
+        });
 
         return redirect()->route('owner.additional-items')
             ->with('sukses', 'Add-on "'.$name.'" berhasil dihapus!');
@@ -136,7 +155,11 @@ class OwnerAdditionalItemController extends Controller
         }
 
         $item = AdditionalItem::where('idtenant', $tenant->id)->findOrFail($id);
-        $item->update(['is_active' => ! $item->is_active]);
+        DB::transaction(function () use ($tenant, $item): void {
+            ClaimSlots::lockTenant((int) $tenant->id);
+            $item->refresh();
+            $item->update(['is_active' => ! $item->is_active]);
+        });
 
         $statusText = $item->is_active ? 'diaktifkan' : 'dinonaktifkan';
 

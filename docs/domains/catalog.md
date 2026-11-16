@@ -44,3 +44,5 @@ Functional: Implemented · Verification: Verified · Architecture: Target
 |---|---|
 | Legacy "program" names in routes, controller and views | BQ-035, BQ-036 |
 | Audit P0: quote characters break `@click` on cards; staff/resource relations not detached | BQ-044, BQ-045 |
+
+BQ-150 backend: add-ons linked to the selected service can enter the booking quote when the module and plan allow it. A null stock in the existing owner form means unlimited. Finite stock accounts for pending payment reservations and is decremented on settlement.

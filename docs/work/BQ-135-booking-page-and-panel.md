@@ -2,7 +2,7 @@
 id: BQ-135
 title: Booking page with task tabs and the shared booking panel actions
 type: feature
-status: proposed
+status: in-progress
 priority: P1
 phase: 4
 domain: booking
@@ -50,3 +50,5 @@ INV-BOOK-01/02; INV-PAY-*: amounts from payments.
 - `docs/domains/booking.md`
 
 ## Evidence (fill when done)
+
+2026-11-13: Booking now uses task tabs, search and filters, responsive rows, gated formula-safe CSV, and the BQ-129 shared panel also opened from Calendar. Payment amounts, actor history, and action inputs are prepared on the server. OwnerPortalWorkflowTest and the shared cancellation regression cover the new read/action contract. Remaining: no-show (BQ-153), reschedule price difference (BQ-140), unit/participant fields where the model does not yet supply them, and owner resend and notification entry points.

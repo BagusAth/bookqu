@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Voucher extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use BelongsToTenant, HasFactory;
 
     protected $fillable = [
         'idtenant',
@@ -48,7 +48,7 @@ class Voucher extends Model
 
     public function isValid(float $amount = 0, ?int $serviceId = null): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -68,9 +68,9 @@ class Voucher extends Model
             return false;
         }
 
-        if ($serviceId !== null && !empty($this->applicable_services) && $this->applicable_services !== 'all') {
+        if ($serviceId !== null && ! empty($this->applicable_services) && $this->applicable_services !== 'all') {
             $allowedServices = array_map('intval', explode(',', $this->applicable_services));
-            if (!in_array($serviceId, $allowedServices)) {
+            if (! in_array($serviceId, $allowedServices)) {
                 return false;
             }
         }
@@ -80,18 +80,19 @@ class Voucher extends Model
 
     public function calculateDiscount(float $amount): float
     {
-        if (!$this->isValid($amount)) {
+        if (! $this->isValid($amount)) {
             return 0;
         }
 
-        if ($this->discount_type === 'percentage') {
-            $cut = ($amount * $this->discount_value) / 100;
-            if ($this->max_discount !== null && $cut > $this->max_discount) {
-                $cut = $this->max_discount;
-            }
-            return min($cut, $amount);
-        }
+        return $this->discountOn($amount);
+    }
 
-        return min($this->discount_value, $amount);
+    public function discountOn(float $amount): float
+    {
+        $discount = $this->discount_type === 'percentage'
+            ? $amount * (float) $this->discount_value / 100
+            : (float) $this->discount_value;
+
+        return max(0, min($discount, $amount, $this->max_discount ?? $amount));
     }
 }

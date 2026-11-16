@@ -12,6 +12,9 @@ class BookingState
 
     public const STATUS_COMPLETED = 'completed';
 
+    /** The customer did not come to a paid session (ADR-0018). Terminal. */
+    public const STATUS_NO_SHOW = 'no_show';
+
     /**
      * Allowed status transitions mapped from current status to target statuses.
      */
@@ -24,9 +27,11 @@ class BookingState
         self::STATUS_PAID => [
             self::STATUS_COMPLETED,
             self::STATUS_CANCELLED,
+            self::STATUS_NO_SHOW,
         ],
         self::STATUS_CANCELLED => [],
         self::STATUS_COMPLETED => [],
+        self::STATUS_NO_SHOW => [],
     ];
 
     /**
@@ -61,7 +66,7 @@ class BookingState
 
     /**
      * Human-readable Indonesian label for booking status, as listed in the owner-portal
-     * contract (owner-portal.md §8). `no_show` arrives with ADR-0018 (BQ-153).
+     * contract (owner-portal.md §8).
      */
     public static function formatLabel(string $status): string
     {
@@ -70,7 +75,7 @@ class BookingState
             self::STATUS_PAID => 'Terkonfirmasi',
             self::STATUS_COMPLETED => 'Selesai',
             self::STATUS_CANCELLED => 'Dibatalkan',
-            'no_show' => 'Tidak datang',
+            self::STATUS_NO_SHOW => 'Tidak datang',
             default => $status,
         };
     }

@@ -2,7 +2,7 @@
 id: BQ-138
 title: Refund requests, owner decisions, business cancellation refunds and admin processing
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: payment
@@ -17,7 +17,7 @@ depends-on: [BQ-131, BQ-135, BQ-049]
 
 # BQ-138: Refund requests, owner decisions, business cancellation refunds and admin processing
 
-Epic **E3 · Approved decisions D-001, D-002, D-006** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E3 · Approved decisions D-001, D-002, D-006** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -56,4 +56,6 @@ INV-PAY-03 (idempotent), INV-PAY-06 (one refund per payment), INV-TEN-01.
 Disetujui Tech Lead 2026-11-04 untuk sesi agen.
 
 Backend shipped in this commit: grant-bound customer request, tenant-locked owner decisions, business cancellation refund, balance debit, admin transfer/retry and daily reminders. The request-to-transfer feature test checks encrypted data, masking, duplicate requests, tenant isolation and 50% rounding. SQLite 713, MySQL group 15, Pint and PHPStan passed.
-Remaining: customer refund input and owner booking panel controls, including the cancellation reason field, still need UI wiring. Status remains in-progress.
+The backend delivery left the customer form and owner panel wiring for the UI pass.
+
+2026-11-13: Customer single-booking and group access pages render the same refund form, with no account details echoed. The shared owner panel shows request status, the three decisions and the full-refund notice before business cancellation. OwnerPortalWorkflowTest covers the action contract and BookingManageTest covers visibility and the existing request-to-transfer flow.

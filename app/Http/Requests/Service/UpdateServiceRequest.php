@@ -39,6 +39,10 @@ class UpdateServiceRequest extends FormRequest
             'image_asset_id' => ['nullable', 'integer', Rule::exists('assets', 'id')->where('idtenant', $tenantId)],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
             'remove_image' => ['nullable', 'in:0,1'],
+            // FR-BOOKING-021: capacity per slot; FR-UNIT-002: units this service uses
+            'kapasitas' => ['nullable', 'integer', 'min:1', 'max:9999'],
+            'unit_ids' => ['nullable', 'array'],
+            'unit_ids.*' => ['integer', Rule::exists('units', 'id')->where('idtenant', $tenantId)],
             'resource_ids' => ['nullable', 'array'],
             'resource_ids.*' => ['integer', Rule::exists('resources', 'id')->where('idtenant', $tenantId)],
             'additional_item_ids' => ['nullable', 'array'],

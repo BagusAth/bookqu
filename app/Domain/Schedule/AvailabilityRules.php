@@ -48,7 +48,8 @@ class AvailabilityRules
     /**
      * Why a schedule slot cannot be booked now, or null when it can (ADR-0005 decision 1).
      * Checks, in order: ownership and requested date (when given), slot status, closed
-     * date, past time, service and fulfillment eligibility, occupancy.
+     * date, past time, service and fulfillment eligibility, room for the participants
+     * (capacity, ADR-0017), unit conflicts (FR-UNIT-003).
      */
     public static function refusal(
         Schedule $schedule,
@@ -57,6 +58,7 @@ class AvailabilityRules
         ?int $tenantId = null,
         ?int $serviceId = null,
         ?string $date = null,
+        int $participants = 1,
     ): ?SlotRefusal {
         $now = $now ? Carbon::instance($now) : Carbon::now('Asia/Jakarta');
 
@@ -99,8 +101,13 @@ class AvailabilityRules
             return SlotRefusal::ServiceUnavailable;
         }
 
-        if (BookingRules::isSlotOccupied((int) $schedule->id, $excludeBookingId)) {
-            return SlotRefusal::Occupied;
+        if (! BookingRules::hasRoomFor((int) $schedule->id, $participants, $excludeBookingId)) {
+            return BookingRules::hasRoomFor((int) $schedule->id, 1, $excludeBookingId)
+                ? SlotRefusal::NotEnoughRoom : SlotRefusal::Occupied;
+        }
+
+        if (BookingRules::unitConflict($schedule, $excludeBookingId)) {
+            return SlotRefusal::UnitBusy;
         }
 
         return null;
