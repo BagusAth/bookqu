@@ -25,23 +25,6 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 *Jawaban Product Lead:* —
 
-### D-024 · Empat tombol bantu baru di portal owner
-
-*Status:* Menunggu · *Diajukan:* 16 Nov 2026 · *Menahan rilis:* tidak
-
-*Masalah*
-Pemeriksaan portal owner menemukan beberapa langkah yang merepotkan owner. Empat perbaikannya menambah tombol atau informasi baru yang belum ada di rancangan halaman yang sudah disetujui (D-007), jadi perlu persetujuan dulu. Perbaikan lain dari pemeriksaan yang sama tidak menambah fitur, jadi dikerjakan tanpa menunggu entri ini.
-
-*Usulan keputusan*
-1. Setelah mencatat booking walk-in, owner langsung mendapat tautan ke booking itu, agar kode booking bisa langsung ditunjukkan atau dikirim ke pelanggan.
-2. Di form "Buat slot sekaligus" ada tombol "Isi dari jam buka" yang mengisi jam mulai dan selesai dari jam buka yang sudah diatur. Owner tetap memeriksa dan menyimpan sendiri. Ini berbeda dengan slot otomatis dari jam buka yang ditunda di D-021: tidak ada slot yang dibuat tanpa owner menekan simpan.
-3. Simulasi harga di menu Jam Buka & Harga menampilkan aturan yang menentukan harganya (harga dasar, akhir pekan, jam sibuk, tanggal khusus, atau harga slot), agar owner paham kenapa harganya begitu.
-4. Di pengaturan webhook (paket Pro), owner bisa mengirim pesan uji dan mengirim ulang pesan yang gagal.
-
-*Sampai diputuskan:* keempatnya tidak dikerjakan. Portal tetap berjalan seperti sekarang.
-
-*Jawaban Product Lead:* —
-
 ---
 
 ## Untuk diketahui (tidak perlu keputusan)
@@ -53,6 +36,7 @@ Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
 - *1 Nov 2026:* kalau pelanggan sampai membayar dua kali, sistem mencatat refund dan memberi tahu owner, tidak lagi diam saja.
 - *1 Nov 2026:* trial atau langganan yang sudah habis tidak lagi mendapat manfaat Pro. Perilaku setelah habis mengikuti D-002.
 - *4 Nov 2026:* satu akun hanya untuk satu bisnis. Owner yang ingin membuka bisnis lain mendaftar dengan akun terpisah.
+- *16 Nov 2026:* di Beranda, "Tandai selesai" muncul begitu sesi dimulai, sama seperti di panel booking. "Tidak datang" bisa ditandai langsung dari Beranda setelah sesi berakhir. (BQ-160)
 
 ---
 
@@ -96,3 +80,4 @@ Diambil Tech Lead sebelum peran Product Lead ditetapkan. Product Lead bisa membu
 - D-021 · Yang tidak termasuk rilis ini · Disetujui 4 Nov 2026: slot otomatis dari jam buka, tutup otomatis di libur nasional, saran otomatis di Laporan, uang muka, pengingat dan integrasi WhatsApp, serta peran buatan sendiri diajukan lagi setelah rilis
 - D-022 · Tiga fitur yang sudah ada tetapi belum diterima resmi · Disetujui 4 Nov 2026: reset password lewat link email sekali pakai yang punya masa berlaku; pembatasan percobaan login, pendaftaran, reset password, dan formulir publik per akun dan per alamat internet; halaman utama BookQu dengan paket dan harga mengikuti D-017 → sudah ada di kode (FR-AUTH-007, FR-AUTH-008, FR-PUBLIC-005)
 - D-023 · Durasi layanan dan interval slot kelipatan 5 menit · Disetujui 5 Nov 2026: owner hanya bisa menyimpan durasi layanan dan interval jadwal massal dalam kelipatan 5 menit; layanan lama yang tidak sesuai harus diubah saat diedit → BQ-114
+- D-024 · Empat tombol bantu baru di portal owner · Disetujui 16 Nov 2026: tautan ke booking setelah walk-in; tombol "Isi dari jam buka" di form buat slot sekaligus (owner tetap menyimpan sendiri, berbeda dengan slot otomatis D-021); simulasi harga menampilkan aturan yang menentukan harga; uji dan kirim ulang webhook untuk paket Pro → BQ-160

@@ -2,16 +2,16 @@
 id: BQ-160
 title: Fix owner portal frontend defects and UX gaps found in the 2026-11-16 audit
 type: improvement
-status: approved           # Tech Lead, 2026-11-16; items UX-05, UX-90, UX-94 and webhook test/redeliver wait for D-024
+status: approved           # Tech Lead 2026-11-16; D-024 approved by the Product Lead 2026-11-16
 priority: P1
 phase: 5
 domain: tenancy            # cross-cutting: every owner page (docs/owner-portal.md)
 requirements: [FR-BOOKING-010, FR-BOOKING-020, FR-VOUCHER-001, FR-VOUCHER-002, FR-TEAM-004, FR-TEAM-006, FR-UNIT-001, FR-UNIT-004]
 invariants: [INV-TEN-01, INV-BOOK-01]
-lane: heavy                # PR 1 and PR 4 are heavy; the other PRs are light-lane UI work under this item
+lane: heavy                # one bulk PR (Tech Lead exception, see "Bulk execution")
 approval: tech-lead
-decision:                  # D-024 (pending) for the four new actions only
-launch-blocker: false      # PR 1 and PR 2 (severity A) should land before the BQ-158 regression pass
+decision: D-024            # the four new actions (UX-05, UX-90, UX-94, webhook test/redeliver)
+launch-blocker: false      # the bulk PR should land before the BQ-158 regression pass
 depends-on: []
 ---
 
@@ -183,7 +183,24 @@ Related contract facts found during verification:
   **has started**; the panel follows it (`GetOwnerBookingPanel.php:109`), Beranda requires the session to have
   **ended** (`GetBeranda.php:340`). The contract wins; the rule moves into `BookingRules` so both use one source.
 - UX-90 is not D-021's "slots generated automatically from opening hours" (deferred): it only prefills the
-  bulk-slot form, and the owner still reviews and saves. It is a new action, so it waits for D-024.
+  bulk-slot form, and the owner still reviews and saves. It is a new action, approved in D-024.
+
+## Bulk execution (Tech Lead exception, 2026-11-16)
+
+The Tech Lead approved BQ-160 and decided that **all of it ships in one branch and one PR**, as a one-time
+exception to "one finished task per PR" (`docs/workflow.md` §6) and to the per-PR split below. The Product Lead
+approved D-024 the same day, so PR 9 is no longer blocked.
+
+- Branch: `agathan-bq-160-owner-portal-fixes` (already created from `integration` at `921a36e`).
+- One PR into `integration`, reviewed and merged by the Tech Lead as a heavy-lane PR.
+- The "PR" rows below become **sections of the same branch**, done in the listed order, with one or more
+  commits per section so the Tech Lead can review section by section.
+- What stays: the non-negotiable rules in `AGENTS.md` (tenant isolation, server-side authorization, booking
+  states only through `BookingState::canTransition`, no business logic in Blade/JS, never edit a test to make
+  it pass), the tests of each section, and the four green CI jobs before merge. They protect the result, not
+  the process.
+- What is waived: separate branches, separate PRs, separate approval per section, and stopping for a decision
+  on the D-024 actions.
 
 ## Plan
 
@@ -207,7 +224,7 @@ release (Tech Lead decides per PR).
 | 7b | `7b-catalog` | UX-50, UX-51, UX-61, UX-62, UX-66, rest of UX-73, UX-74, UX-80, UX-82, UX-83 | Light (UX-62: stop if the fix changes what customers see beyond the unit label) |
 | 7c | `7c-pages` | UX-100, UX-101, UX-102, UX-103, UX-104, UX-113, UX-122 | Light |
 | 8 | `8-cleanup` | UX-08, legacy colours left in add-on, promo, reschedule and checkout views | Light |
-| 9 | `9-d024` | UX-05, UX-90, UX-94, webhook test/redeliver (UX-114) | **Blocked** until D-024 is approved; contract in `owner-portal.md` §8 first (§14) |
+| 9 | `9-d024` | UX-05, UX-90, UX-94, webhook test/redeliver (UX-114) | Light; D-024 approved; contract in `owner-portal.md` §8 first (§14) |
 
 PR 3 goes before PR 4–7, because those PRs reuse its pattern. After PR 3, PR 5a–5d, 6 and 7a–7c touch
 different files and may run in parallel worktrees (`docs/workflow.md` §6).
@@ -246,8 +263,60 @@ different files and may run in parallel worktrees (`docs/workflow.md` §6).
 
 ## Agent briefs
 
-Paste the **shared brief** and then the brief of one PR into a fresh agent session (Codex or any other).
-One PR per session.
+Bulk mode (current): paste only the **bulk brief** into one agent session. It points the agent to the shared
+brief and the section briefs below, which stay the detailed checklist for each section.
+
+### Bulk brief
+
+```text
+You are implementing all of BQ-160 in the BookQu repository, in ONE branch and ONE pull request.
+The Tech Lead approved this bulk mode on 2026-11-16 and the Product Lead approved D-024 the same day, so you
+do not split the work into several PRs and you do not stop for approval between sections.
+
+Setup
+1. git fetch origin; git switch agathan-bq-160-owner-portal-fixes; git merge origin/integration.
+2. Read docs/work/BQ-160-owner-portal-ui-ux-audit.md completely: findings, Verification, Bulk execution,
+   Plan, Invariants at risk, Tests, and every brief under "Agent briefs".
+3. Follow the "Shared brief" for how to work and verify, with these bulk-mode differences:
+   - stay on agathan-bq-160-owner-portal-fixes for everything (no new branches);
+   - treat each Plan row ("PR 1" … "PR 9") as a section of this branch, in this order:
+     1, 2, 3, 4, 5a, 5b, 5c, 5d, 6, 7a, 7b, 7c, 9, 8 (cleanup last);
+   - commit at least once per section, message "type(owner): summary (BQ-160 §<section>)";
+   - the "stop and report" cases in the briefs become: skip that one item, note why, continue with the rest;
+   - ignore the shared brief's "do not push and do not open a PR": in bulk mode you push this branch and
+     open the one PR at the end (see Finish).
+
+Per section
+- Read the docs/owner-portal.md parts and the .ai/rules files that cover the files you touch.
+- Confirm each UX item in the code first; if it does not hold, mark it "skipped (not reproduced)".
+- Write the failing test first where behaviour is testable, then fix, then run that test file.
+- Section 9 (D-024): first add the four approved actions to the page contracts in docs/owner-portal.md §8,
+  each with a new AC ID (§14), then build them.
+
+Rules that stay in force (they protect the result)
+- Tenant isolation: every query stays scoped to the current tenant; ids from the request are checked.
+- Authorization on the server through TenantPermission and EntitlementRules; hiding a button is not enough.
+- Booking states change only through BookingState::canTransition and the existing Actions.
+- No queries or business decisions in Blade or JavaScript; PHP values into JS with @js() / Js::from().
+- No new dependency and no database schema change. If an item truly needs one, skip it and report it.
+- Never edit an existing test just to make it pass; a failing test is evidence.
+
+Finish
+- php artisan test --compact (full suite) passes.
+- vendor/bin/pint --dirty --format agent; vendor/bin/phpstan analyse --memory-limit=1G with no new errors.
+- npm run build.
+- Browser check at 375 px and desktop of every owner page you touched, as Pemilik and as Kasir.
+- Update docs/domains/booking.md (BookingRules change), docs/owner-portal.md (§8 for D-024, §9 if you added
+  a shared building block), and fill the Evidence table of BQ-160: one row per section with items fixed,
+  items skipped and why, tests added, and manual checks.
+- Push the branch and open ONE PR into integration using .github/pull_request_template.md, titled
+  "fix(owner): owner portal UI/UX fixes (BQ-160)". No Co-Authored-By or other attribution lines.
+- Report to the developer: per section what was fixed and skipped, the commands you ran with their results,
+  "Found, not fixed", and the PR link.
+```
+
+Per-PR mode (not used now): paste the **shared brief** and then the brief of one PR into a fresh agent
+session. One PR per session.
 
 ### Shared brief
 
@@ -478,10 +547,10 @@ reschedule and checkout views with bq-* tokens. No behaviour change; full suite 
 four pages.
 ```
 
-### PR 9 — After D-024 (blocked)
+### PR 9 — D-024 actions (approved 2026-11-16)
 
 ```text
-Start only when docs/product-decisions.md shows D-024 approved, and build only the points that were approved.
+D-024 was approved in full on 2026-11-16.
 First add the approved actions to owner-portal.md §8 with new AC IDs (§14), then build: UX-05 link to the new
 booking after a walk-in, UX-90 "Isi dari jam buka" in the bulk-slot form, UX-94 the rule name per price in
 the simulator, webhook test and redeliver.
@@ -489,5 +558,7 @@ the simulator, webhook test and redeliver.
 
 ## Evidence (fill when done)
 
-| PR | Result |
-|---|---|
+One row per section of the bulk branch.
+
+| Section | Fixed | Skipped (why) | Tests added | Manual checks |
+|---|---|---|---|---|
