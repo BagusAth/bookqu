@@ -144,6 +144,7 @@ Route::prefix('owner')
             Route::get('/programs', [OwnerProgramController::class, 'legacyIndex'])->name('owner.programs');
             Route::get('/schedule', [OwnerScheduleController::class, 'index'])->name('owner.schedule');
             Route::post('/schedule/bulk-slots', [OwnerScheduleController::class, 'bulkStore'])->name('owner.schedule.bulk-store');
+            Route::post('/schedule/selected-slots', [OwnerScheduleController::class, 'changeSelectedSlots'])->name('owner.schedule.slots.bulk');
             Route::patch('/schedule/slots/{slot}', [OwnerScheduleController::class, 'updateSlot'])->whereNumber('slot')->name('owner.schedule.slots.update');
             Route::delete('/schedule/slots/{slot}', [OwnerScheduleController::class, 'destroy'])->name('owner.schedule.slots.destroy');
             Route::post('/schedule/default-pricing', [OwnerScheduleController::class, 'updateDefaultPricing'])->name('owner.schedule.default-pricing');

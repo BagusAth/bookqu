@@ -3,6 +3,7 @@
 namespace Tests\Feature\Owner;
 
 use App\Actions\Subscription\CreateTrialSubscription;
+use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -99,6 +100,32 @@ class ScheduleManagementTest extends TestCase
         $this->assertDatabaseMissing('schedules', [
             'id' => $slot->id,
         ]);
+    }
+
+    public function test_selecting_multiple_slots_never_partially_mutates_an_occupied_or_foreign_selection(): void
+    {
+        app(CreateTrialSubscription::class)->execute($this->tenant);
+        $slots = Schedule::factory()->count(2)->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'status' => 'tersedia',
+        ]);
+        $foreign = Schedule::factory()->create();
+        Booking::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+            'idschedule' => $slots[1]->id, 'status' => 'paid',
+        ]);
+        $url = '/owner/schedule/selected-slots';
+        $this->actingAs($this->user)->postJson($url, ['operation' => 'close', 'slot_ids' => [$slots[0]->id, $foreign->id]])
+            ->assertNotFound();
+        foreach (['close', 'delete'] as $operation) {
+            $this->postJson($url, ['operation' => $operation, 'slot_ids' => $slots->modelKeys()])
+                ->assertUnprocessable()->assertJsonValidationErrors('slot_ids');
+            $this->assertDatabaseHas('schedules', ['id' => $slots[0]->id, 'status' => 'tersedia']);
+        }
+
+        $this->post($url, ['operation' => 'close', 'slot_ids' => [$slots[0]->id]])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('schedules', ['id' => $slots[0]->id, 'status' => 'tidak_tersedia']);
+        $this->post($url, ['operation' => 'delete', 'slot_ids' => [$slots[0]->id]])->assertSessionHasNoErrors();
+        $this->assertModelMissing($slots[0]);
     }
 
     public function test_owner_can_block_a_date_and_update_weekend_price(): void

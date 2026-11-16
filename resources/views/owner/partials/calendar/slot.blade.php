@@ -1,4 +1,4 @@
-<article class="min-w-0 space-y-2 rounded-lg border border-bq-border bg-bq-background p-2 text-xs">
+<article class="min-w-0 space-y-2 rounded-lg border border-bq-border p-2 text-xs {{ $slotColors[$slot['state']] ?? 'bg-bq-background' }}">
     <div class="break-words">
         <p class="font-semibold">{{ $slot['time'] }} · {{ $slot['service'] }}</p>
         <p class="mt-1 text-bq-text-muted">
@@ -12,9 +12,10 @@
     @endforeach
     @if ($slot['walkIn'] || $slot['edit'])
         <button type="button" class="rounded text-left font-semibold text-bq-primary underline"
+            data-calendar-slot-id="{{ $slot['id'] }}" data-calendar-slot="{{ \Illuminate\Support\Js::encode($slot) }}"
             @if ($errors->any() && in_array(old('_form'), ['calendar-state-'.$slot['id'], 'calendar-price-'.$slot['id']], true))
                 x-init="$nextTick(() => $el.click())"
             @endif
-            @click="slot = @js($slot); feedback = ''; $dispatch('open-dialog', { id: 'calendar-slot', trigger: $el })">Kelola slot</button>
+            @click="slot = JSON.parse($el.dataset.calendarSlot); slotErrors = {}; feedback = ''; $dispatch('open-dialog', { id: 'calendar-slot', trigger: $el })">Kelola slot</button>
     @endif
 </article>

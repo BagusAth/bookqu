@@ -15,22 +15,34 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('scheduleOpeningHours', (openingHours) => ({
         nextKey: 0,
         days: {},
+        closed: {},
         errors: [],
         busy: false,
         init() {
             for (let day = 1; day <= 7; day++) {
                 this.days[day] = (openingHours[day] ?? []).map(interval => ({ ...interval, key: ++this.nextKey }));
+                this.closed[day] = this.days[day].length === 0;
             }
         },
         add(day) {
             this.days[day].push({ key: ++this.nextKey, opens_at: '', closes_at: '' });
+        },
+        toggle(day) {
+            if (!this.closed[day] && this.days[day].length === 0) this.add(day);
+        },
+        copyToAll(source) {
+            for (let day = 1; day <= 7; day++) {
+                if (day === source) continue;
+                this.days[day] = this.days[source].map(interval => ({ ...interval, key: ++this.nextKey }));
+                this.closed[day] = this.closed[source];
+            }
         },
         async save(form) {
             this.busy = true;
             this.errors = [];
             const fields = new FormData(form);
             const days = Object.fromEntries(Object.entries(this.days).map(([day, intervals]) => [
-                day, intervals.map(({ opens_at, closes_at }) => ({ opens_at, closes_at })),
+                day, this.closed[day] ? [] : intervals.map(({ opens_at, closes_at }) => ({ opens_at, closes_at })),
             ]));
             try {
                 const response = await fetch(form.action, {
