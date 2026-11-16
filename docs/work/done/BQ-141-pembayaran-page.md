@@ -2,7 +2,7 @@
 id: BQ-141
 title: Pembayaran page: summary, transactions, balance and payouts, accounts, explanation
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: balance-payout
@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-131, BQ-127]
 
 # BQ-141: Pembayaran page: summary, transactions, balance and payouts, accounts, explanation
 
-Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -47,8 +47,9 @@ Balance changes only through the existing payout and ledger actions.
 
 - `docs/domains/balance-payout.md`
 
-## Evidence (fill when done)
+## Evidence
 
+Closed 2026-11-12. Merged into `integration` in PR #45 (merge commit `cd41f24`, 2026-11-10) after the Tech Lead audit. Before the merge: full suite 897 tests on SQLite, the item tests also on MySQL 8, Pint and PHPStan clean. Commit `eac976f`. Tests: `Owner/PembayaranPageTest` (AC-PAY-01 to AC-PAY-05), `Payout/*` tests on the new page and redirects.
 ## Implementation notes
 
 - **Wave:** built ahead of wave 4 under the ROADMAP rule. It depends on BQ-129, BQ-131 and BQ-127 and touches no file of Developer A's open items.

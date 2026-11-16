@@ -2,7 +2,7 @@
 id: BQ-136
 title: Beranda: today, needs action and the new owner guide
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: insights
@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-131, BQ-089]
 
 # BQ-136: Beranda: today, needs action and the new owner guide
 
-Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E2 · Core loop pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -48,8 +48,9 @@ Figures from payments and bookings of the current tenant only.
 
 - `docs/domains/insights.md`
 
-## Evidence (fill when done)
+## Evidence
 
+Closed 2026-11-12. Merged into `integration` in PR #45 (merge commit `cd41f24`, 2026-11-10) after the Tech Lead audit. Before the merge: full suite 897 tests on SQLite, the item tests also on MySQL 8, Pint and PHPStan clean. Commit `ac2ad72`. Tests: `Owner/BerandaPageTest` (AC-BRD-01 to AC-BRD-07), `Owner/OwnerDashboardPollingTest`, `Actions/OwnerApplicationActionsTest`.
 ## Implementation notes
 
 - **Schema (approved by the Tech Lead through the developer, 2026-11-09):** expand-only migration adding nullable `tenants.booking_link_shared_at` and `tenants.owner_guide_completed_at`. Guide step 4 and "never again" (AC-BRD-05) cannot be derived from other data.

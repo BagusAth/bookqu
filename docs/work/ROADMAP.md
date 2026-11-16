@@ -101,6 +101,8 @@ An agent can take an item end to end. Give it the item file as the prompt; the i
 
 **Plan (2026-11-07, Tech Lead):** the ops items BQ-017, BQ-020, BQ-021 and BQ-074 step 2 are deferred until the server steps can be coordinated; they stay release prerequisites for wave 7, and wave checkpoints are demonstrated locally until staging runs. While BQ-129 is open, Developer A builds the backend of the remaining items in three bundles, one PR each: A = BQ-133 + BQ-148 (pricing), B = BQ-151 + BQ-152 + BQ-153 (capacity), C = BQ-149 + BQ-150 + BQ-140 (checkout). Their UI follows BQ-129, so these items stay `in-progress` until it lands.
 
+**Progress (2026-11-12):** PR #45 (`cd41f24`) delivered BQ-129, BQ-128, BQ-132, BQ-137, BQ-136, BQ-143, BQ-141, BQ-142 and BQ-145 (Developer B), absorbing BQ-090 to BQ-094, BQ-099 to BQ-102 and BQ-104 to BQ-106. **Wave 2 is done** for Developer B. Halaman Booking and Bantuan stay behind their hidden modules until release. Still open for Developer B: BQ-134 (after BQ-133), BQ-147, BQ-154 and BQ-155 (after BQ-144).
+
 ### Rules for the waves
 
 - **An item may move forward a wave** when all its `depends-on` are done and it touches no file of the other developer's open item.

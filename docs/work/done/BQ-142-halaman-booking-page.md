@@ -2,7 +2,7 @@
 id: BQ-142
 title: Halaman Booking: link, QR, promotion materials, appearance and media gallery
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: public-site
@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-130]
 
 # BQ-142: Halaman Booking: link, QR, promotion materials, appearance and media gallery
 
-Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -47,8 +47,9 @@ INV-TEN-01 for media files.
 
 - `docs/domains/public-site.md`
 
-## Evidence (fill when done)
+## Evidence
 
+Closed 2026-11-12. Merged into `integration` in PR #45 (merge commit `cd41f24`, 2026-11-10) after the Tech Lead audit. Before the merge: full suite 897 tests on SQLite, the item tests also on MySQL 8, Pint and PHPStan clean. Commit `de6ea31`. Tests: `Owner/HalamanBookingPageTest` (AC-HBK-01, AC-HBK-02, AC-HBK-05), `Owner/OwnerModulesCrudTest`, `Security/ReleaseGateAndHardeningTest`. The page stays behind the hidden `booking-page` module until the Tech Lead releases it.
 ## Implementation notes
 
 - **Decisions (developer, 2026-11-10, on behalf of the Tech Lead):** the new dependency `bacon/bacon-qr-code` (^3.1, server-side SVG) is approved. Gallery wiring covers Layanan and Tampilan in this item.

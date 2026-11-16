@@ -17,7 +17,7 @@ depends-on: [BQ-092]
 
 # BQ-101: Reviews uncapped memory load, unescaped search interpolation, and reply modal governance
 
-> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-143](../BQ-143-ulasan-page.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-143.
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-143](BQ-143-ulasan-page.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-143.
 
 
 Found during the owner UI deep audit on 2026-11-02 in `/owner/reviews`.

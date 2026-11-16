@@ -8,6 +8,7 @@ use App\Actions\Tenant\GetStorefrontTenant;
 use App\Models\Asset;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Models\TenantLandingPage;
 use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Deletes an image from the business's gallery (FR-ASSET-005). An image in use (logo, cover or a
- * service image) is deleted only after the owner confirms; its references are then cleared.
+ * service image or the landing page banner) is deleted only after the owner confirms; its references are then cleared.
  */
 class DeleteMediaAsset
 {
@@ -44,6 +45,7 @@ class DeleteMediaAsset
                 'banner_path' => $tenant->banner_path === $asset->file_path ? null : $tenant->banner_path,
             ])->save();
             Service::where('idtenant', $tenant->id)->where('image_url', $asset->file_path)->update(['image_url' => null]);
+            TenantLandingPage::where('idtenant', $tenant->id)->where('banner_asset_id', $asset->id)->update(['banner_asset_id' => null]);
             $asset->delete();
         });
 
@@ -71,6 +73,9 @@ class DeleteMediaAsset
         $services = Service::where('idtenant', $tenant->id)->where('image_url', $asset->file_path)->count();
         if ($services > 0) {
             $usage[] = $services.' gambar layanan';
+        }
+        if (TenantLandingPage::where('idtenant', $tenant->id)->where('banner_asset_id', $asset->id)->exists()) {
+            $usage[] = 'banner landing page';
         }
 
         return $usage;

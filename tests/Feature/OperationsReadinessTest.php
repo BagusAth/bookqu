@@ -19,6 +19,8 @@ class OperationsReadinessTest extends TestCase
         Artisan::shouldReceive('call')->once()->with('app:check-expired-subscriptions')->andReturn(0);
         Artisan::shouldReceive('call')->once()->with('bookings:expire-payments')->andReturn(0);
         Artisan::shouldReceive('call')->once()->with('refunds:remind-open')->andReturn(0);
+        // BQ-154: every custom domain is re-checked hourly.
+        Artisan::shouldReceive('call')->once()->with('domains:check')->andReturn(0);
 
         foreach ($events as $event) {
             $event->run($this->app);

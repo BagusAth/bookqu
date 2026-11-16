@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Actions\Team\ResolveTenantMembership;
 use App\Domain\CustomerAccess\AccessContext;
+use App\Domain\Tenant\CustomDomain;
 use App\Models\Tenant;
 use App\Support\TenantContext;
 use Closure;
@@ -29,7 +30,10 @@ class TenantMiddleware
         if (is_string($slug) && $slug !== '') {
             $resolvedTenant = Tenant::where('slug', $slug)->first();
         } elseif ($isCustomDomain) {
-            $resolvedTenant = Tenant::where('custom_domain', $host)->first();
+            // BQ-154: a domain serves its business only while its last DNS check connected it.
+            $resolvedTenant = Tenant::where('custom_domain', mb_strtolower($host))
+                ->where('custom_domain_status', CustomDomain::STATUS_CONNECTED)
+                ->first();
             if ($resolvedTenant) {
                 $request->route()->setParameter('slug_usaha', $resolvedTenant->slug);
                 $request->route()->forgetParameter('custom_domain');

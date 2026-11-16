@@ -2,7 +2,7 @@
 id: BQ-145
 title: Paket & Tagihan, notification centre and Bantuan
 type: feature
-status: in-progress
+status: done
 priority: P2
 phase: 4
 domain: subscription
@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-130, BQ-131]
 
 # BQ-145: Paket & Tagihan, notification centre and Bantuan
 
-Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -48,8 +48,9 @@ Notification redirects only to own-tenant targets.
 - `docs/domains/subscription.md`
 - `docs/domains/notifications.md`
 
-## Evidence (fill when done)
+## Evidence
 
+Closed 2026-11-12. Merged into `integration` in PR #45 (merge commit `cd41f24`, 2026-11-10) after the Tech Lead audit. Before the merge: full suite 897 tests on SQLite, the item tests also on MySQL 8, Pint and PHPStan clean. Commit `cdeb057`. Tests: `Owner/PaketNotifikasiBantuanTest` (AC-PKT-03, AC-PKT-04, AC-NTF-01, AC-NTF-02, AC-BNT-01), `Team/TenantPermissionTest`. Bantuan stays behind the hidden `help` module; set `SUPPORT_WHATSAPP` and `SUPPORT_EMAIL` before releasing it.
 ## Implementation notes
 
 - **Wave:** built ahead of wave 4 under the ROADMAP rule. It depends on BQ-129, BQ-130 and BQ-131.

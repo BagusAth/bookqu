@@ -239,35 +239,35 @@ class FiveModulesFullIntegrationTest extends TestCase
 
     public function test_schedule_report_renders_with_period_filters(): void
     {
-        // BQ-130: isolate this behavior behind an explicitly enabled development module.
-        config(['modules.schedule-report' => 'released']);
+        // BQ-147: the schedule report is Laporan → Okupansi with the shared period filter (owner-portal.md §8.13).
+        config(['modules.reports' => 'released']);
         $this->actingAs($this->owner);
         session(['current_tenant_id' => $this->tenant->id]);
         app(TenantContext::class)->setTenantId($this->tenant->id);
 
-        $periods = ['all', 'today', 'this_week', 'this_month', 'last_30_days'];
+        $periods = ['bulan-ini', 'bulan-lalu', '3-bulan', '6-bulan', '12-bulan'];
 
         foreach ($periods as $period) {
-            $response = $this->get(route('owner.schedule-report', ['period' => $period]));
+            $response = $this->get(route('owner.analytics', ['tab' => 'okupansi', 'periode' => $period]));
             $response->assertStatus(200);
-            $response->assertSee('Schedule Report');
-            $response->assertSee('Utilization Rate');
+            $response->assertSee('Okupansi');
+            $response->assertSee('Tingkat okupansi');
         }
     }
 
     public function test_schedule_report_export_csv(): void
     {
-        // BQ-130: isolate this behavior behind an explicitly enabled development module.
-        config(['modules.schedule-report' => 'released']);
+        // BQ-147: the schedule report export is the Okupansi export of Laporan.
+        config(['modules.reports' => 'released']);
         $this->actingAs($this->owner);
         session(['current_tenant_id' => $this->tenant->id]);
         app(TenantContext::class)->setTenantId($this->tenant->id);
 
-        $response = $this->get(route('owner.schedule-report.export', ['period' => 'all']));
+        $response = $this->get(route('owner.analytics.export', ['tab' => 'okupansi']));
 
         $response->assertStatus(200);
         $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('schedule-report-', $response->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('laporan-okupansi-', $response->headers->get('Content-Disposition'));
 
         // Validate content from stream
         ob_start();
@@ -275,7 +275,7 @@ class FiveModulesFullIntegrationTest extends TestCase
         $content = ob_get_clean();
 
         $this->assertStringContainsString('Barbershop Eksklusif', $content);
-        $this->assertStringContainsString('Gentleman Haircut', $content);
+        $this->assertStringContainsString('Tingkat okupansi (%)', $content);
     }
 
     // =========================================================================

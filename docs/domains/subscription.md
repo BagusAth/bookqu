@@ -9,7 +9,7 @@ Owns plans, the tenant's subscription state, trials, feature entitlement, usage 
 | Overview | `owner.subscription` → `Owner/OwnerSubscriptionController` → `Actions/Subscription/GetSubscriptionOverview` |
 | Checkout | `owner.checkout`, `owner.checkout.process`, `owner.checkout.payment`, `owner.checkout.check-status`, `owner.checkout.callback`, `owner.checkout.invoice` → `Owner/OwnerCheckoutController` → `Actions/Payment/CreateSubscriptionPayment`; activation via `SynchronizePaymentStatus` → `ActivateSubscription` |
 | Trial | Registration → `Actions/Subscription/CreateTrialSubscription` (7 days, Pro-equivalent) |
-| Feature gate | middleware `subscription:<feature>` (`CheckSubscription`), used on `owner.analytics*` (`medium`) and `owner.landing-page*` (`pro`) |
+| Feature gate | middleware `subscription:<feature>` (`CheckSubscription`), used on `owner.analytics.export` (`analytics`, Medium) and the landing page and domain routes of Halaman Booking (`landing-page`, Pro) |
 | Expiry | `app:check-expired-subscriptions` daily (`Console/Commands/CheckExpiredSubscriptions`) |
 
 ## Rules (authoritative)

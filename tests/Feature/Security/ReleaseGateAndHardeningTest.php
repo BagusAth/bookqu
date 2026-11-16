@@ -76,10 +76,12 @@ class ReleaseGateAndHardeningTest extends TestCase
             'owner.booking-page' => 'booking-page',
             'owner.settings.payment' => 'direct-payment',
             'owner.settings.assets' => 'booking-page',
-            'owner.landing-page' => 'landing-page',
+            // BQ-154: the former landing builder redirects inside Halaman Booking.
+            'owner.landing-page' => 'booking-page',
             'owner.settings.integrations' => 'integrations',
-            'owner.analytics' => 'analytics',
-            'owner.schedule-report' => 'schedule-report',
+            // BQ-147: Laporan and the former schedule report sit behind the redesign module `reports`.
+            'owner.analytics' => 'reports',
+            'owner.schedule-report' => 'reports',
             'owner.settings.balance' => 'balance',
             'owner.payouts' => 'balance',
         ];

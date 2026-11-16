@@ -17,7 +17,7 @@ depends-on: []
 
 # BQ-105: Hard-coded owner URLs and storefront links built outside CustomerBookingRoutes
 
-> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-128](../BQ-128-owner-app-shell-and-navigation.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-128.
+> **Ditutup 2026-11-04 (BQ-126 Fase 9): dilebur ke [BQ-128](BQ-128-owner-app-shell-and-navigation.md).** Semua temuan di item ini menjadi bagian dari lingkup BQ-128.
 
 
 Found during the owner UI deep audit on 2026-11-02. Corrected by the Tech Lead review on 2026-11-02: the quoted paths (`/owner/schedules/...`, `fetch('/owner/customers/note')`, a route named `tenant.show`) did not exist; the list below is re-checked against the code. Priority lowered to P2 and lane to light: it is a refactor, and no v1 tenant can set a custom domain yet (see D-005).

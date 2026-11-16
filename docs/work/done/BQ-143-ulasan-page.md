@@ -2,7 +2,7 @@
 id: BQ-143
 title: Ulasan page with tabs and suggested replies
 type: feature
-status: in-progress
+status: done
 priority: P2
 phase: 4
 domain: customers-reviews
@@ -17,7 +17,7 @@ depends-on: [BQ-129]
 
 # BQ-143: Ulasan page with tabs and suggested replies
 
-Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -47,8 +47,9 @@ INV-TEN-01.
 
 - `docs/domains/customers-reviews.md`
 
-## Evidence (fill when done)
+## Evidence
 
+Closed 2026-11-12. Merged into `integration` in PR #45 (merge commit `cd41f24`, 2026-11-10) after the Tech Lead audit. Before the merge: full suite 897 tests on SQLite, the item tests also on MySQL 8, Pint and PHPStan clean. Commit `17e19c1`. Tests: `Owner/UlasanPageTest` (AC-ULS-01, AC-ULS-02).
 ## Implementation notes
 
 - **Wave:** built ahead of wave 4 under the ROADMAP rule. Its only dependency is BQ-129, and it touches no file of Developer A's open items (BQ-133, BQ-138, BQ-144).
