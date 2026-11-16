@@ -282,7 +282,14 @@ Route::prefix('owner')
                 });
                 Route::post('/{account}/default', [OwnerPayoutAccountController::class, 'makeDefault'])->whereNumber('account')->middleware('throttle:20,10,payout-account-default')->name('owner.payout-accounts.default');
             });
-            Route::get('/settings/integrations', [OwnerIntegrationController::class, 'index'])->middleware(['module:integrations', 'subscription:integrations'])->name('owner.settings.integrations');
+            Route::prefix('/settings/integrations')->middleware(['module:integrations', 'subscription:integrations'])->name('owner.settings.integrations')->group(function () {
+                Route::get('/', [OwnerIntegrationController::class, 'index']);
+                Route::put('/tracking', [OwnerIntegrationController::class, 'saveTracking'])->name('.tracking');
+                Route::post('/calendar/connect', [OwnerIntegrationController::class, 'beginCalendar'])->name('.calendar.connect');
+                Route::get('/calendar/callback', [OwnerIntegrationController::class, 'connectCalendar'])->name('.calendar.callback');
+                Route::post('/calendar/test', [OwnerIntegrationController::class, 'testCalendar'])->name('.calendar.test');
+                Route::delete('/calendar', [OwnerIntegrationController::class, 'disconnectCalendar'])->name('.calendar.disconnect');
+            });
         });
     });
 

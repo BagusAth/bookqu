@@ -6,8 +6,11 @@ use App\Actions\Owner\GetOwnerShell;
 use App\Actions\Subscription\GetPublicPlanCards;
 use App\Actions\Team\TeamNotificationAccess;
 use App\Contracts\Payments\PaymentGatewayInterface;
+use App\Domain\Integrations\BookingIntegrationEvent;
+use App\Domain\Modules\ModuleRelease;
 use App\Domain\Notifications\NotificationPreferences;
 use App\Infrastructure\Payments\PaymentGatewayManager;
+use App\Jobs\DeliverGoogleCalendarEvent;
 use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
@@ -15,6 +18,7 @@ use App\Models\BookingLog;
 use App\Models\Category;
 use App\Models\CustomerNote;
 use App\Models\OwnerBlockedDate;
+use App\Models\OwnerIntegration;
 use App\Models\OwnerPayout;
 use App\Models\Payment;
 use App\Models\Review;
@@ -28,6 +32,7 @@ use App\Models\TenantPayoutAccount;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Voucher;
+use App\Observers\BookingIntegrationObserver;
 use App\Policies\TenantResourcePolicy;
 use App\Support\TenantActor;
 use App\Support\TenantContext;
@@ -87,6 +92,18 @@ class AppServiceProvider extends ServiceProvider
         foreach ([Booking::class, Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class, Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class, Staff::class, \App\Models\Resource::class, Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class, TenantMember::class, Unit::class] as $resource) {
             Gate::policy($resource, 'App\\Policies\\'.class_basename($resource).'Policy');
         }
+
+        Booking::observe(BookingIntegrationObserver::class);
+        Event::listen(BookingIntegrationEvent::class, function (BookingIntegrationEvent $event): void {
+            if (ModuleRelease::state('integrations') !== 'released') {
+                return;
+            }
+
+            // scope-bypass: an after-commit event contains the tenant of the saved booking.
+            if (OwnerIntegration::withoutGlobalScopes()->where('idtenant', $event->tenantId)->whereNotNull('google_refresh_token')->exists()) {
+                DeliverGoogleCalendarEvent::dispatch($event);
+            }
+        });
 
         Event::listen('eloquent.created: '.Booking::class, function (Booking $booking): void {
             BookingLog::record($booking->id, 'created', 'Booking dibuat.', [

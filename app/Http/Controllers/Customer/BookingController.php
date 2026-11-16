@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\StorefrontCheckoutState;
+use App\Actions\Integrations\GetOwnerIntegrations;
 use App\Actions\Tenant\GetLandingPage;
 use App\Domain\Subscription\EntitlementRules;
 use App\Models\Service;
@@ -62,7 +63,9 @@ final class BookingController extends StorefrontBookingController
         // BQ-154: a published landing page of a Pro business opens the storefront home.
         $landing = app(GetLandingPage::class)->published($tenant, $subscription);
 
-        return view('customer.booking.program-selection', compact('tenant', 'services', 'servicesPayload', 'categories', 'pendingCheckout', 'acceptsOnlineBookings', 'landing'));
+        $tracking = app(GetOwnerIntegrations::class)->storefront($tenant);
+
+        return view('customer.booking.program-selection', compact('tenant', 'services', 'servicesPayload', 'categories', 'pendingCheckout', 'acceptsOnlineBookings', 'landing', 'tracking'));
     }
 
     public function selectProgram(Request $request, string $slug_usaha)
