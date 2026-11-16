@@ -10,8 +10,8 @@ use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
-use Illuminate\Support\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 final class ReadOwnerApi
