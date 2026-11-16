@@ -4,6 +4,7 @@ namespace App\Actions\Payment;
 
 use App\Actions\Booking\CancelBooking;
 use App\Actions\Schedule\ClaimSlots;
+use App\Domain\Integrations\RefundIntegrationEvent;
 use App\Domain\Payment\RefundRequestState;
 use App\Jobs\SendRefundCustomerUpdate;
 use App\Models\RefundRequest;
@@ -35,6 +36,7 @@ final class DecideRefundRequest
             }
 
             $request->update(['status' => $decision, 'decided_by' => $actor->id, 'decision_reason' => $reason, 'decided_at' => now()]);
+            DB::afterCommit(fn () => event(new RefundIntegrationEvent('refund.decided', $tenantId, $id)));
             SendRefundCustomerUpdate::dispatch($tenantId, (int) $request->booking_id, $decision->value)->afterCommit();
         });
     }

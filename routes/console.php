@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -49,3 +50,9 @@ Schedule::call(fn () => Artisan::call('domains:check'))
     ->name('domains:check')
     ->hourly()
     ->withoutOverlapping();
+
+Artisan::command('webhooks:prune', function (): void {
+    DB::table('webhook_deliveries')->where('created_at', '<', now()->subDays(30))->delete();
+})->purpose('Prune webhook delivery logs older than 30 days');
+
+Schedule::command('webhooks:prune')->daily()->withoutOverlapping();
