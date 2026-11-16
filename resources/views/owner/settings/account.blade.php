@@ -4,33 +4,33 @@
     <h2 class="font-semibold">Akun</h2>
     <div class="grid gap-3 sm:grid-cols-2">
         <label class="grid gap-1 text-sm">Nama lengkap
-            <input name="namalengkap" required value="{{ old('namalengkap', $accountUser?->namalengkap) }}" autocomplete="name" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
+            <input name="namalengkap" required value="{{ old('namalengkap', $accountUser?->namalengkap) }}" autocomplete="name" class="bq-input w-full">
             <x-owner.field-error name="namalengkap" />
         </label>
         <label class="grid gap-1 text-sm">Email
-            <input type="email" name="email" required value="{{ old('email', $accountUser?->email) }}" autocomplete="email" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
+            <input type="email" name="email" required value="{{ old('email', $accountUser?->email) }}" autocomplete="email" class="bq-input w-full">
             <x-owner.field-error name="email" />
         </label>
         <label class="grid gap-1 text-sm">Nomor telepon
-            <input type="tel" name="nomorhp" required value="{{ old('nomorhp', $accountUser?->nomorhp) }}" autocomplete="tel" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
+            <input type="tel" name="nomorhp" required value="{{ old('nomorhp', $accountUser?->nomorhp) }}" autocomplete="tel" class="bq-input w-full">
             <x-owner.field-error name="nomorhp" />
         </label>
         <label class="grid gap-1 text-sm">Kata sandi saat ini
             <input type="password" name="current_password" autocomplete="current-password"
-                required class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
+                required class="bq-input w-full">
             <x-owner.field-error name="current_password" />
             <span class="text-bq-text-muted">Wajib untuk menyimpan perubahan akun.</span>
         </label>
         <label class="grid gap-1 text-sm">Kata sandi baru (opsional)
-            <input type="password" name="password" x-model="password" autocomplete="new-password" minlength="8" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
+            <input type="password" name="password" x-model="password" autocomplete="new-password" minlength="8" class="bq-input w-full">
             <x-owner.field-error name="password" />
         </label>
         <label class="grid gap-1 text-sm">Ulangi kata sandi baru
-            <input type="password" name="password_confirmation" autocomplete="new-password" :required="password !== ''" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
+            <input type="password" name="password_confirmation" autocomplete="new-password" :required="password !== ''" class="bq-input w-full">
             <x-owner.field-error name="password_confirmation" />
         </label>
     </div>
-    <button class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white">Simpan akun</button>
+    <button class="bq-btn bq-btn-primary">Simpan akun</button>
 </form>
 
 @if ($canDeleteBusiness)
@@ -46,14 +46,14 @@
             <input type="hidden" name="_form" value="settings-delete-business">
             <x-owner.field-error name="error" form="settings-delete-business" />
             <label class="grid gap-1 text-sm">Email akun
-                <input type="email" name="confirm_account" value="{{ old('confirm_account') }}" required autocomplete="email" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
+                <input type="email" name="confirm_account" value="{{ old('confirm_account') }}" required autocomplete="email" class="bq-input w-full">
                 <x-owner.field-error name="confirm_account" />
             </label>
             <label class="grid gap-1 text-sm">Kata sandi saat ini
-                <input type="password" name="delete_password" required autocomplete="current-password" class="w-full rounded-lg border border-bq-border bg-bq-surface p-2">
+                <input type="password" name="delete_password" required autocomplete="current-password" class="bq-input w-full">
                 <x-owner.field-error name="delete_password" />
             </label>
-            <button class="rounded-lg bg-bq-danger px-4 py-2 text-sm font-semibold text-white">Hapus permanen</button>
+            <button class="bq-btn bq-btn-danger-solid">Hapus permanen</button>
         </form>
     </x-owner.dialog>
 @endif

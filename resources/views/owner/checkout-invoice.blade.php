@@ -8,21 +8,21 @@
     {{-- Stepper --}}
     <div class="flex items-center justify-center gap-0 py-2">
         <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-md shadow-bq-primary/30">
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-bq-primary/30">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
             <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pesanan</span>
         </div>
         <div class="mx-3 h-0.5 w-8 rounded bg-bq-primary sm:w-16"></div>
         <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-md shadow-bq-primary/30">
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-bq-primary/30">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
             <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pembayaran</span>
         </div>
         <div class="mx-3 h-0.5 w-8 rounded bg-bq-primary sm:w-16"></div>
         <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-success text-sm font-bold text-white shadow-md shadow-bq-success/30">
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-success text-sm font-bold text-white shadow-bq-success/30">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
             <span class="hidden text-sm font-semibold text-bq-success sm:inline">Selesai</span>
@@ -165,7 +165,7 @@
 
                 {{-- Back to Dashboard --}}
                 <a href="{{ route('owner.dashboard') }}" id="btn-back-dashboard"
-                    class="w-full rounded-lg bg-bq-primary py-3 text-sm font-bold text-white shadow-md shadow-bq-primary/25 transition-all hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                    class="bq-btn bq-btn-primary w-full">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                     Kembali ke Dashboard
                 </a>

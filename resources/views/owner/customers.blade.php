@@ -20,7 +20,7 @@
         'regular' => '3 booking atau lebih',
         'dormant' => 'Tidak booking 60 hari terakhir',
     ];
-    $openButton = 'inline-flex items-center rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-sm font-medium text-bq-text hover:bg-bq-background';
+    $openButton = 'bq-btn bq-btn-secondary bq-btn-sm';
 @endphp
 
 @section('content')
@@ -55,9 +55,9 @@
                 <input type="hidden" name="filter" value="{{ $filter }}">
             @endif
             <label for="customer-search" class="sr-only">Cari pelanggan</label>
-            <input id="customer-search" type="search" name="search" value="{{ $search }}" placeholder="Cari nama, email atau nomor HP" class="min-w-48 flex-1 rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30">
+            <input id="customer-search" type="search" name="search" value="{{ $search }}" placeholder="Cari nama, email atau nomor HP" class="bq-input min-w-48 flex-1">
             <label class="sr-only" for="customer-sort">Urutkan pelanggan</label>
-            <select id="customer-sort" name="sort" @change="$el.form.requestSubmit()" class="rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm">
+            <select id="customer-sort" name="sort" @change="$el.form.requestSubmit()" class="bq-input">
                 @foreach ($sortOptions as $key => $option)
                     <option value="{{ $key }}" @selected($sort === $key)>{{ $option }}</option>
                 @endforeach

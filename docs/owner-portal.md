@@ -76,13 +76,13 @@ These rules decide where anything new goes. Breaking one needs a Tech Lead decis
 | Element | Behaviour | Roles |
 |---|---|---|
 | Bell (Notifikasi) | Unread count; dropdown with the latest items; "Lihat semua" opens `/owner/notifications` (§8.16) | all |
-| **+ Booking** | Opens the walk-in form (§9) from any page | all; hidden when the subscription has ended (§12) |
+| **+ Booking** (button label "Walk-in", BQ-161) | Opens the walk-in form (§9) from any page | all; hidden when the subscription has ended (§12) |
 | Search | Booking code, customer name or phone number; results open the booking or customer panel | all |
 | Account menu | Name and role of the signed-in user, link to Pengaturan → Akun, sign out | all |
 
 ### 4.3 Bottom navigation (phone)
 
-Below 768 px the sidebar is replaced by a bottom bar with **Beranda, Kalender, + Booking, Booking, Lainnya**. "Lainnya" opens a sheet with the remaining menus the role may open, in sidebar order.
+Below 768 px the sidebar is replaced by a bottom bar with **Beranda, Kalender, + Walk-in, Booking, Lainnya** (the centre button is the + Booking action, labelled "Walk-in" so "Booking" appears once, BQ-161). "Lainnya" opens a sheet with the remaining menus the role may open, in sidebar order.
 
 ## 5. Roles and access
 

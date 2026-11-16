@@ -4,7 +4,7 @@
         <input type="number" name="max_discount_amount" min="0" step="0.01"
                x-model="{{ $model }}.max_discount_amount"
                placeholder="Kosongkan jika tanpa batas"
-               class="w-full rounded-xl border border-bq-border px-3 py-2 text-xs">
+               class="bq-input w-full">
         <x-owner.field-error name="max_discount_amount" :form="$errorForm" />
     </label>
 </div>

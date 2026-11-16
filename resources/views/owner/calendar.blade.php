@@ -84,7 +84,7 @@
         <a class="text-bq-primary underline" href="{{ route('owner.calendar', ['view' => $view, 'date' => $previous->toDateString()] + $filters) }}">Sebelumnya</a>
         <span class="font-semibold">{{ $view === 'day' ? 'Jadwal Harian · ' : '' }}{{ $dateLabel }}</span>
         <a class="text-bq-primary underline" href="{{ route('owner.calendar', ['view' => $view, 'date' => $next->toDateString()] + $filters) }}">Berikutnya</a>
-        <a class="rounded-lg border border-bq-border px-3 py-1" href="{{ route('owner.calendar', ['view' => $view, 'date' => $today] + $filters) }}">Hari ini</a>
+        <a class="bq-btn bq-btn-secondary bq-btn-sm" href="{{ route('owner.calendar', ['view' => $view, 'date' => $today] + $filters) }}">Hari ini</a>
     </nav>
 
     @include('owner.partials.calendar.controls')

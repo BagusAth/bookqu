@@ -10,7 +10,7 @@
         <div class="flex items-center justify-center gap-0">
             {{-- Step 1: Active --}}
             <div class="flex items-center gap-2.5">
-                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-md shadow-bq-primary/30 ring-4 ring-bq-primary/15">
+                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-bq-primary/30 ring-4 ring-bq-primary/15">
                     1
                 </div>
                 <div class="hidden sm:block text-left">
@@ -49,7 +49,7 @@
 
     {{-- Pending Payment Alert if Available --}}
     @if (!empty($existingPayment))
-        <div class="rounded-xl border border-bq-warning bg-bq-warning-bg/90 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+        <div class="rounded-xl border border-bq-warning bg-bq-warning-bg/90 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ">
             <div class="flex items-start sm:items-center gap-3">
                 <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-bq-warning-bg text-bq-warning">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -63,7 +63,7 @@
                     </p>
                 </div>
             </div>
-            <a href="{{ route('owner.checkout.payment', $existingPayment) }}" class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-bq-warning px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-bq-warning transition">
+            <a href="{{ route('owner.checkout.payment', $existingPayment) }}" class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-bq-warning px-4 py-2 text-xs font-bold text-white hover:bg-bq-warning transition">
                 <span>Lanjutkan Pembayaran Lama</span>
                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </a>
@@ -84,7 +84,7 @@
             </div>
 
             {{-- Card 1: Konteks Bisnis & Tenant --}}
-            <div class="rounded-xl border border-bq-border bg-bq-surface p-5 space-y-4 shadow-sm">
+            <div class="rounded-xl border border-bq-border bg-bq-surface p-5 space-y-4 ">
                 <div class="flex items-center justify-between border-b border-bq-border pb-3">
                     <div class="flex items-center gap-2.5">
                         <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-bq-primary/10 text-bq-primary">
@@ -134,7 +134,7 @@
                 <input type="hidden" name="plan_id" value="{{ $plan->id }}">
 
                 {{-- Card 2: Data Kontak Pembayar --}}
-                <div class="rounded-xl border border-bq-border bg-bq-surface p-5 space-y-4 shadow-sm">
+                <div class="rounded-xl border border-bq-border bg-bq-surface p-5 space-y-4 ">
                     <div class="flex items-center gap-2.5 border-b border-bq-border pb-3">
                         <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-bq-primary/10 text-bq-primary">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -152,7 +152,7 @@
                             </label>
                             <input type="text" name="nama_pembayar" id="nama_pembayar"
                                 value="{{ old('nama_pembayar', $user->namalengkap ?? $tenant->namaowner ?? '') }}"
-                                class="w-full rounded-lg border @error('nama_pembayar') border-bq-danger ring-1 ring-bq-danger @else border-bq-border @enderror bg-bq-background px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-colors focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                                class="bq-input w-full" @error(\'nama_pembayar\') aria-invalid="true" @enderror
                                 placeholder="Contoh: John Doe" required>
                             <p class="mt-1.5 text-xs text-bq-text-subtle">Nama penanggung jawab yang tercantum pada faktur langganan.</p>
                             @error('nama_pembayar')
@@ -166,7 +166,7 @@
                             </label>
                             <input type="email" name="email_pembayar" id="email_pembayar"
                                 value="{{ old('email_pembayar', $user->email ?? '') }}"
-                                class="w-full rounded-lg border @error('email_pembayar') border-bq-danger ring-1 ring-bq-danger @else border-bq-border @enderror bg-bq-background px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-colors focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                                class="bq-input w-full" @error(\'email_pembayar\') aria-invalid="true" @enderror
                                 placeholder="nama@perusahaan.com" required>
                             <p class="mt-1.5 text-xs text-bq-text-subtle">Faktur resmi & tanda terima pembayaran akan dikirim ke alamat email ini.</p>
                             @error('email_pembayar')
@@ -180,7 +180,7 @@
                             </label>
                             <input type="tel" name="hp_pembayar" id="hp_pembayar"
                                 value="{{ old('hp_pembayar', $user->nomorhp ?? $tenant->nomorhp ?? '') }}"
-                                class="w-full rounded-lg border @error('hp_pembayar') border-bq-danger ring-1 ring-bq-danger @else border-bq-border @enderror bg-bq-background px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-colors focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"
+                                class="bq-input w-full" @error(\'hp_pembayar\') aria-invalid="true" @enderror
                                 placeholder="081234567890" required>
                             <p class="mt-1.5 text-xs text-bq-text-subtle">Digunakan untuk konfirmasi aktivasi instan dan pengingat masa aktif langganan.</p>
                             @error('hp_pembayar')
@@ -201,7 +201,7 @@
                 {{-- Submit Button (Mobile) --}}
                 <div class="lg:hidden pt-2">
                     <button type="submit" id="btn-checkout-submit-mobile"
-                        class="w-full rounded-xl bg-bq-primary py-3.5 text-sm font-bold text-white shadow-lg shadow-bq-primary/30 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="bq-btn bq-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         :disabled="isSubmitting">
                         <span x-show="!isSubmitting" class="flex items-center justify-center gap-2">
                             <span>Lanjut ke pembayaran</span>
@@ -236,14 +236,14 @@
                     default => [
                         'badgeClass' => 'bg-bq-primary-light text-bq-primary border-bq-border',
                         'iconBg' => 'bg-bq-primary-light text-bq-primary',
-                        'cardBorder' => 'border-bq-border/90 shadow-sm',
+                        'cardBorder' => 'border-bq-border/90 ',
                         'label' => 'Small',
                     ],
                 };
             @endphp
 
             {{-- Plan Summary Card --}}
-            <div class="rounded-xl border {{ $tierBadge['cardBorder'] }} bg-bq-surface p-5 space-y-4 shadow-sm">
+            <div class="rounded-xl border {{ $tierBadge['cardBorder'] }} bg-bq-surface p-5 space-y-4 ">
                 
                 {{-- Header with Dynamic Tier Badge --}}
                 <div class="flex items-center justify-between border-b border-bq-border pb-3">
@@ -353,7 +353,7 @@
                 {{-- Primary CTA Submit Button (Desktop) --}}
                 <div class="hidden lg:block pt-1">
                     <button type="submit" form="checkout-form" id="btn-checkout-submit"
-                        class="w-full rounded-xl bg-bq-primary py-3.5 text-sm font-bold text-white shadow-lg shadow-bq-primary/30 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="bq-btn bq-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         :disabled="isSubmitting">
                         <span x-show="!isSubmitting" class="flex items-center justify-center gap-2">
                             <span>Lanjut ke pembayaran</span>

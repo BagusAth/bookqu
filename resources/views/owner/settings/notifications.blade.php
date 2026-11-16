@@ -14,5 +14,5 @@
             <x-owner.field-error :name="'preferences.'.$event" />
         </div>
     @endforeach
-    <button class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white">Simpan preferensi</button>
+    <button class="bq-btn bq-btn-primary">Simpan preferensi</button>
 </form>

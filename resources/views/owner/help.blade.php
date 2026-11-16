@@ -16,10 +16,10 @@
         @if ($contacts['whatsappUrl'] || $contacts['email'])
             <div class="mt-3 flex flex-wrap gap-2">
                 @if ($contacts['whatsappUrl'])
-                    <a href="{{ $contacts['whatsappUrl'] }}" target="_blank" rel="noopener" class="inline-flex items-center rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover">WhatsApp {{ $contacts['whatsapp'] }}</a>
+                    <a href="{{ $contacts['whatsappUrl'] }}" target="_blank" rel="noopener" class="bq-btn bq-btn-primary">WhatsApp {{ $contacts['whatsapp'] }}</a>
                 @endif
                 @if ($contacts['email'])
-                    <a href="mailto:{{ $contacts['email'] }}" class="inline-flex items-center rounded-lg border border-bq-border bg-bq-surface px-4 py-2 text-sm font-medium text-bq-text hover:bg-bq-background">{{ $contacts['email'] }}</a>
+                    <a href="mailto:{{ $contacts['email'] }}" class="bq-btn bq-btn-secondary">{{ $contacts['email'] }}</a>
                 @endif
             </div>
             @if ($contacts['hours'] !== '')

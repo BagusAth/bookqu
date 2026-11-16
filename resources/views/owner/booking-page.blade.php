@@ -9,10 +9,10 @@
 --}}
 
 @php
-    $card = 'rounded-xl border border-bq-border bg-bq-surface';
-    $buttonSecondary = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-sm font-medium text-bq-text hover:bg-bq-background';
-    $buttonPrimary = 'inline-flex items-center justify-center gap-1.5 rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover';
-    $field = 'mt-1 block w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30';
+    $card = 'bq-panel';
+    $buttonSecondary = 'bq-btn bq-btn-secondary bq-btn-sm';
+    $buttonPrimary = 'bq-btn bq-btn-primary';
+    $field = 'mt-1 block w-full bq-input';
     $label = 'block text-sm font-medium text-bq-text';
     $destroyUrl = route('owner.booking-page.media.destroy', ['asset' => '__ID__']);
     $sections = collect(\App\Actions\Tenant\GetBookingPageData::SECTIONS);
@@ -114,7 +114,7 @@
                         @foreach ($branding['colors'] as $color)
                             <button type="button" class="h-8 w-8 rounded-full ring-offset-2 focus:outline-none focus:ring-2 focus:ring-bq-primary" style="background-color: {{ $color }}" aria-label="Warna {{ $color }}" x-on:click="look.theme_color = @js($color)" x-bind:class="look.theme_color.toUpperCase() === @js($color) ? 'ring-2 ring-bq-text' : ''"></button>
                         @endforeach
-                        <input id="theme-color" type="text" name="theme_color" x-model="look.theme_color" maxlength="7" class="w-28 rounded-lg border border-bq-border px-3 py-1.5 font-mono text-sm uppercase">
+                        <input id="theme-color" type="text" name="theme_color" x-model="look.theme_color" maxlength="7" class="bq-input w-28 font-mono uppercase">
                     </div>
                     @error('theme_color')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
                 </div>
@@ -167,19 +167,19 @@
             <section aria-label="Pratinjau di HP" class="lg:sticky lg:top-20 lg:self-start">
                 <p class="mb-2 text-sm text-bq-text-muted">Pratinjau di HP</p>
                 <div class="mx-auto w-72 overflow-hidden rounded-[2rem] border-8 border-bq-ink bg-white shadow-lg" x-bind:style="'font-family: \'' + look.font_family + '\', system-ui, sans-serif'">
-                    <div class="flex items-center gap-2 border-b border-slate-200 px-3 py-2">
+                    <div class="flex items-center gap-2 border-b border-bq-border px-3 py-2">
                         <template x-if="image(look.logo_asset_id)"><img x-bind:src="image(look.logo_asset_id)" alt="" class="h-7 w-7 rounded-lg object-cover"></template>
                         <template x-if="!image(look.logo_asset_id)"><span class="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-white" x-bind:style="'background-color:' + look.theme_color">{{ mb_strtoupper(mb_substr($tenant->namabisnis ?: 'BQ', 0, 2)) }}</span></template>
-                        <span class="truncate text-sm font-semibold text-slate-900">{{ $tenant->namabisnis }}</span>
+                        <span class="truncate text-sm font-semibold text-bq-ink">{{ $tenant->namabisnis }}</span>
                     </div>
                     <template x-if="image(look.cover_asset_id)"><img x-bind:src="image(look.cover_asset_id)" alt="" class="h-24 w-full object-cover"></template>
                     @if ($appearance['deskripsi'])
-                        <p class="whitespace-pre-line border-b border-slate-100 px-3 py-2 text-xs text-slate-600">{{ $appearance['deskripsi'] }}</p>
+                        <p class="whitespace-pre-line border-b border-bq-border px-3 py-2 text-xs text-bq-text-muted">{{ $appearance['deskripsi'] }}</p>
                     @endif
-                    <div class="space-y-2 bg-slate-50 p-3">
+                    <div class="space-y-2 bg-bq-surface-2 p-3">
                         <div class="rounded-xl bg-white p-3" x-bind:style="'box-shadow:' + (cards[look.card_style] || cards.elevated).shadow + ';border:' + (cards[look.card_style] || cards.elevated).border">
-                            <p class="text-sm font-semibold text-slate-900">Contoh layanan</p>
-                            <p class="text-xs text-slate-500">Rp 150.000 / sesi · 60 menit</p>
+                            <p class="text-sm font-semibold text-bq-ink">Contoh layanan</p>
+                            <p class="text-xs text-bq-text-muted">Rp 150.000 / sesi · 60 menit</p>
                             <span class="mt-2 inline-block px-3 py-1.5 text-xs font-semibold text-white" x-bind:style="'background-color:' + look.theme_color + ';border-radius:' + (radius[look.button_style] || '0.75rem')">Pilih jadwal</span>
                         </div>
                     </div>

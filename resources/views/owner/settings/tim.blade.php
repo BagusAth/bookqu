@@ -6,9 +6,9 @@
     @if ($seatLimit > 0)
         <form method="POST" action="{{ route('owner.team.invite') }}" class="flex flex-wrap items-end gap-3 rounded-xl border border-bq-border bg-bq-surface p-4">
             @csrf
-            <label>Email <input name="email" type="email" value="{{ old('email') }}" required class="block rounded-lg border border-bq-border bg-bq-surface p-2"></label>
-            <label>Peran <select name="role" class="block rounded-lg border border-bq-border bg-bq-surface p-2"><option value="kasir">Kasir</option><option value="manajer">Manajer</option></select></label>
-            <button class="rounded bg-bq-primary px-4 py-2 text-white">Kirim undangan</button>
+            <label>Email <input name="email" type="email" value="{{ old('email') }}" required class="bq-input block"></label>
+            <label>Peran <select name="role" class="bq-input block"><option value="kasir">Kasir</option><option value="manajer">Manajer</option></select></label>
+            <button class="bq-btn bq-btn-primary">Kirim undangan</button>
         </form>
     @endif
     <section class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
@@ -20,7 +20,7 @@
                 @unless (\App\Domain\Team\TenantPermission::isOwnerRole($member->role))
                     <form method="POST" action="{{ route('owner.team.change', $member->id) }}" class="flex items-center gap-2">
                         @csrf @method('PATCH')
-                        <select name="role" aria-label="Peran {{ $member->user?->namalengkap }}" class="rounded-lg border border-bq-border bg-bq-surface p-2">
+                        <select name="role" aria-label="Peran {{ $member->user?->namalengkap }}" class="bq-input">
                             <option value="kasir" @selected($member->role === 'kasir')>Kasir</option>
                             <option value="manajer" @selected($member->role === 'manajer')>Manajer</option>
                         </select>

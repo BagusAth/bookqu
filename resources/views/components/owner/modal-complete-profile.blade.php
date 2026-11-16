@@ -54,7 +54,7 @@
                 <input type="hidden" name="_form" value="complete-profile">
                 <div class="space-y-4 px-5 py-4 sm:px-6 sm:py-5 overflow-y-auto flex-1">
                     @if ($profileErrors->any())
-                        <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
+                        <div class="rounded-xl border border-bq-danger/50 bg-bq-danger-bg px-4 py-3 text-xs text-bq-danger">
                             <p class="font-semibold text-rose-800">Mohon perbaiki isian form:</p>
                             <ul class="mt-1 list-disc space-y-0.5 pl-4">
                                 @foreach ($profileErrors->all() as $error)
@@ -74,10 +74,10 @@
                             value="{{ old('namabisnis', auth()->user()?->tenant?->namabisnis ?? '') }}"
                             required
                             placeholder="Contoh: Yoga Studio" 
-                            class="w-full rounded-lg border {{ $errors->has('namabisnis') ? 'border-rose-400 focus:ring-rose-500' : 'border-bq-border focus:ring-bq-primary/20' }} bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2"
+                            class="bq-input w-full" @if ($profileErrors->has('namabisnis')) aria-invalid="true" @endif
                         >
                         @error('namabisnis')
-                            <p class="mt-1 text-xs text-rose-600 font-medium">{{ $message }}</p>
+                            <p class="mt-1 text-xs text-bq-danger font-medium">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -90,10 +90,10 @@
                             value="{{ old('jenisbisnis', auth()->user()?->tenant?->jenisbisnis ?? '') }}"
                             required
                             placeholder="Contoh: Studio Yoga" 
-                            class="w-full rounded-lg border {{ $errors->has('jenisbisnis') ? 'border-rose-400 focus:ring-rose-500' : 'border-bq-border focus:ring-bq-primary/20' }} bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2"
+                            class="bq-input w-full" @if ($profileErrors->has('jenisbisnis')) aria-invalid="true" @endif
                         >
                         @error('jenisbisnis')
-                            <p class="mt-1 text-xs text-rose-600 font-medium">{{ $message }}</p>
+                            <p class="mt-1 text-xs text-bq-danger font-medium">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -106,10 +106,10 @@
                             value="{{ old('nomorhp', auth()->user()?->tenant?->nomorhp ?? auth()->user()?->nomorhp ?? '') }}"
                             required
                             placeholder="08xxxxxxxxxx" 
-                            class="w-full rounded-lg border {{ $errors->has('nomorhp') ? 'border-rose-400 focus:ring-rose-500' : 'border-bq-border focus:ring-bq-primary/20' }} bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2"
+                            class="bq-input w-full" @if ($profileErrors->has('nomorhp')) aria-invalid="true" @endif
                         >
                         @error('nomorhp')
-                            <p class="mt-1 text-xs text-rose-600 font-medium">{{ $message }}</p>
+                            <p class="mt-1 text-xs text-bq-danger font-medium">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -121,10 +121,10 @@
                             rows="2"
                             placeholder="Alamat bisnis" 
                             required
-                            class="w-full rounded-lg border {{ $errors->has('alamat') ? 'border-rose-400 focus:ring-rose-500' : 'border-bq-border focus:ring-bq-primary/20' }} bg-bq-surface px-4 py-2.5 text-sm text-bq-text placeholder-bq-text-subtle transition-all focus:border-bq-primary focus:outline-none focus:ring-2 resize-none"
+                            class="bq-input w-full resize-none" @if ($profileErrors->has('alamat')) aria-invalid="true" @endif
                         >{{ old('alamat', auth()->user()?->tenant?->alamat ?? '') }}</textarea>
                         @error('alamat')
-                            <p class="mt-1 text-xs text-rose-600 font-medium">{{ $message }}</p>
+                            <p class="mt-1 text-xs text-bq-danger font-medium">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -135,14 +135,14 @@
 
                 {{-- Footer --}}
                 <div class="flex items-center justify-end gap-2.5 sm:gap-3 border-t border-bq-border px-5 py-3 sm:px-6 sm:py-4 shrink-0 bg-bq-surface">
-                    <button type="button" @click="buka = false" class="rounded-lg border border-bq-border bg-bq-surface px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-medium text-bq-text transition-all hover:bg-bq-background cursor-pointer active:scale-95" id="btn-cancel-complete-profile">
+                    <button type="button" @click="buka = false" class="bq-btn bq-btn-secondary bq-btn-sm cursor-pointer" id="btn-cancel-complete-profile">
                         Nanti Saja
                     </button>
                     <button
                         type="submit"
                         :disabled="sedangkirim"
                         :class="sedangkirim ? 'opacity-60 cursor-not-allowed' : 'hover:bg-bq-primary-hover hover:shadow-lg hover:-translate-y-0.5 active:scale-95'"
-                        class="inline-flex items-center gap-2 rounded-lg bg-bq-primary px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-bq-primary/25 transition-all cursor-pointer"
+                        class="bq-btn bq-btn-primary bq-btn-sm cursor-pointer"
                         id="btn-submit-complete-profile"
                     >
                         <svg x-show="sedangkirim" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>

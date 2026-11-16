@@ -8,19 +8,25 @@
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Owner portal typeface (BQ-161): Plus Jakarta Sans, applied by the owner layout with `font-owner`. */
+    --font-owner: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 
-    /* ── Owner design tokens (BQ-129): the prototype palette of BQ-126 (docs/work/BQ-126/prototype-portal-owner.html).
-       Each text/background pair meets WCAG AA for body text. ── */
-    --color-bq-primary: #4F46E5;
-    --color-bq-primary-light: #EEF2FF;
-    --color-bq-primary-hover: #4338CA;
+    /* ── Owner design tokens (BQ-161, "meja depan"): the brand palette below, applied to the portal.
+       Contrast is computed in docs/work/BQ-161-owner-portal-visual-redesign.md; every text/background pair
+       used for text meets WCAG AA. ── */
+    --color-bq-primary: #382186;          /* Aubergine: primary actions, active states, links */
+    --color-bq-primary-hover: #2D1A6D;    /* Aubergine deep */
+    --color-bq-primary-light: #F3EFFE;    /* Lilac mist: selected rows, active tab underlay */
+    --color-bq-primary-border: #E7E2F7;
+    --color-bq-accent: #FFB84D;           /* Marigold: "now" and "needs you" only; text on it is ink */
+    --color-bq-accent-bg: #FFF4E0;
     --color-bq-ink: #231A3D;
-    --color-bq-background: #F9FAFB;
+    --color-bq-background: #F7F7FA;       /* Paper */
     --color-bq-surface: #FFFFFF;
-    --color-bq-surface-2: #F3F4F8;
-    --color-bq-border: #E5E7EB;
-    --color-bq-border-strong: #C9CBD6;
-    --color-bq-text: #302B40;
+    --color-bq-surface-2: #F4F2F9;
+    --color-bq-border: #E7E3EF;
+    --color-bq-border-strong: #CBC5DA;
+    --color-bq-text: #231A3D;
     --color-bq-text-muted: #666477;
     --color-bq-text-subtle: #767487;
     --color-bq-success: #16734B;
@@ -44,34 +50,33 @@
     --color-brand-ink: #231a3d;
     --color-brand-mutedgray: #6e6584;
 
-    /* Sidebar */
-    --color-bq-sidebar: oklch(100% 0 0);
-    --color-bq-sidebar-active: #EEF2FF;
-    --color-bq-sidebar-text: oklch(44.6% 0.043 257.281);
-    --color-bq-sidebar-active-text: #4F46E5;
+    /* Sidebar: the brand aubergine frame */
+    --color-bq-sidebar: #382186;
+    --color-bq-sidebar-active: #2D1A6D;
+    --color-bq-sidebar-text: #FFFFFF;
+    --color-bq-sidebar-muted: #E7E2F7;
+    --color-bq-sidebar-active-text: #FFFFFF;
+
+    /* One elevation, used only by overlays (dialog, drawer, sheet, popover, toast) */
+    --shadow-bq: 0 12px 32px -8px rgb(35 26 61 / 0.22), 0 2px 6px rgb(35 26 61 / 0.08);
+    --shadow-overlay: 0 12px 32px -8px rgb(35 26 61 / 0.22), 0 2px 6px rgb(35 26 61 / 0.08);
 }
 
-/* ── Motion & Craft Utilities (Emil Kowalski / Apple Design) ── */
+/* ── Motion ── */
 :root {
     --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-out-craft: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .craft-btn {
-    transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, box-shadow 160ms ease;
+    transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1), background-color 150ms ease, box-shadow 150ms ease;
 }
 .craft-btn:active {
     transform: scale(0.97);
 }
 
 .craft-card {
-    transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 200ms ease, border-color 200ms ease;
-}
-.craft-card:hover {
-    transform: translateY(-2px);
-}
-.craft-card:active {
-    transform: scale(0.985);
+    transition: box-shadow 150ms ease, border-color 150ms ease;
 }
 
 [x-cloak] {
@@ -88,10 +93,122 @@
     }
 }
 
+/* ── Owner portal base (BQ-161): scoped to the owner layout's body ── */
+@layer base {
+    .bq-owner {
+        font-family: var(--font-owner);
+        font-feature-settings: 'cv11';
+    }
+    .bq-owner :focus-visible {
+        outline: 2px solid var(--color-bq-primary);
+        outline-offset: 2px;
+        border-radius: 0.375rem;
+    }
+    .bq-owner .bq-on-dark :focus-visible {
+        outline-color: var(--color-bq-accent);
+    }
+    .bq-owner ::selection {
+        background: var(--color-bq-primary-light);
+        color: var(--color-bq-ink);
+    }
+    .bq-owner h1,
+    .bq-owner h2,
+    .bq-owner h3 {
+        color: var(--color-bq-ink);
+        letter-spacing: -0.01em;
+    }
+    .bq-owner input[type='checkbox'],
+    .bq-owner input[type='radio'] {
+        accent-color: var(--color-bq-primary);
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .bq-owner *,
+        .bq-owner *::before,
+        .bq-owner *::after {
+            transition-duration: 0.01ms !important;
+            animation-duration: 0.01ms !important;
+        }
+    }
+}
+
+/* ── Owner components (BQ-161): the classes behind resources/views/components/ui. Utilities on the same
+   element still win, so markup keeps only layout utilities (width, margin, grid placement). ── */
+@layer components {
+    .bq-num {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .bq-btn {
+        @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60 max-md:min-h-11;
+    }
+    .bq-btn-sm {
+        @apply min-h-8 px-3 text-xs max-md:min-h-10;
+    }
+    .bq-btn-icon {
+        @apply min-h-10 min-w-10 px-0;
+    }
+    .bq-btn-primary {
+        @apply bg-bq-primary text-white hover:bg-bq-primary-hover;
+    }
+    .bq-btn-secondary {
+        @apply border border-bq-border-strong bg-bq-surface text-bq-ink hover:border-bq-primary hover:bg-bq-primary-light;
+    }
+    .bq-btn-ghost {
+        @apply text-bq-primary hover:bg-bq-primary-light;
+    }
+    .bq-btn-danger {
+        @apply border border-bq-danger/50 bg-bq-surface text-bq-danger hover:border-bq-danger hover:bg-bq-danger-bg;
+    }
+    .bq-btn-danger-solid {
+        @apply bg-bq-danger text-white hover:bg-[#962536];
+    }
+    .bq-btn-accent {
+        @apply bg-bq-accent text-bq-ink hover:bg-[#F5A93A];
+    }
+
+    .bq-link {
+        @apply font-semibold text-bq-primary underline-offset-2 hover:underline;
+    }
+
+    .bq-label {
+        @apply text-sm font-medium text-bq-ink;
+    }
+    .bq-hint {
+        @apply text-xs text-bq-text-muted;
+    }
+    .bq-input {
+        @apply min-h-10 rounded-lg border border-bq-border-strong bg-bq-surface px-3 py-2 text-sm text-bq-ink transition-colors duration-150 placeholder:text-bq-text-subtle hover:border-bq-text-subtle focus:border-bq-primary focus:ring-2 focus:ring-bq-primary/20 focus:outline-none disabled:bg-bq-surface-2 disabled:text-bq-text-muted max-md:min-h-11 max-md:text-base;
+    }
+    textarea.bq-input {
+        @apply min-h-24 leading-relaxed;
+    }
+    .bq-input[aria-invalid='true'] {
+        @apply border-bq-danger focus:ring-bq-danger/20;
+    }
+
+    .bq-panel {
+        @apply rounded-xl border border-bq-border bg-bq-surface;
+    }
+    .bq-panel-pad {
+        @apply p-4 sm:p-5;
+    }
+
+    .bq-badge {
+        @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap;
+    }
+    .bq-badge::before {
+        content: '';
+        @apply h-1.5 w-1.5 rounded-full bg-current opacity-80;
+    }
+    .bq-count {
+        @apply inline-flex min-w-5 items-center justify-center rounded-full bg-bq-accent px-1.5 text-[11px] leading-5 font-bold text-bq-ink;
+    }
+}
+
 /* ── Custom Slim Sidebar Scrollbar ── */
 .sidebar-scroll {
     scrollbar-width: thin;
-    scrollbar-color: #CBD5E1 transparent;
+    scrollbar-color: rgb(255 255 255 / 0.25) transparent;
 }
 .sidebar-scroll::-webkit-scrollbar {
     width: 4px;
@@ -100,9 +217,6 @@
     background: transparent;
 }
 .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: #CBD5E1;
+    background: rgb(255 255 255 / 0.25);
     border-radius: 9999px;
-}
-.sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: #94A3B8;
 }

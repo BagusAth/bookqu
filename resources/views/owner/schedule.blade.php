@@ -10,7 +10,7 @@
 <div class="mx-auto max-w-7xl space-y-5">
     <x-owner.page-header title="Jam Buka & Harga" purpose="Atur jam operasional, harga, tanggal tutup, dan slot booking.">
         <x-slot:action>
-            <a class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white" href="{{ route('owner.schedule', ['tab' => 'slots', 'buat' => 1]) }}">Buka slot</a>
+            <a class="bq-btn bq-btn-primary" href="{{ route('owner.schedule', ['tab' => 'slots', 'buat' => 1]) }}">Buka slot</a>
         </x-slot:action>
     </x-owner.page-header>
 

@@ -10,10 +10,10 @@
 
 @php
     $rupiah = fn (float|int $value): string => 'Rp '.number_format((float) $value, 0, ',', '.');
-    $card = 'rounded-xl border border-bq-border bg-bq-surface';
-    $buttonSecondary = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-sm font-medium text-bq-text hover:bg-bq-background disabled:opacity-50';
-    $buttonPrimary = 'inline-flex items-center justify-center gap-1.5 rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover disabled:cursor-not-allowed disabled:opacity-50';
-    $field = 'mt-1 block w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30';
+    $card = 'bq-panel';
+    $buttonSecondary = 'bq-btn bq-btn-secondary bq-btn-sm';
+    $buttonPrimary = 'bq-btn bq-btn-primary';
+    $field = 'mt-1 block w-full bq-input';
     $label = 'block text-sm font-medium text-bq-text';
     $toneClass = fn (string $tone): string => match ($tone) {
         'success' => 'bg-bq-success-bg text-bq-success',
@@ -398,7 +398,7 @@
             </form>
             <x-slot:footer>
                 <button type="button" class="{{ $buttonSecondary }} py-2" x-on:click="$dispatch('close-dialog', { id: 'payout-account-delete-dialog' })">Batal</button>
-                <button type="submit" form="payout-account-delete-form" class="inline-flex items-center rounded-lg bg-bq-danger px-4 py-2 text-sm font-medium text-white hover:opacity-90">Hapus rekening</button>
+                <button type="submit" form="payout-account-delete-form" class="bq-btn bq-btn-danger-solid">Hapus rekening</button>
             </x-slot:footer>
         </x-owner.dialog>
     @endif

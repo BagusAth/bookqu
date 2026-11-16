@@ -16,8 +16,8 @@
         'info' => 'border-bq-info/30 bg-bq-info-bg text-bq-info',
     ];
     $badgeTone = "{ 'bg-bq-info-bg text-bq-info': badge.tone === 'info', 'bg-bq-success-bg text-bq-success': badge.tone === 'success', 'bg-bq-warning-bg text-bq-warning': badge.tone === 'warning', 'bg-bq-danger-bg text-bq-danger': badge.tone === 'danger', 'bg-bq-background text-bq-text-muted': !['info','success','warning','danger'].includes(badge.tone) }";
-    $card = 'rounded-xl border border-bq-border bg-bq-surface';
-    $secondaryButton = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-sm font-medium text-bq-text hover:bg-bq-background';
+    $card = 'bq-panel';
+    $secondaryButton = 'bq-btn bq-btn-secondary bq-btn-sm';
     $greetingName = \Illuminate\Support\Str::of((string) (auth()->user()?->namalengkap ?? ''))->before(' ')->value();
 @endphp
 
@@ -166,7 +166,7 @@
                 <p class="mt-1 text-sm text-bq-text-muted">Bagikan ke pelanggan lewat WhatsApp, Instagram atau Google Maps.</p>
                 <p class="mt-3 break-all rounded-lg bg-bq-background px-3 py-2 font-mono text-sm text-bq-text">{{ $link['url'] }}</p>
                 <div class="mt-3 flex flex-wrap gap-2">
-                    <button type="button" x-on:click="copy()" class="inline-flex items-center rounded-lg bg-bq-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-bq-primary-hover" x-text="copied ? 'Tersalin' : 'Salin link'">Salin link</button>
+                    <button type="button" x-on:click="copy()" class="bq-btn bq-btn-primary bq-btn-sm" x-text="copied ? 'Tersalin' : 'Salin link'">Salin link</button>
                     <button type="button" x-show="canShare" x-cloak x-on:click="share()" class="{{ $secondaryButton }}">Bagikan</button>
                     <a href="https://wa.me/?text={{ rawurlencode($link['share_text']) }}" target="_blank" rel="noopener" x-on:click="mark()" class="{{ $secondaryButton }}">Kirim lewat WhatsApp</a>
                 </div>

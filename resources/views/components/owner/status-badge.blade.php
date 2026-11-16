@@ -14,8 +14,8 @@
         'success' => 'bg-bq-success-bg text-bq-success',
         'warning' => 'bg-bq-warning-bg text-bq-warning',
         'danger' => 'bg-bq-danger-bg text-bq-danger',
-        default => 'bg-bq-background text-bq-text-muted ring-1 ring-inset ring-bq-border',
+        default => 'bg-bq-surface-2 text-bq-text-muted',
     };
 @endphp
 
-<span data-tone="{{ $tone }}" {{ $attributes->merge(['class' => "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap {$toneClass}"]) }}>{{ $badgeLabel }}</span>
+<span data-tone="{{ $tone }}" {{ $attributes->merge(['class' => "bq-badge {$toneClass}"]) }}>{{ $badgeLabel }}</span>

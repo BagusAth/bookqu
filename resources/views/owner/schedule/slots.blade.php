@@ -8,7 +8,7 @@
                 @csrf
                 <div class="grid gap-3 sm:grid-cols-3">
                     <label class="grid gap-1 text-sm">Layanan
-                        <select name="idlayanan" class="rounded border border-bq-border bg-bq-surface p-2" @change="$refs.interval.value = $event.target.selectedOptions[0].dataset.duration" required>
+                        <select name="idlayanan" class="bq-input" @change="$refs.interval.value = $event.target.selectedOptions[0].dataset.duration" required>
                             <option value="">Pilih layanan</option>
                             @foreach ($daftarlayanan as $service)
                                 <option value="{{ $service->id }}" data-duration="{{ $service->durasi }}">{{ $service->namalayanan }}</option>
@@ -16,46 +16,46 @@
                         </select>
                     </label>
                     <label class="grid gap-1 text-sm">Periode
-                        <select name="jenisslot" x-model="period" class="rounded border border-bq-border bg-bq-surface p-2">
+                        <select name="jenisslot" x-model="period" class="bq-input">
                             <option value="harian">Satu tanggal</option>
                             <option value="rentang">Rentang tanggal</option>
                         </select>
                     </label>
                     <label class="grid gap-1 text-sm" x-show="period === 'harian'">Tanggal
-                        <input type="date" name="tanggal" :disabled="period !== 'harian'" required class="rounded border border-bq-border bg-bq-surface p-2">
+                        <input type="date" name="tanggal" :disabled="period !== 'harian'" required class="bq-input">
                     </label>
                     <label class="grid gap-1 text-sm" x-show="period === 'rentang'" x-cloak>Tanggal mulai
-                        <input type="date" name="tanggalmulai" :disabled="period !== 'rentang'" required class="rounded border border-bq-border bg-bq-surface p-2">
+                        <input type="date" name="tanggalmulai" :disabled="period !== 'rentang'" required class="bq-input">
                     </label>
                     <label class="grid gap-1 text-sm" x-show="period === 'rentang'" x-cloak>Tanggal akhir
-                        <input type="date" name="tanggalselesai" :disabled="period !== 'rentang'" required class="rounded border border-bq-border bg-bq-surface p-2">
+                        <input type="date" name="tanggalselesai" :disabled="period !== 'rentang'" required class="bq-input">
                     </label>
                     <label class="grid gap-1 text-sm">Jam mulai
-                        <input type="time" name="jammulai" required class="rounded border border-bq-border bg-bq-surface p-2">
+                        <input type="time" name="jammulai" required class="bq-input">
                     </label>
                     <label class="grid gap-1 text-sm">Jam akhir
-                        <input type="time" name="jamselesai" required class="rounded border border-bq-border bg-bq-surface p-2">
+                        <input type="time" name="jamselesai" required class="bq-input">
                     </label>
                     <label class="grid gap-1 text-sm">Interval (menit)
-                        <input type="number" name="intervalslot" x-ref="interval" min="5" max="480" step="5" required class="rounded border border-bq-border bg-bq-surface p-2">
+                        <input type="number" name="intervalslot" x-ref="interval" min="5" max="480" step="5" required class="bq-input">
                     </label>
                 </div>
                 <div class="space-y-2 text-sm">
-                    <button type="button" @click="useOpeningHours($el.form)" class="rounded-lg border border-bq-border px-3 py-2 font-semibold">Isi dari jam buka</button>
+                    <button type="button" @click="useOpeningHours($el.form)" class="bq-btn bq-btn-secondary">Isi dari jam buka</button>
                     <p x-show="period === 'rentang'" class="text-bq-text-muted">Menggunakan jam buka pada tanggal mulai.</p>
                     <p x-show="openingWarning" class="text-bq-warning" x-text="openingWarning" role="status"></p>
                     <div x-show="openingChoices.length > 1" class="flex flex-wrap items-center gap-2">
                         <span>Pilih rentang</span>
                         <template x-for="interval in openingChoices" :key="interval.opens_at">
-                            <button type="button" class="rounded-lg bg-bq-primary-light px-3 py-1.5 font-medium text-bq-primary"
+                            <button type="button" class="bq-btn bq-btn-ghost bq-btn-sm"
                                 @click="applyOpeningHours($el.form, interval)" x-text="interval.opens_at + ' – ' + interval.closes_at"></button>
                         </template>
                     </div>
                 </div>
                 <p class="text-sm" role="status" x-show="preview" x-cloak x-text="preview && (preview.to_create + ' slot baru, ' + preview.already_exist + ' slot sudah ada.')"></p>
                 <p class="text-sm" role="alert" x-show="error" x-cloak x-text="error"></p>
-                <button type="button" :disabled="busy" @click="check($el.form)" class="rounded-lg border border-bq-border px-4 py-2 text-sm font-semibold">Pratinjau slot</button>
-                <button disabled :disabled="!preview || !preview.to_create || busy" class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Simpan slot</button>
+                <button type="button" :disabled="busy" @click="check($el.form)" class="bq-btn bq-btn-secondary">Pratinjau slot</button>
+                <button disabled :disabled="!preview || !preview.to_create || busy" class="bq-btn bq-btn-primary disabled:opacity-50">Simpan slot</button>
             </form>
         </details>
     @endif
@@ -63,14 +63,14 @@
         <input type="hidden" name="tab" value="slots">
         <input type="hidden" name="minggu" value="{{ $offsetminggu }}">
         <label class="grid gap-1 text-sm">Layanan
-            <select name="layanan" @change="$el.form.requestSubmit()" class="rounded border border-bq-border bg-bq-surface p-2">
+            <select name="layanan" @change="$el.form.requestSubmit()" class="bq-input">
                 <option value="">Semua layanan</option>
                 @foreach ($daftarlayanan as $service)
                     <option value="{{ $service->id }}" @selected($service->id === $selectedService)>{{ $service->namalayanan }}</option>
                 @endforeach
             </select>
         </label>
-        <noscript><button class="rounded-lg border border-bq-border px-3 py-2 text-sm font-semibold">Terapkan</button></noscript>
+        <noscript><button class="bq-btn bq-btn-secondary">Terapkan</button></noscript>
     </form>
     <nav class="flex flex-wrap items-center gap-3 text-sm" aria-label="Minggu slot">
         <a class="text-bq-primary underline" href="{{ request()->fullUrlWithQuery(['minggu' => $offsetminggu - 1, 'buat' => null]) }}">Minggu sebelumnya</a>
@@ -83,7 +83,7 @@
             <input type="hidden" name="operation" :value="operation">
             <span x-text="slotIds.length + ' slot dipilih'"></span>
             @foreach (['close' => 'Tutup slot pilihan', 'delete' => 'Hapus slot pilihan'] as $value => $label)
-                <button type="button" :disabled="!slotIds.length" class="rounded-lg border border-bq-border px-3 py-2 font-semibold disabled:opacity-40"
+                <button type="button" :disabled="!slotIds.length" class="bq-btn bq-btn-secondary disabled:opacity-40"
                     @click="operation = @js($value); $dispatch('open-confirm', { title: @js($label.'?'), message: 'Tindakan akan diterapkan ke semua slot yang dipilih.', formId: $el.form.id, tone: @js($value === 'delete' ? 'danger' : 'primary'), confirmText: @js($label) })">{{ $label }}</button>
             @endforeach
             <x-owner.field-error name="slot_ids" />
@@ -114,7 +114,7 @@
                     @csrf
                     @method('PATCH')
                     <button type="submit" name="operation" value="{{ $slot->status === 'tersedia' ? 'close' : 'open' }}"
-                        class="rounded-lg border border-bq-border px-3 py-2 font-semibold">{{ $slot->status === 'tersedia' ? 'Tutup slot' : 'Buka slot' }}</button>
+                        class="bq-btn bq-btn-secondary">{{ $slot->status === 'tersedia' ? 'Tutup slot' : 'Buka slot' }}</button>
                 </form>
                 <form method="POST" action="{{ route('owner.schedule.slots.update', $slot) }}" class="flex flex-wrap items-end gap-2">
                     @csrf
@@ -122,9 +122,9 @@
                     <input type="hidden" name="operation" value="price">
                     <label class="grid gap-1 text-xs">Harga khusus (Rp)
                         <input name="harga_override" type="number" min="0" max="9999999999" step="1" value="{{ $slot->harga_override === null ? '' : (int) $slot->harga_override }}"
-                            placeholder="Ikuti aturan harga" class="w-36 rounded-lg border border-bq-border bg-bq-surface px-2 py-1.5">
+                            placeholder="Ikuti aturan harga" class="bq-input w-36">
                     </label>
-                    <button class="rounded-lg border border-bq-border px-3 py-2 font-semibold">Simpan harga</button>
+                    <button class="bq-btn bq-btn-secondary">Simpan harga</button>
                 </form>
             @endif
         </div>

@@ -50,7 +50,7 @@
                     @if ($canWalkIn)
                         <button
                             type="button"
-                            class="inline-flex items-center gap-1.5 rounded-lg bg-bq-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-bq-primary-hover"
+                            class="bq-btn bq-btn-primary bq-btn-sm"
                             x-on:click="
                                 hide(() => {
                                     $dispatch('walkin-prefill', data.walkin);
@@ -77,10 +77,10 @@
                 <p class="mb-2 text-xs text-bq-text-muted">Hanya terlihat oleh tim Anda.</p>
                 <form x-on:submit.prevent="save()" class="space-y-2">
                     <label for="customer-panel-note-text" class="sr-only">Catatan internal</label>
-                    <textarea id="customer-panel-note-text" x-model="text" rows="3" maxlength="2000" placeholder="Misalnya: suka sesi pagi, alergi parfum." class="w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20"></textarea>
+                    <textarea id="customer-panel-note-text" x-model="text" rows="3" maxlength="2000" placeholder="Misalnya: suka sesi pagi, alergi parfum." class="bq-input w-full"></textarea>
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-xs tabular-nums text-bq-text-muted" x-text="text.length + '/2000'"></span>
-                        <button type="submit" x-bind:disabled="saving" class="inline-flex items-center rounded-lg bg-bq-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-bq-primary-hover disabled:opacity-60" x-text="saving ? 'Menyimpan…' : 'Simpan catatan'">Simpan catatan</button>
+                        <button type="submit" x-bind:disabled="saving" class="bq-btn bq-btn-primary bq-btn-sm disabled:opacity-60" x-text="saving ? 'Menyimpan…' : 'Simpan catatan'">Simpan catatan</button>
                     </div>
                 </form>
             </section>

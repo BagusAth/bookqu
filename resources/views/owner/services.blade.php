@@ -16,10 +16,10 @@
     $serviceDestroyUrl = route('owner.services.destroy', ['program' => '__ID__']);
     $categoryUpdateUrl = route('owner.categories.update', ['id' => '__ID__']);
     $categoryDestroyUrl = route('owner.categories.destroy', ['id' => '__ID__']);
-    $inputClass = 'mt-1 block w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30';
-    $labelClass = 'block text-sm font-medium text-bq-text';
-    $buttonSecondary = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-sm font-medium text-bq-text hover:bg-bq-background';
-    $buttonPrimary = 'inline-flex items-center justify-center gap-1.5 rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover';
+    $inputClass = 'mt-1 block w-full bq-input';
+    $labelClass = 'block bq-label';
+    $buttonSecondary = 'bq-btn bq-btn-secondary bq-btn-sm';
+    $buttonPrimary = 'bq-btn bq-btn-primary';
 @endphp
 
 @section('content')

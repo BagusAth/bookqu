@@ -11,8 +11,8 @@
 @php
     $rupiah = fn (float|int $value): string => 'Rp '.number_format((float) $value, 0, ',', '.');
     $percent = fn (float|int $value): string => number_format((float) $value, 1, ',', '.').'%';
-    $card = 'rounded-xl border border-bq-border bg-bq-surface';
-    $field = 'mt-1 block w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30';
+    $card = 'bq-panel';
+    $field = 'mt-1 block w-full bq-input';
     $tab = $report['tab'];
     $period = $report['period'];
     $summary = $report['summary'];
@@ -37,7 +37,7 @@
     <x-owner.page-header title="Laporan" purpose="Bagaimana kinerja bisnis Anda, dan apa yang bisa ditingkatkan.">
         @unless ($report['locked'])
             <x-slot:action>
-                <a href="{{ $exportUrl }}" class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm font-medium text-bq-text hover:bg-bq-background">Unduh CSV</a>
+                <a href="{{ $exportUrl }}" class="bq-btn bq-btn-secondary">Unduh CSV</a>
             </x-slot:action>
         @endunless
     </x-owner.page-header>
@@ -62,7 +62,7 @@
                 <input id="report-to" type="date" name="sampai" value="{{ $period['to'] }}" class="{{ $field }}" x-bind:disabled="periode !== 'kustom'">
             </div>
         </div>
-        <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover">Terapkan</button>
+        <button type="submit" class="bq-btn bq-btn-primary">Terapkan</button>
         <p class="w-full text-xs text-bq-text-muted">{{ $period['label'] }} · {{ \Carbon\Carbon::parse($period['from'])->translatedFormat('j M Y') }} – {{ \Carbon\Carbon::parse($period['to'])->translatedFormat('j M Y') }}. Rentang kustom paling lama 366 hari.</p>
     </form>
 

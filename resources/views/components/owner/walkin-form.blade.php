@@ -17,8 +17,8 @@
     $errors ??= new \Illuminate\Support\ViewErrorBag;
     $formValue = fn ($key, $fallback = null) => old('_form') === $idPrefix ? old($key, $fallback) : $fallback;
     $methods =['cash' => 'Tunai', 'transfer' => 'Transfer', 'qris' => 'QRIS', 'manual' => 'Lainnya (manual)'];
-    $field = 'w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20';
-    $labelClass = 'mb-1 block text-sm font-medium text-bq-text';
+    $field = 'w-full bq-input';
+    $labelClass = 'mb-1 block bq-label';
 @endphp
 
 {{-- BQ-137 (AC-PLG-04): "Buat booking" in the customer panel fills the contact fields with walkin-prefill. --}}
@@ -144,6 +144,6 @@
     </div>
 
     <div class="flex justify-end">
-        <button type="submit" @if ($fixedSlotModel) :disabled="busy" @endif class="inline-flex items-center rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover">Simpan walk-in</button>
+        <button type="submit" @if ($fixedSlotModel) :disabled="busy" @endif class="bq-btn bq-btn-primary">Simpan walk-in</button>
     </div>
 </form>

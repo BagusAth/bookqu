@@ -24,9 +24,9 @@
         <form method="POST" action="{{ route('owner.api.keys.store') }}" class="flex flex-wrap items-end gap-2">
             @csrf
             <label class="grid gap-1 text-sm">Nama kunci
-                <input name="name" required maxlength="100" class="rounded border border-bq-border bg-bq-surface p-2">
+                <input name="name" required maxlength="100" class="bq-input">
             </label>
-            <button class="rounded bg-bq-primary px-3 py-2 text-sm font-semibold text-white">Buat kunci</button>
+            <button class="bq-btn bq-btn-primary">Buat kunci</button>
         </form>
         <ul class="divide-y divide-bq-border text-sm">
             @foreach ($keys as $key)
@@ -47,12 +47,12 @@
         <form method="POST" action="{{ route('owner.api.webhooks.store') }}" class="flex flex-wrap items-end gap-2">
             @csrf
             <label class="grid gap-1 text-sm">Nama endpoint
-                <input name="name" required maxlength="100" class="rounded border border-bq-border bg-bq-surface p-2">
+                <input name="name" required maxlength="100" class="bq-input">
             </label>
             <label class="grid min-w-0 flex-1 gap-1 text-sm">URL HTTPS
-                <input name="url" type="url" required maxlength="2048" class="rounded border border-bq-border bg-bq-surface p-2">
+                <input name="url" type="url" required maxlength="2048" class="bq-input">
             </label>
-            <button class="rounded bg-bq-primary px-3 py-2 text-sm font-semibold text-white">Tambah endpoint</button>
+            <button class="bq-btn bq-btn-primary">Tambah endpoint</button>
         </form>
         <ul class="divide-y divide-bq-border text-sm">
             @foreach ($endpoints as $endpoint)

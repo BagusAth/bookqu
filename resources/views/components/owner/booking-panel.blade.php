@@ -122,7 +122,7 @@
                 <template x-for="(action, index) in data.actions" x-bind:key="index">
                     <div x-data="{ showReason: action.reason && action.form_key === @js($bookingForm) }">
                         <template x-if="action.reschedule">
-                            <button type="button" class="w-full rounded-lg border border-bq-border px-4 py-2 text-sm font-medium"
+                            <button type="button" class="bq-btn bq-btn-secondary w-full"
                                 @click="hide(); $dispatch('open-owner-reschedule', { booking: action.reschedule })" x-text="action.label"></button>
                         </template>
                         <template x-if="action.url">
@@ -136,7 +136,7 @@
                                     <div x-show="showReason">
                                         <input type="hidden" name="_form" :value="action.form_key">
                                         <label class="mb-1 block text-sm font-medium text-bq-text" x-bind:for="'booking-panel-reason-' + index" x-text="action.reason.label"></label>
-                                        <textarea x-bind:id="'booking-panel-reason-' + index" x-bind:name="action.reason.name" :value="action.form_key === @js($bookingForm) ? @js(old('reason')) : ''" :disabled="!showReason" required maxlength="500" rows="2" class="w-full rounded-lg border border-bq-border px-3 py-2 text-sm"></textarea>
+                                        <textarea x-bind:id="'booking-panel-reason-' + index" x-bind:name="action.reason.name" :value="action.form_key === @js($bookingForm) ? @js(old('reason')) : ''" :disabled="!showReason" required maxlength="500" rows="2" class="bq-input w-full"></textarea>
                                         @if ($reopenBooking)
                                             <x-owner.field-error name="reason" x-cloak x-show="action.form_key === @js($bookingForm)" />
                                             <x-owner.field-error name="error" x-cloak x-show="action.form_key === @js($bookingForm)" />

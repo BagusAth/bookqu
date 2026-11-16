@@ -11,7 +11,7 @@
     <x-owner.page-header title="Booking" purpose="Temukan booking dan tangani permintaan pelanggan.">
         @if ($canWalkIn)
             <x-slot:action>
-                <button type="button" class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white" @click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', trigger: $el })">+ Booking</button>
+                <button type="button" class="bq-btn bq-btn-primary" @click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', trigger: $el })">+ Booking</button>
             </x-slot:action>
         @endif
     </x-owner.page-header>
@@ -20,15 +20,15 @@
     <form method="GET" action="{{ route('owner.bookings') }}" class="flex flex-wrap items-end gap-3">
         <input type="hidden" name="tab" value="{{ $tab }}">
         <label class="grid gap-1 text-sm">Cari booking
-            <input name="katakunci" value="{{ $filters['katakunci'] ?? '' }}" placeholder="Kode, nama, telepon, atau email" class="rounded border border-bq-border bg-bq-surface p-2">
+            <input name="katakunci" value="{{ $filters['katakunci'] ?? '' }}" placeholder="Kode, nama, telepon, atau email" class="bq-input">
         </label>
         @foreach (['from' => 'Dari', 'to' => 'Sampai'] as $field => $label)
             <label class="grid gap-1 text-sm">{{ $label }}
-                <input type="date" name="{{ $field }}" value="{{ $filters[$field] ?? '' }}" @change="$el.form.requestSubmit()" class="rounded border border-bq-border bg-bq-surface p-2">
+                <input type="date" name="{{ $field }}" value="{{ $filters[$field] ?? '' }}" @change="$el.form.requestSubmit()" class="bq-input">
             </label>
         @endforeach
         <label class="grid gap-1 text-sm">Layanan
-            <select name="service" @change="$el.form.requestSubmit()" class="rounded border border-bq-border bg-bq-surface p-2">
+            <select name="service" @change="$el.form.requestSubmit()" class="bq-input">
                 <option value="">Semua layanan</option>
                 @foreach ($services as $service)
                     <option value="{{ $service->id }}" @selected($service->id == ($filters['service'] ?? null))>{{ $service->namalayanan }}</option>
@@ -36,7 +36,7 @@
             </select>
         </label>
         <label class="grid gap-1 text-sm">Sumber
-            <select name="source" @change="$el.form.requestSubmit()" class="rounded border border-bq-border bg-bq-surface p-2">
+            <select name="source" @change="$el.form.requestSubmit()" class="bq-input">
                 <option value="">Semua sumber</option>
                 @foreach (['online' => 'Online', 'walkin' => 'Walk-in'] as $key => $label)
                     <option value="{{ $key }}" @selected($key === ($filters['source'] ?? null))>{{ $label }}</option>
@@ -44,12 +44,12 @@
             </select>
         </label>
         <label class="grid gap-1 text-sm">Urutan sesi
-            <select name="sort" @change="$el.form.requestSubmit()" class="rounded border border-bq-border bg-bq-surface p-2">
+            <select name="sort" @change="$el.form.requestSubmit()" class="bq-input">
                 <option value="desc">Terbaru</option>
                 <option value="asc" @selected(($filters['sort'] ?? null) === 'asc')>Terlama</option>
             </select>
         </label>
-        <button class="rounded-lg border border-bq-border px-3 py-2 text-sm font-semibold">Cari</button>
+        <button class="bq-btn bq-btn-secondary">Cari</button>
         <a href="{{ route('owner.bookings', ['tab' => $tab]) }}" class="px-3 py-2 text-sm text-bq-primary underline">Reset filter</a>
         @if ($exportUrl)
             <a class="px-3 py-2 text-sm font-semibold text-bq-primary underline" href="{{ $exportUrl }}">Ekspor CSV</a>

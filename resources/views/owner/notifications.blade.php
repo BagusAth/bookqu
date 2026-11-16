@@ -20,7 +20,7 @@
             <x-slot:action>
                 <form method="POST" action="{{ route('owner.notifications.read-all') }}">
                     @csrf
-                    <button type="submit" class="inline-flex items-center rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-sm font-medium text-bq-text hover:bg-bq-background">Tandai semua dibaca</button>
+                    <button type="submit" class="bq-btn bq-btn-secondary bq-btn-sm">Tandai semua dibaca</button>
                 </form>
             </x-slot:action>
         @endif
@@ -58,7 +58,7 @@
                     </form>
                     <button
                         type="button"
-                        class="shrink-0 rounded-lg px-2 py-1 text-xs text-bq-text-muted hover:bg-bq-background hover:text-bq-danger"
+                        class="bq-btn bq-btn-danger bq-btn-sm shrink-0"
                         aria-label="Hapus notifikasi {{ $item['title'] }}"
                         x-data
                         x-on:click="$dispatch('open-confirm', { title: 'Hapus notifikasi?', message: 'Notifikasi ini akan dihapus dari daftar Anda.', actionUrl: @js($item['destroyUrl']), method: 'DELETE', trigger: $el })"

@@ -2,13 +2,13 @@
     <form method="POST" action="{{ route('owner.schedule.availability', ['tab' => 'closed']) }}" class="flex flex-wrap items-end gap-3 rounded-xl border border-bq-border bg-bq-surface p-4">
         @csrf
         <label class="grid gap-1 text-sm">Tanggal tutup
-            <input class="rounded border border-bq-border bg-bq-surface p-2" type="date" name="tanggal_block" value="{{ old('tanggal_block') }}" required>
+            <input class="bq-input" type="date" name="tanggal_block" value="{{ old('tanggal_block') }}" required>
             <x-owner.field-error name="tanggal_block" />
         </label>
         <label class="grid gap-1 text-sm">Alasan
-            <input class="rounded border border-bq-border bg-bq-surface p-2" name="alasan" value="{{ old('alasan') }}" maxlength="200">
+            <input class="bq-input" name="alasan" value="{{ old('alasan') }}" maxlength="200">
         </label>
-        <button class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white">Tutup tanggal</button>
+        <button class="bq-btn bq-btn-primary">Tutup tanggal</button>
     </form>
     @if ($conflicts = session('blocked_date_conflicts'))
         <section id="blocked-date-conflicts" class="rounded-xl border border-bq-border bg-bq-surface p-4" aria-label="Booking aktif">

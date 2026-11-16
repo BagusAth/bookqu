@@ -8,14 +8,14 @@
     {{-- Stepper --}}
     <div class="flex items-center justify-center gap-0 py-2">
         <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-md shadow-bq-primary/30">
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-bq-primary/30">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
             <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pesanan</span>
         </div>
         <div class="mx-3 h-0.5 w-8 rounded bg-bq-primary sm:w-16"></div>
         <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-md shadow-bq-primary/30 animate-pulse">2</div>
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-bq-primary/30 animate-pulse">2</div>
             <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pembayaran</span>
         </div>
         <div class="mx-3 h-0.5 w-8 rounded bg-bq-border sm:w-16"></div>
@@ -63,7 +63,7 @@
                     @if(($provider ?? '') === 'singapay' || !empty($paymentUrl))
                         {{-- Open SingaPay Payment URL --}}
                         <a href="{{ $paymentUrl ?? $payment->payment_url }}" id="btn-pay-now" x-show="!paymentOpened" @click="paymentOpened = true" target="_blank" rel="noopener noreferrer"
-                            class="w-full rounded-xl bg-bq-primary py-4 text-sm font-bold text-white shadow-lg shadow-bq-primary/30 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                            class="bq-btn bq-btn-primary w-full">
 
                             Bayar Sekarang
                         </a>
@@ -78,7 +78,7 @@
                         {{-- Open Midtrans Snap --}}
                         <button type="button" id="btn-pay-now" x-show="!paymentOpened"
                             @click="openPayment()"
-                            class="w-full rounded-xl bg-bq-primary py-4 text-sm font-bold text-white shadow-lg shadow-bq-primary/30 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                            class="bq-btn bq-btn-primary w-full">
                             Bayar Sekarang
                         </button>
 
@@ -113,11 +113,7 @@
 
                 {{-- Status Message --}}
                 <div x-show="statusMessage" x-transition
-                    :class="{
-                        'bg-bq-success-bg border-bq-success text-bq-success': statusType === 'sukses',
-                        'bg-bq-warning-bg border-bq-warning text-bq-warning': statusType === 'pending',
-                        'bg-bq-danger-bg border-bq-danger text-bq-danger': statusType === 'gagal' || statusType === 'error'
-                    }"
+                    :class="{ 'bg-bq-success-bg border-bq-success text-bq-success': statusType === 'sukses', 'bg-bq-warning-bg border-bq-warning text-bq-warning': statusType === 'pending', 'bg-bq-danger-bg border-bq-danger text-bq-danger': statusType === 'gagal' || statusType === 'error' }"
                     class="rounded-lg border p-3.5 text-sm font-medium flex items-center gap-2">
                     <template x-if="statusType === 'sukses'">
                         <svg class="h-5 w-5 text-bq-success shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>

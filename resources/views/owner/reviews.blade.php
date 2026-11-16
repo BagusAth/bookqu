@@ -13,8 +13,8 @@
     $tabLabels = collect(\App\Actions\Review\GetReviewsPage::TABS)
         ->map(fn (string $label, string $key): string => $label.' ('.$tabCounts[$key].')')
         ->all();
-    $buttonSecondary = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-bq-border bg-bq-surface px-3 py-1.5 text-sm font-medium text-bq-text hover:bg-bq-background';
-    $buttonPrimary = 'inline-flex items-center justify-center gap-1.5 rounded-lg bg-bq-primary px-4 py-2 text-sm font-medium text-white hover:bg-bq-primary-hover disabled:opacity-60';
+    $buttonSecondary = 'bq-btn bq-btn-secondary bq-btn-sm';
+    $buttonPrimary = 'bq-btn bq-btn-primary';
     $star = 'M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z';
 @endphp
 
@@ -77,7 +77,7 @@
     <form method="GET" action="{{ route('owner.reviews') }}" role="search" class="flex gap-2">
         <input type="hidden" name="tab" value="{{ $activeTab }}">
         <label for="review-search" class="sr-only">Cari ulasan</label>
-        <input id="review-search" type="search" name="search" value="{{ $search }}" placeholder="Cari komentar, balasan, nama pelanggan atau kode booking" class="w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30">
+        <input id="review-search" type="search" name="search" value="{{ $search }}" placeholder="Cari komentar, balasan, nama pelanggan atau kode booking" class="bq-input w-full">
         <button type="submit" class="{{ $buttonSecondary }} py-2">Cari</button>
     </form>
 
@@ -164,13 +164,13 @@
                 <p class="mb-1.5 text-sm font-medium text-bq-text">Saran kalimat</p>
                 <div class="flex flex-col gap-2">
                     <template x-for="(sentence, index) in suggestions[review.tone] || []" x-bind:key="index">
-                        <button type="button" x-on:click="review.reply = sentence" class="rounded-lg border border-bq-border px-3 py-2 text-left text-sm text-bq-text hover:bg-bq-background" x-text="sentence"></button>
+                        <button type="button" x-on:click="review.reply = sentence" class="bq-btn bq-btn-secondary text-left" x-text="sentence"></button>
                     </template>
                 </div>
             </div>
             <div>
                 <label for="review-reply-text" class="block text-sm font-medium text-bq-text">Balasan</label>
-                <textarea id="review-reply-text" name="balasan" rows="4" required maxlength="{{ \App\Actions\Review\ReplyToReview::MAX_LENGTH }}" x-model="review.reply" class="mt-1 block w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30"></textarea>
+                <textarea id="review-reply-text" name="balasan" rows="4" required maxlength="{{ \App\Actions\Review\ReplyToReview::MAX_LENGTH }}" x-model="review.reply" class="bq-input mt-1 block w-full"></textarea>
                 <p class="mt-1 text-right text-xs tabular-nums text-bq-text-muted" x-text="(review.reply || '').length + '/{{ \App\Actions\Review\ReplyToReview::MAX_LENGTH }}'"></p>
             </div>
         </form>
