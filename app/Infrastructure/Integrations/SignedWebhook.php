@@ -16,7 +16,7 @@ final class SignedWebhook
 {
     public function __construct(private PublicWebhookTarget $targets) {}
 
-    public function deliver(WebhookEndpoint $endpoint, WebhookDelivery $delivery, int $subjectId): ?int
+    public function deliver(WebhookEndpoint $endpoint, WebhookDelivery $delivery, ?int $subjectId): ?int
     {
         $target = $this->targets->resolve($endpoint->url);
         if ($target === null || ! extension_loaded('curl')) {

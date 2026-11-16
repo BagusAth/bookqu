@@ -2,6 +2,7 @@
     <h2 class="text-lg font-semibold">Integrasi</h2>
 
 
+    @isset($configured)
     <section class="space-y-3 rounded-xl border border-bq-border bg-bq-surface p-4">
         <h2 class="font-semibold">Google Calendar</h2>
         <p class="text-sm text-bq-text-muted">Booking terkonfirmasi dan perubahan jadwal dikirim dari BookQu ke kalender utama Google Anda.</p>
@@ -13,7 +14,7 @@
                     @csrf
                     <button class="rounded-lg border border-bq-border px-3 py-2 text-sm">Tes koneksi</button>
                 </form>
-                <form method="POST" action="{{ route('owner.settings.integrations.calendar.disconnect') }}" id="disconnect-calendar" x-data
+                <form method="POST" action="{{ route('owner.settings.integrations.calendar.disconnect') }}" id="disconnect-calendar" x-data>
                     @csrf
                     @method('DELETE')
                     <button type="button" class="rounded-lg border border-bq-border px-3 py-2 text-sm text-bq-danger" @click="$dispatch('open-confirm', { title: 'Putuskan Google Calendar?', message: 'Booking baru tidak akan disinkronkan ke Google Calendar.', formId: $el.form.id, tone: 'danger' })">Putuskan koneksi</button>
@@ -45,6 +46,7 @@
         </div>
         <button class="rounded-lg bg-bq-primary px-4 py-2 text-sm font-semibold text-white">Simpan</button>
     </form>
+    @endisset
     <p class="text-sm text-bq-text-muted">Pembayaran dan email dikelola BookQu.</p>
 
     @isset($keys)

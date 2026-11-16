@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Integrations;
 
 use App\Infrastructure\Integrations\PublicWebhookTarget;
+use App\Infrastructure\Integrations\WebhookReplay;
 use App\Models\OwnerApiKey;
 use App\Models\Tenant;
 use App\Models\WebhookDelivery;
@@ -13,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 final class ManageOwnerApiCredentials
 {
-    public function __construct(private PublicWebhookTarget $targets) {}
+    public function __construct(private PublicWebhookTarget $targets, private WebhookReplay $replay) {}
 
     /** @return array<string, mixed> */
     public function overview(Tenant $tenant): array
@@ -23,12 +24,14 @@ final class ManageOwnerApiCredentials
                 ->get(['id', 'name', 'prefix']),
             'endpoints' => WebhookEndpoint::where('idtenant', $tenant->id)->latest('id')->get(['id', 'name', 'url']),
             'deliveries' => WebhookDelivery::where('idtenant', $tenant->id)->latest('id')->limit(20)
-                ->get(['id', 'event_id', 'event_name', 'attempts', 'http_status', 'elapsed_ms', 'status', 'created_at'])
+                ->get(['id', 'idtenant', 'endpoint_id', 'event_id', 'event_name', 'attempts', 'http_status', 'elapsed_ms', 'status', 'created_at'])
                 ->each(function (WebhookDelivery $delivery): void {
+                    $delivery->setAttribute('can_redeliver', $this->replay->canReplay($delivery));
                     $delivery->setAttribute('status_label', match ($delivery->status) {
                         'pending' => 'Menunggu pengiriman',
                         'delivered' => 'Terkirim',
                         'failed' => 'Gagal dikirim',
+                        'skipped' => 'Pengiriman dilewati',
                         default => 'Status tidak tersedia',
                     });
                 }),

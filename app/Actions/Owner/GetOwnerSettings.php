@@ -33,12 +33,15 @@ final class GetOwnerSettings
         $tabs += ['notifications' => 'Notifikasi', 'account' => 'Akun'];
         $subscription = $tenant->exists ? $tenant->subscription : null;
         $requestedTab = $requestedTab === 'integrations' ? 'integrasi' : $requestedTab;
+        $showIntegrations = $canManageIntegrations && ModuleRelease::state('integrations') === 'released'
+            && EntitlementRules::canAccessFeature($subscription, 'integrations')['allowed'];
+        $showApi = $canManageIntegrations && ModuleRelease::state('api') === 'released'
+            && EntitlementRules::canAccessFeature($subscription, 'api')['allowed'];
 
         if ($canManageTeam && ModuleRelease::state('team') === 'released') {
             $tabs['tim'] = 'Tim';
         }
-        if ($canManageIntegrations && ModuleRelease::state('integrations') === 'released'
-            && EntitlementRules::canAccessFeature($subscription, 'integrations')['allowed']) {
+        if ($showIntegrations || $showApi) {
             $tabs['integrasi'] = 'Integrasi';
         }
         if ($requestedTab === 'tim') {
@@ -47,7 +50,6 @@ final class GetOwnerSettings
         }
         if ($requestedTab === 'integrasi') {
             abort_unless($canManageIntegrations, 403);
-            abort_unless(ModuleRelease::state('integrations') === 'released', 404);
             abort_unless(isset($tabs['integrasi']), 403);
         }
         $tab = isset($tabs[$requestedTab]) ? $requestedTab : array_key_first($tabs);
@@ -78,8 +80,10 @@ final class GetOwnerSettings
             $data += app(GetOwnerTeam::class)->execute($tenant, app(ManageTeam::class));
         }
         if ($tab === 'integrasi') {
-            $data += app(GetOwnerIntegrations::class)->execute($tenant, app(GoogleCalendar::class));
-            if (ModuleRelease::state('api') === 'released' && EntitlementRules::canAccessFeature($subscription, 'api')['allowed']) {
+            if ($showIntegrations) {
+                $data += app(GetOwnerIntegrations::class)->execute($tenant, app(GoogleCalendar::class));
+            }
+            if ($showApi) {
                 $data += app(ManageOwnerApiCredentials::class)->overview($tenant);
             }
         }

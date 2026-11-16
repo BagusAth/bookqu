@@ -118,7 +118,10 @@
             <p x-show="error" x-cloak x-text="error" role="alert" class="text-sm"></p>
             <ul class="grid gap-2 text-sm sm:grid-cols-3" aria-live="polite">
                 <template x-for="hour in hours" :key="hour.time">
-                    <li class="rounded border border-bq-border p-2 tabular-nums" x-text="hour.time + ' · ' + rupiah.format(hour.price)"></li>
+                    <li class="rounded border border-bq-border p-2">
+                        <span class="font-medium tabular-nums" x-text="hour.time + ' · ' + rupiah.format(hour.price)"></span>
+                        <span class="block text-xs text-bq-text-muted" x-text="hour.rule_label"></span>
+                    </li>
                 </template>
             </ul>
         </form>

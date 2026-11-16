@@ -47,6 +47,9 @@
 
             {{-- Bottom padding keeps content above the phone navigation bar (owner-portal.md §4.3) --}}
             <div class="flex-1 p-3.5 pb-24 sm:p-5 sm:pb-24 md:p-6 lg:p-8">
+                @unless (request()->routeIs('owner.calendar'))
+                    <x-owner.walkin-success />
+                @endunless
                 {{-- Flash messages, including `pesan`, show once in the toast (BQ-129) --}}
                 @yield('content')
             </div>

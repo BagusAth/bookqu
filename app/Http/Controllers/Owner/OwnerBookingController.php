@@ -255,7 +255,13 @@ class OwnerBookingController extends Controller
             return back()->withInput()->withErrors(['idschedule' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.']);
         }
 
-        return back()->with('sukses', "Walk-in booking atas nama {$booking->namapelanggan} berhasil dibuat!");
+        return back()
+            ->with('sukses', "Walk-in booking atas nama {$booking->namapelanggan} berhasil dibuat!")
+            ->with('walkin_booking', [
+                'code' => $booking->booking_code,
+                'panelUrl' => route('owner.bookings.panel', $booking->id),
+                'href' => route('owner.bookings', ['panel' => $booking->id]),
+            ]);
     }
 
     /**

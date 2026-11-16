@@ -59,11 +59,7 @@ class OwnerScheduleController extends Controller
         $data = compact('tenant', 'tabs', 'tab', 'weekdays', 'runway', 'daftarlayanan');
 
         if ($tab === 'hours') {
-            $data['openingHours'] = OpeningHour::where('idtenant', $tenant->id)->orderBy('opens_at')->get()->groupBy('day_of_week')
-                ->map(fn ($intervals) => $intervals->map(fn ($interval) => [
-                    'opens_at' => substr((string) $interval->opens_at, 0, 5),
-                    'closes_at' => substr((string) $interval->closes_at, 0, 5),
-                ])->values());
+            $data['openingHours'] = $this->openingHours($tenant);
         } elseif ($tab === 'prices') {
             $data['peakRules'] = PeakHourRule::where('idtenant', $tenant->id)->with('services')->orderBy('name')->get();
             $data['specialDates'] = SpecialDatePrice::where('idtenant', $tenant->id)->with('service')->orderBy('tanggal')->get();
@@ -71,9 +67,20 @@ class OwnerScheduleController extends Controller
             $data['blockedDates'] = $tenant->blockedDates()->orderByDesc('tanggal')->get();
         } else {
             $data += $this->slotPage($request, $tenant, $priceSlots);
+            $data['openingHours'] = $this->openingHours($tenant);
         }
 
         return view('owner.schedule', $data);
+    }
+
+    /** @return array<int, list<array{opens_at: string, closes_at: string}>> */
+    private function openingHours(Tenant $tenant): array
+    {
+        return OpeningHour::where('idtenant', $tenant->id)->orderBy('opens_at')->get()->groupBy('day_of_week')
+            ->map(fn ($intervals) => $intervals->map(fn (OpeningHour $interval): array => [
+                'opens_at' => substr((string) $interval->opens_at, 0, 5),
+                'closes_at' => substr((string) $interval->closes_at, 0, 5),
+            ])->values()->all())->all();
     }
 
     /** @return array<string, mixed> */

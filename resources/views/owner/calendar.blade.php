@@ -96,6 +96,7 @@
     <p x-cloak x-show="feedback" x-text="feedback" role="status" class="text-sm"></p>
 
     <div x-ref="results" data-calendar-results>
+        <x-owner.walkin-success />
         @if ($errors->any())
             <p data-calendar-error class="text-sm text-bq-danger" role="alert">{{ $errors->first() }}</p>
         @endif

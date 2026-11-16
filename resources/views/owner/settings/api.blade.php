@@ -1,5 +1,6 @@
 <div id="api" class="space-y-5">
     <h3 class="text-base font-semibold">API dan Webhook</h3>
+    <x-owner.field-error name="delivery" />
     @isset($credential)
         <section class="rounded-xl border border-bq-border bg-bq-surface p-4" role="status">
             <h2 class="font-semibold">{{ $label }}</h2>
@@ -31,7 +32,7 @@
             @foreach ($keys as $key)
                 <li class="flex items-center justify-between gap-2 py-2">
                     <span>{{ $key->name }} <code>{{ $key->prefix }}…</code></span>
-                    <form method="POST" action="{{ route('owner.api.keys.revoke', $key->id) }}" id="revoke-api-key-{{ $key->id }}" x-data
+                    <form method="POST" action="{{ route('owner.api.keys.revoke', $key->id) }}" id="revoke-api-key-{{ $key->id }}" x-data>
                         @csrf
                         @method('DELETE')
                         <button type="button" class="font-semibold text-bq-danger" @click="$dispatch('open-confirm', { title: 'Cabut kunci API?', message: 'Aplikasi yang memakai kunci ini akan kehilangan akses.', formId: $el.form.id, tone: 'danger' })">Cabut</button>
@@ -55,9 +56,13 @@
         </form>
         <ul class="divide-y divide-bq-border text-sm">
             @foreach ($endpoints as $endpoint)
-                <li class="flex items-center justify-between gap-2 py-2">
+                <li class="flex flex-wrap items-center justify-between gap-2 py-2">
                     <span class="min-w-0 break-all">{{ $endpoint->name }} · {{ $endpoint->url }}</span>
-                    <form method="POST" action="{{ route('owner.api.webhooks.destroy', $endpoint->id) }}" id="delete-webhook-{{ $endpoint->id }}" x-data
+                    <form method="POST" action="{{ route('owner.api.webhooks.test', $endpoint->id) }}">
+                        @csrf
+                        <button class="font-semibold text-bq-primary">Kirim uji</button>
+                    </form>
+                    <form method="POST" action="{{ route('owner.api.webhooks.destroy', $endpoint->id) }}" id="delete-webhook-{{ $endpoint->id }}" x-data>
                         @csrf
                         @method('DELETE')
                         <button type="button" class="font-semibold text-bq-danger" @click="$dispatch('open-confirm', { title: 'Hapus endpoint?', message: 'Pengiriman ke alamat ini akan berhenti.', formId: $el.form.id, tone: 'danger' })">Hapus</button>
@@ -76,6 +81,14 @@
                     <span>· {{ $delivery->status_label }} · {{ $delivery->attempts }} percobaan</span>
                     @if ($delivery->http_status !== null)<span>· HTTP {{ $delivery->http_status }} · {{ $delivery->elapsed_ms }} ms</span>@endif
                     <code class="block break-all text-xs text-bq-text-muted">{{ $delivery->event_id }}</code>
+                    @if ($delivery->can_redeliver)
+                        <form class="mt-1" method="POST" action="{{ route('owner.api.webhooks.redeliver', $delivery->id) }}">
+                            @csrf
+                            <button class="font-semibold text-bq-primary">Kirim ulang</button>
+                        </form>
+                    @elseif ($delivery->status !== 'pending')
+                        <span class="text-xs text-bq-text-muted">{{ $delivery->endpoint_id ? 'Data untuk kirim ulang sudah tidak tersedia.' : 'Endpoint sudah dihapus.' }}</span>
+                    @endif
                 </li>
             @empty
                 <li class="text-bq-text-muted">Belum ada pengiriman.</li>

@@ -8,6 +8,7 @@ use App\Domain\Integrations\BookingIntegrationEvent;
 use App\Domain\Integrations\RefundIntegrationEvent;
 use App\Domain\Modules\ModuleRelease;
 use App\Domain\Subscription\EntitlementRules;
+use App\Infrastructure\Integrations\WebhookReplay;
 use App\Jobs\DeliverOwnerWebhook;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
@@ -39,6 +40,7 @@ final class QueueOwnerWebhook
                 $delivery = WebhookDelivery::create([
                     'idtenant' => $event->tenantId, 'endpoint_id' => $endpointId, 'event_id' => $eventId, 'event_name' => $event->name,
                 ]);
+                app(WebhookReplay::class)->remember($delivery, $subjectId);
                 DeliverOwnerWebhook::dispatch($event->tenantId, (int) $delivery->id, $subjectId);
             }
         } catch (Throwable) {

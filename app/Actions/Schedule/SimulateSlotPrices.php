@@ -7,6 +7,7 @@ namespace App\Actions\Schedule;
 use App\Domain\Schedule\PriceRules;
 use App\Domain\Schedule\SlotPricing;
 use App\Models\OpeningHour;
+use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use Carbon\Carbon;
@@ -19,7 +20,7 @@ use Carbon\Carbon;
 class SimulateSlotPrices
 {
     /**
-     * @return list<array{time: string, price: int, source: string, peak: list<array{name: string, extra: float}>}>
+     * @return list<array{time: string, price: int, source: string, peak: list<array{name: string, extra: float}>, rule_label: string}>
      */
     public function execute(Tenant $tenant, Service $service, string $date): array
     {
@@ -47,11 +48,25 @@ class SimulateSlotPrices
             }
         }
 
+        $overrides = Schedule::where('idtenant', $tenant->id)->where('idlayanan', $service->id)
+            ->whereDate('tanggal', $day)->whereNotNull('harga_override')->get(['jam_mulai', 'harga_override'])
+            ->mapWithKeys(fn (Schedule $slot): array => [substr((string) $slot->jam_mulai, 0, 5) => $slot->harga_override])->all();
+        $times = array_unique([...array_map(fn (int $hour): string => sprintf('%02d:00', $hour), $hours), ...array_keys($overrides)]);
+        sort($times);
+
         $result = [];
-        foreach (array_values(array_unique($hours)) as $hour) {
-            $time = sprintf('%02d:00', $hour);
-            $price = SlotPricing::price($service, $day, $time, null, $rules);
-            $result[] = ['time' => $time, 'price' => $price['price'], 'source' => $price['source'], 'peak' => $price['peak']];
+        foreach ($times as $time) {
+            $price = SlotPricing::price($service, $day, $time, $overrides[$time] ?? null, $rules);
+            $rule = match ($price['source']) {
+                'override' => 'Harga khusus slot',
+                'special_date' => 'Harga tanggal khusus',
+                'weekend' => 'Harga akhir pekan',
+                'base' => 'Harga dasar',
+            };
+            if ($price['peak'] !== []) {
+                $rule .= ' + jam sibuk: '.implode(', ', array_column($price['peak'], 'name'));
+            }
+            $result[] = ['time' => $time, 'price' => $price['price'], 'source' => $price['source'], 'peak' => $price['peak'], 'rule_label' => $rule];
         }
 
         return $result;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Integrations\ManageOwnerApiCredentials;
+use App\Actions\Integrations\QueueManualWebhook;
 use App\Actions\Owner\GetOwnerSettings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\SaveApiCredentialRequest;
@@ -50,6 +51,22 @@ final class OwnerApiController extends Controller
         $action->deleteWebhook($this->tenant(), $id);
 
         return redirect()->to(route('owner.settings.business', ['tab' => 'integrasi']).'#api')->with('sukses', 'Endpoint webhook dihapus.');
+    }
+
+    public function testWebhook(int $id, QueueManualWebhook $webhook): RedirectResponse
+    {
+        $webhook->test($this->tenant(), $id);
+
+        return redirect()->to(route('owner.settings.business', ['tab' => 'integrasi']).'#api')
+            ->with('sukses', 'Webhook uji masuk antrean pengiriman.');
+    }
+
+    public function redeliverWebhook(int $id, QueueManualWebhook $webhook): RedirectResponse
+    {
+        $webhook->redeliver($this->tenant(), $id);
+
+        return redirect()->to(route('owner.settings.business', ['tab' => 'integrasi']).'#api')
+            ->with('sukses', 'Webhook masuk antrean pengiriman ulang.');
     }
 
     private function showOnce(Tenant $tenant, string $label, #[\SensitiveParameter] string $credential): Response

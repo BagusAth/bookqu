@@ -70,12 +70,32 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    Alpine.data('scheduleBulkPreview', () => ({
+    Alpine.data('scheduleBulkPreview', (openingHours) => ({
         period: 'harian',
         preview: null,
         checkedFields: '',
         error: '',
         busy: false,
+        openingChoices: [],
+        openingWarning: '',
+        useOpeningHours(form) {
+            const value = this.period === 'harian' ? form.elements.tanggal.value : form.elements.tanggalmulai.value;
+            if (!value) {
+                this.openingWarning = 'Pilih tanggal terlebih dahulu.';
+                return;
+            }
+            const weekday = new Date(value + 'T00:00:00Z').getUTCDay() || 7;
+            this.openingChoices = openingHours[weekday] || [];
+            this.openingWarning = this.openingChoices.length ? '' : 'Jam buka untuk hari ini belum diatur.';
+            if (this.openingChoices.length === 1) this.applyOpeningHours(form, this.openingChoices[0]);
+        },
+        applyOpeningHours(form, interval) {
+            form.elements.jammulai.value = interval.opens_at;
+            form.elements.jamselesai.value = interval.closes_at;
+            this.preview = null;
+            this.openingChoices = [];
+            this.openingWarning = '';
+        },
         fingerprint(form) {
             return new URLSearchParams(new FormData(form)).toString();
         },

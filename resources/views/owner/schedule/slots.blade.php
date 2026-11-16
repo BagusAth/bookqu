@@ -4,7 +4,7 @@
             <summary class="cursor-pointer font-semibold">Buat slot sekaligus</summary>
             <form class="mt-4 space-y-3" method="POST" action="{{ route('owner.schedule.bulk-store', ['tab' => 'slots']) }}"
                 data-preview-url="{{ route('owner.schedule.bulk-preview') }}"
-                x-data="scheduleBulkPreview" @input="preview = null" @change="preview = null" @submit="if (!canSave($el)) $event.preventDefault()">
+                x-data="scheduleBulkPreview(@js($openingHours))" @input="preview = null; openingChoices = []; openingWarning = ''" @change="preview = null" @submit="if (!canSave($el)) $event.preventDefault()">
                 @csrf
                 <div class="grid gap-3 sm:grid-cols-3">
                     <label class="grid gap-1 text-sm">Layanan
@@ -39,6 +39,18 @@
                     <label class="grid gap-1 text-sm">Interval (menit)
                         <input type="number" name="intervalslot" x-ref="interval" min="5" max="480" step="5" required class="rounded border border-bq-border bg-bq-surface p-2">
                     </label>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <button type="button" @click="useOpeningHours($el.form)" class="rounded-lg border border-bq-border px-3 py-2 font-semibold">Isi dari jam buka</button>
+                    <p x-show="period === 'rentang'" class="text-bq-text-muted">Menggunakan jam buka pada tanggal mulai.</p>
+                    <p x-show="openingWarning" class="text-bq-warning" x-text="openingWarning" role="status"></p>
+                    <div x-show="openingChoices.length > 1" class="flex flex-wrap items-center gap-2">
+                        <span>Pilih rentang</span>
+                        <template x-for="interval in openingChoices" :key="interval.opens_at">
+                            <button type="button" class="rounded-lg bg-bq-primary-light px-3 py-1.5 font-medium text-bq-primary"
+                                @click="applyOpeningHours($el.form, interval)" x-text="interval.opens_at + ' – ' + interval.closes_at"></button>
+                        </template>
+                    </div>
                 </div>
                 <p class="text-sm" role="status" x-show="preview" x-cloak x-text="preview && (preview.to_create + ' slot baru, ' + preview.already_exist + ' slot sudah ada.')"></p>
                 <p class="text-sm" role="alert" x-show="error" x-cloak x-text="error"></p>
