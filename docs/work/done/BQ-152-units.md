@@ -2,7 +2,7 @@
 id: BQ-152
 title: Unit page and unit conflicts across services
 type: feature
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: booking
@@ -17,7 +17,7 @@ depends-on: [BQ-151, BQ-130]
 
 # BQ-152: Unit page and unit conflicts across services
 
-Epic **E6 · Pro value and core rules** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E6 · Pro value and core rules** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 
@@ -54,3 +54,5 @@ Disetujui Tech Lead 2026-11-07 (backend lebih dulu, tiga bundle: A = BQ-133 + BQ
 Backend 2026-11-13: `units` and `service_unit` (existing `resources` rows copied once); `BookingRules::unitConflict`/`unitBusyRanges`/`unitOverlaps` as the one conflict rule, checked inside `ClaimSlots` (checkout, walk-in, reschedule) and in listings; `SaveUnit`, `DeleteUnit`, `AssignServiceUnits` (tenant lock, refuse new overlaps, list bookings), `GetUnitsOverview` (existing conflicts); routes `owner.units*` behind `module:units` (still hidden) and `subscription:units`; `UnitPolicy`. Tests: `Booking/CapacityUnitsAndNoShowTest` (AC-UNT-01..03, isolation), `Actions/Booking/BookingSeatLockingTest` (MySQL). Remaining: Unit page, unit field in Layanan, Kalender filter, unit image.
 
 2026-11-16: Halaman Unit memakai rute yang sudah ada untuk daftar, simpan, aktif/nonaktif, hapus dan lihat konflik. Form Layanan mengirim unit_ids dan Kalender dapat difilter per unit. Evidence: CapacityUnitsAndNoShowTest. Sisa: unggah gambar unit.
+
+2026-11-16: Form Unit memilih gambar galeri milik tenant dan menampilkan gambar yang tersimpan. Penghapusan gambar dari galeri meminta konfirmasi dan melepas referensi unit. Evidence: CapacityUnitsAndNoShowTest.

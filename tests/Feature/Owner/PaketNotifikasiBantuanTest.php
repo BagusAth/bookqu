@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Owner;
 
+use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Service;
@@ -139,6 +140,22 @@ class PaketNotifikasiBantuanTest extends TestCase
     }
 
     // ── Notifikasi ──
+
+    public function test_opening_a_booking_notification_targets_the_shared_panel_for_its_tenant(): void
+    {
+        $booking = Booking::factory()->create(['idtenant' => $this->tenant->id]);
+        $foreign = Booking::factory()->create(['idtenant' => Tenant::factory()->create()->id]);
+        $id = $this->notify($this->owner, NewBookingOwnerNotification::class, ['booking_id' => $booking->id]);
+        $foreignId = $this->notify($this->owner, NewBookingOwnerNotification::class, ['booking_id' => $foreign->id]);
+        $target = route('owner.bookings', ['panel' => $booking->id]);
+
+        $this->actingAs($this->owner)->post(route('owner.notifications.read', $id))->assertRedirect($target);
+        $this->assertNotNull($this->owner->notifications()->findOrFail($id)->read_at);
+        $this->get($target)->assertOk()->assertViewHas('initialPanelUrl', route('owner.bookings.panel', $booking->id));
+        $this->postJson(route('owner.notifications.read', $id))->assertOk()->assertJsonPath('target', $target);
+        $this->postJson(route('owner.notifications.read', $foreignId))
+            ->assertOk()->assertJsonPath('target', route('owner.notifications'));
+    }
 
     public function test_notifications_list_filters_by_unread_and_type(): void
     {

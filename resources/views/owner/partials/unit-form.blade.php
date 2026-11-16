@@ -15,6 +15,7 @@
         <label class="text-sm">Kapasitas <input name="kapasitas" type="number" min="1" max="9999" required value="{{ $unit['kapasitas'] ?? 1 }}" class="{{ $field }}"></label>
         <label class="text-sm">Lokasi <input name="lokasi" maxlength="255" value="{{ $unit['lokasi'] ?? '' }}" class="{{ $field }}"></label>
     </div>
+    <x-owner.gallery-picker name="image_asset_id" :images="$images" :selected="$unit['image_asset_id'] ?? null" label="Gambar unit" />
     <label class="flex items-center gap-2 text-sm">
         <input type="hidden" name="is_active" value="0">
         <input type="checkbox" name="is_active" value="1" @checked($unit['is_active'] ?? true)> Aktif

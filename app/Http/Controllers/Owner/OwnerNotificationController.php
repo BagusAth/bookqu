@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Owner;
 
 use App\Actions\Team\GetNotificationsPage;
 use App\Actions\Team\GetVisibleNotifications;
+use App\Actions\Team\ResolveNotificationBooking;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
@@ -77,7 +78,7 @@ class OwnerNotificationController extends Controller
     /**
      * Mark a specific notification as read.
      */
-    public function markAsRead(Request $request, string $id)
+    public function markAsRead(Request $request, string $id, ResolveNotificationBooking $bookingTarget)
     {
         $user = auth()->user();
         $notification = $this->visibleNotifications($user)->where('id', $id)->first();
@@ -86,18 +87,20 @@ class OwnerNotificationController extends Controller
             $notification->markAsRead();
         }
 
+        // AC-NTF-01: land on the item's target; BQ-102 refuses external redirect targets.
+        $origin = $request->getSchemeAndHttpHost();
+        $target = InternalRedirect::target($request->input('redirect'), $origin)
+            ?? $bookingTarget->execute($notification)
+            ?? InternalRedirect::target($notification?->data['url'] ?? null, $origin)
+            ?? route('owner.notifications');
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'unread_count' => $this->visibleNotifications($user)->whereNull('read_at')->count(),
+                'target' => $target,
             ]);
         }
-
-        // AC-NTF-01: land on the item's target. BQ-102: only targets inside this application are followed.
-        $origin = $request->getSchemeAndHttpHost();
-        $target = InternalRedirect::target($request->input('redirect'), $origin)
-            ?? InternalRedirect::target($notification?->data['url'] ?? null, $origin)
-            ?? route('owner.notifications');
 
         return redirect($target);
     }

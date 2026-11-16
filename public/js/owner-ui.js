@@ -354,19 +354,20 @@
             },
 
             async openItem(item) {
-                if (!item.is_read) {
-                    item.is_read = true;
-                    this.unread = Math.max(0, this.unread - 1);
-                    try {
-                        await fetch(config.readUrl.replace('__ID__', encodeURIComponent(item.id)), {
-                            method: 'POST',
-                            headers: { ...jsonHeaders, 'X-CSRF-TOKEN': csrfToken() },
-                        });
-                    } catch (error) {
-                        // Reading the item still works; the server state catches up on the next refresh.
+                try {
+                    const response = await fetch(config.readUrl.replace('__ID__', encodeURIComponent(item.id)), {
+                        method: 'POST',
+                        headers: { ...jsonHeaders, 'X-CSRF-TOKEN': csrfToken() },
+                    });
+                    if (response.ok) {
+                        const result = await response.json();
+                        window.location.assign(result.target);
+                        return;
                     }
+                } catch (error) {
+                    // Keep the item accessible from the full notification centre.
                 }
-                if (item.url) window.location.assign(item.url);
+                window.location.assign(config.listUrl);
             },
 
             async markAllRead() {
