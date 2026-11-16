@@ -37,24 +37,31 @@
     </section>
 
     <div class="space-y-3">
-        <nav aria-label="Filter cepat" class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+        <nav aria-label="Filter cepat" class="flex flex-wrap gap-2 pb-1">
             @foreach ($filters as $key => $label)
                 @php $isActive = ($filter ?? null) === ($key === '' ? null : $key); @endphp
                 <a
-                    href="{{ route('owner.customers', array_filter(['filter' => $key ?: null, 'search' => $search !== '' ? $search : null])) }}"
+                    href="{{ route('owner.customers', array_filter(['filter' => $key ?: null, 'search' => $search !== '' ? $search : null, 'sort' => $sort === 'recent' ? null : $sort])) }}"
                     @if ($isActive) aria-current="page" @endif
-                    @isset($filterHints[$key]) title="{{ $filterHints[$key] }}" @endisset
-                    class="shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium {{ $isActive ? 'border-bq-primary bg-bq-primary-light text-bq-primary' : 'border-bq-border bg-bq-surface text-bq-text-muted hover:text-bq-text' }}"
-                >{{ $label }}</a>
+                    class="rounded-lg border px-3 py-1.5 text-sm font-medium {{ $isActive ? 'border-bq-primary bg-bq-primary-light text-bq-primary' : 'border-bq-border bg-bq-surface text-bq-text-muted hover:text-bq-text' }}"
+                >{{ $label }}
+                    @isset($filterHints[$key])<span class="block text-xs font-normal">{{ $filterHints[$key] }}</span>@endisset
+                </a>
             @endforeach
         </nav>
 
-        <form method="GET" action="{{ route('owner.customers') }}" role="search" class="flex gap-2">
+        <form method="GET" action="{{ route('owner.customers') }}" role="search" class="flex flex-wrap gap-2" x-data>
             @if ($filter)
                 <input type="hidden" name="filter" value="{{ $filter }}">
             @endif
             <label for="customer-search" class="sr-only">Cari pelanggan</label>
-            <input id="customer-search" type="search" name="search" value="{{ $search }}" placeholder="Cari nama, email atau nomor HP" class="w-full rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30">
+            <input id="customer-search" type="search" name="search" value="{{ $search }}" placeholder="Cari nama, email atau nomor HP" class="min-w-48 flex-1 rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/30">
+            <label class="sr-only" for="customer-sort">Urutkan pelanggan</label>
+            <select id="customer-sort" name="sort" @change="$el.form.requestSubmit()" class="rounded-lg border border-bq-border bg-bq-surface px-3 py-2 text-sm">
+                @foreach ($sortOptions as $key => $option)
+                    <option value="{{ $key }}" @selected($sort === $key)>{{ $option }}</option>
+                @endforeach
+            </select>
             <button type="submit" class="{{ $openButton }} py-2">Cari</button>
         </form>
     </div>

@@ -60,8 +60,23 @@ class OwnerVoucherController extends Controller
             ->get();
 
         $promoRoute = 'owner.promos';
+        $serviceNames = $services->pluck('namalayanan', 'id');
+        $cards = $vouchers->mapWithKeys(function (Voucher $promo) use ($today, $serviceNames): array {
+            $services = $promo->applicable_services;
 
-        return view('owner.vouchers', compact('tenant', 'vouchers', 'services', 'search', 'promoRoute', 'promoTabs', 'tab', 'promoFigures'));
+            return [$promo->id => [
+                'state' => match (true) {
+                    $promo->end_date !== null && $promo->end_date->toDateString() < $today => 'Berakhir',
+                    ! $promo->is_active => 'Nonaktif',
+                    $promo->start_date !== null && $promo->start_date->toDateString() > $today => 'Terjadwal',
+                    default => 'Aktif',
+                },
+                'services' => ! $services || $services === 'all' ? 'Semua layanan' : collect(explode(',', $services))
+                    ->map(fn (string $id): string => $serviceNames->get((int) $id, 'Layanan dihapus'))->implode(', '),
+            ]];
+        });
+
+        return view('owner.vouchers', compact('vouchers', 'services', 'search', 'promoRoute', 'promoTabs', 'tab', 'promoFigures', 'cards'));
     }
 
     public function store(Request $request)

@@ -6,7 +6,7 @@ namespace App\Actions\Report;
 
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
-use App\Domain\Booking\BookingTimeRange;
+use App\Domain\Booking\UnitUtilisation;
 use App\Domain\Customer\CustomerIdentity;
 use App\Domain\Modules\ModuleRelease;
 use App\Domain\Payment\PaymentState;
@@ -439,51 +439,12 @@ class GetReport
             ->with(['services' => fn ($query) => $query->where('services.idtenant', $tenantId)->select('services.id')])
             ->get();
         foreach ($units as $unit) {
-            $offered = [];
-            $used = [];
-            foreach ($unit->services as $service) {
-                foreach ($slotsByService->get($service->getKey(), []) as $slot) {
-                    $date = CarbonImmutable::parse($slot->tanggal)->toDateString();
-                    $range = BookingTimeRange::forSlot($date, (string) $slot->jam_mulai, (string) $slot->jam_selesai);
-                    if ($range->end === null) {
-                        continue;
-                    }
-
-                    $interval = [$range->start->getTimestamp(), $range->end->getTimestamp()];
-                    if ((int) $slot->getAttribute('seats_taken') > 0) {
-                        $used[] = $interval;
-                        $offered[] = $interval;
-                    } elseif ($slot->status === 'tersedia') {
-                        $offered[] = $interval;
-                    }
-                }
-            }
-            $offeredMinutes = $this->coveredMinutes($offered);
-            $usedMinutes = $this->coveredMinutes($used);
-            $rows[] = [
-                'name' => $unit->name,
-                'offeredMinutes' => $offeredMinutes,
-                'usedMinutes' => $usedMinutes,
-                'rate' => $offeredMinutes > 0 ? round($usedMinutes / $offeredMinutes * 100, 1) : 0.0,
-            ];
+            $unitSlots = $unit->services->flatMap(fn ($service) => $slotsByService->get($service->getKey(), []));
+            $rows[] = ['name' => $unit->name] + UnitUtilisation::forSlots($unitSlots);
         }
         usort($rows, fn (array $a, array $b): int => [$b['usedMinutes'], $a['name']] <=> [$a['usedMinutes'], $b['name']]);
 
         return $rows;
-    }
-
-    /** @param list<array{int, int}> $intervals */
-    private function coveredMinutes(array $intervals): int
-    {
-        sort($intervals);
-        $endOfCoverage = 0;
-        $seconds = 0;
-        foreach ($intervals as [$start, $end]) {
-            $seconds += max(0, $end - max($start, $endOfCoverage));
-            $endOfCoverage = max($end, $endOfCoverage);
-        }
-
-        return intdiv($seconds, 60);
     }
 
     /** @return list<array{customer: string, code: string, uses: int, discount: int}> */

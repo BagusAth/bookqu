@@ -35,9 +35,11 @@ class ListCustomers
      *     summary: array{total: int, new: int, returning: int},
      *     search: string,
      *     filter: string|null,
+     *     sort: string,
+     *     sortOptions: array<string, string>,
      * }
      */
-    public function execute(Tenant $tenant, string $search, ?string $filter, bool $canViewRevenue): array
+    public function execute(Tenant $tenant, string $search, ?string $filter, bool $canViewRevenue, string $requestedSort = ''): array
     {
         app(TenantContext::class)->setTenantId($tenant->id);
 
@@ -46,13 +48,24 @@ class ListCustomers
         $monthStart = Carbon::now()->startOfMonth()->toDateTimeString();
         $dormantBefore = Carbon::today()->subDays(self::DORMANT_AFTER_DAYS)->toDateString();
 
+        $sortOptions = ['recent' => 'Booking terakhir', 'bookings' => 'Booking terbanyak'];
+        if ($canViewRevenue) {
+            $sortOptions['spent'] = 'Pembayaran tertinggi';
+        }
+        $sort = isset($sortOptions[$requestedSort]) ? $requestedSort : 'recent';
+
         $customers = DB::query()
             ->fromSub($this->grouped((int) $tenant->id, $search), 'customers')
+            ->select('customers.*')
             ->when($filter === 'new', fn (Builder $query) => $query->where('first_seen', '>=', $monthStart))
             ->when($filter === 'regular', fn (Builder $query) => $query->where('total_bookings', '>=', self::REGULAR_MIN_BOOKINGS))
             ->when($filter === 'dormant', fn (Builder $query) => $query->where('last_booking_date', '<', $dormantBefore))
+            ->when($sort === 'bookings', fn (Builder $query) => $query->orderByDesc('total_bookings'))
+            ->when($sort === 'spent', fn (Builder $query) => $query
+                ->leftJoinSub($this->sumCustomerPayments->query((int) $tenant->id), 'spending', 'spending.identifier', '=', 'customers.identifier')
+                ->orderByRaw('COALESCE(spending.total_spent, 0) DESC'))
             ->orderByDesc('last_booking_date')
-            ->orderBy('identifier')
+            ->orderBy('customers.identifier')
             ->paginate(20)
             ->withQueryString();
 
@@ -88,6 +101,8 @@ class ListCustomers
             ],
             'search' => $search,
             'filter' => $filter,
+            'sort' => $sort,
+            'sortOptions' => $sortOptions,
         ];
     }
 

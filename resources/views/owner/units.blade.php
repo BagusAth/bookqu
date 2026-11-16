@@ -23,11 +23,19 @@
             @if ($unit['image_url'])
                 <img src="{{ $unit['image_url'] }}" alt="" class="mt-3 h-24 w-24 rounded-lg object-cover" loading="lazy">
             @endif
+            <p class="mt-3 text-sm text-bq-text-muted">Layanan yang memakai unit: {{ implode(', ', $unit['service_names']) ?: 'Belum ada' }}</p>
+            @if ($unit['usage_today'])
+                <p class="mt-1 text-sm text-bq-text-muted">
+                    Pemakaian hari ini: {{ number_format($unit['usage_today']['rate'], 1, ',', '.') }}%
+                    ({{ $unit['usage_today']['usedMinutes'] }} dari {{ $unit['usage_today']['offeredMinutes'] }} menit)
+                </p>
+            @endif
             @include('owner.partials.unit-form', ['unit' => $unit])
-            <form method="POST" action="{{ route('owner.units.destroy', $unit['id']) }}" class="mt-4">
+            <form method="POST" id="delete-unit-{{ $unit['id'] }}" x-data action="{{ route('owner.units.destroy', $unit['id']) }}" class="mt-4">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="text-sm font-semibold text-bq-danger">Hapus unit</button>
+                <button type="button" class="text-sm font-semibold text-bq-danger"
+                    @click="$dispatch('open-confirm', { title: 'Hapus unit?', message: @js('Hapus unit '.$unit['name'].'?'), formId: $el.form.id })">Hapus unit</button>
             </form>
         </details>
     @empty
@@ -41,8 +49,13 @@
                 <li>
                     {{ collect($units)->firstWhere('id', $conflict['unit_id'])['name'] }}
                     @foreach ($conflict['booking_ids'] as $bookingId)
-                        <button type="button" class="text-bq-primary" x-data
-                            @click="$dispatch('open-booking-panel', { url: @js(route('owner.bookings.panel', $bookingId)), trigger: $el })">#{{ $bookingId }}</button>
+                        @if ($detail = $bookingDetails[$bookingId] ?? null)
+                            <p class="ms-3">
+                                <button type="button" class="text-bq-primary underline" x-data
+                                    @click="$dispatch('open-booking-panel', { url: @js($detail['url']), trigger: $el })">{{ $detail['code'] }}</button>
+                                · {{ $detail['customer'] }} · {{ $detail['session'] }}
+                            </p>
+                        @endif
                     @endforeach
                 </li>
             @empty

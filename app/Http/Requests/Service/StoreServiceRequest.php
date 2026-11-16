@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Service;
 
+use App\Domain\Modules\ModuleRelease;
+use App\Domain\Subscription\EntitlementRules;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -14,7 +16,11 @@ class StoreServiceRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->resolveTenant() !== null;
+        $tenant = $this->resolveTenant();
+
+        return $tenant !== null && (! $this->has('additional_item_ids')
+            || (ModuleRelease::state('add-ons') === 'released'
+                && EntitlementRules::canAccessFeature($tenant->subscription, 'add-ons')['allowed']));
     }
 
     /**

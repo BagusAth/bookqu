@@ -32,9 +32,13 @@
         this.activeVoucher = { ...v };
         this.editModalOpen = true;
     },
-    copyCode(code) {
-        navigator.clipboard.writeText(code);
-        $dispatch('toast', { message: 'Kode ' + code + ' disalin!', type: 'success' });
+    async copyCode(code) {
+        try {
+            await navigator.clipboard.writeText(code);
+            $dispatch('toast', { message: 'Kode ' + code + ' disalin.', type: 'success' });
+        } catch {
+            $dispatch('toast', { message: 'Kode tidak dapat disalin. Salin secara manual.', type: 'error' });
+        }
     }
 }">
 
@@ -59,10 +63,10 @@
             <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari kode kupon..." class="w-full rounded-xl border border-bq-border bg-bq-surface py-2.5 pl-10 pr-4 text-xs text-bq-text placeholder-bq-text-subtle transition focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari kode promo" class="w-full rounded-xl border border-bq-border bg-bq-surface py-2.5 pl-10 pr-4 text-xs text-bq-text placeholder-bq-text-subtle transition focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
         </form>
         <p class="text-xs text-bq-text-muted">
-            Total <span class="font-bold text-bq-text">{{ $vouchers->count() }}</span> voucher promo
+            Total <span class="font-bold text-bq-text">{{ $vouchers->count() }}</span> promo
         </p>
     </div>
 
@@ -97,20 +101,25 @@
                             </button>
                         </div>
                         <span class="font-bold text-sm text-emerald-600">
-                            {{ $v->discount_type === 'percentage' ? $v->discount_value . '% OFF' : 'Rp ' . number_format($v->discount_value, 0, ',', '.') }}
+                            {{ $v->discount_type === 'percentage' ? $v->discount_value . '%' : 'Rp ' . number_format($v->discount_value, 0, ',', '.') }}
                         </span>
                     </div>
 
                     {{-- Details --}}
                     <div class="mt-4 space-y-2 text-xs">
+                        <p><span class="text-bq-text-muted">Layanan:</span> {{ $cards[$v->id]['services'] }}</p>
+                        @if ($v->max_discount !== null)
+                            <p><span class="text-bq-text-muted">Diskon maksimum:</span> Rp {{ number_format((float) $v->max_discount, 0, ',', '.') }}</p>
+                        @endif
+                        <p><span class="text-bq-text-muted">Diskon diberikan:</span> Rp {{ number_format($promoFigures['discountByPromo'][$v->id] ?? 0, 0, ',', '.') }}</p>
                         <div class="flex justify-between">
-                            <span class="text-bq-text-muted">Min. Order:</span>
+                            <span class="text-bq-text-muted">Minimum transaksi</span>
                             <span class="font-medium text-bq-text">Rp {{ number_format($v->min_spending ?? $v->min_order_amount ?? 0, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-bq-text-muted">Penggunaan:</span>
                             <span class="font-medium text-bq-text">
-                                {{ $v->used_count }} / {{ $v->usage_limit ? $v->usage_limit . ' Kuota' : 'Unlimited' }}
+                                {{ $v->used_count }} / {{ $v->usage_limit ? $v->usage_limit . ' Kuota' : 'Tanpa batas' }}
                             </span>
                         </div>
                         <div class="flex justify-between">
@@ -130,14 +139,14 @@
 
                 {{-- Footer Controls --}}
                 <div class="mt-5 pt-3 border-t border-bq-border flex items-center justify-between">
-                    <form method="POST" action="{{ route($promoRoute.'.toggle', $v->id) }}">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit"
-                            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition {{ $v->is_active ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200' }}">
-                            <span>{{ $v->is_active ? 'Aktif' : 'Non-Aktif' }}</span>
-                        </button>
-                    </form>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="rounded-full bg-bq-background px-2 py-1 text-xs font-medium">{{ $cards[$v->id]['state'] }}</span>
+                        <form method="POST" action="{{ route($promoRoute.'.toggle', $v->id) }}">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="text-xs font-semibold text-bq-primary underline">{{ $v->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
+                        </form>
+                    </div>
                     <div class="flex items-center gap-1">
                         <button type="button" @click="openEdit(@js($vPayload))" class="rounded-lg p-1.5 text-bq-text-muted hover:bg-slate-100 hover:text-bq-text transition" title="Edit" id="btn-edit-voucher-{{ $v->id }}">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -159,10 +168,10 @@
                 <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
                 </div>
-                <h3 class="text-sm font-bold text-bq-text">Belum ada voucher promo</h3>
-                <p class="mt-1 text-xs text-bq-text-muted max-w-sm mx-auto">Tingkatkan pemesanan dengan memberikan kupon diskon spesial untuk calon pelanggan Anda.</p>
+                <h3 class="text-sm font-bold text-bq-text">Belum ada promo</h3>
+                <p class="mt-1 text-xs text-bq-text-muted max-w-sm mx-auto">Tingkatkan pemesanan dengan memberikan promo diskon spesial untuk calon pelanggan Anda.</p>
                 <button type="button" @click="addModalOpen = true" class="mt-4 inline-flex items-center gap-2 rounded-xl bg-bq-primary px-4 py-2 text-xs font-semibold text-white hover:bg-bq-primary-hover transition">
-                    + Buat Voucher Baru
+                    + Buat promo
                 </button>
             </div>
         @endforelse
@@ -172,7 +181,7 @@
     <div x-show="addModalOpen" class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-slate-900/40 backdrop-blur-xs" style="display: none;" x-cloak>
         <div class="my-auto w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-bq-border" @click.outside="addModalOpen = false">
             <h3 class="text-base font-bold text-bq-text">Buat Kode Promo Baru</h3>
-            <p class="text-xs text-bq-text-muted mt-1">Konfigurasi nilai diskon, kuota pemakaian, dan masa berlaku kupon.</p>
+            <p class="text-xs text-bq-text-muted mt-1">Konfigurasi nilai diskon, kuota pemakaian, dan masa berlaku promo.</p>
             <form method="POST" action="{{ route($promoRoute.'.store') }}" class="mt-4 space-y-3.5" id="form-add-voucher">
                 @csrf
                 <input type="hidden" name="_form" value="promo-create">
@@ -204,7 +213,7 @@
                     </div>
                     <div>
                         <label class="text-xs font-semibold text-bq-text">Batas Kuota Pemakaian</label>
-                        <input type="number" name="usage_limit" value="{{ $promoCreating ? old('usage_limit') : '' }}" min="1" placeholder="Kosongkan jika unlimited" class="mt-1 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
+                        <input type="number" name="usage_limit" value="{{ $promoCreating ? old('usage_limit') : '' }}" min="1" placeholder="Kosongkan jika tanpa batas" class="mt-1 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
                         <x-owner.field-error name="usage_limit" form="promo-create" />
                     </div>
                 </div>
@@ -223,7 +232,7 @@
                 @include('owner.partials.promo-limits', ['model' => 'newVoucher', 'errorForm' => 'promo-create'])
                 <div class="flex items-center justify-end gap-2 pt-2 border-t border-bq-border">
                     <button type="button" @click="addModalOpen = false" class="rounded-xl px-3.5 py-2 text-xs font-semibold text-bq-text-muted hover:bg-slate-100 transition">Batal</button>
-                    <button type="submit" class="rounded-xl bg-bq-primary px-4 py-2 text-xs font-semibold text-white hover:bg-bq-primary-hover transition">Simpan Voucher</button>
+                    <button type="submit" class="rounded-xl bg-bq-primary px-4 py-2 text-xs font-semibold text-white hover:bg-bq-primary-hover transition">Simpan promo</button>
                 </div>
             </form>
         </div>
@@ -233,7 +242,7 @@
     <div x-show="editModalOpen" class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-slate-900/40 backdrop-blur-xs" style="display: none;" x-cloak>
         <div class="my-auto w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-bq-border" @click.outside="editModalOpen = false">
             <h3 class="text-base font-bold text-bq-text">Edit Kode Promo</h3>
-            <p class="text-xs text-bq-text-muted mt-1">Perbarui ketentuan diskon dan ketersediaan kupon.</p>
+            <p class="text-xs text-bq-text-muted mt-1">Perbarui ketentuan diskon dan ketersediaan promo.</p>
             <form method="POST" :action="@js(route($promoRoute.'.update', ['id' => '__ID__'])).replace('__ID__', encodeURIComponent(activeVoucher.id))" class="mt-4 space-y-3.5" id="form-edit-voucher">
                 @csrf
                 <input type="hidden" name="_form" :value="'promo-edit-' + activeVoucher.id">
@@ -266,7 +275,7 @@
                     </div>
                     <div>
                         <label class="text-xs font-semibold text-bq-text">Batas Kuota Pemakaian</label>
-                        <input type="number" name="usage_limit" x-model="activeVoucher.usage_limit" min="1" placeholder="Unlimited" class="mt-1 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
+                        <input type="number" name="usage_limit" x-model="activeVoucher.usage_limit" min="1" placeholder="Tanpa batas" class="mt-1 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
                         <x-owner.field-error name="usage_limit" :form="$promoErrorForm" x-cloak x-show="@js($promoErrorForm) === 'promo-edit-' + activeVoucher.id" />
                     </div>
                 </div>
@@ -286,7 +295,7 @@
                     <label class="text-xs font-semibold text-bq-text">Status</label>
                     <select name="is_active" x-model="activeVoucher.is_active" class="mt-1 w-full rounded-xl border border-bq-border px-3.5 py-2 text-xs text-bq-text focus:border-bq-primary focus:outline-none focus:ring-2 focus:ring-bq-primary/20">
                         <option :value="1">Aktif</option>
-                        <option :value="0">Non-Aktif</option>
+                        <option :value="0">Nonaktif</option>
                     </select>
                         <x-owner.field-error name="is_active" :form="$promoErrorForm" x-cloak x-show="@js($promoErrorForm) === 'promo-edit-' + activeVoucher.id" />
                 </div>

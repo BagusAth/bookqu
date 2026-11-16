@@ -107,10 +107,38 @@
             failed: false,
             data: null,
             requestNumber: 0,
+            noteDirty: false,
+            afterDiscard: null,
+
+            hide(next = null) {
+                if (this.noteDirty) {
+                    this.afterDiscard = next;
+                    this.$dispatch('open-confirm', {
+                        title: 'Buang perubahan catatan?',
+                        message: 'Perubahan catatan pelanggan belum disimpan.',
+                        formId: 'discard-customer-note',
+                        confirmText: 'Buang perubahan',
+                    });
+                    return;
+                }
+                dialogBehaviour(id).hide.call(this);
+                next?.();
+            },
+
+            discardNote() {
+                const next = this.afterDiscard;
+                this.afterDiscard = null;
+                this.noteDirty = false;
+                this.hide(next);
+            },
 
             async load(event) {
                 const url = event.detail && event.detail.url;
                 if (!url) return;
+                if (this.noteDirty) {
+                    this.hide(() => this.load(event));
+                    return;
+                }
                 const requestNumber = ++this.requestNumber;
                 this.data = null;
                 this.failed = false;
@@ -141,14 +169,15 @@
             async save() {
                 if (this.saving) return;
                 this.saving = true;
+                const submitted = this.text;
                 try {
                     const response = await fetch(customer.note_url, {
                         method: 'POST',
                         headers: { ...jsonHeaders, 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
-                        body: JSON.stringify({ customer_identifier: customer.identifier, notes: this.text }),
+                        body: JSON.stringify({ customer_identifier: customer.identifier, notes: submitted }),
                     });
                     if (!response.ok) throw new Error('note save failed');
-                    customer.note = this.text;
+                    customer.note = submitted;
                     window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Catatan disimpan.' } }));
                 } catch (error) {
                     window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Catatan gagal disimpan. Coba lagi.' } }));

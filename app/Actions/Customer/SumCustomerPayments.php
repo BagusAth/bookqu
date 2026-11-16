@@ -6,6 +6,7 @@ namespace App\Actions\Customer;
 
 use App\Domain\Booking\BookingState;
 use App\Domain\Customer\CustomerIdentity;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,6 +28,13 @@ class SumCustomerPayments
             return [];
         }
 
+        return $this->query($tenantId, $identifiers)->pluck('total_spent', 'identifier')
+            ->map(fn ($spent): float => (float) $spent)->all();
+    }
+
+    /** @param list<string>|null $identifiers */
+    public function query(int $tenantId, ?array $identifiers = null): Builder
+    {
         $identity = CustomerIdentity::sql('bookings');
 
         $rows = DB::table('bookings')
@@ -39,15 +47,11 @@ class SumCustomerPayments
             ->where('payments.tipe', 'booking')
             ->where('payments.status', 'sukses')
             ->whereIn('bookings.status', self::COUNTED_STATES)
-            ->whereIn(DB::raw($identity), $identifiers)
+            ->when($identifiers !== null, fn (Builder $query) => $query->whereIn(DB::raw($identity), $identifiers))
             ->select([DB::raw($identity.' AS identifier'), 'payments.id AS payment_id', 'payments.jumlah AS amount'])
-            ->get();
+            ->distinct();
 
-        $totals = [];
-        foreach ($rows->groupBy('identifier') as $identifier => $payments) {
-            $totals[(string) $identifier] = (float) $payments->unique('payment_id')->sum('amount');
-        }
-
-        return $totals;
+        return DB::query()->fromSub($rows, 'paid_once')
+            ->select('identifier')->selectRaw('SUM(amount) AS total_spent')->groupBy('identifier');
     }
 }

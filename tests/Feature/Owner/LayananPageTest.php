@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Owner;
 
+use App\Models\AdditionalItem;
 use App\Models\Booking;
 use App\Models\Category;
 use App\Models\Payment;
@@ -52,6 +53,21 @@ class LayananPageTest extends TestCase
     private function service(array $attributes = []): Service
     {
         return Service::factory()->create(array_merge(['idtenant' => $this->tenant->id, 'harga' => 100000, 'durasi' => 60, 'is_active' => true], $attributes));
+    }
+
+    public function test_service_editor_only_links_add_ons_owned_by_an_entitled_business(): void
+    {
+        $item = AdditionalItem::create(['idtenant' => $this->tenant->id, 'name' => 'Cetak', 'price' => 5000]);
+        $foreign = AdditionalItem::create(['idtenant' => Tenant::factory()->create()->id, 'name' => 'Asing', 'price' => 5000]);
+        $this->actingAs($this->owner)->post(route('owner.services.store'), $this->payload(['additional_item_ids' => [$item->id]]))
+            ->assertForbidden();
+        $this->plan('medium', 5);
+        $this->get(route('owner.services'))->assertOk()->assertSee('name="additional_item_ids[]"', false);
+        $this->post(route('owner.services.store'), $this->payload(['additional_item_ids' => [$foreign->id]]))
+            ->assertSessionHasErrors('additional_item_ids.0');
+        $this->post(route('owner.services.store'), $this->payload(['additional_item_ids' => [$item->id]]))
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('additional_item_service', ['idadditional_item' => $item->id]);
     }
 
     /**

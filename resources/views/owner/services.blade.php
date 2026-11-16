@@ -29,7 +29,7 @@
         service: {},
         category: {},
         blankService() {
-            return { id: null, namalayanan: '', idcategory: '', harga: '', satuan_harga: 'sesi', durasi: 60, satuan_durasi: 'menit', deskripsi: '', is_popular: false, is_active: true, imageUrl: null, remove_image: false, kapasitas: 1, unit_ids: [], image_asset_id: '' };
+            return { id: null, namalayanan: '', idcategory: '', harga: '', satuan_harga: 'sesi', durasi: 60, satuan_durasi: 'menit', deskripsi: '', is_popular: false, is_active: true, imageUrl: null, remove_image: false, kapasitas: 1, unit_ids: [], additional_item_ids: [], image_asset_id: '' };
         },
         blankCategory() {
             return { id: null, name: '', description: '', color: 'purple', sort_order: 0, is_active: true, imageUrl: null, remove_image: false };
@@ -64,6 +64,7 @@
                         satuan_durasi: old.satuan_durasi || 'menit', deskripsi: old.deskripsi || '',
                         is_popular: toBool(old.is_popular), is_active: toBool(old.is_active),
                         image_asset_id: String(old.image_asset_id ?? ''), remove_image: toBool(old.remove_image),
+                        additional_item_ids: Array.isArray(old.additional_item_ids) ? old.additional_item_ids : [],
                         kapasitas: old.kapasitas ?? 1, unit_ids: Array.isArray(old.unit_ids) ? old.unit_ids : [],
                     }, null);
                 } else if (@js($oldContext) === 'category') {
@@ -181,7 +182,7 @@
                             @endif
                             <p class="text-sm text-bq-text">
                                 <span class="font-semibold">{{ $card['priceLabel'] }}</span>
-                                <span class="text-bq-text-muted">/ {{ $card['priceUnit'] }} · {{ $card['duration'] }} {{ $card['durationUnit'] }}</span>
+                                <span class="text-bq-text-muted">/ {{ $card['priceUnit'] }} · {{ $card['duration'] }} menit</span>
                             </p>
                             <p class="text-xs text-bq-text-muted">{{ $card['bookingCount'] > 0 ? $card['bookingCount'].' booking tercatat' : 'Belum pernah dibooking' }}</p>
 
@@ -193,12 +194,18 @@
                                     'is_popular' => $card['isPopular'], 'is_active' => $card['isActive'], 'imageUrl' => $card['imageUrl'],
                                     'image_asset_id' => $card['imageAssetId'] !== null ? (string) $card['imageAssetId'] : '',
                                     'kapasitas' => $card['capacity'], 'unit_ids' => $card['unitIds'],
+                                    'additional_item_ids' => $card['addOnIds'],
                                 ]), $el)">Ubah</button>
 
-                                <form method="POST" x-bind:action="url(@js($serviceToggleUrl), @js($card['id']))">
+                                <form method="POST" id="toggle-service-{{ $card['id'] }}" x-bind:action="url(@js($serviceToggleUrl), @js($card['id']))">
                                     @csrf
                                     <input type="hidden" name="_method" value="PATCH">
-                                    <button type="submit" class="{{ $buttonSecondary }}" data-service-{{ $card['isActive'] ? 'deactivate' : 'activate' }}="{{ $card['id'] }}">
+                                    <button class="{{ $buttonSecondary }}" data-service-{{ $card['isActive'] ? 'deactivate' : 'activate' }}="{{ $card['id'] }}"
+                                        @if ($card['isActive'] && $card['futureBookingCount'] > 0)
+                                            type="button" @click="$dispatch('open-confirm', { title: 'Nonaktifkan layanan?', message: @js($card['futureBookingCount'].' booking mendatang tetap berlaku. Pelanggan tidak dapat membuat booking baru untuk layanan ini.'), formId: $el.form.id, confirmText: 'Nonaktifkan' })"
+                                        @else
+                                            type="submit"
+                                        @endif>
                                         {{ $card['isActive'] ? 'Nonaktifkan' : 'Aktifkan' }}
                                     </button>
                                 </form>
@@ -276,7 +283,7 @@
                     <x-owner.field-error name="durasi" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                     </div>
                     <div>
-                        <label for="service-duration-unit" class="{{ $labelClass }}">Satuan durasi</label>
+                        <label for="service-duration-unit" class="{{ $labelClass }}">Label durasi di halaman booking</label>
                         <input id="service-duration-unit" name="satuan_durasi" type="text" maxlength="20" list="service-duration-units" x-model="service.satuan_durasi" class="{{ $inputClass }}">
                     <x-owner.field-error name="satuan_durasi" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                         <datalist id="service-duration-units"><option value="menit"><option value="jam"><option value="sesi"></datalist>
@@ -304,6 +311,22 @@
                         <x-owner.field-error name="unit_ids.*" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
                     </fieldset>
                 @endif
+
+                @isset($addOnOptions)
+                    <fieldset class="space-y-2">
+                        <legend class="{{ $labelClass }}">Add-on yang ditautkan</legend>
+                        <input type="hidden" name="additional_item_ids" value="">
+                        @forelse ($addOnOptions as $item)
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" name="additional_item_ids[]" value="{{ $item->id }}" x-model="service.additional_item_ids">
+                                {{ $item->name }}
+                            </label>
+                        @empty
+                            <p class="text-sm text-bq-text-muted">Belum ada add-on. <a class="text-bq-primary" href="{{ route('owner.services', ['tab' => 'add-ons']) }}">Kelola add-on</a></p>
+                        @endforelse
+                        <x-owner.field-error name="additional_item_ids.*" :form="$oldForm" />
+                    </fieldset>
+                @endisset
 
                 <p x-show="service.id" class="rounded-lg bg-bq-warning-bg px-3 py-2 text-xs text-bq-warning">
                     Perubahan harga dan durasi hanya berlaku untuk booking baru. Booking yang sudah ada tetap memakai jam dan nominalnya.

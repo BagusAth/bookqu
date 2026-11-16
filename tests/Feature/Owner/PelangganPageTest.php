@@ -181,6 +181,19 @@ class PelangganPageTest extends TestCase
         $this->assertSame([], $panel->json('payments'));
     }
 
+    public function test_spending_sort_orders_paid_customers_and_is_unavailable_to_cashiers(): void
+    {
+        $this->pay($this->booking(['tanggalbooking' => '2026-11-04']), 100000);
+        $this->pay($this->booking(['email' => 'dewi@example.com', 'tanggalbooking' => '2026-11-14']), 50000);
+        $url = route('owner.customers', ['sort' => 'spent']);
+
+        $owner = $this->actingAs($this->owner)->get($url)->assertOk();
+        $this->assertSame('rani@example.com', $owner->viewData('customers')->items()[0]->identifier);
+
+        $cashier = $this->actingAs($this->kasir())->get($url)->assertOk()->assertDontSee('Pembayaran tertinggi');
+        $this->assertSame('dewi@example.com', $cashier->viewData('customers')->items()[0]->identifier);
+    }
+
     public function test_the_panel_gives_contact_links_figures_history_and_the_walk_in_prefill(): void
     {
         $this->pay($this->booking(['booking_code' => 'BKQ-RANI1']), 85000);
