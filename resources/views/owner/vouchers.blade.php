@@ -7,13 +7,14 @@
     $promoErrorForm = $errors->any() ? (string) old('_form') : '';
     $promoCreating = $promoErrorForm === 'promo-create';
     $promoEditId = str_starts_with($promoErrorForm, 'promo-edit-') ? (int) substr($promoErrorForm, 11) : null;
-    $promoInput = \Illuminate\Support\Arr::only(old(), ['code', 'discount_type', 'discount_value', 'min_order_amount', 'max_discount_amount', 'usage_limit', 'start_date', 'end_date', 'is_active', 'applicable_services']);
+    $promoInput = \Illuminate\Support\Arr::only(old(), ['code', 'discount_type', 'discount_value', 'min_order_amount', 'max_discount_amount', 'usage_limit', 'start_date', 'end_date', 'is_active', 'applicable_services', 'valid_days', 'valid_from_time', 'valid_until_time']);
     $promoInput['applicable_services'] = array_map('strval', array_filter((array) ($promoInput['applicable_services'] ?? []), 'is_scalar'));
+    $promoInput['valid_days'] = array_map('strval', array_filter((array) ($promoInput['valid_days'] ?? []), 'is_scalar'));
 @endphp
 <div class="mx-auto max-w-7xl space-y-6" x-data="{
     addModalOpen: @js($promoCreating || ($promoEditId === null && request()->boolean('buat'))),
     editModalOpen: @js($promoEditId > 0),
-    newVoucher: { discount_type: 'percentage', max_discount_amount: null, applicable_services: [], ...@js($promoCreating ? $promoInput : []) },
+    newVoucher: { discount_type: 'percentage', max_discount_amount: null, applicable_services: [], valid_days: [], valid_from_time: '', valid_until_time: '', ...@js($promoCreating ? $promoInput : []) },
     activeVoucher: {
         id: null,
         code: '',
@@ -26,6 +27,9 @@
         end_date: '',
         is_active: 1,
         applicable_services: [],
+        valid_days: [],
+        valid_from_time: '',
+        valid_until_time: '',
         ...@js($promoEditId ? $promoInput + ['id' => $promoEditId] : []),
     },
     openEdit(v) {
@@ -82,6 +86,9 @@
                     'end_date'            => $v->end_date ? \Carbon\Carbon::parse($v->end_date)->format('Y-m-d') : '',
                     'is_active'           => (int) $v->is_active,
                     'applicable_services' => is_string($v->applicable_services) ? ($v->applicable_services === 'all' ? [] : explode(',', $v->applicable_services)) : ($v->applicable_services ?? []),
+                    'valid_days'          => $v->valid_days ? explode(',', $v->valid_days) : [],
+                    'valid_from_time'     => $v->valid_from_time ? substr((string) $v->valid_from_time, 0, 5) : '',
+                    'valid_until_time'    => $v->valid_until_time ? substr((string) $v->valid_until_time, 0, 5) : '',
                 ];
             @endphp
             <div class="bq-panel flex min-w-0 flex-col justify-between p-4">

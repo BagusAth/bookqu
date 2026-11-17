@@ -25,3 +25,31 @@
     <x-owner.field-error name="applicable_services" :form="$errorForm" />
     <x-owner.field-error name="applicable_services.*" :form="$errorForm" />
 </fieldset>
+
+{{-- FR-VOUCHER-006 (D-026): promo jam sepi, opsional --}}
+<fieldset class="space-y-2">
+    <legend class="text-xs font-semibold text-bq-text">Hanya pada hari dan jam tertentu</legend>
+    <p class="text-xs text-bq-text-muted">Kosongkan untuk semua hari dan jam. Promo berlaku bila semua slot booking dimulai di dalam rentang ini.</p>
+    <input type="hidden" name="valid_days" value="">
+    <div class="flex flex-wrap gap-x-3 gap-y-1">
+        @foreach ([1 => 'Sen', 2 => 'Sel', 3 => 'Rab', 4 => 'Kam', 5 => 'Jum', 6 => 'Sab', 7 => 'Min'] as $day => $dayLabel)
+            <label class="inline-flex items-center gap-1.5 text-sm text-bq-text">
+                <input type="checkbox" name="valid_days[]" value="{{ $day }}" x-model="{{ $model }}.valid_days">
+                <span>{{ $dayLabel }}</span>
+            </label>
+        @endforeach
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+        <label class="block space-y-1 text-xs font-semibold text-bq-text">
+            <span>Mulai jam</span>
+            <input type="time" name="valid_from_time" step="300" x-model="{{ $model }}.valid_from_time" class="bq-input w-full">
+            <x-owner.field-error name="valid_from_time" :form="$errorForm" />
+        </label>
+        <label class="block space-y-1 text-xs font-semibold text-bq-text">
+            <span>Sampai jam</span>
+            <input type="time" name="valid_until_time" step="300" x-model="{{ $model }}.valid_until_time" class="bq-input w-full">
+            <x-owner.field-error name="valid_until_time" :form="$errorForm" />
+        </label>
+    </div>
+    <x-owner.field-error name="valid_days.*" :form="$errorForm" />
+</fieldset>

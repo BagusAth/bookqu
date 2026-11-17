@@ -35,6 +35,13 @@
             @endforeach
         </div>
     </x-ui.form-section>
+    <x-ui.form-section title="Sesi lewat" description="Supaya Laporan tetap benar tanpa menandai satu per satu.">
+        <input type="hidden" name="auto_complete_bookings" value="0">
+        <x-ui.switch name="auto_complete_bookings" value="1" :checked="(bool) old('auto_complete_bookings', $bookingPolicy['auto_complete_bookings'] ?? true)"
+            label="Tandai selesai otomatis"
+            description="Booking lunas ditandai selesai 6 jam setelah sesi berakhir, kecuali yang Anda tandai tidak datang atau sedang minta refund atau pembatalan." />
+        <x-owner.field-error name="auto_complete_bookings" />
+    </x-ui.form-section>
     <button class="bq-btn bq-btn-primary">Simpan kebijakan</button>
 </form>
 <div class="mt-4 space-y-2">

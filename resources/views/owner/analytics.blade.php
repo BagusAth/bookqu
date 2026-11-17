@@ -198,6 +198,14 @@
                                     Belum ada slot terisi pada periode ini.
                                 @endif
                             </p>
+                            @if ($occupancy['quietestDay'] ?? null)
+                                <p class="mt-2 flex flex-wrap items-center gap-2 text-sm text-bq-text">
+                                    <span>Paling sepi: {{ $occupancy['quietestDay'] }} dan sekitar pukul {{ $occupancy['quietestHour'] }}.</span>
+                                    @if (\Illuminate\Support\Facades\Route::has('owner.promos'))
+                                        <a href="{{ route('owner.promos', ['buat' => 1]) }}" class="bq-link">Buat promo jam sepi</a>
+                                    @endif
+                                </p>
+                            @endif
                             <div class="mt-3 overflow-x-auto">
                                 <table class="text-xs">
                                     <caption class="sr-only">Jumlah slot terisi per hari dan jam</caption>

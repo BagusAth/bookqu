@@ -534,6 +534,12 @@ class GetReport
                 $perHour[$hour] += $count;
             }
         }
+        // FR-VOUCHER-006: the quietest day and hour among those that had slots, to suggest a promo.
+        $slotDays = $slots->map(fn (Schedule $slot): int => CarbonImmutable::parse($slot->tanggal)->dayOfWeekIso)->unique()->all();
+        $quietDays = array_intersect_key($perDay, array_flip($slotDays));
+        asort($quietDays);
+        $quietHours = $perHour;
+        asort($quietHours);
         arsort($perDay);
         arsort($perHour);
 
@@ -552,6 +558,8 @@ class GetReport
             ],
             'busiestDay' => $booked > 0 ? self::DAYS[array_key_first($perDay)] : null,
             'busiestHour' => $booked > 0 ? sprintf('%02d.00', array_key_first($perHour)) : null,
+            'quietestDay' => $quietDays !== [] ? self::DAYS[array_key_first($quietDays)] : null,
+            'quietestHour' => $quietHours !== [] ? sprintf('%02d.00', array_key_first($quietHours)) : null,
         ];
     }
 
