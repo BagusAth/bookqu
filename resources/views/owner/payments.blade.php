@@ -9,7 +9,7 @@
 --}}
 
 @php
-    $rupiah = fn (float|int $value): string => 'Rp '.number_format((float) $value, 0, ',', '.');
+    $rupiah = fn (float|int $value): string => \App\Support\Rupiah::format($value);
     $card = 'bq-panel';
     $buttonSecondary = 'bq-btn bq-btn-secondary bq-btn-sm';
     $buttonPrimary = 'bq-btn bq-btn-primary';
@@ -88,25 +88,38 @@
         },
     }"
 >
-    <x-owner.page-header title="Pembayaran" purpose="Uang yang masuk, saldo Anda, dan kapan bisa dicairkan." />
+    <x-owner.page-header title="Pembayaran" purpose="Uang yang masuk, saldo Anda, dan kapan bisa dicairkan.">
+        {{-- BQ-162: one primary action in the header, as in the prototype (#/pembayaran). --}}
+        <x-slot:action>
+            @if ($activeTab === 'rekening')
+                @if ($canAddAccount)
+                    <x-ui.button variant="primary" icon="plus" id="payout-account-create" x-on:click="openAccount(null, $el)">Tambah rekening</x-ui.button>
+                @endif
+            @elseif ($activeTab === 'saldo')
+                <button type="button" class="bq-btn bq-btn-primary" @disabled(count($eligibilityReasons) > 0) x-on:click="openWithdraw($el)">Cairkan saldo</button>
+            @else
+                <a href="{{ route('owner.payments', ['tab' => 'saldo']) }}" class="bq-btn bq-btn-primary">Cairkan saldo</a>
+            @endif
+        </x-slot:action>
+    </x-owner.page-header>
 
-    <x-owner.tabs :tabs="\App\Actions\Owner\GetPaymentsPage::TABS" :active="$activeTab" label="Bagian halaman Pembayaran" />
+    <x-owner.tabs :tabs="\App\Actions\Owner\GetPaymentsPage::TABS" :active="$activeTab" :counts="['transaksi' => $summary['counts']['sukses'] + $summary['counts']['pending'] + $summary['counts']['gagal'], 'rekening' => $accounts->count()]" label="Bagian halaman Pembayaran" />
 
     {{-- ── Ringkasan ── --}}
     @if ($activeTab === 'ringkasan')
-        <x-ui.stat hero label="Saldo tersedia" :value="$rupiah($summary['available'])" context="Bisa dicairkan ke rekening Anda"
-            :supporting="['Sedang diproses' => $rupiah($summary['inProcess']), 'Total dicairkan' => $rupiah($summary['withdrawn'])]">
-            <p class="mt-4 text-bq-small text-bq-text-muted">
+        <x-ui.panel>
+            <x-ui.figures :value="$rupiah($summary['available'])" label="saldo tersedia" context="Bisa dicairkan sekarang"
+                :more="[['value' => $rupiah($summary['inProcess']), 'label' => 'sedang diproses'], ['value' => $rupiah($summary['withdrawn']), 'label' => 'sudah dicairkan']]" />
+            <p class="mt-3 text-bq-small text-bq-text-muted">
                 {{ $summary['counts']['sukses'] }} pembayaran berhasil · {{ $summary['counts']['pending'] }} menunggu ·
                 {{ $summary['counts']['gagal'] }} gagal · {{ $summary['counts']['refund'] }} direfund
             </p>
-            <a href="{{ route('owner.payments', ['tab' => 'saldo']) }}" class="bq-btn bq-btn-primary mt-4">Cairkan saldo</a>
-        </x-ui.stat>
+        </x-ui.panel>
 
         <section aria-labelledby="latest-title" class="{{ $card }}">
-            <div class="flex items-center justify-between border-b border-bq-border px-4 py-3">
-                <h2 id="latest-title" class="text-base font-semibold text-bq-text">Transaksi terbaru</h2>
-                <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="text-sm bq-link">Semua transaksi</a>
+            <div class="flex items-center justify-between px-5 pt-4 pb-2">
+                <h2 id="latest-title" class="text-bq-section">Transaksi terbaru</h2>
+                <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="bq-btn bq-btn-ghost bq-btn-sm">Lihat semua</a>
             </div>
             @include('owner.partials.payments.transactions', ['rows' => $latest, 'toneClass' => $toneClass, 'emptyText' => 'Belum ada pembayaran pelanggan.'])
         </section>
@@ -114,31 +127,27 @@
 
     {{-- ── Transaksi ── --}}
     @if ($activeTab === 'transaksi')
-        <form method="GET" action="{{ route('owner.payments') }}" class="{{ $card }} flex flex-wrap items-end gap-3 p-4">
-            <input type="hidden" name="tab" value="transaksi">
-            <label class="grid gap-1 text-sm">Cari transaksi
-                <input type="search" name="search" maxlength="100" value="{{ $transactionFilters['search'] }}" placeholder="Nomor pesanan, booking, pelanggan" class="{{ $field }}">
-            </label>
-            <label class="grid gap-1 text-sm">Status pembayaran
-                <select name="status" class="{{ $field }}">
+        <section aria-label="Semua transaksi" class="{{ $card }}">
+            <form method="GET" action="{{ route('owner.payments') }}" class="bq-filter">
+                <input type="hidden" name="tab" value="transaksi">
+                <x-ui.search name="search" maxlength="100" :value="$transactionFilters['search']" label="Cari nama atau nomor order" />
+                <select name="status" aria-label="Status pembayaran" class="bq-input" @change="$el.form.requestSubmit()">
                     <option value="">Semua status</option>
                     @foreach ($transactionStatuses as $value => $label)
                         <option value="{{ $value }}" @selected($transactionFilters['status'] === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
-            </label>
-            @foreach (['from' => 'Dari tanggal', 'to' => 'Sampai tanggal'] as $key => $label)
-                <label class="grid gap-1 text-sm">{{ $label }}
-                    <input type="date" name="{{ $key }}" value="{{ $transactionFilters[$key] }}" class="{{ $field }}">
-                </label>
-            @endforeach
-            <button class="{{ $buttonSecondary }}">Cari</button>
-            <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="px-2 py-2 text-sm bq-link">Reset filter</a>
-        </form>
-        <section aria-label="Semua transaksi" class="{{ $card }}">
+                @foreach (['from' => 'Dari tanggal', 'to' => 'Sampai tanggal'] as $key => $label)
+                    <input type="date" name="{{ $key }}" aria-label="{{ $label }}" value="{{ $transactionFilters[$key] }}" class="bq-input" @change="$el.form.requestSubmit()">
+                @endforeach
+                <noscript><button class="bq-btn bq-btn-secondary bq-btn-sm">Cari</button></noscript>
+                @if (array_filter($transactionFilters))
+                    <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="bq-btn bq-btn-ghost bq-btn-sm">Hapus filter</a>
+                @endif
+            </form>
             @include('owner.partials.payments.transactions', ['rows' => $transactions, 'toneClass' => $toneClass, 'emptyText' => array_filter($transactionFilters) ? 'Tidak ada transaksi yang cocok.' : 'Belum ada pembayaran pelanggan.'])
+            @if ($transactions->total() > 0)<x-ui.pager :paginator="$transactions" noun="transaksi" />@endif
         </section>
-        <div>{{ $transactions->links() }}</div>
     @endif
 
     {{-- ── Saldo & Pencairan ── --}}
@@ -150,9 +159,6 @@
                 <p class="mt-0.5 text-xs text-bq-text-muted">
                     Minimal {{ $rupiah($payoutRules['min']) }}@if ($payoutRules['cap'] !== null) · maksimal {{ $rupiah($payoutRules['cap']) }} per pengajuan @endif
                 </p>
-            </div>
-            <div class="sm:text-right">
-                <button type="button" class="{{ $buttonPrimary }}" @disabled(count($eligibilityReasons) > 0) x-on:click="openWithdraw($el)">Cairkan saldo</button>
             </div>
         </section>
 
@@ -319,9 +325,6 @@
                     <h2 id="accounts-title" class="text-base font-semibold text-bq-text">Rekening pencairan</h2>
                     <p class="text-sm text-bq-text-muted">{{ $accounts->count() }} dari {{ $maxAccounts }} rekening. Mengubah rekening memerlukan password dan mengirim email pemberitahuan.</p>
                 </div>
-                @if ($canAddAccount)
-                    <button type="button" id="payout-account-create" class="{{ $buttonPrimary }}" x-on:click="openAccount(null, $el)">Tambah rekening</button>
-                @endif
             </div>
             @if ($accounts->isEmpty())
                 <x-owner.empty-state title="Belum ada rekening" description="Tambahkan rekening bank untuk mencairkan saldo." class="m-4" />

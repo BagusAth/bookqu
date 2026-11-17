@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Owner;
 
 use App\Actions\Booking\BookingPricingReservations;
 use App\Actions\Booking\GetPromoFigures;
+use App\Actions\Report\GetReport;
 use App\Actions\Schedule\ClaimSlots;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\Voucher;
+use App\Support\ReportPeriod;
+use App\Support\Rupiah;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -36,16 +39,19 @@ class OwnerVoucherController extends Controller
         $today = Carbon::today()->toDateString();
         $promoTabs = ['active' => 'Aktif', 'scheduled' => 'Terjadwal', 'expired' => 'Berakhir', 'all' => 'Semua'];
         $requestedTab = $request->string('tab')->toString();
-        $tab = isset($promoTabs[$requestedTab]) ? $requestedTab : 'all';
+        $tab = isset($promoTabs[$requestedTab]) ? $requestedTab : 'active';
         $allVouchers = Voucher::where('idtenant', $tenant->id);
         $active = (clone $allVouchers)->where('is_active', true)
             ->where(fn ($query) => $query->whereNull('start_date')->orWhereDate('start_date', '<=', $today))
             ->where(fn ($query) => $query->whereNull('end_date')->orWhereDate('end_date', '>=', $today));
         $promoFigures = app(GetPromoFigures::class)->execute($tenant) + ['active' => $active->count()];
+        $scheduled = (clone $allVouchers)->where('is_active', true)->whereDate('start_date', '>', $today);
+        $expired = (clone $allVouchers)->whereDate('end_date', '<', $today);
+        $tabCounts = ['active' => (clone $active)->count(), 'scheduled' => (clone $scheduled)->count(), 'expired' => (clone $expired)->count(), 'all' => (clone $allVouchers)->count()];
         $vouchers = match ($tab) {
             'active' => $active,
-            'scheduled' => $allVouchers->where('is_active', true)->whereDate('start_date', '>', $today),
-            'expired' => $allVouchers->whereDate('end_date', '<', $today),
+            'scheduled' => $scheduled,
+            'expired' => $expired,
             default => $allVouchers,
         };
         $vouchers = $vouchers
@@ -73,10 +79,29 @@ class OwnerVoucherController extends Controller
                 },
                 'services' => ! $services || $services === 'all' ? 'Semua layanan' : collect(explode(',', $services))
                     ->map(fn (string $id): string => $serviceNames->get((int) $id, 'Layanan dihapus'))->implode(', '),
+                'value' => $promo->discount_type === 'percentage'
+                    ? rtrim(rtrim(number_format((float) $promo->discount_value, 2, ',', '.'), '0'), ',').'%'
+                    : Rupiah::format($promo->discount_value),
+                'period' => match (true) {
+                    $promo->start_date !== null && $promo->end_date !== null => Carbon::parse($promo->start_date)->locale('id')->translatedFormat('j M').' – '.Carbon::parse($promo->end_date)->locale('id')->translatedFormat('j M Y'),
+                    $promo->end_date !== null => 'Sampai '.Carbon::parse($promo->end_date)->locale('id')->translatedFormat('j M Y'),
+                    default => 'Tanpa batas waktu',
+                },
+                'almostOut' => $promo->usage_limit > 0 && $promo->used_count >= $promo->usage_limit * 0.9,
             ]];
         });
 
-        return view('owner.vouchers', compact('vouchers', 'services', 'search', 'promoRoute', 'promoTabs', 'tab', 'promoFigures', 'cards'));
+        // Quiet-hour suggestion (D-026, prototype "Promo untuk jam sepi"): the quietest day and hour of the last 30 days.
+        $quiet = null;
+        if ($tab === 'active') {
+            $period = ReportPeriod::fromQuery(['periode' => 'kustom', 'dari' => Carbon::today()->subDays(29)->toDateString(), 'sampai' => $today]);
+            $occupancy = app(GetReport::class)->execute($tenant, $period, 'okupansi')['occupancy'] ?? null;
+            if (($occupancy['quietestDay'] ?? null) !== null) {
+                $quiet = ['day' => $occupancy['quietestDay'], 'hour' => $occupancy['quietestHour']];
+            }
+        }
+
+        return view('owner.vouchers', compact('vouchers', 'services', 'search', 'promoRoute', 'promoTabs', 'tab', 'tabCounts', 'promoFigures', 'cards', 'quiet'));
     }
 
     public function store(Request $request)

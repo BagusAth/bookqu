@@ -48,140 +48,102 @@
 
     <x-owner.page-header title="Promo" purpose="Beri potongan harga, dan lihat apakah berhasil.">
         <x-slot:action>
-            <button type="button" @click="addModalOpen = true" class="bq-btn bq-btn-primary" id="btn-add-voucher">Buat promo</button>
+            <button type="button" @click="addModalOpen = true" class="bq-btn bq-btn-primary" id="btn-add-voucher"><x-owner.icon name="plus" class="h-4 w-4" />Buat promo</button>
         </x-slot:action>
     </x-owner.page-header>
 
-    <x-ui.stat hero label="Pendapatan dengan promo" :value="'Rp '.number_format($promoFigures['revenue'], 0, ',', '.')"
-        :supporting="['Promo aktif' => $promoFigures['active'], 'Pemakaian' => $promoFigures['uses'], 'Total diskon' => 'Rp '.number_format($promoFigures['discount'], 0, ',', '.')]" />
-    <x-owner.tabs :tabs="$promoTabs" :active="$tab" label="Status promo" />
+    {{-- BQ-162: Promo as in the Papan Jadwal prototype (#/promo): one figure panel, tabs with counts, short cards. --}}
+    <x-ui.panel>
+        <x-ui.figures :value="\App\Support\Rupiah::format($promoFigures['revenue'])" label="pendapatan dari booking berpromo"
+            context="Sejak promo pertama dipakai. Batang di kartu = pemakaian sejak promo dimulai."
+            :more="[
+                ['value' => $promoFigures['active'], 'label' => 'promo aktif'],
+                ['value' => $promoFigures['uses'].' kali', 'label' => 'dipakai'],
+                ['value' => \App\Support\Rupiah::format($promoFigures['discount']), 'label' => 'potongan diberikan'],
+            ]" />
+    </x-ui.panel>
+    <x-owner.tabs :tabs="$promoTabs" :active="$tab" :counts="$tabCounts" label="Status promo" />
 
-    {{-- ── Search & Filter ── --}}
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <form method="GET" action="{{ route($promoRoute) }}" class="relative w-full sm:max-w-xs">
-            <input type="hidden" name="tab" value="{{ $tab }}">
-            <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari kode promo" class="bq-input w-full pl-10">
-        </form>
-        <p class="text-xs text-bq-text-muted">
-            Total <span class="font-bold text-bq-text">{{ $vouchers->count() }}</span> promo
-        </p>
-    </div>
+    @if ($search)
+        <a class="bq-btn bq-btn-secondary bq-btn-sm" href="{{ route($promoRoute, ['tab' => $tab]) }}">Cari: {{ $search }} <x-owner.icon name="x" class="h-3.5 w-3.5" /></a>
+    @endif
 
-    {{-- ── Voucher Cards Grid ── --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        @forelse($vouchers as $v)
-            @php
-                $vPayload = [
-                    'id'                  => $v->id,
-                    'code'                => $v->code,
-                    'discount_type'       => $v->discount_type,
-                    'discount_value'      => (float) $v->discount_value,
-                    'min_order_amount'    => (float) ($v->min_spending ?? $v->min_order_amount ?? 0),
-                    'max_discount_amount' => $v->max_discount !== null ? (float) $v->max_discount : null,
-                    'usage_limit'         => $v->usage_limit,
-                    'start_date'          => $v->start_date ? \Carbon\Carbon::parse($v->start_date)->format('Y-m-d') : '',
-                    'end_date'            => $v->end_date ? \Carbon\Carbon::parse($v->end_date)->format('Y-m-d') : '',
-                    'is_active'           => (int) $v->is_active,
-                    'applicable_services' => is_string($v->applicable_services) ? ($v->applicable_services === 'all' ? [] : explode(',', $v->applicable_services)) : ($v->applicable_services ?? []),
-                    'valid_days'          => $v->valid_days ? explode(',', $v->valid_days) : [],
-                    'valid_from_time'     => $v->valid_from_time ? substr((string) $v->valid_from_time, 0, 5) : '',
-                    'valid_until_time'    => $v->valid_until_time ? substr((string) $v->valid_until_time, 0, 5) : '',
-                ];
-            @endphp
-            <div class="bq-panel flex min-w-0 flex-col justify-between p-4">
-
-                <div>
-                    {{-- Header Code & Discount --}}
+    @if ($vouchers->isEmpty() && ! ($tab === 'active' && $quiet))
+        <section class="bq-panel">
+            <x-ui.empty icon="tag" :title="$tab === 'all' ? 'Belum ada promo' : 'Tidak ada promo di sini'"
+                description="Buat kode potongan untuk pelanggan, dengan kuota dan masa berlaku.">
+                <x-slot:action><x-ui.button variant="primary" icon="plus" @click="addModalOpen = true">Buat promo</x-ui.button></x-slot:action>
+            </x-ui.empty>
+        </section>
+    @else
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            @foreach ($vouchers as $v)
+                @php
+                    $card = $cards[$v->id];
+                    $vPayload = [
+                        'id'                  => $v->id,
+                        'code'                => $v->code,
+                        'discount_type'       => $v->discount_type,
+                        'discount_value'      => (float) $v->discount_value,
+                        'min_order_amount'    => (float) ($v->min_spending ?? $v->min_order_amount ?? 0),
+                        'max_discount_amount' => $v->max_discount !== null ? (float) $v->max_discount : null,
+                        'usage_limit'         => $v->usage_limit,
+                        'start_date'          => $v->start_date ? \Carbon\Carbon::parse($v->start_date)->format('Y-m-d') : '',
+                        'end_date'            => $v->end_date ? \Carbon\Carbon::parse($v->end_date)->format('Y-m-d') : '',
+                        'is_active'           => (int) $v->is_active,
+                        'applicable_services' => is_string($v->applicable_services) ? ($v->applicable_services === 'all' ? [] : explode(',', $v->applicable_services)) : ($v->applicable_services ?? []),
+                        'valid_days'          => $v->valid_days ? explode(',', $v->valid_days) : [],
+                        'valid_from_time'     => $v->valid_from_time ? substr((string) $v->valid_from_time, 0, 5) : '',
+                        'valid_until_time'    => $v->valid_until_time ? substr((string) $v->valid_until_time, 0, 5) : '',
+                    ];
+                @endphp
+                <article @class(['bq-panel flex min-w-0 flex-col gap-3 p-4', 'opacity-70' => $card['state'] === 'Berakhir' || $card['state'] === 'Nonaktif'])>
                     <div class="flex items-start justify-between gap-2">
-                        <div class="flex min-w-0 items-center gap-2">
-                            <span class="min-w-0 truncate rounded-bq-control bg-bq-surface-2 px-2.5 py-1 font-semibold text-bq-primary" title="{{ $v->code }}">{{ $v->code }}</span>
-                            <button type="button" @click="copyCode(@js($v->code))" class="-m-2 inline-flex items-center justify-center rounded-lg p-2 text-bq-text-muted hover:bg-bq-primary-light hover:text-bq-primary transition" title="Salin Kode" aria-label="Salin Kode">
-                                <x-owner.icon name="copy" class="h-4 w-4" />
+                        <div class="min-w-0">
+                            @if ($card['almostOut'] && $card['state'] === 'Aktif')
+                                <x-ui.badge tone="warning" class="mb-1">Hampir habis</x-ui.badge>
+                            @elseif ($card['state'] !== 'Aktif')
+                                <x-ui.badge :tone="$card['state'] === 'Terjadwal' ? 'neutral' : 'danger'" class="mb-1">{{ $card['state'] }}</x-ui.badge>
+                            @endif
+                            <button type="button" class="block text-left" @click="openEdit({{ \Illuminate\Support\Js::from($vPayload) }})" id="btn-edit-voucher-{{ $v->id }}" title="Ubah promo {{ $v->code }}">
+                                <span class="bq-num block font-bq-display text-bq-figure-small font-semibold text-bq-ink">{{ $card['value'] }}</span>
                             </button>
+                            <p class="text-bq-small text-bq-text-muted">Berlaku {{ $card['period'] }}</p>
                         </div>
-                        <span class="bq-num text-2xl font-bold leading-none text-bq-primary">
-                            {{ $v->discount_type === 'percentage' ? rtrim(rtrim(number_format((float) $v->discount_value, 2, ',', '.'), '0'), ',') . '%' : 'Rp ' . number_format($v->discount_value, 0, ',', '.') }}
-                        </span>
-                    </div>
-
-                    {{-- Details --}}
-                    <div class="mt-4 space-y-2 text-bq-small">
-                        <p><span class="text-bq-text-muted">Layanan:</span> {{ $cards[$v->id]['services'] }}</p>
-                        @if ($v->max_discount !== null)
-                            <p><span class="text-bq-text-muted">Diskon maksimum:</span> Rp {{ number_format((float) $v->max_discount, 0, ',', '.') }}</p>
-                        @endif
-                        <p><span class="text-bq-text-muted">Diskon diberikan:</span> Rp {{ number_format($promoFigures['discountByPromo'][$v->id] ?? 0, 0, ',', '.') }}</p>
-                        <div class="flex justify-between">
-                            <span class="text-bq-text-muted">Minimum transaksi</span>
-                            <span class="font-medium text-bq-text">Rp {{ number_format($v->min_spending ?? $v->min_order_amount ?? 0, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-bq-text-muted">Penggunaan:</span>
-                            <span class="font-medium text-bq-text">
-                                @if ($v->usage_limit)
-                                    <x-ui.mini-bar :value="$v->used_count" :total="$v->usage_limit" unit="dipakai" />
-                                @else
-                                    {{ $v->used_count }} dipakai · Tanpa batas
-                                @endif
-                            </span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-bq-text-muted">Masa Berlaku:</span>
-                            <span class="font-medium text-bq-text-subtle bq-num text-bq-small">
-                                @if($v->start_date && $v->end_date)
-                                    {{ \Carbon\Carbon::parse($v->start_date)->translatedFormat('j M') }} - {{ \Carbon\Carbon::parse($v->end_date)->translatedFormat('j M Y') }}
-                                @elseif($v->end_date)
-                                    s/d {{ \Carbon\Carbon::parse($v->end_date)->translatedFormat('j M Y') }}
-                                @else
-                                    Selamanya
-                                @endif
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Footer Controls --}}
-                <div class="mt-5 pt-3 border-t border-bq-border flex items-center justify-between">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-bq-small text-bq-text-muted">{{ $cards[$v->id]['state'] }}</span>
-                        <form method="POST" action="{{ route($promoRoute.'.toggle', $v->id) }}">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="text-xs bq-link">{{ $v->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
-                        </form>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button type="button" @click="openEdit(@js($vPayload))" class="rounded-lg p-1.5 text-bq-text-muted hover:bg-bq-surface-2 hover:text-bq-text transition" title="Edit" id="btn-edit-voucher-{{ $v->id }}">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                        </button>
                         <form method="POST" action="{{ route($promoRoute.'.destroy', $v->id) }}" id="form-delete-voucher-{{ $v->id }}">
                             @csrf
                             @method('DELETE')
-                            <button type="button"
-                                @click="$dispatch('open-confirm', { title: 'Hapus promo?', message: 'Yakin ingin menghapus promo ' + @js($v->code) + '?', formId: $el.form.id })"
-                                class="rounded-lg p-1.5 text-bq-text-muted hover:bg-bq-danger-bg hover:text-bq-danger transition" title="Hapus" id="btn-delete-voucher-{{ $v->id }}">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            </button>
+                            <x-ui.menu :id="'promo-actions-'.$v->id" :label="'Tindakan '.$v->code">
+                                <button type="button" role="menuitem" tabindex="-1" @click="openEdit({{ \Illuminate\Support\Js::from($vPayload) }})">Ubah</button>
+                                <button type="submit" role="menuitem" tabindex="-1" form="toggle-voucher-{{ $v->id }}">{{ $v->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
+                                <button type="button" role="menuitem" tabindex="-1" class="text-bq-danger" id="btn-delete-voucher-{{ $v->id }}"
+                                    @click="$dispatch('open-confirm', { title: 'Hapus promo?', message: 'Yakin ingin menghapus promo ' + @js($v->code) + '?', formId: 'form-delete-voucher-{{ $v->id }}' })">Hapus</button>
+                            </x-ui.menu>
                         </form>
+                        <form method="POST" action="{{ route($promoRoute.'.toggle', $v->id) }}" id="toggle-voucher-{{ $v->id }}" class="hidden">@csrf @method('PATCH')</form>
                     </div>
-                </div>
-            </div>
-        @empty
-            <div class="col-span-full rounded-2xl border border-dashed border-bq-border bg-bq-surface p-12 text-center">
-                <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-bq-primary-light text-bq-primary">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
-                </div>
-                <h3 class="text-sm font-bold text-bq-text">Belum ada promo</h3>
-                <p class="mt-1 text-xs text-bq-text-muted max-w-sm mx-auto">Tingkatkan pemesanan dengan memberikan promo diskon spesial untuk calon pelanggan Anda.</p>
-                <button type="button" @click="addModalOpen = true" class="bq-btn bq-btn-primary bq-btn-sm mt-4">
-                    + Buat promo
-                </button>
-            </div>
-        @endforelse
-    </div>
+                    <div class="flex min-w-0 items-center gap-2 rounded-bq-control bg-bq-background px-2.5 py-1.5">
+                        <span class="min-w-0 flex-1 truncate font-bq-display font-semibold tracking-wide text-bq-ink" title="{{ $v->code }}">{{ $v->code }}</span>
+                        <button type="button" @click="copyCode(@js($v->code))" class="text-bq-text-muted hover:text-bq-primary" aria-label="Salin kode {{ $v->code }}" title="Salin kode">
+                            <x-owner.icon name="copy" class="h-4 w-4" />
+                        </button>
+                    </div>
+                    @if ($v->usage_limit)
+                        <x-ui.mini-bar :value="$v->used_count" :total="$v->usage_limit" unit="dipakai" />
+                    @else
+                        <p class="text-bq-small text-bq-text-muted">{{ $v->used_count }} kali dipakai · tanpa batas</p>
+                    @endif
+                </article>
+            @endforeach
+            @if ($tab === 'active' && $quiet)
+                <article class="bq-panel flex min-w-0 flex-col gap-2 p-4">
+                    <p class="font-semibold text-bq-ink">Promo untuk jam sepi</p>
+                    <p class="text-bq-small text-bq-text-muted">30 hari terakhir paling sepi pada {{ $quiet['day'] }}, sekitar pukul {{ $quiet['hour'] }}. Batasi promo ke hari dan jam itu.</p>
+                    <div class="mt-1"><x-ui.button size="sm" icon="tag" @click="addModalOpen = true">Buat promo jam sepi</x-ui.button></div>
+                </article>
+            @endif
+        </div>
+    @endif
 
     {{-- Add Voucher Modal --}}
     <div x-show="addModalOpen" class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-bq-ink/40 backdrop-blur-xs" style="display: none;" x-cloak>

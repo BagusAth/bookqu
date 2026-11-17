@@ -86,7 +86,7 @@ class PembayaranPageTest extends TestCase
             ->assertSee('role="tablist"', false)
             ->assertSee('Ringkasan')
             ->assertSee('Transaksi')
-            ->assertSee('Saldo &amp; Pencairan', false)
+            ->assertSee('Saldo &amp; pencairan', false)
             ->assertSee('Rekening')
             ->assertSee('Cara kerja');
 
@@ -163,8 +163,8 @@ class PembayaranPageTest extends TestCase
         $this->tenant->update(['saldo_platform' => 300000]);
 
         $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo']))
-            ->assertSee('Minimal Rp 50.000')
-            ->assertDontSee('Minimal Rp 10.000');
+            ->assertSee('Minimal Rp50.000')
+            ->assertDontSee('Minimal Rp10.000');
 
         $this->get(route('owner.payments', ['tab' => 'rekening']))
             ->assertSee('1 dari 2 rekening')
@@ -204,10 +204,10 @@ class PembayaranPageTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->owner)->get(route('owner.payments'))->assertOk()
-            ->assertSee('Saldo tersedia')
-            ->assertSee('Sedang diproses')
-            ->assertSee('Total dicairkan')
-            ->assertSee('Rp 40.000')
+            ->assertSee('saldo tersedia')
+            ->assertSee('sedang diproses')
+            ->assertSee('sudah dicairkan')
+            ->assertSee('Rp40.000')
             ->assertSee('BKQ-SUM1');
         $this->assertSame(['sukses' => 1, 'pending' => 1, 'gagal' => 1, 'refund' => 0], $response->viewData('summary')['counts']);
     }
@@ -226,7 +226,7 @@ class PembayaranPageTest extends TestCase
             ->assertSee('ORD-BKQ-TRX1')
             ->assertSee('Budi')
             ->assertSee('Foto Studio')
-            ->assertSee('Refund Rp 80.000')
+            ->assertSee('Refund Rp80.000')
             ->assertDontSee('ORD-ASING');
     }
 
