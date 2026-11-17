@@ -97,12 +97,12 @@
                 <div>
                     <label for="category-name" class="{{ $labelClass }}">Nama kategori</label>
                     <input id="category-name" name="name" type="text" required maxlength="100" x-model="category.name" class="{{ $inputClass }}">
-                    <x-owner.field-error name="name" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
+                    <x-owner.field-error name="name" :form="$oldForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($oldForm) }} === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                 </div>
                 <div>
                     <label for="category-description" class="{{ $labelClass }}">Deskripsi <span class="font-normal text-bq-text-muted">(opsional)</span></label>
                     <textarea id="category-description" name="description" rows="2" maxlength="500" x-model="category.description" class="{{ $inputClass }}"></textarea>
-                    <x-owner.field-error name="description" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
+                    <x-owner.field-error name="description" :form="$oldForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($oldForm) }} === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                 </div>
                 <fieldset>
                     <legend class="{{ $labelClass }}">Label warna</legend>
@@ -110,7 +110,7 @@
                         @foreach ($colors as $key => $color)
                             <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-bq-border px-2.5 py-1 text-xs text-bq-text has-[:checked]:border-bq-primary has-[:checked]:ring-2 has-[:checked]:ring-bq-primary/30">
                                 <input type="radio" name="color" value="{{ $key }}" x-model="category.color" class="sr-only">
-                    <x-owner.field-error name="color" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
+                    <x-owner.field-error name="color" :form="$oldForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($oldForm) }} === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                                 <span class="h-3 w-3 rounded-full" style="background-color: {{ $color['hex'] }}" aria-hidden="true"></span>
                                 {{ $color['label'] }}
                             </label>
@@ -120,7 +120,7 @@
                 <div>
                     <label for="category-order" class="{{ $labelClass }}">Urutan tampil</label>
                     <input id="category-order" name="sort_order" type="number" min="0" max="9999" step="1" x-model="category.sort_order" class="{{ $inputClass }} sm:w-32">
-                    <x-owner.field-error name="sort_order" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
+                    <x-owner.field-error name="sort_order" :form="$oldForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($oldForm) }} === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                     <p class="mt-1 text-xs text-bq-text-muted">Angka kecil tampil lebih dulu di halaman booking.</p>
                 </div>
                 <div>
@@ -129,7 +129,7 @@
                         <img x-bind:src="category.imageUrl" alt="" class="mt-2 h-16 w-16 rounded-lg object-cover">
                     </template>
                     <input id="category-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm text-bq-text-muted">
-                    <x-owner.field-error name="image" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
+                    <x-owner.field-error name="image" :form="$oldForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($oldForm) }} === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                     <label x-show="category.imageUrl" class="mt-2 inline-flex items-center gap-2 text-sm text-bq-text">
                         <input type="checkbox" name="remove_image" value="1" x-model="category.remove_image" class="rounded border-bq-border text-bq-primary"> Hapus gambar
                     </label>
@@ -137,7 +137,7 @@
                 <label class="inline-flex items-center gap-2 text-sm text-bq-text">
                     <input type="hidden" name="is_active" value="0">
                     <input type="checkbox" name="is_active" value="1" x-model="category.is_active" class="rounded border-bq-border text-bq-primary">
-                    <x-owner.field-error name="is_active" :form="$oldForm" x-cloak x-show="@js($oldForm) === (category.id ? 'category-edit-' + category.id : 'category-create')" />
+                    <x-owner.field-error name="is_active" :form="$oldForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($oldForm) }} === (category.id ? 'category-edit-' + category.id : 'category-create')" />
                     Aktif (tampil di halaman booking)
                 </label>
             </form>

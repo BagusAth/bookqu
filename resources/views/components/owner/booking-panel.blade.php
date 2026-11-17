@@ -157,8 +157,8 @@
                                         <label class="bq-label mb-1 block" x-bind:for="'booking-panel-reason-' + index" x-text="action.reason.label"></label>
                                         <textarea x-bind:id="'booking-panel-reason-' + index" x-bind:name="action.reason.name" :value="action.form_key === @js($bookingForm) ? @js(old('reason')) : ''" :disabled="!showReason" required maxlength="500" rows="2" class="bq-input w-full"></textarea>
                                         @if ($reopenBooking)
-                                            <x-owner.field-error name="reason" x-cloak x-show="action.form_key === @js($bookingForm)" />
-                                            <x-owner.field-error name="error" x-cloak x-show="action.form_key === @js($bookingForm)" />
+                                            <x-owner.field-error name="reason" x-cloak x-show="action.form_key === {{ \Illuminate\Support\Js::from($bookingForm) }}" />
+                                            <x-owner.field-error name="error" x-cloak x-show="action.form_key === {{ \Illuminate\Support\Js::from($bookingForm) }}" />
                                         @endif
                                     </div>
                                 </template>

@@ -256,7 +256,7 @@
                 <div>
                     <label class="text-xs font-semibold text-bq-text">Kode Promo <span class="text-bq-danger">*</span></label>
                     <input type="text" name="code" x-model="activeVoucher.code" required class="bq-input mt-1 w-full font-mono uppercase">
-                        <x-owner.field-error name="code" :form="$promoErrorForm" x-cloak x-show="@js($promoErrorForm) === 'promo-edit-' + activeVoucher.id" />
+                        <x-owner.field-error name="code" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
@@ -265,36 +265,36 @@
                             <option value="percentage">Persentase (%)</option>
                             <option value="fixed">Nominal Tetap (Rp)</option>
                         </select>
-                        <x-owner.field-error name="discount_type" :form="$promoErrorForm" x-cloak x-show="@js($promoErrorForm) === 'promo-edit-' + activeVoucher.id" />
+                        <x-owner.field-error name="discount_type" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold text-bq-text">Nilai Diskon <span class="text-bq-danger">*</span></label>
                         <input type="number" name="discount_value" x-model="activeVoucher.discount_value" required min="1" step="0.01" :max="activeVoucher.discount_type === 'percentage' ? 100 : null" class="bq-input mt-1 w-full">
-                        <x-owner.field-error name="discount_value" :form="$promoErrorForm" x-cloak x-show="@js($promoErrorForm) === 'promo-edit-' + activeVoucher.id" />
+                        <x-owner.field-error name="discount_value" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <label class="text-xs font-semibold text-bq-text">Min. Transaksi (Rp)</label>
                         <input type="number" name="min_order_amount" x-model="activeVoucher.min_order_amount" min="0" class="bq-input mt-1 w-full">
-                        <x-owner.field-error name="min_order_amount" :form="$promoErrorForm" x-cloak x-show="@js($promoErrorForm) === 'promo-edit-' + activeVoucher.id" />
+                        <x-owner.field-error name="min_order_amount" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold text-bq-text">Batas Kuota Pemakaian</label>
                         <input type="number" name="usage_limit" x-model="activeVoucher.usage_limit" min="1" placeholder="Tanpa batas" class="bq-input mt-1 w-full">
-                        <x-owner.field-error name="usage_limit" :form="$promoErrorForm" x-cloak x-show="@js($promoErrorForm) === 'promo-edit-' + activeVoucher.id" />
+                        <x-owner.field-error name="usage_limit" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <label class="text-xs font-semibold text-bq-text">Mulai Berlaku</label>
                         <input type="date" name="start_date" x-model="activeVoucher.start_date" class="bq-input mt-1 w-full">
-                        <x-owner.field-error name="start_date" :form="$promoErrorForm" x-cloak x-show="@js($promoErrorForm) === 'promo-edit-' + activeVoucher.id" />
+                        <x-owner.field-error name="start_date" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold text-bq-text">Berakhir Pada</label>
                         <input type="date" name="end_date" x-model="activeVoucher.end_date" class="bq-input mt-1 w-full">
-                        <x-owner.field-error name="end_date" :form="$promoErrorForm" x-cloak x-show="@js($promoErrorForm) === 'promo-edit-' + activeVoucher.id" />
+                        <x-owner.field-error name="end_date" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                 </div>
                 <div>
@@ -303,7 +303,7 @@
                         <option :value="1">Aktif</option>
                         <option :value="0">Nonaktif</option>
                     </select>
-                        <x-owner.field-error name="is_active" :form="$promoErrorForm" x-cloak x-show="@js($promoErrorForm) === 'promo-edit-' + activeVoucher.id" />
+                        <x-owner.field-error name="is_active" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                 </div>
                 @include('owner.partials.promo-limits', ['model' => 'activeVoucher', 'errorForm' => $promoErrorForm])
                 <div class="flex items-center justify-end gap-2 pt-2 border-t border-bq-border">

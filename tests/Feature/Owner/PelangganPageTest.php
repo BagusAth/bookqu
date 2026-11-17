@@ -155,7 +155,7 @@ class PelangganPageTest extends TestCase
         $cancelled = $this->booking(['status' => 'cancelled']);
         $this->pay($cancelled, 120000);
 
-        $response = $this->actingAs($this->owner)->get(route('owner.customers'))->assertOk()->assertSee('Rp 85.000');
+        $response = $this->actingAs($this->owner)->get(route('owner.customers'))->assertOk()->assertSee('Rp85.000');
         $this->assertSame(85000.0, (float) collect($response->viewData('customers')->items())->first()->total_spent);
 
         $this->getJson(route('owner.customers.panel', ['identifier' => 'rani@example.com']))

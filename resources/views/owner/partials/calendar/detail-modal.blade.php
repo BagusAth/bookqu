@@ -20,8 +20,8 @@
                         @method('PATCH')
                         <input type="hidden" name="_form" :value="'calendar-state-' + selected.id">
                         @if (is_string(old('_form')) && str_starts_with(old('_form'), 'calendar-state-'))
-                            <x-owner.field-error name="operation" x-cloak x-show="@js(old('_form')) === 'calendar-state-' + selected.id" />
-                            <x-owner.field-error name="slot" x-cloak x-show="@js(old('_form')) === 'calendar-state-' + selected.id" />
+                            <x-owner.field-error name="operation" x-cloak x-show="{{ \Illuminate\Support\Js::from(old('_form')) }} === 'calendar-state-' + selected.id" />
+                            <x-owner.field-error name="slot" x-cloak x-show="{{ \Illuminate\Support\Js::from(old('_form')) }} === 'calendar-state-' + selected.id" />
                         @endif
                         <button name="operation" :disabled="busy" :value="selected.closed ? 'open' : 'close'" class="bq-btn bq-btn-secondary"
                             x-text="selected.closed ? 'Buka lagi' : 'Tutup slot ini'"></button>
@@ -38,7 +38,7 @@
                             <span class="text-xs text-bq-text-muted">Kosongkan untuk mengikuti aturan harga.</span>
                             <span x-show="slotErrors.harga_override" x-text="slotErrors.harga_override?.[0]" class="text-bq-danger" role="alert"></span>
                             @if (is_string(old('_form')) && str_starts_with(old('_form'), 'calendar-price-'))
-                                <x-owner.field-error name="harga_override" x-cloak x-show="@js(old('_form')) === 'calendar-price-' + selected.id" />
+                                <x-owner.field-error name="harga_override" x-cloak x-show="{{ \Illuminate\Support\Js::from(old('_form')) }} === 'calendar-price-' + selected.id" />
                             @endif
                         </label>
                         <button :disabled="busy" class="bq-btn bq-btn-secondary">Ubah harga slot ini</button>

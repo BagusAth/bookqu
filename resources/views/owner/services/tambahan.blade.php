@@ -26,7 +26,7 @@
         </x-slot:action>
     </x-owner.page-header>
 
-    <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori', 'add-ons' => 'Tambahan']" active="add-ons" label="Bagian halaman Layanan" />
+    <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori', 'add-ons' => 'Tambahan']" active="add-ons" :counts="$tabCounts ?? []" label="Bagian halaman Layanan" />
 
     <form method="GET" action="{{ route('owner.services') }}" role="search" class="flex flex-wrap items-end gap-2">
         <input type="hidden" name="tab" value="add-ons">
@@ -98,24 +98,24 @@
             <div>
                 <label for="addon-name" class="font-medium">Nama tambahan</label>
                 <input id="addon-name" name="name" x-model="item.name" required maxlength="150" class="{{ $input }}">
-                <x-owner.field-error name="name" x-cloak x-show="formKey === @js($oldForm)" />
+                <x-owner.field-error name="name" x-cloak x-show="formKey === {{ \Illuminate\Support\Js::from($oldForm) }}" />
             </div>
             <div>
                 <label for="addon-description" class="font-medium">Deskripsi</label>
                 <textarea id="addon-description" name="description" x-model="item.description" maxlength="500" rows="2" class="{{ $input }}"></textarea>
-                <x-owner.field-error name="description" x-cloak x-show="formKey === @js($oldForm)" />
+                <x-owner.field-error name="description" x-cloak x-show="formKey === {{ \Illuminate\Support\Js::from($oldForm) }}" />
             </div>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                     <label for="addon-price" class="font-medium">Harga (Rp)</label>
                     <input id="addon-price" name="price" type="number" x-model="item.price" step="0.01" min="0" required class="{{ $input }}">
-                    <x-owner.field-error name="price" x-cloak x-show="formKey === @js($oldForm)" />
+                    <x-owner.field-error name="price" x-cloak x-show="formKey === {{ \Illuminate\Support\Js::from($oldForm) }}" />
                 </div>
                 <div>
                     <label for="addon-stock" class="font-medium">Stok</label>
                     <input id="addon-stock" name="stock" type="number" x-model="item.stock" min="0" placeholder="Tanpa batas" class="{{ $input }}">
                     <p class="mt-1 text-xs text-bq-text-muted">Kosongkan untuk stok tanpa batas. Stok berkurang setelah pembayaran booking berhasil.</p>
-                    <x-owner.field-error name="stock" x-cloak x-show="formKey === @js($oldForm)" />
+                    <x-owner.field-error name="stock" x-cloak x-show="formKey === {{ \Illuminate\Support\Js::from($oldForm) }}" />
                 </div>
             </div>
             <fieldset class="space-y-2">
@@ -128,8 +128,8 @@
                 @empty
                     <p class="text-sm text-bq-text-muted">Tambahkan layanan untuk menautkannya ke tambahan ini.</p>
                 @endforelse
-                <x-owner.field-error name="service_ids" x-cloak x-show="formKey === @js($oldForm)" />
-                <x-owner.field-error name="service_ids.*" x-cloak x-show="formKey === @js($oldForm)" />
+                <x-owner.field-error name="service_ids" x-cloak x-show="formKey === {{ \Illuminate\Support\Js::from($oldForm) }}" />
+                <x-owner.field-error name="service_ids.*" x-cloak x-show="formKey === {{ \Illuminate\Support\Js::from($oldForm) }}" />
             </fieldset>
             <div>
                 <label for="addon-active" class="font-medium">Status</label>
@@ -137,7 +137,7 @@
                     <option value="1">Aktif</option>
                     <option value="0">Nonaktif</option>
                 </select>
-                <x-owner.field-error name="is_active" x-cloak x-show="formKey === @js($oldForm)" />
+                <x-owner.field-error name="is_active" x-cloak x-show="formKey === {{ \Illuminate\Support\Js::from($oldForm) }}" />
             </div>
             <button type="submit" class="bq-btn bq-btn-primary">Simpan tambahan</button>
         </form>

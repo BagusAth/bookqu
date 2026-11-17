@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Owner;
 use App\Actions\Booking\BookingPricingReservations;
 use App\Actions\Booking\GetAddOnSales;
 use App\Actions\Schedule\ClaimSlots;
+use App\Actions\Service\GetLayananTabCounts;
 use App\Http\Controllers\Controller;
 use App\Models\AdditionalItem;
 use App\Models\Service;
@@ -46,7 +47,9 @@ class OwnerAdditionalItemController extends Controller
         $sales = app(GetAddOnSales::class)->execute($tenant);
         $itemRoute = 'owner.services.add-ons';
 
-        return view('owner.additional-items', compact('items', 'services', 'sales', 'search', 'itemRoute'));
+        $tabCounts = app(GetLayananTabCounts::class)->execute($tenant);
+
+        return view('owner.additional-items', compact('items', 'services', 'sales', 'search', 'itemRoute', 'tabCounts'));
     }
 
     public function store(Request $request)

@@ -73,6 +73,8 @@ class GetUnitsOverview
                 'code' => $booking->booking_code ?: 'BKQ-'.$booking->id,
                 'customer' => $booking->namapelanggan,
                 'session' => Carbon::parse($booking->tanggalbooking)->format('d/m/Y').' · '.$timeRanges[$booking->id]->label().' WIB',
+                'date_label' => Carbon::parse($booking->tanggalbooking)->locale('id')->translatedFormat('j M'),
+                'time' => str_replace(':', '.', $timeRanges[$booking->id]->label()),
             ];
         }
 

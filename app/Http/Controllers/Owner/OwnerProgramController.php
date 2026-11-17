@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Owner;
 use App\Actions\Service\CreateService;
 use App\Actions\Service\DeleteService;
 use App\Actions\Service\GetLayananPage;
+use App\Actions\Service\GetLayananTabCounts;
 use App\Actions\Service\ToggleServiceStatus;
 use App\Actions\Service\UpdateService;
 use App\Domain\Modules\ModuleRelease;
@@ -44,7 +45,7 @@ class OwnerProgramController extends Controller
 
         return view('owner.services', array_merge(
             $getLayananPage->execute($tenant, $request->only(['katakunci', 'category', 'search', 'status', 'sort'])),
-            ['tenant' => $tenant, 'activeTab' => $tab, 'showAddOns' => $showAddOns],
+            ['tenant' => $tenant, 'activeTab' => $tab, 'showAddOns' => $showAddOns, 'tabCounts' => app(GetLayananTabCounts::class)->execute($tenant)],
         ));
     }
 

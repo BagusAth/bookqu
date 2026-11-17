@@ -77,7 +77,7 @@
         },
     }"
 >
-    <x-owner.page-header title="Layanan" purpose="Apa yang Anda jual: layanan, harga dasar, durasi dan kategorinya.">
+    <x-owner.page-header title="Layanan" purpose="Yang Anda jual: harga, durasi, kapasitas dan tambahan.">
         <x-slot:action>
             @if ($isServicesTab && $usage['canCreate'])
                 <button type="button" id="service-create-button" class="{{ $buttonPrimary }}" x-on:click="openService(null, $el)">
@@ -91,7 +91,7 @@
         </x-slot:action>
     </x-owner.page-header>
 
-    <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori'] + (($showAddOns ?? false) ? ['add-ons' => 'Tambahan'] : [])" :active="$activeTab" label="Bagian halaman Layanan" />
+    <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori'] + (($showAddOns ?? false) ? ['add-ons' => 'Tambahan'] : [])" :active="$activeTab" :counts="$tabCounts ?? []" label="Bagian halaman Layanan" />
 
     @include($isServicesTab ? 'owner.services.layanan' : 'owner.services.kategori')
 </div>

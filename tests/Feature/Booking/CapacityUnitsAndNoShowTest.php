@@ -359,9 +359,10 @@ class CapacityUnitsAndNoShowTest extends TestCase
         $html = (string) $response->getContent();
         $this->assertTrue(str_contains($html, 'value="Nama dari form"'), 'The submitted name should be restored.');
         $this->assertTrue(str_contains($html, 'id="unit-edit-'.$unit->id.'-kapasitas-error"'));
-        preg_match('/<details [^>]*id="unit-edit-'.$unit->id.'"[^>]*>/', $html, $edit);
-        $this->assertStringContainsString(' open', $edit[0] ?? 'Unit editor missing');
-        $this->assertSame(0, preg_match('/<details [^>]*id="unit-create"[^>]*\bopen\b/', $html));
+        // BQ-162: unit forms open in side panels; only the failed edit panel reopens after the redirect.
+        $reopen = '/x-init="\$nextTick\(\(\) => \$dispatch\(\'open-dialog\', \{ id: \'([a-z0-9-]+)\' \}\)\)"/';
+        preg_match_all($reopen, html_entity_decode($html, ENT_QUOTES), $reopened);
+        $this->assertSame(['unit-edit-'.$unit->id], $reopened[1]);
     }
 
     public function test_unit_routes_are_refused_below_pro(): void

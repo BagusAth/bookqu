@@ -8,6 +8,7 @@ use App\Domain\Booking\BookingState;
 use App\Domain\Customer\CustomerIdentity;
 use App\Models\Tenant;
 use App\Support\CustomerBookingRoutes;
+use App\Support\Rupiah;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -80,8 +81,8 @@ class ListCustomers
             $identifier = (string) $customer->identifier;
             $customer->total_bookings = (int) $customer->total_bookings;
             $customer->total_spent = $canViewRevenue ? ($spent[$identifier] ?? 0.0) : null;
-            $customer->formatted_spent = $canViewRevenue ? 'Rp '.number_format($spent[$identifier] ?? 0, 0, ',', '.') : null;
-            $customer->last_booking = $customer->last_booking_date ? Carbon::parse((string) $customer->last_booking_date)->format('d M Y') : '-';
+            $customer->formatted_spent = $canViewRevenue ? Rupiah::format($spent[$identifier] ?? 0) : null;
+            $customer->last_booking = $customer->last_booking_date ? self::shortDate((string) $customer->last_booking_date) : '—';
             $customer->upcoming_booking = $upcoming[$identifier] ?? null;
             $customer->panel_url = route('owner.customers.panel', ['identifier' => $identifier]);
             $customer->whatsapp_url = GetCustomerPanel::whatsAppUrl((string) $customer->phone);
@@ -185,9 +186,17 @@ class ListCustomers
 
         $upcoming = [];
         foreach ($rows as $row) {
-            $upcoming[(string) $row->identifier] ??= Carbon::parse((string) $row->tanggalbooking)->format('d M Y').' '.substr((string) $row->jam, 0, 5);
+            $upcoming[(string) $row->identifier] ??= self::shortDate((string) $row->tanggalbooking).' · '.str_replace(':', '.', substr((string) $row->jam, 0, 5));
         }
 
         return $upcoming;
+    }
+
+    /** "16 Nov" this year, "16 Nov 2025" otherwise (BQ-162, prototype dates). */
+    private static function shortDate(string $date): string
+    {
+        $day = Carbon::parse($date)->locale('id');
+
+        return $day->translatedFormat($day->year === now('Asia/Jakarta')->year ? 'j M' : 'j M Y');
     }
 }

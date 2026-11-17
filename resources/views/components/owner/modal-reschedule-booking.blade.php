@@ -138,12 +138,12 @@
                 <p class="font-semibold" x-text="booking?.booking_code"></p>
                 <p class="text-bq-text-muted" x-text="[booking?.namapelanggan, booking?.layanan?.namalayanan].filter(Boolean).join(' · ')"></p>
             </div>
-            <x-owner.field-error name="error" x-cloak x-show="@js($rescheduleForm) === 'reschedule-' + booking?.id" />
+            <x-owner.field-error name="error" x-cloak x-show="{{ \Illuminate\Support\Js::from($rescheduleForm) }} === 'reschedule-' + booking?.id" />
             <div>
                 <label for="reschedule-date" class="font-medium">Tanggal baru</label>
                 <input id="reschedule-date" type="date" name="tanggal" x-model="date" :min="minDate" @change="conflict = null; load()" :disabled="saving" required
                     class="bq-input mt-1 block w-full sm:w-auto">
-                <x-owner.field-error name="tanggal" x-cloak x-show="@js($rescheduleForm) === 'reschedule-' + booking?.id" />
+                <x-owner.field-error name="tanggal" x-cloak x-show="{{ \Illuminate\Support\Js::from($rescheduleForm) }} === 'reschedule-' + booking?.id" />
             </div>
             <fieldset class="space-y-2">
                 <legend class="font-medium">Slot baru</legend>
@@ -164,7 +164,7 @@
                         </label>
                     </template>
                 </div>
-                <x-owner.field-error name="schedule_id" x-cloak x-show="@js($rescheduleForm) === 'reschedule-' + booking?.id" />
+                <x-owner.field-error name="schedule_id" x-cloak x-show="{{ \Illuminate\Support\Js::from($rescheduleForm) }} === 'reschedule-' + booking?.id" />
             </fieldset>
             <p x-show="selectedSlot?.price_difference != null" class="rounded-lg bg-bq-info-bg px-3 py-2 text-bq-info" aria-live="polite">
                 Selisih harga slot pilihan <strong x-text="selectedSlot ? formatDifference(selectedSlot.price_difference) : ''"></strong>
@@ -173,7 +173,7 @@
                 <label for="reschedule-reason" class="font-medium">Alasan pindah jadwal (opsional)</label>
                 <input id="reschedule-reason" name="alasan" x-model="reason" type="text" placeholder="Contoh: Permintaan pelanggan"
                     class="bq-input mt-1 block w-full">
-                <x-owner.field-error name="alasan" x-cloak x-show="@js($rescheduleForm) === 'reschedule-' + booking?.id" />
+                <x-owner.field-error name="alasan" x-cloak x-show="{{ \Illuminate\Support\Js::from($rescheduleForm) }} === 'reschedule-' + booking?.id" />
             </div>
             <div class="flex justify-end gap-2">
                 <button type="button" @click="hide()" class="bq-btn bq-btn-secondary">Batal</button>
