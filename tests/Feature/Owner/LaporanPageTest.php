@@ -206,7 +206,7 @@ class LaporanPageTest extends TestCase
     {
         $response = $this->actingAs($this->owner)->get(route('owner.analytics'))->assertOk()
             ->assertSee('role="tablist"', false)
-            ->assertSee('name="periode"', false);
+            ->assertSee('periode=bulan-lalu', false);
         foreach (['Ringkasan', 'Pendapatan', 'Okupansi', 'Layanan', 'Pelanggan'] as $label) {
             $response->assertSee($label);
         }
@@ -267,7 +267,7 @@ class LaporanPageTest extends TestCase
 
         $response = $this->actingAs($this->owner)->get(route('owner.analytics'))->assertOk()
             ->assertSee('Laporan tersedia di paket Medium')
-            ->assertDontSee('Rp 360.000');
+            ->assertDontSee('Rp360.000');
         $this->assertTrue($response->viewData('report')['locked']);
         $this->assertNull($response->viewData('report')['summary']);
 
@@ -279,7 +279,7 @@ class LaporanPageTest extends TestCase
         $kasir = $this->member('kasir');
         $this->actingAs($kasir)->get(route('owner.analytics'))->assertForbidden();
         $this->actingAs($kasir)->get(route('owner.analytics.export'))->assertForbidden();
-        $this->actingAs($this->member('manajer'))->get(route('owner.analytics', ['tab' => 'pendapatan']))->assertOk()->assertSee('Rp 360.000');
+        $this->actingAs($this->member('manajer'))->get(route('owner.analytics', ['tab' => 'pendapatan']))->assertOk()->assertSee('Rp360.000');
 
         config(['modules.reports' => 'hidden']);
         $this->actingAs($this->owner)->get(route('owner.analytics'))->assertNotFound();
