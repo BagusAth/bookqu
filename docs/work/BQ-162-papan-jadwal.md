@@ -23,7 +23,16 @@ BQ-161 restyled the owner portal but kept most pages on raw controls and Tailwin
 
 **Release (D-026 point 8).** v1.0.0 waits for BQ-162. The BQ-158 regression pass runs after BQ-162 is merged into `integration`.
 
-**Gates.** The Tech Lead reviews each session's evidence before the next session starts. Sessions 7 and 8 start only after the Product Lead has confirmed D-026 in `docs/product-decisions.md`; use the numbers from D-026, never guess. If a session finds something the plan or prototype does not answer, stop and write it under "Open findings" instead of deciding.
+**Batches and gates.** Sessions run in four batches; inside a batch the agent runs the sessions in order, commits and pushes after each session, and fills its evidence. The Tech Lead reviews at the end of each batch before the next batch starts.
+
+| Batch | Sessions | Why grouped |
+|---|---|---|
+| 1 | 1 | Foundation: every later screen depends on the shell and primitives, so it is reviewed alone |
+| 2 | 2, 3 | Shared daily parts and the daily pages that use them |
+| 3 | 4, 5, 6 | Independent page groups on the same components |
+| 4 | 9 | Verification and docs |
+
+Sessions 7 and 8 are not part of any batch yet. Sessions 7 and 8 start only after the Product Lead has confirmed D-026 in `docs/product-decisions.md`; use the numbers from D-026, never guess. If a session finds something the plan or prototype does not answer, stop and write it under "Open findings" instead of deciding.
 
 ## How to use the prototype
 
@@ -128,17 +137,16 @@ Gate: D-026 confirmed. Values: weekly email Monday morning to Pemilik only (on, 
 - Update `docs/owner-portal.md` §8 (content) and §9 (visual system, sidebar), `.ai/rules/frontend.md` (component-first rule, design rules above), and the domain files changed by sessions 7–8.
 - Done when: all checks green and the Tech Lead has the evidence to decide on merging into `integration`.
 
-## Prompt for each Codex session
+## Prompt for each Codex batch
 
-Paste and change the number:
+Paste and change the batch number:
 
 ```text
 Repository C:\laragon\www\bookqu, branch agathan-bq-162-papan-jadwal (git switch agathan-bq-162-papan-jadwal; git pull origin agathan-bq-162-papan-jadwal).
-Do BQ-162 session N only. Read docs/work/BQ-162-papan-jadwal.md (rules, gates, session N),
-docs/design/papan-jadwal/KEPUTUSAN.md and AGENTS.md first. Run the prototype with
-php -S 127.0.0.1:8770 -t docs/design/papan-jadwal/prototype and use the routes listed for session N.
-Finish with the checks in the plan, fill "Evidence" for session N, commit, and push only to
-origin agathan-bq-162-papan-jadwal. Stop and report instead of guessing when the plan does not answer.
+Do BQ-162 batch N only (see "Batches and gates"). Read docs/work/BQ-162-papan-jadwal.md, docs/design/papan-jadwal/KEPUTUSAN.md and AGENTS.md first.
+Run the prototype with php -S 127.0.0.1:8770 -t docs/design/papan-jadwal/prototype and use the routes listed for each session.
+Do the sessions of the batch in order. After each session: run its checks, fill its "Evidence", commit, and push only to origin agathan-bq-162-papan-jadwal.
+Stop and report instead of guessing when the plan does not answer. Do not start sessions 7 or 8.
 ```
 
 ## Invariants at risk
