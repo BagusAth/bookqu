@@ -112,7 +112,7 @@
   }
   function catat(arg) {
     if (BQ.S.state === 'galat' && BQ.S.plan === 'small') {
-      return BQ.dialog({ judul: 'Kuota booking bulan ini habis', isi: '<p>100 dari 100 booking bulan November sudah terpakai di paket Small. Booking yang ada tetap bisa diurus. Kuota kembali 1 Des, atau naikkan paket sekarang.</p>', kaki: ui.btn('Tutup', { aksi: 'tutup' }) + ui.btn('Lihat paket', { v: 'utama', href: '#/paket' }) });
+      return BQ.dialog({ judul: 'Kuota booking bulan ini habis', isi: '<p>300 dari 300 booking bulan November sudah terpakai di paket Small. Booking yang ada tetap bisa diurus. Kuota kembali 1 Des, atau naikkan paket sekarang.</p>', kaki: ui.btn('Tutup', { aksi: 'tutup' }) + ui.btn('Lihat paket', { v: 'utama', href: '#/paket' }) });
     }
     if (BQ.S.state === 'berakhir') {
       return BQ.dialog({ judul: 'Booking baru belum bisa dicatat', isi: '<p>Langganan berakhir 14 Nov. Booking yang ada tetap bisa diurus, tetapi booking baru tidak diterima sampai paket diperpanjang.</p>', kaki: ui.btn('Tutup', { aksi: 'tutup' }) + (BQ.S.role === 'pemilik' ? ui.btn('Perpanjang paket', { v: 'utama', href: '#/paket' }) : '') });
