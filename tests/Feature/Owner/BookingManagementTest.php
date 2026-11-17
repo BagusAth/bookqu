@@ -281,6 +281,53 @@ class BookingManagementTest extends TestCase
         $this->assertDatabaseHas('customer_access_deliveries', ['payment_id' => $booking->idpayment]);
     }
 
+    public function test_walk_in_rejects_a_full_small_plan_in_both_response_formats_and_allows_pro(): void
+    {
+        $small = Plan::updateOrCreate(['namapaket' => 'small'], [
+            'hargabulanan' => 50000, 'maxlayanan' => 5, 'maxbooking' => 1, 'isunlimited' => false,
+        ]);
+        $subscription = Subscription::create([
+            'idtenant' => $this->tenant->id,
+            'idplan' => $small->id,
+            'status' => 'active',
+            'langganan_mulai' => now()->subDay(),
+            'langganan_berakhir' => now()->addMonth(),
+        ]);
+        $date = now()->addDays(3)->toDateString();
+        $usedSchedule = Schedule::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+            'tanggal' => $date, 'jam_mulai' => '10:00:00', 'jam_selesai' => '11:00:00',
+        ]);
+        Booking::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+            'idschedule' => $usedSchedule->id, 'tanggalbooking' => $date, 'status' => 'paid',
+        ]);
+        $openSchedule = Schedule::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+            'tanggal' => $date, 'jam_mulai' => '16:00:00', 'jam_selesai' => '17:00:00', 'status' => 'tersedia',
+        ]);
+        $input = [
+            'idschedule' => $openSchedule->id, 'namapelanggan' => 'Pelanggan Walk-in',
+            'nomorhp' => '089988776600', 'metode' => 'cash',
+        ];
+        $message = 'Kuota booking bulan ini habis. Booking yang ada tetap bisa diurus.';
+
+        $this->actingAs($this->user)->postJson(route('owner.bookings.walkin'), $input)
+            ->assertUnprocessable()->assertJsonPath('errors.quota.0', $message);
+        $this->from(route('owner.bookings'))->post(route('owner.bookings.walkin'), $input)
+            ->assertRedirect(route('owner.bookings'))->assertSessionHasErrors(['quota' => $message]);
+        $this->assertDatabaseCount('bookings', 1);
+        $this->assertDatabaseCount('payments', 0);
+
+        $pro = Plan::updateOrCreate(['namapaket' => 'pro'], [
+            'hargabulanan' => 200000, 'maxlayanan' => 0, 'maxbooking' => 1, 'isunlimited' => true,
+        ]);
+        $subscription->update(['idplan' => $pro->id]);
+        $this->postJson(route('owner.bookings.walkin'), $input)->assertCreated();
+        $this->assertDatabaseHas('bookings', ['idschedule' => $openSchedule->id, 'status' => 'paid']);
+        $this->assertDatabaseCount('payments', 1);
+    }
+
     public function test_owner_bookings_page_does_not_expose_customer_credentials(): void
     {
         $booking = Booking::create([

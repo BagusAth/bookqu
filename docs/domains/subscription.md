@@ -29,6 +29,8 @@ Owns plans, the tenant's subscription state, trials, feature entitlement, usage 
 
 - **INV-SUB-01** — feature access and limits are decided by `EntitlementRules`.
 
+Monthly booking limits apply to owner walk-ins as well as storefront bookings. `CreateWalkInBooking` counts usage in the selected session's month and checks the quota within the tenant lock. An effective Pro plan has unlimited bookings.
+
 ## Evidence
 
 `tests/Unit/Domain/EntitlementRulesTest.php`, `PlanCapabilityTest.php`, `SubscriptionStateTest.php`, `tests/Feature/Subscription/SubscriptionActionTest.php`, `SubscriptionRulesAndMechanismsTest.php`, `Owner/AnalyticsAndSubscriptionTest.php`, `Owner/CheckoutMidtransTest.php`.
