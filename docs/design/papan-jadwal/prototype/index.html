@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prototipe BookQu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="app" id="app">
+      <div class="shell">
+        <nav class="sb" id="sb" aria-label="Menu utama"></nav>
+        <div class="main">
+          <header class="top" id="top"></header>
+          <main class="view" id="view"></main>
+        </div>
+      </div>
+      <nav class="bnav" id="bnav" aria-label="Menu bawah"></nav>
+      <div class="lapis" id="lapis"></div>
+    </div>
+  </div>
+
+  <!-- Bilah prototipe: alat peninjau, bukan bagian desain -->
+  <div class="proto">
+    <div class="proto-panel" id="proto-panel" hidden></div>
+    <button type="button" id="proto-tombol">Prototipe</button>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/data-ramai.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/pages/sistem.js"></script>
+  <script src="js/pages/bersama.js"></script>
+  <script src="js/pages/beranda.js"></script>
+  <script src="js/pages/kalender.js"></script>
+  <script src="js/pages/booking.js"></script>
+  <script src="js/pages/pelanggan.js"></script>
+  <script src="js/pages/penyiapan.js"></script>
+  <script src="js/pages/uang.js"></script>
+  <script src="js/pages/lainnya.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
