@@ -9,6 +9,7 @@
     'active' => null,
     'label' => 'Bagian halaman',
     'baseUrl' => null,
+    'counts' => [],
 ])
 
 @php
@@ -23,10 +24,15 @@
         @php $isActive = (string) $key === $current; @endphp
         <a
             role="tab"
-            href="{{ $baseUrl ? url()->query($baseUrl, [$param => $key]) : request()->fullUrlWithQuery([$param => $key]) }}"
+            href="{{ $baseUrl ? url()->query($baseUrl, [$param => $key]) : request()->fullUrlWithQuery([$param => $key, 'page' => null]) }}"
             aria-selected="{{ $isActive ? 'true' : 'false' }}"
             @if ($isActive) aria-current="page" @endif
             class="shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-sm {{ $isActive ? 'border-bq-primary font-semibold text-bq-primary' : 'border-transparent font-medium text-bq-text-muted hover:border-bq-border-strong hover:text-bq-ink' }}"
-        >{{ $tabLabel }}</a>
+        >
+            {{ $tabLabel }}
+            @isset($counts[$key])
+                <span @class(['ml-1 rounded-full px-1.5 py-0.5 text-xs tabular-nums', 'bg-bq-accent text-bq-ink' => $key === 'action' && $counts[$key] > 0, 'bg-bq-surface-2 text-bq-text-muted' => $key !== 'action' || $counts[$key] === 0])>{{ $counts[$key] }}</span>
+            @endisset
+        </a>
     @endforeach
 </nav>

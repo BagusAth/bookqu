@@ -52,7 +52,7 @@
     },
 
 }">
-    <x-owner.page-header title="Kalender" purpose="Lihat jadwal layanan dan kelola slot.">
+    <x-owner.page-header title="Kalender" purpose="Kapan ramai, kapan kosong, dan siapa yang datang.">
         @if ($scheduleUrl)
             <x-slot:action><a href="{{ $scheduleUrl }}" class="bq-btn bq-btn-secondary"><x-owner.icon name="clock" class="h-4 w-4" />Atur jam buka</a></x-slot:action>
         @endif
@@ -67,6 +67,16 @@
         </div>
         <p class="text-lg font-bold text-bq-ink"><span class="sr-only">{{ $view === 'day' ? 'Jadwal Harian Â· ' : '' }}</span>{{ $dateLabel }}</p>
     </nav>
+
+    @if ($view === 'day' && $canViewUnits)
+        @php $dayParameters = ['view' => 'day', 'date' => $date->toDateString()] + array_diff_key($filters, ['kolom' => true]); @endphp
+        <div class="hidden md:block">
+        <x-ui.segmented label="Kolom kalender" :selected="$unitMode ? 'unit' : 'service'" :options="[
+            'service' => ['label' => 'Per layanan', 'href' => route('owner.calendar', $dayParameters)],
+            'unit' => ['label' => 'Per unit', 'href' => route('owner.calendar', $dayParameters + ['kolom' => 'unit'])],
+        ]" />
+        </div>
+    @endif
 
     @include('owner.partials.calendar.controls')
     <ul class="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-bq-text-muted" aria-label="Keterangan status slot">

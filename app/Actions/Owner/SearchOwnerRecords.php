@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
  */
 final class SearchOwnerRecords
 {
-    private const LIMIT = 6;
+    private const LIMIT = 5;
 
     public const MIN_LENGTH = 2;
 

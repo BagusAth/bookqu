@@ -54,8 +54,13 @@ final class GetOwnerCalendarData
         $canWalkIn = $can('bookings.walkin') && EntitlementRules::hasEffectivePlan($subscription);
 
         $services = Service::where('idtenant', $tenant->id)->orderBy('namalayanan')->get();
-        $units = ModuleRelease::state('units') === 'released' && EntitlementRules::canAccessFeature($subscription, 'units')['allowed']
-            ? Unit::where('idtenant', $tenant->id)->orderBy('name')->get(['id', 'name']) : collect();
+        $canViewUnits = ModuleRelease::state('units') === 'released' && EntitlementRules::canAccessFeature($subscription, 'units')['allowed'];
+        $units = $canViewUnits
+            ? Unit::where('idtenant', $tenant->id)->orderBy('name')->get(['id', 'name', 'is_active']) : collect();
+        $unitMode = $view === 'day' && $canViewUnits && $request->query('kolom') === 'unit';
+        if ($unitMode) {
+            $services->load(['units' => fn ($query) => $query->where('units.idtenant', $tenant->id)->where('units.is_active', true)]);
+        }
         $serviceId = $services->firstWhere('id', $request->integer('service_id'))?->id;
         $unitId = $units->firstWhere('id', $request->integer('unit_id'))?->id;
 
@@ -69,7 +74,7 @@ final class GetOwnerCalendarData
         }
         $status = $request->string('status')->toString();
         $status = isset($statuses[$status]) ? $status : '';
-        $filters = array_filter(['service_id' => $serviceId, 'unit_id' => $unitId, 'status' => $status]);
+        $filters = array_filter(['service_id' => $serviceId, 'unit_id' => $unitId, 'status' => $status, 'kolom' => $unitMode ? 'unit' : null]);
 
         $closedDates = OwnerBlockedDate::where('idtenant', $tenant->id)->whereBetween('tanggal', $queryBounds)->pluck('alasan', 'tanggal');
         [$taken, $bindings] = BookingRules::seatsTakenSql();
@@ -93,7 +98,7 @@ final class GetOwnerCalendarData
         $days = [];
         for ($day = $start->startOfDay(); $day->lte($end); $day = $day->addDay()) {
             $key = $day->toDateString();
-            $days[$key] = ['label' => $day->translatedFormat('l, d M'), 'number' => $day->day, 'slots' => [], 'bookings' => [],
+            $days[$key] = ['label' => $day->translatedFormat('l, d M'), 'number' => $day->day, 'slots' => [], 'bookings' => [], 'weekBookings' => [], 'occupied' => 0, 'occupancy' => 0,
                 'closed' => $closedDates->has($key) ? ($closedDates->get($key) ?: 'Tutup') : null];
         }
 
@@ -120,6 +125,7 @@ final class GetOwnerCalendarData
                 continue;
             }
 
+            $days[$key]['occupied'] += (int) ($seats > 0);
             $days[$key]['slots'][] = [
                 'id' => $slot->id,
                 'date' => $key,
@@ -157,15 +163,34 @@ final class GetOwnerCalendarData
                 continue;
             }
             $days[$key]['bookingCount'] = ($days[$key]['bookingCount'] ?? 0) + 1;
+            $card = $this->bookingCard($booking);
+            $days[$key]['weekBookings'][] = $card;
             if (! isset($shownSlotIds[$booking->idschedule])) {
-                $days[$key]['bookings'][] = $this->bookingCard($booking);
+                $days[$key]['bookings'][] = $card;
             }
         }
+
+        foreach ($days as &$day) {
+            if ($day['slots'] !== []) {
+                $day['occupancy'] = (int) round(100 * $day['occupied'] / count($day['slots']));
+            }
+        }
+        unset($day);
 
         $todaySlots = $days[$bounds[0]]['slots'];
         $todayTime = $now->format('H:i');
         $columnOptions = ($serviceId === null ? $services : $services->where('id', $serviceId))
             ->map(fn (Service $service): array => ['id' => (int) $service->id, 'name' => $service->namalayanan])->values()->all();
+        if ($unitMode) {
+            $columnOptions = $units->where('is_active', true)
+                ->when($unitId !== null, fn ($options) => $options->where('id', $unitId))
+                ->map(fn (Unit $unit): array => ['id' => $unit->id, 'name' => $unit->name])->values()->all();
+            $unitsByService = $services->mapWithKeys(fn (Service $service): array => [$service->id => $service->units->modelKeys()]);
+            $todaySlots = collect($todaySlots)->flatMap(static fn (array $slot): array => array_map(
+                static fn (int $id): array => $slot + ['column_id' => $id],
+                $unitsByService->get($slot['service_id'], []),
+            ))->values()->all();
+        }
         $chosenColumns = array_map('intval', array_filter($request->array('columns'), fn ($value): bool => is_scalar($value)));
         $dayGrid = $view === 'day' ? $this->arrangeDayGrid->execute($columnOptions, $todaySlots, $chosenColumns, $bounds[0] === $today ? $todayTime : null) : null;
         $hasEntries = array_any($days, fn (array $day): bool => $day['slots'] !== [] || $day['bookings'] !== [] || $day['closed'] !== null);
@@ -173,7 +198,7 @@ final class GetOwnerCalendarData
         $scheduleUrl = $canEdit ? route('owner.schedule') : null;
 
         return compact('views', 'view', 'date', 'dateLabel', 'previous', 'next', 'today', 'todayTime', 'monthOffset',
-            'filters', 'services', 'units', 'statuses', 'days', 'dayGrid', 'hasEntries', 'scheduleUrl');
+            'filters', 'services', 'units', 'statuses', 'unitMode', 'canViewUnits', 'days', 'dayGrid', 'hasEntries', 'scheduleUrl');
     }
 
     /** @return array{url: string, customer: string, service: string, status: string, time: string} */

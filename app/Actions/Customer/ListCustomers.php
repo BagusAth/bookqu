@@ -7,6 +7,7 @@ namespace App\Actions\Customer;
 use App\Domain\Booking\BookingState;
 use App\Domain\Customer\CustomerIdentity;
 use App\Models\Tenant;
+use App\Support\CustomerBookingRoutes;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -33,6 +34,7 @@ class ListCustomers
      * @return array{
      *     customers: LengthAwarePaginator<int, object>,
      *     summary: array{total: int, new: int, returning: int},
+     *     counts: array<string, int>,
      *     search: string,
      *     filter: string|null,
      *     sort: string,
@@ -73,7 +75,8 @@ class ListCustomers
         $spent = $canViewRevenue ? $this->sumCustomerPayments->execute((int) $tenant->id, $identifiers) : [];
         $upcoming = $this->upcoming((int) $tenant->id, $identifiers);
 
-        $customers->getCollection()->transform(function (object $customer) use ($spent, $upcoming, $canViewRevenue): object {
+        $storefront = $tenant->slug ? CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) : null;
+        $customers->getCollection()->transform(function (object $customer) use ($spent, $upcoming, $canViewRevenue, $monthStart, $dormantBefore, $tenant, $storefront): object {
             $identifier = (string) $customer->identifier;
             $customer->total_bookings = (int) $customer->total_bookings;
             $customer->total_spent = $canViewRevenue ? ($spent[$identifier] ?? 0.0) : null;
@@ -81,6 +84,16 @@ class ListCustomers
             $customer->last_booking = $customer->last_booking_date ? Carbon::parse((string) $customer->last_booking_date)->format('d M Y') : '-';
             $customer->upcoming_booking = $upcoming[$identifier] ?? null;
             $customer->panel_url = route('owner.customers.panel', ['identifier' => $identifier]);
+            $customer->whatsapp_url = GetCustomerPanel::whatsAppUrl((string) $customer->phone);
+            $customer->segment = match (true) {
+                $customer->last_booking_date && $customer->last_booking_date < $dormantBefore => 'Lama tidak datang',
+                $customer->first_seen >= $monthStart => 'Baru',
+                default => null,
+            };
+            $firstName = explode(' ', trim((string) $customer->name), 2)[0];
+            $customer->greeting = $customer->whatsapp_url === null ? null
+                : 'Halo Kak '.$firstName.', sudah lama tidak mampir ke '.$tenant->namabisnis.'. Mau kami bantu pilih jadwal?'
+                    .($storefront ? ' Booking di '.$storefront : '');
 
             return $customer;
         });
@@ -90,6 +103,8 @@ class ListCustomers
             ->selectRaw('COUNT(*) AS total')
             ->selectRaw('SUM(CASE WHEN first_seen >= ? THEN 1 ELSE 0 END) AS new_customers', [$monthStart])
             ->selectRaw('SUM(CASE WHEN total_bookings >= 2 THEN 1 ELSE 0 END) AS returning_customers')
+            ->selectRaw('SUM(CASE WHEN total_bookings >= ? THEN 1 ELSE 0 END) AS regular_customers', [self::REGULAR_MIN_BOOKINGS])
+            ->selectRaw('SUM(CASE WHEN last_booking_date < ? THEN 1 ELSE 0 END) AS dormant_customers', [$dormantBefore])
             ->first();
 
         return [
@@ -98,6 +113,12 @@ class ListCustomers
                 'total' => (int) ($summary->total ?? 0),
                 'new' => (int) ($summary->new_customers ?? 0),
                 'returning' => (int) ($summary->returning_customers ?? 0),
+            ],
+            'counts' => [
+                '' => (int) ($summary->total ?? 0),
+                'new' => (int) ($summary->new_customers ?? 0),
+                'regular' => (int) ($summary->regular_customers ?? 0),
+                'dormant' => (int) ($summary->dormant_customers ?? 0),
             ],
             'search' => $search,
             'filter' => $filter,

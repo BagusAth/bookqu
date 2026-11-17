@@ -181,7 +181,7 @@ class OwnerDashboardPollingTest extends TestCase
             ->assertSee('Menunggu pembayaran')
             ->assertSee('Pendapatan hari ini')
             ->assertSee('Slot terisi hari ini')
-            ->assertSee('Perlu tindakan')
+            ->assertSee('Perlu Anda')
             ->assertSee('Jadwal hari ini')
             ->assertSee('Link booking Anda')
             ->assertSee('Aksi cepat');

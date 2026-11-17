@@ -11,41 +11,23 @@
 --}}
 
 @php
-    $bannerTone = [
-        'danger' => ['border-bq-danger/30 bg-bq-danger-bg text-bq-danger', 'alert'],
-        'warning' => ['border-bq-warning/30 bg-bq-warning-bg text-bq-warning', 'alert'],
-        'info' => ['border-bq-info/30 bg-bq-info-bg text-bq-info', 'info'],
-    ];
-    $badgeTone = "{ 'bg-bq-info-bg text-bq-info': badge.tone === 'info', 'bg-bq-success-bg text-bq-success': badge.tone === 'success', 'bg-bq-warning-bg text-bq-warning': badge.tone === 'warning', 'bg-bq-danger-bg text-bq-danger': badge.tone === 'danger', 'bg-bq-surface-2 text-bq-text-muted': !['info','success','warning','danger'].includes(badge.tone) }";
     $card = 'bq-panel';
     $secondaryButton = 'bq-btn bq-btn-secondary bq-btn-sm';
-    $greetingName = \Illuminate\Support\Str::of((string) (auth()->user()?->namalengkap ?? ''))->before(' ')->value();
-    [$bannerClass, $bannerIcon] = $banner ? ($bannerTone[$banner['tone']] ?? $bannerTone['info']) : ['', ''];
 @endphp
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6">
-    <div class="flex flex-wrap items-end justify-between gap-2">
-        <x-owner.page-header :title="$greetingName !== '' ? 'Halo, '.$greetingName : 'Beranda'" purpose="Yang perlu Anda ketahui dan lakukan hari ini." />
-        <p class="text-sm font-medium text-bq-text-muted">{{ now('Asia/Jakarta')->translatedFormat('l, j F Y') }}</p>
-    </div>
+    <x-owner.page-header title="Beranda" :purpose="now('Asia/Jakarta')->translatedFormat('l, j F Y').' · pukul '.now('Asia/Jakarta')->format('H.i')" />
 
-    {{-- 1. One status banner (AC-BRD-01) --}}
     @if ($banner)
-        <div role="status" data-beranda-banner="{{ $banner['kind'] }}" class="flex flex-col gap-3 rounded-xl border px-4 py-3 sm:flex-row sm:items-center sm:justify-between {{ $bannerClass }}">
-            <div class="flex items-start gap-3 text-sm">
-                <x-owner.icon :name="$bannerIcon" class="mt-0.5 h-5 w-5" />
-                <div>
-                    <p class="font-semibold">{{ $banner['message'] }}</p>
-                    @if ($banner['note'])
-                        <p class="mt-0.5">{{ $banner['note'] }}</p>
-                    @endif
-                </div>
-            </div>
+        <x-ui.banner :title="$banner['message']" :description="$banner['note']" :tone="$banner['tone']"
+            :data-beranda-banner="$banner['kind']">
             @if ($banner['action'])
-                <a href="{{ $banner['action']['url'] }}" class="bq-btn bq-btn-secondary bq-btn-sm shrink-0">{{ $banner['action']['label'] }}</a>
+                <x-slot:action>
+                    <x-ui.button :href="$banner['action']['url']" size="sm">{{ $banner['action']['label'] }}</x-ui.button>
+                </x-slot:action>
             @endif
-        </div>
+        </x-ui.banner>
     @endif
 
     @if ($guide)
@@ -94,24 +76,52 @@
     @else
         {{-- Sections 2–4, refreshed while visible (AC-BRD-06) --}}
         <div x-data="ownerBeranda(@js($live), @js(route('owner.dashboard.polling')))" class="space-y-6">
-            {{-- 2. Today in four figures; the first one is the hero --}}
-            <section aria-label="Hari ini" class="{{ $card }} grid grid-cols-2 divide-bq-border max-lg:gap-px max-lg:overflow-hidden max-lg:bg-bq-border lg:grid-cols-4 lg:divide-x">
-                <template x-for="(figure, index) in live.figures" x-bind:key="figure.key">
-                    <div class="min-w-0 bg-bq-surface p-4 sm:p-5" x-bind:class="index === 0 ? 'max-lg:col-span-2' : ''">
-                        <p class="text-sm text-bq-text-muted" x-text="figure.label"></p>
-                        <p class="bq-num mt-1 break-words font-bold text-bq-ink" x-bind:class="index === 0 ? 'text-4xl' : 'text-2xl'" x-text="figure.value"></p>
-                        <p class="mt-1 text-xs text-bq-text-muted" x-text="figure.hint"></p>
+            <div class="grid gap-5 lg:grid-cols-3">
+                {{-- 3. Perlu tindakan (AC-BRD-04) --}}
+                <section aria-labelledby="actions-title" class="{{ $card }} min-w-0 lg:col-start-3">
+                    <div class="flex items-center justify-between gap-3 border-b border-bq-border px-4 py-3 sm:px-5">
+                        <h2 id="actions-title" class="text-base font-semibold text-bq-ink">Perlu Anda</h2>
+                        <span x-show="live.actions.length > 0" class="sr-only" x-text="live.actions.reduce((sum, item) => sum + Number(item.count || 0), 0)"></span>
                     </div>
-                </template>
-            </section>
-
-            <div class="grid gap-6 lg:grid-cols-3">
+                    <div x-show="live.actions.length === 0" class="flex items-center gap-3 px-4 py-6 sm:px-5">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bq-success-bg text-bq-success"><x-owner.icon name="check" class="h-5 w-5" /></span>
+                        <p class="text-sm text-bq-text-muted">Tidak ada yang perlu ditindak. Semua beres.</p>
+                    </div>
+                    <ul x-show="live.actions.length > 0" class="divide-y divide-bq-border">
+                        <template x-for="item in live.actions" x-bind:key="item.key">
+                            <li>
+                                <a x-bind:href="item.url" class="flex items-center justify-between gap-3 px-4 py-3 text-sm text-bq-ink transition-colors hover:bg-bq-primary-light/60 sm:px-5">
+                                    <span class="bq-count" x-text="item.count"></span>
+                                    <span class="min-w-0 flex-1" x-text="item.label"></span>
+                                    <x-owner.icon name="chevron-right" class="h-4 w-4" />
+                                </a>
+                            </li>
+                        </template>
+                    </ul>
+                </section>
+                <section aria-label="Hari ini" class="{{ $card }} grid content-center gap-4 p-5 lg:col-span-2 lg:col-start-1 lg:row-start-1">
+                    <div>
+                        <p class="bq-num font-bq-display text-bq-figure font-semibold" x-text="live.figures[0]?.value"></p>
+                        <p class="font-semibold" x-text="live.figures[0]?.label"></p>
+                        <p class="text-bq-small text-bq-text-muted" x-text="live.tomorrow.count
+                            ? 'Besok ' + live.tomorrow.count + ' booking, pertama ' + live.tomorrow.first_time
+                            : 'Besok belum ada booking'"></p>
+                    </div>
+                    <dl class="flex flex-wrap gap-x-6 gap-y-3">
+                        <template x-for="figure in live.figures.slice(1)" :key="figure.key">
+                            <div>
+                                <dt class="text-bq-small text-bq-text-muted" x-text="figure.label"></dt>
+                                <dd class="bq-num font-bq-display text-bq-figure-small font-semibold" x-text="figure.value"></dd>
+                            </div>
+                        </template>
+                    </dl>
+                </section>
                 {{-- 4. Today's schedule on the day rail, and tomorrow --}}
                 <section aria-labelledby="today-title" class="{{ $card }} lg:col-span-2"
                     x-data="ownerDayRail">
                     <div class="flex items-center justify-between gap-3 border-b border-bq-border px-4 py-3 sm:px-5">
-                        <h2 id="today-title" class="text-base font-semibold text-bq-ink">Jadwal hari ini</h2>
-                        <span class="bq-num rounded-full bg-bq-accent-bg px-2.5 py-0.5 text-xs font-bold text-bq-ink" x-show="now" x-text="'Sekarang ' + now.replace(':', '.')"></span>
+                        <h2 id="today-title" class="text-bq-section text-bq-ink">Jadwal hari ini</h2>
+                        <x-ui.button :href="route('owner.calendar')" size="sm" variant="ghost">Buka kalender</x-ui.button>
                     </div>
 
                     <div x-show="railRows.length === 0" class="px-4 py-10 text-center">
@@ -138,7 +148,7 @@
                                 </div>
                                 <template x-if="!row.empty">
                                 <div class="grid grid-cols-[4rem_minmax(0,1fr)] gap-3 py-2">
-                                    <p class="bq-num pt-3 text-sm font-semibold text-bq-ink" x-text="start(row).replace(':', '.')"></p>
+                                    <p class="bq-num pt-3 font-bq-display text-bq-clock font-semibold text-bq-ink" x-text="start(row).replace(':', '.')"></p>
                                     <div class="relative border-l-2 pl-4" x-bind:class="row.in_progress ? 'border-bq-primary' : 'border-bq-border'">
                                         <span class="absolute top-4 -left-[5px] h-2 w-2 rounded-full" x-bind:class="row.in_progress ? 'bg-bq-primary' : 'bg-bq-border-strong'" aria-hidden="true"></span>
                                         <div class="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-start" x-bind:class="row.in_progress ? 'border-bq-primary-border bg-bq-primary-light' : 'border-bq-border bg-bq-surface'">
@@ -146,11 +156,10 @@
                                                 <p class="break-words text-sm font-semibold text-bq-ink" x-text="row.customer"></p>
                                                 <p class="truncate text-sm text-bq-text-muted" x-bind:title="row.time + ' · ' + row.service"><span class="bq-num" x-text="row.time"></span> · <span x-text="row.service"></span></p>
                                                 <p x-show="row.in_progress" class="mt-0.5 text-xs font-semibold text-bq-primary">Sedang berlangsung</p>
-                                                <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                                                    <template x-for="badge in [row.status, row.payment]">
-                                                        <span class="bq-badge" x-bind:class="{{ $badgeTone }}" x-text="badge.label"></span>
-                                                    </template>
-                                                </div>
+                                                <span x-show="!row.in_progress" class="mt-1 inline-flex items-center gap-2 text-bq-small text-bq-text-muted">
+                                                    <span aria-hidden="true" class="size-2 rounded-full" :class="row.status.tone === 'success' ? 'bg-bq-success' : (row.status.tone === 'warning' ? 'bg-bq-warning-dot' : 'bg-bq-primary')"></span>
+                                                    <span x-text="row.status.label"></span>
+                                                </span>
                                             </div>
                                             <div class="flex shrink-0 flex-wrap items-center gap-2">
                                                 <a x-bind:href="row.href" x-on:click="if (row.panel_url) { $event.preventDefault(); $dispatch('open-booking-panel', { url: row.panel_url, trigger: $el }); }" class="bq-btn bq-btn-ghost bq-btn-sm">Buka</a>
@@ -185,26 +194,21 @@
                     </p>
                 </section>
 
-                {{-- 3. Perlu tindakan (AC-BRD-04) --}}
-                <section aria-labelledby="actions-title" class="{{ $card }} self-start">
-                    <div class="flex items-center justify-between gap-3 border-b border-bq-border px-4 py-3 sm:px-5">
-                        <h2 id="actions-title" class="text-base font-semibold text-bq-ink">Perlu tindakan</h2>
-                        <span x-show="live.actions.length > 0" class="bq-count" x-text="live.actions.reduce((sum, item) => sum + Number(item.count || 0), 0)"></span>
+                <section aria-labelledby="tomorrow-title" class="{{ $card }} min-w-0 self-start">
+                    <div class="border-b border-bq-border px-4 py-3">
+                        <h2 id="tomorrow-title" class="text-bq-section">Besok</h2>
+                        <p class="text-bq-small text-bq-text-muted" x-text="live.tomorrow.date"></p>
                     </div>
-                    <div x-show="live.actions.length === 0" class="flex items-center gap-3 px-4 py-6 sm:px-5">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bq-success-bg text-bq-success"><x-owner.icon name="check" class="h-5 w-5" /></span>
-                        <p class="text-sm text-bq-text-muted">Tidak ada yang perlu ditindak. Semua beres.</p>
-                    </div>
-                    <ul x-show="live.actions.length > 0" class="divide-y divide-bq-border">
-                        <template x-for="item in live.actions" x-bind:key="item.key">
+                    <p x-show="live.tomorrow.count === 0" class="p-4 text-bq-small text-bq-text-muted">Belum ada booking.</p>
+                    <ul class="divide-y divide-bq-border">
+                        <template x-for="item in live.tomorrow.bookings" :key="item.url">
                             <li>
-                                <a x-bind:href="item.url" class="flex items-center justify-between gap-3 px-4 py-3 text-sm text-bq-ink transition-colors hover:bg-bq-primary-light/60 sm:px-5">
-                                    <span x-text="item.label"></span>
-                                    <span class="flex items-center gap-1.5 font-bold text-bq-primary">
-                                        <span class="bq-num" x-text="item.count"></span>
-                                        <x-owner.icon name="chevron-right" class="h-4 w-4" />
-                                    </span>
-                                </a>
+                                <button type="button" class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-bq-background"
+                                    x-on:click="$dispatch('open-booking-panel', { url: item.url, trigger: $el })">
+                                    <span class="bq-num font-bq-display text-bq-clock font-semibold" x-text="item.time"></span>
+                                    <span class="min-w-0 flex-1 truncate" x-text="item.customer" :title="item.customer"></span>
+                                    <span class="shrink-0 text-bq-small text-bq-text-muted" x-text="item.status"></span>
+                                </button>
                             </li>
                         </template>
                     </ul>
@@ -226,7 +230,7 @@
                 </div>
                 <p class="mt-4 break-all rounded-lg border border-dashed border-bq-border-strong bg-bq-background px-3 py-2.5 text-sm font-medium text-bq-ink">{{ $link['url'] }}</p>
                 <div class="mt-3 flex flex-wrap gap-2">
-                    <button type="button" x-on:click="copy()" class="bq-btn bq-btn-primary bq-btn-sm" x-text="copied ? 'Tersalin' : 'Salin link'">Salin link</button>
+                    <button type="button" x-on:click="copy()" class="bq-btn bq-btn-secondary bq-btn-sm" x-text="copied ? 'Tersalin' : 'Salin link'">Salin link</button>
                     <button type="button" x-show="canShare" x-cloak x-on:click="share()" class="{{ $secondaryButton }}">Bagikan</button>
                     <a href="https://wa.me/?text={{ rawurlencode($link['share_text']) }}" target="_blank" rel="noopener" x-on:click="mark()" class="{{ $secondaryButton }}">Kirim lewat WhatsApp</a>
                 </div>

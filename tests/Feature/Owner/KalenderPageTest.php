@@ -6,10 +6,12 @@ namespace Tests\Feature\Owner;
 
 use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Booking;
+use App\Models\Plan;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\TenantMember;
+use App\Models\Unit;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,6 +40,31 @@ final class KalenderPageTest extends TestCase
             ->assertSee('href="'.route('owner.bookings', ['panel' => $booking->id]).'"', false);
     }
 
+    public function test_pro_calendar_shows_a_slot_under_each_active_unit_while_small_uses_services(): void
+    {
+        config(['modules.units' => 'released']);
+        $tenant = Tenant::factory()->create();
+        $subscription = app(CreateTrialSubscription::class)->execute($tenant);
+        $active = Unit::factory()->create(['idtenant' => $tenant->id, 'name' => 'Ruang A', 'is_active' => true]);
+        $inactive = Unit::factory()->create(['idtenant' => $tenant->id, 'name' => 'Ruang B', 'is_active' => false]);
+        $service = Service::factory()->create(['idtenant' => $tenant->id, 'namalayanan' => 'Sesi Studio']);
+        $service->units()->attach([$active->id, $inactive->id]);
+        $slot = Schedule::factory()->create(['idtenant' => $tenant->id, 'idlayanan' => $service->id]);
+        $url = route('owner.calendar', ['date' => $slot->tanggal->toDateString(), 'kolom' => 'unit']);
+
+        $day = $this->actingAs($tenant->user)->get($url)->assertOk()->assertViewHas('unitMode', true)->viewData('dayGrid');
+
+        $this->assertSame(['Ruang A'], array_column($day['columns'], 'name'));
+        $this->assertSame($slot->id, $day['columns'][0]['slots'][0]['id']);
+
+        $small = Plan::create(['namapaket' => 'small', 'hargabulanan' => 149000, 'maxlayanan' => 5, 'maxbooking' => 300]);
+        $subscription->update(['idplan' => $small->id, 'status' => 'active', 'langganan_berakhir' => now()->addMonth()]);
+
+        $day = $this->get($url)->assertOk()->assertViewHas('unitMode', false)->viewData('dayGrid');
+
+        $this->assertSame(['Sesi Studio'], array_column($day['columns'], 'name'));
+    }
+
     public function test_views_show_the_same_bookings_and_only_count_occupying_seats(): void
     {
         $this->travelTo(CarbonImmutable::parse('2028-01-31 08:00:00', 'Asia/Jakarta'));
@@ -61,7 +88,14 @@ final class KalenderPageTest extends TestCase
         $this->actingAs($owner);
         foreach (['day', 'week', 'month'] as $view) {
             $page = $this->get(route('owner.calendar', ['view' => $view, 'date' => '2028-01-31']))->assertOk();
-            $page->assertSee($booking->namapelanggan)->assertSee('3/5 peserta');
+            if ($view === 'day') {
+                $page->assertSee($booking->namapelanggan)->assertSee('3/5 peserta');
+            } elseif ($view === 'week') {
+                $page->assertSee($booking->namapelanggan);
+            } else {
+                $page->assertSee(route('owner.calendar', ['view' => 'day', 'date' => '2028-01-31']));
+                $this->assertSame(1, $page->viewData('days')['2028-01-31']['occupied']);
+            }
             $card = $page->viewData('days')['2028-01-31']['slots'][0];
             $this->assertContains(route('owner.bookings.panel', $booking->id), array_column($card['bookings'], 'url'));
             $this->assertFalse($card['edit']);

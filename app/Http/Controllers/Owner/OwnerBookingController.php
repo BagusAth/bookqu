@@ -53,11 +53,13 @@ class OwnerBookingController extends Controller
         $can = fn (string $ability): bool => $member instanceof TenantMember && TenantPermission::allowsRole($member->role, $ability);
         $canViewRevenue = $can('revenue.view');
         $canReview = $can('bookings.cancel');
+        $canComplete = $can('bookings.complete');
         $canWalkIn = $can('bookings.walkin') && EntitlementRules::hasEffectivePlan($tenant?->subscription);
         $base = $list->query($tenant, $filters);
         $tabs = $this->taskTabs();
-        foreach ($tabs as $key => $label) {
-            $tabs[$key] = $label.' ('.$list->tab(clone $base, $key, $canReview)->count().')';
+        $tabCounts = [];
+        foreach (array_keys($tabs) as $key) {
+            $tabCounts[$key] = $list->tab(clone $base, $key, $canReview)->count();
         }
         $selection = $list->tab(clone $base, $tab, $canReview);
         if ($tab === 'action') {
@@ -69,9 +71,9 @@ class OwnerBookingController extends Controller
         }
         $daftarbooking = $selection
             ->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')->orderBy('jam', $filters['sort'] ?? 'desc')
-            ->orderBy('bookings.id')->paginate(15)->withQueryString();
+            ->orderBy('bookings.id')->paginate(25)->withQueryString();
         $timeRanges = $ranges->execute($daftarbooking->items())['sessionRanges'];
-        $rows = $daftarbooking->getCollection()->mapWithKeys(function (Booking $booking) use ($list, $timeRanges, $showUnits, $tab): array {
+        $rows = $daftarbooking->getCollection()->mapWithKeys(function (Booking $booking) use ($list, $timeRanges, $showUnits, $tab, $canComplete): array {
             $payment = $booking->payment;
             $hold = $payment instanceof Payment ? BookingRules::onlinePaymentHoldEnd($booking, $payment) : null;
             $amount = $list->paidAmount($booking);
@@ -82,6 +84,12 @@ class OwnerBookingController extends Controller
                 'participants' => $booking->peserta,
                 'units' => $showUnits && $service instanceof Service ? $service->units->pluck('name')->implode(', ') : null,
                 'reasons' => $tab === 'action' ? $list->reasons($booking) : [],
+                'task' => $tab !== 'action' ? null : match (true) {
+                    (bool) $booking->getAttribute('needs_refund') => 'refund',
+                    (bool) $booking->getAttribute('needs_cancellation') => 'cancellation',
+                    (bool) $booking->getAttribute('needs_outcome') && $canComplete => 'complete',
+                    default => null,
+                },
                 'amount' => $amount === null ? '—' : 'Rp '.number_format($amount, 0, ',', '.'),
                 'payment_status' => $payment instanceof Payment ? $payment->status : 'Belum tercatat',
                 'waiting' => $hold ? 'Menunggu pembayaran online, berakhir '.$hold->setTimezone('Asia/Jakarta')->format('H:i').' WIB' : null,
@@ -112,7 +120,7 @@ class OwnerBookingController extends Controller
             : null;
 
         return view('owner.bookings', compact(
-            'tenant', 'daftarbooking', 'filters', 'tab', 'tabs', 'rows', 'services', 'canWalkIn',
+            'tenant', 'daftarbooking', 'filters', 'tab', 'tabs', 'tabCounts', 'rows', 'services', 'canWalkIn',
             'cancellationRequests', 'exportUrl', 'storefrontUrl', 'emptyTitle', 'canViewRevenue', 'initialPanelUrl',
         ));
     }

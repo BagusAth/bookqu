@@ -8,7 +8,7 @@
         <p class="rounded-lg bg-bq-warning-bg p-3 text-sm text-bq-warning">{{ $day['closed'] }}</p>
     @endif
 
-    <x-ui.day-rail class="space-y-3 lg:hidden" label="Slot menurut jam">
+    <x-ui.day-rail class="space-y-3 md:hidden" label="Slot menurut jam">
         @php $nowShown = false; @endphp
         @foreach ($byTime as $time => $slots)
             @if ($showNow && ! $nowShown && $time >= $todayTime)
@@ -30,12 +30,12 @@
     </x-ui.day-rail>
 
     @if ($dayGrid['columns'] !== [])
-        <div class="hidden space-y-3 lg:block">
+        <div class="hidden space-y-3 md:block">
             <x-ui.button size="sm" icon="filter" x-data x-on:click="$dispatch('open-dialog', { id: 'calendar-service-columns', trigger: $el })">
-                Layanan {{ count($dayGrid['columns']) }} dari {{ count($dayGrid['options']) }}
+                {{ $unitMode ? 'Unit' : 'Layanan' }} {{ count($dayGrid['columns']) }} dari {{ count($dayGrid['options']) }}
             </x-ui.button>
             <x-ui.day-grid :columns="$dayGrid['columns']" :hours="$dayGrid['hours']" :minutes="$dayGrid['minutes']" :now-offset="$dayGrid['nowOffset']" />
-            <x-ui.sheet id="calendar-service-columns" title="Kolom layanan">
+            <x-ui.sheet id="calendar-service-columns" :title="$unitMode ? 'Kolom unit' : 'Kolom layanan'">
                 <form method="GET" action="{{ route('owner.calendar') }}" class="space-y-3"
                     x-data="{ chosen: @js(array_map('strval', $dayGrid['selected'])) }">
                     <input type="hidden" name="view" value="day">
@@ -57,6 +57,8 @@
                 </form>
             </x-ui.sheet>
         </div>
+    @elseif ($unitMode)
+        <x-ui.empty title="Belum ada slot untuk unit" class="hidden md:grid" />
     @endif
 
     @foreach ($day['bookings'] as $booking)

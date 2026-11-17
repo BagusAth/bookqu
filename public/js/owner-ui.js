@@ -454,7 +454,7 @@
             choose(result, kind) {
                 this.close();
                 if (result.panel_url) {
-                    this.$dispatch(kind === 'booking' ? 'open-booking-panel' : 'open-customer-panel', { url: result.panel_url });
+                    this.$dispatch(kind === 'booking' ? 'open-booking-panel' : 'open-customer-panel', { url: result.panel_url, trigger: this.$root.querySelector('[role=combobox]') });
                 } else if (result.href) {
                     window.location.assign(result.href);
                 }

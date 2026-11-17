@@ -83,7 +83,7 @@ class PelangganPageTest extends TestCase
         return $kasir;
     }
 
-    public function test_page_shows_summary_quick_filters_and_the_customer_list(): void
+    public function test_page_shows_segment_counts_and_keeps_contact_details_in_the_panel(): void
     {
         $this->booking(['created_at' => now()->subMonths(3), 'tanggalbooking' => '2026-08-01']);
         $this->booking(['tanggalbooking' => '2026-11-12']);
@@ -91,14 +91,12 @@ class PelangganPageTest extends TestCase
 
         $this->actingAs($this->owner)->get(route('owner.customers'))
             ->assertOk()
-            ->assertSee('Total pelanggan')
-            ->assertSee('Baru bulan ini')
-            ->assertSee('Kembali lagi')
+            ->assertViewHas('counts', ['' => 2, 'new' => 1, 'regular' => 0, 'dormant' => 0])
             ->assertSee(route('owner.customers', ['filter' => 'new']))
             ->assertSee(route('owner.customers', ['filter' => 'regular']))
             ->assertSee(route('owner.customers', ['filter' => 'dormant']))
             ->assertSee('Rani Putri')
-            ->assertSee('rani@example.com')
+            ->assertDontSee('rani@example.com')
             ->assertSee('Dewi')
             ->assertViewHas('summary', ['total' => 2, 'new' => 1, 'returning' => 1]);
     }
@@ -142,8 +140,10 @@ class PelangganPageTest extends TestCase
             ->assertSee('Pelanggan Baru')->assertDontSee('Pelanggan Tetap')->assertDontSee('Lama Hilang');
         $this->get(route('owner.customers', ['filter' => 'regular']))
             ->assertSee('Pelanggan Tetap')->assertDontSee('Pelanggan Baru')->assertDontSee('Lama Hilang');
-        $this->get(route('owner.customers', ['filter' => 'dormant']))
-            ->assertSee('Lama Hilang')->assertDontSee('Pelanggan Baru')->assertDontSee('Pelanggan Tetap');
+        $dormant = $this->get(route('owner.customers', ['filter' => 'dormant']))->assertOk()
+            ->assertSee('Lama Hilang')->assertDontSee('Pelanggan Baru')->assertDontSee('Pelanggan Tetap')
+            ->assertSee('Buka WhatsApp')->assertSee('Halo Kak Lama');
+        $this->assertSame('https://wa.me/6281234567890', $dormant->viewData('customers')->items()[0]->whatsapp_url);
     }
 
     public function test_ac_plg_02_totals_use_the_paid_amounts(): void

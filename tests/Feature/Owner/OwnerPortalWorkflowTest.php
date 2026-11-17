@@ -69,8 +69,10 @@ class OwnerPortalWorkflowTest extends TestCase
         BookingLog::record($booking->id, 'paid', 'Pembayaran tercatat.');
 
         $this->actingAs($tenant->user)->get(route('owner.bookings', ['tab' => 'action', 'katakunci' => 'panel@example.test']))
-            ->assertOk()->assertSeeText('Perlu tindakan (1)')->assertSeeText('Rp 75.001')->assertDontSeeText('999.000')
-            ->assertSeeText('Permintaan refund menunggu keputusan');
+            ->assertOk()->assertViewHas('tabCounts', fn (array $counts): bool => $counts['action'] === 1)
+            ->assertSeeText('Permintaan refund menunggu keputusan')->assertSeeText('Putuskan refund');
+        $this->get(route('owner.bookings', ['tab' => 'all', 'katakunci' => 'panel@example.test']))
+            ->assertOk()->assertSeeText('Rp 75.001')->assertDontSeeText('999.000');
         $panel = route('owner.bookings.panel', $booking->id);
         $response = $this->getJson($panel)->assertOk()
             ->assertJsonPath('payment.amount', 'Rp 75.001')

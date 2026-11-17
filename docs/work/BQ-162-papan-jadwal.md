@@ -174,7 +174,10 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 - Session 2 (17 Nov 2026):
   - Ran the updated prototype on port 8770 at `#/beranda`, `#/booking/mendatang`, `#/kalender/hari` and `#/pembayaran/saldo` in state Galat. Edge passed 36 page/viewport checks at 375, 768, 1024 and 1366 px as Pemilik and Kasir using the local SQLite seed. Checked the booking slip from the calendar, the walk-in conflict keeping contact input and offering an alternative, and a lost payout response followed by a retry with the same request key and an inline amount error.
   - Pint, Vite build, PHPStan, the 95 related tests and the two day-component render checks passed. The walk-in regression asserts 409, the two nearest available times and no new booking/payment. The payout regression sends the same JSON request twice and asserts one payout and one balance hold. The full suite passed with PHP 8.4.25 (GD enabled), 988 tests and 6,537 assertions.
-- Session 3:
+- Session 3 (17 Nov 2026):
+  - Compared the prototype in data state Ramai at `#/beranda`, Kalender day/week/month and per unit, Booking Perlu tindakan/Mendatang, and Pelanggan Semua/Lama tidak datang. Edge passed 72 page/viewport checks at 375, 768, 1024 and 1366 px as Pemilik and Kasir on the local SQLite seed, with no horizontal page overflow or console errors. Enter opened the booking slip from global search. Sapa prepared the editable WhatsApp link.
+  - Per-unit columns use the active units linked to the service (ADR-0017). Pelanggan uses the existing 60-day booking rule. The greeting uses the business link without promising specific available times.
+  - Pint, Vite build, PHPStan and the related suite passed (79 tests, 558 assertions), including Pro/Small calendar modes and the dormant-customer WhatsApp link. Full suite on PHP 8.4.25 with GD passed (989 tests, 6,547 assertions).
 - Session 4:
 - Session 5:
 - Session 6:

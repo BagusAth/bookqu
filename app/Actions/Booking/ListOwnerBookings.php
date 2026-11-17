@@ -119,9 +119,9 @@ final class ListOwnerBookings
     public function reasons(Booking $booking): array
     {
         return array_values(array_filter([
-            $booking->getAttribute('needs_outcome') ? 'Sesi berakhir, hasil belum ditandai' : null,
             $booking->getAttribute('needs_refund') ? 'Permintaan refund menunggu keputusan' : null,
             $booking->getAttribute('needs_cancellation') ? 'Permintaan pembatalan dari Kasir' : null,
+            $booking->getAttribute('needs_outcome') ? 'Sesi berakhir, hasil belum ditandai' : null,
         ]));
     }
 

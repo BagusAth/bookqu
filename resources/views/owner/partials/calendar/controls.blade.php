@@ -1,6 +1,10 @@
-<form method="GET" action="{{ route('owner.calendar') }}" class="bq-panel flex flex-wrap items-end gap-3 p-3 sm:p-4">
+<form method="GET" action="{{ route('owner.calendar') }}" >
     <input type="hidden" name="view" value="{{ $view }}">
     <input type="hidden" name="date" value="{{ $date->toDateString() }}">
+    @if ($unitMode)
+        <input type="hidden" name="kolom" value="unit">
+    @endif
+    <x-ui.filter-bar :active="count(array_diff_key($filters, ['kolom' => true]))">
     <label class="grid min-w-0 flex-1 gap-1.5 sm:max-w-64 sm:flex-none"><span class="bq-label">Layanan</span>
         <select name="service_id" @change="$el.form.requestSubmit()" class="bq-input w-full">
             <option value="">Semua layanan</option>
@@ -27,5 +31,7 @@
             @endforeach
         </select>
     </label>
-    <noscript><button class="bq-btn bq-btn-secondary">Terapkan</button></noscript>
+    <x-ui.button type="submit">Terapkan</x-ui.button>
+    <x-slot:actions><a class="bq-link" href="{{ route('owner.calendar', ['view' => $view, 'date' => $date->toDateString()] + ($unitMode ? ['kolom' => 'unit'] : [])) }}">Hapus filter</a></x-slot:actions>
+    </x-ui.filter-bar>
 </form>

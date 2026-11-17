@@ -16,11 +16,11 @@ final class ArrangeDayGrid
      */
     public function execute(array $options, array $slots, array $chosen, ?string $now): array
     {
-        $slotsByService = collect($slots)->groupBy('service_id');
+        $slotsByColumn = collect($slots)->groupBy(fn (array $slot): int => (int) ($slot['column_id'] ?? $slot['service_id']));
         $offered = collect($options)->keyBy('id');
-        $defaults = $offered->filter(fn (array $option): bool => $slotsByService->has($option['id']))->keys()->all();
+        $defaults = $offered->filter(fn (array $option): bool => $slotsByColumn->has($option['id']))->keys()->all();
         $selected = array_slice(array_values(array_intersect($chosen ?: $defaults, $offered->keys()->all())), 0, self::MAX_COLUMNS);
-        $visible = collect($slots)->whereIn('service_id', $selected);
+        $visible = $slotsByColumn->only($selected)->flatten(1);
         $start = $visible->isEmpty() ? 8 * 60 : intdiv((int) $visible->min('startMinute'), 60) * 60;
         $end = $visible->isEmpty() ? 22 * 60 : (int) ceil($visible->max('endMinute') / 60) * 60;
         $hours = array_map(fn (int $minute): array => [
@@ -32,7 +32,7 @@ final class ArrangeDayGrid
         foreach ($selected as $id) {
             $track = [];
             $ends = [];
-            foreach ($slotsByService->get($id, collect())->sortBy('startMinute') as $slot) {
+            foreach ($slotsByColumn->get($id, collect())->sortBy('startMinute') as $slot) {
                 $lane = 0;
                 while (isset($ends[$lane]) && $ends[$lane] > $slot['startMinute']) {
                     $lane++;

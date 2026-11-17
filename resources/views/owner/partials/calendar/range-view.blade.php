@@ -1,26 +1,57 @@
-<div class="grid items-start gap-2 {{ $view === 'month' ? 'grid-cols-1 sm:grid-cols-7' : 'grid-cols-1 lg:grid-cols-7' }}">
-    @if ($view === 'month')
-        @foreach (['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] as $weekday)
-            <span class="hidden px-2 text-xs font-semibold text-bq-text-muted sm:block">{{ $weekday }}</span>
+@if ($view === 'month')
+    <section class="bq-panel p-3 sm:p-4" aria-label="Kalender bulan ini">
+        <p class="mb-3 text-bq-small text-bq-text-muted">Batang menunjukkan slot terisi per tanggal. Klik tanggal untuk melihat harinya.</p>
+        <div class="grid grid-cols-7 gap-1 text-center md:gap-2">
+            @foreach (['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] as $weekday)
+                <span class="text-bq-small font-medium text-bq-text-muted">{{ $weekday }}</span>
+            @endforeach
+            @for ($offset = 0; $offset < $monthOffset; $offset++)
+                <span aria-hidden="true"></span>
+            @endfor
+            @foreach ($days as $dayKey => $day)
+                <a href="{{ route('owner.calendar', ['view' => 'day', 'date' => $dayKey] + $filters) }}"
+                    title="{{ $day['label'] }} · {{ $day['occupied'] }}/{{ count($day['slots']) }} slot terisi{{ $day['closed'] ? ' · '.$day['closed'] : '' }}"
+                    @if ($dayKey === $today) aria-current="date" @endif
+                    @class(['grid min-w-0 content-between gap-1 rounded-bq-control border p-1.5 text-bq-body hover:bg-bq-primary-light md:p-2', 'border-bq-primary bg-bq-primary-light font-semibold' => $dayKey === $today, 'border-bq-border' => $dayKey !== $today])>
+                    <span>{{ $day['number'] }}</span>
+                    <span class="sr-only">{{ $day['label'] }}, {{ $day['occupied'] }} dari {{ count($day['slots']) }} slot terisi</span>
+                    <span aria-hidden="true" class="h-1.5 overflow-hidden rounded-full bg-bq-surface-2">
+                        <span class="block h-full rounded-full bg-bq-primary" style="width: {{ $day['occupancy'] }}%"></span>
+                    </span>
+                    @if ($day['closed'])<span class="truncate text-bq-small text-bq-warning" title="{{ $day['closed'] }}">Tutup</span>@endif
+                </a>
+            @endforeach
+        </div>
+    </section>
+@else
+    <div class="grid items-start gap-2 lg:grid-cols-7">
+        @foreach ($days as $dayKey => $day)
+            <section class="bq-panel min-w-0">
+                <h2 class="border-b border-bq-border px-3 py-2 text-bq-label">
+                    <a class="bq-link" href="{{ route('owner.calendar', ['view' => 'day', 'date' => $dayKey] + $filters) }}">{{ $day['label'] }}</a>
+                </h2>
+                @if ($day['closed'])
+                    <p class="px-3 py-2 text-bq-small text-bq-warning">{{ $day['closed'] }}</p>
+                @endif
+                @if ($day['weekBookings'] === [])
+                    <p class="px-3 py-2 text-bq-small text-bq-text-muted">Belum ada booking.</p>
+                @else
+                    <ul class="divide-y divide-bq-border">
+                        @foreach ($day['weekBookings'] as $booking)
+                            <li>
+                                <button type="button" class="grid w-full min-w-0 gap-0.5 px-3 py-2 text-left hover:bg-bq-primary-light"
+                                    data-booking-panel-url="{{ $booking['url'] }}"
+                                    x-on:click="$dispatch('open-booking-panel', { url: $el.dataset.bookingPanelUrl, trigger: $el })">
+                                    <span class="bq-num font-bq-display text-bq-clock font-semibold">{{ $booking['time'] }}</span>
+                                    <span class="truncate font-semibold" title="{{ $booking['customer'] }}">{{ $booking['customer'] }}</span>
+                                    @php [$statusLabel, $tone] = \App\Support\StatusBadge::for('booking', $booking['status']); @endphp
+                                    <x-ui.status-dot :tone="$tone === 'info' ? 'brand' : $tone">{{ $statusLabel }}</x-ui.status-dot>
+                                </button>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </section>
         @endforeach
-        @for ($offset = 0; $offset < $monthOffset; $offset++)
-            <span class="hidden sm:block" aria-hidden="true"></span>
-        @endfor
-    @endif
-    @foreach ($days as $dayKey => $day)
-        <section @class(['min-w-0 rounded-xl border bg-bq-surface p-2.5', 'border-bq-primary ring-1 ring-bq-primary' => (string) $dayKey === (string) $today, 'border-bq-border' => (string) $dayKey !== (string) $today])>
-            @if ($view === 'month')
-                <details>
-                    <summary class="cursor-pointer break-words text-sm font-semibold">
-                        <span class="sm:hidden">{{ $day['label'] }}</span><span class="hidden sm:inline">{{ $day['number'] }}</span>
-                        <span class="mt-1 block text-xs font-normal text-bq-text-muted"><span class="bq-num">{{ count($day['slots']) }}</span> slot · <span class="bq-num font-semibold text-bq-primary">{{ $day['bookingCount'] ?? 0 }}</span> booking</span>
-                    </summary>
-                    @include('owner.partials.calendar.day-entries')
-                </details>
-            @else
-                <h2 class="text-sm font-bold text-bq-ink">{{ $day['label'] }}</h2>
-                @include('owner.partials.calendar.day-entries')
-            @endif
-        </section>
-    @endforeach
-</div>
+    </div>
+@endif

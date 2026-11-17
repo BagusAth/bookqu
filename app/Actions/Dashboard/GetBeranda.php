@@ -375,21 +375,29 @@ class GetBeranda
     }
 
     /**
-     * @return array{count: int, first_time: string|null, first_customer: string|null}
+     * @return array{count: int, first_time: string|null, first_customer: string|null, date: string, bookings: list<array<string, mixed>>}
      */
     private function tomorrow(Tenant $tenant): array
     {
+        $date = Carbon::tomorrow('Asia/Jakarta');
         $bookings = Booking::where('idtenant', $tenant->id)
-            ->whereDate('tanggalbooking', Carbon::tomorrow())
+            ->whereDate('tanggalbooking', $date)
             ->where('status', '!=', BookingState::STATUS_CANCELLED)
             ->orderBy('jam')
-            ->get(['id', 'jam', 'namapelanggan']);
+            ->get(['id', 'jam', 'namapelanggan', 'status']);
         $first = $bookings->first();
 
         return [
             'count' => $bookings->count(),
             'first_time' => $first ? substr((string) $first->jam, 0, 5) : null,
             'first_customer' => $first ? (string) $first->namapelanggan : null,
+            'date' => $date->translatedFormat('l, j M'),
+            'bookings' => $bookings->take(5)->map(fn (Booking $booking): array => [
+                'customer' => $booking->namapelanggan,
+                'time' => substr((string) $booking->jam, 0, 5),
+                'status' => BookingState::formatLabel($booking->status),
+                'url' => route('owner.bookings.panel', $booking->id),
+            ])->values()->all(),
         ];
     }
 
