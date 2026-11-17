@@ -57,7 +57,7 @@
                                     $dispatch('open-dialog', { id: 'owner-walkin-dialog' });
                                 });
                             "
-                        >Buat booking</button>
+                        >Catat booking</button>
                     @endif
                 </div>
             </section>

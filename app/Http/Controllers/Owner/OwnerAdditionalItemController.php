@@ -81,7 +81,7 @@ class OwnerAdditionalItemController extends Controller
         }
 
         return redirect()->to(route('owner.services', ['tab' => 'add-ons']))
-            ->with('sukses', 'Add-on "'.$item->name.'" berhasil ditambahkan!');
+            ->with('sukses', 'Tambahan "'.$item->name.'" berhasil ditambahkan!');
     }
 
     public function update(Request $request, int $id)
@@ -126,7 +126,7 @@ class OwnerAdditionalItemController extends Controller
         });
 
         return redirect()->to(route('owner.services', ['tab' => 'add-ons']))
-            ->with('sukses', 'Add-on "'.$item->name.'" berhasil diperbarui!');
+            ->with('sukses', 'Tambahan "'.$item->name.'" berhasil diperbarui!');
     }
 
     public function destroy(int $id)
@@ -141,13 +141,13 @@ class OwnerAdditionalItemController extends Controller
         DB::transaction(function () use ($tenant, $item): void {
             ClaimSlots::lockTenant((int) $tenant->id);
             if (app(BookingPricingReservations::class)->held('additional_item_id', $item->id) > 0) {
-                throw ValidationException::withMessages(['stock' => 'Add-on masih dipesan oleh pembayaran aktif.']);
+                throw ValidationException::withMessages(['stock' => 'Tambahan masih dipesan oleh pembayaran aktif.']);
             }
             $item->delete();
         });
 
         return redirect()->to(route('owner.services', ['tab' => 'add-ons']))
-            ->with('sukses', 'Add-on "'.$name.'" berhasil dihapus!');
+            ->with('sukses', 'Tambahan "'.$name.'" berhasil dihapus!');
     }
 
     public function toggleStatus(int $id)
@@ -167,6 +167,6 @@ class OwnerAdditionalItemController extends Controller
         $statusText = $item->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
         return redirect()->to(route('owner.services', ['tab' => 'add-ons']))
-            ->with('sukses', 'Add-on "'.$item->name.'" berhasil '.$statusText.'!');
+            ->with('sukses', 'Tambahan "'.$item->name.'" berhasil '.$statusText.'!');
     }
 }

@@ -7,7 +7,7 @@ namespace Tests\Feature\Components;
 use Tests\TestCase;
 
 /**
- * The shared owner components of BQ-161 render every variant with the design-system classes.
+ * The shared owner components render the design-system variants.
  */
 class UiComponentsTest extends TestCase
 {
@@ -55,8 +55,8 @@ Isi
 
     public function test_stat_renders_a_hero_figure(): void
     {
-        $this->blade('<x-ui.stat label="Saldo tersedia" value="Rp 18.500.000" context="Bisa dicairkan" hero />')
-            ->assertSee('text-3xl', false)->assertSee('Rp 18.500.000')->assertSee('Bisa dicairkan');
+        $this->blade('<x-ui.stat label="Saldo tersedia" value="Rp 18.500.000" context="Bisa dicairkan" hero :supporting="$supporting" />', ['supporting' => ['Booking' => 12]])
+            ->assertSee('text-bq-figure', false)->assertSee('Rp 18.500.000')->assertSee('Bisa dicairkan')->assertSeeInOrder(['Booking', '12']);
 
     }
 
@@ -82,7 +82,91 @@ Rani
     public function test_avatar_and_skeleton_render(): void
     {
         $this->blade('<x-ui.avatar name="Rani Puspita" />')->assertSee('RP');
-        $this->blade('<x-ui.skeleton :lines="2" />')->assertSee('animate-pulse', false);
+        $this->blade('<x-ui.skeleton :lines="2" />')->assertSee('animate-pulse', false)->assertSee('Memuat');
+    }
+
+    public function test_table_renders_group_selection_phone_subtitle_and_row_action(): void
+    {
+        $this->blade(<<<'BLADE'
+<x-ui.table :columns="['Pelanggan', 'Status']" label="Booking" selectable actions>
+    <x-slot:note><x-ui.table-note>Slot terbuka sampai 14 Des.</x-ui.table-note></x-slot:note>
+    <x-slot:selection><x-ui.checkbox label="Pilih semua" hide-label /></x-slot:selection>
+    <x-ui.table.row group>Senin, 16 Nov</x-ui.table.row>
+    <x-ui.table.row two-lines>
+        <x-slot:selection><x-ui.checkbox label="Pilih Rani" name="booking[]" value="12" hide-label /></x-slot:selection>
+        <x-ui.table.cell phone="main" title="Rani Puspita">
+            Rani Puspita
+            <x-slot:subtitle title="Foto keluarga">Foto keluarga</x-slot:subtitle>
+        </x-ui.table.cell>
+        <x-ui.table.cell phone="end"><x-ui.status-dot tone="success">Terkonfirmasi</x-ui.status-dot></x-ui.table.cell>
+        <x-slot:action>
+            <x-ui.menu id="booking-actions">
+                <button type="button" role="menuitem" tabindex="-1">Pindah jadwal</button>
+            </x-ui.menu>
+        </x-slot:action>
+    </x-ui.table.row>
+</x-ui.table>
+BLADE)
+            ->assertSee('role="table"', false)
+            ->assertSee('bq-table-selectable bq-table-actions', false)
+            ->assertSee('role="rowheader"', false)
+            ->assertSee('name="booking[]" value="12"', false)
+            ->assertSee('title="Rani Puspita"', false)
+            ->assertSee('title="Foto keluarga"', false)
+            ->assertSee('bg-bq-success', false)
+            ->assertSee('aria-controls="booking-actions"', false)
+            ->assertSeeInOrder(['Slot terbuka sampai 14 Des.', 'Pilih semua', 'Senin, 16 Nov', 'Pilih Rani', 'Foto keluarga', 'Terkonfirmasi', 'Pindah jadwal']);
+    }
+
+    public function test_form_controls_keep_native_values_and_selected_options(): void
+    {
+        $this->blade(<<<'BLADE'
+<x-ui.form-section title="Kebijakan" description="Pilih pengaturan booking.">
+    <x-ui.switch name="reminders" value="1" label="Pengingat" description="Kirim sebelum sesi" checked />
+    <x-ui.radio-card name="payment" value="cash" label="Tunai" description="Diterima di tempat" checked />
+    <x-ui.segmented label="Periode" name="period" :options="['day' => 'Hari', 'week' => 'Minggu']" selected="week" />
+    <x-ui.segmented label="Tampilan" :options="['table' => ['label' => 'Tabel', 'href' => '/tabel']]" selected="table" />
+</x-ui.form-section>
+BLADE)
+            ->assertSeeInOrder(['Kebijakan', 'Pilih pengaturan booking.', 'Pengingat', 'Kirim sebelum sesi', 'Tunai', 'Diterima di tempat'])
+            ->assertSee('role="switch"', false)->assertSee('name="reminders" value="1" checked', false)
+            ->assertSee('name="payment" value="cash" checked', false)
+            ->assertSee('name="period" value="week" checked', false)
+            ->assertSee('href="/tabel"', false)->assertSee('aria-current="page"', false);
+    }
+
+    public function test_layers_and_feedback_render_actions_and_accessible_states(): void
+    {
+        $this->blade(<<<'BLADE'
+<x-ui.sheet id="hours" title="Jam tersedia">
+    <x-ui.banner title="Slot hampir habis" tone="warning" />
+    <x-ui.error-block title="Jam 13.00 baru saja terisi">
+        <x-slot:action><button type="button">15.00</button></x-slot:action>
+    </x-ui.error-block>
+    <x-ui.empty title="Belum ada slot" description="Atur jam buka." />
+    <x-slot:footer><button type="button">Simpan</button></x-slot:footer>
+</x-ui.sheet>
+BLADE)
+            ->assertSee('aria-labelledby="hours-title"', false)
+            ->assertSee('role="status"', false)
+            ->assertSee('bg-bq-warning-bg', false)
+            ->assertSee('role="alert"', false)
+            ->assertSeeInOrder(['Jam tersedia', 'Slot hampir habis', 'Jam 13.00 baru saja terisi', '15.00', 'Belum ada slot', 'Atur jam buka.', 'Simpan']);
+    }
+
+    public function test_key_values_and_measurements_include_readable_units(): void
+    {
+        $this->blade(<<<'BLADE'
+<x-ui.kv :items="['Layanan' => 'Foto keluarga']" />
+<x-ui.duration :minutes="90" />
+<x-ui.duration :minutes="30" />
+<x-ui.mini-bar :value="6" :total="14" unit="jam" />
+<x-ui.mini-bar :value="0" :total="0" />
+BLADE)
+            ->assertSee('<dl', false)
+            ->assertSeeInOrder(['Layanan', 'Foto keluarga', '1,5 jam', '30 menit', '6 dari 14 jam', '6/14 jam'])
+            ->assertSee('width: 43%', false)
+            ->assertSee('width: 0%', false);
     }
 
     public function test_filter_bar_counts_active_filters_for_the_phone_toggle(): void

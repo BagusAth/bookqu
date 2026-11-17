@@ -91,7 +91,7 @@
         </x-slot:action>
     </x-owner.page-header>
 
-    <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori'] + (($showAddOns ?? false) ? ['add-ons' => 'Add-on'] : [])" :active="$activeTab" label="Bagian halaman Layanan" />
+    <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori'] + (($showAddOns ?? false) ? ['add-ons' => 'Tambahan'] : [])" :active="$activeTab" label="Bagian halaman Layanan" />
 
     @if ($isServicesTab)
         {{-- ── Tab Layanan ── --}}
@@ -320,7 +320,7 @@
 
                 @isset($addOnOptions)
                     <fieldset class="space-y-2">
-                        <legend class="{{ $labelClass }}">Add-on yang ditautkan</legend>
+                        <legend class="{{ $labelClass }}">Tambahan yang ditautkan</legend>
                         <input type="hidden" name="additional_item_ids" value="">
                         @forelse ($addOnOptions as $item)
                             <label class="flex items-center gap-2 text-sm">
@@ -328,7 +328,7 @@
                                 {{ $item->name }}
                             </label>
                         @empty
-                            <p class="text-sm text-bq-text-muted">Belum ada add-on. <a class="text-bq-primary" href="{{ route('owner.services', ['tab' => 'add-ons']) }}">Kelola add-on</a></p>
+                            <p class="text-sm text-bq-text-muted">Belum ada tambahan. <a class="text-bq-primary" href="{{ route('owner.services', ['tab' => 'add-ons']) }}">Kelola tambahan</a></p>
                         @endforelse
                         <x-owner.field-error name="additional_item_ids.*" :form="$oldForm" />
                     </fieldset>

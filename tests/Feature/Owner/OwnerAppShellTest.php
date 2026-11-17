@@ -156,7 +156,7 @@ class OwnerAppShellTest extends TestCase
         $this->assertStringContainsString('id="owner-bottom-nav"', $html);
         $bar = substr($html, (int) strpos($html, 'id="owner-bottom-nav"'));
         $bar = substr($bar, 0, (int) strpos($bar, '</nav>'));
-        $this->assertMatchesRegularExpression('/Beranda.*Kalender.*Walk-in.*Booking.*Lainnya/s', strip_tags($bar));
+        $this->assertMatchesRegularExpression('/Beranda.*Kalender.*Catat.*Booking.*Lainnya/s', strip_tags($bar));
         $this->assertStringContainsString('id="owner-more-sheet"', $html);
         $sheet = substr($html, (int) strpos($html, 'id="owner-more-sheet"'));
         foreach (['Pelanggan', 'Layanan', 'Jam Buka &amp; Harga', 'Pengaturan'] as $menu) {

@@ -106,9 +106,9 @@ class OwnerBookingPageController extends Controller
         $saveLandingPage->execute($tenant, $request->safe()->except('action'), $action);
 
         return redirect()->route('owner.booking-page', ['section' => 'landing'])->with('sukses', match ($action) {
-            'publish' => 'Landing page diterbitkan di halaman booking Anda.',
-            'unpublish' => 'Landing page disembunyikan. Halaman booking kembali ke tampilan biasa.',
-            default => 'Landing page disimpan.',
+            'publish' => 'Halaman depan diterbitkan di halaman booking Anda.',
+            'unpublish' => 'Halaman depan disembunyikan. Halaman booking kembali ke tampilan biasa.',
+            default => 'Halaman depan disimpan.',
         });
     }
 

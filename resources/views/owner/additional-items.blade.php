@@ -1,6 +1,6 @@
 @extends('layouts.owner-layout')
 
-@section('title', 'Add-on')
+@section('title', 'Tambahan')
 
 @section('content')
 @php
@@ -25,17 +25,17 @@
         if (old) this.$nextTick(() => this.edit(old));
     }
 }">
-    <x-owner.page-header title="Add-on" purpose="Kelola produk tambahan yang dapat dipesan bersama layanan.">
+    <x-owner.page-header title="Tambahan" purpose="Kelola produk tambahan yang dapat dipesan bersama layanan.">
         <x-slot:action>
-            <button id="btn-add-addon" type="button" @click="edit(null, $el)" class="bq-btn bq-btn-primary">Tambah add-on</button>
+            <button id="btn-add-addon" type="button" @click="edit(null, $el)" class="bq-btn bq-btn-primary">Tambah tambahan</button>
         </x-slot:action>
     </x-owner.page-header>
 
-    <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori', 'add-ons' => 'Add-on']" active="add-ons" label="Bagian halaman Layanan" />
+    <x-owner.tabs :tabs="['layanan' => 'Layanan', 'kategori' => 'Kategori', 'add-ons' => 'Tambahan']" active="add-ons" label="Bagian halaman Layanan" />
 
     <form method="GET" action="{{ route('owner.services') }}" role="search" class="flex flex-wrap items-end gap-2">
         <input type="hidden" name="tab" value="add-ons">
-        <label class="text-sm">Cari add-on
+        <label class="text-sm">Cari tambahan
             <input name="search" value="{{ $search }}" class="{{ $input }}" type="search">
         </label>
         <button class="bq-btn bq-btn-secondary">Cari</button>
@@ -74,24 +74,24 @@
                         @csrf
                         @method('DELETE')
                         <button type="button" class="text-bq-danger"
-                            @click="$dispatch('open-confirm', { title: 'Hapus add-on?', message: 'Yakin ingin menghapus ' + @js($item->name) + '?', formId: $el.form.id, tone: 'danger' })">Hapus</button>
+                            @click="$dispatch('open-confirm', { title: 'Hapus tambahan?', message: 'Yakin ingin menghapus ' + @js($item->name) + '?', formId: $el.form.id, tone: 'danger' })">Hapus</button>
                     </form>
                 </div>
             </article>
         @empty
-            <x-owner.empty-state :title="$search !== '' ? 'Add-on tidak ditemukan' : 'Belum ada add-on'"
+            <x-owner.empty-state :title="$search !== '' ? 'Tambahan tidak ditemukan' : 'Belum ada tambahan'"
                 :description="$search !== '' ? 'Coba kata kunci lain.' : 'Tambahkan produk yang dapat dipilih saat pelanggan memesan layanan.'" />
         @endforelse
     </div>
 
-    <x-owner.dialog id="addon-form" title="Add-on" size="lg">
+    <x-owner.dialog id="addon-form" title="Tambahan" size="lg">
         <form method="POST" class="space-y-4"
             :action="item.id ? @js(route($itemRoute.'.update', ['id' => '__ID__'])).replace('__ID__', encodeURIComponent(item.id)) : @js(route($itemRoute.'.store'))">
             @csrf
             <input type="hidden" name="_method" value="PUT" :disabled="!item.id">
             <input type="hidden" name="_form" :value="formKey">
             <div>
-                <label for="addon-name" class="font-medium">Nama add-on</label>
+                <label for="addon-name" class="font-medium">Nama tambahan</label>
                 <input id="addon-name" name="name" x-model="item.name" required maxlength="150" class="{{ $input }}">
                 <x-owner.field-error name="name" x-cloak x-show="formKey === @js($oldForm)" />
             </div>
@@ -121,7 +121,7 @@
                         {{ $service->namalayanan }}
                     </label>
                 @empty
-                    <p class="text-sm text-bq-text-muted">Tambahkan layanan untuk menautkannya ke add-on ini.</p>
+                    <p class="text-sm text-bq-text-muted">Tambahkan layanan untuk menautkannya ke tambahan ini.</p>
                 @endforelse
                 <x-owner.field-error name="service_ids" x-cloak x-show="formKey === @js($oldForm)" />
                 <x-owner.field-error name="service_ids.*" x-cloak x-show="formKey === @js($oldForm)" />
@@ -134,7 +134,7 @@
                 </select>
                 <x-owner.field-error name="is_active" x-cloak x-show="formKey === @js($oldForm)" />
             </div>
-            <button type="submit" class="bq-btn bq-btn-primary">Simpan add-on</button>
+            <button type="submit" class="bq-btn bq-btn-primary">Simpan tambahan</button>
         </form>
     </x-owner.dialog>
 </div>

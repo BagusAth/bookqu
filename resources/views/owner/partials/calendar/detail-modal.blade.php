@@ -5,8 +5,8 @@
         <div class="space-y-4">
             <p class="text-sm font-semibold" x-text="selected.walkInLabel"></p>
             <template x-if="selected.walkIn">
-                <section x-on:submit.prevent="saveWalkIn($event.target)" aria-label="Catat walk-in">
-                    <h3 class="mb-2 text-sm font-semibold">Catat walk-in</h3>
+                <section x-on:submit.prevent="saveWalkIn($event.target)" aria-label="Catat booking">
+                    <h3 class="mb-2 text-sm font-semibold">Catat booking</h3>
                     <p x-show="feedback" x-text="feedback" class="mb-2 text-sm text-bq-danger" role="alert"></p>
                     <x-owner.walkin-form fixed-slot-model="selected" id-prefix="calendar-walkin" />
                 </section>

@@ -1,15 +1,14 @@
 {{--
     Phone navigation (BQ-128, owner-portal.md §4.3): below 768 px the sidebar is replaced by
-    Beranda, Kalender, + Walk-in, Booking and Lainnya (BQ-161: the centre button is the walk-in action, so
-    "Booking" appears once). "Lainnya" opens a sheet with the remaining
+    Beranda, Kalender, Catat, Booking and Lainnya. "Lainnya" opens a sheet with the remaining
     menus the role may open, in sidebar order.
 --}}
 @php
     $primary = collect($shell['phonePrimary'])->keyBy('id');
-    $navItem = 'flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-semibold';
+    $navItem = 'flex min-h-bq-bottom-nav flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-bq-phone-nav font-medium';
 @endphp
 
-<nav id="owner-bottom-nav" aria-label="Navigasi utama" class="fixed inset-x-0 bottom-0 z-40 flex border-t border-bq-border bg-bq-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden">
+<nav id="owner-bottom-nav" aria-label="Navigasi utama" class="fixed inset-x-0 bottom-0 z-40 flex border-t border-bq-border bg-bq-surface pb-[env(safe-area-inset-bottom)] md:hidden">
     @foreach (['dashboard', 'calendar'] as $id)
         @if ($item = $primary->get($id))
             <a href="{{ $item['href'] }}" @if ($item['active']) aria-current="page" @endif class="{{ $navItem }} {{ $item['active'] ? 'text-bq-primary' : 'text-bq-text-muted' }}">
@@ -20,9 +19,9 @@
     @endforeach
 
     @if ($shell['canWalkIn'])
-        <button type="button" x-data x-on:click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', trigger: $el })" class="{{ $navItem }} text-bq-primary">
-            <span class="-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-bq-primary text-white shadow-bq ring-4 ring-bq-accent"><x-owner.icon name="plus" class="h-5 w-5" /></span>
-            <span class="sr-only">Catat booking</span> Walk-in
+        <button type="button" x-data x-on:click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', trigger: $el })" aria-label="Catat booking" class="{{ $navItem }} text-bq-primary">
+            <span class="-mt-4.5 flex h-11 w-11 items-center justify-center rounded-full bg-bq-primary text-white ring-4 ring-bq-surface"><x-owner.icon name="plus" class="h-5 w-5" /></span>
+            Catat
         </button>
     @endif
 
@@ -31,7 +30,7 @@
             <span class="relative">
                 <x-owner.icon :name="$item['icon']" />
                 @if ($item['badge'])
-                    <span class="absolute -right-3 -top-1 min-w-4 rounded-full bg-bq-accent px-1 text-center text-[10px] font-bold leading-4 text-bq-ink" title="{{ $item['badge']['label'] ?? 'Booking perlu tindakan' }}">{{ $item['badge']['text'] }}</span>
+                    <span class="absolute -right-3 -top-1 min-w-4 rounded-full bg-bq-accent px-1 text-center text-xs font-bold leading-4 text-bq-ink" title="{{ $item['badge']['label'] ?? 'Booking perlu tindakan' }}">{{ $item['badge']['text'] }}</span>
                 @endif
             </span>
             {{ $item['label'] }}
@@ -47,7 +46,7 @@
 </nav>
 
 @if (count($shell['phoneMore']) > 0)
-    <x-owner.dialog id="owner-more-sheet" title="Lainnya" class="md:hidden">
+    <x-ui.sheet id="owner-more-sheet" title="Lainnya" class="md:hidden">
         <ul class="-mx-2 space-y-0.5">
             @foreach ($shell['phoneMore'] as $item)
                 <li>
@@ -74,5 +73,5 @@
                 <x-owner.icon name="external" class="h-4 w-4" /> Buka halaman booking
             </a>
         @endif
-    </x-owner.dialog>
+    </x-ui.sheet>
 @endif

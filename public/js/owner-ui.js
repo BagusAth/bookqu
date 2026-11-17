@@ -101,6 +101,40 @@
     document.addEventListener('alpine:init', () => {
         window.Alpine.data('ownerDialog', (id) => dialogBehaviour(id));
 
+        window.Alpine.data('ownerMenu', () => ({
+            open: false,
+
+            items() {
+                return Array.from(this.$refs.items.querySelectorAll('[role="menuitem"]:not([disabled]):not([aria-disabled="true"])'))
+                    .filter((item) => item.getClientRects().length > 0);
+            },
+
+            show(last = false) {
+                this.open = true;
+                this.$nextTick(() => this.focusItem(last));
+            },
+
+            close(restoreFocus = false) {
+                if (!this.open) return;
+                this.open = false;
+                if (restoreFocus) this.$refs.trigger.focus();
+            },
+
+            leave(event) {
+                if (!this.$refs.items.contains(event.relatedTarget)) this.close();
+            },
+
+            focusItem(last = false) {
+                this.items().at(last ? -1 : 0)?.focus();
+            },
+
+            move(direction) {
+                const items = this.items();
+                const index = items.indexOf(document.activeElement);
+                if (items.length) items[(index + direction + items.length) % items.length].focus();
+            },
+        }));
+
         window.Alpine.data('ownerPanel', (id) => ({
             ...dialogBehaviour(id),
             loading: false,

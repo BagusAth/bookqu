@@ -4,7 +4,7 @@
 
 {{--
     Halaman Booking (BQ-142, owner-portal.md §8.9): Link & QR, Materi promosi, Tampilan and Galeri
-    media, for every plan (D-009, D-010), plus Landing page and Domain sendiri for Pro (BQ-154), which
+    media, for every plan (D-009, D-010), plus Halaman depan and Domain sendiri for Pro (BQ-154), which
     show the upgrade prompt below Pro (§3 rule 6). Data from App\Actions\Tenant\GetBookingPageData.
 --}}
 
@@ -252,15 +252,15 @@
         @endif
     @endif
 
-    {{-- ── Landing page (Pro, FR-PUBLIC-007, AC-HBK-03) ── --}}
+    {{-- ── Halaman depan (Pro, FR-PUBLIC-007, AC-HBK-03) ── --}}
     @if ($activeSection === 'landing')
         @if (! $isPro)
-            <x-owner.upgrade-prompt feature="Landing page" plan="Pro" description="Buka halaman booking dengan judul, banner dan bagian pilihan Anda, dari tiga template siap pakai." />
+            <x-owner.upgrade-prompt feature="Halaman depan" plan="Pro" description="Buka halaman booking dengan judul, banner dan bagian pilihan Anda, dari tiga template siap pakai." />
         @else
             <form method="POST" action="{{ route('owner.booking-page.landing') }}" class="{{ $card }} space-y-5 p-4" x-data="{ sending: false }" x-on:submit="if ($event.submitter?.formTarget !== '_blank') sending = true">
                 @csrf
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="text-base font-semibold text-bq-text">Landing page</h2>
+                    <h2 class="text-base font-semibold text-bq-text">Halaman depan</h2>
                     <span class="rounded-full px-2.5 py-0.5 text-xs font-medium {{ $landing['published'] ? 'bg-bq-success-bg text-bq-success' : 'bg-bq-background text-bq-text-muted ring-1 ring-inset ring-bq-border' }}">{{ $landing['published'] ? 'Diterbitkan' : 'Belum diterbitkan' }}</span>
                 </div>
 

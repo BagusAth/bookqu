@@ -8,13 +8,7 @@
         x-init="$nextTick(() => $dispatch('open-booking-panel', { url: @js($initialPanelUrl) }))"
     @endif
 >
-    <x-owner.page-header title="Booking" purpose="Temukan booking dan tangani permintaan pelanggan.">
-        @if ($canWalkIn)
-            <x-slot:action>
-                <button type="button" class="bq-btn bq-btn-primary" @click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', trigger: $el })">+ Booking</button>
-            </x-slot:action>
-        @endif
-    </x-owner.page-header>
+    <x-owner.page-header title="Booking" purpose="Temukan booking dan tangani permintaan pelanggan." />
     <x-owner.tabs :tabs="$tabs" :active="$tab" />
 
     @php
@@ -48,7 +42,7 @@
             <label class="grid gap-1.5 max-md:w-[calc(50%-0.375rem)]"><span class="bq-label">Sumber</span>
                 <select name="source" @change="$el.form.requestSubmit()" class="bq-input">
                     <option value="">Semua sumber</option>
-                    @foreach (['online' => 'Online', 'walkin' => 'Walk-in'] as $key => $label)
+                    @foreach (['online' => 'Online', 'walkin' => 'Dicatat kasir'] as $key => $label)
                         <option value="{{ $key }}" @selected($key === ($filters['source'] ?? null))>{{ $label }}</option>
                     @endforeach
                 </select>

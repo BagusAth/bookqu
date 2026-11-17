@@ -221,7 +221,7 @@ class PelangganPageTest extends TestCase
         $this->actingAs($this->owner)->get(route('owner.customers'))
             ->assertOk()
             ->assertSee('x-on:walkin-prefill.window', false)
-            ->assertSee('Buat booking');
+            ->assertSee('Catat booking');
     }
 
     public function test_the_panel_never_shows_another_business_customer(): void

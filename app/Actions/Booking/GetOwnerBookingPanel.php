@@ -49,7 +49,7 @@ final class GetOwnerBookingPanel
 
         return [
             'code' => $booking->booking_code ?? 'BKQ-'.$booking->id,
-            'source' => $walkIn ? 'Walk-in' : 'Online',
+            'source' => $walkIn ? 'Dicatat kasir' : 'Online',
             'service' => $service instanceof Service ? $service->namalayanan : 'Layanan dihapus',
             'status' => self::badge('booking', $booking->status),
             'sessions' => $family->map(fn (Booking $row): array => [

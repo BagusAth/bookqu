@@ -21,7 +21,7 @@
     $labelClass = 'mb-1 block bq-label';
 @endphp
 
-{{-- BQ-137 (AC-PLG-04): "Buat booking" in the customer panel fills the contact fields with walkin-prefill. --}}
+{{-- BQ-137 (AC-PLG-04): "Catat booking" in the customer panel fills the contact fields with walkin-prefill. --}}
 <form
     method="POST"
     action="{{ route('owner.bookings.walkin') }}"
@@ -42,7 +42,7 @@
             <input type="hidden" name="idschedule" x-bind:value="{{ $fixedSlotModel }}.id">
             <p id="{{ $idPrefix }}-slot" class="rounded-lg bg-bq-background px-3 py-2 text-sm" x-text="{{ $fixedSlotModel }}.walkInLabel"></p>
             <fieldset class="mt-2 space-y-2" x-show="{{ $fixedSlotModel }}.addOns.length" x-data="{ quantities: {} }">
-                <legend class="{{ $labelClass }}">Add-on</legend>
+                <legend class="{{ $labelClass }}">Tambahan</legend>
                 <template x-for="item in {{ $fixedSlotModel }}.addOns" :key="item.id">
                     <label class="flex items-center justify-between gap-2 text-sm">
                         <span x-text="item.name"></span>
@@ -69,7 +69,7 @@
                     </template>
                 </select>
                 <fieldset x-show="addOns.length" x-cloak class="space-y-2 sm:col-span-2">
-                    <legend class="{{ $labelClass }}">Add-on</legend>
+                    <legend class="{{ $labelClass }}">Tambahan</legend>
                     <template x-for="item in addOns" :key="item.id">
                         <label class="flex items-center justify-between gap-3 text-sm">
                             <span x-text="item.name"></span>
@@ -144,6 +144,6 @@
     </div>
 
     <div class="flex justify-end">
-        <button type="submit" @if ($fixedSlotModel) :disabled="busy" @endif class="bq-btn bq-btn-primary">Simpan walk-in</button>
+        <button type="submit" @if ($fixedSlotModel) :disabled="busy" @endif class="bq-btn bq-btn-primary">Catat booking</button>
     </div>
 </form>

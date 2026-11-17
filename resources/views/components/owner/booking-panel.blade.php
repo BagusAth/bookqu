@@ -32,7 +32,8 @@
     title="Detail booking"
     behaviour="ownerPanel('owner-booking-panel')"
     x-on:open-booking-panel.window="load($event)"
-    x-init="if (@js($reopenBooking)) $nextTick(() => $dispatch('open-booking-panel', { url: @js($reopenBooking) }))"
+    :data-reopen-url="$reopenBooking"
+    x-init="if ($el.dataset.reopenUrl) $nextTick(() => $dispatch('open-booking-panel', { url: $el.dataset.reopenUrl }))"
 >
     <x-slot:heading>
         <span x-text="data ? data.code : 'Detail booking'">Detail booking</span>
@@ -98,7 +99,7 @@
                     </div>
                 </template>
                 <p x-show="data.refund_reason" class="mt-1 text-sm text-bq-text-muted">Alasan pengajuan: <span x-text="data.refund_reason"></span></p>
-                <p x-show="data.walkin_method" class="mt-1 text-sm text-bq-text-muted">Metode walk-in: <span x-text="data.walkin_method"></span></p>
+                <p x-show="data.walkin_method" class="mt-1 text-sm text-bq-text-muted">Cara bayar: <span x-text="data.walkin_method"></span></p>
             </section>
 
             <section x-show="data.note" aria-labelledby="booking-panel-note">

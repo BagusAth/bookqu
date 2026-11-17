@@ -11,30 +11,30 @@
     /* Owner portal typeface (BQ-161): Plus Jakarta Sans, applied by the owner layout with `font-owner`. */
     --font-owner: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 
-    /* ── Owner design tokens (BQ-161, "meja depan"): the brand palette below, applied to the portal.
+    /* ── Owner design tokens (BQ-162, "Papan Jadwal"): the brand palette below, applied to the portal.
        Contrast is computed in docs/work/BQ-161-owner-portal-visual-redesign.md; every text/background pair
        used for text meets WCAG AA. ── */
     --color-bq-primary: #382186;          /* Aubergine: primary actions, active states, links */
-    --color-bq-primary-hover: #2D1A6D;    /* Aubergine deep */
-    --color-bq-primary-light: #F3EFFE;    /* Lilac mist: selected rows, active tab underlay */
-    --color-bq-primary-border: #E7E2F7;
+    --color-bq-primary-hover: #2A1869;    /* Aubergine deep */
+    --color-bq-primary-light: #ECE8FA;    /* Lilac mist: selected rows, active tab underlay */
+    --color-bq-primary-border: #D6CEF3;
     --color-bq-accent: #FFB84D;           /* Marigold: "now" and "needs you" only; text on it is ink */
-    --color-bq-accent-bg: #FFF4E0;
-    --color-bq-ink: #231A3D;
-    --color-bq-background: #F7F7FA;       /* Paper */
+    --color-bq-accent-bg: #FFF1D6;
+    --color-bq-ink: #1D1638;
+    --color-bq-background: #F5F4F9;       /* Paper */
     --color-bq-surface: #FFFFFF;
-    --color-bq-surface-2: #F4F2F9;
-    --color-bq-border: #E7E3EF;
-    --color-bq-border-strong: #CBC5DA;
-    --color-bq-text: #231A3D;
-    --color-bq-text-muted: #666477;
-    --color-bq-text-subtle: #767487;
-    --color-bq-success: #16734B;
-    --color-bq-success-bg: #E9F6EF;
-    --color-bq-warning: #865300;
-    --color-bq-warning-bg: #FFF3D6;
-    --color-bq-danger: #B52E43;
-    --color-bq-danger-bg: #FFF0F2;
+    --color-bq-surface-2: #EEEDF3;
+    --color-bq-border: #E3E0EE;
+    --color-bq-border-strong: #CBC6DC;
+    --color-bq-text: #1D1638;
+    --color-bq-text-muted: #625E75;
+    --color-bq-text-subtle: #625E75;
+    --color-bq-success: #1F7A4D;
+    --color-bq-success-bg: #E4F3EA;
+    --color-bq-warning: #8A5A00;
+    --color-bq-warning-bg: #FFF1D6;
+    --color-bq-danger: #B3261E;
+    --color-bq-danger-bg: #FBE9E7;
     --color-bq-info: #285E9F;
     --color-bq-info-bg: #EAF2FF;
 
@@ -50,16 +50,69 @@
     --color-brand-ink: #231a3d;
     --color-brand-mutedgray: #6e6584;
 
-    /* Sidebar: the brand aubergine frame */
-    --color-bq-sidebar: #382186;
-    --color-bq-sidebar-active: #2D1A6D;
-    --color-bq-sidebar-text: #FFFFFF;
-    --color-bq-sidebar-muted: #E7E2F7;
-    --color-bq-sidebar-active-text: #FFFFFF;
+    --color-bq-selected-border: #B8ABEA;
+    --color-bq-selected-hover: #E2DCF7;
+    --color-bq-warning-dot: #C77700;
+    --color-bq-warning-border: #F1D49B;
+    --color-bq-warning-copy: #5B4A2A;
+    --color-bq-success-border: #A8D5BC;
+    --color-bq-danger-border: #EDC4C0;
+    --color-bq-disabled: #8E8AA0;
+    --color-bq-heat-1: #DAD2F5;
+    --color-bq-heat-2: #A999E4;
+    --color-bq-heat-3: #6A52C0;
+
+    --font-bq-display: 'Barlow Semi Condensed', 'Plus Jakarta Sans', system-ui, sans-serif;
+    --text-bq-body: 14px;
+    --text-bq-body--line-height: 20px;
+    --text-bq-small: 13px;
+    --text-bq-small--line-height: 18px;
+    --text-bq-label: 13px;
+    --text-bq-label--line-height: 18px;
+    --text-bq-label--font-weight: 600;
+    --text-bq-form: 15px;
+    --text-bq-form--line-height: 22px;
+    --text-bq-section: 17px;
+    --text-bq-section--line-height: 24px;
+    --text-bq-section--font-weight: 600;
+    --text-bq-title: 24px;
+    --text-bq-title--line-height: 32px;
+    --text-bq-title--font-weight: 700;
+    --text-bq-title-phone: 22px;
+    --text-bq-title-phone--line-height: 28px;
+    --text-bq-title-phone--font-weight: 700;
+    --text-bq-clock: 15px;
+    --text-bq-clock--line-height: 20px;
+    --text-bq-figure: 40px;
+    --text-bq-figure--line-height: 44px;
+    --text-bq-figure-small: 26px;
+    --text-bq-figure-small--line-height: 30px;
+    --text-bq-figure-medium: 22px;
+    --text-bq-figure-medium--line-height: 26px;
+    --text-bq-phone-nav: 12px;
+    --text-bq-phone-nav--line-height: 14px;
+
+    --radius-bq-control: 6px;
+    --radius-bq-panel: 10px;
+    --radius-bq-overlay: 16px;
+    --breakpoint-owner-wide: 75rem;
+    --spacing-bq-rail: 72px;
+    --spacing-bq-sidebar: 232px;
+    --spacing-bq-edge: 32px;
+    --spacing-bq-topbar: 56px;
+    --spacing-bq-bottom-nav: 64px;
+    --spacing-bq-control: 40px;
+
+    /* Light owner sidebar */
+    --color-bq-sidebar: #FFFFFF;
+    --color-bq-sidebar-active: #ECE8FA;
+    --color-bq-sidebar-text: #1D1638;
+    --color-bq-sidebar-muted: #625E75;
+    --color-bq-sidebar-active-text: #382186;
 
     /* One elevation, used only by overlays (dialog, drawer, sheet, popover, toast) */
-    --shadow-bq: 0 12px 32px -8px rgb(35 26 61 / 0.22), 0 2px 6px rgb(35 26 61 / 0.08);
-    --shadow-overlay: 0 12px 32px -8px rgb(35 26 61 / 0.22), 0 2px 6px rgb(35 26 61 / 0.08);
+    --shadow-bq: 0 16px 40px rgb(29 22 56 / 0.18);
+    --shadow-overlay: 0 16px 40px rgb(29 22 56 / 0.18);
 }
 
 /* ── Motion ── */
@@ -97,7 +150,15 @@
 @layer base {
     .bq-owner {
         font-family: var(--font-owner);
+        --bq-row: 52px;
+        --bq-row-double: 60px;
+        font-size: var(--text-bq-body);
+        line-height: var(--text-bq-body--line-height);
         font-feature-settings: 'cv11';
+    }
+    .bq-owner[data-density="compact"] {
+        --bq-row: 44px;
+        --bq-row-double: 52px;
     }
     .bq-owner :focus-visible {
         outline: 2px solid var(--color-bq-primary);
@@ -144,10 +205,10 @@
     }
 
     .bq-btn {
-        @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60 max-md:min-h-11;
+        @apply inline-flex min-h-bq-control items-center justify-center gap-2 rounded-bq-control px-4 text-bq-body font-semibold whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60 max-md:min-h-11;
     }
     .bq-btn-sm {
-        @apply min-h-8 px-3 text-xs max-md:min-h-10;
+        @apply min-h-8 px-3 text-bq-label max-md:min-h-10;
     }
     .bq-btn-icon {
         @apply min-h-10 min-w-10 px-0;
@@ -179,10 +240,10 @@
         @apply text-sm font-medium text-bq-ink;
     }
     .bq-hint {
-        @apply text-xs text-bq-text-muted;
+        @apply text-bq-small text-bq-text-muted;
     }
     .bq-input {
-        @apply min-h-10 rounded-lg border border-bq-border-strong bg-bq-surface px-3 py-2 text-sm font-normal text-bq-ink transition-colors duration-150 placeholder:text-bq-text-subtle hover:border-bq-text-subtle focus:border-bq-primary focus:ring-2 focus:ring-bq-primary/20 focus:outline-none disabled:bg-bq-surface-2 disabled:text-bq-text-muted max-md:min-h-11 max-md:text-base;
+        @apply min-h-bq-control rounded-bq-control border border-bq-border-strong bg-bq-surface px-3 py-2 text-bq-form font-normal text-bq-ink transition-colors duration-150 placeholder:text-bq-text-subtle hover:border-bq-text-subtle focus:border-bq-primary focus:ring-2 focus:ring-bq-primary/20 focus:outline-none disabled:bg-bq-surface-2 disabled:text-bq-text-muted max-md:min-h-11 max-md:text-base;
     }
     textarea.bq-input {
         @apply min-h-24 leading-relaxed;
@@ -192,10 +253,89 @@
     }
 
     .bq-panel {
-        @apply rounded-xl border border-bq-border bg-bq-surface;
+        @apply rounded-bq-panel border border-bq-border bg-bq-surface;
     }
     .bq-panel-pad {
         @apply p-4 sm:p-5;
+    }
+
+    .bq-table {
+        --bq-choice-track: ;
+        --bq-action-track: ;
+        display: grid;
+        grid-template-columns: var(--bq-choice-track) repeat(var(--bq-data-columns), minmax(0, 1fr)) var(--bq-action-track);
+    }
+    .bq-table-selectable {
+        --bq-choice-track: auto;
+    }
+    .bq-table-actions {
+        --bq-action-track: auto;
+    }
+    .bq-table-row {
+        @apply col-span-full grid grid-cols-subgrid items-center gap-x-3 border-t border-bq-border px-4 text-bq-body;
+        min-height: var(--bq-row);
+    }
+    .bq-table-double {
+        min-height: var(--bq-row-double);
+    }
+    .bq-table-header {
+        @apply min-h-bq-control border-t-0 text-bq-label text-bq-text-muted;
+    }
+    .bq-table-group {
+        @apply min-h-8 bg-bq-background py-2 text-bq-label;
+    }
+    .bq-table-action {
+        @apply justify-self-end;
+    }
+    .bq-table-caption {
+        @apply mt-0.5;
+    }
+
+    @media (width < 48rem) {
+        .bq-table {
+            grid-template-columns: var(--bq-choice-track) minmax(0, 1fr) minmax(0, auto) var(--bq-action-track);
+        }
+        .bq-table-header {
+            @apply sr-only;
+        }
+        .bq-table-selectable .bq-table-header {
+            @apply not-sr-only grid border-t-0;
+        }
+        .bq-table-header > :not(.bq-table-choice) {
+            @apply sr-only;
+        }
+        .bq-table-cell:not(.bq-table-main, .bq-table-sub, .bq-table-end) {
+            @apply hidden;
+        }
+        .bq-table-main, .bq-table-sub {
+            grid-column: 1;
+        }
+        .bq-table-end {
+            grid-column: 2;
+            @apply row-start-1 row-span-2;
+        }
+        .bq-table-selectable .bq-table-main, .bq-table-selectable .bq-table-sub {
+            grid-column: 2;
+        }
+        .bq-table-selectable .bq-table-end {
+            grid-column: 3;
+        }
+        .bq-table-choice {
+            @apply col-start-1 row-start-1 row-span-2;
+        }
+        .bq-table-action {
+            @apply col-start-[-2] row-start-1 row-span-2;
+        }
+        .bq-table-main {
+            @apply row-start-1 self-end;
+        }
+        .bq-table-main:last-child,
+        .bq-table-main:not(:has(.bq-table-caption)):not(:has(~ .bq-table-sub)) {
+            @apply self-center;
+        }
+        .bq-table-sub {
+            @apply row-start-2 self-start;
+        }
     }
 
     .bq-badge {
@@ -206,14 +346,14 @@
         @apply h-1.5 w-1.5 rounded-full bg-current opacity-80;
     }
     .bq-count {
-        @apply inline-flex min-w-5 items-center justify-center rounded-full bg-bq-accent px-1.5 text-[11px] leading-5 font-bold text-bq-ink;
+        @apply inline-flex min-w-5 items-center justify-center rounded-full bg-bq-accent px-1.5 text-xs leading-5 font-bold text-bq-ink;
     }
 }
 
 /* ── Custom Slim Sidebar Scrollbar ── */
 .sidebar-scroll {
     scrollbar-width: thin;
-    scrollbar-color: rgb(255 255 255 / 0.25) transparent;
+    scrollbar-color: var(--color-bq-border-strong) transparent;
 }
 .sidebar-scroll::-webkit-scrollbar {
     width: 4px;
@@ -222,6 +362,6 @@
     background: transparent;
 }
 .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: rgb(255 255 255 / 0.25);
+    background: var(--color-bq-border-strong);
     border-radius: 9999px;
 }

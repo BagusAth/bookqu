@@ -89,7 +89,7 @@
                 <section aria-labelledby="revenue-title" class="space-y-4">
                     <h2 id="revenue-title" class="sr-only">Pendapatan</h2>
                     <div class="bq-panel grid grid-cols-2 lg:grid-cols-5 gap-px overflow-hidden bg-bq-border">
-                        @foreach (['Pendapatan kotor' => $revenue['gross'], 'Online' => $revenue['online'], 'Walk-in' => $revenue['walkIn'], 'Refund' => $revenue['refunds'], 'Pendapatan bersih' => $revenue['net']] as $label => $value)
+                        @foreach (['Pendapatan kotor' => $revenue['gross'], 'Online' => $revenue['online'], 'Dicatat kasir' => $revenue['walkIn'], 'Refund' => $revenue['refunds'], 'Pendapatan bersih' => $revenue['net']] as $label => $value)
                             <div class="min-w-0 bg-bq-surface p-4 sm:p-5">
                                 <p class="text-xs font-medium text-bq-text-muted">{{ $label }}</p>
                                 <p class="bq-num mt-1 text-2xl font-bold text-bq-ink">{{ $rupiah($value) }}</p>

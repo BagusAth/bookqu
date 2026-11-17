@@ -9,6 +9,7 @@
     'description' => null,
     'size' => 'md',
     'reopenFor' => null,
+    'sheet' => false,
 ])
 
 @php
@@ -32,7 +33,14 @@
 >
     <div x-show="open" x-cloak class="fixed inset-0 z-[100] bg-bq-ink/50 backdrop-blur-[2px]" x-on:click="hide()" aria-hidden="true"></div>
 
-    <div x-show="open" x-cloak class="fixed inset-0 z-[110] flex items-end justify-center p-0 sm:items-center sm:p-4 pointer-events-none">
+    <div x-show="open" x-cloak
+        x-transition:enter="transition-transform duration-200"
+        x-transition:enter-start="{{ $sheet ? 'translate-y-full' : 'max-sm:translate-y-full' }}"
+        x-transition:enter-end="translate-y-0"
+        @class([
+        'fixed inset-0 z-[110] flex items-end justify-center pointer-events-none',
+        'sm:items-center sm:p-4' => ! $sheet,
+    ])>
         <div
             x-ref="panel"
             role="dialog"
@@ -42,7 +50,10 @@
             tabindex="-1"
             x-on:keydown="trap($event)"
             x-on:keydown.escape.stop="hide()"
-            class="pointer-events-auto w-full {{ $width }} max-h-[90vh] overflow-y-auto rounded-t-2xl sm:bq-panel shadow-bq focus:outline-none"
+            @class([
+                'pointer-events-auto w-full max-h-[90dvh] overflow-y-auto rounded-t-bq-overlay bg-bq-surface shadow-bq focus:outline-none',
+                $width.' sm:rounded-bq-overlay sm:border sm:border-bq-border' => ! $sheet,
+            ])
         >
             <div class="flex items-start justify-between gap-4 border-b border-bq-border px-5 py-4">
                 <div>
@@ -56,7 +67,7 @@
                 </button>
             </div>
 
-            <div class="px-5 py-4 text-sm text-bq-text">
+            <div class="px-5 py-4 text-bq-body text-bq-text">
                 {{ $slot }}
             </div>
 

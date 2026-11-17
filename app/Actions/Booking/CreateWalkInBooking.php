@@ -43,7 +43,7 @@ class CreateWalkInBooking
         $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
         if (! EntitlementRules::hasEffectivePlan($subscription)) {
             throw ValidationException::withMessages([
-                'error' => 'Langganan Anda telah habis, mohon perpanjang untuk menambah booking walk-in.',
+                'error' => 'Perpanjang paket untuk mencatat booking baru.',
             ]);
         }
 

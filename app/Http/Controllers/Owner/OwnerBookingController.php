@@ -257,7 +257,7 @@ class OwnerBookingController extends Controller
         }
 
         return back()
-            ->with('sukses', "Walk-in booking atas nama {$booking->namapelanggan} berhasil dibuat!")
+            ->with('sukses', "Booking atas nama {$booking->namapelanggan} berhasil dicatat.")
             ->with('walkin_booking', [
                 'code' => $booking->booking_code,
                 'panelUrl' => route('owner.bookings.panel', $booking->id),

@@ -243,7 +243,7 @@ class GetBeranda
         })->count();
 
         $figures = [
-            ['key' => 'bookings', 'label' => 'Booking hari ini', 'value' => (string) $bookingsToday, 'hint' => 'Online dan walk-in'],
+            ['key' => 'bookings', 'label' => 'Booking hari ini', 'value' => (string) $bookingsToday, 'hint' => 'Online dan dicatat kasir'],
             ['key' => 'waiting', 'label' => 'Menunggu pembayaran', 'value' => (string) $waiting, 'hint' => 'Booking yang slotnya masih ditahan'],
         ];
 
@@ -410,7 +410,7 @@ class GetBeranda
     {
         $actions = [];
         if (TenantPermission::allowsRole($role, 'bookings.walkin') && EntitlementRules::hasEffectivePlan($subscription)) {
-            $actions[] = ['key' => 'walkin', 'label' => 'Booking', 'event' => 'owner-walkin-dialog', 'url' => ''];
+            $actions[] = ['key' => 'walkin', 'label' => 'Catat booking', 'event' => 'owner-walkin-dialog', 'url' => ''];
         }
         if (TenantPermission::allowsRole($role, 'services.manage')) {
             $actions[] = ['key' => 'service', 'label' => 'Layanan', 'event' => '', 'url' => route('owner.services', ['buat' => 1])];

@@ -20,7 +20,7 @@ return [
         'tenants' => 'Profil bisnis',
         'assets' => 'Media galeri',
         'vouchers' => 'Promo',
-        'additional_items' => 'Add-on',
+        'additional_items' => 'Tambahan',
         'payments' => 'Pembayaran',
         'subscriptions' => 'Langganan',
     ],

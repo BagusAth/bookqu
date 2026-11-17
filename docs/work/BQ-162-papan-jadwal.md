@@ -167,7 +167,10 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 ## Evidence (fill when done)
 
 - Session 0 (prototype, 17 Nov 2026): prototype moved into the repo; audit P1 closed (tablet rail and one-column layout, error states, busy data, touch actions, full titles); checks `alat/cek.py` (44 routes × 3 switch sets, 0 issues), `alat/tepi.py lebar` and data = Ramai at 375/768/1024/1366 (0 issues), `alat/uji4.py` (9 error-state checks pass).
-- Session 1:
+- Session 1 (17 Nov 2026):
+  - Ran the PHP prototype on port 8770 and opened `#/sistem` and `#/beranda`. Compared the live shell with the reference as Pemilik and Kasir at 375, 768, 1024 and 1366 px. Live portal checked with temporary local SQLite seed accounts (MySQL was offline). Edge passed 56 page/viewport checks across Beranda, Booking, Kalender, Pelanggan and the Pemilik-only Layanan, Tambahan, Halaman depan, its preview, Laporan and Paket & Tagihan. The shell had the 72 px tablet rail, 232 px desktop sidebar and phone bottom nav, with no page-level horizontal overflow or console errors. The real BookQu mark and phone account trigger were retained.
+  - Verified Catat booking opens from the visible shell button and returns focus on Escape at each width. The grouped selectable table rendered at 60 px in its two-line variant and its phone action menu supported arrow keys and Escape. Fixed the shared booking panel's literal Blade directive in Alpine initialization, which had produced a console error on every owner page.
+  - Pint, `npm run build`, PHPStan and the focused suite passed (90 tests, including `OwnerAppShellTest`, `OwnerSidebarNavigationTest` and `UiComponentsTest`). The full suite on PHP 8.5 reported 982 passed and 4 failed. The three image tests passed on PHP 8.4.25 with GD (20 assertions). The documentation guardrail failure is recorded below.
 - Session 2:
 - Session 3:
 - Session 4:
@@ -179,4 +182,4 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 
 ## Open findings
 
--
+- The full-suite documentation guardrail reports two undefined work item references in `docs/design/papan-jadwal/audit-ui.md`. Both references were already present on the branch before Session 1. The audit document is outside this session's scope.

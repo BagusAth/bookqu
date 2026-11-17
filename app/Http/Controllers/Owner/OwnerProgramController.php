@@ -34,7 +34,7 @@ class OwnerProgramController extends Controller
         if ($request->query('tab') === 'add-ons') {
             abort_unless(ModuleRelease::state('add-ons') === 'released', 404);
             if (! $showAddOns) {
-                return redirect()->route('owner.subscription')->with('error', 'Add-on tersedia mulai paket Medium.');
+                return redirect()->route('owner.subscription')->with('error', 'Tambahan tersedia mulai paket Medium.');
             }
 
             return $addOns->index($request);

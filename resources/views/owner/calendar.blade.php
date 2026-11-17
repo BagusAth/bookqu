@@ -67,7 +67,7 @@
             this.$dispatch('close-dialog', { id: 'calendar-slot' });
             this.$refs.results.replaceWith(document.importNode(results, true));
             this.slot = null;
-            this.feedback = 'Walk-in berhasil dicatat.';
+            this.feedback = 'Booking berhasil dicatat.';
         } catch {
             this.feedback = 'Status penyimpanan belum dapat diperiksa. Muat ulang Kalender sebelum mencoba lagi.';
         } finally {

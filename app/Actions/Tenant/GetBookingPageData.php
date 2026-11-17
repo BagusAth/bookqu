@@ -22,7 +22,7 @@ use App\Support\TenantContext;
  */
 class GetBookingPageData
 {
-    public const SECTIONS = ['link' => 'Link & QR', 'promosi' => 'Materi promosi', 'tampilan' => 'Tampilan', 'galeri' => 'Galeri media', 'landing' => 'Landing page', 'domain' => 'Domain sendiri'];
+    public const SECTIONS = ['link' => 'Link & QR', 'promosi' => 'Materi promosi', 'tampilan' => 'Tampilan', 'galeri' => 'Galeri media', 'landing' => 'Halaman depan', 'domain' => 'Domain sendiri'];
 
     public function __construct(
         private BuildBookingQr $buildBookingQr,
