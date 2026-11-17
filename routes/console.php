@@ -2,6 +2,7 @@
 
 use App\Actions\Booking\CompleteBookings;
 use App\Actions\Payment\RemindOpenRefundRequests;
+use App\Actions\Schedule\OpenAutomaticSlots;
 use App\Actions\Tenant\CheckCustomDomain;
 use App\Models\Tenant;
 use App\Support\TenantContext;
@@ -84,4 +85,26 @@ Artisan::command('bookings:complete-ended', function (CompleteBookings $complete
 Schedule::call(fn () => Artisan::call('bookings:complete-ended'))
     ->name('bookings:complete-ended')
     ->hourly()
+    ->withoutOverlapping();
+
+// BQ-162 (FR-SCHEDULE-015, D-026): every night, open the missing slots of services that switched on
+// automatic opening, from opening hours up to 30 days ahead.
+Artisan::command('slots:open-automatic', function (OpenAutomaticSlots $openAutomaticSlots): void {
+    Tenant::query()->whereIn('id', DB::table('services')->where('auto_open_slots', true)->select('idtenant'))
+        ->chunkById(100, function ($tenants) use ($openAutomaticSlots): void {
+            $context = app(TenantContext::class);
+            foreach ($tenants as $tenant) {
+                $context->setTenantId((int) $tenant->id);
+                try {
+                    $openAutomaticSlots->execute($tenant);
+                } finally {
+                    $context->clear();
+                }
+            }
+        });
+})->purpose('Open slots automatically from opening hours for services that switched it on');
+
+Schedule::call(fn () => Artisan::call('slots:open-automatic'))
+    ->name('slots:open-automatic')
+    ->dailyAt('01:00')
     ->withoutOverlapping();

@@ -54,6 +54,7 @@ class CreateService
             'satuan_harga' => ($data['satuan_harga'] ?? null) ?: 'sesi',
             'satuan_durasi' => ($data['satuan_durasi'] ?? null) ?: 'menit',
             'is_popular' => (bool) ($data['is_popular'] ?? false),
+            'auto_open_slots' => (bool) ($data['auto_open_slots'] ?? false),
             'is_active' => (bool) ($data['is_active'] ?? true),
             'image_url' => $imageUrl,
             'kapasitas' => max(1, (int) ($data['kapasitas'] ?? 1)),

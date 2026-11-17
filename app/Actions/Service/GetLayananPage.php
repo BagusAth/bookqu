@@ -147,6 +147,7 @@ class GetLayananPage
             'imageUrl' => $service->cover_image_url,
             'isActive' => (bool) $service->is_active,
             'isPopular' => (bool) $service->is_popular,
+            'autoOpenSlots' => (bool) $service->auto_open_slots,
             'bookingCount' => (int) $service->bookings_count,
             'futureBookingCount' => (int) $service->getAttribute('future_booking_count'),
             'addOnIds' => $service->relationLoaded('additionalItems') ? $service->additionalItems->pluck('id')->map(fn ($id): string => (string) $id)->all() : [],

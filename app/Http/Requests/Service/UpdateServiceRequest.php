@@ -25,6 +25,7 @@ class UpdateServiceRequest extends StoreServiceRequest
             'satuan_harga' => ['nullable', 'string', 'max:20'],
             'satuan_durasi' => ['nullable', 'string', 'max:20'],
             'is_popular' => ['nullable', 'boolean'],
+            'auto_open_slots' => ['nullable', 'boolean'],
             'is_active' => ['required', 'boolean'],
             // BQ-142 (FR-ASSET-005): an image of this business's gallery, or a new upload into it.
             'image_asset_id' => ['nullable', 'integer', Rule::exists('assets', 'id')->where('idtenant', $tenantId)],
