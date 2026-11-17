@@ -60,7 +60,8 @@ final class TenantPermission
             'bookings' => match ($route) {
                 'bookings.cancellation-requests.store' => 'bookings.request-cancel',
                 'bookings.cancellation-requests.decide' => 'bookings.cancel',
-                'bookings.walkin', 'bookings.walkin-slots' => 'bookings.walkin','bookings.reschedule' => 'bookings.reschedule',default => 'bookings.view'
+                'bookings.walkin', 'bookings.walkin-slots' => 'bookings.walkin','bookings.reschedule' => 'bookings.reschedule',
+                'bookings.complete-many' => 'bookings.complete',default => 'bookings.view'
             },
             'customers' => $method === 'GET' ? 'customers.view' : 'customers.manage',
             'programs','services','categories','resources','additional-items' => 'services.manage',

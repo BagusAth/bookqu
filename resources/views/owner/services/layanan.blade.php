@@ -278,6 +278,16 @@
                     </label>
                 </fieldset>
 
+                <div class="grid gap-1">
+                    <label class="inline-flex items-center gap-2 text-sm text-bq-text">
+                        <input type="hidden" name="auto_open_slots" value="0">
+                        <input type="checkbox" name="auto_open_slots" value="1" x-model="service.auto_open_slots" class="rounded border-bq-border text-bq-primary">
+                        Buka slot otomatis dari jam buka
+                    </label>
+                    <p class="text-bq-small text-bq-text-muted">Setiap malam sistem membuka slot sampai 30 hari ke depan memakai durasi layanan. Slot yang sudah ada atau Anda tutup tidak diubah.</p>
+                    <x-owner.field-error name="auto_open_slots" :form="$oldForm" x-cloak x-show="@js($oldForm) === (service.id ? 'service-edit-' + service.id : 'service-create')" />
+                </div>
+
                 <div class="flex flex-col gap-3 sm:flex-row sm:gap-6">
                     <label class="inline-flex items-center gap-2 text-sm text-bq-text">
                         <input type="hidden" name="is_popular" value="0">

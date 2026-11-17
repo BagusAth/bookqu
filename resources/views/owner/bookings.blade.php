@@ -106,7 +106,33 @@
                     $columns[] = 'Dibayar';
                 }
             @endphp
-            <x-ui.table :columns="$columns" label="Daftar booking" :actions="$actionTab">
+            @php $bulk = $actionTab && $canComplete && $endedCount > 0; @endphp
+            @if ($bulk)
+                <form id="bulk-complete" method="POST" action="{{ route('owner.bookings.complete-many') }}" class="hidden">@csrf</form>
+                <form id="bulk-complete-all" method="POST" action="{{ route('owner.bookings.complete-many') }}" class="hidden">@csrf<input type="hidden" name="all_ended" value="1"></form>
+            @endif
+            <x-ui.table :columns="$columns" label="Daftar booking" :actions="$actionTab" :selectable="$bulk"
+                x-data="{ picked: 0 }" x-on:change="picked = $el.querySelectorAll('input[form=bulk-complete]:checked').length">
+                @if ($bulk)
+                    <x-slot:note>
+                        <x-ui.table-note>
+                            <span>{{ $endedCount }} sesi sudah lewat dan belum ditutup.</span>
+                            <x-slot:action>
+                                <span class="inline-flex flex-wrap gap-2">
+                                    <x-ui.button size="sm" x-show="picked > 0" x-cloak
+                                        x-on:click="$dispatch('open-confirm', { title: 'Tandai booking terpilih selesai?', message: 'Booking yang sedang minta refund atau pembatalan dilewati.', formId: 'bulk-complete', confirmText: 'Tandai selesai' })">
+                                        Tandai selesai (<span x-text="picked"></span>)
+                                    </x-ui.button>
+                                    <x-ui.button size="sm"
+                                        x-on:click="$dispatch('open-confirm', { title: 'Tandai {{ $endedCount }} booking selesai?', message: 'Semua sesi yang sudah lewat dan belum ditutup ditandai selesai, kecuali yang sedang minta refund atau pembatalan. Pelanggan yang tidak datang ubah satu per satu dari slip.', formId: 'bulk-complete-all', confirmText: 'Tandai {{ $endedCount }} selesai' })">
+                                        Tandai selesai semua ({{ $endedCount }})
+                                    </x-ui.button>
+                                </span>
+                            </x-slot:action>
+                        </x-ui.table-note>
+                    </x-slot:note>
+                    <x-slot:selection><span class="sr-only">Pilih</span></x-slot:selection>
+                @endif
                 @foreach ($daftarbooking->getCollection()->groupBy(fn ($booking) => $booking->tanggalbooking?->toDateString()) as $bookingsOnDate)
                     <x-ui.table.row group>{{ $bookingsOnDate->first()->tanggalbooking?->translatedFormat('l, j M Y') }} · {{ $bookingsOnDate->count() }} booking</x-ui.table.row>
                     @foreach ($bookingsOnDate as $booking)
@@ -119,6 +145,13 @@
                             $panel = route('owner.bookings.panel', $booking);
                         @endphp
                         <x-ui.table.row :two-lines="true" :muted="$booking->status === 'cancelled'">
+                            @if ($bulk)
+                                <x-slot:selection>
+                                    @if ($row['task'] === 'complete')
+                                        <x-ui.checkbox name="ids[]" :value="$booking->id" form="bulk-complete" :label="'Pilih '.$booking->namapelanggan" hide-label />
+                                    @endif
+                                </x-slot:selection>
+                            @endif
                             <x-ui.table.cell>
                                 <span class="bq-num font-bq-display text-bq-clock font-semibold">{{ $row['time'] }}</span>
                             </x-ui.table.cell>

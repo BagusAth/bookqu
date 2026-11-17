@@ -3,7 +3,7 @@
         'id' => $card['id'], 'namalayanan' => $card['name'], 'idcategory' => $card['categoryId'] ?? '',
         'harga' => $card['price'], 'satuan_harga' => $card['priceUnit'], 'durasi' => $card['duration'],
         'satuan_durasi' => $card['durationUnit'], 'deskripsi' => $card['description'],
-        'is_popular' => $card['isPopular'], 'is_active' => $card['isActive'], 'imageUrl' => $card['imageUrl'],
+        'is_popular' => $card['isPopular'], 'auto_open_slots' => $card['autoOpenSlots'], 'is_active' => $card['isActive'], 'imageUrl' => $card['imageUrl'],
         'image_asset_id' => $card['imageAssetId'] !== null ? (string) $card['imageAssetId'] : '',
         'kapasitas' => $card['capacity'], 'unit_ids' => $card['unitIds'],
         'additional_item_ids' => $card['addOnIds'],

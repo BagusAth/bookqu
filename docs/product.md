@@ -86,10 +86,11 @@ This table is the home of the plan contents (D-017). Prices stay Small Rp149.000
 | Booking page, calendar and slots, bookings and walk-ins, customers, reviews, payments, balance and payouts, email notifications, invoices | ✓ | ✓ | ✓ |
 | Logo and appearance, link, QR and promotion materials, media gallery | ✓ | ✓ | ✓ |
 | Capacity per slot, no-show, booking policy, Google Calendar, Google Analytics, Meta Pixel | ✓ | ✓ | ✓ |
+| Automatic slot opening (per service, up to 30 days ahead), automatic and bulk completion of ended bookings, weekly summary email (D-026) | ✓ | ✓ | ✓ |
 | Services | 5 | unlimited | unlimited |
 | Bookings per month | 300 | 500 | unlimited |
 | Reports and exports | blurred preview | ✓ | ✓ |
-| Promos and add-ons | — | ✓ | ✓ |
+| Promos (including quiet-hour promos, D-026) and add-ons | — | ✓ | ✓ |
 | Team accounts (in addition to the owner) | 0 | 2 | 10 |
 | Units | — | — | ✓ |
 | Landing page and custom domain | — | — | ✓ |

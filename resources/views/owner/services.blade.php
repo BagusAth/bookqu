@@ -29,7 +29,7 @@
         service: {},
         category: {},
         blankService() {
-            return { id: null, namalayanan: '', idcategory: '', harga: '', satuan_harga: 'sesi', durasi: 60, satuan_durasi: 'menit', deskripsi: '', is_popular: false, is_active: true, imageUrl: null, remove_image: false, kapasitas: 1, unit_ids: [], additional_item_ids: [], image_asset_id: '' };
+            return { id: null, namalayanan: '', idcategory: '', harga: '', satuan_harga: 'sesi', durasi: 60, satuan_durasi: 'menit', deskripsi: '', is_popular: false, auto_open_slots: false, is_active: true, imageUrl: null, remove_image: false, kapasitas: 1, unit_ids: [], additional_item_ids: [], image_asset_id: '' };
         },
         blankCategory() {
             return { id: null, name: '', description: '', color: 'purple', sort_order: 0, is_active: true, imageUrl: null, remove_image: false };
@@ -62,7 +62,7 @@
                         id: old.editing_id || null, namalayanan: old.namalayanan || '', idcategory: old.idcategory || '',
                         harga: old.harga || '', satuan_harga: old.satuan_harga || 'sesi', durasi: old.durasi || 60,
                         satuan_durasi: old.satuan_durasi || 'menit', deskripsi: old.deskripsi || '',
-                        is_popular: toBool(old.is_popular), is_active: toBool(old.is_active),
+                        is_popular: toBool(old.is_popular), auto_open_slots: toBool(old.auto_open_slots), is_active: toBool(old.is_active),
                         image_asset_id: String(old.image_asset_id ?? ''), remove_image: toBool(old.remove_image),
                         additional_item_ids: Array.isArray(old.additional_item_ids) ? old.additional_item_ids : [],
                         kapasitas: old.kapasitas ?? 1, unit_ids: Array.isArray(old.unit_ids) ? old.unit_ids : [],
