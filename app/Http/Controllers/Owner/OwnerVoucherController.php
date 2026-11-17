@@ -98,13 +98,14 @@ class OwnerVoucherController extends Controller
             'is_active' => 'nullable|boolean',
             'applicable_services' => 'nullable|array',
             'applicable_services.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            ...self::quietHourRules(),
         ]);
 
         $applicableServices = ! empty($validated['applicable_services'])
             ? implode(',', $validated['applicable_services'])
             : 'all';
 
-        $voucher = Voucher::create([
+        $voucher = Voucher::create(self::quietHours($validated) + [
             'idtenant' => $tenant->id,
             'code' => strtoupper($validated['code']),
             'discount_type' => $validated['discount_type'],
@@ -144,6 +145,7 @@ class OwnerVoucherController extends Controller
             'is_active' => 'required|boolean',
             'applicable_services' => 'nullable|array',
             'applicable_services.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            ...self::quietHourRules(),
         ]);
 
         $applicableServices = ! empty($validated['applicable_services'])
@@ -157,7 +159,9 @@ class OwnerVoucherController extends Controller
             if (isset($validated['usage_limit']) && (int) $validated['usage_limit'] < $voucher->used_count + $held) {
                 throw ValidationException::withMessages(['usage_limit' => 'Kuota lebih kecil dari pemakaian dan pesanan aktif.']);
             }
-            $voucher->update([
+            $quietHours = array_key_exists('valid_days', $validated) || array_key_exists('valid_from_time', $validated)
+                ? self::quietHours($validated) : [];
+            $voucher->update($quietHours + [
                 'code' => strtoupper($validated['code']),
                 'discount_type' => $validated['discount_type'],
                 'discount_value' => $validated['discount_value'],
@@ -178,6 +182,37 @@ class OwnerVoucherController extends Controller
 
         return redirect()->route('owner.promos')
             ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil diperbarui!');
+    }
+
+    /**
+     * Optional day and time limits of a quiet-hour promo (FR-VOUCHER-006).
+     *
+     * @return array<string, mixed>
+     */
+    private static function quietHourRules(): array
+    {
+        return [
+            'valid_days' => 'nullable|array',
+            'valid_days.*' => 'integer|between:1,7',
+            'valid_from_time' => 'nullable|date_format:H:i|required_with:valid_until_time',
+            'valid_until_time' => 'nullable|date_format:H:i|required_with:valid_from_time|after:valid_from_time',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array{valid_days: ?string, valid_from_time: ?string, valid_until_time: ?string}
+     */
+    private static function quietHours(array $validated): array
+    {
+        $days = array_values(array_unique(array_map('intval', $validated['valid_days'] ?? [])));
+        sort($days);
+
+        return [
+            'valid_days' => $days === [] ? null : implode(',', $days),
+            'valid_from_time' => $validated['valid_from_time'] ?? null,
+            'valid_until_time' => $validated['valid_until_time'] ?? null,
+        ];
     }
 
     public function destroy(int $id)
