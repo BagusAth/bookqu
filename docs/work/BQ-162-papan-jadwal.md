@@ -223,3 +223,25 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 - Resolved by the Tech Lead (17 Nov 2026). C-11 “Belum jadi membayar” goes in Laporan → Pelanggan. List in-period, tenant-scoped bookings whose payment is `gagal` and booking log says “Pembayaran ditutup”. Exclude owner or manager cancellations and customers with a `paid` or `completed` booking created later under the same customer identifier. Expiry and gateway failure share the existing records. Sort newest first and show “Pembayaran tidak selesai” with a link that opens the owner's WhatsApp. Kasir remains outside the Laporan permission.
 - Closed in session 9 (see Evidence). Batch 4 notes for session 9 (17 Nov 2026): (1) on SQLite, closed dates created through Eloquent are stored with a time and `BulkCreateSchedules::plan()` compares them with `whereIn`, so tests insert plain dates; MySQL/MariaDB are not affected, but consider `whereDate`. (2) The weekly summary preference label shows for every role although only the Pemilik receives the mail; hide it for Manajer and Kasir. (3) In one filtered run `CheckoutMidtransTest` and `FiveModulesFullIntegrationTest` raised a RuntimeException that did not repeat when the files ran alone; confirm in the full suite.
 - Session 9 (minor, open): on a phone, Booking → Perlu tindakan shows an empty table header strip below the table note. The prototype has none. This is a cosmetic item.
+- Visual fidelity pass (17 Nov 2026, Tech Lead with Claude Code), after the Tech Lead found pages that differed from the prototype. **Done** (commits `2652aa4`..`91aa9d7`):
+  - Jam Buka & Harga (all four tabs), Booking, Kalender, Unit, Layanan, Pelanggan, Promo, Pembayaran and Laporan now follow `docs/design/papan-jadwal/prototype/`. All figures come from live data.
+  - Shared blocks were added: `x-ui.figures`, `x-ui.delta`, `x-ui.form-row`, `x-ui.savebar`, `x-ui.date-nav`, `x-ui.search` and `x-ui.pager`. `x-ui.table` gained `widths`. Blocks for the hours, filter, toolbar, split and day-grid styles were added to `app.css`. `App\Support\Rupiah` formats owner amounts as "Rp150.000".
+  - Tabs use plain counts.
+  - Fixes: `@js()` inside `<x-ui.*>`/`<x-owner.*>` attributes was not compiled by Blade and broke Alpine on validation errors (now `Js::from`). The owner page title and calendar labels showed garbled dashes.
+  - The "Buka slot otomatis" switch on Jam buka sets `services.auto_open_slots` for every active service.
+  - Tests for the touched pages were updated to the new copy and formats, and pass. The full suite was not rerun after this pass.
+- **Remaining for the visual pass** (compare each page side by side with the prototype at 1366 and 375 px; reuse the blocks above):
+  - Ulasan: the rating panel is one panel with the figure on the left and the distribution bars on the right. Show quick replies and the reply field inline on each unanswered review.
+  - Pengaturan:
+    - use two-column `x-ui.form-row` sections on every tab, with `x-ui.savebar` at the bottom;
+    - fix the save bar that covers fields;
+    - move "Kelola tim" into the Tim tab.
+  - Paket & Tagihan:
+    - compare plans as "Termasuk / Semua di X, ditambah";
+    - "Turun ke …", "Perpanjang" and "Pilih paket" buttons;
+    - usage bars beside the plan panel.
+  - Notifikasi: replace the chip filters with a "Semua / Belum dibaca (n)" segmented control plus a type select, and add "Tandai semua dibaca" in the header.
+  - Bantuan: show the contact buttons (WhatsApp, email) when they are configured, and group the questions by area as in the prototype.
+  - Beranda: compare it after refreshing the local demo data (`BramaStudioSeeder` rebuilds the demo tenants' bookings and slots relative to today; ask before running it). The local data was stale, so Beranda showed its setup guide.
+  - Halaman Booking: close to the prototype, so give it a final check only.
+  - Then a phone check of every page at 375 px, the full suite, PHPStan, and `owner-portal.md` §9 for the new blocks.
