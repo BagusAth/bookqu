@@ -184,7 +184,9 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
   - Compared Layanan (list, gallery, Kategori, Tambahan), Unit and the four Jam Buka & Harga tabs with the PHP prototype on port 8770. Edge checked 72 page and access combinations on the local SQLite seed at 375, 768, 1024 and 1366 px as Pemilik and Kasir. The final Slot and Libur & Tutup tables passed a follow-up layout check, and the phone price simulator expanded and received a live response.
   - The Layanan table uses the most common nonempty date from the existing slot runway, with the later date breaking ties. Rows show exceptions. Unit keeps historical conflicts in a collapsed section and preserves the existing JSON response.
   - Pint, Vite build and PHPStan passed. Ran the full suite once on PHP 8.4.25 with GD (988 passed, one sold-count text assertion failed). Restored the accessible sold-count label and ran only the affected test and schedule suites (9 passed, 53 assertions).
-- Session 5:
+- Session 5 (17 Nov 2026):
+  - Compared Pembayaran, Laporan, Promo and Ulasan at the listed prototype routes. Edge passed 96 page and access checks at 375, 768, 1024 and 1366 px as Pemilik and Kasir on the local SQLite seed.
+  - Pint, Vite build and PHPStan checked. Report tests passed on SQLite (19) and MySQL (13). C-11 fixtures cover a system-closed payment, a later paid/completed booking, owner cancellation, tenant isolation and Kasir denial. The full SQLite suite reported 991 passed and one assertion using the old payment header copy. The updated copy assertion passed on its own.
 - Session 6:
 - Session 7:
 - Session 8:
@@ -194,4 +196,4 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 
 - The full-suite documentation guardrail reports two undefined work item references in `docs/design/papan-jadwal/audit-ui.md`. Both references were already present on the branch before Session 1. Resolved in commit `eb277e4`.
 - Resolved by the Tech Lead. A network failure, timeout or 5xx during payout submission shows “Pengajuan pencairan belum terkonfirmasi”. “Coba lagi” sends the same `request_key` and “Nanti saja” closes the dialog. Validation remains inline. The local balance hold and later admin transfer continue under FR-PAYOUT-002 and FR-PAYOUT-003. Prototype updated in `eb277e4`.
-- Session 5, C-11 “Belum jadi membayar”. The decision catalogue lists `#/laporan/pendapatan`; the prototype renders the list and WhatsApp action in `#/laporan/pelanggan`. The payment lifecycle writes the same `gagal` status and “Pembayaran ditutup” booking log for expiry and gateway failure, so the report cannot reliably identify historic expiries from these fields. Tech Lead decision needed on the tab and how to identify eligible bookings.
+- Resolved by the Tech Lead (17 Nov 2026). C-11 “Belum jadi membayar” goes in Laporan → Pelanggan. List in-period, tenant-scoped bookings whose payment is `gagal` and booking log says “Pembayaran ditutup”. Exclude owner or manager cancellations and customers with a `paid` or `completed` booking created later under the same customer identifier. Expiry and gateway failure share the existing records. Sort newest first and show “Pembayaran tidak selesai” with a link that opens the owner's WhatsApp. Kasir remains outside the Laporan permission.

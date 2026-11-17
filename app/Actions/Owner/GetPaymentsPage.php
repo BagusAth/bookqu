@@ -35,7 +35,7 @@ class GetPaymentsPage
         'transaksi' => 'Transaksi',
         'saldo' => 'Saldo & Pencairan',
         'rekening' => 'Rekening',
-        'pengaturan' => 'Pengaturan',
+        'cara' => 'Cara kerja',
     ];
 
     public function __construct(private GetBalanceLedger $getBalanceLedger) {}
@@ -48,6 +48,7 @@ class GetPaymentsPage
     {
         app(TenantContext::class)->setTenantId($tenant->id);
 
+        $tab = $tab === 'pengaturan' ? 'cara' : $tab;
         $activeTab = array_key_exists((string) $tab, self::TABS) ? (string) $tab : 'ringkasan';
         $accounts = TenantPayoutAccount::where('idtenant', $tenant->id)->orderByDesc('is_default')->latest()->get();
         $eligibilityReasons = PayoutEligibility::reasons($tenant, $user);
@@ -87,7 +88,7 @@ class GetPaymentsPage
                     ->latest('requested_at')->latest('id')->paginate(15, ['*'], 'pencairan')->withQueryString()
                     ->through(fn (OwnerPayout $payout): array => $this->payoutRow($payout)),
             ],
-            'pengaturan' => ['explanation' => $this->explanation($tenant)],
+            'cara' => ['explanation' => $this->explanation($tenant)],
             default => [],
         };
     }

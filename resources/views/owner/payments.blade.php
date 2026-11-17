@@ -88,31 +88,20 @@
         },
     }"
 >
-    <x-owner.page-header title="Pembayaran" purpose="Cara Anda menerima uang, berapa saldo Anda, dan kapan bisa dicairkan." />
+    <x-owner.page-header title="Pembayaran" purpose="Uang yang masuk, saldo Anda, dan kapan bisa dicairkan." />
 
     <x-owner.tabs :tabs="\App\Actions\Owner\GetPaymentsPage::TABS" :active="$activeTab" label="Bagian halaman Pembayaran" />
 
     {{-- ── Ringkasan ── --}}
     @if ($activeTab === 'ringkasan')
-        <section aria-label="Saldo" class="grid gap-4 sm:grid-cols-3">
-            @foreach ([['Saldo tersedia', $summary['available'], 'Bisa dicairkan ke rekening Anda'], ['Sedang diproses', $summary['inProcess'], 'Pencairan menunggu review atau transfer'], ['Total dicairkan', $summary['withdrawn'], 'Sudah ditransfer ke rekening Anda']] as [$title, $value, $hint])
-                {{-- BQ-161 (audit PY-01): the available balance is the page's hero figure --}}
-                <div @class(['rounded-xl p-5', 'bg-bq-primary text-white' => $loop->first, $card => ! $loop->first])>
-                    <p @class(['text-sm', 'text-white/80' => $loop->first, 'text-bq-text-muted' => ! $loop->first])>{{ $title }}</p>
-                    <p @class(['bq-num mt-1 font-bold', 'text-3xl text-white' => $loop->first, 'text-2xl text-bq-ink' => ! $loop->first])>{{ $rupiah($value) }}</p>
-                    <p @class(['mt-1 text-xs', 'text-white/80' => $loop->first, 'text-bq-text-muted' => ! $loop->first])>{{ $hint }}</p>
-                </div>
-            @endforeach
-        </section>
-
-        <section aria-label="Pembayaran pelanggan" class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            @foreach ([['Berhasil', 'sukses'], ['Menunggu', 'pending'], ['Gagal', 'gagal'], ['Direfund', 'refund']] as [$title, $key])
-                <div class="{{ $card }} p-4">
-                    <p class="text-sm text-bq-text-muted">Pembayaran {{ mb_strtolower($title) }}</p>
-                    <p class="mt-1 text-xl font-semibold bq-num text-bq-text">{{ $summary['counts'][$key] }}</p>
-                </div>
-            @endforeach
-        </section>
+        <x-ui.stat hero label="Saldo tersedia" :value="$rupiah($summary['available'])" context="Bisa dicairkan ke rekening Anda"
+            :supporting="['Sedang diproses' => $rupiah($summary['inProcess']), 'Total dicairkan' => $rupiah($summary['withdrawn'])]">
+            <p class="mt-4 text-bq-small text-bq-text-muted">
+                {{ $summary['counts']['sukses'] }} pembayaran berhasil · {{ $summary['counts']['pending'] }} menunggu ·
+                {{ $summary['counts']['gagal'] }} gagal · {{ $summary['counts']['refund'] }} direfund
+            </p>
+            <a href="{{ route('owner.payments', ['tab' => 'saldo']) }}" class="bq-btn bq-btn-primary mt-4">Cairkan saldo</a>
+        </x-ui.stat>
 
         <section aria-labelledby="latest-title" class="{{ $card }}">
             <div class="flex items-center justify-between border-b border-bq-border px-4 py-3">
@@ -420,29 +409,32 @@
     @endif
 
     {{-- ── Pengaturan: explanation only, nothing to configure (D-016) ── --}}
-    @if ($activeTab === 'pengaturan')
-        <section aria-labelledby="how-title" class="{{ $card }} space-y-4 p-4 text-sm text-bq-text">
-            <h2 id="how-title" class="text-base font-semibold">Cara pembayaran bekerja</h2>
-            <ul class="list-disc space-y-2 pl-5">
-                <li>Pembayaran pelanggan diproses oleh BookQu: QRIS, virtual account dan e-wallet. Anda tidak perlu mengatur payment gateway.</li>
-                <li>Biaya platform 0%. Seluruh pembayaran booking yang berhasil masuk ke saldo Anda.</li>
-                <li>Pelanggan punya waktu {{ $explanation['deadlineMinutes'] }} menit untuk membayar. Setelah itu booking batal otomatis dan slotnya kembali terbuka.</li>
-                <li>
+    @if ($activeTab === 'cara')
+        <section aria-labelledby="how-title" class="bq-panel space-y-4 p-4">
+            <div>
+                <h2 id="how-title" class="font-semibold">Cara pembayaran bekerja</h2>
+                <p class="mt-1 text-bq-small text-bq-text-muted">Tidak ada yang perlu diatur di sini.</p>
+            </div>
+            <x-ui.kv :items="[
+                'Diproses oleh' => 'BookQu: QRIS, virtual account dan e-wallet',
+                'Biaya platform' => '0%',
+                'Batas bayar' => 'Pelanggan punya '.$explanation['deadlineMinutes'].' menit untuk membayar; slot ditahan selama itu.',
+                'Uang masuk' => 'Ke saldo BookQu Anda, lalu dicairkan ke rekening melalui admin BookQu.',
+            ]">
+                <dt class="text-bq-text-muted">Refund</dt>
+                <dd class="min-w-0 break-words">
                     @if ($explanation['refundsEnabled'])
-                        Refund aktif:
                         @if ($explanation['cancelBeforeHours'] > 0)
-                            pelanggan bisa membatalkan dan meminta refund paling lambat {{ $explanation['cancelBeforeHours'] }} jam sebelum jadwal.
+                            Pelanggan bisa membatalkan dan meminta refund paling lambat {{ $explanation['cancelBeforeHours'] }} jam sebelum jadwal.
                         @else
-                            pelanggan bisa meminta refund sesuai Kebijakan Booking Anda.
+                            Pelanggan bisa meminta refund sesuai Kebijakan Booking Anda.
                         @endif
-                        Refund yang Anda setujui mengurangi saldo.
                     @else
-                        Refund tidak aktif: pelanggan tidak bisa meminta refund dari link akses mereka.
+                        Refund tidak aktif.
                     @endif
-                    Atur di Pengaturan → Kebijakan Booking.
-                </li>
-                <li>Saldo dicairkan ke rekening Anda lewat tab Saldo &amp; Pencairan, ditinjau dan ditransfer oleh admin BookQu.</li>
-            </ul>
+                    <a class="bq-link" href="{{ route('owner.settings.business', ['tab' => 'policy']) }}">Ubah kebijakan</a>
+                </dd>
+            </x-ui.kv>
         </section>
     @endif
 </div>

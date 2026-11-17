@@ -39,19 +39,8 @@
 
     {{-- ── Average and distribution ── --}}
     <section aria-label="Ringkasan ulasan" class="grid gap-4 lg:grid-cols-3">
-        <div class="bq-panel p-5">
-            <p class="text-sm text-bq-text-muted">Rata-rata rating</p>
-            <p class="mt-1 flex items-baseline gap-1">
-                <span class="text-3xl font-semibold bq-num text-bq-text">{{ number_format($summary['average'], 1, ',', '.') }}</span>
-                <span class="text-sm text-bq-text-muted">/ 5</span>
-            </p>
-            <div class="mt-1 flex items-center gap-0.5" aria-hidden="true">
-                @for ($i = 1; $i <= 5; $i++)
-                    <svg class="h-4 w-4 {{ $i <= round($summary['average']) ? 'text-bq-warning' : 'text-bq-border' }}" viewBox="0 0 20 20" fill="currentColor"><path d="{{ $star }}"/></svg>
-                @endfor
-            </div>
-            <p class="mt-1 text-sm text-bq-text-muted">Dari {{ $summary['total'] }} ulasan</p>
-        </div>
+        <x-ui.stat hero label="Rata-rata rating" :value="number_format($summary['average'], 1, ',', '.').' / 5'"
+            :context="'Dari '.$summary['total'].' ulasan'" />
 
         <div class="bq-panel p-5 lg:col-span-2">
             <p class="text-sm text-bq-text-muted">Sebaran rating</p>
@@ -92,13 +81,13 @@
             <x-owner.empty-state title="Belum ada ulasan" description="Pelanggan memberi ulasan lewat link akses booking mereka setelah booking selesai." />
         @endif
     @else
-        <ul class="space-y-3" aria-label="Ulasan">
+        <ul class="bq-panel divide-y divide-bq-border" aria-label="Ulasan">
             @foreach ($reviews as $review)
-                <li class="bq-panel p-4 {{ $review['hidden'] ? 'opacity-75' : '' }}">
+                <li class="p-4 {{ $review['hidden'] ? 'opacity-75' : '' }}">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
-                                <p class="text-sm font-medium text-bq-text">{{ $review['customer'] }}</p>
+                                <p class="text-bq-body font-semibold text-bq-text">{{ $review['customer'] }}</p>
                                 <span class="flex items-center gap-0.5" role="img" aria-label="{{ $review['rating'] }} dari 5 bintang">
                                     @for ($i = 1; $i <= 5; $i++)
                                         <svg class="h-3.5 w-3.5 {{ $i <= $review['rating'] ? 'text-bq-warning' : 'text-bq-border' }}" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="{{ $star }}"/></svg>
@@ -108,7 +97,7 @@
                                     <span class="inline-flex items-center rounded-full bg-bq-background px-2 py-0.5 text-xs font-medium text-bq-text-muted ring-1 ring-inset ring-bq-border">Disembunyikan</span>
                                 @endif
                             </div>
-                            <p class="mt-0.5 text-xs text-bq-text-muted">
+                            <p class="mt-0.5 text-bq-small text-bq-text-muted">
                                 {{ $review['createdAt'] }}
                                 @if ($review['service'] !== '') · {{ $review['service'] }} @endif
                                 @if ($review['bookingCode'] !== '')
@@ -176,7 +165,7 @@
         </form>
         <x-slot:footer>
             <button type="button" class="{{ $buttonSecondary }} py-2" x-on:click="$dispatch('close-dialog', { id: 'review-reply-dialog' })">Batal</button>
-            <button type="submit" form="review-reply-form" class="{{ $buttonPrimary }}" x-bind:disabled="saving" x-text="saving ? 'Menyimpan…' : 'Simpan balasan'">Simpan balasan</button>
+            <button type="submit" form="review-reply-form" class="{{ $buttonPrimary }}" x-bind:disabled="saving" x-text="saving ? 'Menyimpan…' : 'Kirim balasan'">Kirim balasan</button>
         </x-slot:footer>
     </x-owner.dialog>
 </div>

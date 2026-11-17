@@ -42,18 +42,14 @@
     }
 }">
 
-    <x-owner.page-header title="Promo" purpose="Buat dan pantau kode diskon untuk booking.">
+    <x-owner.page-header title="Promo" purpose="Beri potongan harga, dan lihat apakah berhasil.">
         <x-slot:action>
             <button type="button" @click="addModalOpen = true" class="bq-btn bq-btn-primary" id="btn-add-voucher">Buat promo</button>
         </x-slot:action>
     </x-owner.page-header>
 
-    <dl class="grid grid-cols-2 gap-3 bq-panel p-4 text-sm sm:grid-cols-4">
-        <div><dt>Promo aktif</dt><dd class="font-semibold">{{ $promoFigures['active'] }}</dd></div>
-        <div><dt>Pemakaian</dt><dd class="font-semibold">{{ $promoFigures['uses'] }}</dd></div>
-        <div><dt>Total diskon</dt><dd class="font-semibold">Rp {{ number_format($promoFigures['discount'], 0, ',', '.') }}</dd></div>
-        <div><dt>Pendapatan dengan promo</dt><dd class="font-semibold">Rp {{ number_format($promoFigures['revenue'], 0, ',', '.') }}</dd></div>
-    </dl>
+    <x-ui.stat hero label="Pendapatan dengan promo" :value="'Rp '.number_format($promoFigures['revenue'], 0, ',', '.')"
+        :supporting="['Promo aktif' => $promoFigures['active'], 'Pemakaian' => $promoFigures['uses'], 'Total diskon' => 'Rp '.number_format($promoFigures['discount'], 0, ',', '.')]" />
     <x-owner.tabs :tabs="$promoTabs" :active="$tab" label="Status promo" />
 
     {{-- ── Search & Filter ── --}}
@@ -88,14 +84,13 @@
                     'applicable_services' => is_string($v->applicable_services) ? ($v->applicable_services === 'all' ? [] : explode(',', $v->applicable_services)) : ($v->applicable_services ?? []),
                 ];
             @endphp
-            <div class="relative bq-panel p-5 transition hover:border-bq-border-strong hover: flex flex-col justify-between overflow-hidden">
-                <div class="absolute -right-6 -bottom-6 h-24 w-24 rounded-full bg-bq-primary-light/50 pointer-events-none"></div>
+            <div class="bq-panel flex min-w-0 flex-col justify-between p-4">
 
                 <div>
                     {{-- Header Code & Discount --}}
                     <div class="flex items-start justify-between gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="rounded-lg border border-dashed border-bq-primary/40 bg-bq-primary-light px-2.5 py-1 text-xs font-bold tracking-wider text-bq-primary">{{ $v->code }}</span>
+                        <div class="flex min-w-0 items-center gap-2">
+                            <span class="min-w-0 truncate rounded-bq-control bg-bq-surface-2 px-2.5 py-1 font-semibold text-bq-primary" title="{{ $v->code }}">{{ $v->code }}</span>
                             <button type="button" @click="copyCode(@js($v->code))" class="-m-2 inline-flex items-center justify-center rounded-lg p-2 text-bq-text-muted hover:bg-bq-primary-light hover:text-bq-primary transition" title="Salin Kode" aria-label="Salin Kode">
                                 <x-owner.icon name="copy" class="h-4 w-4" />
                             </button>
@@ -106,7 +101,7 @@
                     </div>
 
                     {{-- Details --}}
-                    <div class="mt-4 space-y-2 text-xs">
+                    <div class="mt-4 space-y-2 text-bq-small">
                         <p><span class="text-bq-text-muted">Layanan:</span> {{ $cards[$v->id]['services'] }}</p>
                         @if ($v->max_discount !== null)
                             <p><span class="text-bq-text-muted">Diskon maksimum:</span> Rp {{ number_format((float) $v->max_discount, 0, ',', '.') }}</p>
@@ -119,12 +114,16 @@
                         <div class="flex justify-between">
                             <span class="text-bq-text-muted">Penggunaan:</span>
                             <span class="font-medium text-bq-text">
-                                {{ $v->used_count }} / {{ $v->usage_limit ? $v->usage_limit . ' Kuota' : 'Tanpa batas' }}
+                                @if ($v->usage_limit)
+                                    <x-ui.mini-bar :value="$v->used_count" :total="$v->usage_limit" unit="dipakai" />
+                                @else
+                                    {{ $v->used_count }} dipakai · Tanpa batas
+                                @endif
                             </span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-bq-text-muted">Masa Berlaku:</span>
-                            <span class="font-medium text-bq-text-subtle font-mono text-[11px]">
+                            <span class="font-medium text-bq-text-subtle bq-num text-bq-small">
                                 @if($v->start_date && $v->end_date)
                                     {{ \Carbon\Carbon::parse($v->start_date)->translatedFormat('j M') }} - {{ \Carbon\Carbon::parse($v->end_date)->translatedFormat('j M Y') }}
                                 @elseif($v->end_date)
@@ -140,7 +139,7 @@
                 {{-- Footer Controls --}}
                 <div class="mt-5 pt-3 border-t border-bq-border flex items-center justify-between">
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="rounded-full bg-bq-background px-2 py-1 text-xs font-medium">{{ $cards[$v->id]['state'] }}</span>
+                        <span class="text-bq-small text-bq-text-muted">{{ $cards[$v->id]['state'] }}</span>
                         <form method="POST" action="{{ route($promoRoute.'.toggle', $v->id) }}">
                             @csrf
                             @method('PATCH')

@@ -6,7 +6,7 @@ Under the platform escrow model, customer payments are collected with BookQu's o
 
 | Route | Code |
 |---|---|
-| `owner.payments` (Pembayaran page, BQ-141: tabs Ringkasan, Transaksi, Saldo & Pencairan, Rekening, Pengaturan); `owner.settings.balance` answers 301 to its Saldo tab | `Owner/OwnerBalanceController` → `Actions/Owner/GetPaymentsPage`, `GetBalanceLedger` |
+| `owner.payments` (Pembayaran page, BQ-141: tabs Ringkasan, Transaksi, Saldo & Pencairan, Rekening, Cara kerja); `owner.settings.balance` answers 301 to Saldo | `Owner/OwnerBalanceController` → `Actions/Owner/GetPaymentsPage`, `GetBalanceLedger` |
 | `owner.payouts.proof` (own tenant only) | `OwnerBalanceController::proof` |
 | `owner.payout-accounts.*` (CRUD saved payout accounts) | `Owner/OwnerPayoutAccountController` → `Actions/Owner/*TenantPayoutAccount` |
 | `admin.payouts*` (`role:admin`) | `Admin/AdminPayoutController` → `Actions/Admin/ProcessOwnerPayout` |

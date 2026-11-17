@@ -88,6 +88,24 @@ final readonly class ReportPeriod
         return $this->start->diffInDays($this->end) < 62;
     }
 
+    public function previous(): self
+    {
+        if ($this->key === 'kustom') {
+            $days = (int) $this->start->diffInDays($this->end->startOfDay()) + 1;
+
+            return new self($this->key, $this->start->subDays($days), $this->start->subDay()->endOfDay());
+        }
+
+        $months = match ($this->key) {
+            '3-bulan' => 3,
+            '6-bulan' => 6,
+            '12-bulan' => 12,
+            default => 1,
+        };
+
+        return new self($this->key, $this->start->subMonthsNoOverflow($months), $this->start->subDay()->endOfDay());
+    }
+
     public function label(): string
     {
         if ($this->key !== 'kustom') {

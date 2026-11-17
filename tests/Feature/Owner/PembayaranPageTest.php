@@ -88,7 +88,7 @@ class PembayaranPageTest extends TestCase
             ->assertSee('Transaksi')
             ->assertSee('Saldo &amp; Pencairan', false)
             ->assertSee('Rekening')
-            ->assertSee('Pengaturan');
+            ->assertSee('Cara kerja');
 
         $this->get('/owner/settings/balance?page=2')
             ->assertStatus(301)
@@ -269,7 +269,7 @@ class PembayaranPageTest extends TestCase
     {
         $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'pengaturan']))
             ->assertOk()
-            ->assertSee('Biaya platform 0%')
+            ->assertSeeInOrder(['Biaya platform', '0%'])
             ->assertSee('15 menit')
             ->assertSee('24 jam')
             ->assertDontSee('name="payment_mode"', false);

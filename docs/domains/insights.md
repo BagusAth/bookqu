@@ -37,6 +37,9 @@ BQ-147: Laporan (owner-portal.md §8.13, FR-ANALYTICS-007) replaces the analytic
 - **Customers:** `CustomerIdentity`; new when the first booking was made in the period.
 - **Occupancy:** participants holding seats (BookingRules::seatsTakenSql) divided by total slot capacity, with a separate free-slot count and heat map of occupied slots. Pro unit utilisation compares occupied minutes with scheduled minutes across the services currently assigned to each active unit. Overlapping intervals count once.
 - **Promo usage:** successful booking payments in the period contribute one use and their frozen discount to the customer and code. Pending reservations are reflected after payment succeeds.
+- **Previous period (BQ-162):** the preceding calendar month or block of months for presets, or the immediately preceding range of the same length for custom dates. Conclusions come from the figures in `GetReport`.
+- **Days booked in advance:** the average calendar days from booking creation to the session date, counted once per checkout, using sessions in the selected period.
+- **Belum jadi membayar (BQ-162, C-11):** Pelanggan shows system-closed booking payments (`gagal` and the “Pembayaran ditutup” log) for sessions in the period, newest bookings first. Owner/manager cancellations and customers with a later-created `paid` or `completed` booking in the same tenant are excluded. Identity follows `CustomerIdentity`. The WhatsApp link opens the owner's app, with no automated message.
 
 Charts are CSS bars and a heat-map table, so no chart library loads. Each tab exports its own CSV (`ExportReport`): formula-safe cells, one row per payment in the Pendapatan transactions, tenant context restored inside the stream, refused below Medium by `subscription:analytics`. The no-show rate, unit metrics and promo usage follow their respective module release gates. Evidence: Owner/LaporanPageTest, Owner/AnalyticsExportAndAggregationTest.
 

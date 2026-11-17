@@ -35,7 +35,7 @@ Kolom **Jalur** mengikuti `docs/workflow.md` §3. "Berat" berarti menyentuh atur
 | C-08 | ~~Sumber booking per kanal~~ **Disembunyikan (D-026 poin 5).** Tidak dibangun: tanpa link `?dari=`, kolom sumber, laporan "Dari mana booking datang" atau filter kanal. Sumber online / walk-in yang sudah ada tetap seperti sekarang | — | — | — | — |
 | C-09 | Promo jam sepi | `#/promo`, `#/laporan/okupansi` | Baru: aturan promo per jam | **Berat** (harga, pembayaran) | 8 |
 | C-10 | Laporan: hari pesan di muka | `#/laporan/pelanggan` | Ada (created_at vs sesi) | Ringan | 5 |
-| C-11 | Laporan: booking yang tidak jadi dibayar | `#/laporan/pendapatan` | Ada (pending yang kedaluwarsa) | Ringan | 5 |
+| C-11 | Laporan: booking yang tidak jadi dibayar | `#/laporan/pelanggan` | Booking yang pembayarannya ditutup sistem (`gagal`), tanpa membedakan kedaluwarsa dan gagal di gateway | Ringan | 5 |
 
 ## Tidak termasuk
 

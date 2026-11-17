@@ -16,6 +16,8 @@
     $tab = $report['tab'];
     $period = $report['period'];
     $summary = $report['summary'];
+    $comparison = $report['comparison'];
+    $number = fn (int|float $value): string => number_format($value, 0, ',', '.');
     $exportUrl = route('owner.analytics.export', ['tab' => $tab] + $period['query']);
     $heatClass = function (int $count, int $max): string {
         if ($count === 0 || $max === 0) {
@@ -34,10 +36,10 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6">
-    <x-owner.page-header title="Laporan" purpose="Bagaimana kinerja bisnis Anda, dan apa yang bisa ditingkatkan.">
+    <x-owner.page-header title="Laporan" purpose="Bagaimana bisnis Anda berjalan, dan apa yang bisa diperbaiki.">
         @unless ($report['locked'])
             <x-slot:action>
-                <a href="{{ $exportUrl }}" class="bq-btn bq-btn-secondary">Unduh CSV</a>
+                <a href="{{ $exportUrl }}" class="bq-btn bq-btn-secondary">Ekspor CSV</a>
             </x-slot:action>
         @endunless
     </x-owner.page-header>
@@ -52,7 +54,7 @@
                 @endforeach
             </select>
         </div>
-        <div class="flex w-full gap-3 sm:w-auto" x-show="periode === 'kustom'" @if ($period['key'] !== 'kustom') style="display: none" @endif>
+        <div class="grid w-full gap-3 min-[420px]:grid-cols-2 sm:w-auto" x-show="periode === 'kustom'" @if ($period['key'] !== 'kustom') style="display: none" @endif>
             <div class="flex-1">
                 <label for="report-from" class="block text-sm font-medium text-bq-text">Dari</label>
                 <input id="report-from" type="date" name="dari" value="{{ $period['from'] }}" class="{{ $field }}" x-bind:disabled="periode !== 'kustom'">
@@ -83,24 +85,44 @@
             <div class="{{ $card }} mt-3 h-40"></div>
         </div>
     @else
+        <div class="bq-panel px-4 py-3">
+            <p class="text-bq-body font-semibold">{{ $report['conclusion'] }}</p>
+            <p class="mt-1 text-bq-small text-bq-text-muted">Dibanding {{ $comparison['label'] }}</p>
+        </div>
         @switch($tab)
             @case('pendapatan')
                 @php $revenue = $report['revenue']; $maxNet = max([1, ...array_map(fn ($point) => abs($point['net']), $revenue['series'])]); @endphp
                 <section aria-labelledby="revenue-title" class="space-y-4">
                     <h2 id="revenue-title" class="sr-only">Pendapatan</h2>
-                    <div class="bq-panel grid grid-cols-2 lg:grid-cols-5 gap-px overflow-hidden bg-bq-border">
-                        @foreach (['Pendapatan kotor' => $revenue['gross'], 'Online' => $revenue['online'], 'Dicatat kasir' => $revenue['walkIn'], 'Refund' => $revenue['refunds'], 'Pendapatan bersih' => $revenue['net']] as $label => $value)
-                            <div class="min-w-0 bg-bq-surface p-4 sm:p-5">
-                                <p class="text-xs font-medium text-bq-text-muted">{{ $label }}</p>
-                                <p class="bq-num mt-1 text-2xl font-bold text-bq-ink">{{ $rupiah($value) }}</p>
-                            </div>
-                        @endforeach
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <x-ui.stat hero label="Pendapatan bersih" :value="$rupiah($revenue['net'])"
+                            :context="'Pembayaran berhasil dikurangi refund · sebelumnya '.$rupiah($comparison['net'])" />
+                        <x-ui.stat label="Pendapatan kotor" :value="$rupiah($revenue['gross'])"
+                            :context="'Menurut tanggal bayar · sebelumnya '.$rupiah($comparison['gross'])" />
                     </div>
-                    <p class="text-xs text-bq-text-muted">Dari pembayaran booking yang berhasil pada periode ini, dikurangi refund yang dicatat pada periode ini.</p>
+                    <dl class="bq-panel grid grid-cols-2 gap-4 p-4 sm:grid-cols-3">
+                        @foreach (['Online' => $revenue['online'], 'Dicatat kasir' => $revenue['walkIn'], 'Refund' => $revenue['refunds']] as $label => $value)
+                            <div><dt class="text-bq-small text-bq-text-muted">{{ $label }}</dt><dd class="bq-num font-semibold">{{ $rupiah($value) }}</dd></div>
+                        @endforeach
+                    </dl>
 
                     <div class="{{ $card }} overflow-hidden">
                         <h3 class="border-b border-bq-border px-4 py-3 text-sm font-semibold text-bq-text">Pendapatan bersih per {{ $revenue['daily'] ? 'hari' : 'bulan' }}</h3>
-                        <div class="max-h-96 overflow-y-auto">
+                        <div class="px-4 pb-3" aria-hidden="true">
+                            <div class="flex h-24 items-end gap-0.5 border-b border-bq-border">
+                                @foreach ($revenue['series'] as $point)
+                                    <span class="min-w-0 flex-1 rounded-t-sm {{ $point['net'] < 0 ? 'bg-bq-danger' : 'bg-bq-primary' }}"
+                                        style="height: {{ max(2, round(abs($point['net']) / $maxNet * 100)) }}%"
+                                        title="{{ $point['label'] }} · {{ $rupiah($point['net']) }}"></span>
+                                @endforeach
+                            </div>
+                            <div class="mt-1 flex justify-between text-bq-small text-bq-text-muted">
+                                <span>{{ $revenue['series'][0]['label'] ?? '' }}</span><span>{{ $revenue['series'][array_key_last($revenue['series'])]['label'] ?? '' }}</span>
+                            </div>
+                        </div>
+                        <details class="border-t border-bq-border">
+                            <summary class="cursor-pointer px-4 py-3 text-bq-small font-semibold">Rincian pendapatan</summary>
+                            <div class="max-h-96 overflow-y-auto">
                             <table class="w-full text-sm">
                                 <caption class="sr-only">Pendapatan kotor, refund dan bersih per {{ $revenue['daily'] ? 'hari' : 'bulan' }}</caption>
                                 <thead class="sticky top-0 bg-bq-surface text-left text-xs text-bq-text-muted">
@@ -122,7 +144,8 @@
                                     @endforeach
                                 </tbody>
                             </table>
-                        </div>
+                            </div>
+                        </details>
                     </div>
 
                     <div class="{{ $card }} overflow-hidden">
@@ -155,13 +178,12 @@
                 @php $occupancy = $report['occupancy']; $heatmap = $occupancy['heatmap']; @endphp
                 <section aria-labelledby="occupancy-title" class="space-y-4">
                     <h2 id="occupancy-title" class="sr-only">Okupansi</h2>
-                    <div class="bq-panel grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden bg-bq-border">
-                        @foreach (['Tingkat okupansi' => $percent($occupancy['rate']), 'Kursi terisi / kapasitas' => number_format($occupancy['seats'], 0, ',', '.').' / '.number_format($occupancy['capacity'], 0, ',', '.'), 'Slot terisi' => number_format($occupancy['booked'], 0, ',', '.'), 'Slot kosong' => number_format($occupancy['free'], 0, ',', '.')] as $label => $value)
-                            <div class="min-w-0 bg-bq-surface p-4 sm:p-5">
-                                <p class="text-xs font-medium text-bq-text-muted">{{ $label }}</p>
-                                <p class="bq-num mt-1 text-2xl font-bold text-bq-ink">{{ $value }}</p>
-                            </div>
-                        @endforeach
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <x-ui.stat hero label="Tingkat okupansi" :value="$percent($occupancy['rate'])"
+                            :context="'Kursi terisi dari total kapasitas · sebelumnya '.$percent($comparison['rate'])" />
+                        <x-ui.stat label="Slot terisi" :value="$number($occupancy['booked'])"
+                            :context="'Menurut tanggal sesi · sebelumnya '.$number($comparison['booked'])"
+                            :supporting="['Kursi terisi / kapasitas' => $number($occupancy['seats']).' / '.$number($occupancy['capacity']), 'Slot kosong' => $number($occupancy['free'])]" />
                     </div>
 
                     <div class="{{ $card }} p-4">
@@ -222,6 +244,10 @@
 
             @case('layanan')
                 @php $services = $report['services']; $maxBookings = max([1, ...array_column($services, 'bookings')]); @endphp
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <x-ui.stat hero label="Pendapatan bersih" :value="$rupiah($summary['revenue'])" :context="'Sebelumnya '.$rupiah($comparison['net'])" />
+                    <x-ui.stat label="Booking" :value="$number($summary['bookings'])" :context="'Menurut tanggal sesi · sebelumnya '.$number($comparison['bookings'])" />
+                </div>
                 <section aria-labelledby="services-title" class="{{ $card }} overflow-hidden">
                     <h2 id="services-title" class="border-b border-bq-border px-4 py-3 text-sm font-semibold text-bq-text">Layanan menurut booking dan pendapatan</h2>
                     @if ($services === [])
@@ -255,13 +281,10 @@
                 @php $customers = $report['customers']; $newShare = $customers['active'] > 0 ? round($customers['new'] / $customers['active'] * 100, 1) : 0; @endphp
                 <section aria-labelledby="customers-title" class="space-y-4">
                     <h2 id="customers-title" class="sr-only">Pelanggan</h2>
-                    <div class="bq-panel grid grid-cols-3 gap-px overflow-hidden bg-bq-border">
-                        @foreach (['Pelanggan aktif' => $customers['active'], 'Baru' => $customers['new'], 'Kembali' => $customers['returning']] as $label => $value)
-                            <div class="min-w-0 bg-bq-surface p-4 sm:p-5">
-                                <p class="text-xs font-medium text-bq-text-muted">{{ $label }}</p>
-                                <p class="bq-num mt-1 text-2xl font-bold text-bq-ink">{{ number_format($value, 0, ',', '.') }}</p>
-                            </div>
-                        @endforeach
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <x-ui.stat hero label="Pelanggan baru" :value="$number($customers['new'])" :context="'Sebelumnya '.$number($comparison['new'])" />
+                        <x-ui.stat label="Pelanggan kembali" :value="$number($customers['returning'])" :context="'Sebelumnya '.$number($comparison['returning'])"
+                            :supporting="['Pelanggan aktif' => $number($customers['active']), 'Rata-rata booking sebelum sesi' => $customers['advanceDays'] === null ? '—' : number_format($customers['advanceDays'], 1, ',', '.').' hari']" />
                     </div>
                     <div class="{{ $card }} p-4">
                         <h3 class="text-sm font-semibold text-bq-text">Baru dan kembali</h3>
@@ -289,6 +312,29 @@
                             </ul>
                         </div>
                     @endif
+                    <section class="bq-panel" aria-labelledby="report-unpaid">
+                        <div class="px-4 py-3">
+                            <h3 id="report-unpaid" class="font-semibold">Belum jadi membayar</h3>
+                            <p class="mt-1 text-bq-small text-bq-text-muted">Sudah memilih slot tetapi tidak membayar.</p>
+                        </div>
+                        <ul class="divide-y divide-bq-border">
+                            @forelse ($customers['unpaid'] as $booking)
+                                <li class="flex items-center justify-between gap-3 border-t border-bq-border px-4 py-3">
+                                    <div class="min-w-0">
+                                        <p class="truncate font-semibold" title="{{ $booking['name'] }}">{{ $booking['name'] }}</p>
+                                        @php $details = $booking['service'].' · '.$booking['date'].' · Pembayaran tidak selesai'; @endphp
+                                        <p class="truncate text-bq-small text-bq-text-muted" title="{{ $details }}">{{ $details }}</p>
+                                    </div>
+                                    @if ($booking['whatsAppUrl'])
+                                        <a href="{{ $booking['whatsAppUrl'] }}" rel="noopener" target="_blank" class="bq-btn bq-btn-secondary bq-btn-sm shrink-0"
+                                            aria-label="Buka WhatsApp untuk {{ $booking['name'] }}">WhatsApp</a>
+                                    @endif
+                                </li>
+                            @empty
+                                <li class="border-t border-bq-border px-4 py-3 text-bq-small text-bq-text-muted">Tidak ada booking yang belum jadi membayar.</li>
+                            @endforelse
+                        </ul>
+                    </section>
                 </section>
                 @break
 
@@ -297,8 +343,6 @@
                     <h2 id="summary-title" class="sr-only">Ringkasan</h2>
                     @php
                         $figures = [
-                            'Pendapatan bersih' => $rupiah($summary['revenue']),
-                            'Booking' => number_format($summary['bookings'], 0, ',', '.'),
                             'Pelanggan baru' => number_format($summary['newCustomers'], 0, ',', '.'),
                             'Tingkat pembatalan' => $percent($summary['cancellationRate']),
                             'Tingkat selesai' => $percent($summary['completionRate']),
@@ -312,6 +356,12 @@
                             $figures['Unit paling sering dipakai'] = $summary['topUnit'] ?? 'Belum ada pemakaian';
                         }
                     @endphp
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <x-ui.stat hero label="Pendapatan bersih" :value="$rupiah($summary['revenue'])"
+                            :context="'Menurut tanggal bayar · sebelumnya '.$rupiah($comparison['net'])" />
+                        <x-ui.stat label="Booking" :value="$number($summary['bookings'])"
+                            :context="'Menurut tanggal sesi · sebelumnya '.$number($comparison['bookings'])" />
+                    </div>
                     <div class="bq-panel grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden bg-bq-border">
                         @foreach ($figures as $label => $value)
                             <div class="min-w-0 bg-bq-surface p-4 sm:p-5">

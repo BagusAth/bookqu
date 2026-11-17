@@ -6,54 +6,31 @@
 @if ($rows->total() === 0)
     <p class="px-4 py-6 text-sm text-bq-text-muted">{{ $emptyText }}</p>
 @else
-    <div class="hidden overflow-x-auto md:block">
-        <table class="w-full text-left text-sm">
-            <thead class="border-b border-bq-border bg-bq-background text-xs text-bq-text-muted">
-                <tr>
-                    <th scope="col" class="px-4 py-2.5 font-medium">Order</th>
-                    <th scope="col" class="px-4 py-2.5 font-medium">Pelanggan</th>
-                    <th scope="col" class="px-4 py-2.5 font-medium">Layanan</th>
-                    <th scope="col" class="px-4 py-2.5 text-right font-medium">Jumlah</th>
-                    <th scope="col" class="px-4 py-2.5 font-medium">Metode</th>
-                    <th scope="col" class="px-4 py-2.5 font-medium">Status</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-bq-border">
-                @foreach ($rows as $row)
-                    <tr>
-                        <td class="px-4 py-3">
-                            <span class="block text-bq-text">{{ $row['orderId'] }}</span>
-                            <span class="block text-xs bq-num text-bq-text-muted">{{ $row['time'] }}</span>
-                        </td>
-                        <td class="px-4 py-3 text-bq-text">
-                            {{ $row['customer'] }}
-                            @include('owner.partials.payments.booking-link')
-                        </td>
-                        <td class="px-4 py-3 text-bq-text-muted">{{ $row['service'] }}</td>
-                        <td class="whitespace-nowrap px-4 py-3 text-right bq-num text-bq-text">
-                            {{ $row['amount'] }}
-                            @if ($row['refund'])<span class="block text-xs text-bq-danger">{{ $row['refund'] }}</span>@endif
-                        </td>
-                        <td class="px-4 py-3 text-bq-text-muted">{{ $row['method'] }}</td>
-                        <td class="px-4 py-3"><span class="bq-badge {{ $toneClass($row['status']['tone']) }}">{{ $row['status']['label'] }}</span></td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-
-    <ul class="divide-y divide-bq-border md:hidden">
+    <x-ui.table :columns="['Waktu', 'Pelanggan', 'Layanan', 'Metode', 'Dibayar']" label="Transaksi pembayaran">
         @foreach ($rows as $row)
-            <li class="space-y-1 px-4 py-3 text-sm">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="truncate text-bq-text">{{ $row['customer'] }}</span>
-                    <span class="bq-badge {{ $toneClass($row['status']['tone']) }}">{{ $row['status']['label'] }}</span>
+            <div role="row" class="bq-table-row bq-table-double">
+                <div role="cell" class="bq-table-cell min-w-0">
+                    <span class="block truncate bq-num" title="{{ $row['time'] }}">{{ $row['time'] }}</span>
+                    <span class="sr-only">{{ $row['orderId'] }}</span>
                 </div>
-                <p class="text-xs text-bq-text-muted">{{ $row['orderId'] }} · {{ $row['time'] }}</p>
-                <p class="text-xs text-bq-text-muted">{{ $row['service'] }} · {{ $row['method'] }}</p>
-                @include('owner.partials.payments.booking-link')
-                <p class="bq-num text-bq-text">{{ $row['amount'] }}@if ($row['refund']) <span class="text-xs text-bq-danger">· {{ $row['refund'] }}</span>@endif</p>
-            </li>
+                <div role="cell" class="bq-table-cell bq-table-main min-w-0">
+                    <span class="block truncate font-semibold" title="{{ $row['customer'] }}">{{ $row['customer'] }}</span>
+                    <div class="bq-table-caption text-bq-small text-bq-text-muted">
+                        <span class="md:hidden">{{ $row['status']['label'] }} · </span>
+                        @include('owner.partials.payments.booking-link')
+                        @unless ($row['bookingPanel']){{ $row['orderId'] }}@endunless
+                    </div>
+                </div>
+                <div role="cell" class="bq-table-cell truncate text-bq-small" title="{{ $row['service'] }}">{{ $row['service'] }}</div>
+                <div role="cell" class="bq-table-cell min-w-0">
+                    <span class="block truncate text-bq-small" title="{{ $row['method'] }}">{{ $row['method'] }}</span>
+                    <x-ui.status-dot :tone="$row['status']['tone']">{{ $row['status']['label'] }}</x-ui.status-dot>
+                </div>
+                <div role="cell" class="bq-table-cell bq-table-end bq-num">
+                    <span class="block">{{ $row['amount'] }}</span>
+                    @if ($row['refund'])<span class="block text-bq-small text-bq-danger">{{ $row['refund'] }}</span>@endif
+                </div>
+            </div>
         @endforeach
-    </ul>
+    </x-ui.table>
 @endif

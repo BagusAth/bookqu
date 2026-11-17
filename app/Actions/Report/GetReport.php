@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Report;
 
+use App\Actions\Customer\GetCustomerPanel;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
 use App\Domain\Booking\UnitUtilisation;
@@ -58,6 +59,8 @@ class GetReport
      *     tabs: array<string, string>,
      *     period: array{key: string, label: string, from: string, to: string, query: array<string, string>},
      *     locked: bool,
+     *     conclusion: ?string,
+     *     comparison: array<string, float|int|string>,
      *     summary: ?array<string, mixed>,
      *     revenue: ?array<string, mixed>,
      *     occupancy: ?array<string, mixed>,
@@ -82,6 +85,8 @@ class GetReport
                 'query' => $period->query(),
             ],
             'locked' => $locked,
+            'conclusion' => null,
+            'comparison' => [],
             'summary' => null,
             'revenue' => null,
             'occupancy' => null,
@@ -110,14 +115,82 @@ class GetReport
                 && EntitlementRules::canAccessFeature($subscription, 'promos')['allowed']
                 ? $this->promoUsage($tenantId, $period)
                 : null;
+            $customers['unpaid'] = $this->unpaidBookings($tenantId, $period);
+            $customers['advanceDays'] = $this->averageAdvanceDays($tenantId, $period);
         }
 
-        return match ($tab) {
+        $report = match ($tab) {
             'pendapatan' => ['revenue' => $revenue] + $report,
             'okupansi' => ['occupancy' => $this->occupancy($slots) + ['units' => $units]] + $report,
             'layanan' => ['services' => $this->services($bookingsPerService, $revenue)] + $report,
             'pelanggan' => ['customers' => $customers] + $report,
             default => $report,
+        };
+
+        $previous = $period->previous();
+        $report['comparison'] = [
+            'label' => $previous->start->locale('id')->translatedFormat('j M Y').' – '.$previous->end->locale('id')->translatedFormat('j M Y'),
+        ] + $this->comparison($tenantId, $previous, $tab);
+        $report['conclusion'] = $this->conclusion($report);
+
+        return $report;
+    }
+
+    /** @return array<string, int|float> */
+    private function comparison(int $tenantId, ReportPeriod $period, string $tab): array
+    {
+        if ($tab === 'okupansi') {
+            $occupancy = $this->occupancy($this->reportSlots($tenantId, $period));
+
+            return ['rate' => $occupancy['rate'], 'booked' => $occupancy['booked']];
+        }
+        if ($tab === 'pelanggan') {
+            $customers = $this->customers($tenantId, $period);
+
+            return ['new' => $customers['new'], 'returning' => $customers['returning']];
+        }
+
+        [$payments, $refunds] = $this->revenueRows($tenantId, $period);
+        $total = DB::query()->fromSub(
+            $payments->selectRaw('payments.jumlah AS gross, 0 AS refund')
+                ->unionAll($refunds->selectRaw('0 AS gross, refunds.jumlah AS refund')),
+            'previous_money',
+        )->selectRaw('SUM(gross) AS gross, SUM(refund) AS refund')->first();
+        $gross = (float) ($total->gross ?? 0);
+        $revenue = ['net' => round($gross - (float) ($total->refund ?? 0), 2), 'gross' => $gross];
+
+        return $tab === 'pendapatan' ? $revenue : $revenue + [
+            'bookings' => array_sum($this->bookingsPerService($tenantId, $period)),
+        ];
+    }
+
+    /** @param array<string, mixed> $report */
+    private function conclusion(array $report): string
+    {
+        $previous = $report['comparison'];
+        $summary = $report['summary'];
+
+        return match ($report['tab']) {
+            'pendapatan' => 'Pendapatan bersih '.$this->trend($report['revenue']['net'], $previous['net']).' dibanding periode sebelumnya.',
+            'okupansi' => $report['occupancy']['busiestDay'] === null
+                ? 'Belum ada slot terisi pada periode ini.'
+                : 'Slot paling sering terisi pada hari '.$report['occupancy']['busiestDay'].', dan jam tersibuk adalah '.$report['occupancy']['busiestHour'].'.',
+            'layanan' => $summary['topService'] === null
+                ? 'Belum ada booking layanan pada periode ini.'
+                : $summary['topService'].' menerima booking terbanyak pada periode ini.',
+            'pelanggan' => number_format($report['customers']['new'], 0, ',', '.').' pelanggan baru dan '
+                .number_format($report['customers']['returning'], 0, ',', '.').' pelanggan kembali lagi.',
+            default => 'Pendapatan '.$this->trend($summary['revenue'], $previous['net']).' dan jumlah booking '
+                .$this->trend($summary['bookings'], $previous['bookings']).' dibanding periode sebelumnya.',
+        };
+    }
+
+    private function trend(float|int $current, float|int $previous): string
+    {
+        return match ($current <=> $previous) {
+            -1 => 'turun',
+            1 => 'naik',
+            default => 'tetap',
         };
     }
 
@@ -280,24 +353,12 @@ class GetReport
         $names = $this->serviceNames($tenantId);
         $bucket = $this->bucketExpression($period);
 
-        $payments = DB::table('payments')
-            ->leftJoinSub($this->paymentServices($tenantId), 'payment_services', 'payment_services.idpayment', '=', 'payments.id')
-            ->where('payments.idtenant', $tenantId)
-            ->where('payments.tipe', PaymentState::TIPE_BOOKING)
-            ->where('payments.status', PaymentState::STATUS_SUKSES)
-            ->whereBetween('payments.created_at', $this->bounds($period))
-            ->selectRaw("payment_services.idlayanan AS idlayanan, CASE WHEN payments.provider = 'manual' THEN 1 ELSE 0 END AS walk_in, {$bucket('payments.created_at')} AS bucket, payments.jumlah AS amount");
-
-        $refunds = DB::table('refunds')
-            ->join('payments', 'payments.id', '=', 'refunds.payment_id')
-            ->leftJoinSub($this->paymentServices($tenantId), 'payment_services', 'payment_services.idpayment', '=', 'payments.id')
-            ->where('payments.idtenant', $tenantId)
-            ->where('payments.tipe', PaymentState::TIPE_BOOKING)
-            ->where('payments.status', PaymentState::STATUS_SUKSES)
-            ->where('refunds.status', '!=', 'failed')
-            ->where(fn (Builder $query) => $query->whereNull('refunds.cause')->orWhere('refunds.cause', '!=', 'double-payment'))
-            ->whereBetween('refunds.created_at', $this->bounds($period))
-            ->selectRaw("payment_services.idlayanan AS idlayanan, 0 AS walk_in, {$bucket('refunds.created_at')} AS bucket, refunds.jumlah AS amount");
+        [$payments, $refunds] = $this->revenueRows($tenantId, $period);
+        $services = $this->paymentServices($tenantId);
+        $payments->leftJoinSub($services, 'payment_services', 'payment_services.idpayment', '=', 'payments.id')
+            ->selectRaw("'gross' AS kind, payment_services.idlayanan AS idlayanan, CASE WHEN payments.provider = 'manual' THEN 1 ELSE 0 END AS walk_in, {$bucket('payments.created_at')} AS bucket, payments.jumlah AS amount");
+        $refunds->leftJoinSub($services, 'payment_services', 'payment_services.idpayment', '=', 'payments.id')
+            ->selectRaw("'refunds' AS kind, payment_services.idlayanan AS idlayanan, 0 AS walk_in, {$bucket('refunds.created_at')} AS bucket, refunds.jumlah AS amount");
 
         $series = [];
         foreach ($this->buckets($period) as $key => $label) {
@@ -307,24 +368,23 @@ class GetReport
         $online = 0.0;
         $walkIn = 0.0;
 
-        foreach (['gross' => $payments, 'refunds' => $refunds] as $kind => $rows) {
-            $grouped = DB::query()->fromSub($rows, 'money')
-                ->selectRaw('idlayanan, walk_in, bucket, SUM(amount) AS total')
-                ->groupBy('idlayanan', 'walk_in', 'bucket')
-                ->get();
-            foreach ($grouped as $row) {
-                $amount = round((float) $row->total, 2);
-                $name = $row->idlayanan !== null ? ($names[(int) $row->idlayanan] ?? self::NO_SERVICE) : self::NO_SERVICE;
-                $perService[$name] ??= ['name' => $name, 'gross' => 0.0, 'refunds' => 0.0, 'net' => 0.0];
-                $perService[$name][$kind] += $amount;
-                if (isset($series[(string) $row->bucket])) {
-                    $series[(string) $row->bucket][$kind] += $amount;
-                }
-                if ($kind === 'gross' && (int) $row->walk_in === 1) {
-                    $walkIn += $amount;
-                } elseif ($kind === 'gross') {
-                    $online += $amount;
-                }
+        $grouped = DB::query()->fromSub($payments->unionAll($refunds), 'money')
+            ->selectRaw('kind, idlayanan, walk_in, bucket, SUM(amount) AS total')
+            ->groupBy('kind', 'idlayanan', 'walk_in', 'bucket')
+            ->get();
+        foreach ($grouped as $row) {
+            $kind = $row->kind === 'gross' ? 'gross' : 'refunds';
+            $amount = round((float) $row->total, 2);
+            $name = $row->idlayanan !== null ? ($names[(int) $row->idlayanan] ?? self::NO_SERVICE) : self::NO_SERVICE;
+            $perService[$name] ??= ['name' => $name, 'gross' => 0.0, 'refunds' => 0.0, 'net' => 0.0];
+            $perService[$name][$kind] += $amount;
+            if (isset($series[(string) $row->bucket])) {
+                $series[(string) $row->bucket][$kind] += $amount;
+            }
+            if ($kind === 'gross' && (int) $row->walk_in === 1) {
+                $walkIn += $amount;
+            } elseif ($kind === 'gross') {
+                $online += $amount;
             }
         }
 
@@ -346,6 +406,27 @@ class GetReport
         ];
     }
 
+    /** @return array{Builder, Builder} */
+    private function revenueRows(int $tenantId, ReportPeriod $period): array
+    {
+        $payments = DB::table('payments')
+            ->where('payments.idtenant', $tenantId)
+            ->where('payments.tipe', PaymentState::TIPE_BOOKING)
+            ->where('payments.status', PaymentState::STATUS_SUKSES)
+            ->whereBetween('payments.created_at', $this->bounds($period));
+
+        $refunds = DB::table('refunds')
+            ->join('payments', 'payments.id', '=', 'refunds.payment_id')
+            ->where('payments.idtenant', $tenantId)
+            ->where('payments.tipe', PaymentState::TIPE_BOOKING)
+            ->where('payments.status', PaymentState::STATUS_SUKSES)
+            ->where('refunds.status', '!=', 'failed')
+            ->where(fn (Builder $query) => $query->whereNull('refunds.cause')->orWhere('refunds.cause', '!=', 'double-payment'))
+            ->whereBetween('refunds.created_at', $this->bounds($period));
+
+        return [$payments, $refunds];
+    }
+
     /**
      * The service of each payment's booking (the slots of one checkout share a service).
      */
@@ -357,6 +438,56 @@ class GetReport
             ->where('idtenant', $tenantId)
             ->whereNotNull('idpayment')
             ->groupBy('idpayment');
+    }
+
+    /** @return list<array{name: string, service: string, date: string, whatsAppUrl: ?string}> */
+    private function unpaidBookings(int $tenantId, ReportPeriod $period): array
+    {
+        return DB::table('bookings as unpaid')
+            ->join('payments', fn ($join) => $join->on('payments.id', '=', 'unpaid.idpayment')->on('payments.idtenant', '=', 'unpaid.idtenant'))
+            ->leftJoin('services', fn ($join) => $join->on('services.id', '=', 'unpaid.idlayanan')->on('services.idtenant', '=', 'unpaid.idtenant'))
+            ->where('unpaid.idtenant', $tenantId)
+            ->whereBetween('unpaid.tanggalbooking', $this->bounds($period))
+            ->where('payments.tipe', PaymentState::TIPE_BOOKING)
+            ->where('payments.status', PaymentState::STATUS_GAGAL)
+            ->whereExists(fn (Builder $logs) => $logs->from('booking_logs')
+                ->whereColumn('booking_id', 'unpaid.id')->where('event', 'cancelled')->where('description', 'Pembayaran ditutup.'))
+            ->whereNotExists(fn (Builder $logs) => $logs->from('booking_logs')
+                ->whereColumn('booking_id', 'unpaid.id')->where('event', 'cancelled')->where('metadata->actor', 'owner'))
+            ->whereNotExists(fn (Builder $later) => $later->from('bookings as later')
+                ->whereColumn('later.idtenant', 'unpaid.idtenant')
+                ->whereIn('later.status', [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
+                ->whereColumn('later.created_at', '>', 'unpaid.created_at')
+                ->whereRaw(CustomerIdentity::sql('later').' = '.CustomerIdentity::sql('unpaid')))
+            ->orderByDesc('unpaid.created_at')
+            ->orderByDesc('unpaid.id')
+            ->get(['unpaid.idpayment', 'unpaid.namapelanggan', 'unpaid.nomorhp', 'unpaid.tanggalbooking', 'services.namalayanan'])
+            ->unique('idpayment')
+            ->map(fn (object $row): array => [
+                'name' => (string) $row->namapelanggan,
+                'service' => (string) ($row->namalayanan ?? self::NO_SERVICE),
+                'date' => CarbonImmutable::parse((string) $row->tanggalbooking)->locale('id')->translatedFormat('j M Y'),
+                'whatsAppUrl' => GetCustomerPanel::whatsAppUrl((string) $row->nomorhp),
+            ])->values()->all();
+    }
+
+    private function averageAdvanceDays(int $tenantId, ReportPeriod $period): ?float
+    {
+        $bookings = DB::table('bookings')
+            ->selectRaw("CASE WHEN idpayment IS NULL THEN CONCAT('b', id) ELSE CONCAT('p', idpayment) END AS group_key")
+            ->selectRaw('MIN(tanggalbooking) AS session_date, MIN(created_at) AS booked_at')
+            ->where('idtenant', $tenantId)
+            ->whereBetween('tanggalbooking', $this->bounds($period))
+            ->groupBy('group_key');
+
+        $days = DB::connection()->getDriverName() === 'sqlite'
+            ? 'JULIANDAY(DATE(session_date)) - JULIANDAY(DATE(booked_at))'
+            : 'DATEDIFF(session_date, booked_at)';
+        $average = DB::query()->fromSub($bookings, 'lead_times')
+            ->selectRaw("AVG(CASE WHEN ($days) >= 0 THEN ($days) END) AS average_days")
+            ->value('average_days');
+
+        return $average === null ? null : round((float) $average, 1);
     }
 
     /** @return Collection<int, Schedule> */

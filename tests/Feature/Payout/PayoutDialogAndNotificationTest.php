@@ -277,7 +277,7 @@ class PayoutDialogAndNotificationTest extends TestCase
 
         // Check header and the Saldo & Pencairan tab in Indonesian (BQ-141, owner-portal.md §8.12)
         $response->assertSee('Pembayaran');
-        $response->assertSee('Cara Anda menerima uang, berapa saldo Anda, dan kapan bisa dicairkan.');
+        $response->assertSee('Uang yang masuk, saldo Anda, dan kapan bisa dicairkan.');
         $response->assertSee('Saldo tersedia');
         $response->assertSee('Mutasi saldo');
 
