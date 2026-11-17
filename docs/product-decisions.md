@@ -4,7 +4,7 @@ Dokumen ini berisi keputusan yang perlu divalidasi Product Lead, dan catatan kep
 
 **Cara menjawab:** balas dengan nomor entri dan poinnya, misalnya "D-001 setuju semua" atau "D-001 setuju kecuali poin 3: …". Setelah disetujui, Tech Lead membuat pekerjaannya. Keputusan yang sudah diambil bisa dibuka lagi kapan saja dengan menyebut nomornya.
 
-Terakhir diperbarui: 16 November 2026
+Terakhir diperbarui: 17 November 2026
 
 ---
 
@@ -82,3 +82,4 @@ Diambil Tech Lead sebelum peran Product Lead ditetapkan. Product Lead bisa membu
 - D-022 · Tiga fitur yang sudah ada tetapi belum diterima resmi · Disetujui 4 Nov 2026: reset password lewat link email sekali pakai yang punya masa berlaku; pembatasan percobaan login, pendaftaran, reset password, dan formulir publik per akun dan per alamat internet; halaman utama BookQu dengan paket dan harga mengikuti D-017 → sudah ada di kode (FR-AUTH-007, FR-AUTH-008, FR-PUBLIC-005)
 - D-023 · Durasi layanan dan interval slot kelipatan 5 menit · Disetujui 5 Nov 2026: owner hanya bisa menyimpan durasi layanan dan interval jadwal massal dalam kelipatan 5 menit; layanan lama yang tidak sesuai harus diubah saat diedit → BQ-114
 - D-024 · Empat tombol bantu baru di portal owner · Disetujui 16 Nov 2026: tautan ke booking setelah walk-in; tombol "Isi dari jam buka" di form buat slot sekaligus (owner tetap menyimpan sendiri, berbeda dengan slot otomatis D-021); simulasi harga menampilkan aturan yang menentukan harga; uji dan kirim ulang webhook untuk paket Pro → BQ-160
+- D-025 · Tampilan portal owner "Papan Jadwal" beserta perubahan isi dan fitur barunya · Disetujui 17 Nov 2026: semua perubahan isi halaman dan fitur baru di prototipe dibangun, termasuk slot otomatis dan kalimat kesimpulan di Laporan yang dibuka kembali dari D-021; dikerjakan dulu di branch tersendiri dan baru masuk ke versi utama setelah Tech Lead memutuskan; daftar lengkapnya di `docs/design/papan-jadwal/KEPUTUSAN.md` → BQ-162
