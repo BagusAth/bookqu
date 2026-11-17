@@ -13,6 +13,7 @@ use App\Notifications\PaymentRefundOwedOwnerNotification;
 use App\Notifications\RefundTeamNotification;
 use App\Notifications\SubscriptionReminderNotification;
 use App\Notifications\TrialExpiringNotification;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Notifications\DatabaseNotification;
 
@@ -82,7 +83,8 @@ final class GetNotificationsPage
             $createdAt === null => 'Tanpa tanggal',
             $createdAt->isToday() => 'Hari ini',
             $createdAt->isYesterday() => 'Kemarin',
-            default => $createdAt->translatedFormat('l, j M Y'),
+            $createdAt->gte(now('Asia/Jakarta')->startOfWeek(CarbonInterface::MONDAY)) => 'Minggu ini',
+            default => 'Lebih lama',
         };
 
         return [
@@ -90,8 +92,16 @@ final class GetNotificationsPage
             'title' => (string) ($data['title'] ?? 'Pemberitahuan'),
             'message' => (string) ($data['message'] ?? ''),
             'day' => $day,
-            'time' => $createdAt?->format('H.i'),
-            'category' => $category !== false ? self::CATEGORIES[$category]['label'] : 'Lainnya',
+            'time' => $createdAt?->diffForHumans(),
+            'dateTime' => $createdAt?->toIso8601String(),
+            'timeLabel' => $createdAt?->translatedFormat($createdAt->isCurrentYear() ? 'j M, H.i' : 'j M Y, H.i'),
+            'icon' => match ($category) {
+                'booking' => 'calendar',
+                'refund' => 'card',
+                'pencairan' => 'wallet',
+                'paket' => 'tag',
+                default => 'bell',
+            },
             'unread' => $notification->read_at === null,
             'readUrl' => route('owner.notifications.read', $notification->id),
             'destroyUrl' => route('owner.notifications.destroy', $notification->id),
