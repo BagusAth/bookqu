@@ -10,8 +10,8 @@
         @if ($daftarlayanan->isNotEmpty())
             <form method="POST" action="{{ route('owner.schedule.apply-base-price') }}" id="apply-base-price" x-data class="mt-3 flex flex-wrap items-end gap-2">
                 @csrf
-                <label class="grid gap-1 text-sm">Layanan
-        <select name="idlayanan" class="bq-input" required>
+                <label class="grid min-w-0 max-w-full grid-cols-1 gap-1 text-sm">Layanan
+        <select name="idlayanan" class="bq-input w-full" required>
             @foreach ($daftarlayanan as $service)
                 <option value="{{ $service->id }}">{{ $service->namalayanan }}</option>
             @endforeach
@@ -110,8 +110,8 @@
             :class="expanded ? 'block' : 'hidden md:block'" class="mt-2 space-y-3">
             <p class="text-bq-small text-bq-text-muted">Harga tiap jam dan aturan yang membentuknya.</p>
             <div class="flex flex-wrap items-end gap-3">
-                <label class="grid gap-1 text-sm">Layanan
-        <select name="idlayanan" class="bq-input" required>
+                <label class="grid min-w-0 max-w-full grid-cols-1 gap-1 text-sm">Layanan
+        <select name="idlayanan" class="bq-input w-full" required>
             @foreach ($daftarlayanan as $service)
                 <option value="{{ $service->id }}">{{ $service->namalayanan }}</option>
             @endforeach

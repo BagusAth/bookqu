@@ -6,8 +6,8 @@
                 data-preview-url="{{ route('owner.schedule.bulk-preview') }}"
                 x-data="scheduleBulkPreview(@js($openingHours))" @input="preview = null; openingChoices = []; openingWarning = ''" @change="preview = null" @submit="if (!canSave($el)) $event.preventDefault()">
                 @csrf
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <label class="grid gap-1 text-sm">Layanan
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <label class="grid min-w-0 grid-cols-1 gap-1 text-sm">Layanan
                         <select name="idlayanan" class="bq-input" @change="$refs.interval.value = $event.target.selectedOptions[0].dataset.duration" required>
                             <option value="">Pilih layanan</option>
                             @foreach ($daftarlayanan as $service)
@@ -15,28 +15,28 @@
                             @endforeach
                         </select>
                     </label>
-                    <label class="grid gap-1 text-sm">Periode
+                    <label class="grid min-w-0 grid-cols-1 gap-1 text-sm">Periode
                         <select name="jenisslot" x-model="period" class="bq-input">
                             <option value="harian">Satu tanggal</option>
                             <option value="rentang">Rentang tanggal</option>
                         </select>
                     </label>
-                    <label class="grid gap-1 text-sm" x-show="period === 'harian'">Tanggal
+                    <label class="grid min-w-0 grid-cols-1 gap-1 text-sm" x-show="period === 'harian'">Tanggal
                         <input type="date" name="tanggal" :disabled="period !== 'harian'" required class="bq-input">
                     </label>
-                    <label class="grid gap-1 text-sm" x-show="period === 'rentang'" x-cloak>Tanggal mulai
+                    <label class="grid min-w-0 grid-cols-1 gap-1 text-sm" x-show="period === 'rentang'" x-cloak>Tanggal mulai
                         <input type="date" name="tanggalmulai" :disabled="period !== 'rentang'" required class="bq-input">
                     </label>
-                    <label class="grid gap-1 text-sm" x-show="period === 'rentang'" x-cloak>Tanggal akhir
+                    <label class="grid min-w-0 grid-cols-1 gap-1 text-sm" x-show="period === 'rentang'" x-cloak>Tanggal akhir
                         <input type="date" name="tanggalselesai" :disabled="period !== 'rentang'" required class="bq-input">
                     </label>
-                    <label class="grid gap-1 text-sm">Jam mulai
+                    <label class="grid min-w-0 grid-cols-1 gap-1 text-sm">Jam mulai
                         <input type="time" name="jammulai" required class="bq-input">
                     </label>
-                    <label class="grid gap-1 text-sm">Jam akhir
+                    <label class="grid min-w-0 grid-cols-1 gap-1 text-sm">Jam akhir
                         <input type="time" name="jamselesai" required class="bq-input">
                     </label>
-                    <label class="grid gap-1 text-sm">Interval (menit)
+                    <label class="grid min-w-0 grid-cols-1 gap-1 text-sm">Interval (menit)
                         <input type="number" name="intervalslot" x-ref="interval" min="5" max="480" step="5" required class="bq-input">
                     </label>
                 </div>
@@ -62,7 +62,7 @@
     <form method="GET" action="{{ route('owner.schedule') }}" class="flex flex-wrap items-end gap-3">
         <input type="hidden" name="tab" value="slots">
         <input type="hidden" name="minggu" value="{{ $offsetminggu }}">
-        <label class="grid gap-1 text-sm">Layanan
+        <label class="grid min-w-0 grid-cols-1 gap-1 text-sm">Layanan
             <select name="layanan" @change="$el.form.requestSubmit()" class="bq-input">
                 <option value="">Semua layanan</option>
                 @foreach ($daftarlayanan as $service)

@@ -29,10 +29,10 @@
             </span>
             <x-owner.icon name="chevron-down" class="h-4 w-4 shrink-0 text-bq-text-muted transition-transform group-open:rotate-180" />
         </summary>
-        <ul class="grid gap-x-6 gap-y-1.5 border-t border-bq-border/70 px-4 py-3 text-sm sm:grid-cols-2" aria-label="Jangkauan slot">
+        <ul class="grid grid-cols-1 gap-x-6 gap-y-1.5 border-t border-bq-border/70 px-4 py-3 text-sm sm:grid-cols-2" aria-label="Jangkauan slot">
             @foreach ($runway as $serviceRunway)
-                <li class="flex items-center justify-between gap-3">
-                    <span class="truncate text-bq-ink">{{ $serviceRunway['service'] }}</span>
+                <li class="flex min-w-0 items-center justify-between gap-3">
+                    <span class="min-w-0 truncate text-bq-ink" title="{{ $serviceRunway['service'] }}">{{ $serviceRunway['service'] }}</span>
                     @if ($serviceRunway['open_until'])
                         <span class="shrink-0 text-bq-success">slot terbuka sampai {{ \Carbon\Carbon::parse($serviceRunway['open_until'])->locale('id')->translatedFormat('j M') }}</span>
                     @else

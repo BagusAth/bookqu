@@ -31,7 +31,7 @@ BQ-161 restyled the owner portal but kept most pages on raw controls and Tailwin
 | 2 | 2, 3 | Shared daily parts and the daily pages that use them |
 | 3 | 4, 5, 6 | Independent page groups on the same components |
 | 4 | 7, 8 | Heavy-lane features with the numbers from D-026 (**done** by the Tech Lead, see Evidence) |
-| 5 | 9 | Verification and docs |
+| 5 | 9 | Verification and docs (**done** by the Tech Lead, see Evidence; screen-reader pass open) |
 
 D-026 was confirmed by the Product Lead on 17 Nov 2026, except point 5: **booking source per channel (C-08) is hidden for now.** Do not build source tracking, `?dari=` links, a source column, a "Dari mana booking datang" report or channel filters. Keep the existing online / walk-in source exactly as it works today (Booking filter "Sumber", slip label). Sessions 7 and 8 run as batch 4 with the numbers from D-026; never guess. If a session finds something the plan or prototype does not answer, stop and write it under "Open findings" instead of deciding.
 
@@ -200,11 +200,26 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
   - C-07 (`258a781`): `SendWeeklySummary` from `GetReport`, `GetSlotRunway` and `CompleteBookings`, queued `WeeklySummaryNotification`, preference `weekly_summary` (default on), `owners:weekly-summary` Mondays 07:00. `WeeklySummaryTest` 1 test.
   - C-09 (`b4ec495`, `6e74a68`): `vouchers.valid_days/valid_from_time/valid_until_time`, `Voucher::coversSlot`, `BookingPricing::quote` refuses the code unless every slot starts inside the range, controller validation, day/time fields in the promo form, quietest day and hour in Laporan → Okupansi (computed in `GetReport`) with a link to a new promo. `QuietHourPromoTest` 2 tests.
   - Checks run: the tests above, Laporan/Settings/Paket/Modules/Team/Booking related suites (62 + 56 passed), Pint on touched files. **Not yet run (session 9):** full suite, PHPStan, MySQL suite, browser checks at four widths.
-- Session 9:
+- Session 9 (17 Nov 2026, Tech Lead with Claude Code):
+  - Full SQLite suite on PHP 8.4.25 with GD: 1,008 passed, 1 failed. The scheduler readiness test did not expect the three batch 4 commands. They are now registered, and the test passes. The RuntimeException in `CheckoutMidtransTest` and `FiveModulesFullIntegrationTest` did not repeat (Open findings note 3 closed). MySQL suite (`phpunit.mysql.xml`, Laragon MySQL 8.4): 1,029 tests, 6,714 assertions, 1 skipped, no failures. PHPStan: no errors after typing `Tenant::user()` (`BelongsTo<User, $this>`). Pint and `npm run build` passed.
+  - Batch 4 notes closed (`0829619`):
+    - (1) `BulkCreateSchedules::plan()` compares closed dates by day, and `AutomaticSlotOpeningTest` now creates the closed date through the model.
+    - (2) The weekly summary preference shows only to the business owner account (`WeeklySummaryTest`).
+  - Browser: Playwright Chromium on `bookqu.test` (local MySQL, Pro tenant with 270 bookings), with temporary local accounts for Pemilik, Manajer and Kasir. Every owner page and each of its tabs was opened at 375, 768, 1024 and 1366 px: 52 URLs as Pemilik, 44 as Manajer, 12 as Kasir.
+    - The pages refused by role were exactly those of §5: Manajer was refused Pembayaran and Paket & Tagihan; Kasir only reached Beranda, Kalender, Booking, Pelanggan, Notifikasi and Bantuan.
+    - There were no console errors.
+    - Jam Buka & Harga → Slot and → Harga overflowed by 28 and 45 px at 375 px (long service names in the selects, and the slot runway list). They were fixed, and all four tabs were rechecked at 0 px with their panels open.
+    - Pemilik screenshots at 375 and 1366 px were spot-checked against the prototype on Booking → Perlu tindakan.
+  - Docs (`e7f5533`):
+    - `owner-portal.md` §4 (rail and sidebar widths, Catat booking), §8.3, §8.6, §8.10, §8.13 and §8.14 (D-026 features and C-11), and §9 (Papan Jadwal visual system);
+    - `.ai/rules/frontend.md` (component-first rule and owner design rules, adopted from the component README);
+    - domain files `booking.md`, `schedule.md`, `catalog.md` (promo), `insights.md` and `notifications.md`.
+  - **Not done:** the screen-reader pass with NVDA or VoiceOver needs a person at the machine. Left for the Tech Lead before merging.
 
 ## Open findings
 
 - The full-suite documentation guardrail reports two undefined work item references in `docs/design/papan-jadwal/audit-ui.md`. Both references were already present on the branch before Session 1. Resolved in commit `eb277e4`.
 - Resolved by the Tech Lead. A network failure, timeout or 5xx during payout submission shows “Pengajuan pencairan belum terkonfirmasi”. “Coba lagi” sends the same `request_key` and “Nanti saja” closes the dialog. Validation remains inline. The local balance hold and later admin transfer continue under FR-PAYOUT-002 and FR-PAYOUT-003. Prototype updated in `eb277e4`.
 - Resolved by the Tech Lead (17 Nov 2026). C-11 “Belum jadi membayar” goes in Laporan → Pelanggan. List in-period, tenant-scoped bookings whose payment is `gagal` and booking log says “Pembayaran ditutup”. Exclude owner or manager cancellations and customers with a `paid` or `completed` booking created later under the same customer identifier. Expiry and gateway failure share the existing records. Sort newest first and show “Pembayaran tidak selesai” with a link that opens the owner's WhatsApp. Kasir remains outside the Laporan permission.
-- Batch 4 notes for session 9 (17 Nov 2026): (1) on SQLite, closed dates created through Eloquent are stored with a time and `BulkCreateSchedules::plan()` compares them with `whereIn`, so tests insert plain dates; MySQL/MariaDB are not affected, but consider `whereDate`. (2) The weekly summary preference label shows for every role although only the Pemilik receives the mail; hide it for Manajer and Kasir. (3) In one filtered run `CheckoutMidtransTest` and `FiveModulesFullIntegrationTest` raised a RuntimeException that did not repeat when the files ran alone; confirm in the full suite.
+- Closed in session 9 (see Evidence). Batch 4 notes for session 9 (17 Nov 2026): (1) on SQLite, closed dates created through Eloquent are stored with a time and `BulkCreateSchedules::plan()` compares them with `whereIn`, so tests insert plain dates; MySQL/MariaDB are not affected, but consider `whereDate`. (2) The weekly summary preference label shows for every role although only the Pemilik receives the mail; hide it for Manajer and Kasir. (3) In one filtered run `CheckoutMidtransTest` and `FiveModulesFullIntegrationTest` raised a RuntimeException that did not repeat when the files ran alone; confirm in the full suite.
+- Session 9 (minor, open): on a phone, Booking → Perlu tindakan shows an empty table header strip below the table note. The prototype has none. This is a cosmetic item.
