@@ -98,10 +98,17 @@
             </form>
         </section>
 
-        <form action="{{ route('owner.schedule.price-simulator') }}" method="GET" x-data="schedulePriceSimulator"
+        <section class="bq-panel self-start p-4" x-data="{ expanded: false }">
+            <h2 class="hidden font-semibold md:block">Simulasi harga</h2>
+            <button type="button" class="flex w-full items-center justify-between gap-2 font-semibold md:hidden"
+                aria-controls="price-simulator" :aria-expanded="expanded" @click="expanded = !expanded">
+                Simulasi harga per jam
+                <x-owner.icon name="chevron-down" class="size-4 text-bq-text-muted" />
+            </button>
+        <form id="price-simulator" action="{{ route('owner.schedule.price-simulator') }}" method="GET" x-data="schedulePriceSimulator"
             @submit.prevent="simulate($el)" @change="hours = []"
-            class="space-y-3 bq-panel p-4">
-            <h2 class="font-semibold">Simulator harga</h2>
+            :class="expanded ? 'block' : 'hidden md:block'" class="mt-2 space-y-3">
+            <p class="text-bq-small text-bq-text-muted">Harga tiap jam dan aturan yang membentuknya.</p>
             <div class="flex flex-wrap items-end gap-3">
                 <label class="grid gap-1 text-sm">Layanan
         <select name="idlayanan" class="bq-input" required>
@@ -120,10 +127,11 @@
                 <template x-for="hour in hours" :key="hour.time">
                     <li class="rounded border border-bq-border p-2">
                         <span class="font-medium bq-num" x-text="hour.time + ' · ' + rupiah.format(hour.price)"></span>
-                        <span class="block text-xs text-bq-text-muted" x-text="hour.rule_label"></span>
+                        <span class="block text-bq-small text-bq-text-muted" x-text="hour.rule_label"></span>
                     </li>
                 </template>
             </ul>
         </form>
+        </section>
     @endif
 </div>

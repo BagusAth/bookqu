@@ -178,7 +178,10 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
   - Compared the prototype in data state Ramai at `#/beranda`, Kalender day/week/month and per unit, Booking Perlu tindakan/Mendatang, and Pelanggan Semua/Lama tidak datang. Edge passed 72 page/viewport checks at 375, 768, 1024 and 1366 px as Pemilik and Kasir on the local SQLite seed, with no horizontal page overflow or console errors. Enter opened the booking slip from global search. Sapa prepared the editable WhatsApp link.
   - Per-unit columns use the active units linked to the service (ADR-0017). Pelanggan uses the existing 60-day booking rule. The greeting uses the business link without promising specific available times.
   - Pint, Vite build, PHPStan and the related suite passed (79 tests, 558 assertions), including Pro/Small calendar modes and the dormant-customer WhatsApp link. Full suite on PHP 8.4.25 with GD passed (989 tests, 6,547 assertions).
-- Session 4:
+- Session 4 (17 Nov 2026):
+  - Compared Layanan (list, gallery, Kategori, Tambahan), Unit and the four Jam Buka & Harga tabs with the PHP prototype on port 8770. Edge checked 72 page and access combinations on the local SQLite seed at 375, 768, 1024 and 1366 px as Pemilik and Kasir. The final Slot and Libur & Tutup tables passed a follow-up layout check, and the phone price simulator expanded and received a live response.
+  - The Layanan table uses the most common nonempty date from the existing slot runway, with the later date breaking ties. Rows show exceptions. Unit keeps historical conflicts in a collapsed section and preserves the existing JSON response.
+  - Pint, Vite build and PHPStan passed. Ran the full suite once on PHP 8.4.25 with GD (988 passed, one sold-count text assertion failed). Restored the accessible sold-count label and ran only the affected test and schedule suites (9 passed, 53 assertions).
 - Session 5:
 - Session 6:
 - Session 7:
@@ -189,3 +192,4 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 
 - The full-suite documentation guardrail reports two undefined work item references in `docs/design/papan-jadwal/audit-ui.md`. Both references were already present on the branch before Session 1. Resolved in commit `eb277e4`.
 - Resolved by the Tech Lead. A network failure, timeout or 5xx during payout submission shows “Pengajuan pencairan belum terkonfirmasi”. “Coba lagi” sends the same `request_key` and “Nanti saja” closes the dialog. Validation remains inline. The local balance hold and later admin transfer continue under FR-PAYOUT-002 and FR-PAYOUT-003. Prototype updated in `eb277e4`.
+- Session 5, C-11 “Belum jadi membayar”. The decision catalogue lists `#/laporan/pendapatan`; the prototype renders the list and WhatsApp action in `#/laporan/pelanggan`. The payment lifecycle writes the same `gagal` status and “Pembayaran ditutup” booking log for expiry and gateway failure, so the report cannot reliably identify historic expiries from these fields. Tech Lead decision needed on the tab and how to identify eligible bookings.

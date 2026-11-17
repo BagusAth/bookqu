@@ -298,6 +298,13 @@ class CapacityUnitsAndNoShowTest extends TestCase
         $this->actingAs($this->owner)->getJson(route('owner.units'))
             ->assertOk()
             ->assertJsonPath('conflicts.0.booking_ids', [min($a->id, $b->id), max($a->id, $b->id)]);
+        $this->get(route('owner.units'))->assertOk()
+            ->assertSeeInOrder(['Konflik mendatang', $a->namapelanggan, $b->namapelanggan])
+            ->assertDontSee('konflik lampau');
+
+        $this->travelTo(Carbon::parse(self::DATE.' 12:00:00', 'Asia/Jakarta'));
+        $this->get(route('owner.units'))->assertOk()
+            ->assertSeeInOrder(['Tidak ada konflik mendatang.', '1 konflik lampau', $a->namapelanggan, $b->namapelanggan]);
         $this->assertSame('paid', $a->fresh()->status);
     }
 

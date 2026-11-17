@@ -1,7 +1,7 @@
 <div class="space-y-4" x-data="{ slotIds: [], operation: 'close' }">
     @if ($daftarlayanan->isNotEmpty())
         <details class="bq-panel p-4" @if (request()->boolean('buat')) open @endif>
-            <summary class="cursor-pointer font-semibold">Buat slot sekaligus</summary>
+            <summary class="cursor-pointer font-semibold">Buka slot sekaligus</summary>
             <form class="mt-4 space-y-3" method="POST" action="{{ route('owner.schedule.bulk-store', ['tab' => 'slots']) }}"
                 data-preview-url="{{ route('owner.schedule.bulk-preview') }}"
                 x-data="scheduleBulkPreview(@js($openingHours))" @input="preview = null; openingChoices = []; openingWarning = ''" @change="preview = null" @submit="if (!canSave($el)) $event.preventDefault()">
@@ -89,46 +89,66 @@
             <x-owner.field-error name="slot_ids" />
         </form>
     @endif
-    @forelse ($slots as $slot)
-        <div class="flex flex-wrap items-center justify-between gap-2 bq-panel p-3 text-sm">
-            <div>
-                @if (! $slot->occupied)
-                    <input type="checkbox" name="slot_ids[]" form="selected-slots" value="{{ $slot->id }}" x-model="slotIds"
-                        aria-label="Pilih slot {{ $slot->layanan?->namalayanan }} {{ $slot->tanggal->format('d/m/Y') }} {{ $slotTimes[$slot->id] }}">
-                @endif
-                <strong>{{ $slot->layanan?->namalayanan ?? 'Layanan dihapus' }}</strong>
-                <p class="bq-num">{{ $slot->tanggal->format('d/m/Y') }} · {{ $slotTimes[$slot->id] }}</p>
-            </div>
-            @isset($slotPrices[$slot->id])
-                <span class="bq-num">Rp {{ number_format($slotPrices[$slot->id], 0, ',', '.') }}</span>
-            @endisset
-            <span>{{ $slotLabels[$slot->id] }}</span>
-            @if ($slot->occupied)
-                <div class="flex flex-wrap gap-2">
-                    @foreach ($slot->bookings as $booking)
-                        @include('owner.partials.bookings.panel-link')
-                    @endforeach
+    @if ($slots->isNotEmpty())
+        <x-ui.table :columns="['Jam', 'Status', 'Harga']" label="Slot minggu ini" selectable actions>
+            @foreach ($slots->groupBy(fn ($slot) => $slot->tanggal->toDateString()) as $daySlots)
+                <div role="row" class="bq-table-row bq-table-group">
+                    <div role="cell" class="col-span-full">{{ $daySlots->first()->tanggal->locale('id')->translatedFormat('l, j M') }}</div>
                 </div>
-            @else
-                <form method="POST" action="{{ route('owner.schedule.slots.update', $slot) }}">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit" name="operation" value="{{ $slot->status === 'tersedia' ? 'close' : 'open' }}"
-                        class="bq-btn bq-btn-secondary">{{ $slot->status === 'tersedia' ? 'Tutup slot' : 'Buka slot' }}</button>
-                </form>
-                <form method="POST" action="{{ route('owner.schedule.slots.update', $slot) }}" class="flex flex-wrap items-end gap-2">
-                    @csrf
-                    @method('PATCH')
-                    <input type="hidden" name="operation" value="price">
-                    <label class="grid gap-1 text-xs">Harga khusus (Rp)
-                        <input name="harga_override" type="number" min="0" max="9999999999" step="1" value="{{ $slot->harga_override === null ? '' : (int) $slot->harga_override }}"
-                            placeholder="Ikuti aturan harga" class="bq-input w-36">
-                    </label>
-                    <button class="bq-btn bq-btn-secondary">Simpan harga</button>
-                </form>
-            @endif
-        </div>
-    @empty
+                @foreach ($daySlots as $slot)
+                    <div role="row" class="bq-table-row bq-table-double">
+                        <div role="cell" class="bq-table-choice">
+                            @unless ($slot->occupied)
+                                <input type="checkbox" name="slot_ids[]" form="selected-slots" value="{{ $slot->id }}" x-model="slotIds"
+                                    aria-label="Pilih slot {{ $slot->layanan?->namalayanan }} {{ $slot->tanggal->format('d/m/Y') }} {{ $slotTimes[$slot->id] }}">
+                            @endunless
+                        </div>
+                        <div role="cell" class="bq-table-cell bq-table-main min-w-0">
+                            <strong class="bq-num block">{{ $slotTimes[$slot->id] }}</strong>
+                            <span class="bq-table-caption block truncate text-bq-small text-bq-text-muted" title="{{ $slot->layanan?->namalayanan }}">{{ $slot->layanan?->namalayanan ?? 'Layanan dihapus' }}<span class="md:hidden"> · {{ $slotLabels[$slot->id] }}</span></span>
+                        </div>
+                        <div role="cell" class="bq-table-cell hidden md:block">
+                            <x-ui.status-dot :tone="$slot->occupied ? 'brand' : 'neutral'">{{ $slotLabels[$slot->id] }}</x-ui.status-dot>
+                        </div>
+                        <div role="cell" class="bq-table-cell bq-table-end bq-num">
+                            @isset($slotPrices[$slot->id])
+                                Rp {{ number_format($slotPrices[$slot->id], 0, ',', '.') }}
+                            @endisset
+                        </div>
+                        <div role="cell" class="bq-table-action">
+                            <x-ui.menu :id="'slot-actions-'.$slot->id" :label="'Tindakan slot '.$slotTimes[$slot->id]">
+                                @if ($slot->occupied)
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach ($slot->bookings as $booking)
+                                            <button role="menuitem" tabindex="-1" type="button" class="bq-link"
+                                                @click="$dispatch('open-booking-panel', { url: @js(route('owner.bookings.panel', $booking->id)), trigger: $el })">{{ $booking->namapelanggan }}</button>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <form method="POST" action="{{ route('owner.schedule.slots.update', $slot) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button role="menuitem" tabindex="-1" type="submit" name="operation" value="{{ $slot->status === 'tersedia' ? 'close' : 'open' }}"
+                                            class="bq-btn bq-btn-secondary">{{ $slot->status === 'tersedia' ? 'Tutup slot' : 'Buka slot' }}</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('owner.schedule.slots.update', $slot) }}" class="flex flex-wrap items-end gap-2">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="operation" value="price">
+                                        <label class="grid gap-1 text-xs">Harga khusus (Rp)
+                                            <input name="harga_override" type="number" min="0" max="9999999999" step="1" value="{{ $slot->harga_override === null ? '' : (int) $slot->harga_override }}"
+                                                placeholder="Ikuti aturan harga" class="bq-input w-36">
+                                        </label>
+                                        <button role="menuitem" tabindex="-1" class="bq-btn bq-btn-secondary">Simpan harga</button>
+                                    </form>
+                                @endif
+                            </x-ui.menu>
+                        </div>
+                    </div>
+                @endforeach
+            @endforeach
+        </x-ui.table>
+    @else
         <x-owner.empty-state title="Belum ada slot minggu ini" description="Buka slot agar pelanggan dapat memilih jadwal." />
-    @endforelse
+    @endif
 </div>

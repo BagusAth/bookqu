@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-5">
-    <x-owner.page-header title="Unit" purpose="Kelola ruang, lapangan, atau peralatan yang dipakai bersama." />
+    <x-owner.page-header title="Unit" purpose="Ruang, lapangan atau alat yang dipakai layanan Anda. Dua booking tidak bisa memakai unit yang sama pada jam yang sama." />
     @if ($galleryUrl)
         <a class="inline-block text-sm bq-link" href="{{ $galleryUrl }}">Unggah gambar ke galeri</a>
     @endif
@@ -13,18 +13,36 @@
         @include('owner.partials.unit-form', ['unit' => null])
     </details>
 
+    <section aria-labelledby="unit-conflicts" class="bq-panel space-y-3 p-4">
+        <div>
+            <h2 id="unit-conflicts" class="font-semibold">Konflik mendatang</h2>
+            <p class="text-bq-small text-bq-text-muted">Dua booking yang sudah memakai unit yang sama pada jam yang sama. Pindahkan salah satunya.</p>
+        </div>
+        @if ($upcomingConflicts)
+            @include('owner.partials.unit-conflicts', ['conflicts' => $upcomingConflicts])
+        @else
+            <p class="text-bq-small text-bq-text-muted">Tidak ada konflik mendatang.</p>
+        @endif
+        @if ($pastConflicts)
+            <details class="border-t border-bq-border pt-3">
+                <summary class="cursor-pointer font-semibold">{{ count($pastConflicts) }} konflik lampau</summary>
+                <p class="my-2 text-bq-small text-bq-text-muted">Sesi sudah lewat, tidak bisa ditindak lagi. Disimpan untuk catatan.</p>
+                @include('owner.partials.unit-conflicts', ['conflicts' => $pastConflicts])
+            </details>
+        @endif
+    </section>
+
     @forelse ($units as $unit)
         <details id="unit-edit-{{ $unit['id'] }}" class="bq-panel p-4" @if ($errors->any() && old('_form') === 'unit-edit-'.$unit['id']) open @endif>
             <summary class="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-2 [&::-webkit-details-marker]:hidden">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-bq-primary-light text-bq-primary"><x-owner.icon name="units" /></span>
                 <span class="min-w-0 flex-1">
-                    <span class="block font-semibold text-bq-ink">{{ $unit['name'] }}</span>
-                    <span class="block text-sm text-bq-text-muted">{{ $unit['type'] }} · {{ $unit['kapasitas'] }} orang · {{ count($unit['service_names']) }} layanan</span>
+                    <span class="block truncate font-semibold text-bq-ink" title="{{ $unit['name'] }}">{{ $unit['name'] }}</span>
+                    <span class="block text-sm text-bq-text-muted">{{ $unit['type'] }}{{ $unit['lokasi'] ? ' · '.$unit['lokasi'] : '' }} · {{ $unit['kapasitas'] }} orang · {{ count($unit['service_names']) }} layanan</span>
                 </span>
                 @if ($unit['usage_today'])
-                    <span class="hidden w-32 sm:block" title="Pemakaian hari ini">
-                        <span class="block h-1.5 overflow-hidden rounded-full bg-bq-surface-2"><span class="block h-full rounded-full bg-bq-primary" style="width: {{ min(100, (float) $unit['usage_today']['rate']) }}%"></span></span>
-                        <span class="bq-num mt-1 block text-xs text-bq-text-muted">{{ number_format($unit['usage_today']['rate'], 0, ',', '.') }}% hari ini</span>
+                    <span class="hidden sm:inline-flex">
+                        <x-ui.mini-bar :value="$unit['usage_today']['usedMinutes']" :total="$unit['usage_today']['offeredMinutes']" unit="menit" />
                     </span>
                 @endif
                 <x-owner.status-badge type="availability" :status="$unit['is_active'] ? 'active' : 'inactive'" />
@@ -52,26 +70,6 @@
         <x-owner.empty-state title="Belum ada unit" description="Tambahkan unit untuk menghubungkannya dengan layanan." />
     @endforelse
 
-    <section aria-labelledby="unit-conflicts" class="bq-panel p-4">
-        <h2 id="unit-conflicts" class="flex items-center gap-2 font-semibold text-bq-ink"><x-owner.icon name="alert" class="h-5 w-5 text-bq-warning" />Konflik booking</h2>
-        <ul class="mt-2 space-y-1 text-sm">
-            @forelse ($conflicts as $conflict)
-                <li>
-                    {{ collect($units)->firstWhere('id', $conflict['unit_id'])['name'] }}
-                    @foreach ($conflict['booking_ids'] as $bookingId)
-                        @if ($detail = $bookingDetails[$bookingId] ?? null)
-                            <p class="ms-3">
-                                <button type="button" class="bq-link" x-data
-                                    @click="$dispatch('open-booking-panel', { url: @js($detail['url']), trigger: $el })">{{ $detail['code'] }}</button>
-                                · {{ $detail['customer'] }} · {{ $detail['session'] }}
-                            </p>
-                        @endif
-                    @endforeach
-                </li>
-            @empty
-                <li class="text-bq-text-muted">Tidak ada booking yang bertabrakan.</li>
-            @endforelse
-        </ul>
-    </section>
+
 </div>
 @endsection
