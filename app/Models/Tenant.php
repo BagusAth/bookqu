@@ -98,6 +98,7 @@ class Tenant extends Model
         return $this->hasOne(TenantLandingPage::class, 'idtenant');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'iduser');

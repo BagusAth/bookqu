@@ -71,6 +71,10 @@ final class GetOwnerSettings
             'refund_request' => 'Pengajuan refund', 'new_review' => 'Ulasan baru',
             'payout_status' => 'Status pencairan', 'plan_status' => 'Status paket', 'weekly_summary' => 'Ringkasan mingguan (Senin pagi)',
         ];
+        // Only the business owner account receives the weekly summary (FR-NOTIFICATION-008).
+        if ($user === null || (int) $tenant->iduser !== (int) $user->id) {
+            unset($notificationEvents['weekly_summary']);
+        }
         $notificationPreferences = $user?->getAttribute('notification_preferences') ?? [];
 
         $data = compact(

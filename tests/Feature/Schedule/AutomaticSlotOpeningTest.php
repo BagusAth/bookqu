@@ -4,6 +4,7 @@ namespace Tests\Feature\Schedule;
 
 use App\Actions\Schedule\OpenAutomaticSlots;
 use App\Models\OpeningHour;
+use App\Models\OwnerBlockedDate;
 use App\Models\Plan;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -12,7 +13,6 @@ use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /** BQ-162 batch 4: automatic slot opening from opening hours (FR-SCHEDULE-015, D-026). */
@@ -52,8 +52,8 @@ class AutomaticSlotOpeningTest extends TestCase
 
     public function test_running_twice_creates_nothing_new_and_keeps_closed_slots_and_dates(): void
     {
-        // Stored as a plain date, as the MySQL/MariaDB date column does (SQLite would add a time).
-        DB::table('owner_blocked_dates')->insert(['idtenant' => $this->tenant->id, 'tanggal' => '2026-11-23', 'alasan' => 'Libur', 'created_at' => now(), 'updated_at' => now()]);
+        // Created through the model: SQLite stores the date with a time part, MySQL does not.
+        OwnerBlockedDate::withoutGlobalScopes()->create(['idtenant' => $this->tenant->id, 'tanggal' => '2026-11-23', 'alasan' => 'Libur']);
         $closed = Schedule::factory()->create([
             'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'tanggal' => '2026-11-30',
             'jam_mulai' => '09:00:00', 'jam_selesai' => '09:59:00', 'status' => 'tidak_tersedia',

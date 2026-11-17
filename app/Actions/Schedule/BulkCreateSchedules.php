@@ -164,8 +164,9 @@ class BulkCreateSchedules
         }
 
         // scope-bypass: filtered by the authenticated tenant
-        $blocked = OwnerBlockedDate::withoutGlobalScopes()->where('idtenant', $tenant->id)
-            ->whereIn('tanggal', $dates)
+        // Compared by day: some drivers store the date with a time part.
+        $blocked = $dates === [] ? [] : OwnerBlockedDate::withoutGlobalScopes()->where('idtenant', $tenant->id)
+            ->whereBetween('tanggal', [min($dates), max($dates).' 23:59:59'])
             ->pluck('tanggal')
             ->map(fn ($t) => Carbon::parse($t)->format('Y-m-d'))
             ->toArray();

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Owner\GetOwnerSettings;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\WeeklySummaryNotification;
@@ -28,5 +29,17 @@ class WeeklySummaryTest extends TestCase
 
         Notification::assertSentTo($on, WeeklySummaryNotification::class, fn (WeeklySummaryNotification $n): bool => $n->summary['from'] === '9 Nov' && $n->summary['to'] === '15 Nov 2026');
         Notification::assertNotSentTo($off, WeeklySummaryNotification::class);
+    }
+
+    public function test_only_the_business_owner_sees_the_weekly_summary_preference(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
+        $tenant = Tenant::factory()->create(['iduser' => $owner->id]);
+        $member = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
+
+        $settings = app(GetOwnerSettings::class);
+
+        $this->assertArrayHasKey('weekly_summary', $settings->execute($tenant, $owner, 'notifications')['notificationEvents']);
+        $this->assertArrayNotHasKey('weekly_summary', $settings->execute($tenant, $member, 'notifications')['notificationEvents']);
     }
 }
