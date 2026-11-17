@@ -200,7 +200,7 @@
   BQ.aksi = Object.assign(BQ.aksi || {}, {
     'cair-ajukan': el => {
       if (BQ.S.state !== 'galat') { BQ.tutup(); return BQ.toast(el.dataset.arg); }
-      BQ.dialog({ judul: 'Pencairan belum diproses', isi: ui.galatBlok({ judul: 'Layanan pembayaran tidak menjawab', teks: 'Saldo Anda tidak berkurang dan tidak ada uang yang keluar. Kunci permintaan PCR-REQ-8F2A tetap sama, jadi mencoba lagi tidak membuat pencairan ganda.' }), kaki: ui.btn('Nanti saja', { aksi: 'tutup' }) + ui.btn('Coba lagi', { v: 'utama', aksi: 'cairkan', arg: 3 }) });
+      BQ.dialog({ judul: 'Pengajuan pencairan belum terkonfirmasi', isi: ui.galatBlok({ judul: 'Koneksi terputus sebelum BookQu menjawab', teks: 'Pengajuan mungkin sudah tercatat, mungkin belum. Tekan Coba lagi: permintaan yang sama tidak membuat pencairan ganda dan saldo hanya ditahan sekali. Transfer tetap diproses admin BookQu setelah pengajuan tercatat.' }), kaki: ui.btn('Nanti saja', { aksi: 'tutup' }) + ui.btn('Coba lagi', { v: 'utama', aksi: 'cairkan', arg: 3 }) });
     },
     cairkan: el => cairkan(Number(el.dataset.arg) || 1),
     'form-promo': () => formPromo(),

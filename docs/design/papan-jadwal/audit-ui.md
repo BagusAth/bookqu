@@ -176,13 +176,13 @@ P-1 boleh berjalan sejajar sejak Tahap 0; P-2…P-7 menunggu rilis.
 
 ## 6. Calon work item
 
-Nomor dicek ulang saat dibuat (BQ-162 bebas pada 16 Nov 2026).
+Nomor dicek ulang saat dibuat (BQ-162 bebas pada 16 Nov 2026). *Catatan 17 Nov 2026:* calon-calon ini akhirnya digabung menjadi BQ-162 (sesi 1–9).
 
 | Calon | Isi | Jalur | Bergantung |
 |---|---|---|---|
 | BQ-162 | Tahap 0 + Tahap 1: verifikasi temuan, sisa uji BQ-161, penghalang rilis | ringan (dicatat sebagai item karena `NEXT.md` memintanya) | — |
-| BQ-163 | Tahap 2: fondasi sistem UI, aturan, penjaga | berat, Tech Lead | rilis |
-| BQ-164 … 167 | Bundel 3a, 3b, 3c, 3d | ringan (PR sebagai catatan) | BQ-163 |
+| Calon fondasi | Tahap 2: fondasi sistem UI, aturan, penjaga | berat, Tech Lead | rilis |
+| Calon bundel (empat) | Bundel 3a, 3b, 3c, 3d | ringan (PR sebagai catatan) | calon fondasi |
 | per bug | Tiap fakta yang terbukti bug | menurut domain | Tahap 0 |
 | setelah `D-NNN` | P-1 sampai P-7 | berat | keputusan Product Lead |
 

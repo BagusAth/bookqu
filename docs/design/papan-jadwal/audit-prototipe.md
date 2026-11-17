@@ -102,7 +102,7 @@ Perkiraan: satu sesi perbaikan prototipe (sesi 4), lalu perencanaan implementasi
 - slot keburu diambil saat Catat booking atau pindah jadwal (penjaga terakhir INV-BOOK-04);
 - gagal simpan atau koneksi putus;
 - sesi login kedaluwarsa;
-- gateway gagal saat cairkan saldo;
+- pengajuan pencairan yang belum terkonfirmasi (koneksi putus; pengajuan tercatat lokal, transfer oleh admin);
 - batas booking per bulan tercapai di tengah jalan.
 
 Yang sudah ada hanya galat isian formulir (nama kosong, kode promo ganda, tutup tanggal yang berisi booking).

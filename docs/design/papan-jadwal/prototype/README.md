@@ -183,7 +183,7 @@ Rencana: `../riwayat/rencana-keterbacaan-prototipe.md`.
 Lihat `../audit-prototipe.md`.
 - **T1 tablet:** pada 768–1199 px sidebar menjadi rel ikon 72 px (label lewat `title`); di bawah 1024 px Beranda, kisi dua kolom dan angka menjadi satu kolom; simulator harga tidak lagi meluap.
 - **T2 cakupan:** semua butir B dan C disetujui lewat D-025; daftarnya di `../KEPUTUSAN.md`.
-- **T3 galat:** Keadaan = Galat. Catat booking dan Pindah jadwal menampilkan "jam baru saja terisi" dengan jam pengganti (isian tetap); tombol simpan di laci/dialog memberi toast galat dan lapisan tetap terbuka; Ajukan pencairan gagal tanpa saldo berkurang; paket Small → kuota habis; contoh sesi berakhir di `#/sistem`. Komponen baru `ui.galatBlok`.
+- **T3 galat:** Keadaan = Galat. Catat booking dan Pindah jadwal menampilkan "jam baru saja terisi" dengan jam pengganti (isian tetap); tombol simpan di laci/dialog memberi toast galat dan lapisan tetap terbuka; Ajukan pencairan yang belum terkonfirmasi (koneksi putus) dengan Coba lagi memakai kunci permintaan yang sama; pengajuan dan penahanan saldo terjadi sekali di server, transfer diproses admin; paket Small → kuota habis; contoh sesi berakhir di `#/sistem`. Komponen baru `ui.galatBlok`.
 - **T4 data ramai:** Data = Ramai (`js/data-ramai.js`): 25 layanan, 80 tugas, nama panjang. Booking paling banyak 25 baris per halaman dan "Tandai selesai semua (n)"; Kalender hari paling banyak 6 kolom layanan dengan "Layanan n dari m".
 - **T5 sentuh:** pada `(hover: none)` tombol ⋯ baris selalu penuh dan minimal 44 px.
 - **T6 terpotong:** setiap teks yang terpotong otomatis mendapat `title` berisi teks penuh.
