@@ -60,6 +60,7 @@ class Tenant extends Model
         'booking_max_days_ahead',
         'slot_open_days_ahead',
         'booking_buffer_minutes',
+        'auto_complete_bookings',
         'reschedule_before_hours',
         'theme_color',
         'button_style',
@@ -71,6 +72,7 @@ class Tenant extends Model
     {
         return [
             'refunds_enabled' => 'boolean',
+            'auto_complete_bookings' => 'boolean',
             'booking_min_lead_hours' => 'integer',
             'booking_max_days_ahead' => 'integer',
             'slot_open_days_ahead' => 'integer',

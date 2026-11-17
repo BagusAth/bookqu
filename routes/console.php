@@ -1,8 +1,10 @@
 <?php
 
+use App\Actions\Booking\CompleteBookings;
 use App\Actions\Payment\RemindOpenRefundRequests;
 use App\Actions\Tenant\CheckCustomDomain;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -56,3 +58,30 @@ Artisan::command('webhooks:prune', function (): void {
 })->purpose('Prune webhook delivery logs older than 30 days');
 
 Schedule::command('webhooks:prune')->daily()->withoutOverlapping();
+
+// BQ-162 (FR-BOOKING-024, D-026): paid sessions that ended 6 hours ago are completed for
+// tenants that keep automatic completion on. Each booking goes through CompleteBookings.
+Artisan::command('bookings:complete-ended', function (CompleteBookings $completeBookings): void {
+    $cutoff = now('Asia/Jakarta')->subHours(CompleteBookings::AUTO_COMPLETE_AFTER_HOURS);
+    Tenant::query()->where('auto_complete_bookings', true)->select(['id'])
+        ->chunkById(100, function ($tenants) use ($completeBookings, $cutoff): void {
+            $context = app(TenantContext::class);
+            foreach ($tenants as $tenant) {
+                // Same pattern as bookings:expire-payments: tenant-scoped relations resolve inside this tenant only.
+                $context->setTenantId((int) $tenant->id);
+                try {
+                    $ids = $completeBookings->endedIds($tenant, $cutoff);
+                    if ($ids !== []) {
+                        $completeBookings->execute($tenant, $ids, 'system', $cutoff);
+                    }
+                } finally {
+                    $context->clear();
+                }
+            }
+        });
+})->purpose('Complete paid bookings whose session ended at least 6 hours ago');
+
+Schedule::call(fn () => Artisan::call('bookings:complete-ended'))
+    ->name('bookings:complete-ended')
+    ->hourly()
+    ->withoutOverlapping();

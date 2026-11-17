@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Booking\CompleteBookings;
 use App\Actions\Booking\CreateWalkInBooking;
 use App\Actions\Booking\ExportOwnerBookings;
 use App\Actions\Booking\GetBookingTimeRanges;
@@ -65,6 +66,10 @@ class OwnerBookingController extends Controller
         if ($tab === 'action') {
             $list->withActionReasons($selection, $canReview);
         }
+        // FR-BOOKING-025: ended sessions the team may close at once from "Perlu tindakan".
+        $endedCount = $tab === 'action' && $canComplete && $tenant !== null
+            ? count(app(CompleteBookings::class)->endedIds($tenant, Carbon::now('Asia/Jakarta')))
+            : 0;
         $showUnits = EntitlementRules::canAccessFeature($tenant?->subscription, 'units')['allowed'] && config('modules.units') === 'released';
         if ($showUnits) {
             $selection->with('layanan.units');
@@ -122,6 +127,7 @@ class OwnerBookingController extends Controller
         return view('owner.bookings', compact(
             'tenant', 'daftarbooking', 'filters', 'tab', 'tabs', 'tabCounts', 'rows', 'services', 'canWalkIn',
             'cancellationRequests', 'exportUrl', 'storefrontUrl', 'emptyTitle', 'canViewRevenue', 'initialPanelUrl',
+            'endedCount', 'canComplete',
         ));
     }
 
@@ -232,6 +238,34 @@ class OwnerBookingController extends Controller
         }
 
         return back()->with('sukses', 'Tautan booking dijadwalkan untuk dikirim ulang.');
+    }
+
+    /**
+     * Bulk completion (FR-BOOKING-025): selected rows, or every ended session still paid.
+     */
+    public function completeMany(Request $request, CompleteBookings $completeBookings): RedirectResponse
+    {
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $data = $request->validate([
+            'all_ended' => ['sometimes', 'boolean'],
+            'ids' => ['required_without:all_ended', 'array', 'max:500'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $ids = ($data['all_ended'] ?? false)
+            ? $completeBookings->endedIds($tenant, Carbon::now('Asia/Jakarta'))
+            : array_map('intval', $data['ids'] ?? []);
+        if ($ids === []) {
+            return back()->with('sukses', 'Tidak ada sesi lewat yang perlu ditutup.');
+        }
+
+        $result = $completeBookings->execute($tenant, $ids, 'owner');
+        $message = "{$result['completed']} booking ditandai selesai.";
+        if ($result['skipped'] > 0) {
+            $message .= " {$result['skipped']} dilewati karena belum selesai sesinya, sedang minta refund atau pembatalan, atau statusnya sudah berubah.";
+        }
+
+        return back()->with('sukses', $message);
     }
 
     public function walkinStore(Request $request, CreateWalkInBooking $createWalkInBooking, ListWalkInSlots $walkInSlots): JsonResponse|RedirectResponse

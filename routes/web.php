@@ -167,6 +167,7 @@ Route::prefix('owner')
             Route::patch('/bookings/cancellation-requests/{cancellationId}', [BookingCancellationController::class, 'decide'])->whereNumber('cancellationId')->name('owner.bookings.cancellation-requests.decide');
             Route::patch('/refunds/requests/{refundRequestId}', [OwnerRefundController::class, 'decide'])->whereNumber('refundRequestId')->name('owner.refunds.decide');
             Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
+            Route::post('/bookings/complete', [OwnerBookingController::class, 'completeMany'])->name('owner.bookings.complete-many');
             Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
             Route::get('/bookings/walkin-slots', [OwnerShellController::class, 'walkInSlots'])->name('owner.bookings.walkin-slots');
             Route::get('/bookings/{booking}/available-slots', [OwnerBookingController::class, 'getAvailableSlots'])->name('owner.bookings.available-slots');
