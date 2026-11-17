@@ -30,7 +30,7 @@ BQ-161 restyled the owner portal but kept most pages on raw controls and Tailwin
 | 1 | 1 | Foundation: every later screen depends on the shell and primitives, so it is reviewed alone |
 | 2 | 2, 3 | Shared daily parts and the daily pages that use them |
 | 3 | 4, 5, 6 | Independent page groups on the same components |
-| 4 | 7, 8 | Heavy-lane features with the numbers from D-026 |
+| 4 | 7, 8 | Heavy-lane features with the numbers from D-026 (**done** by the Tech Lead, see Evidence) |
 | 5 | 9 | Verification and docs |
 
 D-026 was confirmed by the Product Lead on 17 Nov 2026, except point 5: **booking source per channel (C-08) is hidden for now.** Do not build source tracking, `?dari=` links, a source column, a "Dari mana booking datang" report or channel filters. Keep the existing online / walk-in source exactly as it works today (Booking filter "Sumber", slip label). Sessions 7 and 8 run as batch 4 with the numbers from D-026; never guess. If a session finds something the plan or prototype does not answer, stop and write it under "Open findings" instead of deciding.
@@ -190,8 +190,16 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 - Session 6 (17 Nov 2026):
   - Checked the listed prototype routes and 108 page and access combinations at 375, 768, 1024 and 1366 px as Pemilik and Kasir on the local SQLite seed. Fixed the Integrasi HTTPS field overflow at 375 px and rechecked only that case. Checkout order was opened in Edge; payment and invoice were covered by the related feature tests.
   - Pint, Vite build and PHPStan passed. Ran the related tests once for this session (53 passed, 460 assertions), including tenant-scoped service previews and notifications grouped by day. The full SQLite suite was exercised in Session 5 as recorded above.
-- Session 7:
-- Session 8:
+- Session 7 (17 Nov 2026, Tech Lead with Claude Code, parallel to batch 3; merged in `c498d86`):
+  - Requirements first (`c4943b6`): FR-SCHEDULE-015, FR-BOOKING-024, FR-BOOKING-025, plan table in `docs/product.md`.
+  - C-02/C-03 (`e9eae06`): `CompleteBookings` (eligibility: `paid`, session ended, no open refund or pending cancellation; each booking through `UpdateBookingStatus` without per-booking mail), hourly `bookings:complete-ended` per tenant context with the 6-hour cutoff, `tenants.auto_complete_bookings` (default on), `POST owner.bookings.complete-many` mapped to `bookings.complete`, bulk bar on Perlu tindakan. `BookingCompletionTest` 7 tests.
+  - C-01 (`6a32a84`): `services.auto_open_slots` (default off), `OpenAutomaticSlots` through `BulkCreateSchedules` per opening interval up to 30 days (capped by the days-ahead limits), nightly `slots:open-automatic` at 01:00, switch in the service form. `AutomaticSlotOpeningTest` 5 tests.
+  - UI hooks on the rebuilt pages (`6e74a68`): automatic completion switch in Kebijakan.
+- Session 8 (17 Nov 2026, Tech Lead with Claude Code; merged in `c498d86`):
+  - Requirements: FR-NOTIFICATION-008, FR-VOUCHER-006. C-08 not built (D-026).
+  - C-07 (`258a781`): `SendWeeklySummary` from `GetReport`, `GetSlotRunway` and `CompleteBookings`, queued `WeeklySummaryNotification`, preference `weekly_summary` (default on), `owners:weekly-summary` Mondays 07:00. `WeeklySummaryTest` 1 test.
+  - C-09 (`b4ec495`, `6e74a68`): `vouchers.valid_days/valid_from_time/valid_until_time`, `Voucher::coversSlot`, `BookingPricing::quote` refuses the code unless every slot starts inside the range, controller validation, day/time fields in the promo form, quietest day and hour in Laporan → Okupansi (computed in `GetReport`) with a link to a new promo. `QuietHourPromoTest` 2 tests.
+  - Checks run: the tests above, Laporan/Settings/Paket/Modules/Team/Booking related suites (62 + 56 passed), Pint on touched files. **Not yet run (session 9):** full suite, PHPStan, MySQL suite, browser checks at four widths.
 - Session 9:
 
 ## Open findings
@@ -199,3 +207,4 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 - The full-suite documentation guardrail reports two undefined work item references in `docs/design/papan-jadwal/audit-ui.md`. Both references were already present on the branch before Session 1. Resolved in commit `eb277e4`.
 - Resolved by the Tech Lead. A network failure, timeout or 5xx during payout submission shows “Pengajuan pencairan belum terkonfirmasi”. “Coba lagi” sends the same `request_key` and “Nanti saja” closes the dialog. Validation remains inline. The local balance hold and later admin transfer continue under FR-PAYOUT-002 and FR-PAYOUT-003. Prototype updated in `eb277e4`.
 - Resolved by the Tech Lead (17 Nov 2026). C-11 “Belum jadi membayar” goes in Laporan → Pelanggan. List in-period, tenant-scoped bookings whose payment is `gagal` and booking log says “Pembayaran ditutup”. Exclude owner or manager cancellations and customers with a `paid` or `completed` booking created later under the same customer identifier. Expiry and gateway failure share the existing records. Sort newest first and show “Pembayaran tidak selesai” with a link that opens the owner's WhatsApp. Kasir remains outside the Laporan permission.
+- Batch 4 notes for session 9 (17 Nov 2026): (1) on SQLite, closed dates created through Eloquent are stored with a time and `BulkCreateSchedules::plan()` compares them with `whereIn`, so tests insert plain dates; MySQL/MariaDB are not affected, but consider `whereDate`. (2) The weekly summary preference label shows for every role although only the Pemilik receives the mail; hide it for Manajer and Kasir. (3) In one filtered run `CheckoutMidtransTest` and `FiveModulesFullIntegrationTest` raised a RuntimeException that did not repeat when the files ran alone; confirm in the full suite.
