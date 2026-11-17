@@ -303,7 +303,7 @@ class OwnerPayoutFlowTest extends TestCase
         $this->assertDatabaseCount('owner_payouts', 0);
         $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo']))
             ->assertOk()
-            ->assertSee('Minimal Rp 50.000')
+            ->assertSee('Minimal Rp50.000')
             ->assertDontSee('Minimal Rp 10.000');
     }
 
