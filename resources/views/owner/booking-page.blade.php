@@ -29,48 +29,56 @@
         $dispatch('open-confirm', { title: 'Buang perubahan tampilan?', message: 'Perubahan tampilan belum disimpan.', formId: 'leave-booking-page-section', confirmText: 'Buang perubahan' });
     }
 }">
-    <x-owner.page-header title="Halaman Booking" purpose="Bagaimana pelanggan menemukan Anda, dan apa yang mereka lihat." />
+    <x-owner.page-header title="Halaman Booking" purpose="Bagaimana pelanggan menemukan Anda, dan apa yang mereka lihat.">
+        @if ($activeSection === 'galeri')
+            <x-slot:action>
+                <x-ui.button href="#booking-gallery-upload" variant="primary" icon="plus">Unggah gambar</x-ui.button>
+            </x-slot:action>
+        @endif
+    </x-owner.page-header>
 
     <div @click.capture="confirmSection($event)">
-        <x-owner.tabs :tabs="$sections->all()" param="section" :active="$activeSection" label="Bagian Halaman Booking" />
+        <x-owner.tabs :tabs="$sections->all()" :counts="['galeri' => count($gallery)]" param="section" :active="$activeSection" label="Bagian Halaman Booking" />
     </div>
     <form id="leave-booking-page-section" @submit.prevent="if (pendingSection) window.location.assign(pendingSection)" hidden></form>
 
     {{-- ── Link & QR (FR-PUBLIC-006, AC-HBK-02) ── --}}
     @if ($activeSection === 'link')
-        <div class="grid gap-6 lg:grid-cols-3">
-            <section aria-labelledby="link-title" class="{{ $card }} p-4 lg:col-span-2" x-data="ownerBookingLink(@js(['url' => $link, 'share_text' => 'Booking '.($tenant->namabisnis ?: 'kami').' online: '.$link]), @js(route('owner.dashboard.link-shared')))">
-                <h2 id="link-title" class="text-base font-semibold text-bq-text">Link booking</h2>
-                <p class="mt-1 text-sm text-bq-text-muted">Link ini membuka halaman booking Anda. Pasang di bio Instagram, Google Maps, atau kirim lewat WhatsApp.</p>
-                <p class="mt-3 break-all rounded-lg bg-bq-background px-3 py-2 font-mono text-sm text-bq-text">{{ $link }}</p>
-                <div class="mt-3 flex flex-wrap gap-2">
-                    <button type="button" class="{{ $buttonPrimary }}" x-on:click="copy()" x-text="copied ? 'Tersalin' : 'Salin link'">Salin link</button>
-                    <a href="{{ $link }}" target="_blank" rel="noopener" class="{{ $buttonSecondary }}">Buka halaman</a>
-                    <a href="{{ $whatsappShareUrl }}" target="_blank" rel="noopener" x-on:click="mark()" class="{{ $buttonSecondary }}">Bagikan ke WhatsApp</a>
+        <div class="grid gap-4 md:grid-cols-2">
+            <x-ui.panel title="Link booking">
+                <div class="grid gap-3" x-data="ownerBookingLink(@js(['url' => $link, 'share_text' => 'Booking '.($tenant->namabisnis ?: 'kami').' online: '.$link]), @js(route('owner.dashboard.link-shared')))">
+                    <div class="flex flex-wrap items-center justify-between gap-2 rounded-bq-control border border-bq-border bg-bq-background px-3 py-2">
+                        <p class="min-w-0 flex-1 break-all text-bq-body">{{ $link }}</p>
+                        <x-ui.button icon="copy" size="sm" x-on:click="copy()" x-text="copied ? 'Tersalin' : 'Salin link'">Salin link</x-ui.button>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <x-ui.button :href="$link" target="_blank" rel="noopener" size="sm" icon="external">Buka</x-ui.button>
+                        <x-ui.button :href="$whatsappShareUrl" target="_blank" rel="noopener" size="sm" icon="whatsapp" x-on:click="mark()">Bagikan ke WhatsApp</x-ui.button>
+                    </div>
                 </div>
-            </section>
+            </x-ui.panel>
 
-            <section aria-labelledby="qr-title" class="{{ $card }} p-4">
-                <h2 id="qr-title" class="text-base font-semibold text-bq-text">Kode QR</h2>
-                <div class="mx-auto mt-3 w-44 [&>svg]:h-auto [&>svg]:w-full" role="img" aria-label="Kode QR untuk {{ $link }}">{!! $qrSvg !!}</div>
-                <div class="mt-3 flex flex-wrap justify-center gap-2">
-                    <a href="{{ route('owner.booking-page.qr') }}" class="{{ $buttonSecondary }}">Unduh QR</a>
-                    <a href="{{ route('owner.booking-page.poster') }}" target="_blank" rel="noopener" class="{{ $buttonSecondary }}">Cetak poster</a>
+            <x-ui.panel title="Kode QR">
+                <div class="flex flex-wrap items-center gap-4">
+                    <div class="w-28 shrink-0 [&>svg]:h-auto [&>svg]:w-full" role="img" aria-label="Kode QR untuk {{ $link }}">{!! $qrSvg !!}</div>
+                    <div class="grid justify-items-start gap-2">
+                        <x-ui.button :href="route('owner.booking-page.qr')" size="sm" icon="download">Unduh QR</x-ui.button>
+                        <x-ui.button :href="route('owner.booking-page.poster')" target="_blank" rel="noopener" size="sm" icon="download">Cetak poster</x-ui.button>
+                    </div>
                 </div>
-            </section>
+            </x-ui.panel>
         </div>
-        <section aria-labelledby="share-materials" class="bq-panel p-4">
-            <h2 id="share-materials" class="font-semibold">Teks siap pakai</h2>
-            <div class="mt-3 grid gap-4 lg:grid-cols-2">
+        <x-ui.panel title="Teks siap pakai">
+            <div class="grid gap-4 md:grid-cols-2">
                 @foreach ([['Bio Instagram', 'instagram', 'Salin teks bio Instagram'], ['Pesan WhatsApp', 'whatsapp', 'Salin pesan WhatsApp']] as [$title, $key, $action])
-                    <section class="min-w-0" x-data="ownerCopyText(@js($materials[$key]))">
-                        <h2 class="text-base font-semibold text-bq-text">{{ $title }}</h2>
-                        <p class="mt-2 whitespace-pre-line break-words rounded-bq-control bg-bq-background px-3 py-2 text-bq-body text-bq-text">{{ $materials[$key] }}</p>
-                        <button type="button" class="{{ $buttonSecondary }} mt-3" x-on:click="copy()" x-text="copied ? 'Tersalin' : @js($action)">{{ $action }}</button>
+                    <section class="grid min-w-0 justify-items-start gap-2" x-data="ownerCopyText(@js($materials[$key]))">
+                        <h3 class="text-bq-body font-semibold text-bq-text">{{ $title }}</h3>
+                        <p class="w-full whitespace-pre-line break-words rounded-bq-control border border-bq-border bg-bq-background px-3 py-2 text-bq-body text-bq-text">{{ $materials[$key] }}</p>
+                        <button type="button" class="{{ $buttonSecondary }}" x-on:click="copy()" x-text="copied ? 'Tersalin' : @js($action)">{{ $action }}</button>
                     </section>
                 @endforeach
             </div>
-        </section>
+        </x-ui.panel>
     @endif
 
     {{-- ── Tampilan (FR-PUBLIC-003, AC-HBK-01) ── --}}
@@ -153,12 +161,13 @@
 
                 <p class="text-sm text-bq-text-muted">
                     Deskripsi bisnis ditampilkan pada pratinjau.
-                    <a @click="confirmSection($event)" href="{{ route('owner.settings.business', ['tab' => 'profile']) }}" class="bq-link">Ubah di Profil Bisnis</a>
+                    <a @click="confirmSection($event)" href="{{ route('owner.settings.business', ['tab' => 'profile']) }}" class="bq-link">Ubah di Profil bisnis</a>
                 </p>
 
-                <div class="flex justify-end">
-                    <button type="submit" class="{{ $buttonPrimary }}">Simpan tampilan</button>
-                </div>
+                <x-ui.savebar class="!static !px-0">
+                    <x-ui.button variant="ghost" :href="route('owner.booking-page', ['section' => 'tampilan'])">Batal</x-ui.button>
+                    <x-ui.button type="submit" variant="primary">Simpan tampilan</x-ui.button>
+                </x-ui.savebar>
             </form>
 
             {{-- Live phone-sized preview (D-009) --}}
@@ -195,13 +204,13 @@
 
     {{-- ── Galeri media (FR-ASSET-005, AC-HBK-05) ── --}}
     @if ($activeSection === 'galeri')
-        <section aria-labelledby="upload-title" class="{{ $card }} p-4">
+        <section id="booking-gallery-upload" aria-labelledby="upload-title" class="{{ $card }} p-4">
             <h2 id="upload-title" class="text-base font-semibold text-bq-text">Tambah gambar</h2>
-            <form method="POST" action="{{ route('owner.booking-page.media.store') }}" enctype="multipart/form-data" class="mt-3 grid gap-3 sm:grid-cols-[1fr_12rem_10rem_auto] sm:items-end" x-data="{ sending: false }" x-on:submit="sending = true">
+            <form method="POST" action="{{ route('owner.booking-page.media.store') }}" enctype="multipart/form-data" class="mt-3 grid gap-3 sm:grid-cols-2 sm:items-end lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem_auto]" x-data="{ sending: false }" x-on:submit="sending = true">
                 @csrf
                 <div>
                     <label for="media-file" class="{{ $label }}">File gambar <span class="font-normal text-bq-text-muted">(maks. 10 MB)</span></label>
-                    <input id="media-file" type="file" name="file" required accept="image/jpeg,image/png,image/webp,image/gif" class="mt-1 block w-full text-sm text-bq-text-muted">
+                    <input id="media-file" type="file" name="file" required accept="image/jpeg,image/png,image/webp,image/gif" class="mt-1 block w-full min-w-0 text-sm text-bq-text-muted">
                     @error('file')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
                 </div>
                 <div>
