@@ -10,6 +10,7 @@
     'label' => 'Bagian halaman',
     'baseUrl' => null,
     'counts' => [],
+    'attentionTabs' => ['action'],
 ])
 
 @php
@@ -32,7 +33,7 @@
             {{ $tabLabel }}
             @isset($counts[$key])
                 {{-- BQ-162 (prototype .tabs): plain muted counts; marigold only for what needs the owner. --}}
-                @if ($key === 'action' && $counts[$key] > 0)
+                @if (in_array($key, $attentionTabs, true) && $counts[$key] > 0)
                     <span class="bq-count">{{ $counts[$key] }}</span>
                 @else
                     <span class="text-bq-small font-medium tabular-nums text-bq-text-muted">{{ $counts[$key] }}</span>
