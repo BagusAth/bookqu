@@ -245,17 +245,17 @@ class PriceRulesAndOpeningHoursTest extends TestCase
 
     public function test_opening_hours_save_breaks_and_refuse_overlapping_intervals(): void
     {
-        $this->actingAs($this->owner)->put(route('owner.schedule.opening-hours'), [
+        $this->actingAs($this->owner)->putJson(route('owner.schedule.opening-hours'), [
             'days' => [1 => [['opens_at' => '09:00', 'closes_at' => '12:00'], ['opens_at' => '13:00', 'closes_at' => '17:00']]],
             'slot_open_days_ahead' => 14,
-        ])->assertSessionHasNoErrors();
+        ])->assertOk()->assertExactJson(['success' => true])->assertSessionHas('sukses', 'Jam buka berhasil disimpan.');
 
         $this->assertSame(2, OpeningHour::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->where('day_of_week', 1)->count());
         $this->assertSame(14, $this->tenant->fresh()->slot_open_days_ahead);
 
-        $this->actingAs($this->owner)->put(route('owner.schedule.opening-hours'), [
+        $this->putJson(route('owner.schedule.opening-hours'), [
             'days' => [1 => [['opens_at' => '09:00', 'closes_at' => '12:00'], ['opens_at' => '11:00', 'closes_at' => '17:00']]],
-        ])->assertSessionHasErrors('days.1');
+        ])->assertUnprocessable()->assertJsonValidationErrors('days.1');
         $this->assertSame(2, OpeningHour::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->count());
     }
 

@@ -34,7 +34,7 @@ class OwnerPriceRuleController extends Controller
 {
     use ResolvesOwnerTenant;
 
-    public function saveOpeningHours(SaveOpeningHoursRequest $request, SaveOpeningHours $action): RedirectResponse
+    public function saveOpeningHours(SaveOpeningHoursRequest $request, SaveOpeningHours $action): JsonResponse|RedirectResponse
     {
         $slotOpenDaysAhead = $request->validated('slot_open_days_ahead');
         $autoOpenSlots = $request->validated('auto_open_slots');
@@ -45,7 +45,9 @@ class OwnerPriceRuleController extends Controller
             $autoOpenSlots !== null ? (bool) $autoOpenSlots : null,
         );
 
-        return back()->with('sukses', 'Jam buka berhasil disimpan.');
+        $request->session()->flash('sukses', 'Jam buka berhasil disimpan.');
+
+        return $request->expectsJson() ? response()->json(['success' => true]) : back(303);
     }
 
     public function storePeakRule(SavePeakHourRuleRequest $request, SavePriceRules $action): RedirectResponse

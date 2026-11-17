@@ -1,10 +1,10 @@
 {{-- BQ-162: Jam buka tab as in the Papan Jadwal prototype (#/jam-buka): automatic slots, then one row per day. --}}
-<form class="bq-panel" x-data="scheduleOpeningHours(@js($openingHours), @js($overview['auto_open'] > 0))"
+<form class="bq-panel" x-data="scheduleOpeningHours(@js($openingHours))"
     action="{{ route('owner.schedule.opening-hours') }}" method="POST" @submit.prevent="save($event.currentTarget)">
     @csrf
     @method('PUT')
     <x-ui.form-row title="Slot otomatis" description="Sistem membuka slot dari jam buka setiap hari. Anda hanya mengatur pengecualian.">
-        <x-ui.switch x-model="autoOpen" label="Buka slot otomatis" description="Slot baru dibuka setiap malam sampai batas di bawah. Durasi diambil dari Layanan." />
+        <x-ui.switch name="auto_open_slots" value="1" :checked="$overview['auto_open'] > 0" label="Buka slot otomatis" description="Slot baru dibuka setiap malam sampai batas di bawah. Durasi diambil dari Layanan." />
         <div class="grid gap-1.5">
             <label for="slot-open-days-ahead" class="bq-label">Buka slot sampai</label>
             <div class="flex min-h-bq-control items-center rounded-bq-control border border-bq-border-strong bg-bq-surface focus-within:border-bq-primary focus-within:ring-2 focus-within:ring-bq-primary/20">
@@ -31,9 +31,9 @@
                         <span x-show="closed[{{ $day }}]" class="text-bq-text-muted">Tutup</span>
                         <template x-for="(interval, index) in days[{{ $day }}]" :key="interval.key">
                             <span class="bq-hours-range" x-show="!closed[{{ $day }}]">
-                                <input class="bq-input" x-model="interval.opens_at" inputmode="numeric" maxlength="5" placeholder="08.00" :aria-label="index ? '{{ $label }} buka lagi' : '{{ $label }} buka'" required>
+                                <input class="bq-input" x-model="interval.opens_at" inputmode="numeric" maxlength="5" placeholder="08.00" :aria-label="index ? '{{ $label }} buka lagi' : '{{ $label }} buka'" :disabled="closed[{{ $day }}]" required>
                                 <span class="text-bq-text-muted">–</span>
-                                <input class="bq-input" x-model="interval.closes_at" inputmode="numeric" maxlength="5" placeholder="17.00" :aria-label="index ? '{{ $label }} tutup' : '{{ $label }} mulai jeda'" required>
+                                <input class="bq-input" x-model="interval.closes_at" inputmode="numeric" maxlength="5" placeholder="17.00" :aria-label="index ? '{{ $label }} tutup' : '{{ $label }} mulai jeda'" :disabled="closed[{{ $day }}]" required>
                                 <button type="button" x-show="index > 0" class="bq-btn bq-btn-ghost bq-btn-sm bq-btn-icon !min-h-8 !min-w-8" @click="days[{{ $day }}].splice(index, 1)" aria-label="Hapus jeda {{ $label }}"><x-owner.icon name="x" class="h-4 w-4" /></button>
                             </span>
                         </template>

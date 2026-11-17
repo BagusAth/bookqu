@@ -19,11 +19,10 @@ document.addEventListener('alpine:init', () => {
         return match ? `${match[1].padStart(2, '0')}:${match[2]}` : String(time ?? '').trim();
     };
 
-    Alpine.data('scheduleOpeningHours', (openingHours, autoOpen = false) => ({
+    Alpine.data('scheduleOpeningHours', (openingHours) => ({
         nextKey: 0,
         days: {},
         closed: {},
-        autoOpen,
         errors: [],
         busy: false,
         init() {
@@ -60,14 +59,15 @@ document.addEventListener('alpine:init', () => {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': fields.get('_token'),
                     },
-                    body: JSON.stringify({ days, slot_open_days_ahead: fields.get('slot_open_days_ahead') || null, auto_open_slots: this.autoOpen }),
+                    body: JSON.stringify({ days, slot_open_days_ahead: fields.get('slot_open_days_ahead') || null, auto_open_slots: fields.has('auto_open_slots') }),
                 });
-                if (response.redirected && response.ok) {
-                    window.location.assign(response.url);
-                    return;
-                }
                 if (response.headers.get('content-type')?.includes('application/json')) {
-                    this.errors = Object.values((await response.json()).errors ?? {}).flat();
+                    const data = await response.json();
+                    if (response.ok && data.success === true) {
+                        window.location.reload();
+                        return;
+                    }
+                    this.errors = Object.values(data.errors ?? {}).flat();
                 }
                 if (!this.errors.length) this.errors = ['Jam buka gagal disimpan.'];
             } catch {
