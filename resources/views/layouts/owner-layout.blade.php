@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#382186">
 
-    <title>@yield('title', 'Beranda') — BookQu</title>
+    <title>@yield('title', 'Beranda') â€” BookQu</title>
 
     <link rel="icon" type="image/png" href="{{ asset('logo_icon.png') }}">
 
@@ -45,7 +45,7 @@
                 </header>
             @endif
 
-            {{-- Bottom padding keeps content above the phone navigation bar (owner-portal.md §4.3) --}}
+            {{-- Bottom padding keeps content above the phone navigation bar (owner-portal.md Â§4.3) --}}
             <div class="min-w-0 flex-1 px-3 pt-4 pb-24 md:px-5 md:pt-6 md:pb-10 owner-wide:px-bq-edge">
                 @unless (request()->routeIs('owner.calendar'))
                     <x-owner.walkin-success />
@@ -61,11 +61,11 @@
 
         @if ($shell['canWalkIn'])
             <x-owner.dialog id="owner-walkin-dialog" title="Catat booking" description="Catat pelanggan yang datang langsung." size="lg" reopen-for="shell-walkin">
-                <x-owner.walkin-form :slots-url="route('owner.bookings.walkin-slots')" id-prefix="shell-walkin" />
+                <x-owner.walkin-form :slots-url="route('owner.bookings.walkin-slots')" :search-url="route('owner.search')" id-prefix="shell-walkin" />
             </x-owner.dialog>
         @endif
 
-        {{-- The shared upgrade prompt a locked menu opens (owner-portal.md §3 rule 6) --}}
+        {{-- The shared upgrade prompt a locked menu opens (owner-portal.md Â§3 rule 6) --}}
         <x-owner.dialog id="owner-upgrade-dialog" title="Fitur paket lebih tinggi" size="sm">
             <div x-data="{ feature: '' }" x-on:open-upgrade.window="feature = $event.detail.feature">
                 <p class="text-sm text-bq-text"><span class="font-semibold" x-text="feature"></span> belum termasuk paket Anda.</p>

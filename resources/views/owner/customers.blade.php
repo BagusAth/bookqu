@@ -74,7 +74,7 @@
         @endif
     @else
         {{-- Desktop table --}}
-        <div class="bq-panel hidden overflow-hidden md:block">
+        <div class="bq-panel relative hidden overflow-x-auto md:block" role="region" aria-label="Daftar pelanggan" tabindex="0">
             <table class="w-full text-left text-sm">
                 <thead class="border-b border-bq-border bg-bq-surface-2/70 text-xs text-bq-text-muted">
                     <tr>

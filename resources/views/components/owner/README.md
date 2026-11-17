@@ -8,7 +8,7 @@ Built in BQ-129 for `docs/owner-portal.md` §9. Every owner page uses these inst
 | Tabs | `<x-owner.tabs :tabs="['key' => 'Label']" param="tab">` | Active tab in the URL; unknown value → first tab |
 | Booking panel | `$dispatch('open-booking-panel', { url })` | Rendered once by the layout; JSON contract in `booking-panel.blade.php` (filled by BQ-135) |
 | Customer panel | `$dispatch('open-customer-panel', { url: route('owner.customers.panel', ['identifier' => …]) })` | Rendered once by the layout; JSON contract in `customer-panel.blade.php` (`GetCustomerPanel`, BQ-137). "Catat booking" prefills the walk-in form with `walkin-prefill` |
-| Catat booking | `<x-owner.walkin-form :slots>` or `:fixed-slot` | Posts to `owner.bookings.walkin` |
+| Catat booking | `<x-owner.walkin-form :slots-url :search-url>` | The shell dialog receives a slot through `open-dialog` or contact fields through `walkin-prefill` |
 | Status badge | `<x-owner.status-badge type status>` | Labels and tones from `App\Support\StatusBadge` |
 | Upgrade prompt | `<x-owner.upgrade-prompt feature plan>` | The page decides access through `EntitlementRules` |
 | Gallery picker | `<x-owner.gallery-picker name :images>` (`model` binds the choice to page state) | One gallery per business (BQ-142): Layanan and Halaman Booking → Tampilan pick from it |
@@ -46,6 +46,10 @@ Primitives live in `resources/views/components/ui/` and are styled by the `bq-*`
 | `<x-ui.form-section title description>` | A group of related controls with a fieldset legend | — |
 | `<x-ui.mini-bar :value :total unit>`, `<x-ui.duration :minutes>` | A labelled proportion and a duration in Indonesian | — |
 | `<x-ui.empty title description icon>` + `action` slot | A page or panel empty state | — |
+
+### Daily schedule
+
+Use `x-ui.day-rail` for chronological rows and `x-ui.day-grid` for the desktop calendar. `ArrangeDayGrid` prepares the visible columns and time offsets.
 
 Give each row a cell for every data column. In selectable tables, use the `selection` slot in each row. In tables with actions use the `action` slot in each row, even if it is empty. To show a phone subtitle, use either a `phone="subtitle"` cell or the main cell's `subtitle` slot. Give truncated text a full `title`. Use `two-lines` for the two-line desktop row height, and `data-density="compact"` on the owner body for compact rows.
 

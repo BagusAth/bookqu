@@ -252,7 +252,8 @@ class GetAvailableSchedules
         Tenant $tenant,
         int $serviceId,
         string $date,
-        ?int $excludeBookingId = null
+        ?int $excludeBookingId = null,
+        int $participants = 1,
     ): Collection {
         // scope-bypass: filtered by the resolved storefront tenant
         $slots = Schedule::withoutGlobalScopes()->with('layanan')
@@ -263,8 +264,8 @@ class GetAvailableSchedules
             ->orderBy('jam_mulai')
             ->get();
 
-        return $slots->map(function ($slot) use ($excludeBookingId) {
-            $isAvailable = AvailabilityRules::isSlotAvailable($slot, excludeBookingId: $excludeBookingId);
+        return $slots->map(function ($slot) use ($excludeBookingId, $participants) {
+            $isAvailable = AvailabilityRules::refusal($slot, excludeBookingId: $excludeBookingId, participants: $participants) === null;
             $isCurrentSlot = ($excludeBookingId !== null && $slot->bookings()->where('id', $excludeBookingId)->exists());
 
             return [

@@ -14,7 +14,7 @@
 
 <div
     x-data="ownerToasts(@js($initialToasts))"
-    x-on:toast.window="add($event.detail.type, $event.detail.message)"
+    x-on:toast.window="add($event.detail.type, $event.detail.message, $event.detail.action)"
     aria-live="polite"
     aria-atomic="false"
     class="pointer-events-none fixed right-4 top-4 z-[120] flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2"
@@ -26,6 +26,7 @@
             x-bind:class="{ 'border-bq-success/30 bg-bq-success-bg text-bq-success': toast.type === 'success', 'border-bq-danger/30 bg-bq-danger-bg text-bq-danger': toast.type === 'error', 'border-bq-warning/30 bg-bq-warning-bg text-bq-warning': toast.type === 'warning', }"
         >
             <p class="flex-1 text-sm font-medium leading-snug" x-text="toast.message"></p>
+            <button type="button" x-show="toast.action" x-on:click="toast.action(); remove(toast.id)" class="shrink-0 font-semibold underline">Coba lagi</button>
             <button type="button" x-on:click="remove(toast.id)" aria-label="Tutup notifikasi" class="rounded p-0.5 opacity-70 hover:opacity-100">
                 <x-owner.icon name="x" class="h-4 w-4" />
             </button>

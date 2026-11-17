@@ -11,6 +11,7 @@ use App\Actions\Booking\QuoteReschedule;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\Booking\UpdateBookingStatus;
 use App\Actions\CustomerAccess\RequestManagementDelivery;
+use App\Actions\Owner\ListWalkInSlots;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Subscription\EntitlementRules;
@@ -225,7 +226,7 @@ class OwnerBookingController extends Controller
         return back()->with('sukses', 'Tautan booking dijadwalkan untuk dikirim ulang.');
     }
 
-    public function walkinStore(Request $request, CreateWalkInBooking $createWalkInBooking)
+    public function walkinStore(Request $request, CreateWalkInBooking $createWalkInBooking, ListWalkInSlots $walkInSlots): JsonResponse|RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (! $tenant) {
@@ -253,16 +254,30 @@ class OwnerBookingController extends Controller
         $booking = $createWalkInBooking->execute($tenant, $validated);
 
         if (! $booking) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.',
+                    'alternatives' => $walkInSlots->alternatives($tenant, (int) $validated['idschedule'], (int) ($validated['peserta'] ?? 1)),
+                ], 409);
+            }
+
             return back()->withInput()->withErrors(['idschedule' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.']);
         }
 
-        return back()
-            ->with('sukses', "Booking atas nama {$booking->namapelanggan} berhasil dicatat.")
-            ->with('walkin_booking', [
-                'code' => $booking->booking_code,
-                'panelUrl' => route('owner.bookings.panel', $booking->id),
-                'href' => route('owner.bookings', ['panel' => $booking->id]),
-            ]);
+        $notice = [
+            'code' => $booking->booking_code,
+            'panelUrl' => route('owner.bookings.panel', $booking->id),
+            'href' => route('owner.bookings', ['panel' => $booking->id]),
+        ];
+        $message = "Booking atas nama {$booking->namapelanggan} berhasil dicatat.";
+        if ($request->expectsJson()) {
+            $request->session()->flash('sukses', $message);
+            $request->session()->flash('walkin_booking', $notice);
+
+            return response()->json($notice, 201);
+        }
+
+        return back()->with('sukses', $message)->with('walkin_booking', $notice);
     }
 
     /**
@@ -288,7 +303,7 @@ class OwnerBookingController extends Controller
 
         $service = $booking->layanan;
         $slots = app(GetAvailableSchedules::class)
-            ->getSlotsForReschedule($tenant, (int) $booking->idlayanan, $tanggal, (int) $booking->id);
+            ->getSlotsForReschedule($tenant, (int) $booking->idlayanan, $tanggal, (int) $booking->id, (int) $booking->peserta);
 
         $slotPrices = $service instanceof Service
             ? app(QuoteReschedule::class)->execute($booking, $tenant, $service, $tanggal, $slots->pluck('schedule')) : [];
@@ -342,7 +357,7 @@ class OwnerBookingController extends Controller
 
         if (! $result['success']) {
             if ($request->wantsJson() || $request->ajax()) {
-                return response()->json(['success' => false, 'message' => $result['error']], 422);
+                return response()->json(['success' => false, 'message' => $result['error'], 'code' => $result['error_code'] ?? null], 422);
             }
 
             return back()->withInput()->withErrors(['error' => $result['error']]);

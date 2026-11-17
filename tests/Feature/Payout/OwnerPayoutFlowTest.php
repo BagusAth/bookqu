@@ -153,14 +153,15 @@ class OwnerPayoutFlowTest extends TestCase
             'payout_account_id' => $this->payoutAccount->id,
         ];
 
-        $this->actingAs($this->owner)->post('/owner/payouts', $payload)->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
+        $this->actingAs($this->owner)->postJson('/owner/payouts', $payload)->assertOk()->assertJsonPath('redirect', route('owner.payments', ['tab' => 'saldo']));
         $this->assertEquals(200000, (float) $this->tenant->fresh()->saldo_platform);
         $this->assertDatabaseCount('owner_payouts', 1);
 
-        // Second POST with same request_key
-        $this->actingAs($this->owner)->post('/owner/payouts', $payload)->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
+        // Retry the same submission after the first response is lost.
+        $this->actingAs($this->owner)->postJson('/owner/payouts', $payload)->assertOk()->assertJsonPath('redirect', route('owner.payments', ['tab' => 'saldo']));
         $this->assertEquals(200000, (float) $this->tenant->fresh()->saldo_platform);
         $this->assertDatabaseCount('owner_payouts', 1);
+        $this->assertDatabaseHas('owner_payouts', ['idtenant' => $this->tenant->id, 'request_key' => $requestKey, 'jumlah' => 100000]);
     }
 
     public function test_payout_requests_with_different_request_keys_create_distinct_payouts(): void
@@ -189,8 +190,9 @@ class OwnerPayoutFlowTest extends TestCase
         $response = $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo']));
         $response->assertOk();
         $response->assertSee('name="request_key"', false);
-        $response->assertSee('x-data="{ submitting: false }"', false);
-        $response->assertSee(':disabled="submitting"', false);
+        $response->assertSee('Pengajuan pencairan belum terkonfirmasi');
+        $response->assertSee('submitPayout($refs.payoutForm)', false);
+        $response->assertSee(':disabled="payoutSubmitting"', false);
         $response->assertSee('Memproses…');
         $response->assertSee('Riwayat pencairan'); // BQ-141: Pembayaran page copy (owner-portal.md §8.12)
         $response->assertDontSee('Riwayat Penarikan Dana Terbaru');

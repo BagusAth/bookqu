@@ -108,14 +108,13 @@
             <div class="grid gap-6 lg:grid-cols-3">
                 {{-- 4. Today's schedule on the day rail, and tomorrow --}}
                 <section aria-labelledby="today-title" class="{{ $card }} lg:col-span-2"
-                    x-data="{ now: '', tick() { this.now = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()); }, start(row) { return (String(row.time).match(/\d{2}[:.]\d{2}/) || ['99:99'])[0].replace('.', ':'); }, get nowIndex() { const index = live.today.findIndex(row => this.start(row) > this.now); return index === -1 ? live.today.length : index; } }"
-                    x-init="tick(); setInterval(() => tick(), 30000)">
+                    x-data="ownerDayRail">
                     <div class="flex items-center justify-between gap-3 border-b border-bq-border px-4 py-3 sm:px-5">
                         <h2 id="today-title" class="text-base font-semibold text-bq-ink">Jadwal hari ini</h2>
                         <span class="bq-num rounded-full bg-bq-accent-bg px-2.5 py-0.5 text-xs font-bold text-bq-ink" x-show="now" x-text="'Sekarang ' + now.replace(':', '.')"></span>
                     </div>
 
-                    <div x-show="live.today.length === 0" class="px-4 py-10 text-center">
+                    <div x-show="railRows.length === 0" class="px-4 py-10 text-center">
                         <span class="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-bq-primary-light text-bq-primary"><x-owner.icon name="calendar" /></span>
                         <p class="text-base font-semibold text-bq-ink">Belum ada booking hari ini</p>
                         <p x-show="live.next" class="mt-1 text-sm text-bq-text-muted">
@@ -123,13 +122,21 @@
                         </p>
                     </div>
 
-                    <ol x-show="live.today.length > 0" class="px-4 py-2 sm:px-5" aria-label="Booking hari ini menurut jam">
-                        <template x-for="(row, index) in live.today" x-bind:key="row.id">
+                    <x-ui.day-rail x-show="railRows.length > 0" label="Booking hari ini menurut jam">
+                        <template x-for="(row, index) in railRows" x-bind:key="(row.empty ? 'slot-' : 'booking-') + row.id">
                             <li>
                                 <div x-show="index === nowIndex" class="relative my-1 flex items-center gap-2" aria-hidden="true">
                                     <span class="bq-num w-16 shrink-0 rounded-full bg-bq-accent px-2 py-0.5 text-center text-[11px] font-bold text-bq-ink" x-text="now.replace(':', '.')"></span>
                                     <span class="h-0.5 flex-1 rounded-full bg-bq-accent"></span>
                                 </div>
+                                <div x-show="row.empty" class="flex flex-wrap items-center justify-between gap-2 border-b border-bq-border py-2">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold">Kosong</p>
+                                        <p class="text-bq-small text-bq-text-muted" x-text="row.label"></p>
+                                    </div>
+                                    <x-ui.button size="sm" variant="ghost" icon="plus" x-on:click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', slot: row, trigger: $el })">Catat booking</x-ui.button>
+                                </div>
+                                <template x-if="!row.empty">
                                 <div class="grid grid-cols-[4rem_minmax(0,1fr)] gap-3 py-2">
                                     <p class="bq-num pt-3 text-sm font-semibold text-bq-ink" x-text="start(row).replace(':', '.')"></p>
                                     <div class="relative border-l-2 pl-4" x-bind:class="row.in_progress ? 'border-bq-primary' : 'border-bq-border'">
@@ -137,7 +144,7 @@
                                         <div class="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-start" x-bind:class="row.in_progress ? 'border-bq-primary-border bg-bq-primary-light' : 'border-bq-border bg-bq-surface'">
                                             <div class="min-w-0 flex-1">
                                                 <p class="break-words text-sm font-semibold text-bq-ink" x-text="row.customer"></p>
-                                                <p class="truncate text-sm text-bq-text-muted"><span class="bq-num" x-text="row.time"></span> · <span x-text="row.service"></span></p>
+                                                <p class="truncate text-sm text-bq-text-muted" x-bind:title="row.time + ' · ' + row.service"><span class="bq-num" x-text="row.time"></span> · <span x-text="row.service"></span></p>
                                                 <p x-show="row.in_progress" class="mt-0.5 text-xs font-semibold text-bq-primary">Sedang berlangsung</p>
                                                 <div class="mt-2 flex flex-wrap items-center gap-1.5">
                                                     <template x-for="badge in [row.status, row.payment]">
@@ -163,13 +170,14 @@
                                         </div>
                                     </div>
                                 </div>
+                                </template>
                             </li>
                         </template>
-                        <li x-show="nowIndex === live.today.length" class="my-1 flex items-center gap-2" aria-hidden="true">
+                        <li x-show="nowIndex === railRows.length" class="my-1 flex items-center gap-2" aria-hidden="true">
                             <span class="bq-num w-16 shrink-0 rounded-full bg-bq-accent px-2 py-0.5 text-center text-[11px] font-bold text-bq-ink" x-text="now.replace(':', '.')"></span>
                             <span class="h-0.5 flex-1 rounded-full bg-bq-accent"></span>
                         </li>
-                    </ol>
+                    </x-ui.day-rail>
 
                     <p class="border-t border-bq-border px-4 py-3 text-sm text-bq-text-muted sm:px-5">
                         <span class="font-semibold text-bq-ink">Besok:</span>

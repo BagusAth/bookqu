@@ -205,6 +205,35 @@ class OwnerAppShellTest extends TestCase
         $this->getJson(route('owner.bookings.walkin-slots', ['date' => 'besok']))->assertUnprocessable();
     }
 
+    public function test_a_walk_in_conflict_offers_the_nearest_free_times_without_creating_a_booking(): void
+    {
+        $service = Service::factory()->create(['idtenant' => $this->tenant->id, 'is_active' => true]);
+        $date = Carbon::tomorrow('Asia/Jakarta')->toDateString();
+        $slot = fn (string $start, string $end): Schedule => Schedule::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $service->id,
+            'tanggal' => $date, 'jam_mulai' => $start, 'jam_selesai' => $end, 'status' => 'tersedia',
+        ]);
+        $taken = $slot('13:00', '13:59');
+        $nearest = $slot('14:00', '14:59');
+        $second = $slot('11:00', '11:59');
+        $slot('17:00', '17:59');
+        Booking::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $service->id, 'idschedule' => $taken->id,
+            'tanggalbooking' => $date, 'jam' => '13:00', 'status' => 'paid',
+        ]);
+
+        $this->actingAs($this->owner)->postJson(route('owner.bookings.walkin'), [
+            'idschedule' => $taken->id, 'namapelanggan' => 'Rani', 'nomorhp' => '081234500012',
+        ])->assertConflict()
+            ->assertJsonPath('message', 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.')
+            ->assertJsonPath('alternatives.0.id', $nearest->id)
+            ->assertJsonPath('alternatives.1.id', $second->id)
+            ->assertJsonCount(2, 'alternatives');
+
+        $this->assertDatabaseCount('bookings', 1);
+        $this->assertDatabaseCount('payments', 0);
+    }
+
     public function test_shell_does_no_hover_prefetch_and_loads_charts_only_where_drawn(): void
     {
         $settings = (string) $this->actingAs($this->owner)->get(route('owner.settings'))->assertOk()->getContent();

@@ -70,6 +70,7 @@ final class SearchOwnerRecords
             ->map(fn (Booking $booking): array => [
                 'name' => (string) $booking->namapelanggan,
                 'phone' => (string) $booking->nomorhp,
+                'email' => $booking->email,
                 'panel_url' => route('owner.customers.panel', ['identifier' => CustomerIdentity::forBooking($booking)]),
                 'href' => route('owner.customers', ['search' => $booking->namapelanggan]),
             ])->values()->all();

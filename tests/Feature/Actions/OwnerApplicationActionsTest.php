@@ -148,7 +148,7 @@ class OwnerApplicationActionsTest extends TestCase
         $this->assertSame(['banner', 'guide', 'live', 'link', 'quickActions'], array_keys($page));
 
         $live = $action->live($this->tenant, $this->tenant->user);
-        $this->assertSame(['figures', 'actions', 'today', 'tomorrow', 'next'], array_keys($live));
+        $this->assertSame(['empty_slots', 'figures', 'actions', 'today', 'tomorrow', 'next'], array_keys($live));
         $this->assertContains('revenue', array_column($live['figures'], 'key'));
     }
 

@@ -169,6 +169,18 @@ BLADE)
             ->assertSee('width: 0%', false);
     }
 
+    public function test_day_components_render_the_timeline_and_grid_with_a_current_time_marker(): void
+    {
+        $this->blade(<<<'BLADE'
+<x-ui.day-rail label="Jadwal hari ini"><li>Foto keluarga</li></x-ui.day-rail>
+<x-ui.day-grid :columns="[['name' => 'Studio A', 'slots' => [], 'lanes' => 1]]"
+    :hours="[['label' => '09.00', 'offset' => 0]]" :minutes="60" :now-offset="15" />
+BLADE)
+            ->assertSee('aria-label="Jadwal hari ini"', false)
+            ->assertSeeInOrder(['Foto keluarga', 'Studio A', '09.00'])
+            ->assertSee('calc(15 * var(--bq-calendar-minute))', false);
+    }
+
     public function test_filter_bar_counts_active_filters_for_the_phone_toggle(): void
     {
         $this->blade('<x-ui.filter-bar :active="2">

@@ -95,8 +95,13 @@ final class GetOwnerBookingPanel
      */
     private function actions(Booking $booking, ?Payment $payment, ?RefundRequest $request, TenantMember $member, BookingTimeRange $range, iterable $family): array
     {
-        if ($booking->idpayment && $payment === null || $payment && BookingRules::onlinePaymentHoldEnd($booking, $payment) !== null) {
+        if ($booking->idpayment && $payment === null) {
             return [];
+        }
+        if ($payment && BookingRules::onlinePaymentHoldEnd($booking, $payment) !== null) {
+            return filled($booking->email) && filled($payment->email_pembayar)
+                ? [['label' => 'Kirim ulang link', 'url' => route('owner.bookings.resend-link', $booking->id)]]
+                : [];
         }
 
         $allowed = fn (string $ability): bool => TenantPermission::allowsRole($member->role, $ability);

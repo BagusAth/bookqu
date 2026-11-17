@@ -25,6 +25,8 @@ use Illuminate\Http\Request;
 
 final class GetOwnerCalendarData
 {
+    public function __construct(private ArrangeDayGrid $arrangeDayGrid) {}
+
     /** @return array<string, mixed> */
     public function execute(Tenant $tenant, Request $request): array
     {
@@ -39,7 +41,7 @@ final class GetOwnerCalendarData
 
         [$start, $end, $previous, $next, $dateLabel] = match ($view) {
             'month' => [$date->startOfMonth(), $date->endOfMonth(), $date->startOfMonth()->subMonth(), $date->startOfMonth()->addMonth(), $date->translatedFormat('F Y')],
-            'week' => [$date->startOfWeek(), $date->endOfWeek(), $date->startOfWeek()->subWeek(), $date->startOfWeek()->addWeek(), $date->startOfWeek()->translatedFormat('d M').' – '.$date->endOfWeek()->translatedFormat('d M Y')],
+            'week' => [$date->startOfWeek(), $date->endOfWeek(), $date->startOfWeek()->subWeek(), $date->startOfWeek()->addWeek(), $date->startOfWeek()->translatedFormat('d M').' â€“ '.$date->endOfWeek()->translatedFormat('d M Y')],
             default => [$date, $date, $date->subDay(), $date->addDay(), $date->translatedFormat('l, d F Y')],
         };
         $bounds = [$start->toDateString(), $end->toDateString()];
@@ -120,10 +122,13 @@ final class GetOwnerCalendarData
 
             $days[$key]['slots'][] = [
                 'id' => $slot->id,
+                'date' => $key,
                 'service' => $serviceName,
                 'service_id' => $slot->idlayanan,
                 'time' => $range->label(),
                 'start' => $range->startTime(),
+                'startMinute' => $range->start->hour * 60 + $range->start->minute,
+                'endMinute' => $range->start->hour * 60 + $range->start->minute + ($range->durationMinutes() ?? 0),
                 'state' => match (true) {
                     $closed => 'Ditutup',
                     $seats > 0 => 'Terisi',
@@ -137,7 +142,7 @@ final class GetOwnerCalendarData
                 'bookings' => $slotBookings->map(fn (Booking $booking): array => $this->bookingCard($booking))->values()->all(),
                 'walkIn' => $available && $canWalkIn,
                 'addOns' => $addOns[$slot->idlayanan] ?? [],
-                'walkInLabel' => $serviceName.' · '.$range->label().' · '.$key,
+                'walkInLabel' => $serviceName.' Â· '.$range->label().' Â· '.$key,
                 'edit' => $canEdit && $seats === 0 && ! $past && ! $closedDates->has($key),
                 'closed' => $closed,
                 'override' => $slot->harga_override,
@@ -157,14 +162,18 @@ final class GetOwnerCalendarData
             }
         }
 
-        $gridServices = $services->whereIn('id', array_column($days[$bounds[0]]['slots'], 'service_id'));
-        $hasEntries = array_any($days, fn (array $day): bool => $day['slots'] !== [] || $day['bookings'] !== [] || $day['closed'] !== null);
+        $todaySlots = $days[$bounds[0]]['slots'];
         $todayTime = $now->format('H:i');
+        $columnOptions = ($serviceId === null ? $services : $services->where('id', $serviceId))
+            ->map(fn (Service $service): array => ['id' => (int) $service->id, 'name' => $service->namalayanan])->values()->all();
+        $chosenColumns = array_map('intval', array_filter($request->array('columns'), fn ($value): bool => is_scalar($value)));
+        $dayGrid = $view === 'day' ? $this->arrangeDayGrid->execute($columnOptions, $todaySlots, $chosenColumns, $bounds[0] === $today ? $todayTime : null) : null;
+        $hasEntries = array_any($days, fn (array $day): bool => $day['slots'] !== [] || $day['bookings'] !== [] || $day['closed'] !== null);
         $monthOffset = $start->dayOfWeekIso - 1;
         $scheduleUrl = $canEdit ? route('owner.schedule') : null;
 
         return compact('views', 'view', 'date', 'dateLabel', 'previous', 'next', 'today', 'todayTime', 'monthOffset',
-            'filters', 'services', 'units', 'statuses', 'days', 'gridServices', 'hasEntries', 'scheduleUrl');
+            'filters', 'services', 'units', 'statuses', 'days', 'dayGrid', 'hasEntries', 'scheduleUrl');
     }
 
     /** @return array{url: string, customer: string, service: string, status: string, time: string} */

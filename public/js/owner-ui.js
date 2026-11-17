@@ -196,6 +196,54 @@
 
         // BQ-137 (BQ-100 finding 3): the customer note editor in the customer panel. One save at a
         // time; the result is reported with a toast and the panel keeps the saved text.
+        window.Alpine.data('ownerPayoutSubmission', () => ({
+            payoutErrors: {},
+            payoutUnconfirmed: false,
+            payoutSubmitting: false,
+            payoutPayload: null,
+
+            async submitPayout(form) {
+                if (this.payoutSubmitting) return;
+                this.payoutSubmitting = true;
+                this.payoutErrors = {};
+                this.payoutPayload ??= new FormData(form);
+                let response;
+                try {
+                    response = await fetch(form.action, {
+                        method: 'POST',
+                        body: this.payoutPayload,
+                        headers: jsonHeaders,
+                        signal: AbortSignal.timeout(30000),
+                    });
+                    this.payoutUnconfirmed = response.status >= 500;
+                    if (this.payoutUnconfirmed || response.status === 401 || response.status === 419) return;
+                    this.payoutPayload = null;
+                    if (response.status === 422) {
+                        this.payoutErrors = (await response.json()).errors || {};
+                        if (this.payoutErrors.jumlah) this.step = 1;
+                        else if (this.payoutErrors.payout_account_id) this.step = 2;
+                        return;
+                    }
+                    if (!response.ok) {
+                        this.payoutErrors = { request_key: ['Pengajuan tidak dapat dikirim. Muat ulang halaman.'] };
+                        return;
+                    }
+                    window.location.assign((await response.json()).redirect);
+                } catch (error) {
+                    this.payoutUnconfirmed = !response || error.name === 'TimeoutError' || error.name === 'AbortError';
+                    if (!this.payoutUnconfirmed) {
+                        this.payoutErrors = { request_key: ['Respons pengajuan tidak dapat dibaca. Muat ulang halaman.'] };
+                    }
+                } finally {
+                    this.payoutSubmitting = false;
+                    if (this.payoutUnconfirmed) {
+                        this.step = 3;
+                        this.$nextTick(() => this.$refs.payoutRetry?.focus());
+                    }
+                }
+            },
+        }));
+
         window.Alpine.data('ownerCustomerNote', (customer) => ({
             text: customer.note || '',
             saving: false,
@@ -210,14 +258,42 @@
                         headers: { ...jsonHeaders, 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
                         body: JSON.stringify({ customer_identifier: customer.identifier, notes: submitted }),
                     });
+                    if (response.status === 419 || response.status === 401) return;
                     if (!response.ok) throw new Error('note save failed');
                     customer.note = submitted;
                     window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Catatan disimpan.' } }));
                 } catch (error) {
-                    window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Catatan gagal disimpan. Coba lagi.' } }));
+                    window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Catatan gagal disimpan. Isian Anda masih ada.', action: () => this.save() } }));
                 } finally {
                     this.saving = false;
                 }
+            },
+        }));
+
+        window.Alpine.data('ownerDayRail', () => ({
+            now: '',
+            clockTimer: null,
+
+            start(row) {
+                return (String(row.start || row.time).match(/\d{2}[:.]\d{2}/) || ['99:99'])[0].replace('.', ':');
+            },
+            get railRows() {
+                const empty = (this.live.empty_slots || []).map(slot => ({ ...slot, empty: true }));
+                return [...this.live.today, ...empty].sort((a, b) => this.start(a).localeCompare(this.start(b)));
+            },
+            get nowIndex() {
+                const index = this.railRows.findIndex(row => this.start(row) > this.now);
+                return index === -1 ? this.railRows.length : index;
+            },
+            init() {
+                const tick = () => {
+                    this.now = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+                };
+                tick();
+                this.clockTimer = setInterval(tick, 30000);
+            },
+            destroy() {
+                clearInterval(this.clockTimer);
             },
         }));
 
@@ -470,54 +546,132 @@
             },
         }));
 
-        // BQ-128: "+ Booking" picks a date and loads that day's free slots, first when its dialog opens.
-        window.Alpine.data('ownerWalkInSlots', (url, today, oldDate, oldSlot, oldAddOns) => ({
-            selectedSlot: String(oldSlot ?? ''),
-            quantities: Object.fromEntries(Array.isArray(oldAddOns) ? oldAddOns.filter(item => item?.id).map(item => [item.id, item.quantity]) : []),
+        window.Alpine.data('ownerWalkInForm', (slotsUrl, config) => ({
+            date: config.date || config.today,
+            service: '',
+            selectedSlot: String(config.slot ?? ''),
+            quantities: Object.fromEntries(Array.isArray(config.addOns) ? config.addOns.map(item => [item.id, item.quantity]) : []),
+            services: [],
+            slots: [],
+            customers: [],
+            errors: {},
+            conflict: null,
+            loading: false,
+            failed: false,
+            saving: false,
+            requestNumber: 0,
+            searchNumber: 0,
+
+            get serviceSlots() {
+                return this.slots.filter(slot => String(slot.service) === String(this.service));
+            },
+            get picked() {
+                return this.serviceSlots.find(slot => String(slot.id) === String(this.selectedSlot));
+            },
             get addOns() {
-                return this.slots.find(slot => String(slot.id) === String(this.selectedSlot))?.add_ons ?? [];
+                return this.picked?.add_ons ?? [];
             },
             get selectedAddOns() {
                 return this.addOns.filter(item => Number(this.quantities[item.id]) > 0);
             },
-            today,
-            date: typeof oldDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(oldDate) ? oldDate : today,
-            slots: [],
-            loading: false,
-            failed: false,
-            requestNumber: 0,
-            loadingDate: null,
-
-            loadWhenOpened(event) {
-                const id = event.detail && event.detail.id;
-                if (id && this.$el.closest('#' + CSS.escape(id))) this.load();
+            get capacity() {
+                return this.services.find(service => String(service.id) === String(this.service))?.capacity ?? 1;
             },
 
+            start(event) {
+                if (!slotsUrl || event.detail?.id !== 'owner-walkin-dialog') return;
+                const slot = event.detail.slot;
+                if (slot) {
+                    this.date = slot.date;
+                    this.service = String(slot.service_id);
+                    this.pick(slot.id);
+                }
+                this.load();
+            },
+            pick(id) {
+                this.selectedSlot = String(id);
+                this.conflict = null;
+            },
             async load() {
-                if (!this.date || (this.loading && this.loadingDate === this.date)) return;
-                const requestNumber = ++this.requestNumber;
-                this.loadingDate = this.date;
-                this.loading = true;
+                const sequence = ++this.requestNumber;
+                this.loading = Boolean(this.date);
                 this.failed = false;
+                if (!this.date) return;
                 try {
-                    const target = new URL(url, window.location.origin);
-                    target.searchParams.set('date', this.date);
-                    const response = await fetch(target, { headers: jsonHeaders });
-                    if (!response.ok) throw new Error('slots failed');
+                    const url = new URL(slotsUrl, window.location.origin);
+                    url.searchParams.set('date', this.date);
+                    url.searchParams.set('picker', '1');
+                    const response = await fetch(url, { headers: jsonHeaders });
+                    if (!response.ok) throw new Error();
                     const data = await response.json();
-                    if (requestNumber !== this.requestNumber) return;
-                    this.slots = data.slots || [];
-                    if (!this.slots.some(slot => String(slot.id) === String(this.selectedSlot))) {
-                        this.selectedSlot = '';
-                        this.quantities = {};
-                    }
-                } catch (error) {
-                    if (requestNumber === this.requestNumber) {
-                        this.slots = [];
-                        this.failed = true;
-                    }
+                    if (sequence !== this.requestNumber) return;
+                    this.services = data.services;
+                    this.slots = data.slots;
+                    const preferred = this.slots.find(slot => String(slot.id) === this.selectedSlot);
+                    this.service = String(preferred?.service ?? (this.service || this.services[0]?.id || ''));
+                    if (!preferred?.available) this.selectedSlot = '';
+                } catch {
+                    if (sequence !== this.requestNumber) return;
+                    this.slots = [];
+                    this.failed = true;
                 } finally {
-                    if (requestNumber === this.requestNumber) this.loading = false;
+                    if (sequence === this.requestNumber) this.loading = false;
+                }
+            },
+            async suggest(input) {
+                const query = input.value.trim();
+                const sequence = ++this.searchNumber;
+                if (!config.searchUrl || query.length < 2) {
+                    this.customers = [];
+                    return;
+                }
+                try {
+                    const url = new URL(config.searchUrl, window.location.origin);
+                    url.searchParams.set('q', query);
+                    const response = await fetch(url, { headers: jsonHeaders });
+                    const data = response.ok ? await response.json() : {};
+                    if (sequence === this.searchNumber && input.value.trim() === query) this.customers = data.customers || [];
+                } catch {
+                    if (sequence === this.searchNumber) this.customers = [];
+                }
+            },
+            prefill(customer) {
+                ++this.searchNumber;
+                this.customers = [];
+                this.$refs.name.value = customer.name ?? customer.namapelanggan ?? '';
+                this.$refs.phone.value = customer.phone ?? customer.nomorhp ?? '';
+                this.$refs.email.value = customer.email ?? '';
+            },
+            async save(event) {
+                if (!slotsUrl) return;
+                event.preventDefault();
+                if (this.saving) return;
+                const form = event.currentTarget;
+                const fields = new FormData(form);
+                const attempted = this.picked;
+                this.saving = true;
+                this.errors = {};
+                this.conflict = null;
+                try {
+                    const response = await fetch(form.action, { method: 'POST', body: fields, headers: jsonHeaders });
+                    if (response.status === 419 || response.status === 401) return;
+                    if (response.status === 409) {
+                        const payload = await response.json();
+                        this.selectedSlot = '';
+                        this.conflict = { start: attempted?.start, alternatives: payload.alternatives };
+                        await this.load();
+                        return;
+                    }
+                    if (response.status === 422) {
+                        this.errors = (await response.json()).errors || {};
+                        return;
+                    }
+                    if (!response.ok) throw new Error();
+                    window.location.reload();
+                } catch {
+                    this.$dispatch('toast', { type: 'error', message: 'Status penyimpanan belum dapat diperiksa. Isian Anda masih ada.', action: () => this.$refs.submit.focus() });
+                } finally {
+                    this.saving = false;
                 }
             },
         }));
@@ -530,11 +684,11 @@
                 (initial || []).forEach((toast) => this.add(toast.type, toast.message));
             },
 
-            add(type, message) {
+            add(type, message, action = null) {
                 if (!message) return;
                 const id = ++this.nextId;
-                this.toasts.push({ id, type: type || 'success', message: String(message) });
-                setTimeout(() => this.remove(id), 5000);
+                this.toasts.push({ id, type: type || 'success', message: String(message), action });
+                setTimeout(() => this.remove(id), action ? 10000 : 5000);
             },
 
             remove(id) {

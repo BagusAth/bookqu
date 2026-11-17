@@ -259,6 +259,28 @@
         @apply p-4 sm:p-5;
     }
 
+    .bq-day-grid {
+        --bq-calendar-minute: 1.2px;
+        display: grid;
+        grid-template-columns: 48px repeat(var(--bq-calendar-columns), minmax(152px, 1fr));
+        min-width: max-content;
+    }
+    .bq-day-grid-track {
+        height: calc(var(--bq-calendar-minutes) * var(--bq-calendar-minute));
+        background: repeating-linear-gradient(to bottom, var(--color-bq-border) 0 1px, transparent 1px calc(60 * var(--bq-calendar-minute)));
+    }
+    .bq-day-grid-slot {
+        position: absolute;
+        top: calc(var(--bq-slot-top) * var(--bq-calendar-minute));
+        left: calc(var(--bq-slot-lane) * 100% / var(--bq-slot-lanes));
+        height: max(30px, calc(var(--bq-slot-length) * var(--bq-calendar-minute)));
+        width: calc(100% / var(--bq-slot-lanes));
+        padding: 1px 2px;
+    }
+    .bq-day-grid-slot:focus-within {
+        z-index: 11;
+    }
+
     .bq-table {
         --bq-choice-track: ;
         --bq-action-track: ;

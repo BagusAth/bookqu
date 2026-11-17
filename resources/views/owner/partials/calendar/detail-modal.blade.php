@@ -4,12 +4,14 @@
     <template x-for="selected in slot ? [slot] : []" :key="selected.id">
         <div class="space-y-4">
             <p class="text-sm font-semibold" x-text="selected.walkInLabel"></p>
+            <ul x-show="selected.bookings.length" class="divide-y divide-bq-border">
+                <template x-for="booking in selected.bookings" :key="booking.url">
+                    <li><button type="button" class="bq-link py-2" x-text="booking.customer"
+                        x-on:click="hide(); $dispatch('open-booking-panel', { url: booking.url, trigger: calendarTrigger })"></button></li>
+                </template>
+            </ul>
             <template x-if="selected.walkIn">
-                <section x-on:submit.prevent="saveWalkIn($event.target)" aria-label="Catat booking">
-                    <h3 class="mb-2 text-sm font-semibold">Catat booking</h3>
-                    <p x-show="feedback" x-text="feedback" class="mb-2 text-sm text-bq-danger" role="alert"></p>
-                    <x-owner.walkin-form fixed-slot-model="selected" id-prefix="calendar-walkin" />
-                </section>
+                <x-ui.button variant="primary" icon="plus" x-on:click="hide(); $dispatch('open-dialog', { id: 'owner-walkin-dialog', slot: selected, trigger: calendarTrigger })">Catat booking</x-ui.button>
             </template>
             <template x-if="selected.edit">
                 <div class="space-y-3 border-t border-bq-border pt-3">

@@ -74,7 +74,7 @@ Each session is one Codex run. Start every session by reading this file, `KEPUTU
 - Booking slip (`booking-panel`): status, large time, customer with WhatsApp, payment block, payment deadline, history with actor and role, actions by status and role.
 - Catat booking (`walkin-form`): one form for every entry point; crossed-out taken times, remaining seats, existing-customer suggestions after two letters, payment method.
 - Reschedule, cancel / request cancellation (Kasir), refund decision, customer panel.
-- Error states (T3): slot just taken (catch the existing conflict from the booking write and show `error-block` with nearest free times, keeping the input), save failed (toast with "Coba lagi", layer stays open), session expired (existing `session-expired`), booking quota reached, payout provider failure.
+- Error states (T3): slot just taken (catch the existing conflict from the booking write and show `error-block` with nearest free times, keeping the input), save failed (toast with "Coba lagi", layer stays open), session expired (existing `session-expired`), booking quota reached, unconfirmed payout submission.
 - Prototype routes: `#/beranda`, slip from `#/booking/mendatang`, "Catat booking" from the top bar, state = Galat.
 - Done when: `BookingManagementTest`, `SharedBuildingBlocksTest` and the walk-in tests are green; a test proves the conflict path returns the friendly error without creating a booking (INV-BOOK-04).
 
@@ -171,7 +171,9 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
   - Ran the PHP prototype on port 8770 and opened `#/sistem` and `#/beranda`. Compared the live shell with the reference as Pemilik and Kasir at 375, 768, 1024 and 1366 px. Live portal checked with temporary local SQLite seed accounts (MySQL was offline). Edge passed 56 page/viewport checks across Beranda, Booking, Kalender, Pelanggan and the Pemilik-only Layanan, Tambahan, Halaman depan, its preview, Laporan and Paket & Tagihan. The shell had the 72 px tablet rail, 232 px desktop sidebar and phone bottom nav, with no page-level horizontal overflow or console errors. The real BookQu mark and phone account trigger were retained.
   - Verified Catat booking opens from the visible shell button and returns focus on Escape at each width. The grouped selectable table rendered at 60 px in its two-line variant and its phone action menu supported arrow keys and Escape. Fixed the shared booking panel's literal Blade directive in Alpine initialization, which had produced a console error on every owner page.
   - Pint, `npm run build`, PHPStan and the focused suite passed (90 tests, including `OwnerAppShellTest`, `OwnerSidebarNavigationTest` and `UiComponentsTest`). The full suite on PHP 8.5 reported 982 passed and 4 failed. The three image tests passed on PHP 8.4.25 with GD (20 assertions). The documentation guardrail failure is recorded below.
-- Session 2:
+- Session 2 (17 Nov 2026):
+  - Ran the updated prototype on port 8770 at `#/beranda`, `#/booking/mendatang`, `#/kalender/hari` and `#/pembayaran/saldo` in state Galat. Edge passed 36 page/viewport checks at 375, 768, 1024 and 1366 px as Pemilik and Kasir using the local SQLite seed. Checked the booking slip from the calendar, the walk-in conflict keeping contact input and offering an alternative, and a lost payout response followed by a retry with the same request key and an inline amount error.
+  - Pint, Vite build, PHPStan, the 95 related tests and the two day-component render checks passed. The walk-in regression asserts 409, the two nearest available times and no new booking/payment. The payout regression sends the same JSON request twice and asserts one payout and one balance hold. The full suite passed with PHP 8.4.25 (GD enabled), 988 tests and 6,537 assertions.
 - Session 3:
 - Session 4:
 - Session 5:
@@ -182,4 +184,5 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 
 ## Open findings
 
-- The full-suite documentation guardrail reports two undefined work item references in `docs/design/papan-jadwal/audit-ui.md`. Both references were already present on the branch before Session 1. The audit document is outside this session's scope.
+- The full-suite documentation guardrail reports two undefined work item references in `docs/design/papan-jadwal/audit-ui.md`. Both references were already present on the branch before Session 1. Resolved in commit `eb277e4`.
+- Resolved by the Tech Lead. A network failure, timeout or 5xx during payout submission shows “Pengajuan pencairan belum terkonfirmasi”. “Coba lagi” sends the same `request_key` and “Nanti saja” closes the dialog. Validation remains inline. The local balance hold and later admin transfer continue under FR-PAYOUT-002 and FR-PAYOUT-003. Prototype updated in `eb277e4`.

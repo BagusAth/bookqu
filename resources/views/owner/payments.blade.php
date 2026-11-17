@@ -44,6 +44,7 @@
 <div
     class="mx-auto max-w-7xl space-y-6"
     x-data="{
+        ...ownerPayoutSubmission(),
         accounts: @js($accountPayload),
         account: { id: null, bank_kode: '', nomor_rekening: '', nama_pemilik_rekening: '' },
         deleteId: @js(old('delete_id')),
@@ -62,7 +63,7 @@
             $dispatch('open-dialog', { id: 'payout-account-delete-dialog', trigger });
         },
         openWithdraw(trigger) {
-            this.step = 1;
+            this.step = this.payoutUnconfirmed || this.payoutSubmitting ? 3 : 1;
             $dispatch('open-dialog', { id: 'withdraw-dialog', trigger });
         },
         amountValid() {
@@ -81,6 +82,7 @@
                     this.openDelete(this.deleteId, null);
                 } else {
                     this.openWithdraw(null);
+                    this.step = @js($errors->has('jumlah') ? 1 : ($errors->has('payout_account_id') ? 2 : 3));
                 }
             });
         },
@@ -253,7 +255,8 @@
                     </div>
                     <input id="withdraw-amount" type="number" inputmode="numeric" step="1" x-model="amount" min="{{ $payoutRules['min'] }}" max="{{ $maxAmount }}" class="{{ $field }}">
                     <p class="mt-1 text-xs text-bq-text-muted">Saldo tersedia {{ $rupiah($summary['available']) }} · Minimal {{ $rupiah($payoutRules['min']) }}@if ($payoutRules['cap'] !== null) · maksimal {{ $rupiah($payoutRules['cap']) }} per pengajuan @endif</p>
-                    @error('jumlah')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
+                    <p x-show="payoutErrors.jumlah" x-text="payoutErrors.jumlah?.[0]" class="mt-1 text-bq-small text-bq-danger" role="alert"></p>
+                    @error('jumlah')<p class="mt-1 text-bq-small text-bq-danger">{{ $message }}</p>@enderror
                 </div>
                 <div class="flex justify-end">
                     <button type="button" class="{{ $buttonPrimary }}" x-bind:disabled="!amountValid()" x-on:click="step = 2">Lanjut</button>
@@ -279,6 +282,7 @@
                         @endforeach
                     </fieldset>
                 @endif
+                <p x-show="payoutErrors.payout_account_id" x-text="payoutErrors.payout_account_id?.[0]" class="text-bq-small text-bq-danger" role="alert"></p>
                 @error('payout_account_id')<p class="text-xs text-bq-danger">{{ $message }}</p>@enderror
                 <div class="flex justify-between">
                     <button type="button" class="{{ $buttonSecondary }}" x-on:click="step = 1">Kembali</button>
@@ -287,22 +291,33 @@
             </div>
 
             <div x-show="step === 3" x-cloak class="space-y-3">
-                <p class="text-xs text-bq-text-muted">Langkah 3 dari 3: konfirmasi</p>
-                <dl class="space-y-1.5 rounded-lg bg-bq-background px-3 py-2 text-sm">
-                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Jumlah</dt><dd class="font-medium bq-num text-bq-text">Rp <span x-text="formatted(amount)"></span></dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Bank</dt><dd class="text-bq-text" x-text="selectedAccount()?.bank_nama"></dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Nomor rekening</dt><dd class="bq-num text-bq-text" x-text="selectedAccount()?.masked_number"></dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Atas nama</dt><dd class="text-bq-text" x-text="selectedAccount()?.nama_pemilik_rekening"></dd></div>
-                </dl>
-                <p class="text-xs text-bq-text-muted">Jumlah ini langsung ditahan dari saldo Anda. Admin BookQu meninjau lalu mentransfer secara manual pada jam kerja.</p>
-                <form id="withdraw-form" method="POST" action="{{ route('owner.payouts.request') }}" x-data="{ submitting: false }" x-on:submit="submitting = true" class="flex justify-between">
-                    @csrf
-                    <input type="hidden" name="request_key" value="{{ old('request_key', $requestKey) }}">
-                    <input type="hidden" name="jumlah" x-bind:value="amount">
-                    <input type="hidden" name="payout_account_id" x-bind:value="accountId">
-                    <button type="button" class="{{ $buttonSecondary }}" x-on:click="step = 2" :disabled="submitting">Kembali</button>
-                    <button type="submit" class="{{ $buttonPrimary }}" :disabled="submitting" x-text="submitting ? 'Memproses…' : 'Ajukan pencairan'">Ajukan pencairan</button>
-                </form>
+                <div x-show="!payoutUnconfirmed" class="space-y-3">
+                    <p class="text-xs text-bq-text-muted">Langkah 3 dari 3: konfirmasi</p>
+                    <dl class="space-y-1.5 rounded-lg bg-bq-background px-3 py-2 text-sm">
+                        <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Jumlah</dt><dd class="font-medium bq-num text-bq-text">Rp <span x-text="formatted(amount)"></span></dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Bank</dt><dd class="text-bq-text" x-text="selectedAccount()?.bank_nama"></dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Nomor rekening</dt><dd class="bq-num text-bq-text" x-text="selectedAccount()?.masked_number"></dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Atas nama</dt><dd class="text-bq-text" x-text="selectedAccount()?.nama_pemilik_rekening"></dd></div>
+                    </dl>
+                    <p class="text-xs text-bq-text-muted">Jumlah ini langsung ditahan dari saldo Anda. Admin BookQu meninjau lalu mentransfer secara manual pada jam kerja.</p>
+                    <form id="withdraw-form" method="POST" action="{{ route('owner.payouts.request') }}" x-ref="payoutForm" x-on:submit.prevent="submitPayout($el)" class="flex justify-between">
+                        @csrf
+                        <input type="hidden" name="request_key" value="{{ old('request_key', $requestKey) }}">
+                        <input type="hidden" name="jumlah" x-bind:value="amount">
+                        <input type="hidden" name="payout_account_id" x-bind:value="accountId">
+                        <button type="button" class="{{ $buttonSecondary }}" x-on:click="step = 2" :disabled="payoutSubmitting">Kembali</button>
+                        <button type="submit" class="{{ $buttonPrimary }}" :disabled="payoutSubmitting" x-text="payoutSubmitting ? 'Memproses…' : 'Ajukan pencairan'">Ajukan pencairan</button>
+                    </form>
+                    <p x-show="payoutErrors.request_key" x-text="payoutErrors.request_key?.[0]" role="alert" class="text-bq-small text-bq-danger"></p>
+                    @error('request_key')<p class="text-bq-small text-bq-danger">{{ $message }}</p>@enderror
+                </div>
+                <div x-show="payoutUnconfirmed" x-cloak class="space-y-3">
+                    <x-ui.error-block title="Pengajuan pencairan belum terkonfirmasi" description="Koneksi terputus sebelum BookQu menjawab. Pengajuan mungkin sudah tercatat, mungkin belum. Tekan Coba lagi: permintaan yang sama tidak membuat pencairan ganda dan saldo hanya ditahan sekali. Transfer tetap diproses admin BookQu setelah pengajuan tercatat." />
+                    <div class="flex flex-wrap justify-end gap-2">
+                        <x-ui.button size="sm" x-on:click="hide()">Nanti saja</x-ui.button>
+                        <x-ui.button size="sm" variant="primary" x-ref="payoutRetry" x-on:click="submitPayout($refs.payoutForm)" x-bind:disabled="payoutSubmitting">Coba lagi</x-ui.button>
+                    </div>
+                </div>
             </div>
         </x-owner.dialog>
     @endif

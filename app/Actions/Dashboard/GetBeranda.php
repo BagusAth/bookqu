@@ -6,6 +6,7 @@ namespace App\Actions\Dashboard;
 
 use App\Actions\Booking\GetBookingTimeRanges;
 use App\Actions\Owner\GetOwnerNavigation;
+use App\Actions\Owner\ListWalkInSlots;
 use App\Actions\Schedule\GetSlotRunway;
 use App\Actions\Team\ResolveTenantMembership;
 use App\Domain\Booking\BookingRules;
@@ -84,7 +85,7 @@ class GetBeranda
     /**
      * Sections 2–4, also served by the live refresh: figures, needs action, today and tomorrow.
      *
-     * @return array{figures: list<array<string, string>>, actions: list<array<string, mixed>>, today: list<array<string, mixed>>, tomorrow: array<string, mixed>, next: array<string, string>|null}
+     * @return array{empty_slots: list<array<string, mixed>>, figures: list<array<string, string>>, actions: list<array<string, mixed>>, today: list<array<string, mixed>>, tomorrow: array<string, mixed>, next: array<string, string>|null}
      */
     public function live(Tenant $tenant, User $user): array
     {
@@ -105,7 +106,19 @@ class GetBeranda
             ->map(fn (Collection $group): array => $group->values()->all())->all();
         $ranges = $todayBookings->isEmpty() ? [] : $this->getBookingTimeRanges->execute($todayBookings)['sessionRanges'];
 
+        $empty = [];
+        if (TenantPermission::allowsRole($role, 'bookings.walkin') && EntitlementRules::hasEffectivePlan($tenant->subscription()->with('plan')->first())) {
+            $picker = app(ListWalkInSlots::class)->picker($tenant, $today->toDateString());
+            $occupiedSchedules = $todayBookings->pluck('idschedule')->all();
+            $empty = collect($picker['slots'])->where('available', true)->whereNotIn('id', $occupiedSchedules)
+                ->map(fn (array $slot): array => [
+                    'id' => $slot['id'], 'service_id' => $slot['service'],
+                    'date' => $today->toDateString(), 'start' => $slot['start'], 'label' => $slot['label'],
+                ])->values()->all();
+        }
+
         return [
+            'empty_slots' => $empty,
             'figures' => $this->figures($tenant, $todayBookings->count(), $canViewRevenue),
             'actions' => $this->actions($tenant, $user, $role, $todayBookings, $ranges, $now),
             'today' => $this->todayRows($todayBookings, $ranges, $paymentGroups, $role, $now),

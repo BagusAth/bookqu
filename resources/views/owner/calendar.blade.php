@@ -16,6 +16,7 @@
 @endphp
 <div class="mx-auto max-w-7xl space-y-5" x-data="{
     slot: null,
+    calendarTrigger: null,
     busy: false,
     feedback: '',
     slotErrors: {},
@@ -49,31 +50,7 @@
             this.busy = false;
         }
     },
-    async saveWalkIn(form) {
-        if (this.busy) return;
-        this.busy = true;
-        this.feedback = '';
-        try {
-            const response = await fetch(form.action, { method: 'POST', body: new FormData(form) });
-            if (!response.ok || new URL(response.url).origin !== window.location.origin) throw new Error();
-            const page = new DOMParser().parseFromString(await response.text(), 'text/html');
-            const results = page.querySelector('[data-calendar-results]');
-            if (!results) throw new Error();
-            const error = results.querySelector('[data-calendar-error]');
-            if (error) {
-                this.feedback = error.textContent.trim();
-                return;
-            }
-            this.$dispatch('close-dialog', { id: 'calendar-slot' });
-            this.$refs.results.replaceWith(document.importNode(results, true));
-            this.slot = null;
-            this.feedback = 'Booking berhasil dicatat.';
-        } catch {
-            this.feedback = 'Status penyimpanan belum dapat diperiksa. Muat ulang Kalender sebelum mencoba lagi.';
-        } finally {
-            this.busy = false;
-        }
-    }
+
 }">
     <x-owner.page-header title="Kalender" purpose="Lihat jadwal layanan dan kelola slot.">
         @if ($scheduleUrl)
@@ -88,7 +65,7 @@
             <a class="bq-btn bq-btn-ghost bq-btn-sm" href="{{ route('owner.calendar', ['view' => $view, 'date' => $today] + $filters) }}">Hari ini</a>
             <a class="bq-btn bq-btn-ghost bq-btn-icon bq-btn-sm" href="{{ route('owner.calendar', ['view' => $view, 'date' => $next->toDateString()] + $filters) }}" aria-label="Berikutnya" title="Berikutnya"><x-owner.icon name="chevron-right" class="h-5 w-5" /><span class="sr-only">Berikutnya</span></a>
         </div>
-        <p class="text-lg font-bold text-bq-ink"><span class="sr-only">{{ $view === 'day' ? 'Jadwal Harian · ' : '' }}</span>{{ $dateLabel }}</p>
+        <p class="text-lg font-bold text-bq-ink"><span class="sr-only">{{ $view === 'day' ? 'Jadwal Harian Â· ' : '' }}</span>{{ $dateLabel }}</p>
     </nav>
 
     @include('owner.partials.calendar.controls')
