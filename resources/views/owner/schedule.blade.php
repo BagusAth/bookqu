@@ -7,41 +7,52 @@
 @endpush
 
 @section('content')
+{{-- BQ-162: follows the Papan Jadwal prototype (#/jam-buka): banner for short runways, one summary panel, then tabs. --}}
 <div class="mx-auto max-w-7xl space-y-5">
-    <x-owner.page-header title="Jam Buka & Harga" purpose="Atur jam operasional, harga, tanggal tutup, dan slot booking.">
-        <x-slot:action>
-            <a class="bq-btn bq-btn-primary" href="{{ route('owner.schedule', ['tab' => 'slots', 'buat' => 1]) }}">Buka slot</a>
-        </x-slot:action>
+    <x-owner.page-header title="Jam Buka & Harga" purpose="Kapan Anda buka, berapa harganya, dan kapan tutup.">
+        @if ($tab === 'slots' && $daftarlayanan->isNotEmpty())
+            <x-slot:action>
+                <x-ui.button variant="primary" icon="plus" x-data x-on:click="$dispatch('open-dialog', { id: 'schedule-bulk-dialog', trigger: $el })">Buka slot sekaligus</x-ui.button>
+            </x-slot:action>
+        @elseif ($tab === 'closed')
+            <x-slot:action>
+                <x-ui.button variant="primary" icon="plus" x-data x-on:click="$dispatch('open-dialog', { id: 'schedule-close-date-dialog', trigger: $el })">Tutup tanggal</x-ui.button>
+            </x-slot:action>
+        @endif
     </x-owner.page-header>
 
-    {{-- BQ-161 (audit L-03): one summary instead of one box per service; the per-service list stays one click away. --}}
-    @php $runwayWarnings = collect($runway)->where('warning', true)->count(); @endphp
-    <details @class(['group rounded-xl border', 'border-bq-warning/30 bg-bq-warning-bg/60' => $runwayWarnings > 0, 'border-bq-border bg-bq-surface' => $runwayWarnings === 0]) @if ($runwayWarnings > 0 && $runwayWarnings < count($runway)) open @endif>
-        <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden">
-            <x-owner.icon :name="$runwayWarnings > 0 ? 'alert' : 'check'" @class(['h-5 w-5 shrink-0', 'text-bq-warning' => $runwayWarnings > 0, 'text-bq-success' => $runwayWarnings === 0]) />
-            <span class="flex-1">
-                @if ($runwayWarnings > 0)
-                    <span class="font-semibold text-bq-ink">{{ $runwayWarnings }} dari {{ count($runway) }} layanan belum punya slot terbuka 7 hari ke depan.</span>
-                    <span class="block text-bq-text-muted">Periksa ketersediaan slot 7 hari ke depan.</span>
-                @else
-                    <span class="font-semibold text-bq-ink">Semua layanan punya slot terbuka 7 hari ke depan.</span>
-                @endif
-            </span>
-            <x-owner.icon name="chevron-down" class="h-4 w-4 shrink-0 text-bq-text-muted transition-transform group-open:rotate-180" />
-        </summary>
-        <ul class="grid grid-cols-1 gap-x-6 gap-y-1.5 border-t border-bq-border/70 px-4 py-3 text-sm sm:grid-cols-2" aria-label="Jangkauan slot">
-            @foreach ($runway as $serviceRunway)
-                <li class="flex min-w-0 items-center justify-between gap-3">
-                    <span class="min-w-0 truncate text-bq-ink" title="{{ $serviceRunway['service'] }}">{{ $serviceRunway['service'] }}</span>
-                    @if ($serviceRunway['open_until'])
-                        <span class="shrink-0 text-bq-success">slot terbuka sampai {{ \Carbon\Carbon::parse($serviceRunway['open_until'])->locale('id')->translatedFormat('j M') }}</span>
-                    @else
-                        <span class="shrink-0 font-semibold text-bq-warning">belum ada slot terbuka</span>
-                    @endif
-                </li>
-            @endforeach
-        </ul>
-    </details>
+    @php $short = $overview['short']; @endphp
+    @if (count($short) === 1)
+        @php $only = $short[0]; @endphp
+        <x-ui.banner tone="warning"
+            :title="$only['service'].': '.($only['open_until_label'] ? 'slot hanya sampai '.$only['open_until_label'] : 'belum ada slot terbuka')"
+            :description="($only['auto_open'] ? 'Slot otomatis belum mencapai 7 hari ke depan.' : 'Layanan ini tidak ikut slot otomatis.').' Pelanggan tidak bisa booking setelah tanggal itu.'">
+            <x-slot:action>
+                <a class="bq-btn bq-btn-secondary bq-btn-sm" href="{{ route('owner.schedule', ['tab' => 'slots', 'buat' => 1, 'layanan' => $only['service_id']]) }}">Buka slot</a>
+            </x-slot:action>
+        </x-ui.banner>
+    @elseif (count($short) > 1)
+        <x-ui.banner tone="warning"
+            :title="count($short).' layanan: slot terbuka kurang dari 7 hari ke depan'"
+            :description="collect($short)->pluck('service')->take(3)->join(', ').(count($short) > 3 ? ', dan '.(count($short) - 3).' lainnya' : '').'. Pelanggan tidak bisa booking setelah slotnya habis.'">
+            <x-slot:action>
+                <a class="bq-btn bq-btn-secondary bq-btn-sm" href="{{ route('owner.schedule', ['tab' => 'slots', 'buat' => 1]) }}">Buka slot</a>
+            </x-slot:action>
+        </x-ui.banner>
+    @endif
+
+    <x-ui.panel>
+        <x-ui.figures
+            :value="$overview['open_until_label'] ?? 'Belum ada'"
+            label="slot terbuka sampai"
+            :context="$overview['auto_open'] > 0
+                ? $overview['auto_open'].' dari '.$overview['services'].' layanan, dibuka otomatis setiap hari'
+                : ($overview['services'] - count($short)).' dari '.$overview['services'].' layanan punya slot 7 hari ke depan'"
+            :more="[
+                ['value' => $overview['days_ahead'] !== null ? $overview['days_ahead'].' hari' : '0 hari', 'label' => 'ke depan'],
+                ['value' => count($short), 'label' => 'layanan kurang dari 7 hari'],
+            ]" />
+    </x-ui.panel>
 
     <x-owner.tabs :tabs="$tabs" :active="$tab" />
 

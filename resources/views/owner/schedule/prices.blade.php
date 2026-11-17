@@ -1,137 +1,165 @@
-<div class="space-y-4">
-    <div class="bq-panel p-4">
-        <h2 class="font-semibold">Harga dasar</h2>
-        <p class="text-sm text-bq-text-muted">Ubah harga dasar di <a class="underline" href="{{ route('owner.services') }}">Layanan</a>.</p>
-        <ul class="mt-2 space-y-1 text-sm">
-            @foreach ($daftarlayanan as $service)
-                <li>{{ $service->namalayanan }} · Rp {{ number_format($service->harga, 0, ',', '.') }}</li>
-            @endforeach
-        </ul>
-        @if ($daftarlayanan->isNotEmpty())
-            <form method="POST" action="{{ route('owner.schedule.apply-base-price') }}" id="apply-base-price" x-data class="mt-3 flex flex-wrap items-end gap-2">
+{{-- BQ-162: Harga tab as in the Papan Jadwal prototype (#/jam-buka/harga): rules on the left, the simulator on the right. --}}
+<div class="bq-split">
+    <div class="grid min-w-0 gap-4">
+        <x-ui.panel title="Akhir pekan" description="Berlaku Sabtu dan Minggu, di atas harga dasar dari Layanan.">
+            <form method="POST" action="{{ route('owner.schedule.availability', ['tab' => 'prices']) }}" class="grid gap-4"
+                x-data="{ type: @js(old('weekend_price_type', $tenant->weekend_price_type ?? 'none')) }">
                 @csrf
-                <label class="grid min-w-0 max-w-full grid-cols-1 gap-1 text-sm">Layanan
-        <select name="idlayanan" class="bq-input w-full" required>
-            @foreach ($daftarlayanan as $service)
-                <option value="{{ $service->id }}">{{ $service->namalayanan }}</option>
-            @endforeach
-        </select>
-    </label>
-                <button type="button" class="bq-btn bq-btn-primary" @click="$dispatch('open-confirm', { title: 'Terapkan harga dasar?', message: 'Harga khusus per slot dihapus hanya untuk slot mendatang yang masih bebas. Aturan harga tetap berlaku.', formId: 'apply-base-price' })">Terapkan harga dasar ke slot terbuka</button>
+                <x-ui.segmented label="Jenis aturan" name="weekend_price_type" @change="type = $event.target.value"
+                    :options="['none' => 'Tanpa aturan', 'multiplier' => 'Dikali', 'fixed' => 'Harga tetap']"
+                    :selected="old('weekend_price_type', $tenant->weekend_price_type ?? 'none')" />
+                <div class="grid gap-1.5" x-show="type !== 'none'" x-cloak>
+                    <label for="weekend-price-value" class="bq-label" x-text="type === 'multiplier' ? 'Pengali' : 'Harga tetap'"></label>
+                    <div class="flex min-h-bq-control items-center rounded-bq-control border border-bq-border-strong bg-bq-surface focus-within:border-bq-primary focus-within:ring-2 focus-within:ring-bq-primary/20">
+                        <span x-show="type === 'fixed'" class="pl-3 text-bq-form text-bq-text-muted">Rp</span>
+                        <input id="weekend-price-value" name="weekend_price_value" type="number" min="0" step="0.01" inputmode="decimal"
+                            :disabled="type === 'none'" :required="type !== 'none'" value="{{ old('weekend_price_value', $tenant->weekend_price_value) }}"
+                            class="bq-num min-w-0 flex-1 border-0 bg-transparent px-3 text-bq-form outline-none focus:ring-0">
+                        <span x-show="type === 'multiplier'" class="px-3 text-bq-form text-bq-text-muted">× harga dasar</span>
+                    </div>
+                    <p class="bq-hint" x-show="type === 'multiplier'">1,2 = harga dasar ditambah 20%. 1 = sama dengan hari biasa.</p>
+                    <p class="bq-hint" x-show="type === 'fixed'" x-cloak>Harga per slot pada Sabtu dan Minggu, menggantikan harga dasar.</p>
+                    <x-owner.field-error name="weekend_price_value" />
+                </div>
+                <div><x-ui.button type="submit" size="sm">Simpan aturan akhir pekan</x-ui.button></div>
             </form>
-        @endif
+        </x-ui.panel>
+
+        <x-ui.panel title="Jam ramai" description="Tambahan harga pada jam tertentu." flush>
+            <x-slot:actions>
+                <x-ui.button size="sm" icon="plus" x-data x-on:click="$dispatch('open-dialog', { id: 'peak-rule-new', trigger: $el })">Tambah</x-ui.button>
+            </x-slot:actions>
+            @if ($peakRows === [])
+                <p class="px-5 py-4 text-bq-small text-bq-text-muted">Belum ada aturan jam ramai. Semua jam memakai harga dasar.</p>
+            @else
+                <x-ui.table class="rounded-none border-0" label="Aturan jam ramai" :columns="['Nama', 'Kapan', 'Tambahan', 'Layanan']" actions>
+                    @foreach ($peakRows as $row)
+                        <x-ui.table.row>
+                            <x-ui.table.cell phone="main" :title="$row['rule']->name">
+                                <button type="button" class="truncate text-left font-semibold text-bq-ink hover:text-bq-primary" x-data x-on:click="$dispatch('open-dialog', { id: 'peak-rule-{{ $row['rule']->id }}', trigger: $el })">{{ $row['rule']->name }}</button>
+                            </x-ui.table.cell>
+                            <x-ui.table.cell phone="subtitle">{{ $row['days'] }} · <span class="bq-num font-bq-display font-semibold">{{ $row['time'] }}</span></x-ui.table.cell>
+                            <x-ui.table.cell phone="end" align="end"><span class="bq-num">{{ $row['extra'] }}</span></x-ui.table.cell>
+                            <x-ui.table.cell :title="$row['services_title']"><span class="truncate text-bq-text-muted">{{ $row['services'] }}</span></x-ui.table.cell>
+                            <x-slot:action>
+                                <x-ui.button size="sm" variant="ghost" icon="edit" icon-only aria-label="Ubah {{ $row['rule']->name }}" x-data x-on:click="$dispatch('open-dialog', { id: 'peak-rule-{{ $row['rule']->id }}', trigger: $el })" />
+                            </x-slot:action>
+                        </x-ui.table.row>
+                    @endforeach
+                </x-ui.table>
+            @endif
+        </x-ui.panel>
+
+        <x-ui.panel title="Tanggal khusus" description="Menggantikan harga pada tanggal tertentu." flush>
+            @if ($daftarlayanan->isNotEmpty())
+                <x-slot:actions>
+                    <x-ui.button size="sm" icon="plus" x-data x-on:click="$dispatch('open-dialog', { id: 'special-date-new', trigger: $el })">Tambah</x-ui.button>
+                </x-slot:actions>
+            @endif
+            @if ($specialDates->isEmpty())
+                <p class="px-5 py-4 text-bq-small text-bq-text-muted">Belum ada tanggal khusus.</p>
+            @else
+                <x-ui.table class="rounded-none border-0" label="Harga tanggal khusus" :columns="['Tanggal', 'Harga', 'Layanan']" actions>
+                    @foreach ($specialDates as $special)
+                        <x-ui.table.row>
+                            <x-ui.table.cell phone="main">{{ $special->tanggal->locale('id')->translatedFormat('j M Y') }}</x-ui.table.cell>
+                            <x-ui.table.cell phone="end"><span class="bq-num">{{ \App\Support\Rupiah::format($special->price) }}</span></x-ui.table.cell>
+                            <x-ui.table.cell phone="subtitle" :title="$special->service?->namalayanan"><span class="truncate text-bq-text-muted">{{ $special->service?->namalayanan }}</span></x-ui.table.cell>
+                            <x-slot:action>
+                                <form method="POST" id="delete-special-{{ $special->id }}" x-data action="{{ route('owner.schedule.special-dates.destroy', $special) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <x-ui.button size="sm" variant="ghost" icon="trash" icon-only aria-label="Hapus harga khusus {{ $special->tanggal->format('d/m/Y') }}"
+                                        @click="$dispatch('open-confirm', { title: 'Hapus harga khusus?', message: 'Tanggal ini kembali mengikuti aturan harga lain yang berlaku.', formId: $el.form.id })" />
+                                </form>
+                            </x-slot:action>
+                        </x-ui.table.row>
+                    @endforeach
+                </x-ui.table>
+            @endif
+        </x-ui.panel>
     </div>
 
-    <form method="POST" action="{{ route('owner.schedule.availability', ['tab' => 'prices']) }}" class="space-y-3 bq-panel p-4"
-        x-data="{ type: @js(old('weekend_price_type', $tenant->weekend_price_type ?? 'none')) }">
-        @csrf
-        <h2 class="font-semibold">Harga akhir pekan</h2>
-        <p class="text-sm text-bq-text-muted">Berlaku pada Sabtu dan Minggu.</p>
-        <div class="flex flex-wrap items-end gap-3">
-            <label class="grid gap-1 text-sm">Aturan
-        <select name="weekend_price_type" x-model="type" class="bq-input">
-                    <option value="none">Harga biasa</option>
-                    <option value="multiplier">Pengali harga dasar</option>
-                    <option value="fixed">Harga tetap</option>
-                </select>
-    </label>
-            <label class="grid gap-1 text-sm" x-show="type !== 'none'" x-cloak>
-                <span x-text="type === 'multiplier' ? 'Pengali (contoh 1,5)' : 'Harga tetap (Rp)'"></span>
-                <input name="weekend_price_value" type="number" min="0" step="0.01" :disabled="type === 'none'" :required="type !== 'none'" value="{{ old('weekend_price_value', $tenant->weekend_price_value) }}" class="bq-input">
-            </label>
-            <button class="bq-btn bq-btn-primary">Simpan harga akhir pekan</button>
-        </div>
-    </form>
-
-    <section class="space-y-3 bq-panel p-4">
-        <h2 class="font-semibold">Aturan jam sibuk</h2>
-        @foreach ($peakRules as $rule)
-            <details class="rounded border border-bq-border p-3">
-                <summary class="cursor-pointer">{{ $rule->name }} · +Rp {{ number_format($rule->extra_amount, 0, ',', '.') }}</summary>
-                @include('owner.schedule.peak-rule', ['rule' => $rule])
-                <form method="POST" id="delete-peak-{{ $rule->id }}" x-data action="{{ route('owner.schedule.peak-rules.destroy', $rule) }}" class="mt-2">
-                    @csrf
-                    @method('DELETE')
-                    <button type="button" class="text-sm text-bq-danger underline"
-                        @click="$dispatch('open-confirm', { title: 'Hapus aturan jam sibuk?', message: 'Tambahan harga dari aturan ini akan berhenti berlaku.', formId: $el.form.id })">Hapus aturan</button>
-                </form>
-            </details>
-        @endforeach
-        <details>
-            <summary class="cursor-pointer text-sm font-semibold text-bq-primary">Tambah aturan jam sibuk</summary>
-            @include('owner.schedule.peak-rule', ['rule' => null])
-        </details>
-    </section>
-
     @if ($daftarlayanan->isNotEmpty())
-        <section class="space-y-3 bq-panel p-4">
-            <h2 class="font-semibold">Harga tanggal khusus</h2>
-            @foreach ($specialDates as $special)
-                <form method="POST" id="delete-special-{{ $special->id }}" x-data action="{{ route('owner.schedule.special-dates.destroy', $special) }}" class="flex flex-wrap items-center justify-between gap-2 text-sm">
-                    @csrf
-                    @method('DELETE')
-                    <span>{{ $special->tanggal->format('d/m/Y') }} · {{ $special->service?->namalayanan }} · Rp {{ number_format($special->price, 0, ',', '.') }}</span>
-                    <button type="button" class="text-bq-danger underline"
-                        @click="$dispatch('open-confirm', { title: 'Hapus harga khusus?', message: 'Tanggal ini kembali mengikuti aturan harga lain yang berlaku.', formId: $el.form.id })">Hapus harga khusus</button>
-                </form>
-            @endforeach
-            <form method="POST" action="{{ route('owner.schedule.special-dates.store') }}" class="grid gap-3 sm:grid-cols-3">
-                @csrf
-                <label class="grid gap-1 text-sm">Tanggal
-        <input type="date" name="tanggal" required class="bq-input">
-    </label>
-                <label class="grid gap-1 text-sm">Harga (Rp)
-        <input type="number" name="price" required min="0" max="100000000" class="bq-input">
-    </label>
-                <fieldset class="space-y-2 text-sm">
-                    <legend class="font-semibold">Layanan</legend>
-                    @foreach ($daftarlayanan as $service)
-                        <label class="flex items-center gap-2">
-                            <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" @checked(in_array($service->id, (array) old('service_ids', [])))>
-                            {{ $service->namalayanan }}
-                        </label>
-                    @endforeach
-                    <x-owner.field-error name="service_ids" />
-                    <x-owner.field-error name="service_ids.*" />
-                </fieldset>
-                <div><button class="bq-btn bq-btn-primary">Simpan harga khusus</button></div>
+        <x-ui.panel title="Simulasi harga" description="Harga tiap jam dan aturan yang membentuknya." class="md:sticky md:top-20">
+            <form id="price-simulator" action="{{ route('owner.schedule.price-simulator') }}" method="GET" x-data="schedulePriceSimulator(@js((string) $daftarlayanan->first()->id))"
+                x-init="$nextTick(() => simulate($el))" @change="simulate($el)" @submit.prevent="simulate($el)" class="grid gap-4">
+                <div class="grid gap-1.5">
+                    <label for="simulator-service" class="bq-label">Layanan</label>
+                    <select id="simulator-service" name="idlayanan" class="bq-input w-full" required x-model="serviceId">
+                        @foreach ($daftarlayanan as $service)
+                            <option value="{{ $service->id }}">{{ $service->namalayanan }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="grid gap-1.5">
+                    <label for="simulator-date" class="bq-label">Tanggal</label>
+                    <input id="simulator-date" type="date" name="tanggal" required class="bq-input w-full" value="{{ now('Asia/Jakarta')->next(\Carbon\CarbonInterface::SATURDAY)->toDateString() }}">
+                </div>
+                <p x-show="error" x-cloak x-text="error" role="alert" class="text-bq-small text-bq-danger"></p>
+                <p x-show="busy" x-cloak class="text-bq-small text-bq-text-muted">Menghitung…</p>
+                <dl class="grid grid-cols-[64px_minmax(0,1fr)] gap-x-4 gap-y-2" aria-live="polite">
+                    <template x-for="hour in hours" :key="hour.time">
+                        <div class="contents">
+                            <dt class="bq-num font-bq-display font-semibold text-bq-text-muted" x-text="hour.time.replace(':', '.')"></dt>
+                            <dd>
+                                <b class="bq-num" x-text="rupiah(hour.price)"></b>
+                                <span class="block text-bq-small text-bq-text-muted" x-text="hour.rule_label"></span>
+                            </dd>
+                        </div>
+                    </template>
+                </dl>
+                <p x-show="!busy && !error && hours.length === 0" class="text-bq-small text-bq-text-muted">Tidak ada jam buka pada tanggal ini.</p>
+                <input type="hidden" name="idlayanan" form="apply-base-price" :value="serviceId">
             </form>
-        </section>
-
-        <section class="bq-panel self-start p-4" x-data="{ expanded: false }">
-            <h2 class="hidden font-semibold md:block">Simulasi harga</h2>
-            <button type="button" class="flex w-full items-center justify-between gap-2 font-semibold md:hidden"
-                aria-controls="price-simulator" :aria-expanded="expanded" @click="expanded = !expanded">
-                Simulasi harga per jam
-                <x-owner.icon name="chevron-down" class="size-4 text-bq-text-muted" />
-            </button>
-        <form id="price-simulator" action="{{ route('owner.schedule.price-simulator') }}" method="GET" x-data="schedulePriceSimulator"
-            @submit.prevent="simulate($el)" @change="hours = []"
-            :class="expanded ? 'block' : 'hidden md:block'" class="mt-2 space-y-3">
-            <p class="text-bq-small text-bq-text-muted">Harga tiap jam dan aturan yang membentuknya.</p>
-            <div class="flex flex-wrap items-end gap-3">
-                <label class="grid min-w-0 max-w-full grid-cols-1 gap-1 text-sm">Layanan
-        <select name="idlayanan" class="bq-input w-full" required>
-            @foreach ($daftarlayanan as $service)
-                <option value="{{ $service->id }}">{{ $service->namalayanan }}</option>
-            @endforeach
-        </select>
-    </label>
-                <label class="grid gap-1 text-sm">Tanggal
-        <input type="date" name="tanggal" required class="bq-input">
-    </label>
-                <button :disabled="busy" class="bq-btn bq-btn-primary">Lihat harga per jam</button>
-            </div>
-            <p x-show="error" x-cloak x-text="error" role="alert" class="text-sm"></p>
-            <ul class="grid gap-2 text-sm sm:grid-cols-3" aria-live="polite">
-                <template x-for="hour in hours" :key="hour.time">
-                    <li class="rounded border border-bq-border p-2">
-                        <span class="font-medium bq-num" x-text="hour.time + ' · ' + rupiah.format(hour.price)"></span>
-                        <span class="block text-bq-small text-bq-text-muted" x-text="hour.rule_label"></span>
-                    </li>
-                </template>
-            </ul>
-        </form>
-        </section>
+            <form method="POST" action="{{ route('owner.schedule.apply-base-price') }}" id="apply-base-price" x-data class="mt-4">
+                @csrf
+                <x-ui.button icon="check" class="w-full" @click="$dispatch('open-confirm', { title: 'Terapkan harga dasar?', message: 'Harga khusus per slot dihapus hanya untuk slot mendatang yang masih bebas pada layanan ini. Aturan harga tetap berlaku.', formId: 'apply-base-price' })">Terapkan harga dasar ke slot terbuka</x-ui.button>
+            </form>
+        </x-ui.panel>
     @endif
 </div>
+
+{{-- Forms open in the side panel, as in the prototype. --}}
+<x-owner.drawer id="peak-rule-new" title="Tambah jam ramai">
+    @include('owner.schedule.peak-rule', ['rule' => null])
+</x-owner.drawer>
+@foreach ($peakRules as $rule)
+    <x-owner.drawer id="peak-rule-{{ $rule->id }}" title="Ubah jam ramai">
+        @include('owner.schedule.peak-rule', ['rule' => $rule])
+        <form method="POST" id="delete-peak-{{ $rule->id }}" x-data action="{{ route('owner.schedule.peak-rules.destroy', $rule) }}" class="mt-4 border-t border-bq-border pt-4">
+            @csrf
+            @method('DELETE')
+            <x-ui.button variant="danger" size="sm" icon="trash"
+                @click="$dispatch('open-confirm', { title: 'Hapus aturan jam ramai?', message: 'Tambahan harga dari aturan ini akan berhenti berlaku.', formId: $el.form.id })">Hapus aturan</x-ui.button>
+        </form>
+    </x-owner.drawer>
+@endforeach
+@if ($daftarlayanan->isNotEmpty())
+    <x-owner.drawer id="special-date-new" title="Tambah tanggal khusus">
+        <form method="POST" action="{{ route('owner.schedule.special-dates.store') }}" class="grid gap-4">
+            @csrf
+            <div class="grid grid-cols-2 gap-3">
+                <div class="grid gap-1.5">
+                    <label for="special-date" class="bq-label">Tanggal</label>
+                    <input id="special-date" type="date" name="tanggal" required class="bq-input w-full" value="{{ old('tanggal') }}">
+                    <x-owner.field-error name="tanggal" />
+                </div>
+                <div class="grid gap-1.5">
+                    <label for="special-price" class="bq-label">Harga (Rp)</label>
+                    <input id="special-price" type="number" name="price" required min="0" max="100000000" inputmode="numeric" class="bq-input w-full" value="{{ old('price') }}">
+                    <x-owner.field-error name="price" />
+                </div>
+            </div>
+            <fieldset class="grid gap-2">
+                <legend class="bq-label mb-1">Layanan</legend>
+                @foreach ($daftarlayanan as $service)
+                    <x-ui.checkbox name="service_ids[]" value="{{ $service->id }}" :label="$service->namalayanan" :checked="in_array($service->id, (array) old('service_ids', []))" />
+                @endforeach
+                <x-owner.field-error name="service_ids" />
+                <x-owner.field-error name="service_ids.*" />
+            </fieldset>
+            <div class="flex justify-end"><x-ui.button type="submit" variant="primary">Simpan tanggal khusus</x-ui.button></div>
+        </form>
+    </x-owner.drawer>
+@endif

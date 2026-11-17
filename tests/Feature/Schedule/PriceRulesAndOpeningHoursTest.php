@@ -226,6 +226,23 @@ class PriceRulesAndOpeningHoursTest extends TestCase
         $this->assertSame('2026-11-05', $services[$soon->id]['open_until']);
     }
 
+    public function test_the_automatic_slots_switch_applies_to_every_active_service(): void
+    {
+        $inactive = Service::factory()->create(['idtenant' => $this->tenant->id, 'is_active' => false, 'auto_open_slots' => false]);
+        $days = ['days' => [1 => [['opens_at' => '09:00', 'closes_at' => '17:00']]], 'slot_open_days_ahead' => 21];
+
+        $this->actingAs($this->owner)->put(route('owner.schedule.opening-hours'), $days + ['auto_open_slots' => true])->assertSessionHasNoErrors();
+        $this->assertTrue((bool) $this->service->fresh()->auto_open_slots);
+        $this->assertFalse((bool) $inactive->fresh()->auto_open_slots, 'inactive services keep their own choice');
+        $this->get(route('owner.schedule'))->assertOk()->assertSeeText('dibuka otomatis setiap hari');
+
+        $this->put(route('owner.schedule.opening-hours'), $days)->assertSessionHasNoErrors();
+        $this->assertTrue((bool) $this->service->fresh()->auto_open_slots, 'without the switch nothing changes');
+
+        $this->put(route('owner.schedule.opening-hours'), $days + ['auto_open_slots' => false])->assertSessionHasNoErrors();
+        $this->assertFalse((bool) $this->service->fresh()->auto_open_slots);
+    }
+
     public function test_opening_hours_save_breaks_and_refuse_overlapping_intervals(): void
     {
         $this->actingAs($this->owner)->put(route('owner.schedule.opening-hours'), [

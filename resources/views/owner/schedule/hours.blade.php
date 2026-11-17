@@ -1,38 +1,59 @@
-<form class="space-y-4 bq-panel p-4" x-data="scheduleOpeningHours(@js($openingHours))"
+{{-- BQ-162: Jam buka tab as in the Papan Jadwal prototype (#/jam-buka): automatic slots, then one row per day. --}}
+<form class="bq-panel" x-data="scheduleOpeningHours(@js($openingHours), @js($overview['auto_open'] > 0))"
     action="{{ route('owner.schedule.opening-hours') }}" method="POST" @submit.prevent="save($event.currentTarget)">
     @csrf
     @method('PUT')
-    <h2 class="font-semibold">Jam operasional mingguan</h2>
-    <p class="text-sm text-bq-text-muted">Untuk jeda istirahat, tambahkan rentang baru setelah jeda. Jam buka tidak otomatis membuat slot.</p>
-    @foreach ($weekdays as $day => $label)
-        <fieldset class="space-y-2 border-t border-bq-border pt-2">
-            <legend class="font-medium">{{ $label }}</legend>
-            <label class="flex items-center gap-2 text-sm">
-                <input type="checkbox" x-model="closed[@js($day)]" @change="toggle(@js($day))"> Tutup
-            </label>
-            <template x-for="(interval, index) in days[{{ $day }}]" :key="interval.key">
-                <div x-show="!closed[@js($day)]" class="flex flex-wrap items-end gap-2">
-                    <label class="grid text-sm">Buka <input class="bq-input" type="time" x-model="interval.opens_at" :disabled="closed[@js($day)]" required></label>
-                    <label class="grid text-sm">Tutup <input class="bq-input" type="time" x-model="interval.closes_at" :disabled="closed[@js($day)]" required></label>
-                    <button type="button" class="p-2 text-sm text-bq-primary" @click="days[{{ $day }}].splice(index, 1)">Hapus rentang</button>
-                </div>
-            </template>
-            <div class="flex flex-wrap gap-3">
-                <button type="button" x-show="!closed[@js($day)]" class="text-sm font-semibold text-bq-primary" :disabled="days[@js($day)].length >= 6" @click="add(@js($day))">Tambah rentang</button>
-                <button type="button" class="text-sm font-semibold text-bq-primary" @click="copyToAll(@js($day))">Salin ke semua hari</button>
+    <x-ui.form-row title="Slot otomatis" description="Sistem membuka slot dari jam buka setiap hari. Anda hanya mengatur pengecualian.">
+        <x-ui.switch x-model="autoOpen" label="Buka slot otomatis" description="Slot baru dibuka setiap malam sampai batas di bawah. Durasi diambil dari Layanan." />
+        <div class="grid gap-1.5">
+            <label for="slot-open-days-ahead" class="bq-label">Buka slot sampai</label>
+            <div class="flex min-h-bq-control items-center rounded-bq-control border border-bq-border-strong bg-bq-surface focus-within:border-bq-primary focus-within:ring-2 focus-within:ring-bq-primary/20">
+                <input id="slot-open-days-ahead" name="slot_open_days_ahead" type="number" min="1" max="365" inputmode="numeric"
+                    value="{{ $tenant->slot_open_days_ahead }}" placeholder="{{ $maxDaysAhead }}"
+                    class="bq-num min-w-0 flex-1 border-0 bg-transparent px-3 text-bq-form outline-none focus:ring-0">
+                <span class="px-3 text-bq-form text-bq-text-muted">hari ke depan</span>
             </div>
-        </fieldset>
-    @endforeach
-    <label class="grid max-w-xs gap-1 text-sm">Batas buka slot (hari ke depan)
-        <input name="slot_open_days_ahead" class="bq-input" type="number" min="1" max="365" value="{{ $tenant->slot_open_days_ahead }}">
-    </label>
-    <ul role="alert" x-show="errors.length" x-cloak class="text-sm">
-        <template x-for="(error, index) in errors" :key="index"><li x-text="error"></li></template>
-    </ul>
-    <button :disabled="busy" class="bq-btn bq-btn-primary disabled:opacity-50">Simpan jam buka</button>
+            <p class="bq-hint">Pelanggan bisa booking paling jauh {{ $maxDaysAhead }} hari ke depan.</p>
+        </div>
+        <p class="bq-hint">{{ $overview['auto_open'] }} dari {{ $overview['services'] }} layanan ikut. <a class="bq-link" href="{{ route('owner.services') }}">Atur per layanan</a></p>
+    </x-ui.form-row>
+
+    <x-ui.form-row title="Jam buka mingguan" description="Satu baris per hari. Tambah jeda untuk istirahat.">
+        <div class="bq-panel">
+            @foreach ($weekdays as $day => $label)
+                <div class="bq-hours-row" :class="closed[{{ $day }}] && 'text-bq-text-muted'">
+                    <b class="bq-hours-day font-semibold" :class="closed[{{ $day }}] ? 'text-bq-text-muted' : 'text-bq-ink'" >{{ $label }}</b>
+                    <label class="bq-hours-switch relative inline-flex cursor-pointer">
+                        <input type="checkbox" role="switch" class="peer sr-only" :checked="!closed[{{ $day }}]" @change="closed[{{ $day }}] = !$event.target.checked; toggle({{ $day }})" aria-label="{{ $label }} buka">
+                        <span aria-hidden="true" class="relative h-5 w-9 rounded-full bg-bq-border-strong after:absolute after:top-0.5 after:left-0.5 after:size-4 after:rounded-full after:bg-bq-surface after:transition-transform peer-checked:bg-bq-primary peer-checked:after:translate-x-4 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-bq-primary"></span>
+                    </label>
+                    <div class="bq-hours-ranges">
+                        <span x-show="closed[{{ $day }}]" class="text-bq-text-muted">Tutup</span>
+                        <template x-for="(interval, index) in days[{{ $day }}]" :key="interval.key">
+                            <span class="bq-hours-range" x-show="!closed[{{ $day }}]">
+                                <input class="bq-input" x-model="interval.opens_at" inputmode="numeric" maxlength="5" placeholder="08.00" :aria-label="index ? '{{ $label }} buka lagi' : '{{ $label }} buka'" required>
+                                <span class="text-bq-text-muted">–</span>
+                                <input class="bq-input" x-model="interval.closes_at" inputmode="numeric" maxlength="5" placeholder="17.00" :aria-label="index ? '{{ $label }} tutup' : '{{ $label }} mulai jeda'" required>
+                                <button type="button" x-show="index > 0" class="bq-btn bq-btn-ghost bq-btn-sm bq-btn-icon !min-h-8 !min-w-8" @click="days[{{ $day }}].splice(index, 1)" aria-label="Hapus jeda {{ $label }}"><x-owner.icon name="x" class="h-4 w-4" /></button>
+                            </span>
+                        </template>
+                    </div>
+                    <span class="bq-hours-action justify-self-end">
+                        <button type="button" x-show="!closed[{{ $day }}]" class="bq-btn bq-btn-ghost bq-btn-sm" :disabled="days[{{ $day }}].length >= 6" @click="add({{ $day }})">Tambah jeda</button>
+                    </span>
+                </div>
+            @endforeach
+        </div>
+        <div>
+            <x-ui.button size="sm" icon="copy" @click="copyToAll(1)">Salin Senin ke semua hari</x-ui.button>
+        </div>
+        <ul role="alert" x-show="errors.length" x-cloak class="space-y-1 text-bq-small text-bq-danger">
+            <template x-for="(error, index) in errors" :key="index"><li x-text="error"></li></template>
+        </ul>
+    </x-ui.form-row>
+
+    <x-ui.savebar>
+        <a href="{{ route('owner.schedule', ['tab' => 'hours']) }}" class="bq-btn bq-btn-ghost">Batal</a>
+        <button :disabled="busy" class="bq-btn bq-btn-primary">Simpan jam buka</button>
+    </x-ui.savebar>
 </form>
-@if ($daftarlayanan->isNotEmpty())
-    <p class="mt-4 text-sm text-bq-text-muted">Durasi dari <a class="underline" href="{{ route('owner.services') }}">Layanan</a>:
-        {{ $daftarlayanan->map(fn ($service) => $service->namalayanan . ' (' . $service->durasi . ' menit)')->join(', ') }}.
-    </p>
-@endif

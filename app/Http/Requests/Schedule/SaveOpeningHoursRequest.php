@@ -24,6 +24,7 @@ class SaveOpeningHoursRequest extends FormRequest
             'days.*.*.opens_at' => ['required', 'date_format:H:i'],
             'days.*.*.closes_at' => ['required', 'date_format:H:i'],
             'slot_open_days_ahead' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'auto_open_slots' => ['sometimes', 'nullable', 'boolean'],
         ];
     }
 

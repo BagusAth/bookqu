@@ -12,15 +12,23 @@ document.addEventListener('alpine:init', () => {
         return data;
     }
 
-    Alpine.data('scheduleOpeningHours', (openingHours) => ({
+    // Times show as 08.00 (Indonesian style, BQ-162) and are sent as 08:00.
+    const shownTime = (time) => String(time ?? '').replace(':', '.');
+    const sentTime = (time) => {
+        const match = String(time ?? '').trim().match(/^(\d{1,2})[.:]?(\d{2})$/);
+        return match ? `${match[1].padStart(2, '0')}:${match[2]}` : String(time ?? '').trim();
+    };
+
+    Alpine.data('scheduleOpeningHours', (openingHours, autoOpen = false) => ({
         nextKey: 0,
         days: {},
         closed: {},
+        autoOpen,
         errors: [],
         busy: false,
         init() {
             for (let day = 1; day <= 7; day++) {
-                this.days[day] = (openingHours[day] ?? []).map(interval => ({ ...interval, key: ++this.nextKey }));
+                this.days[day] = (openingHours[day] ?? []).map(interval => ({ opens_at: shownTime(interval.opens_at), closes_at: shownTime(interval.closes_at), key: ++this.nextKey }));
                 this.closed[day] = this.days[day].length === 0;
             }
         },
@@ -42,7 +50,7 @@ document.addEventListener('alpine:init', () => {
             this.errors = [];
             const fields = new FormData(form);
             const days = Object.fromEntries(Object.entries(this.days).map(([day, intervals]) => [
-                day, this.closed[day] ? [] : intervals.map(({ opens_at, closes_at }) => ({ opens_at, closes_at })),
+                day, this.closed[day] ? [] : intervals.map(({ opens_at, closes_at }) => ({ opens_at: sentTime(opens_at), closes_at: sentTime(closes_at) })),
             ]));
             try {
                 const response = await fetch(form.action, {
@@ -52,7 +60,7 @@ document.addEventListener('alpine:init', () => {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': fields.get('_token'),
                     },
-                    body: JSON.stringify({ days, slot_open_days_ahead: fields.get('slot_open_days_ahead') || null }),
+                    body: JSON.stringify({ days, slot_open_days_ahead: fields.get('slot_open_days_ahead') || null, auto_open_slots: this.autoOpen }),
                 });
                 if (response.redirected && response.ok) {
                     window.location.assign(response.url);
@@ -122,11 +130,12 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    Alpine.data('schedulePriceSimulator', () => ({
+    Alpine.data('schedulePriceSimulator', (serviceId = '') => ({
+        serviceId,
         hours: [],
         error: '',
         busy: false,
-        rupiah: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }),
+        rupiah: (amount) => 'Rp' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Math.round(Number(amount) || 0)),
         async simulate(form) {
             if (this.busy) return;
             this.busy = true;

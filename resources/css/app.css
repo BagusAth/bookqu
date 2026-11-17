@@ -285,7 +285,7 @@
         --bq-choice-track: ;
         --bq-action-track: ;
         display: grid;
-        grid-template-columns: var(--bq-choice-track) repeat(var(--bq-data-columns), minmax(0, 1fr)) var(--bq-action-track);
+        grid-template-columns: var(--bq-choice-track) var(--bq-cols, repeat(var(--bq-data-columns), minmax(0, 1fr))) var(--bq-action-track);
     }
     .bq-table-selectable {
         --bq-choice-track: auto;
@@ -369,6 +369,137 @@
     }
     .bq-count {
         @apply inline-flex min-w-5 items-center justify-center rounded-full bg-bq-accent px-1.5 text-xs leading-5 font-bold text-bq-ink;
+    }
+
+    /* ── Papan Jadwal blocks (BQ-162): ported from docs/design/papan-jadwal/prototype/css/components.css ── */
+    /* Headline figure with supporting figures (prototype .angka) */
+    .bq-figures {
+        @apply grid items-end gap-6;
+        grid-template-columns: minmax(200px, auto) minmax(0, 1fr);
+    }
+    .bq-figures-main > b {
+        @apply tabular-nums block font-bq-display text-bq-figure font-semibold text-bq-ink;
+        letter-spacing: -0.5px;
+    }
+    .bq-figures-main > span {
+        @apply block text-bq-body font-semibold text-bq-ink;
+    }
+    .bq-figures-main > small {
+        @apply mt-0.5 block text-bq-small text-bq-text-muted;
+    }
+    .bq-figures-more {
+        @apply flex flex-wrap gap-x-8 gap-y-4 pb-0.5;
+    }
+    .bq-figures-more b {
+        @apply tabular-nums block font-bq-display text-bq-figure-small font-semibold text-bq-ink;
+    }
+    .bq-figures-more span {
+        @apply block text-bq-small text-bq-text-muted;
+    }
+    .bq-delta {
+        @apply tabular-nums inline-flex items-center gap-0.5 text-bq-small font-semibold;
+    }
+    /* Form section: title column and fields column (prototype .form-bagian) */
+    .bq-form-row {
+        @apply grid gap-x-8 gap-y-5 border-t border-bq-border p-5 first:border-t-0;
+        grid-template-columns: 240px minmax(0, 1fr);
+    }
+    .bq-form-row-title h3 {
+        @apply text-bq-form font-semibold;
+    }
+    .bq-form-row-title p {
+        @apply mt-0.5 text-bq-small text-bq-text-muted;
+    }
+    .bq-form-fields {
+        @apply grid max-w-[640px] min-w-0 content-start gap-4;
+    }
+    .bq-savebar {
+        @apply sticky -bottom-10 z-10 flex items-center justify-end gap-3 rounded-b-bq-panel border-t border-bq-border bg-bq-surface px-5 py-3;
+    }
+    /* Toolbar above content, and the filter row inside a table panel (prototype .alat, .filter) */
+    .bq-toolbar {
+        @apply flex flex-wrap items-center gap-x-3 gap-y-2;
+    }
+    .bq-toolbar > * {
+        @apply max-w-full min-w-0;
+    }
+    .bq-filter {
+        @apply flex flex-wrap items-center gap-2 border-b border-bq-border px-5 py-3;
+    }
+    .bq-filter .bq-input {
+        @apply min-h-9 w-auto py-1 text-bq-body;
+    }
+    .bq-search {
+        @apply relative block w-full max-w-80;
+    }
+    .bq-search > svg {
+        @apply pointer-events-none absolute top-1/2 left-3 size-[18px] -translate-y-1/2 text-bq-text-muted;
+    }
+    .bq-search > input {
+        @apply w-full pl-9;
+    }
+    .bq-date-nav {
+        @apply flex items-center gap-1;
+    }
+    .bq-date-nav > b {
+        @apply ml-2 text-bq-body font-semibold whitespace-nowrap;
+    }
+    .bq-pager {
+        @apply flex items-center gap-2 border-t border-bq-border px-5 py-3 text-bq-small text-bq-text-muted;
+    }
+    /* Two columns: content and a side panel (prototype .kisi-2) */
+    .bq-split {
+        @apply grid items-start gap-5;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    }
+    /* Weekly opening hours: one row per day (prototype .jam-buka) */
+    .bq-hours-row {
+        @apply grid items-center gap-3 border-t border-bq-border px-5 py-1.5 first:border-t-0;
+        grid-template-columns: 88px 64px minmax(0, 1fr) auto;
+        min-height: 52px;
+    }
+    .bq-hours-ranges {
+        @apply flex flex-wrap items-center gap-x-4 gap-y-2;
+    }
+    .bq-hours-range {
+        @apply inline-flex items-center gap-2 whitespace-nowrap;
+    }
+    .bq-hours-range .bq-input {
+        @apply tabular-nums min-h-9 w-[84px] px-1 py-1 text-center font-bq-display text-bq-clock font-semibold;
+    }
+    @media (width < 48rem) {
+        .bq-figures {
+            @apply grid-cols-1 gap-4;
+        }
+        .bq-form-row {
+            @apply grid-cols-1 gap-4 p-4;
+        }
+        .bq-split {
+            @apply grid-cols-1;
+        }
+        .bq-filter {
+            @apply px-4;
+        }
+        .bq-hours-row {
+            @apply px-4 py-2;
+            grid-template-columns: 64px minmax(0, 1fr) auto;
+            grid-template-areas: 'day switch action' 'ranges ranges ranges';
+        }
+        .bq-hours-day {
+            grid-area: day;
+        }
+        .bq-hours-switch {
+            grid-area: switch;
+        }
+        .bq-hours-action {
+            grid-area: action;
+        }
+        .bq-hours-ranges {
+            grid-area: ranges;
+        }
+        .bq-hours-range .bq-input {
+            @apply w-16;
+        }
     }
 }
 

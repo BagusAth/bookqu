@@ -37,7 +37,13 @@ class OwnerPriceRuleController extends Controller
     public function saveOpeningHours(SaveOpeningHoursRequest $request, SaveOpeningHours $action): RedirectResponse
     {
         $slotOpenDaysAhead = $request->validated('slot_open_days_ahead');
-        $action->execute($this->tenant(), $request->days(), $slotOpenDaysAhead !== null ? (int) $slotOpenDaysAhead : null);
+        $autoOpenSlots = $request->validated('auto_open_slots');
+        $action->execute(
+            $this->tenant(),
+            $request->days(),
+            $slotOpenDaysAhead !== null ? (int) $slotOpenDaysAhead : null,
+            $autoOpenSlots !== null ? (bool) $autoOpenSlots : null,
+        );
 
         return back()->with('sukses', 'Jam buka berhasil disimpan.');
     }

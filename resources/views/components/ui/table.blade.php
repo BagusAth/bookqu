@@ -1,4 +1,5 @@
-@props(['columns', 'label', 'selectable' => false, 'actions' => false])
+{{-- `widths`: optional CSS grid tracks for the data columns (BQ-162), e.g. 'auto minmax(0, 1fr) minmax(0, 1.4fr)'. --}}
+@props(['columns', 'label', 'selectable' => false, 'actions' => false, 'widths' => null])
 
 <div {{ $attributes->class('bq-panel min-w-0') }}>
     @isset($note)
@@ -7,7 +8,7 @@
 
     <div role="table" aria-label="{{ $label }}"
         @class(['bq-table', 'bq-table-selectable' => $selectable, 'bq-table-actions' => $actions])
-        style="--bq-data-columns: {{ count($columns) }}">
+        style="--bq-data-columns: {{ count($columns) }};@if ($widths) --bq-cols: {{ $widths }};@endif">
         <div role="row" class="bq-table-row bq-table-header">
             @if ($selectable)
                 <div role="columnheader" class="bq-table-choice">
