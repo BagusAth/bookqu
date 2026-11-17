@@ -19,7 +19,7 @@
 @endphp
 
 {{-- BQ-161: on phones the row fades at its right edge to show it scrolls, and the active tab scrolls into view. --}}
-<nav role="tablist" aria-label="{{ $label }}" x-data x-init="$el.querySelector('[aria-current]')?.scrollIntoView({ inline: 'center', block: 'nearest' })" {{ $attributes->merge(['class' => 'flex gap-1 overflow-x-auto border-b border-bq-border no-scrollbar max-md:pr-8 max-md:[mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)]']) }}>
+<nav role="tablist" aria-label="{{ $label }}" x-data x-init="$el.querySelector('[aria-current]')?.scrollIntoView({ inline: 'center', block: 'nearest' })" {{ $attributes->merge(['class' => 'flex gap-5 overflow-x-auto border-b border-bq-border no-scrollbar max-md:pr-8 max-md:[mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)]']) }}>
     @foreach ($tabs as $key => $tabLabel)
         @php $isActive = (string) $key === $current; @endphp
         <a
@@ -27,11 +27,16 @@
             href="{{ $baseUrl ? url()->query($baseUrl, [$param => $key]) : request()->fullUrlWithQuery([$param => $key, 'page' => null]) }}"
             aria-selected="{{ $isActive ? 'true' : 'false' }}"
             @if ($isActive) aria-current="page" @endif
-            class="shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-sm {{ $isActive ? 'border-bq-primary font-semibold text-bq-primary' : 'border-transparent font-medium text-bq-text-muted hover:border-bq-border-strong hover:text-bq-ink' }}"
+            class="-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 pt-2 pb-2.5 text-bq-body {{ $isActive ? 'border-bq-primary font-semibold text-bq-primary' : 'border-transparent font-medium text-bq-text-muted hover:text-bq-ink' }}"
         >
             {{ $tabLabel }}
             @isset($counts[$key])
-                <span @class(['ml-1 rounded-full px-1.5 py-0.5 text-xs tabular-nums', 'bg-bq-accent text-bq-ink' => $key === 'action' && $counts[$key] > 0, 'bg-bq-surface-2 text-bq-text-muted' => $key !== 'action' || $counts[$key] === 0])>{{ $counts[$key] }}</span>
+                {{-- BQ-162 (prototype .tabs): plain muted counts; marigold only for what needs the owner. --}}
+                @if ($key === 'action' && $counts[$key] > 0)
+                    <span class="bq-count">{{ $counts[$key] }}</span>
+                @else
+                    <span class="text-bq-small font-medium tabular-nums text-bq-text-muted">{{ $counts[$key] }}</span>
+                @endif
             @endisset
         </a>
     @endforeach

@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#382186">
 
-    <title>@yield('title', 'Beranda') â€” BookQu</title>
+    <title>@yield('title', 'Beranda') — BookQu</title>
 
     <link rel="icon" type="image/png" href="{{ asset('logo_icon.png') }}">
 

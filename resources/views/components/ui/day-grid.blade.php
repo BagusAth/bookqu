@@ -4,13 +4,13 @@
     <div class="bq-day-grid" style="--bq-calendar-columns: {{ count($columns) }}; --bq-calendar-minutes: {{ $minutes }}">
         <span aria-hidden="true" class="border-b border-bq-border"></span>
         @foreach ($columns as $column)
-            <div class="min-w-0 border-b border-l border-bq-border px-3 py-2">
-                <p class="truncate text-bq-label" title="{{ $column['name'] }}">{{ $column['name'] }}</p>
+            <div class="flex min-w-0 items-center border-b border-l border-bq-border px-2 py-2">
+                <p class="line-clamp-2 text-bq-body leading-[18px] font-semibold text-bq-ink" title="{{ $column['name'] }}">{{ $column['name'] }}</p>
             </div>
         @endforeach
         <div class="bq-day-grid-track relative" aria-hidden="true">
             @foreach ($hours as $hour)
-                <span class="absolute inset-x-0 px-2 text-center font-bq-display text-bq-clock font-semibold text-bq-text-muted" style="top: calc({{ $hour['offset'] }} * var(--bq-calendar-minute))">{{ $hour['label'] }}</span>
+                <span class="absolute inset-x-0 mt-0.5 px-2 text-center font-bq-display text-sm font-semibold text-bq-text-muted" style="top: calc({{ $hour['offset'] }} * var(--bq-calendar-minute))">{{ \Illuminate\Support\Str::before(str_replace(':', '.', $hour['label']), '.') }}</span>
             @endforeach
         </div>
         @foreach ($columns as $column)

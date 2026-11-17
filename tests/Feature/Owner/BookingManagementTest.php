@@ -52,6 +52,15 @@ class BookingManagementTest extends TestCase
         ]);
     }
 
+    public function test_the_booking_list_opens_on_perlu_tindakan_unless_searching(): void
+    {
+        $this->actingAs($this->user)->get('/owner/bookings')->assertOk()->assertSee('aria-current="page"', false)
+            ->assertViewHas('tab', 'action');
+        $this->get('/owner/bookings?katakunci=abc')->assertOk()->assertViewHas('tab', 'all');
+        $this->get('/owner/bookings?range=today&tab=all')->assertOk()
+            ->assertViewHas('filters', fn (array $filters): bool => $filters['from'] === now('Asia/Jakarta')->toDateString() && $filters['to'] === $filters['from']);
+    }
+
     public function test_owner_can_view_bookings_list(): void
     {
         Booking::factory()->create([
@@ -62,7 +71,7 @@ class BookingManagementTest extends TestCase
             'status' => 'paid',
         ]);
 
-        $response = $this->actingAs($this->user)->get('/owner/bookings');
+        $response = $this->actingAs($this->user)->get('/owner/bookings?tab=all');
         $response->assertStatus(200);
         $response->assertSee('Alice Customer');
     }
@@ -135,7 +144,7 @@ class BookingManagementTest extends TestCase
         ]));
         $booking = $bookings->first();
         $url = "/owner/bookings/{$booking->id}/status";
-        $this->actingAs($this->user)->get('/owner/bookings')->assertOk()
+        $this->actingAs($this->user)->get('/owner/bookings?tab=all')->assertOk()
             ->assertSee('Menunggu pembayaran online')->assertSee('08:01 WIB')
             ->assertDontSee('id="cancel-booking-'.$booking->id.'"', false);
         foreach (['paid', 'completed', 'cancelled'] as $status) {

@@ -260,9 +260,9 @@
     }
 
     .bq-day-grid {
-        --bq-calendar-minute: 1.2px;
+        --bq-calendar-minute: 0.8px;
         display: grid;
-        grid-template-columns: 48px repeat(var(--bq-calendar-columns), minmax(152px, 1fr));
+        grid-template-columns: 48px repeat(var(--bq-calendar-columns), minmax(120px, 1fr));
         min-width: max-content;
     }
     .bq-day-grid-track {
@@ -279,6 +279,47 @@
     }
     .bq-day-grid-slot:focus-within {
         z-index: 11;
+    }
+    /* Day-grid blocks (prototype .kh-blok) */
+    .bq-block {
+        @apply grid h-full w-full min-w-0 content-start overflow-hidden rounded-bq-control border border-bq-border border-l-[3px] border-l-bq-primary bg-bq-surface px-2 py-1 text-left text-bq-small;
+    }
+    .bq-block b {
+        @apply truncate text-bq-body font-semibold text-bq-ink;
+    }
+    .bq-block > span {
+        @apply truncate text-bq-text-muted;
+    }
+    .bq-block-top {
+        @apply flex min-w-0 items-baseline gap-1.5;
+    }
+    .bq-block-top time {
+        @apply shrink-0 font-bq-display text-sm font-semibold tabular-nums text-bq-ink;
+    }
+    button.bq-block:hover {
+        box-shadow: 0 0 0 1px var(--color-bq-primary);
+    }
+    .bq-block-now {
+        @apply border-bq-primary-border bg-bq-primary-light;
+    }
+    .bq-block-pending {
+        @apply border-bq-warning-border border-l-bq-accent bg-bq-accent-bg;
+    }
+    .bq-block-past {
+        @apply border-l-bq-border-strong bg-bq-background;
+    }
+    .bq-block-past b, .bq-block-past time {
+        @apply text-bq-text-muted;
+    }
+    .bq-block-free {
+        @apply border border-dashed border-bq-border-strong bg-transparent;
+    }
+    .bq-block-free b, .bq-block-free > span {
+        @apply text-bq-primary;
+    }
+    .bq-block-closed {
+        @apply border-0;
+        background: repeating-linear-gradient(135deg, var(--color-bq-surface-2) 0 6px, var(--color-bq-background) 6px 12px);
     }
 
     .bq-table {
@@ -428,6 +469,9 @@
     }
     .bq-filter .bq-input {
         @apply min-h-9 w-auto py-1 text-bq-body;
+    }
+    .bq-filter .bq-search > input {
+        @apply w-full;
     }
     .bq-search {
         @apply relative block w-full max-w-80;

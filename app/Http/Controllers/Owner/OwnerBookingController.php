@@ -87,6 +87,7 @@ class OwnerBookingController extends Controller
             return [$booking->id => [
                 'time' => $timeRanges[$booking->id]->label(),
                 'participants' => $booking->peserta,
+                'capacity' => $service instanceof Service ? max(1, (int) $service->kapasitas) : 1,
                 'units' => $showUnits && $service instanceof Service ? $service->units->pluck('name')->implode(', ') : null,
                 'reasons' => $tab === 'action' ? $list->reasons($booking) : [],
                 'task' => $tab !== 'action' ? null : match (true) {
@@ -156,7 +157,7 @@ class OwnerBookingController extends Controller
     /** @return array<string, mixed> */
     private function listFilters(Request $request): array
     {
-        return Validator::make($request->query(), [
+        $filters = Validator::make($request->query(), [
             'katakunci' => ['nullable', 'string', 'max:150'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d'],
@@ -165,13 +166,31 @@ class OwnerBookingController extends Controller
             'sort' => ['nullable', 'in:asc,desc'],
             'tab' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
+            'range' => ['nullable', 'in:today,next7,month'],
         ])->validate();
+
+        // Date presets of the prototype filter row (BQ-162) become the existing from/to filter.
+        $today = Carbon::today('Asia/Jakarta');
+        [$from, $to] = match ($filters['range'] ?? null) {
+            'today' => [$today, $today],
+            'next7' => [$today, $today->copy()->addDays(6)],
+            'month' => [$today->copy()->startOfMonth(), $today->copy()->endOfMonth()],
+            default => [null, null],
+        };
+        if ($from !== null) {
+            $filters['from'] = $from->toDateString();
+            $filters['to'] = $to->toDateString();
+        }
+
+        return $filters;
     }
 
     /** @param array<string, mixed> $filters */
     private function selectedTab(array $filters): string
     {
-        $tab = $filters['tab'] ?? $filters['status'] ?? 'all';
+        // Perlu tindakan opens first (BQ-162, prototype); a search or a filter without a tab looks in Semua.
+        $searching = collect(['katakunci', 'from', 'to', 'service', 'source'])->contains(fn (string $key): bool => filled($filters[$key] ?? null));
+        $tab = $filters['tab'] ?? $filters['status'] ?? ($searching ? 'all' : 'action');
 
         return isset($this->taskTabs()[$tab]) || in_array($tab, ['paid', 'today'], true) ? $tab : 'all';
     }

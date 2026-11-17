@@ -20,6 +20,7 @@ use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Models\Unit;
+use App\Support\Rupiah;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
@@ -41,8 +42,8 @@ final class GetOwnerCalendarData
 
         [$start, $end, $previous, $next, $dateLabel] = match ($view) {
             'month' => [$date->startOfMonth(), $date->endOfMonth(), $date->startOfMonth()->subMonth(), $date->startOfMonth()->addMonth(), $date->translatedFormat('F Y')],
-            'week' => [$date->startOfWeek(), $date->endOfWeek(), $date->startOfWeek()->subWeek(), $date->startOfWeek()->addWeek(), $date->startOfWeek()->translatedFormat('d M').' â€“ '.$date->endOfWeek()->translatedFormat('d M Y')],
-            default => [$date, $date, $date->subDay(), $date->addDay(), $date->translatedFormat('l, d F Y')],
+            'week' => [$date->startOfWeek(), $date->endOfWeek(), $date->startOfWeek()->subWeek(), $date->startOfWeek()->addWeek(), ($date->startOfWeek()->month === $date->endOfWeek()->month ? $date->startOfWeek()->format('j') : $date->startOfWeek()->translatedFormat('j M')).'–'.$date->endOfWeek()->translatedFormat('j M Y')],
+            default => [$date, $date, $date->subDay(), $date->addDay(), $date->translatedFormat('l, j M Y')],
         };
         $bounds = [$start->toDateString(), $end->toDateString()];
         $queryBounds = [$bounds[0], $end->endOfDay()->toDateTimeString()];
@@ -142,13 +143,13 @@ final class GetOwnerCalendarData
                     $available => 'Tersedia',
                     default => 'Tidak tersedia',
                 },
-                'price' => isset($prices[$slot->id]) ? 'Rp '.number_format($prices[$slot->id], 0, ',', '.') : null,
+                'price' => isset($prices[$slot->id]) ? Rupiah::format($prices[$slot->id]) : null,
                 'capacity' => $capacity > 1 ? $seats.'/'.$capacity : null,
                 'seatsLeft' => max(0, $capacity - $seats),
                 'bookings' => $slotBookings->map(fn (Booking $booking): array => $this->bookingCard($booking))->values()->all(),
                 'walkIn' => $available && $canWalkIn,
                 'addOns' => $addOns[$slot->idlayanan] ?? [],
-                'walkInLabel' => $serviceName.' Â· '.$range->label().' Â· '.$key,
+                'walkInLabel' => $serviceName.' · '.$range->label().' · '.$key,
                 'edit' => $canEdit && $seats === 0 && ! $past && ! $closedDates->has($key),
                 'closed' => $closed,
                 'override' => $slot->harga_override,

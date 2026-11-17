@@ -52,38 +52,37 @@
     },
 
 }">
-    <x-owner.page-header title="Kalender" purpose="Kapan ramai, kapan kosong, dan siapa yang datang.">
-        @if ($scheduleUrl)
-            <x-slot:action><a href="{{ $scheduleUrl }}" class="bq-btn bq-btn-secondary"><x-owner.icon name="clock" class="h-4 w-4" />Atur jam buka</a></x-slot:action>
-        @endif
-    </x-owner.page-header>
-    <x-owner.tabs :tabs="$views" :active="$view" param="view" label="Tampilan kalender" />
+    <x-owner.page-header title="Kalender" purpose="Kapan ramai, kapan kosong, dan siapa yang datang." />
 
-    <nav class="flex flex-wrap items-center justify-between gap-3" aria-label="Navigasi tanggal">
-        <div class="flex items-center gap-1 bq-panel p-1">
-            <a class="bq-btn bq-btn-ghost bq-btn-icon bq-btn-sm" href="{{ route('owner.calendar', ['view' => $view, 'date' => $previous->toDateString()] + $filters) }}" aria-label="Sebelumnya" title="Sebelumnya"><x-owner.icon name="chevron-left" class="h-5 w-5" /><span class="sr-only">Sebelumnya</span></a>
-            <a class="bq-btn bq-btn-ghost bq-btn-sm" href="{{ route('owner.calendar', ['view' => $view, 'date' => $today] + $filters) }}">Hari ini</a>
-            <a class="bq-btn bq-btn-ghost bq-btn-icon bq-btn-sm" href="{{ route('owner.calendar', ['view' => $view, 'date' => $next->toDateString()] + $filters) }}" aria-label="Berikutnya" title="Berikutnya"><x-owner.icon name="chevron-right" class="h-5 w-5" /><span class="sr-only">Berikutnya</span></a>
-        </div>
-        <p class="text-lg font-bold text-bq-ink"><span class="sr-only">{{ $view === 'day' ? 'Jadwal Harian Â· ' : '' }}</span>{{ $dateLabel }}</p>
-    </nav>
-
-    @if ($view === 'day' && $canViewUnits)
-        @php $dayParameters = ['view' => 'day', 'date' => $date->toDateString()] + array_diff_key($filters, ['kolom' => true]); @endphp
-        <div class="hidden md:block">
-        <x-ui.segmented label="Kolom kalender" :selected="$unitMode ? 'unit' : 'service'" :options="[
-            'service' => ['label' => 'Per layanan', 'href' => route('owner.calendar', $dayParameters)],
-            'unit' => ['label' => 'Per unit', 'href' => route('owner.calendar', $dayParameters + ['kolom' => 'unit'])],
-        ]" />
-        </div>
-    @endif
-
-    @include('owner.partials.calendar.controls')
-    <ul class="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-bq-text-muted" aria-label="Keterangan status slot">
-        @foreach ($legendDots as $label => $dot)
-            <li class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full {{ $dot }}" aria-hidden="true"></span>{{ $label }}</li>
-        @endforeach
-    </ul>
+    {{-- BQ-162: one toolbar as in the prototype (#/kalender): view, date, columns, opening hours, filter. --}}
+    @php
+        $activeCalendarFilters = count(array_diff_key($filters, ['kolom' => true]));
+        $viewOptions = collect($views)->mapWithKeys(fn ($label, $key) => [$key => ['label' => $label, 'href' => route('owner.calendar', ['view' => $key, 'date' => $date->toDateString()] + $filters)]])->all();
+    @endphp
+    <h2 class="sr-only">{{ $view === 'day' ? 'Jadwal Harian · ' : '' }}{{ $dateLabel }}</h2>
+    <div class="bq-toolbar" role="toolbar" aria-label="Tampilan kalender">
+        <x-ui.segmented label="Tampilan" :selected="$view" :options="$viewOptions" />
+        <x-ui.date-nav :label="$dateLabel"
+            :previous="route('owner.calendar', ['view' => $view, 'date' => $previous->toDateString()] + $filters)"
+            :today="route('owner.calendar', ['view' => $view, 'date' => $today] + $filters)"
+            :next="route('owner.calendar', ['view' => $view, 'date' => $next->toDateString()] + $filters)" />
+        <span class="ml-auto flex flex-wrap items-center gap-2">
+            @if ($view === 'day' && $canViewUnits)
+                @php $dayParameters = ['view' => 'day', 'date' => $date->toDateString()] + array_diff_key($filters, ['kolom' => true]); @endphp
+                <x-ui.segmented class="max-md:hidden" label="Kolom kalender" :selected="$unitMode ? 'unit' : 'service'" :options="[
+                    'service' => ['label' => 'Per layanan', 'href' => route('owner.calendar', $dayParameters)],
+                    'unit' => ['label' => 'Per unit', 'href' => route('owner.calendar', $dayParameters + ['kolom' => 'unit'])],
+                ]" />
+            @endif
+            @if ($scheduleUrl)
+                <a href="{{ $scheduleUrl }}" class="bq-btn bq-btn-ghost bq-btn-sm max-md:hidden"><x-owner.icon name="clock" class="h-4 w-4" />Atur jam buka</a>
+            @endif
+            <x-ui.button size="sm" icon="filter" x-on:click="$dispatch('open-dialog', { id: 'calendar-filter', trigger: $el })">Filter{{ $activeCalendarFilters ? ' ('.$activeCalendarFilters.')' : '' }}</x-ui.button>
+        </span>
+    </div>
+    <x-owner.drawer id="calendar-filter" title="Filter kalender">
+        @include('owner.partials.calendar.controls')
+    </x-owner.drawer>
     <p x-cloak x-show="feedback" x-text="feedback" role="status" class="text-sm"></p>
 
     <div x-ref="results" data-calendar-results>
@@ -92,7 +91,13 @@
             <p data-calendar-error class="text-sm text-bq-danger" role="alert">{{ $errors->first() }}</p>
         @endif
         @if (! $hasEntries)
-            <x-owner.empty-state title="Belum ada slot di periode ini" :action-label="$scheduleUrl ? 'Jam Buka & Harga' : null" :action-href="$scheduleUrl" />
+            <section class="bq-panel">
+                <x-ui.empty title="Belum ada slot di periode ini" description="Atur jam buka, lalu slot terbuka otomatis." icon="calendar">
+                    @if ($scheduleUrl)
+                        <x-slot:action><x-ui.button variant="primary" :href="$scheduleUrl">Atur jam buka</x-ui.button></x-slot:action>
+                    @endif
+                </x-ui.empty>
+            </section>
         @elseif ($view === 'day')
             @include('owner.partials.calendar.day-view', ['day' => reset($days)])
         @else
