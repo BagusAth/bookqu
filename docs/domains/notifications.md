@@ -24,6 +24,7 @@ Owns owner in-app notifications, dashboard polling, and e-mails to customers and
 | `OwnerPayoutStatusChangedNotification` | database + mail (on success/failed/rejected) | `ProcessOwnerPayout` (admin payout review, BQ-015, BQ-125) |
 | `NewPayoutRequestNotification` | database | `RequestOwnerPayout` (BQ-125) |
 | `PayoutAccountChangedNotification` | mail | `SaveTenantPayoutAccount`, `DeleteTenantPayoutAccount` (BQ-123) |
+| `WeeklySummaryNotification` | queued mail | `SendWeeklySummary` from `owners:weekly-summary`, Mondays 07:00, to the business owner account only, unless its `weekly_summary` preference is off (FR-NOTIFICATION-008, BQ-162). Figures for last Monday–Sunday come from `GetReport`, `GetSlotRunway`, `CompleteBookings::endedIds` and open refund requests |
 
 Sends happen after the main transaction and dispatch failures are wrapped in `try/catch`, so mail failure does not undo the booking or payment. The owner/trial mail notifications and `OwnerPayoutStatusChangedNotification` implement `ShouldQueue` with `afterCommit()` (database channels on those notifications are queued too); database-only notifications like `NewPayoutRequestNotification` stay synchronous. `BookingCancelledMail` is queued after commit.
 
@@ -51,5 +52,7 @@ Implemented decision: [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosti
 BQ-144: users store their own email preferences by event. Mail dispatch checks the preference after role filtering. In-app delivery still follows role eligibility and is independent of email preferences.
 
 BQ-135: opening a booking notification marks it read and opens the shared booking panel from the Booking page. The target is resolved within the active tenant. Evidence: Owner/PaketNotifikasiBantuanTest.
+
+BQ-162: `Owner/WeeklySummaryTest` covers the summary period, the switched-off preference and that only the owner account sees the preference.
 
 BQ-162: the full notification list groups the current page by calendar day in WIB, with today's and yesterday's labels and the time on each item.

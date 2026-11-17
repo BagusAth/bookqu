@@ -66,6 +66,7 @@ These rules decide where anything new goes. Breaking one needs a Tech Lead decis
 | Lainnya | Paket & Tagihan | `/owner/subscription` | trial days left |
 | Lainnya | Bantuan | `/owner/help` (new) | — |
 
+- From 768 px the sidebar is a 72 px icon rail with tooltips; from 1200 px it shows groups and labels at 232 px (BQ-162). Below 768 px the bottom navigation replaces it (§4.3).
 - A menu the viewer's role may not open is not shown (§5).
 - A menu above the plan is shown with a lock and opens the upgrade prompt, except Unit, which is hidden below Pro.
 - Tabs keep their state in the URL (`?tab=…`), so links and reloads land on the same tab.
@@ -76,13 +77,13 @@ These rules decide where anything new goes. Breaking one needs a Tech Lead decis
 | Element | Behaviour | Roles |
 |---|---|---|
 | Bell (Notifikasi) | Unread count; dropdown with the latest items; "Lihat semua" opens `/owner/notifications` (§8.16) | all |
-| **+ Booking** (button label "Walk-in", BQ-161) | Opens the walk-in form (§9) from any page | all; hidden when the subscription has ended (§12) |
+| **Catat booking** (BQ-162; was "Walk-in") | Opens the walk-in form (§9) from any page | all; hidden when the subscription has ended (§12) |
 | Search | Booking code, customer name or phone number; results open the booking or customer panel | all |
 | Account menu | Name and role of the signed-in user, link to Pengaturan → Akun, sign out | all |
 
 ### 4.3 Bottom navigation (phone)
 
-Below 768 px the sidebar is replaced by a bottom bar with **Beranda, Kalender, + Walk-in, Booking, Lainnya** (the centre button is the + Booking action, labelled "Walk-in" so "Booking" appears once, BQ-161). "Lainnya" opens a sheet with the remaining menus the role may open, in sidebar order.
+Below 768 px the sidebar is replaced by a bottom bar with **Beranda, Kalender, Catat, Booking, Lainnya** (the centre button opens Catat booking; its short label keeps "Booking" to one item, BQ-162). "Lainnya" opens a sheet with the remaining menus the role may open, in sidebar order.
 
 ## 5. Roles and access
 
@@ -290,18 +291,21 @@ Home of the rule: `product.md` §7 (D-017). Entitlement is decided only by `Enti
   - open the booking panel;
   - + Booking;
   - **Ekspor CSV** of the filtered list (Medium and up). The export is formula-safe (BQ-111).
+  - **Tandai selesai** in bulk on Perlu tindakan: tick rows or "Tandai selesai semua (n)" for every ended paid booking (FR-BOOKING-024). Rows with an open refund or a pending cancellation request are skipped and counted in the result message. No email per booking.
+- **Automatic completion (FR-BOOKING-025):** when Pengaturan → Kebijakan Booking → "Tandai selesai otomatis" is on (default), an hourly job marks paid bookings completed 6 hours after the session ended, with the same skips.
 - **Not here:** charts and totals over time (Laporan), customer notes (Pelanggan), slot editing.
 - **Empty states:**
   - no bookings yet: explains that bookings arrive from the booking page, and shows the link;
   - an empty tab: a short sentence per tab.
 - **Source:** inventory §2.3 (list, filters `katakunci` and `status`, summary).
-- **Requirements:** FR-BOOKING-008 to FR-BOOKING-016, FR-MULTIBOOK-005, FR-MULTIBOOK-006, FR-REFUND.
+- **Requirements:** FR-BOOKING-008 to FR-BOOKING-016, FR-BOOKING-024, FR-BOOKING-025, FR-MULTIBOOK-005, FR-MULTIBOOK-006, FR-REFUND.
 - **Acceptance criteria:**
   - **AC-BKG-01:** Each tab's count equals the number of rows it shows.
   - **AC-BKG-02:** The amount shown equals the paid amount on the payment record, even after the service or slot price changes.
   - **AC-BKG-03:** Search finds a booking by code, name, phone or email.
   - **AC-BKG-04:** Below Medium, the export is refused on the server, not only hidden.
   - **AC-BKG-05:** An exported cell that starts with `=`, `+`, `-` or `@` is neutralised.
+  - **AC-BKG-06:** Bulk and automatic completion change only paid, ended bookings without an open refund or cancellation request, each through `BookingState::canTransition`.
 
 ### 8.4 Booking panel (shared)
 
@@ -392,6 +396,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
     | Description | Up to 1000 characters |
     | Image | Picked from the gallery or uploaded into it |
     | Popular | Shown as a badge on the booking page |
+    | Buka slot otomatis (FR-SCHEDULE-015, default off) | Each night opens slots from the opening hours up to 30 days ahead (capped by the days-ahead limits), one slot per service duration; break times, closed dates and existing slots stay untouched |
     | Active | — |
 
   - **Price and duration warning:** changing them applies only to new bookings.
@@ -410,7 +415,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - §2.6 categories, including YATIM-4 (colour).
   - §2.7 add-ons, including `is_unlimited`.
   - `staff_ids[]` is removed; `resource_ids[]` becomes Units.
-- **Requirements:** FR-SERVICE-001 to FR-SERVICE-007, FR-CATEGORY-001 to FR-CATEGORY-005, FR-ADDON-001 to FR-ADDON-005, FR-SUB-010, FR-UNIT.
+- **Requirements:** FR-SERVICE-001 to FR-SERVICE-007, FR-SCHEDULE-015, FR-CATEGORY-001 to FR-CATEGORY-005, FR-ADDON-001 to FR-ADDON-005, FR-SUB-010, FR-UNIT.
 - **Acceptance criteria:**
   - **AC-LYN-01:** Creating a service above the plan limit is refused on the server, and the upgrade prompt shows.
   - **AC-LYN-02:** A service with bookings cannot be deleted, only deactivated.
@@ -534,16 +539,18 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - quota;
   - start and end date;
   - services it applies to;
+  - days and hours (optional, D-026): the promo applies only when every slot of the booking starts on one of the days and inside the hours;
   - active.
 - **Rule:** the discount is applied before payment, and the payment amount includes it.
 - **Not here:** promo usage by customer (Laporan → Pelanggan).
 - **Source:** inventory §2.10; customer side in inventory §6 (`validate-voucher`, `voucher_code`).
-- **Requirements:** FR-VOUCHER-001 to FR-VOUCHER-005.
+- **Requirements:** FR-VOUCHER-001 to FR-VOUCHER-006.
 - **Acceptance criteria:**
   - **AC-PRM-01:** A valid code at checkout reduces the payment amount by exactly the computed discount, capped by the maximum discount.
   - **AC-PRM-02:** The quota cannot be exceeded, even when two customers pay at the same time.
   - **AC-PRM-03:** An expired or scheduled promo is refused at checkout.
   - **AC-PRM-04:** The page and its routes are refused below Medium.
+  - **AC-PRM-05:** A code limited to days and hours is refused at checkout when any slot starts outside them.
 
 ### 8.11 Ulasan
 
@@ -615,9 +622,10 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 - **Tab Okupansi:**
   - occupancy rate, total, booked and free slots;
   - heat map of busy and quiet hours and days;
+  - the quietest day and hour, with a link to create a promo for them (D-026);
   - utilisation per unit (Pro).
 - **Tab Layanan:** ranking by bookings and revenue.
-- **Tab Pelanggan:** new versus returning customers; promo usage (Medium and up).
+- **Tab Pelanggan:** new versus returning customers; promo usage (Medium and up); **Belum jadi membayar** (C-11): bookings in the period whose payment the system closed as `gagal`, without an owner cancellation or a later paid booking by the same customer, newest first, each with a WhatsApp link.
 - **Actions:** CSV export per tab. Formula-safe, refused below Medium, and computed without double counting (BQ-111).
 - **Not here:** today's operations (Beranda), individual bookings (Booking).
 - **Source:** inventory §2.12 (analytics, export), §2.13 (schedule report, export), and the charts removed from the dashboard (§2.1).
@@ -635,8 +643,8 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 | Tab | Question | Contents | Access, plan |
 |---|---|---|---|
 | **Profil Bisnis** | "How is my business described?" | Name, booking link (slug) with a warning that the old link, QR code and poster stop working when it changes (BQ-110), business type, address, map link, WhatsApp, email, time zone (WIB only for now), description | Pemilik, Manajer; all |
-| **Kebijakan Booking** | "What may customers do themselves?" | Refund on or off (D-001); cancellation and refund-request deadline in hours (`cancel_before_hours`, default 24); reschedule deadline in hours (`reschedule_before_hours`); minimum hours before a session for a new booking, maximum days ahead, buffer between bookings; a preview of the policy text customers see before paying | Pemilik, Manajer; all |
-| **Notifikasi** | "What am I told, and how?" | Per event (new booking, payment success, cancellation, reschedule, refund request, new review, payout status, plan status): in-app (always on) and email (on/off), plus the email address. Stored on the server. WhatsApp is not offered (D-021) | every user for their own preferences; all |
+| **Kebijakan Booking** | "What may customers do themselves?" | Refund on or off (D-001); cancellation and refund-request deadline in hours (`cancel_before_hours`, default 24); reschedule deadline in hours (`reschedule_before_hours`); minimum hours before a session for a new booking, maximum days ahead, buffer between bookings; "Tandai selesai otomatis" for ended sessions (FR-BOOKING-025, default on); a preview of the policy text customers see before paying | Pemilik, Manajer; all |
+| **Notifikasi** | "What am I told, and how?" | Per event (new booking, payment success, cancellation, reschedule, refund request, new review, payout status, plan status; for the business owner account also the Monday weekly summary, FR-NOTIFICATION-008): in-app (always on) and email (on/off), plus the email address. Stored on the server. WhatsApp is not offered (D-021) | every user for their own preferences; all |
 | **Integrasi** | "Which of my tools are connected?" | Google Calendar (bookings into the owner's calendar), Google Analytics and Meta Pixel (booking page), each with connect, test, disconnect; API keys and webhooks (Pro); payments and email shown as "Dikelola BookQu" | Pemilik, Manajer; API Pro |
 | **Akun** | "How do I sign in?" | Name, email, phone, new password with confirmation; the current password is required for any change (BQ-098). Pemilik also sees "Hapus akun bisnis", which requires the account email and the current password and is refused while the balance is not zero or a payout is in progress (BQ-122) | every user for their own account; delete: Pemilik |
 | **Tim** | "Who else may sign in?" | Members with role, status and last sign-in; invite by email with a role; change role; revoke access; seat usage against the plan; activity log of all members (§5.3) | Pemilik; Medium and up |
@@ -647,9 +655,8 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - the notification preferences that were not saved become real;
   - §2.20: the integrations route;
   - §2.8: the staff routes are replaced by Tim.
-- **Requirements:** FR-TENANT-004, FR-TENANT-005, FR-TENANT-008, FR-BOOKING-012, FR-BOOKING-013, FR-BOOKING-022, FR-NOTIFICATION-001 to FR-NOTIFICATION-007, FR-AUTH-006, FR-INTEGRATION, FR-API, FR-TEAM, FR-REFUND.
 - **Pro webhook actions (D-024):** send a signed test event to a saved endpoint and redeliver a terminal delivery to its original endpoint when the event data is available. The event ID stays the same on redelivery. Booking and refund replay data is retained for up to seven days.
-- **Requirements:** FR-TENANT-004, FR-TENANT-005, FR-TENANT-008, FR-BOOKING-012, FR-BOOKING-013, FR-BOOKING-022, FR-NOTIFICATION-001 to FR-NOTIFICATION-007, FR-AUTH-006, FR-INTEGRATION, FR-API, FR-TEAM, FR-REFUND.
+- **Requirements:** FR-TENANT-004, FR-TENANT-005, FR-TENANT-008, FR-BOOKING-012, FR-BOOKING-013, FR-BOOKING-022, FR-BOOKING-025, FR-NOTIFICATION-001 to FR-NOTIFICATION-008, FR-AUTH-006, FR-INTEGRATION, FR-API, FR-TEAM, FR-REFUND.
 - **Acceptance criteria:**
   - **AC-SET-01:** The cancellation and reschedule deadlines saved here are the ones `BookingRules` and the customer access page enforce.
   - **AC-SET-02:** Notification preferences survive a reload and another device.
@@ -731,11 +738,13 @@ Built once (epic E1) and used by every page above.
 
 Dialog forms submit a hidden `_form` key, including the record ID for an edit. After a validation redirect, the matching form restores its previous input and shows field errors inline. The shared dialog accepts `reopen-for` for a fixed form key, and `x-owner.field-error` can scope a message to a form. The toast summarizes the error.
 
-**Visual system (BQ-161).** Every owner page uses one token set and one component set, so pages look and behave alike:
+**Visual system (BQ-161, rebuilt to the Papan Jadwal reference in BQ-162).** Every owner page uses one token set and one component set, so pages look and behave alike. The reference prototype is `docs/design/papan-jadwal/prototype/`; its decisions are in `docs/design/papan-jadwal/KEPUTUSAN.md`:
 
-- Tokens in `resources/css/app.css`: brand aubergine `bq-primary` for primary actions, active states and links; marigold `bq-accent` only for "now" and "needs you"; Paper background with white panels; the existing AA status pairs. Typeface Plus Jakarta Sans (`font-owner`). Radius 8 px controls, 12 px panels, 16 px overlays; only overlays cast a shadow (`shadow-bq`).
-- Components in `resources/views/components/ui`: `x-ui.button` (`primary`, `secondary`, `ghost`, `danger`, `danger-solid`, `accent`), `x-ui.field`, `x-ui.input`, `x-ui.select`, `x-ui.textarea`, `x-ui.panel`, `x-ui.stat`, `x-ui.badge`, `x-ui.list-row`, `x-ui.filter-bar` (filters behind "Filter (n)" on phones), `x-ui.avatar`, `x-ui.skeleton`. Markup that cannot use a component uses the same classes (`bq-btn`, `bq-input`, `bq-panel`, `bq-badge`, `bq-link`, `bq-num`).
-- Beranda's schedule and Kalender's day view share the day rail with the marigold "now" line.
+- Tokens in `resources/css/app.css`: brand aubergine `bq-primary` for primary actions, active states and links; marigold `bq-accent` only for "now" and "needs you"; Paper background with white panels; the existing AA status pairs. Typeface Plus Jakarta Sans (`font-owner`); Barlow Semi Condensed for clock times and headline figures, tabular figures for amounts (`bq-num`). Radius 6 px controls, 10 px panels, 16 px overlays; only overlays cast a shadow (`shadow-bq`). Shell widths `bq-rail` 72 px and `bq-sidebar` 232 px (§4.1).
+- Components in `resources/views/components/ui`, listed with their use in `resources/views/components/owner/README.md`: buttons, form fields, switch, checkbox, radio card, segmented control, form section, panel, stat, badge, status dot, list row, filter bar (filters behind "Filter (n)" on phones), table with rows and cells (selectable, grouped, phone layout), table note, key-value list, banner, error block, menu, sheet, mini bar, duration, empty state, avatar, skeleton. Markup that cannot use a component uses the same classes (`bq-btn`, `bq-input`, `bq-panel`, `bq-badge`, `bq-table`, `bq-link`, `bq-num`).
+- Lists are tables of rows inside one panel, not cards per row; on a phone the row keeps a main line, a subtitle and an end value. One primary action per view.
+- Beranda's schedule and Kalender's day view share the day rail (`x-ui.day-rail`) and day grid (`x-ui.day-grid`) with the marigold "now" line.
+- Every error state offers a way to recover (retry, or keep the input), and every truncated text carries its full `title`.
 
 ## 10. From the current portal to the new one
 

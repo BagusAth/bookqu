@@ -10,7 +10,7 @@ The central domain: creating, changing and ending reservations, including multi-
 | Combined schedule page / AJAX / selection | GET `booking/schedule`, GET `booking/schedule/slots`, POST `booking/select-schedule` in both slug and custom-domain no-store groups; AJAX is throttled to 60/minute |
 | Legacy navigation | GET `booking/date` and `booking/time` redirect to schedule and preserve flash feedback; legacy POST `select-date`/`select-time` remain supported |
 | Create booking | `process-checkout` → `Actions/Booking/CreateBooking` |
-| Owner list / status / walk-in / reschedule | `owner.bookings`, `owner.bookings.status`, `owner.bookings.walkin`, `owner.bookings.reschedule` → `Owner/OwnerBookingController` |
+| Owner list / status / walk-in / reschedule / bulk completion | `owner.bookings`, `owner.bookings.status`, `owner.bookings.walkin`, `owner.bookings.reschedule`, `owner.bookings.complete-many` (ability `bookings.complete`, every role) → `Owner/OwnerBookingController` |
 | Customer cancel / reschedule | `booking.manage.cancel`, `booking.manage.reschedule.*` → `Customer/BookingManageController` (see `customer-access.md`) |
 
 ## Operations
@@ -22,6 +22,7 @@ The central domain: creating, changing and ending reservations, including multi-
 | `CreateBooking` | One transaction: lock subscription/tenant row and check monthly quota (`EntitlementRules::canCreateBooking`), lock schedules, evict stale pending, validate tenant/service/date/status/past/occupancy, check contiguity, quote through `BookingPricing::quote` (ADR-0019 decision 1) inside the lock and store it as `payments.price_breakdown`, create one payment + N bookings (`pending`, or `paid` when free). After commit: initialize the gateway payment; on failure mark payment `gagal` and bookings `cancelled`; clear availability cache. |
 | `CreateWalkInBooking` | Owner booking: lock tenant and subscription, check the booking quota for the selected slot's month, then lock the slot, evict stale pending and check capacity and unit conflicts before recording a `paid` booking and a successful manual payment. An exhausted quota returns a field error (`quota`) for JSON and form requests before any booking or payment is written. |
 | `MarkBookingNoShow` | Under the tenant lock: a `paid` payment group whose session has ended (`BookingRules::sessionHasEnded`) becomes `no_show`; payment, balance and refunds stay untouched (ADR-0018). Every role may do it. |
+| `CompleteBookings` | Bulk and automatic completion (FR-BOOKING-024/025, BQ-162): only `paid` bookings whose session has ended (`BookingRules::sessionHasEnded`), without an open refund request or a pending cancellation request; each goes through `UpdateBookingStatus` without the per-booking owner mail and returns `{completed, skipped}`. The hourly `bookings:complete-ended` command runs it per tenant context for tenants with `auto_complete_bookings` (default on), 6 hours after the session ended (`AUTO_COMPLETE_AFTER_HOURS`); log actor `system`. |
 | `UpdateBookingStatus` | Owner status change through `BookingState::canTransition`; completion also requires `BookingRules::sessionHasStarted`, the same check used on Beranda and in the booking panel. `cancelled` delegates to `CancelBooking`, `no_show` to `MarkBookingNoShow`. |
 | `CancelBooking` | Actor `customer` or `owner`. Customers cannot cancel multi-slot bookings and must pass `BookingRules::canCancel` (paid, before `cancel_before_hours`). Owners cancel the whole payment group. Creates a `Refund` only for customer cancellation of a successful payment (one per payment). |
 | `RescheduleBooking` | Moves a single-slot booking to another available schedule; multi-slot is rejected. |
@@ -51,6 +52,8 @@ Unexpected checkout/reschedule failures return generic Indonesian messages to cu
 `tests/Unit/Domain/BookingRulesTest.php`, `BookingStateTest.php`, `tests/Feature/CoreFlowIntegrationTest.php`, `Customer/BookingFlowTest.php`, `Customer/ProductionLogicSpecificationTest.php`, `Owner/BookingManagementTest.php`. Concurrency is only exercised on SQLite, where `lockForUpdate` has no effect.
 
 `tests/Feature/Customer/SafeOperationErrorsTest.php` verifies generic checkout/session and reschedule/JSON errors, Exception/Error cleanup, preserved slot-refusal messages and redacted diagnostics with fake providers.
+
+BQ-162: `Owner/BookingCompletionTest` covers bulk completion with skipped refund and cancellation requests, the scheduler with the 6-hour cutoff and tenant switch, tenant isolation and the role mapping.
 
 BQ-084: `ThreeStepBookingFlowTest` covers the combined flow, AJAX validation/isolation, date refusals without session mutation, session-date authority, old GET redirects, unsafe characters and pinned Alpine. `BookingFlowHardeningTest` retains BQ-083 fingerprints, stale-CSRF feedback, pending banners and payment guards. Legacy date/time views and JS are removed after reference checks; routes keep their names for compatibility. Client JS lives in `public/js/booking-schedule.js`, rejects gaps inline and ignores stale/aborted AJAX responses.
 

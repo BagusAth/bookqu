@@ -55,7 +55,7 @@ Give each row a cell for every data column. In selectable tables, use the `selec
 
 Markup that cannot use a component (Alpine templates, class variables) uses the same classes. Raw Tailwind palette colours and hex values do not appear in owner views; amounts and times use `bq-num`.
 
-## Restraint rules (proposed by BQ-092/BQ-129; for the Tech Lead to adopt into `.ai/rules/frontend.md`)
+## Restraint rules (adopted into `.ai/rules/frontend.md` by BQ-162)
 
 - Colours only from the `bq-*` tokens in `resources/css/app.css`; no hard-coded hex in new owner views.
 - Use sentence case and at least 13 px for text. Badges, tab counts and phone navigation labels may use 12 px. Use tabular figures for times and amounts, and Barlow Semi Condensed for clock times and headline figures.

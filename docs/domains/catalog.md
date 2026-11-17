@@ -32,6 +32,10 @@ Owns what customers can book: services and their categories.
 
 BQ-114: changing a service's `durasi` affects only slots created afterwards; existing slots and bookings keep their stored range (`Domain/Booking/BookingTimeRange`, evidence `Customer/BookingTimeRangeAfterDurationChangeTest`).
 
+BQ-162: the service form adds "Buka slot otomatis" (`services.auto_open_slots`, default off; see `schedule.md`).
+
+Promo (`owner.promos`, `Owner/OwnerVoucherController`, `Models/Voucher`): FR-VOUCHER-006 (BQ-162) adds optional `valid_days` (ISO days, comma separated), `valid_from_time` and `valid_until_time`. `Voucher::coversSlot` checks one slot start; `BookingPricing::quote` refuses the code unless every slot of the booking is covered, so the payment amount never includes a discount outside those hours. Evidence `Owner/QuietHourPromoTest`.
+
 BQ-132: the Layanan page (`owner-portal.md` §8.6) replaces the programs and categories pages. Service form fields: name, category, base price and `satuan_harga`, duration and `satuan_durasi`, description, image, popular, active; unit links are sent back unchanged (edited on the Unit page, BQ-152). Evidence `Owner/LayananPageTest`.
 
 ## Status

@@ -13,7 +13,9 @@ Owns bookable time slots, blocked dates, slot pricing, and the definition of "av
 
 ## Operations
 
-`Actions/Schedule/BulkCreateSchedules` (`execute`, `preview`), `SaveOpeningHours`, `SavePriceRules`, `SimulateSlotPrices`, `ApplyBasePriceToOpenSlots`, `GetSlotRunway`, `PriceSlots`, `DeleteSchedule`, `UpdateScheduleAvailability`, `DeleteBlockedDate`, `GetAvailableSchedules` (`getDateAvailability`, `countAvailableSlotsOnDate`, `getTimeSlots`, `getSlotsForReschedule`, `getCustomerRescheduleSlots`).
+`Actions/Schedule/BulkCreateSchedules` (`execute`, `preview`), `OpenAutomaticSlots`, `SaveOpeningHours`, `SavePriceRules`, `SimulateSlotPrices`, `ApplyBasePriceToOpenSlots`, `GetSlotRunway`, `PriceSlots`, `DeleteSchedule`, `UpdateScheduleAvailability`, `DeleteBlockedDate`, `GetAvailableSchedules` (`getDateAvailability`, `countAvailableSlotsOnDate`, `getTimeSlots`, `getSlotsForReschedule`, `getCustomerRescheduleSlots`).
+
+Automatic slots (FR-SCHEDULE-015, BQ-162): the nightly `slots:open-automatic` command (01:00) runs `OpenAutomaticSlots` for every tenant with an effective plan (`EntitlementRules::hasEffectivePlan`), under that tenant's context. For each active service with `services.auto_open_slots` it calls `BulkCreateSchedules` per day and per opening-hour interval, with the service duration as interval, up to min(30, `slot_open_days_ahead`, the maximum days ahead). Closed dates are compared by day, existing slots are kept, and closed slots are not reopened.
 
 ## Rules (authoritative)
 
@@ -40,7 +42,7 @@ Owns bookable time slots, blocked dates, slot pricing, and the definition of "av
 
 ## Evidence
 
-`tests/Unit/Domain/AvailabilityRulesTest.php`, `ScheduleConflictRulesTest.php`, `SlotCompatibilityRulesTest.php`, `tests/Feature/Schedule/ScheduleActionTest.php`, `BulkScheduleLimitsAndDeleteOccupancyTest.php`, `BlockedDateActiveBookingConflictTest.php`, `Owner/ScheduleManagementTest.php`.
+`tests/Feature/Schedule/AutomaticSlotOpeningTest.php` (BQ-162), `tests/Unit/Domain/AvailabilityRulesTest.php`, `ScheduleConflictRulesTest.php`, `SlotCompatibilityRulesTest.php`, `tests/Feature/Schedule/ScheduleActionTest.php`, `BulkScheduleLimitsAndDeleteOccupancyTest.php`, `BlockedDateActiveBookingConflictTest.php`, `Owner/ScheduleManagementTest.php`.
 
 ## Status
 
