@@ -2,7 +2,7 @@
 
 Satu baris per perubahan isi (B) atau fitur baru (C) yang tampil di prototipe. Perubahan tampilan saja (A) tidak dicatat di sini; semuanya ikut dibangun.
 
-**Status semua butir: disetujui lewat D-025 (17 Nov 2026), dibangun hanya di branch `agathan-bq-162-papan-jadwal` dan turunannya, belum masuk `integration` sampai Tech Lead memutuskan.** D-025 membuka kembali dua butir D-021 (slot otomatis, kesimpulan di Laporan) khusus untuk branch ini.
+**Status semua butir: disetujui lewat D-025 (17 Nov 2026), dibangun hanya di branch `agathan-bq-162-papan-jadwal` dan turunannya, belum masuk `integration` sampai Tech Lead memutuskan.** D-025 membuka kembali dua butir D-021 (slot otomatis, kesimpulan di Laporan) khusus untuk branch ini. Angka dan aturan fitur C ada di D-026 (disetujui 17 Nov 2026 kecuali sumber booking, C-08).
 
 Kolom **Jalur** mengikuti `docs/workflow.md` §3. "Berat" berarti menyentuh aturan domain, skema, atau tugas terjadwal, sehingga butuh work item dan pengujian penuh. Kolom **Sesi** merujuk ke rencana di `docs/work/BQ-162-papan-jadwal.md`.
 
@@ -32,7 +32,7 @@ Kolom **Jalur** mengikuti `docs/workflow.md` §3. "Berat" berarti menyentuh atur
 | C-05 | Kalender per unit (Pro) | `#/kalender/hari?kolom=unit` | Ada (booking_seats/unit) | Ringan | 3 |
 | C-06 | Sapa pelanggan lama lewat WhatsApp (membuka WhatsApp pemilik; tidak ada pesan yang dikirim sistem) | Panel pelanggan, `#/pelanggan/lama` | Ada | Ringan | 3 |
 | C-07 | Ringkasan mingguan lewat email | `#/pengaturan/notifikasi` | Baru: preferensi + tugas terjadwal + email | Berat (tugas terjadwal) | 8 |
-| C-08 | Sumber booking per kanal (Instagram, WhatsApp, Maps, langsung) | `#/laporan/pelanggan`, filter Booking | **Belum ada:** perlu kolom baru dan penanda di link booking | **Berat** (skema) | 8 |
+| C-08 | ~~Sumber booking per kanal~~ **Disembunyikan (D-026 poin 5).** Tidak dibangun: tanpa link `?dari=`, kolom sumber, laporan "Dari mana booking datang" atau filter kanal. Sumber online / walk-in yang sudah ada tetap seperti sekarang | — | — | — | — |
 | C-09 | Promo jam sepi | `#/promo`, `#/laporan/okupansi` | Baru: aturan promo per jam | **Berat** (harga, pembayaran) | 8 |
 | C-10 | Laporan: hari pesan di muka | `#/laporan/pelanggan` | Ada (created_at vs sesi) | Ringan | 5 |
 | C-11 | Laporan: booking yang tidak jadi dibayar | `#/laporan/pendapatan` | Ada (pending yang kedaluwarsa) | Ringan | 5 |

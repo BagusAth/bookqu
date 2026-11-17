@@ -23,16 +23,17 @@ BQ-161 restyled the owner portal but kept most pages on raw controls and Tailwin
 
 **Release (D-026 point 8).** v1.0.0 waits for BQ-162. The BQ-158 regression pass runs after BQ-162 is merged into `integration`.
 
-**Batches and gates.** Sessions run in four batches; inside a batch the agent runs the sessions in order, commits and pushes after each session, and fills its evidence. The Tech Lead reviews at the end of each batch before the next batch starts.
+**Batches and gates.** Sessions run in five batches; inside a batch the agent runs the sessions in order, commits and pushes after each session, and fills its evidence. The Tech Lead reviews at the end of each batch before the next batch starts.
 
 | Batch | Sessions | Why grouped |
 |---|---|---|
 | 1 | 1 | Foundation: every later screen depends on the shell and primitives, so it is reviewed alone |
 | 2 | 2, 3 | Shared daily parts and the daily pages that use them |
 | 3 | 4, 5, 6 | Independent page groups on the same components |
-| 4 | 9 | Verification and docs |
+| 4 | 7, 8 | Heavy-lane features with the numbers from D-026 |
+| 5 | 9 | Verification and docs |
 
-Sessions 7 and 8 are not part of any batch yet. Sessions 7 and 8 start only after the Product Lead has confirmed D-026 in `docs/product-decisions.md`; use the numbers from D-026, never guess. If a session finds something the plan or prototype does not answer, stop and write it under "Open findings" instead of deciding.
+D-026 was confirmed by the Product Lead on 17 Nov 2026, except point 5: **booking source per channel (C-08) is hidden for now.** Do not build source tracking, `?dari=` links, a source column, a "Dari mana booking datang" report or channel filters. Keep the existing online / walk-in source exactly as it works today (Booking filter "Sumber", slip label). Sessions 7 and 8 run as batch 4 with the numbers from D-026; never guess. If a session finds something the plan or prototype does not answer, stop and write it under "Open findings" instead of deciding.
 
 ## How to use the prototype
 
@@ -109,7 +110,7 @@ Each session is one Codex run. Start every session by reading this file, `KEPUTU
 
 ### Session 7: booking automation (heavy, C-01 to C-03)
 
-Gate: D-026 confirmed by the Product Lead. Values: slots 30 days ahead per service (opt-in, all plans); auto-complete 6 hours after the session ends (on by default, can be switched off, skips no-show and refund requests); bulk complete for Pemilik, Manajer and Kasir.
+Gate: D-026 confirmed by the Product Lead (17 Nov 2026). Values: slots 30 days ahead per service (opt-in, all plans); auto-complete 6 hours after the session ends (on by default, can be switched off, skips no-show and refund requests); bulk complete for Pemilik, Manajer and Kasir.
 
 
 - First add the requirements (`docs/requirements.md`) and update `docs/domains/booking.md` and `docs/domains/schedule.md`; the code follows them.
@@ -118,16 +119,16 @@ Gate: D-026 confirmed by the Product Lead. Values: slots 30 days ahead per servi
 - C-03 bulk complete: selected rows and "Tandai selesai semua", one Action that applies the same transition rules per booking and reports skipped ones.
 - Done when: unit tests for the rules, feature tests for the commands and the bulk Action, MySQL suite green for anything that locks.
 
-### Session 8: growth features (heavy, C-07 to C-09)
+### Session 8: growth features (heavy, C-07 and C-09)
 
-Gate: D-026 confirmed. Values: weekly email Monday morning to Pemilik only (on, can be switched off); sources Instagram, WhatsApp, Google Maps, QR, direct (report Medium+); quiet-hour promo percent or amount on owner-chosen days and hours (Medium+), suggestion shown in Laporan → Okupansi. Update the plan table in `docs/product.md` (D-017) first.
+Gate: D-026 confirmed (17 Nov 2026). Values: weekly email Monday morning to Pemilik only (on, can be switched off); quiet-hour promo percent or amount on owner-chosen days and hours (Medium+), suggestion shown in Laporan → Okupansi. Update the plan table in `docs/product.md` (D-017) first.
 
 
 - Requirements and domain docs first, as in session 7.
 - C-07 weekly email summary: preference in Notifikasi, scheduled job, queued mail.
-- C-08 booking source per channel: new nullable column set from a link parameter on the booking page (`?dari=instagram` etc.), shown in Laporan and as a Booking filter. Migration + tenant-safe query.
+- C-08 booking source per channel: **not built** (D-026 point 5 hidden). Leave the booking page links, schema and reports without source tracking.
 - C-09 quiet-hour promo: promo rule limited to hours; pricing goes through the existing price rules and payment amount checks.
-- Done when: migrations run up and down, tests cover tenant isolation and price calculation, payment tests stay green.
+- Done when: any migration runs up and down, tests cover tenant isolation and price calculation, payment tests stay green.
 
 ### Session 9: verification and docs
 
@@ -146,7 +147,7 @@ Repository C:\laragon\www\bookqu, branch agathan-bq-162-papan-jadwal (git switch
 Do BQ-162 batch N only (see "Batches and gates"). Read docs/work/BQ-162-papan-jadwal.md, docs/design/papan-jadwal/KEPUTUSAN.md and AGENTS.md first.
 Run the prototype with php -S 127.0.0.1:8770 -t docs/design/papan-jadwal/prototype and use the routes listed for each session.
 Do the sessions of the batch in order. After each session: run its checks, fill its "Evidence", commit, and push only to origin agathan-bq-162-papan-jadwal.
-Stop and report instead of guessing when the plan does not answer. Do not start sessions 7 or 8.
+Stop and report instead of guessing when the plan does not answer. Do not start a later batch.
 ```
 
 ## Invariants at risk

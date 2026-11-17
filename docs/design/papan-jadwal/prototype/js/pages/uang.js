@@ -117,9 +117,9 @@
         isi = ui.kesimpulan('Webinar & Corporate Broadcast hanya 3 booking, tetapi pendapatannya terbesar. Voice Over paling kecil.')
           + ui.panel({ judul: 'Pendapatan kotor per layanan', ket: `Jumlah ${rp(D.periode.kotor)}; dikurangi refund ${rp(D.periode.refund)} menjadi pendapatan bersih ${rp(D.periode.bersih)}. Booking menurut tanggal sesi.`, isi: `<div class="tumpuk">${D.perLayanan.map(([n, v, j]) => ui.batang({ label: `${n} · ${j} booking`, nilai: v, maks, teks: rp(v) })).join('')}</div>` });
       } else if (tab === 'pelanggan') {
-        isi = ui.kesimpulan('Instagram membawa booking terbanyak; 3 calon pelanggan belum jadi membayar.')
-          + `<div class="kisi-sama">${ui.panel({ isi: ui.angka({ utama: { nilai: '2', label: 'pelanggan baru', delta: -33, ket: '18 pelanggan kembali lagi' }, lain: [{ nilai: '9 kali', label: 'promo dipakai' }] }) })}
-            ${ui.panel({ judul: 'Dari mana booking datang', cat: ui.cat('C', 'fitur 7'), isi: `<div class="tumpuk">${D.sumber.map(([n, v]) => ui.batang({ label: n, nilai: v, maks: 21, teks: `${v}` })).join('')}</div>` })}</div>`
+        isi = ui.kesimpulan('2 pelanggan baru dan 18 pelanggan kembali lagi; 3 calon pelanggan belum jadi membayar.')
+          /* D-026: panel "Dari mana booking datang" (C-08) disembunyikan sampai sumber link dicatat */
+          + ui.panel({ isi: ui.angka({ utama: { nilai: '2', label: 'pelanggan baru', delta: -33, ket: '18 pelanggan kembali lagi' }, lain: [{ nilai: '9 kali', label: 'promo dipakai' }] }) })
           + ui.panel({ judul: 'Belum jadi membayar', ket: 'Sudah memilih slot tetapi tidak membayar. Calon pelanggan paling dekat.', cat: ui.cat('C', 'fitur 10'), rata: true, isi: D.gagalBayar.map(g => ui.lr({ awal: ui.avatar(g.nama), judul: esc(g.nama), ket: `${esc(g.layanan)} · ${g.kapan} · ${g.alasan}`, akhir: ui.btn('WhatsApp', { kecil: true, ikon: 'pesan', aksi: 'toast', arg: `Membuka WhatsApp ${g.hp}` }) })).join('') });
       } else {
         isi = ui.kesimpulan('Bulan ini lebih baik: pendapatan naik 12%, booking naik 8%. Tingkat tidak datang turun.') + ui.cat('B', '8.13 no. 2 · saran ditunda D-021')

@@ -27,27 +27,6 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 ---
 
-### D-026 · Aturan rinci fitur baru portal owner (lanjutan D-025)
-
-*Status:* Disetujui Tech Lead 17 Nov 2026, menunggu konfirmasi Product Lead · *Diajukan:* 17 Nov 2026 · *Menahan rilis:* ya (rilis menunggu BQ-162)
-
-*Masalah*
-D-025 menyetujui fitur-fitur baru di prototipe "Papan Jadwal", tetapi angka dan aturannya belum ditentukan. Tanpa ini, pekerjaan BQ-162 sesi 7 dan 8 tidak bisa dimulai. Rilis v1.0.0 juga diputuskan menunggu BQ-162 selesai, sehingga uji regresi memakai tampilan baru.
-
-*Usulan keputusan*
-1. **Slot otomatis:** dinyalakan pemilik per layanan; slot dibuka setiap malam sampai 30 hari ke depan; tersedia di semua paket.
-2. **Selesai otomatis:** booking yang sudah dibayar ditandai selesai 6 jam setelah sesi berakhir; aktif sejak awal dan bisa dimatikan di Kebijakan Booking; tidak berlaku untuk booking yang ditandai tidak datang atau sedang minta refund.
-3. **Tutup banyak sekaligus:** pemilik, manajer dan kasir boleh menandai selesai banyak booking sekaligus, dengan aturan yang sama seperti satu per satu.
-4. **Ringkasan mingguan:** email setiap Senin pagi, hanya untuk Pemilik, aktif sejak awal dan bisa dimatikan; isinya pendapatan, booking, slot terisi, slot terbuka sampai kapan, dan hal yang menunggu.
-5. **Sumber booking:** Instagram, WhatsApp, Google Maps, QR, dan langsung (tanpa penanda); laporannya ikut Laporan, jadi paket Medium ke atas.
-6. **Promo jam sepi:** potongan persen atau nominal pada hari dan jam yang dipilih pemilik; paket Medium ke atas seperti Promo; sistem boleh menyarankan jam sepi di Laporan → Okupansi.
-7. Tabel isi paket di `docs/product.md` diperbarui dengan butir 1, 4, 5 dan 6.
-8. Rilis v1.0.0 menunggu BQ-162 masuk ke versi utama.
-
-*Jawaban Product Lead:* —
-
----
-
 ## Untuk diketahui (tidak perlu keputusan)
 
 Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
@@ -104,3 +83,4 @@ Diambil Tech Lead sebelum peran Product Lead ditetapkan. Product Lead bisa membu
 - D-023 · Durasi layanan dan interval slot kelipatan 5 menit · Disetujui 5 Nov 2026: owner hanya bisa menyimpan durasi layanan dan interval jadwal massal dalam kelipatan 5 menit; layanan lama yang tidak sesuai harus diubah saat diedit → BQ-114
 - D-024 · Empat tombol bantu baru di portal owner · Disetujui 16 Nov 2026: tautan ke booking setelah walk-in; tombol "Isi dari jam buka" di form buat slot sekaligus (owner tetap menyimpan sendiri, berbeda dengan slot otomatis D-021); simulasi harga menampilkan aturan yang menentukan harga; uji dan kirim ulang webhook untuk paket Pro → BQ-160
 - D-025 · Tampilan portal owner "Papan Jadwal" beserta perubahan isi dan fitur barunya · Disetujui 17 Nov 2026: semua perubahan isi halaman dan fitur baru di prototipe dibangun, termasuk slot otomatis dan kalimat kesimpulan di Laporan yang dibuka kembali dari D-021; dikerjakan dulu di branch tersendiri dan baru masuk ke versi utama setelah Tech Lead memutuskan; daftar lengkapnya di `docs/design/papan-jadwal/KEPUTUSAN.md` → BQ-162
+- D-026 · Aturan rinci fitur baru portal owner (lanjutan D-025) · Disetujui 17 Nov 2026 kecuali sumber booking: slot otomatis dinyalakan per layanan sampai 30 hari ke depan di semua paket; selesai otomatis 6 jam setelah sesi, aktif dan bisa dimatikan, tidak berlaku untuk tidak datang atau minta refund; tutup banyak sekaligus untuk pemilik, manajer dan kasir; ringkasan mingguan email Senin pagi untuk Pemilik, aktif dan bisa dimatikan; promo jam sepi persen atau nominal di hari dan jam pilihan pemilik untuk Medium ke atas, dengan saran jam sepi di Laporan; tabel isi paket di `docs/product.md` diperbarui; rilis v1.0.0 menunggu BQ-162. Sumber booking per kanal disembunyikan dulu karena penanda link belum ada; sumber online dan walk-in tetap seperti sekarang → BQ-162
