@@ -1,11 +1,5 @@
-<div class="space-y-5">
-    <h2 class="text-lg font-semibold">Integrasi</h2>
-
-
-    @isset($configured)
-    <section class="space-y-3 bq-panel p-4">
-        <h2 class="font-semibold">Google Calendar</h2>
-        <p class="text-sm text-bq-text-muted">Booking terkonfirmasi dan perubahan jadwal dikirim dari BookQu ke kalender utama Google Anda.</p>
+@isset($configured)
+    <x-ui.form-row title="Google Calendar" description="Booking terkonfirmasi dan perubahan jadwal dikirim ke kalender utama Google Anda.">
         @error('calendar')<p class="text-sm text-bq-danger" role="alert">{{ $message }}</p>@enderror
         @if ($connected)
             <p class="text-sm font-semibold text-bq-success">Terhubung</p>
@@ -28,12 +22,12 @@
         @else
             <p class="text-sm text-bq-text-muted">Google Calendar belum dikonfigurasi.</p>
         @endif
-    </section>
+    </x-ui.form-row>
 
-    <form method="POST" action="{{ route('owner.settings.integrations.tracking') }}" class="space-y-4 bq-panel p-4">
+    <form method="POST" action="{{ route('owner.settings.integrations.tracking') }}">
         @csrf
         @method('PUT')
-        <h2 class="font-semibold">Pengukuran halaman booking</h2>
+        <x-ui.form-row title="Pengukuran halaman booking">
         <div class="grid gap-3 sm:grid-cols-2">
             <label class="grid gap-1 text-sm">Google Analytics Measurement ID
                 <input name="google_analytics_id" maxlength="24" pattern="G-[A-Z0-9]+" value="{{ old('google_analytics_id', $googleAnalytics) }}" class="bq-input" placeholder="G-…">
@@ -44,12 +38,17 @@
                 @error('meta_pixel_id')<span class="text-xs text-bq-danger">{{ $message }}</span>@enderror
             </label>
         </div>
-        <button class="bq-btn bq-btn-primary">Simpan</button>
+        </x-ui.form-row>
+        <x-ui.savebar class="!static flex-wrap">
+            <x-ui.button variant="ghost" :href="route('owner.settings.business', ['tab' => 'integrasi'])">Batal</x-ui.button>
+            <x-ui.button type="submit" variant="primary">Simpan</x-ui.button>
+        </x-ui.savebar>
     </form>
     @endisset
-    <p class="text-sm text-bq-text-muted">Pembayaran dan email dikelola BookQu.</p>
+    <x-ui.form-row title="Dikelola BookQu" description="Tidak perlu diatur.">
+        <x-ui.kv :items="['Pembayaran' => 'Pembayaran online pelanggan', 'Email' => 'Bukti booking dan pengingat']" />
+    </x-ui.form-row>
 
     @isset($keys)
         @include('owner.settings.api')
     @endisset
-</div>

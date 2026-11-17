@@ -1,5 +1,4 @@
-<div id="api" class="space-y-5">
-    <h3 class="text-base font-semibold">API dan Webhook</h3>
+<x-ui.form-row id="api" title="API dan webhook" description="Kelola akses developer dan pengiriman event.">
     <x-owner.field-error name="delivery" />
     @isset($credential)
         <section class="bq-panel p-4" role="status">
@@ -95,4 +94,4 @@
             @endforelse
         </ul>
     </section>
-</div>
+</x-ui.form-row>

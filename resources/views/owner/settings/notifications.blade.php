@@ -1,18 +1,31 @@
-<form method="POST" action="{{ route('owner.settings.notification-preferences') }}" class="space-y-4 bq-panel p-4">
+<form method="POST" action="{{ route('owner.settings.notification-preferences') }}">
     @csrf
     @method('PATCH')
-    <h2 class="font-semibold">Notifikasi</h2>
-    <x-owner.field-error name="preferences" />
-    <p class="text-sm text-bq-text-muted">Notifikasi di aplikasi selalu aktif. Email dikirim ke {{ $accountUser?->email }}.</p>
-    @foreach ($notificationEvents as $event => $label)
-        <div class="flex items-center justify-between gap-3 border-t border-bq-border pt-2 text-sm">
-            <input type="hidden" name="preferences[{{ $event }}]" value="0">
-            <label class="flex w-full items-center justify-between gap-3">
-                {{ $label }}
-                <span class="flex items-center gap-2">Email <input type="checkbox" name="preferences[{{ $event }}]" value="1" @checked(old('preferences.' . $event, $notificationPreferences[$event] ?? true))></span>
-            </label>
-            <x-owner.field-error :name="'preferences.'.$event" />
-        </div>
-    @endforeach
-    <button class="bq-btn bq-btn-primary">Simpan preferensi</button>
+    <x-ui.form-row title="Per kejadian" description="Notifikasi di aplikasi selalu aktif. Email bisa dimatikan.">
+        <x-owner.field-error name="preferences" />
+        @foreach ($notificationEvents as $event => $label)
+            @continue($event === 'weekly_summary')
+            <div class="border-b border-bq-border pb-2">
+                <input type="hidden" name="preferences[{{ $event }}]" value="0">
+                <x-ui.switch :name="'preferences['.$event.']'" value="1" :label="$label"
+                    :checked="(bool) old('preferences.'.$event, $notificationPreferences[$event] ?? true)" />
+                <x-owner.field-error :name="'preferences.'.$event" />
+            </div>
+        @endforeach
+        <label class="grid gap-1 text-sm">Kirim email ke
+            <x-ui.input :value="$accountUser?->email" readonly />
+        </label>
+    </x-ui.form-row>
+    @isset($notificationEvents['weekly_summary'])
+        <x-ui.form-row title="Ringkasan mingguan" description="Setiap Senin pagi.">
+            <input type="hidden" name="preferences[weekly_summary]" value="0">
+            <x-ui.switch name="preferences[weekly_summary]" value="1" label="Kirim ringkasan mingguan"
+                :checked="(bool) old('preferences.weekly_summary', $notificationPreferences['weekly_summary'] ?? true)" />
+            <x-owner.field-error name="preferences.weekly_summary" />
+        </x-ui.form-row>
+    @endisset
+    <x-ui.savebar class="!static flex-wrap">
+        <x-ui.button variant="ghost" :href="route('owner.settings.business', ['tab' => 'notifications'])">Batal</x-ui.button>
+        <x-ui.button type="submit" variant="primary">Simpan preferensi</x-ui.button>
+    </x-ui.savebar>
 </form>
