@@ -187,7 +187,9 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 - Session 5 (17 Nov 2026):
   - Compared Pembayaran, Laporan, Promo and Ulasan at the listed prototype routes. Edge passed 96 page and access checks at 375, 768, 1024 and 1366 px as Pemilik and Kasir on the local SQLite seed.
   - Pint, Vite build and PHPStan checked. Report tests passed on SQLite (19) and MySQL (13). C-11 fixtures cover a system-closed payment, a later paid/completed booking, owner cancellation, tenant isolation and Kasir denial. The full SQLite suite reported 991 passed and one assertion using the old payment header copy. The updated copy assertion passed on its own.
-- Session 6:
+- Session 6 (17 Nov 2026):
+  - Checked the listed prototype routes and 108 page and access combinations at 375, 768, 1024 and 1366 px as Pemilik and Kasir on the local SQLite seed. Fixed the Integrasi HTTPS field overflow at 375 px and rechecked only that case. Checkout order was opened in Edge; payment and invoice were covered by the related feature tests.
+  - Pint, Vite build and PHPStan passed. Ran the related tests once for this session (53 passed, 460 assertions), including tenant-scoped service previews and notifications grouped by day. The full SQLite suite was exercised in Session 5 as recorded above.
 - Session 7:
 - Session 8:
 - Session 9:

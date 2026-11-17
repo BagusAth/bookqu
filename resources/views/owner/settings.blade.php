@@ -4,8 +4,8 @@
 
 @section('content')
 <div class="mx-auto max-w-4xl space-y-5">
-    <x-owner.page-header title="Pengaturan" purpose="Kelola profil bisnis, kebijakan booking, dan akun Anda." />
-    <x-owner.tabs :tabs="$tabs" :active="$tab" :base-url="isset($credential) ? route('owner.settings.business') : null" />
+    <x-owner.page-header title="Pengaturan" purpose="Setiap tab disimpan sendiri." />
+    <x-owner.tabs :tabs="$tabs" :active="$tab" label="Bagian pengaturan" :base-url="isset($credential) ? route('owner.settings.business') : null" />
 
     @foreach ($tabs as $key => $tabLabel)
         @continue(in_array($key, ['tim', 'integrasi'], true) && $tab !== $key)

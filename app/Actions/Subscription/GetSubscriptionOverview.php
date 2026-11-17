@@ -57,6 +57,7 @@ class GetSubscriptionOverview
                 'riwayatpembayaran' => collect(),
                 'statusLabel' => 'Berakhir',
                 'endDate' => null,
+                'daysRemaining' => 0,
                 'usage' => ['services' => ['used' => 0, 'limit' => 0], 'bookings' => ['used' => 0, 'limit' => 0], 'team' => ['used' => 0, 'limit' => 0]],
                 'history' => [],
             ];
@@ -104,11 +105,15 @@ class GetSubscriptionOverview
         // BQ-145 (owner-portal.md §8.15): status, end date, the three usage figures and billing rows.
         // scope-bypass: members of the authenticated tenant
         $teamUsed = TenantMember::withoutGlobalScopes()->where('idtenant', $idtenant)->whereNotNull('accepted_at')->count();
+        $periodEnd = $langgananaktif !== null ? SubscriptionState::periodEnd($langgananaktif)?->timezone('Asia/Jakarta') : null;
 
         return [
             'langgananaktif' => $langgananaktif,
             'statusLabel' => $this->statusLabel($langgananaktif),
-            'endDate' => $langgananaktif !== null ? SubscriptionState::periodEnd($langgananaktif)?->timezone('Asia/Jakarta')->translatedFormat('j M Y') : null,
+            'endDate' => $periodEnd?->translatedFormat('j M Y'),
+            'daysRemaining' => $periodEnd !== null && EntitlementRules::hasEffectivePlan($langgananaktif)
+                ? (int) max(0, ceil(now()->diffInDays($periodEnd, false)))
+                : 0,
             'usage' => [
                 'services' => ['used' => $jumlahlayanan, 'limit' => $serviceQuota['isUnlimited'] ? null : $maxlayanan],
                 'bookings' => ['used' => $jumlahbookingbulanini, 'limit' => $bookingQuota['isUnlimited'] ? null : $maxbooking],

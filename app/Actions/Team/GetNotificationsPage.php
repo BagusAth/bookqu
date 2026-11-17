@@ -77,12 +77,20 @@ final class GetNotificationsPage
         /** @var array<string, mixed> $data */
         $data = (array) $notification->data;
         $category = collect(self::CATEGORIES)->search(fn (array $item): bool => in_array($notification->type, $item['types'], true));
+        $createdAt = $notification->created_at?->copy()->timezone('Asia/Jakarta')->locale('id');
+        $day = match (true) {
+            $createdAt === null => 'Tanpa tanggal',
+            $createdAt->isToday() => 'Hari ini',
+            $createdAt->isYesterday() => 'Kemarin',
+            default => $createdAt->translatedFormat('l, j M Y'),
+        };
 
         return [
             'id' => (string) $notification->id,
             'title' => (string) ($data['title'] ?? 'Pemberitahuan'),
             'message' => (string) ($data['message'] ?? ''),
-            'time' => $notification->created_at?->diffForHumans(),
+            'day' => $day,
+            'time' => $createdAt?->format('H.i'),
             'category' => $category !== false ? self::CATEGORIES[$category]['label'] : 'Lainnya',
             'unread' => $notification->read_at === null,
             'readUrl' => route('owner.notifications.read', $notification->id),

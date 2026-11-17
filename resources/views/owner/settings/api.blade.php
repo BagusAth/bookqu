@@ -49,8 +49,8 @@
             <label class="grid gap-1 text-sm">Nama endpoint
                 <input name="name" required maxlength="100" class="bq-input">
             </label>
-            <label class="grid min-w-0 flex-1 gap-1 text-sm">URL HTTPS
-                <input name="url" type="url" required maxlength="2048" class="bq-input">
+            <label class="grid w-full min-w-0 gap-1 text-sm sm:w-auto sm:flex-1">URL HTTPS
+                <input name="url" type="url" required maxlength="2048" class="bq-input w-full min-w-0">
             </label>
             <button class="bq-btn bq-btn-primary">Tambah endpoint</button>
         </form>

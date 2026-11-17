@@ -31,22 +31,16 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6">
-    <x-owner.page-header title="Paket & Tagihan" purpose="Paket Anda, apa yang didapat, dan apa yang sudah dibayar." />
+    <x-owner.page-header title="Paket & Tagihan" purpose="Paket Anda, apa yang didapat, dan riwayat pembayaran." />
 
-    <section aria-labelledby="plan-title" class="{{ $card }} p-4 sm:p-5">
-        <div class="flex flex-wrap items-center gap-2">
-            <h2 id="plan-title" class="text-lg font-semibold text-bq-text">{{ $langgananaktif?->plan ? ucfirst($langgananaktif->plan->namapaket) : 'Belum ada paket' }}</h2>
-            <span class="bq-badge {{ $toneClass($statusTone) }}">{{ $statusLabel }}</span>
-        </div>
-        <p class="mt-1 text-sm text-bq-text-muted">
-            @if ($endDate)
-                {{ $statusLabel === 'Berakhir' ? 'Berakhir' : 'Berlaku sampai' }} {{ $endDate }}
-                @if ($statustrial) · sisa {{ $sisahari }} hari uji coba @endif
-            @else
-                Pilih paket di bawah untuk mulai menerima booking online.
-            @endif
-        </p>
-
+    <div class="grid gap-4 lg:grid-cols-2">
+        <x-ui.stat class="self-start" hero :label="$langgananaktif?->plan ? 'Paket '.ucfirst($langgananaktif->plan->namapaket) : 'Belum ada paket'"
+            :value="$daysRemaining.' hari'"
+            :context="$endDate ? ($statusLabel === 'Berakhir' ? 'Berakhir ' : 'Berlaku sampai ').$endDate : 'Pilih paket untuk mulai menerima booking online.'">
+            <x-ui.status-dot :tone="$statusTone" class="mt-3">{{ $statusLabel }}</x-ui.status-dot>
+        </x-ui.stat>
+        <section aria-labelledby="usage-title" class="bq-panel p-4 sm:p-5">
+            <h2 id="usage-title" class="font-semibold">Pemakaian</h2>
         <dl class="mt-4 grid gap-4 sm:grid-cols-3">
             @foreach ($usageRows as [$title, $unit, $figure])
                 @php
@@ -70,18 +64,27 @@
                 </div>
             @endforeach
         </dl>
-    </section>
+        </section>
+    </div>
 
     {{-- Comparison generated from the plan list (§6, D-017) --}}
-    <section aria-labelledby="plans-title" class="space-y-3">
+    <section aria-labelledby="plans-title" class="space-y-3" x-data="{ plan: @js($currentPlanId ?? $semuapaket->first()?->id) }">
         <div>
             <h2 id="plans-title" class="text-base font-semibold text-bq-text">Bandingkan paket</h2>
             <p class="text-sm text-bq-text-muted">Memperpanjang paket yang sama menambah masa aktif dari tanggal berakhir. Ganti paket berlaku sejak tanggal bayar.</p>
         </div>
+        <div class="inline-flex flex-wrap gap-1 rounded-bq-control bg-bq-surface-2 p-1 md:hidden" role="group" aria-label="Pilih paket untuk dibandingkan">
+            @foreach ($semuapaket as $paket)
+                <button type="button" class="rounded-bq-control px-3 py-1.5 text-bq-label"
+                    :class="plan === @js($paket->id) && 'bg-bq-surface text-bq-primary'"
+                    :aria-pressed="plan === @js($paket->id)" @click="plan = @js($paket->id)">{{ ucfirst($paket->namapaket) }}</button>
+            @endforeach
+        </div>
         <ul class="grid gap-4 md:grid-cols-3">
             @foreach ($semuapaket as $paket)
                 @php $isCurrent = $currentPlanId === $paket->id; @endphp
-                <li class="{{ $card }} flex flex-col p-4 {{ $isCurrent ? 'ring-2 ring-bq-primary' : '' }}">
+                <li class="{{ $card }} flex-col p-4 {{ $isCurrent ? 'ring-2 ring-bq-primary' : '' }}"
+                    :class="plan === @js($paket->id) ? 'flex' : 'hidden md:flex'">
                     <div class="flex items-center justify-between gap-2">
                         <h3 class="text-base font-semibold text-bq-text">{{ ucfirst($paket->namapaket) }}</h3>
                         @if ($isCurrent)

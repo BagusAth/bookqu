@@ -73,14 +73,14 @@ class HalamanBookingPageTest extends TestCase
         return $user;
     }
 
-    public function test_page_has_link_and_qr_promotion_materials_appearance_and_gallery(): void
+    public function test_page_has_sharing_materials_appearance_and_gallery(): void
     {
         $this->actingAs($this->owner)->get(route('owner.booking-page'))
             ->assertOk()
-            ->assertSee('Link &amp; QR', false)
-            ->assertSee('Materi promosi')
+            ->assertSee('Bagikan')
+            ->assertSee('Teks siap pakai')
             ->assertSee('Tampilan')
-            ->assertSee('Galeri media')
+            ->assertSee('Galeri')
             ->assertSee($this->link())
             ->assertSee('https://wa.me/?text=', false);
 
@@ -91,6 +91,24 @@ class HalamanBookingPageTest extends TestCase
 
         $this->actingAs($this->member('manajer'))->get(route('owner.booking-page'))->assertOk();
         $this->actingAs($this->member('kasir'))->get(route('owner.booking-page'))->assertForbidden();
+    }
+
+    public function test_appearance_previews_only_active_services_of_the_current_tenant(): void
+    {
+        Service::factory()->create([
+            'idtenant' => $this->tenant->id, 'namalayanan' => 'Foto Pratinjau', 'is_active' => true,
+            'harga' => 175000, 'durasi' => 45,
+        ]);
+        Service::factory()->create([
+            'idtenant' => $this->tenant->id, 'namalayanan' => 'Layanan Tidak Aktif', 'is_active' => false,
+        ]);
+        Service::factory()->create([
+            'idtenant' => Tenant::factory()->create()->id, 'namalayanan' => 'Layanan Tenant Lain', 'is_active' => true,
+        ]);
+
+        $this->actingAs($this->owner)->get(route('owner.booking-page', ['section' => 'tampilan']))
+            ->assertOk()->assertSee('Foto Pratinjau')->assertSee('Rp 175.000')->assertSee('45 menit')
+            ->assertDontSee('Layanan Tidak Aktif')->assertDontSee('Layanan Tenant Lain');
     }
 
     public function test_the_page_stays_hidden_until_the_module_is_released(): void

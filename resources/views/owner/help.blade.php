@@ -9,27 +9,26 @@
 
 @section('content')
 <div class="mx-auto max-w-4xl space-y-6">
-    <x-owner.page-header title="Bantuan" purpose="Jawaban cepat untuk pertanyaan umum, dan cara menghubungi tim BookQu." />
+    <x-owner.page-header title="Bantuan" purpose="Jawaban cepat, dan cara menghubungi kami." />
 
-    <section aria-labelledby="contact-title" class="rounded-xl bg-bq-primary p-5 text-white sm:p-6">
-        <h2 id="contact-title" class="text-lg font-bold text-white">Hubungi BookQu</h2>
-        <p class="mt-1 text-sm text-white/80">Tim kami membantu lewat WhatsApp atau email.</p>
+    <section aria-labelledby="contact-title" class="bq-panel p-4 sm:p-5">
+        <h2 id="contact-title" class="text-lg font-semibold text-bq-ink">Hubungi BookQu</h2>
+        <p class="mt-1 text-sm text-bq-text-muted">Tim kami membantu lewat WhatsApp atau email.</p>
         @if ($contacts['whatsappUrl'] || $contacts['email'])
             <div class="mt-3 flex flex-wrap gap-2">
                 @if ($contacts['whatsappUrl'])
-                    <a href="{{ $contacts['whatsappUrl'] }}" target="_blank" rel="noopener" class="bq-btn bq-btn-accent"><x-owner.icon name="whatsapp" class="h-4 w-4" />WhatsApp {{ $contacts['whatsapp'] }}</a>
+                    <a href="{{ $contacts['whatsappUrl'] }}" target="_blank" rel="noopener" class="bq-btn bq-btn-primary"><x-owner.icon name="whatsapp" class="h-4 w-4" />WhatsApp {{ $contacts['whatsapp'] }}</a>
                 @endif
                 @if ($contacts['email'])
-                    <a href="mailto:{{ $contacts['email'] }}" class="bq-btn border border-white/40 text-white hover:bg-white/10">{{ $contacts['email'] }}</a>
+                    <a href="mailto:{{ $contacts['email'] }}" class="bq-btn bq-btn-secondary">{{ $contacts['email'] }}</a>
                 @endif
             </div>
             @if ($contacts['hours'] !== '')
-                <p class="mt-2 text-xs text-white/80">{{ $contacts['hours'] }}</p>
+                <p class="mt-2 text-xs text-bq-text-muted">{{ $contacts['hours'] }}</p>
             @endif
         @else
-            <p class="mt-1 text-sm text-white/80">Kontak bantuan belum diatur.</p>
+            <p class="mt-1 text-sm text-bq-text-muted">Kontak bantuan belum diatur.</p>
         @endif
-        <p class="mt-4 text-sm text-white/80"><a href="{{ $guideUrl }}" class="font-semibold text-white underline underline-offset-2">Buka Beranda</a> untuk melihat langkah penyiapan atau jadwal hari ini.</p>
     </section>
 
     <section aria-labelledby="faq-title" class="space-y-4">
@@ -52,6 +51,13 @@
                 </div>
             </div>
         @endforeach
+    </section>
+    <section class="bq-panel flex flex-wrap items-center justify-between gap-3 p-4" aria-labelledby="help-guide">
+        <div>
+            <h2 id="help-guide" class="font-semibold">Panduan awal</h2>
+            <p class="text-bq-small text-bq-text-muted">Langkah menyiapkan bisnis di BookQu.</p>
+        </div>
+        <a href="{{ $guideUrl }}" class="bq-btn bq-btn-secondary">Buka panduan</a>
     </section>
 </div>
 @endsection

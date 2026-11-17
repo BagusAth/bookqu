@@ -3,8 +3,7 @@
 @section('title', 'Halaman Booking')
 
 {{--
-    Halaman Booking (BQ-142, owner-portal.md §8.9): Link & QR, Materi promosi, Tampilan and Galeri
-    media, for every plan (D-009, D-010), plus Halaman depan and Domain sendiri for Pro (BQ-154), which
+    Halaman Booking (BQ-142, owner-portal.md §8.9): Bagikan, Tampilan and Galeri, for every plan (D-009, D-010), plus Halaman depan and Domain sendiri for Pro (BQ-154), which
     show the upgrade prompt below Pro (§3 rule 6). Data from App\Actions\Tenant\GetBookingPageData.
 --}}
 
@@ -60,19 +59,18 @@
                 </div>
             </section>
         </div>
-    @endif
-
-    {{-- ── Materi promosi ── --}}
-    @if ($activeSection === 'promosi')
-        <div class="grid gap-4 lg:grid-cols-2">
-            @foreach ([['Bio Instagram', 'instagram', 'Salin teks bio Instagram'], ['Pesan WhatsApp', 'whatsapp', 'Salin pesan WhatsApp']] as [$title, $key, $action])
-                <section class="{{ $card }} p-4" x-data="ownerCopyText(@js($materials[$key]))">
-                    <h2 class="text-base font-semibold text-bq-text">{{ $title }}</h2>
-                    <p class="mt-2 whitespace-pre-line rounded-lg bg-bq-background px-3 py-2 text-sm text-bq-text">{{ $materials[$key] }}</p>
-                    <button type="button" class="{{ $buttonSecondary }} mt-3" x-on:click="copy()" x-text="copied ? 'Tersalin' : @js($action)">{{ $action }}</button>
-                </section>
-            @endforeach
-        </div>
+        <section aria-labelledby="share-materials" class="bq-panel p-4">
+            <h2 id="share-materials" class="font-semibold">Teks siap pakai</h2>
+            <div class="mt-3 grid gap-4 lg:grid-cols-2">
+                @foreach ([['Bio Instagram', 'instagram', 'Salin teks bio Instagram'], ['Pesan WhatsApp', 'whatsapp', 'Salin pesan WhatsApp']] as [$title, $key, $action])
+                    <section class="min-w-0" x-data="ownerCopyText(@js($materials[$key]))">
+                        <h2 class="text-base font-semibold text-bq-text">{{ $title }}</h2>
+                        <p class="mt-2 whitespace-pre-line break-words rounded-bq-control bg-bq-background px-3 py-2 text-bq-body text-bq-text">{{ $materials[$key] }}</p>
+                        <button type="button" class="{{ $buttonSecondary }} mt-3" x-on:click="copy()" x-text="copied ? 'Tersalin' : @js($action)">{{ $action }}</button>
+                    </section>
+                @endforeach
+            </div>
+        </section>
     @endif
 
     {{-- ── Tampilan (FR-PUBLIC-003, AC-HBK-01) ── --}}
@@ -166,24 +164,31 @@
             {{-- Live phone-sized preview (D-009) --}}
             <section aria-label="Pratinjau di HP" class="lg:sticky lg:top-20 lg:self-start">
                 <p class="mb-2 text-sm text-bq-text-muted">Pratinjau di HP</p>
-                <div class="mx-auto w-72 overflow-hidden rounded-[2rem] border-8 border-bq-ink bg-white shadow-bq" x-bind:style="'font-family: \'' + look.font_family + '\', system-ui, sans-serif'">
+                <div class="mx-auto w-full max-w-72 overflow-hidden rounded-[2rem] border-8 border-bq-ink bg-white shadow-bq" x-bind:style="'font-family: \'' + look.font_family + '\', system-ui, sans-serif'">
                     <div class="flex items-center gap-2 border-b border-bq-border px-3 py-2">
                         <template x-if="image(look.logo_asset_id)"><img x-bind:src="image(look.logo_asset_id)" alt="" class="h-7 w-7 rounded-lg object-cover"></template>
                         <template x-if="!image(look.logo_asset_id)"><span class="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-white" x-bind:style="'background-color:' + look.theme_color">{{ mb_strtoupper(mb_substr($tenant->namabisnis ?: 'BQ', 0, 2)) }}</span></template>
-                        <span class="truncate text-sm font-semibold text-bq-ink">{{ $tenant->namabisnis }}</span>
+                        <span class="truncate text-sm font-semibold text-bq-ink" title="{{ $tenant->namabisnis }}">{{ $tenant->namabisnis }}</span>
                     </div>
                     <template x-if="image(look.cover_asset_id)"><img x-bind:src="image(look.cover_asset_id)" alt="" class="h-24 w-full object-cover"></template>
                     @if ($appearance['deskripsi'])
                         <p class="whitespace-pre-line border-b border-bq-border px-3 py-2 text-xs text-bq-text-muted">{{ $appearance['deskripsi'] }}</p>
                     @endif
                     <div class="space-y-2 bg-bq-surface-2 p-3">
-                        <div class="rounded-xl bg-white p-3" x-bind:style="'box-shadow:' + (cards[look.card_style] || cards.elevated).shadow + ';border:' + (cards[look.card_style] || cards.elevated).border">
-                            <p class="text-sm font-semibold text-bq-ink">Contoh layanan</p>
-                            <p class="text-xs text-bq-text-muted">Rp 150.000 / sesi · 60 menit</p>
-                            <span class="mt-2 inline-block px-3 py-1.5 text-xs font-semibold text-white" x-bind:style="'background-color:' + look.theme_color + ';border-radius:' + (radius[look.button_style] || '0.75rem')">Pilih jadwal</span>
-                        </div>
+                        @forelse ($previewServices as $service)
+                            <div class="rounded-bq-panel bg-white p-3" x-bind:style="'box-shadow:' + (cards[look.card_style] || cards.elevated).shadow + ';border:' + (cards[look.card_style] || cards.elevated).border">
+                                <p class="truncate text-bq-body font-semibold text-bq-ink" title="{{ $service['name'] }}">{{ $service['name'] }}</p>
+                                <p class="text-bq-small text-bq-text-muted">{{ $service['price'] }} / {{ $service['priceUnit'] }} · <x-ui.duration :minutes="$service['duration']" /></p>
+                            </div>
+                        @empty
+                            <p class="text-bq-small text-bq-text-muted">Belum ada layanan aktif.</p>
+                        @endforelse
+                        @if ($previewServices)
+                            <span class="inline-block px-3 py-1.5 text-bq-small font-semibold text-white" x-bind:style="'background-color:' + look.theme_color + ';border-radius:' + (radius[look.button_style] || '0.75rem')">Pilih jadwal</span>
+                        @endif
                     </div>
                 </div>
+                <p class="mt-2 text-center text-bq-small text-bq-text-muted">Pratinjau memakai layanan Anda.</p>
             </section>
         </div>
     @endif

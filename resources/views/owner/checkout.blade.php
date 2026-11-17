@@ -5,47 +5,7 @@
 @section('content')
 <div class="mx-auto max-w-5xl space-y-6" x-data="checkoutPage()">
 
-    {{-- Stepper Navigation --}}
-    <nav aria-label="Tahapan Checkout" class="py-2">
-        <div class="flex items-center justify-center gap-0">
-            {{-- Step 1: Active --}}
-            <div class="flex items-center gap-2.5">
-                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-bq-primary/30 ring-4 ring-bq-primary/15">
-                    1
-                </div>
-                <div class="hidden sm:block text-left">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-bq-primary">Langkah 1</p>
-                    <p class="text-sm font-bold text-bq-primary">Periksa pesanan</p>
-                </div>
-            </div>
-
-            <div class="mx-2 sm:mx-3 h-0.5 w-6 sm:w-16 rounded bg-bq-border"></div>
-
-            {{-- Step 2: Pembayaran --}}
-            <div class="flex items-center gap-2.5 opacity-60">
-                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-bq-border bg-bq-surface text-sm font-semibold text-bq-text-muted">
-                    2
-                </div>
-                <div class="hidden sm:block text-left">
-                    <p class="text-xs font-medium uppercase tracking-wider text-bq-text-muted">Langkah 2</p>
-                    <p class="text-sm font-medium text-bq-text-muted">Pembayaran</p>
-                </div>
-            </div>
-
-            <div class="mx-2 sm:mx-3 h-0.5 w-6 sm:w-16 rounded bg-bq-border"></div>
-
-            {{-- Step 3: Invoice --}}
-            <div class="flex items-center gap-2.5 opacity-60">
-                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-bq-border bg-bq-surface text-sm font-semibold text-bq-text-muted">
-                    3
-                </div>
-                <div class="hidden sm:block text-left">
-                    <p class="text-xs font-medium uppercase tracking-wider text-bq-text-muted">Langkah 3</p>
-                    <p class="text-sm font-medium text-bq-text-muted">Invoice</p>
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('owner.partials.checkout-steps', ['step' => 1])
 
     {{-- Pending Payment Alert if Available --}}
     @if (!empty($existingPayment))
@@ -77,7 +37,7 @@
 
             {{-- Page Title --}}
             <div>
-                <h1 class="text-xl font-bold text-bq-text sm:text-2xl">Periksa pesanan Langganan</h1>
+                <h1 class="text-bq-title font-semibold text-bq-ink">Periksa pesanan Langganan</h1>
                 <p class="mt-1 text-sm text-bq-text-muted">
                     Pastikan rincian bisnis dan kontak penerima invoice sudah sesuai sebelum menuju halaman pembayaran.
                 </p>

@@ -51,3 +51,5 @@ Implemented decision: [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosti
 BQ-144: users store their own email preferences by event. Mail dispatch checks the preference after role filtering. In-app delivery still follows role eligibility and is independent of email preferences.
 
 BQ-135: opening a booking notification marks it read and opens the shared booking panel from the Booking page. The target is resolved within the active tenant. Evidence: Owner/PaketNotifikasiBantuanTest.
+
+BQ-162: the full notification list groups the current page by calendar day in WIB, with today's and yesterday's labels and the time on each item.

@@ -5,32 +5,9 @@
 @section('content')
 <div class="mx-auto max-w-5xl space-y-6">
 
-    {{-- Stepper --}}
-    <div class="flex items-center justify-center gap-0 py-2">
-        <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-bq-primary/30">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pesanan</span>
-        </div>
-        <div class="mx-3 h-0.5 w-8 rounded bg-bq-primary sm:w-16"></div>
-        <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-bq-primary/30">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pembayaran</span>
-        </div>
-        <div class="mx-3 h-0.5 w-8 rounded bg-bq-primary sm:w-16"></div>
-        <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-success text-sm font-bold text-white shadow-bq-success/30">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="hidden text-sm font-semibold text-bq-success sm:inline">Selesai</span>
-        </div>
-    </div>
+    @include('owner.partials.checkout-steps', ['step' => 3])
 
-    {{-- Success Banner --}}
-    <div class="rounded-2xl border border-bq-success bg-gradient-to-br from-bq-success-bg via-bq-success-bg to-bq-success-bg p-6 text-center">
+    <div class="rounded-2xl border border-bq-success bg-bq-success-bg p-6 text-center">
         {{-- Animated Checkmark --}}
         <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-bq-success-bg shadow-bq shadow-bq-success/50">
             <div class="invoice-checkmark">
@@ -39,7 +16,7 @@
                 </svg>
             </div>
         </div>
-        <h1 class="text-2xl font-bold text-bq-success">Pembayaran Berhasil! 🎉</h1>
+        <h1 class="text-2xl font-bold text-bq-success">Pembayaran Berhasil</h1>
         <p class="mt-2 text-sm text-bq-success">Terima kasih! Langganan Anda telah aktif.</p>
         <p class="mt-1 text-xs text-bq-success/70">Konfirmasi pembayaran dan invoice telah dikirim ke email Anda.</p>
     </div>
@@ -52,7 +29,7 @@
             {{-- Invoice Card --}}
             <div class="bq-panel overflow-hidden" id="invoice-card">
                 {{-- Invoice Header --}}
-                <div class="bg-gradient-to-r from-bq-primary to-bq-primary px-4 sm:px-6 py-5 text-white">
+                <div class="bg-bq-primary px-4 sm:px-6 py-5 text-white">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <p class="text-xs font-medium text-white/70 uppercase tracking-wider">Invoice</p>

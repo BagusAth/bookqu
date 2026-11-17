@@ -15,7 +15,7 @@
 
 @section('content')
 <div class="mx-auto max-w-4xl space-y-6">
-    <x-owner.page-header title="Notifikasi" purpose="Apa yang terjadi dan perlu Anda ketahui.">
+    <x-owner.page-header title="Notifikasi" purpose="Yang terjadi dan perlu Anda ketahui.">
         @if ($unreadCount > 0)
             <x-slot:action>
                 <form method="POST" action="{{ route('owner.notifications.read-all') }}">
@@ -43,26 +43,34 @@
         />
     @else
         <ul class="divide-y divide-bq-border overflow-hidden bq-panel" aria-label="Daftar notifikasi">
-            @foreach ($notifications as $item)
-                <li class="flex items-start gap-3 px-4 py-3 {{ $item['unread'] ? 'bg-bq-primary-light/40' : '' }}">
-                    <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {{ $item['unread'] ? 'bg-bq-primary' : 'bg-transparent' }}" aria-hidden="true"></span>
-                    <form method="POST" action="{{ $item['readUrl'] }}" class="min-w-0 flex-1">
-                        @csrf
-                        <button type="submit" class="block w-full text-left">
-                            <span class="block text-sm {{ $item['unread'] ? 'font-semibold' : 'font-medium' }} text-bq-text">{{ $item['title'] }}<span class="sr-only">{{ $item['unread'] ? ' (belum dibaca)' : '' }}</span></span>
-                            @if ($item['message'] !== '')
-                                <span class="block text-sm text-bq-text-muted">{{ $item['message'] }}</span>
-                            @endif
-                            <span class="mt-0.5 block text-xs text-bq-text-muted">{{ $item['category'] }} · {{ $item['time'] }}</span>
-                        </button>
-                    </form>
-                    <button
-                        type="button"
-                        class="bq-btn bq-btn-danger bq-btn-sm shrink-0"
-                        aria-label="Hapus notifikasi {{ $item['title'] }}"
-                        x-data
-                        x-on:click="$dispatch('open-confirm', { title: 'Hapus notifikasi?', message: 'Notifikasi ini akan dihapus dari daftar Anda.', actionUrl: @js($item['destroyUrl']), method: 'DELETE', trigger: $el })"
-                    >Hapus</button>
+            @foreach ($notifications->getCollection()->groupBy('day') as $day => $items)
+                <li>
+                    <h2 class="bg-bq-surface-2 px-4 py-2 text-bq-small font-semibold">{{ $day }}</h2>
+                    <ul class="divide-y divide-bq-border">
+                        @foreach ($items as $item)
+                            <li class="flex items-start gap-3 px-4 py-3 {{ $item['unread'] ? 'bg-bq-primary-light/40' : '' }}">
+                                <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {{ $item['unread'] ? 'bg-bq-primary' : 'bg-transparent' }}" aria-hidden="true"></span>
+                                <form method="POST" action="{{ $item['readUrl'] }}" class="min-w-0 flex-1">
+                                    @csrf
+                                    <button type="submit" class="block w-full text-left">
+                                        <span class="block text-sm {{ $item['unread'] ? 'font-semibold' : 'font-medium' }} text-bq-text">{{ $item['title'] }}<span class="sr-only">{{ $item['unread'] ? ' (belum dibaca)' : '' }}</span></span>
+                                        @if ($item['message'] !== '')
+                                            <span class="block text-sm text-bq-text-muted">{{ $item['message'] }}</span>
+                                        @endif
+                                        <span class="mt-0.5 block text-bq-small text-bq-text-muted">{{ $item['category'] }}</span>
+                                    </button>
+                                </form>
+                                <time class="shrink-0 text-bq-small bq-num text-bq-text-muted">{{ $item['time'] }}</time>
+                                <button
+                                    type="button"
+                                    class="bq-btn bq-btn-danger bq-btn-sm shrink-0"
+                                    aria-label="Hapus notifikasi {{ $item['title'] }}"
+                                    x-data
+                                    x-on:click="$dispatch('open-confirm', { title: 'Hapus notifikasi?', message: 'Notifikasi ini akan dihapus dari daftar Anda.', actionUrl: @js($item['destroyUrl']), method: 'DELETE', trigger: $el })"
+                                >Hapus</button>
+                            </li>
+                        @endforeach
+                    </ul>
                 </li>
             @endforeach
         </ul>

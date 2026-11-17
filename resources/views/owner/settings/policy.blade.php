@@ -10,28 +10,31 @@
     }">
     @csrf
     @method('PATCH')
-    <h2 class="font-semibold">Kebijakan Booking</h2>
-    <input type="hidden" name="refunds_enabled" value="0">
-    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="refunds_enabled" value="1" @checked(old('refunds_enabled', $bookingPolicy['refunds_enabled']))> Izinkan pelanggan mengajukan refund</label>
-    <p class="text-sm text-bq-text-muted">Jika aktif, pelanggan dapat mengajukan refund sebelum batas waktu. Tim Anda meninjau permintaan sebelum refund diproses. Jika dinonaktifkan, pelanggan tidak dapat membuat permintaan baru.</p>
-    <x-owner.field-error name="refunds_enabled" />
-    <div class="grid gap-3 sm:grid-cols-2">
-        @foreach ([
-            'cancel_before_hours' => ['Batas pengajuan refund (jam sebelum sesi)', 0, 8760],
-            'reschedule_before_hours' => ['Batas pindah jadwal (jam sebelum sesi)', 0, 8760],
-            'booking_min_lead_hours' => ['Paling lambat booking baru (jam sebelum sesi)', 0, 8760],
-            'booking_max_days_ahead' => ['Booking paling jauh (hari ke depan)', 1, 365],
-            'booking_buffer_minutes' => ['Jeda antar-booking (menit)', 0, 1440],
-        ] as $field => [$label, $min, $max])
-            @php $usesHours = str_ends_with($field, '_hours'); @endphp
-            <label class="grid gap-1 text-sm" @if ($usesHours) x-data="{ hours: @js(old($field, $bookingPolicy[$field])) }" @endif>{{ $label }}
-                <input type="number" name="{{ $field }}" min="{{ $min }}" max="{{ $max }}" value="{{ old($field, $bookingPolicy[$field]) }}"
-                    @if ($usesHours) x-model.number="hours" @endif required class="bq-input">
-                @if ($usesHours)<span class="text-xs text-bq-text-muted" aria-live="polite" x-text="hours === '' ? '' : formatHours(hours)"></span>@endif
-                <x-owner.field-error :name="$field" />
-            </label>
-        @endforeach
-    </div>
+    <x-ui.form-section title="Pembatalan dan refund" description="Yang boleh dilakukan pelanggan lewat link booking.">
+        <input type="hidden" name="refunds_enabled" value="0">
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="refunds_enabled" value="1" @checked(old('refunds_enabled', $bookingPolicy['refunds_enabled']))> Izinkan pelanggan mengajukan refund</label>
+        <p class="text-sm text-bq-text-muted">Jika aktif, pelanggan dapat mengajukan refund sebelum batas waktu. Tim Anda meninjau permintaan sebelum refund diproses. Jika dinonaktifkan, pelanggan tidak dapat membuat permintaan baru.</p>
+        <x-owner.field-error name="refunds_enabled" />
+        <div class="grid gap-3 sm:grid-cols-2">
+            @foreach ([
+                'cancel_before_hours' => ['Batas pengajuan refund (jam sebelum sesi)', 0, 8760],
+                'reschedule_before_hours' => ['Batas pindah jadwal (jam sebelum sesi)', 0, 8760],
+            ] as $field => [$label, $min, $max])
+                @include('owner.settings.policy-field')
+            @endforeach
+        </div>
+    </x-ui.form-section>
+    <x-ui.form-section title="Waktu booking" description="Kapan pelanggan boleh memesan.">
+        <div class="grid gap-3 sm:grid-cols-2">
+            @foreach ([
+                'booking_min_lead_hours' => ['Paling lambat booking baru (jam sebelum sesi)', 0, 8760],
+                'booking_max_days_ahead' => ['Booking paling jauh (hari ke depan)', 1, 365],
+                'booking_buffer_minutes' => ['Jeda antar-booking (menit)', 0, 1440],
+            ] as $field => [$label, $min, $max])
+                @include('owner.settings.policy-field')
+            @endforeach
+        </div>
+    </x-ui.form-section>
     <button class="bq-btn bq-btn-primary">Simpan kebijakan</button>
 </form>
 <div class="mt-4 space-y-2">

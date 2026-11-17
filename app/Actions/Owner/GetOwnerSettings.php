@@ -30,7 +30,7 @@ final class GetOwnerSettings
         $canManageIntegrations = $tenant->exists && $user !== null && $policy->ability($user, 'integrations.manage');
         $accountUser = $user;
         $tabs = $canManageBusiness ? ['profile' => 'Profil Bisnis', 'policy' => 'Kebijakan Booking'] : [];
-        $tabs += ['notifications' => 'Notifikasi', 'account' => 'Akun'];
+        $tabs['notifications'] = 'Notifikasi';
         $subscription = $tenant->exists ? $tenant->subscription : null;
         $requestedTab = $requestedTab === 'integrations' ? 'integrasi' : $requestedTab;
         $showIntegrations = $canManageIntegrations && ModuleRelease::state('integrations') === 'released'
@@ -44,6 +44,7 @@ final class GetOwnerSettings
         if ($showIntegrations || $showApi) {
             $tabs['integrasi'] = 'Integrasi';
         }
+        $tabs['account'] = 'Akun';
         if ($requestedTab === 'tim') {
             abort_unless($canManageTeam, 403);
             abort_unless(isset($tabs['tim']), 404);

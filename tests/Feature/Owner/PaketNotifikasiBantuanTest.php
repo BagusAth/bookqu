@@ -174,6 +174,18 @@ class PaketNotifikasiBantuanTest extends TestCase
             ->assertSee('Booking baru Rani')->assertDontSee('Paket hampir habis');
     }
 
+    public function test_notifications_are_grouped_by_local_day_newest_first(): void
+    {
+        $today = now();
+        $this->travelTo($today->copy()->subDay());
+        $this->notify($this->owner, NewBookingOwnerNotification::class, ['title' => 'Booking Kemarin']);
+        $this->travelTo($today);
+        $this->notify($this->owner, NewBookingOwnerNotification::class, ['title' => 'Booking Terbaru']);
+
+        $this->actingAs($this->owner)->get(route('owner.notifications'))
+            ->assertOk()->assertSeeInOrder(['Hari ini</h2>', 'Booking Terbaru', 'Kemarin</h2>', 'Booking Kemarin'], false);
+    }
+
     public function test_ac_ntf_01_opening_an_item_marks_it_read_and_lands_on_its_target(): void
     {
         $target = url('/owner/bookings?katakunci=BKQ-77');
