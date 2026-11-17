@@ -11,31 +11,29 @@
 <div class="mx-auto max-w-4xl space-y-6">
     <x-owner.page-header title="Bantuan" purpose="Jawaban cepat, dan cara menghubungi kami." />
 
-    <section aria-labelledby="contact-title" class="bq-panel p-4 sm:p-5">
-        <h2 id="contact-title" class="text-lg font-semibold text-bq-ink">Hubungi BookQu</h2>
-        <p class="mt-1 text-sm text-bq-text-muted">Tim kami membantu lewat WhatsApp atau email.</p>
+    <x-ui.panel title="Hubungi BookQu" :description="$contacts['hours'] !== '' ? $contacts['hours'] : null">
         @if ($contacts['whatsappUrl'] || $contacts['email'])
-            <div class="mt-3 flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2">
                 @if ($contacts['whatsappUrl'])
-                    <a href="{{ $contacts['whatsappUrl'] }}" target="_blank" rel="noopener" class="bq-btn bq-btn-primary"><x-owner.icon name="whatsapp" class="h-4 w-4" />WhatsApp {{ $contacts['whatsapp'] }}</a>
+                    <x-ui.button variant="primary" icon="whatsapp" :href="$contacts['whatsappUrl']" target="_blank" rel="noopener">
+                        WhatsApp {{ $contacts['whatsapp'] }}
+                    </x-ui.button>
                 @endif
                 @if ($contacts['email'])
-                    <a href="mailto:{{ $contacts['email'] }}" class="bq-btn bq-btn-secondary">{{ $contacts['email'] }}</a>
+                    <x-ui.button icon="external" :href="'mailto:'.$contacts['email']" class="max-w-full break-all">
+                        {{ $contacts['email'] }}
+                    </x-ui.button>
                 @endif
             </div>
-            @if ($contacts['hours'] !== '')
-                <p class="mt-2 text-xs text-bq-text-muted">{{ $contacts['hours'] }}</p>
-            @endif
         @else
-            <p class="mt-1 text-sm text-bq-text-muted">Kontak bantuan belum diatur.</p>
+            <p class="text-sm text-bq-text-muted">Tim kami membantu lewat WhatsApp atau email. Kontak bantuan belum diatur.</p>
         @endif
-    </section>
+    </x-ui.panel>
 
     <section aria-labelledby="faq-title" class="space-y-4">
-        <h2 id="faq-title" class="text-base font-semibold text-bq-text">Pertanyaan umum</h2>
+        <h2 id="faq-title" class="sr-only">Pertanyaan umum</h2>
         @foreach ($faq as $page => $questions)
-            <div class="bq-panel">
-                <h3 class="border-b border-bq-border px-4 py-3 text-sm font-semibold text-bq-text">{{ $page }}</h3>
+            <x-ui.panel :title="$page" flush>
                 <div class="divide-y divide-bq-border">
                     @foreach ($questions as $item)
                         <details class="group px-4 py-3">
@@ -49,15 +47,16 @@
                         </details>
                     @endforeach
                 </div>
-            </div>
+            </x-ui.panel>
         @endforeach
     </section>
-    <section class="bq-panel flex flex-wrap items-center justify-between gap-3 p-4" aria-labelledby="help-guide">
-        <div>
+    <x-ui.panel aria-labelledby="help-guide" flush>
+        <x-ui.list-row class="flex-wrap">
+            <x-slot:leading><x-owner.icon name="check" class="size-5 text-bq-primary" /></x-slot:leading>
             <h2 id="help-guide" class="font-semibold">Panduan awal</h2>
             <p class="text-bq-small text-bq-text-muted">Langkah menyiapkan bisnis di BookQu.</p>
-        </div>
-        <a href="{{ $guideUrl }}" class="bq-btn bq-btn-secondary">Buka panduan</a>
-    </section>
+            <x-slot:trailing><x-ui.button :href="$guideUrl" size="sm">Buka panduan</x-ui.button></x-slot:trailing>
+        </x-ui.list-row>
+    </x-ui.panel>
 </div>
 @endsection
