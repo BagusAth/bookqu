@@ -149,11 +149,11 @@ class BerandaPageTest extends TestCase
         $this->actingAs($this->owner)->get(route('owner.dashboard'))
             ->assertOk()
             ->assertSee('Pendapatan hari ini')
-            ->assertSee('Rp 125.000');
+            ->assertSee('Rp125.000');
 
         $this->getJson(route('owner.dashboard.polling'))
             ->assertOk()
-            ->assertJsonFragment(['key' => 'revenue', 'label' => 'Pendapatan hari ini', 'value' => 'Rp 125.000']);
+            ->assertJsonFragment(['key' => 'revenue', 'label' => 'Pendapatan hari ini', 'value' => 'Rp125.000']);
     }
 
     public function test_ac_brd_03_a_kasir_sees_no_amount(): void
@@ -170,7 +170,7 @@ class BerandaPageTest extends TestCase
             ->assertSee('Booking hari ini');
 
         $json = (string) $this->getJson(route('owner.dashboard.polling'))->assertOk()->getContent();
-        $this->assertStringNotContainsString('Rp ', $json);
+        $this->assertStringNotContainsString('Rp', $json);
         $this->assertStringNotContainsString('revenue', $json);
     }
 

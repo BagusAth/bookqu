@@ -29,6 +29,7 @@ use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use App\Notifications\OwnerPayoutStatusChangedNotification;
 use App\Support\CustomerBookingRoutes;
+use App\Support\Rupiah;
 use App\Support\StatusBadge;
 use App\Support\TenantContext;
 use Carbon\Carbon;
@@ -57,7 +58,7 @@ class GetBeranda
      *     banner: array<string, mixed>|null,
      *     guide: array<string, mixed>|null,
      *     live: array<string, mixed>,
-     *     link: array{url: string, share_text: string}|null,
+     *     link: array{url: string, share_text: string, qr_url: string|null}|null,
      *     quickActions: list<array<string, string>>,
      * }
      */
@@ -68,6 +69,7 @@ class GetBeranda
         $role = $this->role($user);
         $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
         $guide = $this->guide($tenant);
+        $navigation = collect($this->getOwnerNavigation->execute($user));
         $storefront = $tenant->slug ? CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) : null;
 
         return [
@@ -77,8 +79,9 @@ class GetBeranda
             'link' => $storefront === null ? null : [
                 'url' => $storefront,
                 'share_text' => 'Booking '.($tenant->namabisnis ?: 'kami').' secara online: '.$storefront,
+                'qr_url' => $navigation->firstWhere('id', 'booking-page')['url'] ?? null,
             ],
-            'quickActions' => $this->quickActions($user, $role, $subscription),
+            'quickActions' => $this->quickActions($navigation, $role, $subscription),
         ];
     }
 
@@ -267,7 +270,7 @@ class GetBeranda
                 ->where('status', 'sukses')
                 ->whereBetween('created_at', [Carbon::today(), Carbon::today()->endOfDay()])
                 ->sum('jumlah');
-            $figures[] = ['key' => 'revenue', 'label' => 'Pendapatan hari ini', 'value' => 'Rp '.number_format($revenue, 0, ',', '.'), 'hint' => 'Dari pembayaran berhasil'];
+            $figures[] = ['key' => 'revenue', 'label' => 'Pendapatan hari ini', 'value' => Rupiah::format($revenue), 'hint' => 'Dari pembayaran berhasil'];
         }
 
         $figures[] = [
@@ -425,9 +428,10 @@ class GetBeranda
     /**
      * Quick actions of §8.1 point 6, shown only where the member's role and plan allow them.
      *
+     * @param  Collection<int, array<string, mixed>>  $navigation
      * @return list<array<string, string>>
      */
-    private function quickActions(User $user, string $role, ?Subscription $subscription): array
+    private function quickActions(Collection $navigation, string $role, ?Subscription $subscription): array
     {
         $actions = [];
         if (TenantPermission::allowsRole($role, 'bookings.walkin') && EntitlementRules::hasEffectivePlan($subscription)) {
@@ -436,7 +440,7 @@ class GetBeranda
         if (TenantPermission::allowsRole($role, 'services.manage')) {
             $actions[] = ['key' => 'service', 'label' => 'Layanan', 'event' => '', 'url' => route('owner.services', ['buat' => 1])];
         }
-        $promos = collect($this->getOwnerNavigation->execute($user))->firstWhere('id', 'promos');
+        $promos = $navigation->firstWhere('id', 'promos');
         if ($promos !== null && ! $promos['locked']) {
             $actions[] = ['key' => 'promo', 'label' => 'Promo', 'event' => '', 'url' => route('owner.promos', ['buat' => 1])];
         }

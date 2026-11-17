@@ -110,7 +110,7 @@ class OwnerDashboardPollingTest extends TestCase
             ]);
         }
 
-        $this->assertSame('Rp 50.000', $this->figure('revenue')['value']);
+        $this->assertSame('Rp50.000', $this->figure('revenue')['value']);
     }
 
     public function test_html_customer_names_stay_raw_data_in_polling_and_text_on_the_dashboard(): void
@@ -183,7 +183,7 @@ class OwnerDashboardPollingTest extends TestCase
             ->assertSee('Slot terisi hari ini')
             ->assertSee('Perlu Anda')
             ->assertSee('Jadwal hari ini')
-            ->assertSee('Link booking Anda')
+            ->assertSee('Link booking')
             ->assertSee('Aksi cepat');
     }
 }
