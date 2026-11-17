@@ -1,0 +1,109 @@
+/* BookQu prototipe "Papan Jadwal": satu-satunya tempat nilai warna, huruf, jarak dan bentuk. */
+:root {
+  /* Warna */
+  --terong: #382186;        /* yang bisa ditekan dan yang sedang dipilih */
+  --terong-tua: #2A1869;    /* tekan / hover terong */
+  --tinta: #1D1638;         /* teks */
+  --redup: #625E75;         /* teks kedua */
+  --kunyit: #FFB84D;        /* hanya "sekarang" dan "perlu Anda"; tidak pernah jadi teks */
+  --kunyit-pucat: #FFF1D6;
+  --kabut: #F5F4F9;         /* latar aplikasi */
+  --putih: #FFFFFF;         /* panel */
+  --lilak: #ECE8FA;         /* terpilih, slot terisi */
+  --abu-pucat: #EEEDF3;
+  --garis: #E3E0EE;
+  --garis-kuat: #CBC6DC;
+  --daun: #1F7A4D;          /* lunas, selesai */
+  --daun-pucat: #E4F3EA;
+  --bata: #B3261E;          /* batal, bahaya */
+  --bata-pucat: #FBE9E7;
+
+  --lilak-garis: #D6CEF3;   /* garis lapisan terpilih */
+  --lilak-garis-kuat: #B8ABEA;
+  --lilak-tekan: #E2DCF7;
+  --kunyit-tua: #C77700;    /* titik dan batang "menunggu" / "hampir habis"; bukan teks */
+  --kunyit-garis: #F1D49B;
+  --kunyit-ikon: #8A5A00;
+  --kunyit-teks: #5B4A2A;   /* teks kedua di atas kunyit pucat */
+  --daun-garis: #A8D5BC;
+  --bata-garis: #EDC4C0;
+  --teks-mati: #8E8AA0;     /* kontrol nonaktif (dikecualikan dari AA) */
+  --peta-1: #DAD2F5; --peta-2: #A999E4; --peta-3: #6A52C0;   /* peta jam ramai; tingkat 4 = terong */
+
+  /* Alat prototipe (bukan bagian desain) */
+  --alat: #0B6E99; --alat-b: #8A4FBF; --alat-panggung: #DDDAE8;
+
+  /* Huruf */
+  --f-ui: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-papan: "Barlow Semi Condensed", "Plus Jakarta Sans", system-ui, sans-serif;
+  --t-angka: 600 40px/44px var(--f-papan);
+  --t-angka-kecil: 600 26px/30px var(--f-papan);
+  --t-judul: 700 24px/32px var(--f-ui);
+  --t-bagian: 600 17px/24px var(--f-ui);
+  --t-isi: 400 14px/20px var(--f-ui);
+  --t-isi-tebal: 600 14px/20px var(--f-ui);
+  --t-form: 400 15px/22px var(--f-ui);
+  --t-kecil: 500 13px/18px var(--f-ui);
+  --t-jam: 600 15px/20px var(--f-papan);
+  --t-jam-kecil: 600 14px/18px var(--f-papan);
+  --t-angka-sedang: 600 22px/26px var(--f-papan);
+  --t-papan-kecil: 600 13px/20px var(--f-papan);   /* label "sekarang" di rel */
+  --t-papan-sumbu: 600 13px/16px var(--f-papan);   /* angka jam di sumbu kisi */
+  --t-papan-angka: 600 13px/1 var(--f-papan);
+  --t-papan-label: 600 13px/18px var(--f-papan);
+  --t-papan-mini: 600 12px/18px var(--f-papan);
+  --t-judul-hp: 700 22px/28px var(--f-ui);
+  --t-sub: 600 15px/22px var(--f-ui);              /* judul bagian formulir, keadaan kosong */
+  --t-form-hp: 400 16px/24px var(--f-ui);
+  --t-nav: 500 14px/20px var(--f-ui);
+  --t-label: 600 13px/18px var(--f-ui);            /* label bidang, tombol kecil */
+  --t-kontrol-kecil: 500 13px/18px var(--f-ui);
+  --t-kecil-tebal: 600 13px/18px var(--f-ui);
+  --t-lencana: 600 12px/22px var(--f-ui);
+  --t-hitung: 700 12px/20px var(--f-ui);
+  --t-sel-peta: 600 12px/26px var(--f-ui);
+  --t-nav-bawah: 500 12px/14px var(--f-ui);
+  --t-akun: 600 13px/16px var(--f-ui);
+  --t-akun-kecil: 500 12px/15px var(--f-ui);
+  --t-merek: 700 15px/18px var(--f-ui);
+  --t-logo: 800 15px/1 var(--f-ui);
+  --t-avatar: 700 12px/1 var(--f-ui);
+  --t-avatar-besar: 700 15px/1 var(--f-ui);
+  --t-alat: 700 11px/18px var(--f-ui);             /* hanya label catatan perubahan (alat prototipe) */
+
+  /* Jarak (kisi 4 px) */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px;
+
+  /* Bentuk */
+  --r1: 6px;    /* kontrol */
+  --r2: 10px;   /* panel */
+  --r3: 16px;   /* dialog, lembar */
+  --bayang: 0 16px 40px rgba(29, 22, 56, .18);   /* hanya lapisan melayang */
+
+  /* Kepadatan */
+  --baris: 52px;        /* baris tabel satu lapis */
+  --baris-dua: 60px;    /* baris tabel dua lapis */
+  --kontrol: 40px;      /* tinggi tombol dan input */
+  --tepi: 32px;         /* tepi halaman */
+
+  /* Sidebar (terang) */
+  --sb-latar: var(--putih);
+  --sb-teks: var(--tinta);
+  --sb-redup: var(--redup);
+  --sb-aktif-latar: var(--lilak);
+  --sb-aktif-teks: var(--terong);
+  --sb-garis: var(--garis);
+  --sb-hover: var(--kabut);
+}
+
+.app[data-density="padat"] { --baris: 44px; --baris-dua: 52px; }
+
+.app[data-sidebar="terong"] {
+  --sb-latar: var(--terong);
+  --sb-teks: #FFFFFF;
+  --sb-redup: #D3CCF0;
+  --sb-aktif-latar: var(--terong-tua);
+  --sb-aktif-teks: #FFFFFF;
+  --sb-garis: transparent;
+  --sb-hover: rgba(255, 255, 255, .08);
+}
