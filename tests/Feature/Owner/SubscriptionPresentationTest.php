@@ -34,7 +34,7 @@ class SubscriptionPresentationTest extends TestCase
         $this->assertSame('119', $match[1]);
     }
 
-    public function test_landing_and_subscription_use_the_same_configured_features_and_database_limits(): void
+    public function test_subscription_compares_configured_features_and_database_limits_to_the_previous_plan(): void
     {
         $tenant = Tenant::factory()->create();
         foreach (['small', 'medium', 'pro'] as $key) {
@@ -46,11 +46,12 @@ class SubscriptionPresentationTest extends TestCase
 
         foreach (['small', 'medium', 'pro'] as $key) {
             $expected = ['Fitur bersama '.$key, 'Hingga 7 layanan', 'Hingga 123 booking/bulan'];
-            foreach ([$landing, $subscription] as $response) {
+            foreach (['landing' => $landing, 'owner' => $subscription] as $page => $response) {
+                $visible = $page === 'owner' && $key !== 'small' ? ['Fitur bersama '.$key] : $expected;
                 $document = new \DOMDocument;
                 @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
                 $labels = (new \DOMXPath($document))->query('//ul[@data-plan-features="'.$key.'"]//span[@data-feature-label]');
-                $this->assertSame($expected, array_map(fn (\DOMNode $node): string => trim($node->textContent), iterator_to_array($labels)));
+                $this->assertSame($visible, array_map(fn (\DOMNode $node): string => trim($node->textContent), iterator_to_array($labels)));
             }
         }
     }

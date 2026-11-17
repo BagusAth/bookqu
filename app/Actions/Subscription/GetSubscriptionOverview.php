@@ -14,6 +14,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantMember;
+use App\Support\Rupiah;
 use App\Support\StatusBadge;
 use Illuminate\Support\Collection;
 
@@ -110,7 +111,7 @@ class GetSubscriptionOverview
         return [
             'langgananaktif' => $langgananaktif,
             'statusLabel' => $this->statusLabel($langgananaktif),
-            'endDate' => $periodEnd?->translatedFormat('j M Y'),
+            'endDate' => $periodEnd?->locale('id')->translatedFormat($periodEnd->isCurrentYear() ? 'j M' : 'j M Y'),
             'daysRemaining' => $periodEnd !== null && EntitlementRules::hasEffectivePlan($langgananaktif)
                 ? (int) max(0, ceil(now()->diffInDays($periodEnd, false)))
                 : 0,
@@ -153,10 +154,12 @@ class GetSubscriptionOverview
     {
         $orderId = (string) $payment->order_id;
 
+        $date = $payment->created_at?->timezone('Asia/Jakarta')->locale('id');
+
         return [
             'orderId' => $orderId,
-            'date' => $payment->created_at?->timezone('Asia/Jakarta')->translatedFormat('j M Y'),
-            'amount' => 'Rp '.number_format((float) $payment->jumlah, 0, ',', '.'),
+            'date' => $date?->translatedFormat($date->isCurrentYear() ? 'j M' : 'j M Y'),
+            'amount' => Rupiah::format($payment->jumlah),
             'status' => array_combine(['label', 'tone'], StatusBadge::for('payment', (string) $payment->status)),
             'invoiceUrl' => $payment->status === PaymentState::STATUS_SUKSES && $orderId !== '' ? route('owner.checkout.invoice', $orderId) : null,
             'payUrl' => $payment->status === PaymentState::STATUS_PENDING && $orderId !== '' ? route('owner.checkout.payment', $orderId) : null,

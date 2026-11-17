@@ -87,7 +87,7 @@ class PaketNotifikasiBantuanTest extends TestCase
             ->assertSee('Paket &amp; Tagihan', false)
             ->assertSee('Medium')
             ->assertSee('Aktif')
-            ->assertSee('10 Des 2026')
+            ->assertSee('10 Des')
             ->assertSee('2 dari 10 layanan')
             ->assertSee('data-plan-features="small"', false)
             ->assertSee(route('owner.checkout.invoice', 'SUB-PAID-1'))
