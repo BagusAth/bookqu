@@ -111,9 +111,13 @@ document.addEventListener('alpine:init', () => {
             return !this.busy && this.preview?.to_create > 0 && this.checkedFields === this.fingerprint(form);
         },
         async check(form) {
-            if (this.busy || !form.reportValidity()) return;
+            if (this.busy) return;
             this.preview = null;
             this.error = '';
+            if (!form.reportValidity()) {
+                this.error = 'Isi atau perbaiki kolom yang ditandai, lalu tekan Pratinjau lagi.';
+                return;
+            }
             this.busy = true;
             const fields = this.fingerprint(form);
             try {

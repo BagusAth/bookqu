@@ -131,14 +131,14 @@
             data-preview-url="{{ route('owner.schedule.bulk-preview') }}"
             x-data="scheduleBulkPreview(@js($openingHours))"
             @if (request()->boolean('buat')) x-init="$nextTick(() => $dispatch('open-dialog', { id: 'schedule-bulk-dialog' }))" @endif
-            @input="preview = null; openingChoices = []; openingWarning = ''" @change="preview = null" @submit="if (!canSave($el)) $event.preventDefault()">
+            @input="preview = null; error = ''; openingChoices = []; openingWarning = ''" @change="preview = null; error = ''" @submit="if (!canSave($el)) $event.preventDefault()">
             @csrf
             <div class="grid gap-1.5">
                 <label for="bulk-service" class="bq-label">Layanan <span class="text-bq-danger" aria-hidden="true">*</span></label>
-                <select id="bulk-service" name="idlayanan" class="bq-input w-full" @change="$refs.interval.value = $event.target.selectedOptions[0].dataset.duration" required>
+                <select id="bulk-service" name="idlayanan" class="bq-input w-full" @change="$refs.interval.value = $event.target.selectedOptions[0]?.dataset.duration ?? ''" required>
                     <option value="">Pilih layanan</option>
                     @foreach ($daftarlayanan as $service)
-                        <option value="{{ $service->id }}" data-duration="{{ $service->durasi }}" @selected($service->id === request()->integer('layanan'))>{{ $service->namalayanan }}</option>
+                        <option value="{{ $service->id }}" data-duration="{{ $service->durasi }}" @selected($service->id === $selectedService)>{{ $service->namalayanan }}</option>
                     @endforeach
                 </select>
             </div>
@@ -188,6 +188,7 @@
                 <label for="bulk-interval" class="bq-label">Jarak antar-slot</label>
                 <div class="flex min-h-bq-control items-center rounded-bq-control border border-bq-border-strong bg-bq-surface focus-within:border-bq-primary focus-within:ring-2 focus-within:ring-bq-primary/20">
                     <input id="bulk-interval" type="number" name="intervalslot" x-ref="interval" min="5" max="480" step="5" required inputmode="numeric"
+                        value="{{ $daftarlayanan->firstWhere('id', $selectedService)?->durasi }}"
                         class="bq-num min-w-0 flex-1 border-0 bg-transparent px-3 text-bq-form outline-none focus:ring-0">
                     <span class="px-3 text-bq-form text-bq-text-muted">menit</span>
                 </div>
