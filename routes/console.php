@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Booking\CompleteBookings;
+use App\Actions\Owner\SendWeeklySummary;
 use App\Actions\Payment\RemindOpenRefundRequests;
 use App\Actions\Schedule\OpenAutomaticSlots;
 use App\Actions\Tenant\CheckCustomDomain;
@@ -107,4 +108,18 @@ Artisan::command('slots:open-automatic', function (OpenAutomaticSlots $openAutom
 Schedule::call(fn () => Artisan::call('slots:open-automatic'))
     ->name('slots:open-automatic')
     ->dailyAt('01:00')
+    ->withoutOverlapping();
+
+// BQ-162 (FR-NOTIFICATION-008, D-026): Monday-morning summary of last week for every Pemilik.
+Artisan::command('owners:weekly-summary', function (SendWeeklySummary $sendWeeklySummary): void {
+    Tenant::query()->with('user')->chunkById(100, function ($tenants) use ($sendWeeklySummary): void {
+        foreach ($tenants as $tenant) {
+            $sendWeeklySummary->execute($tenant);
+        }
+    });
+})->purpose('Email the summary of last week to every business owner');
+
+Schedule::call(fn () => Artisan::call('owners:weekly-summary'))
+    ->name('owners:weekly-summary')
+    ->weeklyOn(1, '07:00')
     ->withoutOverlapping();
