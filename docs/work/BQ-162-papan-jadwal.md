@@ -10,8 +10,8 @@ requirements: []
 invariants: [INV-TEN-01, INV-BOOK-01, INV-BOOK-02, INV-BOOK-03, INV-BOOK-04, INV-BOOK-05, INV-SUB-01]
 lane: heavy
 approval: product-lead
-decision: D-025
-launch-blocker: false
+decision: D-025, D-026
+launch-blocker: true
 depends-on: [BQ-161]
 ---
 
@@ -19,7 +19,11 @@ depends-on: [BQ-161]
 
 BQ-161 restyled the owner portal but kept most pages on raw controls and Tailwind steps (`docs/design/papan-jadwal/audit-ui.md` §3, gaps G-1 to G-11). A review (`review.md`) and a static prototype (`docs/design/papan-jadwal/prototype/`) now define the target: a time-first layout, five-column tables, one name per action, and readable phone and tablet layouts. D-025 approves building all of it, including the content changes (B) and new features (C) listed in `docs/design/papan-jadwal/KEPUTUSAN.md`.
 
-**Branch rule (D-025).** All sessions work on `agathan-bq-162-papan-jadwal`, one commit series per session, in order. Nothing goes to `integration` until the Tech Lead decides. Do not push to `integration` or `main`.
+**Branch rule (D-025).** All sessions work on `agathan-bq-162-papan-jadwal`, one commit series per session, in order. Nothing goes to `integration` until the Tech Lead decides. Do not push to `integration` or `main`. Push only with `git push origin agathan-bq-162-papan-jadwal`; first check that `git rev-parse --abbrev-ref @{u}` is `origin/agathan-bq-162-papan-jadwal` (or empty), never `origin/integration`.
+
+**Release (D-026 point 8).** v1.0.0 waits for BQ-162. The BQ-158 regression pass runs after BQ-162 is merged into `integration`.
+
+**Gates.** The Tech Lead reviews each session's evidence before the next session starts. Sessions 7 and 8 start only after the Product Lead has confirmed D-026 in `docs/product-decisions.md`; use the numbers from D-026, never guess. If a session finds something the plan or prototype does not answer, stop and write it under "Open findings" instead of deciding.
 
 ## How to use the prototype
 
@@ -48,6 +52,7 @@ Each session is one Codex run. Start every session by reading this file, `KEPUTU
 
 ### Session 1: tokens, shell and primitives
 
+- Decided by the Tech Lead (17 Nov 2026): light sidebar, Barlow Semi Condensed allowed.
 - Tokens: map `prototype/css/tokens.css` to `resources/css/app.css` (colours, type scale as named classes, spacing, radius, density). Add Barlow Semi Condensed (500, 600) to the owner layout font link for clock times and headline numbers only.
 - Shell (`components/owner/sidebar`, `topbar`, `bottom-nav`, `layouts/owner-layout`): light sidebar, tablet icon rail 768–1199 px, top bar with one "Catat booking" button, phone bottom nav with "Catat" in the middle. Rename "Walk-in" and "+ Booking" to "Catat booking" everywhere (B-10), plus "Tambahan" and "Halaman depan".
 - New `x-ui` primitives with render tests: `table` (subgrid, group rows, selectable rows, phone two-line form, row action), `status-dot`, `kv`, `banner`, `error-block`, `menu`, `segmented`, `checkbox`, `radio-card`, `switch`, `sheet`, `form-section`, `stat` (one main number + supporting numbers), `table-note`, `mini-bar`, `duration`, `empty`, `skeleton`. Update `components/owner/README.md`.
@@ -95,6 +100,9 @@ Each session is one Codex run. Start every session by reading this file, `KEPUTU
 
 ### Session 7: booking automation (heavy, C-01 to C-03)
 
+Gate: D-026 confirmed by the Product Lead. Values: slots 30 days ahead per service (opt-in, all plans); auto-complete 6 hours after the session ends (on by default, can be switched off, skips no-show and refund requests); bulk complete for Pemilik, Manajer and Kasir.
+
+
 - First add the requirements (`docs/requirements.md`) and update `docs/domains/booking.md` and `docs/domains/schedule.md`; the code follows them.
 - C-01 slot automation: per-service setting, nightly scheduled command that opens slots from opening hours up to the configured horizon, skips closed dates and existing slots, idempotent.
 - C-02 auto-complete: setting in Kebijakan; scheduled command completes `paid` bookings X hours after the session ends, only through `BookingState::canTransition`, skips bookings with a refund request.
@@ -102,6 +110,9 @@ Each session is one Codex run. Start every session by reading this file, `KEPUTU
 - Done when: unit tests for the rules, feature tests for the commands and the bulk Action, MySQL suite green for anything that locks.
 
 ### Session 8: growth features (heavy, C-07 to C-09)
+
+Gate: D-026 confirmed. Values: weekly email Monday morning to Pemilik only (on, can be switched off); sources Instagram, WhatsApp, Google Maps, QR, direct (report Medium+); quiet-hour promo percent or amount on owner-chosen days and hours (Medium+), suggestion shown in Laporan → Okupansi. Update the plan table in `docs/product.md` (D-017) first.
+
 
 - Requirements and domain docs first, as in session 7.
 - C-07 weekly email summary: preference in Notifikasi, scheduled job, queued mail.
@@ -116,6 +127,19 @@ Each session is one Codex run. Start every session by reading this file, `KEPUTU
 - Screenshots of every owner page at 375, 768, 1024, 1366 as Pemilik, Manajer and Kasir, compared with the prototype; list differences in Evidence.
 - Update `docs/owner-portal.md` §8 (content) and §9 (visual system, sidebar), `.ai/rules/frontend.md` (component-first rule, design rules above), and the domain files changed by sessions 7–8.
 - Done when: all checks green and the Tech Lead has the evidence to decide on merging into `integration`.
+
+## Prompt for each Codex session
+
+Paste and change the number:
+
+```text
+Repository C:\laragon\www\bookqu, branch agathan-bq-162-papan-jadwal (git switch agathan-bq-162-papan-jadwal; git pull origin agathan-bq-162-papan-jadwal).
+Do BQ-162 session N only. Read docs/work/BQ-162-papan-jadwal.md (rules, gates, session N),
+docs/design/papan-jadwal/KEPUTUSAN.md and AGENTS.md first. Run the prototype with
+php -S 127.0.0.1:8770 -t docs/design/papan-jadwal/prototype and use the routes listed for session N.
+Finish with the checks in the plan, fill "Evidence" for session N, commit, and push only to
+origin agathan-bq-162-papan-jadwal. Stop and report instead of guessing when the plan does not answer.
+```
 
 ## Invariants at risk
 
