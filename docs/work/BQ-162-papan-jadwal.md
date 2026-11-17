@@ -216,8 +216,19 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
     - domain files `booking.md`, `schedule.md`, `catalog.md` (promo), `insights.md` and `notifications.md`.
   - **Not done:** the screen-reader pass with NVDA or VoiceOver needs a person at the machine. Left for the Tech Lead before merging.
 
+### Remaining owner visual pass (17 Nov 2026)
+
+- Ulasan `1d4b372`, Pengaturan `c2071ae`, Paket & Tagihan `1ccda7d`, Notifikasi `982225d`, Bantuan `c8b3145`, Halaman Booking `c955cbf` and Beranda `3d5c040` were implemented in order.
+- Compared the prototype and the Pro tenant side by side at 1366 and 375 px. Covered the six Pengaturan tabs, both Notifikasi segments and all five Halaman Booking tabs. At 375 px, all 37 accessible main pages across Pemilik (16), Manajer (14) and Kasir (7) rendered without page overflow or JavaScript exceptions. Removed the temporary Manajer account.
+- The application retains review search, rating-based suggestions and the edit dialog. Pengaturan keeps the existing profile fields and separate integration and team forms. The prototype's team sign-in times and Google Analytics test button have no existing application equivalent. Paket & Tagihan uses actual plan features, prices and limits. Notifikasi uses the existing type filters and routes. Bantuan uses configured contacts and existing FAQ answers. Halaman Booking keeps its existing upload form and longer copy labels.
+- Beranda displayed the setup guide with the existing local data. Compared that state in the browser and the busy banner, figures, Perlu Anda, today's rail, Besok and booking link in code. Beranda feature tests exercise the live data paths. The demo seeder was not run.
+- Build, Pint and focused page tests passed.
+- The single full SQLite run on PHP 8.4 reported 1,006 passed and six failed. Two assertions still expected the old Beranda label and rupiah format at the start of that run. The updated `OwnerDashboardPollingTest` passed all seven tests. Four full-suite failures and one PHPStan finding remain below.
+
 ## Open findings
 
+- The remaining visual pass exposed four full-suite failures in code outside this pass. `CoreFlowIntegrationTest::test_owner_only_sees_own_tenant_bookings` did not find the expected own-tenant customer in Booking. `OwnerPortalWorkflowTest::test_csv_export_is_plan_gated_and_neutralizes_formula_cells` did not find the expected escaped formula in the Booking export. `OwnerUiAuditTest::test_owner_pages_render_when_optional_service_or_account_relations_are_missing` did not find the expected Booking customer with no service relation. `ArchitectureRulesTest::test_scope_bypasses_carry_a_reason_comment` reported two scope bypasses in `GetLayananTabCounts` from `8623d1e`.
+- PHPStan reported that `OwnerScheduleController.php:75` reads `namalayanan` on an inferred generic Eloquent model. That line came from `2652aa4` and was outside the remaining visual pass.
 - The full-suite documentation guardrail reports two undefined work item references in `docs/design/papan-jadwal/audit-ui.md`. Both references were already present on the branch before Session 1. Resolved in commit `eb277e4`.
 - Resolved by the Tech Lead. A network failure, timeout or 5xx during payout submission shows “Pengajuan pencairan belum terkonfirmasi”. “Coba lagi” sends the same `request_key` and “Nanti saja” closes the dialog. Validation remains inline. The local balance hold and later admin transfer continue under FR-PAYOUT-002 and FR-PAYOUT-003. Prototype updated in `eb277e4`.
 - Resolved by the Tech Lead (17 Nov 2026). C-11 “Belum jadi membayar” goes in Laporan → Pelanggan. List in-period, tenant-scoped bookings whose payment is `gagal` and booking log says “Pembayaran ditutup”. Exclude owner or manager cancellations and customers with a `paid` or `completed` booking created later under the same customer identifier. Expiry and gateway failure share the existing records. Sort newest first and show “Pembayaran tidak selesai” with a link that opens the owner's WhatsApp. Kasir remains outside the Laporan permission.
@@ -230,7 +241,7 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
   - Fixes: `@js()` inside `<x-ui.*>`/`<x-owner.*>` attributes was not compiled by Blade and broke Alpine on validation errors (now `Js::from`). The owner page title and calendar labels showed garbled dashes.
   - The "Buka slot otomatis" switch on Jam buka sets `services.auto_open_slots` for every active service.
   - Tests for the touched pages were updated to the new copy and formats, and pass. The full suite was not rerun after this pass.
-- **Remaining for the visual pass** (compare each page side by side with the prototype at 1366 and 375 px; reuse the blocks above):
+- **Checklist for the remaining visual pass** (results in Evidence above):
   - Ulasan: the rating panel is one panel with the figure on the left and the distribution bars on the right. Show quick replies and the reply field inline on each unanswered review.
   - Pengaturan:
     - use two-column `x-ui.form-row` sections on every tab, with `x-ui.savebar` at the bottom;
