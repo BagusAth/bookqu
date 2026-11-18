@@ -22,6 +22,7 @@
     </div>
     <x-owner.gallery-picker name="image_asset_id" :images="$images" :selected="$value('image_asset_id')" label="Gambar unit" />
     <x-owner.field-error name="image_asset_id" :form="$formKey" />
+    <x-owner.field-error name="service_ids" :form="$formKey" />
     <x-owner.field-error name="service_ids.*" :form="$formKey" />
     <label class="flex items-center gap-2 text-sm">
         <input type="hidden" name="is_active" value="0">

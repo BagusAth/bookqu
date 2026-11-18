@@ -340,6 +340,20 @@ class CapacityUnitsAndNoShowTest extends TestCase
         $this->assertDatabaseHas('units', ['id' => $unit->id, 'image_path' => 'media/lapangan.png']);
     }
 
+    public function test_unit_rejects_unavailable_services_with_a_validation_error(): void
+    {
+        $this->asPro();
+        $service = $this->service();
+        $unit = $this->shareUnit($service);
+        $foreignService = Service::factory()->create(['idtenant' => Tenant::factory()->create()->id]);
+        $form = ['name' => $unit->name, 'type' => $unit->type, 'kapasitas' => $unit->kapasitas];
+
+        $this->actingAs($this->owner)->put(route('owner.units.update', $unit), $form + ['service_ids' => [$foreignService->id]])
+            ->assertSessionHasErrors('service_ids');
+        $this->assertDatabaseHas('service_unit', ['idunit' => $unit->id, 'idservice' => $service->id]);
+        $this->assertDatabaseMissing('service_unit', ['idunit' => $unit->id, 'idservice' => $foreignService->id]);
+    }
+
     public function test_failed_unit_edit_reopens_the_same_unit_with_old_input(): void
     {
         $this->asPro();

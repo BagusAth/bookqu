@@ -98,7 +98,7 @@ class SaveUnit
         // scope-bypass: filtered by the authenticated tenant
         $owned = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->whereIn('id', $ids)->pluck('id')->map(fn ($id): int => (int) $id)->all();
         if (count($owned) !== count($ids)) {
-            abort(404);
+            throw ValidationException::withMessages(['service_ids' => 'Layanan yang dipilih tidak tersedia. Muat ulang halaman dan coba lagi.']);
         }
 
         return $owned;

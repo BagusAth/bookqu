@@ -31,6 +31,7 @@
                 <button
                     type="button"
                     role="radio"
+                    aria-label="{{ filled($image['alt'] ?? null) ? $image['alt'] : 'Gambar '.$loop->iteration }}"
                     x-bind:aria-checked="chosen === @js((string) $image['id']) ? 'true' : 'false'"
                     x-on:click="chosen = @js((string) $image['id'])"
                     class="overflow-hidden rounded-lg border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-bq-primary/40"
