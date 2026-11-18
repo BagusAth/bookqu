@@ -72,7 +72,7 @@ class OwnerScheduleController extends Controller
                 'days' => self::dayRange((array) $rule->days),
                 'time' => str_replace(':', '.', substr((string) $rule->starts_at, 0, 5)).'–'.str_replace(':', '.', substr((string) $rule->ends_at, 0, 5)),
                 'extra' => '+'.Rupiah::format($rule->extra_amount),
-                'services' => $rule->services->isEmpty() ? 'Semua layanan' : ($rule->services->count() === 1 ? (string) $rule->services->first()->namalayanan : $rule->services->count().' layanan'),
+                'services' => $rule->services->isEmpty() ? 'Semua layanan' : ($rule->services->count() === 1 ? (string) $rule->services->value('namalayanan') : $rule->services->count().' layanan'),
                 'services_title' => $rule->services->pluck('namalayanan')->join(', '),
             ])->all();
         } elseif ($tab === 'closed') {

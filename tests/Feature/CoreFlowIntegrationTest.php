@@ -604,7 +604,7 @@ class CoreFlowIntegrationTest extends TestCase
         $this->actingAs($this->ownerA);
         session(['current_tenant_id' => $this->tenantA->id]);
 
-        $response = $this->get(route('owner.bookings'));
+        $response = $this->get(route('owner.bookings', ['tab' => 'all']));
         $response->assertStatus(200);
         $response->assertSee('Pelanggan Tenant A');
         $response->assertDontSee('Pelanggan Tenant B');

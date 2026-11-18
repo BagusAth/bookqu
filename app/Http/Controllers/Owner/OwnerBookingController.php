@@ -148,7 +148,9 @@ class OwnerBookingController extends Controller
         abort_unless($member instanceof TenantMember && TenantPermission::allowsRole($member->role, 'revenue.view'), 403);
         abort_unless(EntitlementRules::canAccessFeature($tenant->subscription, 'analytics.export')['allowed'], 403);
         $filters = $this->listFilters($request);
-        $query = $list->tab($list->query($tenant, $filters, streaming: true), $this->selectedTab($filters), TenantPermission::allowsRole($member->role, 'bookings.cancel'));
+        // An export without a tab keeps exporting every booking; only the page opens on Perlu tindakan.
+        $tab = $this->selectedTab($filters + ['tab' => $filters['status'] ?? 'all']);
+        $query = $list->tab($list->query($tenant, $filters, streaming: true), $tab, TenantPermission::allowsRole($member->role, 'bookings.cancel'));
 
         return $export->execute($query->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')
             ->orderBy('jam', $filters['sort'] ?? 'desc')->orderBy('bookings.id'));
