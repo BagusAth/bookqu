@@ -4,7 +4,7 @@ Dokumen ini berisi keputusan yang perlu divalidasi Product Lead, dan catatan kep
 
 **Cara menjawab:** balas dengan nomor entri dan poinnya, misalnya "D-001 setuju semua" atau "D-001 setuju kecuali poin 3: …". Setelah disetujui, Tech Lead membuat pekerjaannya. Keputusan yang sudah diambil bisa dibuka lagi kapan saja dengan menyebut nomornya.
 
-Terakhir diperbarui: 17 November 2026
+Terakhir diperbarui: 18 November 2026
 
 ---
 
@@ -22,6 +22,21 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 2. Menonaktifkan bisnis, masuk sebagai owner, dan mengubah langganan secara manual ditunda setelah rilis.
 
 *Catatan 4 Nov 2026:* D-001 sudah disetujui, jadi pemrosesan refund oleh admin ikut dikerjakan sebagai bagian dari D-001. Yang masih menunggu di sini hanya fitur admin di luar pencairan saldo dan refund. Product Lead sengaja menunda entri ini.
+
+*Jawaban Product Lead:* —
+
+### D-027 · Sesi lama saat fitur selesai otomatis pertama kali berjalan
+
+*Status:* Menunggu · *Diajukan:* 18 Nov 2026 · *Menahan rilis:* ya, untuk fitur selesai otomatis
+
+*Masalah*
+Saat fitur pertama kali berjalan, sesi lama yang sudah dibayar dan belum ditutup bisa langsung ditandai selesai. Pemilik mungkin masih perlu memeriksa apakah pelanggan benar-benar datang, terutama untuk sesi lama yang menumpuk.
+
+*Usulan keputusan*
+1. Mulai otomatisasi dari sesi yang berakhir sejak fitur diaktifkan. Pemilik tetap bisa menutup sesi lama melalui daftar Booking.
+2. Alternatifnya, proses semua sesi lama yang memenuhi syarat dan beri tahu pemilik sebelum fitur diaktifkan.
+
+*Sementara menunggu:* aturan aktivasi pertama belum diterapkan ke produksi. Aturan enam jam untuk sesi reguler tetap mengikuti D-026.
 
 *Jawaban Product Lead:* —
 

@@ -225,6 +225,14 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 - Build, Pint and focused page tests passed.
 - The single full SQLite run on PHP 8.4 reported 1,006 passed and six failed. Two assertions still expected the old Beranda label and rupiah format at the start of that run. The updated `OwnerDashboardPollingTest` passed all seven tests. Four full-suite failures and one PHPStan finding remain below.
 
+### Developer A test follow-up (18 Nov 2026)
+
+- T-02, T-09 and T-25 were already addressed by `2d26195`. This pass also makes the default CSV tab explicit when the request supplies an empty value.
+- T-01 now uses the existing optional bulk field from an explicit choice in Jam buka. Saving hours alone preserves the chosen services.
+- Fixed T-06, T-15 (calendar and reschedule), T-17a, T-18, T-19, T-23, T-27, T-28, T-29a, T-30, T-31, T-34 and T-36. The cancellation decision is available from the action row.
+- Evidence: full SQLite suite on PHP 8.4.25 with GD, 1,014 tests and 6,677 assertions passed. PHPStan, changed-file Pint, frontend build and the three opening-hours payload cases passed.
+- T-11, T-13 and T-26 are proposed in BQ-163 for Tech Lead review. T-12 is awaiting the Product Lead's answer in D-027.
+
 ## Open findings
 
 - The remaining visual pass exposed four full-suite failures in code outside this pass. `CoreFlowIntegrationTest::test_owner_only_sees_own_tenant_bookings` did not find the expected own-tenant customer in Booking. `OwnerPortalWorkflowTest::test_csv_export_is_plan_gated_and_neutralizes_formula_cells` did not find the expected escaped formula in the Booking export. `OwnerUiAuditTest::test_owner_pages_render_when_optional_service_or_account_relations_are_missing` did not find the expected Booking customer with no service relation. `ArchitectureRulesTest::test_scope_bypasses_carry_a_reason_comment` reported two scope bypasses in `GetLayananTabCounts` from `8623d1e`.
