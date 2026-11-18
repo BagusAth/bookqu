@@ -123,7 +123,9 @@ class TeamInvitationTest extends TestCase
         $decisionUrl = '/owner/bookings/cancellation-requests/'.$id;
         $this->patch($decisionUrl, ['decision' => 'approve'])->assertForbidden();
         $this->actingAs(Tenant::factory()->create()->user)->patch($decisionUrl, ['decision' => 'approve'])->assertNotFound();
-        $this->actingAs($manager)->get('/owner/bookings')->assertOk()->assertSee('Lokasi ditutup');
+        $page = $this->actingAs($manager)->get('/owner/bookings')->assertOk()
+            ->assertSee('Tinjau pembatalan')->assertSee($decisionUrl);
+        $this->assertSame(1, substr_count($page->getContent(), 'Lokasi ditutup'));
         $this->patch($decisionUrl, ['decision' => 'approve'])->assertRedirect();
         $this->patch($decisionUrl, ['decision' => 'approve'])->assertConflict();
         $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'cancelled']);

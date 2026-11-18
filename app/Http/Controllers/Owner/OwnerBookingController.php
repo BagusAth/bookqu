@@ -15,6 +15,7 @@ use App\Actions\CustomerAccess\RequestManagementDelivery;
 use App\Actions\Owner\ListWalkInSlots;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Domain\Booking\BookingRules;
+use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Team\TenantPermission;
 use App\Http\Controllers\Controller;
@@ -26,6 +27,7 @@ use App\Models\Payment;
 use App\Models\Service;
 use App\Models\TenantMember;
 use App\Support\CustomerBookingRoutes;
+use App\Support\Rupiah;
 use App\Traits\ClearsBookingCache;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
@@ -50,6 +52,7 @@ class OwnerBookingController extends Controller
         $tenant = $this->resolveTenant();
         $filters = $this->listFilters($request);
         $tab = $this->selectedTab($filters);
+        $filters['sort'] ??= $tab === 'upcoming' ? 'asc' : 'desc';
         $member = $request->attributes->get('tenant_member');
         $can = fn (string $ability): bool => $member instanceof TenantMember && TenantPermission::allowsRole($member->role, $ability);
         $canViewRevenue = $can('revenue.view');
@@ -75,7 +78,7 @@ class OwnerBookingController extends Controller
             $selection->with('layanan.units');
         }
         $daftarbooking = $selection
-            ->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')->orderBy('jam', $filters['sort'] ?? 'desc')
+            ->orderBy('tanggalbooking', $filters['sort'])->orderBy('jam', $filters['sort'])
             ->orderBy('bookings.id')->paginate(25)->withQueryString();
         $timeRanges = $ranges->execute($daftarbooking->items())['sessionRanges'];
         $rows = $daftarbooking->getCollection()->mapWithKeys(function (Booking $booking) use ($list, $timeRanges, $showUnits, $tab, $canComplete): array {
@@ -96,15 +99,18 @@ class OwnerBookingController extends Controller
                     (bool) $booking->getAttribute('needs_outcome') && $canComplete => 'complete',
                     default => null,
                 },
-                'amount' => $amount === null ? '—' : 'Rp '.number_format($amount, 0, ',', '.'),
+                'amount' => $amount === null ? '—' : Rupiah::format($amount),
                 'payment_status' => $payment instanceof Payment ? $payment->status : 'Belum tercatat',
                 'waiting' => $hold ? 'Menunggu pembayaran online, berakhir '.$hold->setTimezone('Asia/Jakarta')->format('H:i').' WIB' : null,
             ]];
         });
         $services = $tenant ? Service::where('idtenant', $tenant->id)->orderBy('namalayanan')->get() : collect();
-        $cancellationRequests = $canReview && $tenant !== null && in_array($tab, ['all', 'action'], true)
+        $cancellationRequests = $canReview && $tenant !== null && $tab === 'all'
             ? $list->cancellationRequests($tenant)
             : null;
+        $cancellationsByBooking = $canReview && $tenant !== null && $tab === 'action'
+            ? $list->cancellationRequestsForBookings($tenant, $daftarbooking->getCollection()->modelKeys())
+            : collect();
         $exportUrl = $can('revenue.view') && EntitlementRules::canAccessFeature($tenant?->subscription, 'analytics.export')['allowed']
             ? route('owner.bookings.export', ['tab' => $tab] + $filters)
             : null;
@@ -127,7 +133,7 @@ class OwnerBookingController extends Controller
 
         return view('owner.bookings', compact(
             'tenant', 'daftarbooking', 'filters', 'tab', 'tabs', 'tabCounts', 'rows', 'services', 'canWalkIn',
-            'cancellationRequests', 'exportUrl', 'storefrontUrl', 'emptyTitle', 'canViewRevenue', 'initialPanelUrl',
+            'cancellationRequests', 'cancellationsByBooking', 'exportUrl', 'storefrontUrl', 'emptyTitle', 'canViewRevenue', 'initialPanelUrl',
             'endedCount', 'canComplete',
         ));
     }
@@ -149,7 +155,8 @@ class OwnerBookingController extends Controller
         abort_unless(EntitlementRules::canAccessFeature($tenant->subscription, 'analytics.export')['allowed'], 403);
         $filters = $this->listFilters($request);
         // An export without a tab keeps exporting every booking; only the page opens on Perlu tindakan.
-        $tab = $this->selectedTab($filters + ['tab' => $filters['status'] ?? 'all']);
+        $filters['tab'] ??= $filters['status'] ?? 'all';
+        $tab = $this->selectedTab($filters);
         $query = $list->tab($list->query($tenant, $filters, streaming: true), $tab, TenantPermission::allowsRole($member->role, 'bookings.cancel'));
 
         return $export->execute($query->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')
@@ -371,7 +378,7 @@ class OwnerBookingController extends Controller
         $slotPrices = $service instanceof Service
             ? app(QuoteReschedule::class)->execute($booking, $tenant, $service, $tanggal, $slots->pluck('schedule')) : [];
 
-        $mappedSlots = $slots->map(function ($item) use ($slotPrices) {
+        $mappedSlots = $slots->map(function ($item) use ($slotPrices, $tanggal) {
             $slot = $item['schedule'];
             $price = $slotPrices[(int) $slot->id]['price'] ?? null;
 
@@ -379,9 +386,9 @@ class OwnerBookingController extends Controller
                 'id' => $slot->id,
                 'jam_mulai' => $item['jam_mulai'],
                 'jam_selesai' => $item['jam_selesai'],
-                'formatted_time' => $item['jam_mulai'].' - '.$item['jam_selesai'],
+                'formatted_time' => str_replace(':', '.', BookingTimeRange::forSlot($tanggal, $item['jam_mulai'], $item['jam_selesai'])->label()),
                 'price' => $price,
-                'formatted_price' => $price === null ? '—' : 'Rp '.number_format($price, 0, ',', '.'),
+                'formatted_price' => $price === null ? '—' : Rupiah::format($price),
                 'price_difference' => $slotPrices[(int) $slot->id]['price_difference'] ?? null,
                 'is_available' => $item['is_available'],
                 'is_current' => $item['is_current'],
@@ -414,7 +421,7 @@ class OwnerBookingController extends Controller
 
         $validated = $request->validated();
         $newScheduleId = (int) $validated['schedule_id'];
-        $alasan = $validated['alasan'] ?? 'Permintaan langsung customer walk-in di studio';
+        $alasan = $validated['alasan'] ?? null;
 
         $result = $rescheduleBooking->execute($booking, $newScheduleId, 'owner', $alasan, $validated['tanggal'] ?? null);
 
@@ -426,7 +433,7 @@ class OwnerBookingController extends Controller
             return back()->withInput()->withErrors(['error' => $result['error']]);
         }
 
-        $tglFormatted = Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y');
+        $tglFormatted = Carbon::parse($booking->tanggalbooking)->locale('id')->translatedFormat('l, d F Y');
         $jamFormatted = substr($booking->jam, 0, 5).' WIB';
         $successMsg = "Jadwal booking #{$booking->booking_code} ({$booking->namapelanggan}) berhasil diubah ke {$tglFormatted} pukul {$jamFormatted}!";
 

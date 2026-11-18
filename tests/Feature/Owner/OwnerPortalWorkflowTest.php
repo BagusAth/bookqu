@@ -72,18 +72,18 @@ class OwnerPortalWorkflowTest extends TestCase
             ->assertOk()->assertViewHas('tabCounts', fn (array $counts): bool => $counts['action'] === 1)
             ->assertSeeText('Permintaan refund menunggu keputusan')->assertSeeText('Putuskan refund');
         $this->get(route('owner.bookings', ['tab' => 'all', 'katakunci' => 'panel@example.test']))
-            ->assertOk()->assertSeeText('Rp 75.001')->assertDontSeeText('999.000');
+            ->assertOk()->assertSeeText('Rp75.001')->assertDontSeeText('999.000');
         $panel = route('owner.bookings.panel', $booking->id);
         $response = $this->getJson($panel)->assertOk()
-            ->assertJsonPath('payment.amount', 'Rp 75.001')
+            ->assertJsonPath('payment.amount', 'Rp75.001')
             ->assertJsonPath('history.0.actor', 'Sistem')
             ->assertDontSee('1234567890');
         $actions = collect($response->json('actions'))->keyBy('label');
         $this->assertSame('reason', $actions['Batalkan booking']['reason']['name']);
-        $this->assertSame('Pelanggan mendapat refund penuh Rp 75.001.', $actions['Batalkan booking']['confirm']['message']);
+        $this->assertSame('Pelanggan mendapat refund penuh Rp75.001.', $actions['Batalkan booking']['confirm']['message']);
         $this->assertSame('accepted_half', $actions['Terima 50%']['fields']['decision']);
         $this->assertSame(route('owner.refunds.decide', $refund->id), $actions['Terima 50%']['url']);
-        $this->assertStringContainsString('Rp 37.500', $actions['Terima 50%']['confirm']['message']);
+        $this->assertStringContainsString('Rp37.500', $actions['Terima 50%']['confirm']['message']);
         $this->actingAs(Tenant::factory()->create()->user)->getJson($panel)->assertNotFound();
     }
 

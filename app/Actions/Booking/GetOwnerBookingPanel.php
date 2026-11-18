@@ -20,6 +20,7 @@ use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Models\User;
 use App\Support\PaymentMethodLabel;
+use App\Support\Rupiah;
 use App\Support\StatusBadge;
 use Carbon\Carbon;
 
@@ -53,8 +54,8 @@ final class GetOwnerBookingPanel
             'service' => $service instanceof Service ? $service->namalayanan : 'Layanan dihapus',
             'status' => self::badge('booking', $booking->status),
             'sessions' => $family->map(fn (Booking $row): array => [
-                'date' => Carbon::parse($row->tanggalbooking)->format('d/m/Y'),
-                'time' => $timeRanges[$row->id]->label(),
+                'date' => $timeRanges[$row->id]->start->locale('id')->translatedFormat('l, j M'),
+                'time' => str_replace(':', '.', $timeRanges[$row->id]->label()),
             ])->values()->all(),
             'participants' => $booking->peserta,
             'unit' => $service instanceof Service ? $service->units->pluck('name')->implode(', ') : null,
@@ -71,7 +72,7 @@ final class GetOwnerBookingPanel
                 ] : [],
                 'paid_at' => $payment?->balance_credited_at ? Carbon::parse($payment->balance_credited_at)->format('d/m/Y H:i') : null,
                 'deadline' => $payment?->status === PaymentState::STATUS_PENDING && $payment->expired_at ? Carbon::parse($payment->expired_at)->format('d/m/Y H:i') : null,
-                'refund' => $refund ? ['status' => self::badge('refund', $refund->status), 'amount' => $refund->jumlah_formatted]
+                'refund' => $refund ? ['status' => self::badge('refund', $refund->status), 'amount' => Rupiah::format($refund->jumlah)]
                     : ($request ? ['status' => self::badge('refund_request', $request->status->value), 'amount' => null] : null),
             ],
             'refund_reason' => TenantPermission::allowsRole($member->role, 'refunds.decide') ? $request?->reason : null,
@@ -203,6 +204,9 @@ final class GetOwnerBookingPanel
             };
 
             $description = $log->description ?? $log->event_label;
+            if ($log->event === 'rescheduled' && ($metadata['role'] ?? null) === 'owner' && array_key_exists('reason', $metadata)) {
+                $description = 'Jadwal diubah oleh '.$actor.'. Alasan: '.($metadata['reason'] ?? '—');
+            }
             if (isset($metadata['price_difference'])) {
                 $difference = (int) $metadata['price_difference'];
                 $description .= ' Selisih harga: '.($difference < 0 ? '−' : ($difference > 0 ? '+' : '')).self::rupiah(abs($difference)).'.';
@@ -222,6 +226,6 @@ final class GetOwnerBookingPanel
 
     private static function rupiah(float $amount): string
     {
-        return 'Rp '.number_format($amount, 0, ',', '.');
+        return Rupiah::format($amount);
     }
 }

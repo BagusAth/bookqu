@@ -22,25 +22,14 @@
                         {{ $item->booking_code ?? 'BKQ-'.$item->booking_id }}
                     </button>
                     <p>{{ $item->namapelanggan }} · {{ $item->session }}</p>
-                    <p>Diajukan oleh {{ $item->requester ?? 'Akun tidak tersedia' }} · {{ $item->reason }}</p>
-                    <div class="flex flex-wrap gap-3">
-                        @foreach (['approve' => 'Setujui pembatalan', 'reject' => 'Tolak permintaan'] as $decision => $label)
-                            <form id="cancellation-{{ $item->id }}-{{ $decision }}" method="POST" action="{{ route('owner.bookings.cancellation-requests.decide', $item->id) }}">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="decision" value="{{ $decision }}">
-                                <button type="button" class="bq-btn bq-btn-sm {{ $decision === 'approve' ? 'bq-btn-danger' : 'bq-btn-secondary' }}"
-                                    @click="$dispatch('open-confirm', { title: @js($label.'?'), message: @js($decision === 'approve' ? 'Booking akan dibatalkan.' : 'Booking tetap berlaku.'), formId: $el.form.id, confirmText: @js($label) })">{{ $label }}</button>
-                            </form>
-                        @endforeach
-                    </div>
+                    @include('owner.partials.bookings.cancellation-review', ['item' => $item])
                 </article>
             @endforeach
             {{ $cancellationRequests->links() }}
         </section>
     @endif
 
-    <section role="tabpanel" aria-label="Daftar booking" class="bq-panel min-w-0">
+    <section @if ($tab === 'action') id="permintaan-pembatalan" @endif role="tabpanel" aria-label="Daftar booking" class="bq-panel min-w-0">
         @php
             $pastTab = in_array($tab, ['completed', 'cancelled', 'all'], true);
             $activeFilters = collect(['range', 'service'])->filter(fn ($key) => filled($filters[$key] ?? null))->count();
@@ -63,7 +52,7 @@
                 </select>
                 @if (filled($filters['source'] ?? null))<input type="hidden" name="source" value="{{ $filters['source'] }}">@endif
                 <select name="sort" aria-label="Urutkan" @change="$el.form.requestSubmit()" class="bq-input max-md:w-full">
-                    <option value="desc">{{ $pastTab ? 'Terbaru dulu' : 'Sesi terjauh' }}</option>
+                    <option value="desc" @selected(($filters['sort'] ?? null) === 'desc')>{{ $pastTab ? 'Terbaru dulu' : 'Sesi terjauh' }}</option>
                     <option value="asc" @selected(($filters['sort'] ?? null) === 'asc')>{{ $pastTab ? 'Terlama dulu' : 'Sesi terdekat' }}</option>
                 </select>
             </div>
@@ -105,11 +94,11 @@
                             <x-slot:action>
                                 <span class="inline-flex flex-wrap gap-2">
                                     <x-ui.button size="sm" x-show="picked > 0" x-cloak
-                                        x-on:click="$dispatch('open-confirm', { title: 'Tandai booking terpilih selesai?', message: 'Booking yang sedang minta refund atau pembatalan dilewati.', formId: 'bulk-complete', confirmText: 'Tandai selesai' })">
-                                        Tandai selesai (<span x-text="picked"></span>)
+                                        x-on:click="$dispatch('open-confirm', { title: 'Tandai booking terpilih selesai?', message: 'Booking yang sedang minta refund atau pembatalan dilewati.', formId: 'bulk-complete', confirmText: 'Tandai selesai', tone: 'primary' })">
+                                        <span x-text="'Tandai selesai (' + picked + ')'">Tandai selesai</span>
                                     </x-ui.button>
                                     <x-ui.button size="sm"
-                                        x-on:click="$dispatch('open-confirm', { title: 'Tandai {{ $endedCount }} booking selesai?', message: 'Semua sesi yang sudah lewat dan belum ditutup ditandai selesai, kecuali yang sedang minta refund atau pembatalan. Pelanggan yang tidak datang ubah satu per satu dari slip.', formId: 'bulk-complete-all', confirmText: 'Tandai {{ $endedCount }} selesai' })">
+                                        x-on:click="$dispatch('open-confirm', { title: 'Tandai {{ $endedCount }} booking selesai?', message: 'Semua sesi yang sudah lewat dan belum ditutup ditandai selesai, kecuali yang sedang minta refund atau pembatalan. Pelanggan yang tidak datang ubah satu per satu dari slip.', formId: 'bulk-complete-all', confirmText: 'Tandai {{ $endedCount }} selesai', tone: 'primary' })">
                                         Tandai selesai semua ({{ $endedCount }})
                                     </x-ui.button>
                                 </span>
@@ -174,13 +163,19 @@
                                             @method('PATCH')
                                             <input type="hidden" name="status" value="completed">
                                             <x-ui.button size="sm"
-                                                x-on:click="$dispatch('open-confirm', { title: 'Tandai booking selesai?', message: 'Pastikan sesi pelanggan sudah selesai.', formId: $el.form.id, confirmText: 'Tandai selesai' })">Tandai selesai</x-ui.button>
+                                                x-on:click="$dispatch('open-confirm', { title: 'Tandai booking selesai?', message: 'Pastikan sesi pelanggan sudah selesai.', formId: $el.form.id, confirmText: 'Tandai selesai', tone: 'primary' })">Tandai selesai</x-ui.button>
                                         </form>
-                                    @elseif ($row['task'] === 'cancellation')
-                                        <x-ui.button size="sm" href="#permintaan-pembatalan">Tinjau</x-ui.button>
-                                    @else
+                                    @elseif ($row['task'] !== 'cancellation')
                                         <x-ui.button size="sm" :data-booking-panel-url="$panel"
                                             x-on:click="$dispatch('open-booking-panel', { url: $el.dataset.bookingPanelUrl, trigger: $el })">{{ $row['task'] === 'refund' ? 'Putuskan refund' : 'Tinjau' }}</x-ui.button>
+                                    @endif
+                                    @if ($item = $cancellationsByBooking->get($booking->id))
+                                        <details>
+                                            <summary class="cursor-pointer text-bq-small font-semibold text-bq-primary">Tinjau pembatalan</summary>
+                                            <div class="mt-2 space-y-2 whitespace-normal">
+                                                @include('owner.partials.bookings.cancellation-review', ['item' => $item])
+                                            </div>
+                                        </details>
                                     @endif
                                 </x-slot:action>
                             @endif

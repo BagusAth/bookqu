@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 
@@ -128,12 +129,9 @@ final class ListOwnerBookings
     /** @return LengthAwarePaginator<int, stdClass> */
     public function cancellationRequests(Tenant $tenant): LengthAwarePaginator
     {
-        return DB::table('booking_cancellation_requests as requests')
+        return $this->pendingCancellationRequests($tenant)
             ->join('bookings', fn ($join) => $join->on('bookings.id', '=', 'requests.booking_id')->on('bookings.idtenant', '=', 'requests.idtenant'))
             ->leftJoin('schedules', fn ($join) => $join->on('schedules.id', '=', 'bookings.idschedule')->on('schedules.idtenant', '=', 'requests.idtenant'))
-            ->leftJoin('tenant_members', fn ($join) => $join->on('tenant_members.iduser', '=', 'requests.requested_by')->on('tenant_members.idtenant', '=', 'requests.idtenant'))
-            ->leftJoin('users', 'users.id', '=', 'tenant_members.iduser')
-            ->where('requests.idtenant', $tenant->id)->where('requests.status', 'pending')->orderBy('requests.id')
             ->paginate(10, ['requests.id', 'requests.booking_id', 'requests.reason', 'bookings.booking_code', 'bookings.namapelanggan',
                 'bookings.tanggalbooking', 'bookings.jam', 'schedules.jam_mulai', 'schedules.jam_selesai', 'users.namalengkap as requester'],
                 pageName: 'permintaan')
@@ -147,6 +145,27 @@ final class ListOwnerBookings
 
                 return $item;
             });
+    }
+
+    /** @param array<int, int|string> $bookingIds
+     * @return Collection<int, stdClass>
+     */
+    public function cancellationRequestsForBookings(Tenant $tenant, array $bookingIds): Collection
+    {
+        if ($bookingIds === []) {
+            return collect();
+        }
+
+        return $this->pendingCancellationRequests($tenant)->whereIn('requests.booking_id', $bookingIds)
+            ->get(['requests.id', 'requests.booking_id', 'requests.reason', 'users.namalengkap as requester'])->keyBy('booking_id');
+    }
+
+    private function pendingCancellationRequests(Tenant $tenant): QueryBuilder
+    {
+        return DB::table('booking_cancellation_requests as requests')
+            ->leftJoin('tenant_members', fn ($join) => $join->on('tenant_members.iduser', '=', 'requests.requested_by')->on('tenant_members.idtenant', '=', 'requests.idtenant'))
+            ->leftJoin('users', 'users.id', '=', 'tenant_members.iduser')
+            ->where('requests.idtenant', $tenant->id)->where('requests.status', 'pending')->orderBy('requests.id');
     }
 
     public function paidAmount(Booking $booking): ?int
