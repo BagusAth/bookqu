@@ -25,16 +25,16 @@
     @if (count($short) === 1)
         @php $only = $short[0]; @endphp
         <x-ui.banner tone="warning"
-            :title="$only['service'].': '.($only['open_until_label'] ? 'slot hanya sampai '.$only['open_until_label'] : 'belum ada slot terbuka')"
-            :description="($only['auto_open'] ? 'Slot otomatis belum mencapai 7 hari ke depan.' : 'Layanan ini tidak ikut slot otomatis.').' Pelanggan tidak bisa booking setelah tanggal itu.'">
+            :title="$only['service'].': '.($only['open_until_label'] ? 'periksa slot untuk 7 hari ke depan' : 'belum ada slot terbuka')"
+            :description="$only['auto_open'] ? 'Cakupan slot belum memenuhi batas 7 hari.' : 'Cakupan slot belum memenuhi batas 7 hari. Layanan ini tidak ikut slot otomatis.'">
             <x-slot:action>
                 <a class="bq-btn bq-btn-secondary bq-btn-sm" href="{{ route('owner.schedule', ['tab' => 'slots', 'buat' => 1, 'layanan' => $only['service_id']]) }}">Buka slot</a>
             </x-slot:action>
         </x-ui.banner>
     @elseif (count($short) > 1)
         <x-ui.banner tone="warning"
-            :title="count($short).' layanan: slot terbuka kurang dari 7 hari ke depan'"
-            :description="collect($short)->pluck('service')->take(3)->join(', ').(count($short) > 3 ? ', dan '.(count($short) - 3).' lainnya' : '').'. Pelanggan tidak bisa booking setelah slotnya habis.'">
+            :title="count($short).' layanan perlu dicek untuk 7 hari ke depan'"
+            :description="collect($short)->pluck('service')->take(3)->join(', ').(count($short) > 3 ? ', dan '.(count($short) - 3).' lainnya' : '').'. Cakupan slot belum memenuhi batas 7 hari.'">
             <x-slot:action>
                 <a class="bq-btn bq-btn-secondary bq-btn-sm" href="{{ route('owner.schedule', ['tab' => 'slots', 'buat' => 1]) }}">Buka slot</a>
             </x-slot:action>
@@ -50,7 +50,7 @@
                 : ($overview['services'] - count($short)).' dari '.$overview['services'].' layanan punya slot 7 hari ke depan'"
             :more="[
                 ['value' => $overview['days_ahead'] !== null ? $overview['days_ahead'].' hari' : '0 hari', 'label' => 'ke depan'],
-                ['value' => count($short), 'label' => 'layanan kurang dari 7 hari'],
+                ['value' => count($short), 'label' => 'layanan perlu cek slot'],
             ]" />
     </x-ui.panel>
 

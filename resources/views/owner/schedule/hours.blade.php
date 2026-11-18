@@ -4,7 +4,15 @@
     @csrf
     @method('PUT')
     <x-ui.form-row title="Slot otomatis" description="Sistem membuka slot dari jam buka setiap hari. Anda hanya mengatur pengecualian.">
-        <x-ui.switch name="auto_open_slots" value="1" :checked="$overview['auto_open'] > 0" label="Buka slot otomatis" description="Slot baru dibuka setiap malam sampai batas di bawah. Durasi diambil dari Layanan." />
+        <div class="grid gap-1.5">
+            <label for="automatic-slot-setting" class="bq-label">Buka slot otomatis</label>
+            <select id="automatic-slot-setting" name="auto_open_slots" class="bq-input w-full">
+                <option value="">Pertahankan pilihan per layanan</option>
+                <option value="1">Aktifkan untuk semua layanan aktif</option>
+                <option value="0">Nonaktifkan untuk semua layanan aktif</option>
+            </select>
+            <p class="bq-hint">{{ $overview['auto_open'] }} dari {{ $overview['services'] }} layanan ikut. <a class="bq-link" href="{{ route('owner.services') }}">Atur per layanan</a></p>
+        </div>
         <div class="grid gap-1.5">
             <label for="slot-open-days-ahead" class="bq-label">Buka slot sampai</label>
             <div class="flex min-h-bq-control items-center rounded-bq-control border border-bq-border-strong bg-bq-surface focus-within:border-bq-primary focus-within:ring-2 focus-within:ring-bq-primary/20">
@@ -15,11 +23,10 @@
             </div>
             <p class="bq-hint">Pelanggan bisa booking paling jauh {{ $maxDaysAhead }} hari ke depan.</p>
         </div>
-        <p class="bq-hint">{{ $overview['auto_open'] }} dari {{ $overview['services'] }} layanan ikut. <a class="bq-link" href="{{ route('owner.services') }}">Atur per layanan</a></p>
     </x-ui.form-row>
 
     <x-ui.form-row title="Jam buka mingguan" description="Satu baris per hari. Tambah jeda untuk istirahat.">
-        <div class="bq-panel">
+        <div class="bq-panel bq-weekly-hours">
             @foreach ($weekdays as $day => $label)
                 <div class="bq-hours-row" :class="closed[{{ $day }}] && 'text-bq-text-muted'">
                     <b class="bq-hours-day font-semibold" :class="closed[{{ $day }}] ? 'text-bq-text-muted' : 'text-bq-ink'" >{{ $label }}</b>

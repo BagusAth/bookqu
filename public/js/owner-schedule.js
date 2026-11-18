@@ -51,6 +51,11 @@ document.addEventListener('alpine:init', () => {
             const days = Object.fromEntries(Object.entries(this.days).map(([day, intervals]) => [
                 day, this.closed[day] ? [] : intervals.map(({ opens_at, closes_at }) => ({ opens_at: sentTime(opens_at), closes_at: sentTime(closes_at) })),
             ]));
+            const payload = { days, slot_open_days_ahead: fields.get('slot_open_days_ahead') || null };
+            const autoOpenSlots = fields.get('auto_open_slots');
+            if (autoOpenSlots === '1' || autoOpenSlots === '0') {
+                payload.auto_open_slots = autoOpenSlots === '1';
+            }
             try {
                 const response = await fetch(form.action, {
                     method: 'PUT',
@@ -59,7 +64,7 @@ document.addEventListener('alpine:init', () => {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': fields.get('_token'),
                     },
-                    body: JSON.stringify({ days, slot_open_days_ahead: fields.get('slot_open_days_ahead') || null, auto_open_slots: fields.has('auto_open_slots') }),
+                    body: JSON.stringify(payload),
                 });
                 if (response.headers.get('content-type')?.includes('application/json')) {
                     const data = await response.json();

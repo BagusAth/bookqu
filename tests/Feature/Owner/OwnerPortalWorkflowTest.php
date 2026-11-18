@@ -41,7 +41,7 @@ class OwnerPortalWorkflowTest extends TestCase
         Service::factory()->create(['idtenant' => $tenant->id, 'is_active' => true]);
 
         $this->actingAs($tenant->user)->get(route('owner.schedule', ['tab' => 'slots', 'buat' => 1]))
-            ->assertOk()->assertSeeText('belum ada slot terbuka')->assertSeeText('slot terbuka sampai')
+            ->assertOk()->assertSeeText('belum ada slot terbuka')->assertSeeText('Cakupan slot belum memenuhi batas 7 hari.')
             ->assertSee(route('owner.schedule.bulk-preview'))->assertSeeText('Buka slot sekaligus')->assertSeeText('Pratinjau');
         $this->get(route('owner.schedule', ['tab' => 'prices']))
             ->assertOk()->assertSee(route('owner.schedule.price-simulator'))->assertSee(route('owner.schedule.apply-base-price'));

@@ -50,6 +50,18 @@ class AutomaticSlotOpeningTest extends TestCase
         $this->assertSame(0, Schedule::withoutGlobalScopes()->whereDate('tanggal', '>', '2026-12-17')->count());
     }
 
+    public function test_saving_hours_preserves_mixed_service_preferences_by_default(): void
+    {
+        $disabled = Service::factory()->create(['idtenant' => $this->tenant->id, 'is_active' => true, 'auto_open_slots' => false]);
+
+        $this->actingAs($this->owner)->putJson(route('owner.schedule.opening-hours'), [
+            'days' => [1 => [['opens_at' => '10:00', 'closes_at' => '12:00']]],
+        ])->assertOk()->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('services', ['id' => $this->service->id, 'auto_open_slots' => true]);
+        $this->assertDatabaseHas('services', ['id' => $disabled->id, 'auto_open_slots' => false]);
+    }
+
     public function test_running_twice_creates_nothing_new_and_keeps_closed_slots_and_dates(): void
     {
         // Created through the model: SQLite stores the date with a time part, MySQL does not.
