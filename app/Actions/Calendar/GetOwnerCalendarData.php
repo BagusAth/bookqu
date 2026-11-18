@@ -39,6 +39,7 @@ final class GetOwnerCalendarData
         $validDate = preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $rawDate, $parts) === 1
             && checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
         $date = $validDate ? CarbonImmutable::parse($rawDate, 'Asia/Jakarta') : $now->startOfDay();
+        $date = $date->locale('id');
 
         [$start, $end, $previous, $next, $dateLabel] = match ($view) {
             'month' => [$date->startOfMonth(), $date->endOfMonth(), $date->startOfMonth()->subMonth(), $date->startOfMonth()->addMonth(), $date->translatedFormat('F Y')],

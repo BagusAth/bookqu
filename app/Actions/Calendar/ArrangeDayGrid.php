@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Calendar;
 
+use App\Domain\Booking\BookingState;
+
 final class ArrangeDayGrid
 {
     private const MAX_COLUMNS = 6;
@@ -18,7 +20,19 @@ final class ArrangeDayGrid
     {
         $slotsByColumn = collect($slots)->groupBy(fn (array $slot): int => (int) ($slot['column_id'] ?? $slot['service_id']));
         $offered = collect($options)->keyBy('id');
-        $defaults = $offered->filter(fn (array $option): bool => $slotsByColumn->has($option['id']))->keys()->all();
+        $nowMinute = $now === null ? null : (int) substr($now, 0, 2) * 60 + (int) substr($now, 3, 2);
+        $priorities = $slotsByColumn->map(fn ($column): int => $column->max(static function (array $slot) use ($nowMinute): int {
+            if ($slot['bookings'] === []) {
+                return 0;
+            }
+
+            $isRunning = $nowMinute !== null && $slot['startMinute'] <= $nowMinute && $nowMinute < $slot['endMinute']
+                && array_any($slot['bookings'], fn (array $booking): bool => $booking['status'] === BookingState::STATUS_PAID);
+
+            return $isRunning ? 2 : 1;
+        }));
+        $defaults = $offered->intersectByKeys($priorities)
+            ->sortByDesc(fn (array $option): int => $priorities[$option['id']])->keys()->all();
         $selected = array_slice(array_values(array_intersect($chosen ?: $defaults, $offered->keys()->all())), 0, self::MAX_COLUMNS);
         $visible = $slotsByColumn->only($selected)->flatten(1);
         $start = $visible->isEmpty() ? 8 * 60 : intdiv((int) $visible->min('startMinute'), 60) * 60;
@@ -46,8 +60,6 @@ final class ArrangeDayGrid
             }
             $columns[] = ['name' => $offered[$id]['name'], 'slots' => $track, 'lanes' => max(1, count($ends))];
         }
-
-        $nowMinute = $now === null ? null : (int) substr($now, 0, 2) * 60 + (int) substr($now, 3, 2);
 
         return [
             'columns' => $columns,
