@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Team\CreateOwnerMembership;
 use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
@@ -15,6 +16,7 @@ use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Models\TenantMember;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Voucher;
@@ -163,6 +165,15 @@ class BramaStudioSeeder extends Seeder
             ]
         );
 
+        // Owner memberships: DatabaseSeeder runs with WithoutModelEvents, which mutes Tenant::created.
+        $createOwnerMembership = app(CreateOwnerMembership::class);
+        foreach ([$tenantBrama, $tenantStudio, $tenantSilver] as $tenant) {
+            $createOwnerMembership->execute($tenant);
+        }
+
+        // Demo team for brama@bookqu.test so the Manajer and Kasir views can be checked locally.
+        $this->seedDemoTeam($tenantStudio);
+
         // Seed full rich suite for Brama Digital
         $this->seedTenantFullSuite($tenantBrama, $planPro);
 
@@ -173,6 +184,36 @@ class BramaStudioSeeder extends Seeder
         $this->seedTenantFullSuite($tenantSilver, $planPro);
 
         $this->command->info('Brama Digital comprehensive dataset successfully seeded!');
+    }
+
+    /**
+     * Verified Manajer and Kasir accounts in the tenant's team (password `password`).
+     */
+    protected function seedDemoTeam(Tenant $tenant): void
+    {
+        $members = [
+            'manajer' => ['email' => 'manajer@bookqu.test', 'name' => 'Manajer Brama Studio', 'phone' => '081299887701'],
+            'kasir' => ['email' => 'kasir@bookqu.test', 'name' => 'Kasir Brama Studio', 'phone' => '081299887702'],
+        ];
+
+        foreach ($members as $role => $member) {
+            $user = User::updateOrCreate(
+                ['email' => $member['email']],
+                [
+                    'namalengkap' => $member['name'],
+                    'password' => Hash::make('password'),
+                    'nomorhp' => $member['phone'],
+                    'role' => 'owner',
+                    'email_verified_at' => now(),
+                ]
+            );
+
+            // scope-bypass: seeding runs without a tenant context; the row is written for this tenant only.
+            TenantMember::withoutGlobalScopes()->updateOrCreate(
+                ['idtenant' => $tenant->id, 'iduser' => $user->id],
+                ['role' => $role, 'invited_by' => $tenant->iduser, 'invited_at' => now(), 'accepted_at' => now(), 'revoked_at' => null]
+            );
+        }
     }
 
     /**
