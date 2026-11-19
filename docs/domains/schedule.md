@@ -67,6 +67,8 @@ BQ-114: the storefront slot picker (`GetAvailableSchedules::getTimeSlots`) and t
 
 BQ-120: reschedule slot selectability now delegates to `AvailabilityRules::isSlotAvailable`, including closed dates, service fulfillment, time and occupancy, with current-booking exclusion. `BookingManagementTest` verifies blocked GET/POST refusal, reopening and successful claim.
 
+BQ-163: owner reschedule and walk-in listings preload occupancy counts, the current-booking flag, closed-date status, and shared-unit ranges once per service/date before calling `AvailabilityRules::refusal`. Locked claims continue to query current data. The nightly command reports tenant failures and continues.
+
 BQ-133 backend (AC-JBH-01, 02, 04, 05): `SlotPricing` is the one price rule; the simulator, storefront slot lists, owner calendar and schedule page, the export, the checkout quote and walk-ins read it. Bulk interval is 5–480 minutes in steps of 5 and may differ from the service duration (FR-SCHEDULE-014; the page defaults it to the duration). `BulkCreateSchedules::preview` counts new and existing slots without saving; writes re-read the day's slots inside the tenant lock. Price-rule writes take the tenant lock. `GetSlotRunway` reads `GetAvailableSchedules::getDateAvailability`. Tests: `SlotPricingTest`, `PriceRulesAndOpeningHoursTest`.
 
 BQ-134: Kalender renders day, week and month from the same booking and slot queries. Slot occupancy and unit conflicts use BookingRules. The calendar reuses the BQ-129 booking panel and walk-in form, and the BQ-133 slot update route. KalenderPageTest covers month boundaries, capacity, and the shared panel targets.

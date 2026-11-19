@@ -4,7 +4,7 @@ Dokumen ini berisi keputusan yang perlu divalidasi Product Lead, dan catatan kep
 
 **Cara menjawab:** balas dengan nomor entri dan poinnya, misalnya "D-001 setuju semua" atau "D-001 setuju kecuali poin 3: …". Setelah disetujui, Tech Lead membuat pekerjaannya. Keputusan yang sudah diambil bisa dibuka lagi kapan saja dengan menyebut nomornya.
 
-Terakhir diperbarui: 18 November 2026
+Terakhir diperbarui: 19 November 2026
 
 ---
 
@@ -25,21 +25,6 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 *Jawaban Product Lead:* —
 
-### D-027 · Sesi lama saat fitur selesai otomatis pertama kali berjalan
-
-*Status:* Menunggu · *Diajukan:* 18 Nov 2026 · *Menahan rilis:* ya, untuk fitur selesai otomatis
-
-*Masalah*
-Saat fitur pertama kali berjalan, sesi lama yang sudah dibayar dan belum ditutup bisa langsung ditandai selesai. Pemilik mungkin masih perlu memeriksa apakah pelanggan benar-benar datang, terutama untuk sesi lama yang menumpuk.
-
-*Usulan keputusan*
-1. Mulai otomatisasi dari sesi yang berakhir sejak fitur diaktifkan. Pemilik tetap bisa menutup sesi lama melalui daftar Booking.
-2. Alternatifnya, proses semua sesi lama yang memenuhi syarat dan beri tahu pemilik sebelum fitur diaktifkan.
-
-*Sementara menunggu:* aturan aktivasi pertama belum diterapkan ke produksi. Aturan enam jam untuk sesi reguler tetap mengikuti D-026.
-
-*Jawaban Product Lead:* —
-
 ---
 
 ## Untuk diketahui (tidak perlu keputusan)
@@ -57,6 +42,8 @@ Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
 ---
 
 ## Sudah diputuskan
+
+- D-027 · Sesi lama saat fitur selesai otomatis pertama kali berjalan · Disetujui 19 Nov 2026 melalui konfirmasi developer. Usulan utama diterapkan, mulai dari sesi yang berakhir sejak fitur diaktifkan, termasuk saat diaktifkan kembali. Sesi lama bisa ditutup manual → BQ-163
 
 ### Keputusan sebelum dokumen ini dibuat
 

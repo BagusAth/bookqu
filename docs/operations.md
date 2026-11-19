@@ -206,4 +206,6 @@ All must be checked before the first real customer (gate G5 in `docs/work/ROADMA
 
 ## 9. After every deployment
 
+For BQ-163, migrate before restarting scheduler workers. The migration sets the automatic-completion boundary to deployment time for enabled tenants, so older paid sessions remain for manual review (D-027). Each of the three owner automation commands reports tenant errors and continues. Weekly summaries require an effective plan. Booking logs use the application clock for new rows. Before interpreting older MySQL logs, inspect `@@session.time_zone` and `@@system_time_zone` through a read-only database query; older SQLite defaults were UTC. Do not apply a blanket offset to historical logs.
+
 Application responds · owner login works · a public storefront loads with availability · a booking can start payment · scheduler and queue are alive · `laravel.log` shows no new critical errors.

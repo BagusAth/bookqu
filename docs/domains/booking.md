@@ -36,6 +36,10 @@ Unexpected checkout/reschedule failures return generic Indonesian messages to cu
 
 ## Data
 
+`tenants.auto_completion_started_at` bounds automatic completion under D-027. Existing enabled tenants start at migration time; new tenants start at creation; enabling the setting again records a new boundary. `CompleteBookings::completeEnded` processes at most 200 candidate IDs per batch, while `endedCount` counts in SQL through the shared `BookingTimeRange` end expression. Manual "all ended" processes at most 500 candidates per submission and tells the user to review the remaining list when the limit is reached. The scheduler reports tenant failures and continues (BQ-163).
+
+`BookingLog` writes `created_at` from the application clock and has no `updated_at`. Existing timestamps retain their stored representation because their source time zone is unknown.
+
 `bookings`: `idtenant`, `idlayanan`, `idschedule`, `namapelanggan`, `nomorhp`, `email`, `tanggalbooking`, `jam`, `status`, `idpayment`, `catatan`, `booking_code` (unique), `cancellation_token`, `reschedule_token`, `rescheduled_from_*`, `peserta` (participants, default 1). `booking_seats`: one row per participant (`idbooking`, `idschedule`, `seat_no` below the service capacity, `status` copied from the booking) with virtual `active_idschedule` (pending/paid/completed/no_show) and the unique seat index (`active_idschedule`, `seat_no`) that replaced `unique_active_booking_slot` (BQ-151). `services.kapasitas` is the capacity per slot (default 1). `units` and `service_unit` link services to shared units (BQ-152). `booking_logs` keeps an event trail.
 
 ## Invariants

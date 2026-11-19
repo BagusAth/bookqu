@@ -98,6 +98,8 @@ This table is the home of the plan contents (D-017). Prices stay Small Rp149.000
 
 When the trial or subscription ends, the business keeps managing what exists but creates nothing new, and the public page takes no new bookings; renewing the same plan extends from the current end date (D-002, FR-SUB-012, FR-SUB-013).
 
+Automatic completion starts with sessions ending after activation, including reactivation. Owners can manually close older sessions (D-027). Weekly summaries are sent during an effective trial or subscription.
+
 ## 8. Release tiers
 
 BookQu releases capabilities in stages to keep booking and payment stable (ADR-0002). The server enforces each module's tier through the registry `config/modules.php` and the `module:<name>` middleware (ADR-0011): `hidden` answers 404, `locked` shows the lock page and refuses writes. `tests/Feature/Owner/OwnerSidebarNavigationTest.php` enforces the navigation.

@@ -24,7 +24,7 @@ Owns owner in-app notifications, dashboard polling, and e-mails to customers and
 | `OwnerPayoutStatusChangedNotification` | database + mail (on success/failed/rejected) | `ProcessOwnerPayout` (admin payout review, BQ-015, BQ-125) |
 | `NewPayoutRequestNotification` | database | `RequestOwnerPayout` (BQ-125) |
 | `PayoutAccountChangedNotification` | mail | `SaveTenantPayoutAccount`, `DeleteTenantPayoutAccount` (BQ-123) |
-| `WeeklySummaryNotification` | queued mail | `SendWeeklySummary` from `owners:weekly-summary`, Mondays 07:00, to the business owner account only, unless its `weekly_summary` preference is off (FR-NOTIFICATION-008, BQ-162). Figures for last Monday–Sunday come from `GetReport`, `GetSlotRunway`, `CompleteBookings::endedIds` and open refund requests |
+| `WeeklySummaryNotification` | queued mail | `SendWeeklySummary` from `owners:weekly-summary`, Mondays 07:00, to the business owner account only, with an effective plan and unless its `weekly_summary` preference is off (FR-NOTIFICATION-008, BQ-162, BQ-163). Figures for last Monday–Sunday come from `GetReport`, `GetSlotRunway`, `CompleteBookings::endedCount` and open refund requests. A tenant failure is reported and the command continues. |
 
 Sends happen after the main transaction and dispatch failures are wrapped in `try/catch`, so mail failure does not undo the booking or payment. The owner/trial mail notifications and `OwnerPayoutStatusChangedNotification` implement `ShouldQueue` with `afterCommit()` (database channels on those notifications are queued too); database-only notifications like `NewPayoutRequestNotification` stay synchronous. `BookingCancelledMail` is queued after commit.
 

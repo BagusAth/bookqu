@@ -546,9 +546,13 @@ The amount of a booking is fixed when it is created: base price per participant,
 
 A `paid` booking is marked `completed` by the system 6 hours after its session ends, through the same state transition as a manual completion (FR-BOOKING-009). The setting is in the booking policy, on by default, and the tenant can switch it off. A booking that was marked `no_show`, or that has an open refund or cancellation request, is never completed automatically. The booking history records the system as the actor.
 
+Amended 2026-11-19 (D-027): automatic completion includes only sessions ending at or after activation. Existing tenants start at deployment of this rule, new tenants at creation, and enabling the setting again starts a new activation period. Older sessions remain available for manual bulk completion.
+
 ### FR-BOOKING-025 — Bulk Completion (Accepted 2026-11-17, D-025, D-026)
 
 A Pemilik, Manajer or Kasir can complete several bookings at once: selected rows, or every ended session that is still `paid`. Each booking passes the same rules as a single completion; bookings that cannot be completed (not ended, refund or cancellation request, other state) are skipped, and the result states how many were completed and how many were skipped. Only bookings of the current tenant are affected.
+
+Amended 2026-11-19 (T-13, Tech Lead approval confirmed through the developer): manual bulk submissions process at most 500 candidates. When the limit is reached the response directs the user to review the remaining list and continue as needed.
 
 ## Multi-Slot Booking Requirements
 
@@ -1131,6 +1135,8 @@ The Pemilik is reminded 3 days and 1 day before the trial or subscription ends, 
 ### FR-NOTIFICATION-008 — Weekly Summary (Accepted 2026-11-17, D-025, D-026)
 
 Every Monday morning the Pemilik receives an email summarising the previous Monday-to-Sunday week: net revenue, number of bookings, share of slots filled, the date until which slots are open, and the items waiting for them (refund requests, ended sessions not yet closed). It is on by default and is switched off in the notification preferences (FR-NOTIFICATION-006). Other team roles do not receive it. Every figure comes from the same calculations as the owner portal.
+
+Amended 2026-11-19 (T-11, Tech Lead approval confirmed through the developer): the summary is sent only while the tenant has an effective plan under `EntitlementRules`.
 
 ## Subscription Requirements
 

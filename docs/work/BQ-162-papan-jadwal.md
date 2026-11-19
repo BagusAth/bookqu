@@ -231,7 +231,7 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 - T-01 now uses the existing optional bulk field from an explicit choice in Jam buka. Saving hours alone preserves the chosen services.
 - Fixed T-06, T-15 (calendar and reschedule), T-17a, T-18, T-19, T-23, T-27, T-28, T-29a, T-30, T-31, T-34 and T-36. The cancellation decision is available from the action row.
 - Evidence: full SQLite suite on PHP 8.4.25 with GD, 1,014 tests and 6,677 assertions passed. PHPStan, changed-file Pint, frontend build and the three opening-hours payload cases passed.
-- T-11, T-13 and T-26 are proposed in BQ-163 for Tech Lead review. T-12 is awaiting the Product Lead's answer in D-027.
+- Follow-up on 19 Nov 2026: T-11, T-12, T-13 and T-26 were approved through the developer and implemented in BQ-163. D-027 uses activation time as the automatic-completion boundary.
 
 ## Open findings
 
