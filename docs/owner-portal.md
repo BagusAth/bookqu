@@ -291,8 +291,8 @@ Home of the rule: `product.md` §7 (D-017). Entitlement is decided only by `Enti
   - open the booking panel;
   - + Booking;
   - **Ekspor CSV** of the filtered list (Medium and up). The export is formula-safe (BQ-111).
-  - **Tandai selesai** in bulk on Perlu tindakan: tick rows or "Tandai selesai semua (n)" for every ended paid booking (FR-BOOKING-024). Rows with an open refund or a pending cancellation request are skipped and counted in the result message. No email per booking.
-- **Automatic completion (FR-BOOKING-025):** when Pengaturan → Kebijakan Booking → "Tandai selesai otomatis" is on (default), an hourly job marks paid bookings completed 6 hours after the session ended, with the same skips.
+  - **Tandai selesai** in bulk on Perlu tindakan: tick rows or "Tandai selesai semua (n)" for ended paid bookings (FR-BOOKING-025). Each manual submission processes at most 500 candidates and reports when that limit is reached so the owner can review the remaining list. Rows with an open refund or a pending cancellation request are skipped and counted in the result message. No email per booking.
+- **Automatic completion (FR-BOOKING-024):** when Pengaturan → Kebijakan Booking → "Tandai selesai otomatis" is on (default), an hourly job marks paid bookings completed 6 hours after the session ended, with the same skips. Only sessions ending at or after activation or reactivation are included (D-027). Older sessions can be completed manually.
 - **Not here:** charts and totals over time (Laporan), customer notes (Pelanggan), slot editing.
 - **Empty states:**
   - no bookings yet: explains that bookings arrive from the booking page, and shows the link;
@@ -448,6 +448,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 - **Header:** the runway per service, for example "Slot terbuka sampai 14 Des". A warning shows when it is less than 7 days away.
 - **Tab Jam Buka:**
   - weekly opening hours per day, with breaks;
+  - automatic slot opening shows how many services participate. Saving hours preserves the per-service choices unless the owner explicitly selects activation or deactivation for all active services;
   - how many days ahead slots may be opened;
   - service duration is read from Layanan.
 - **Tab Harga:**

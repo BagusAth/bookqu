@@ -11,6 +11,8 @@ From the current state to a production-ready, maintainable BookQu. Each phase en
 
 ## What is left
 
+Developer A's BQ-162 findings were implemented through BQ-163 on 19 Nov 2026. The [assignment and results](BQ-162/pembagian-perbaikan-dev-a-b.md) and [original test findings with follow-up status](BQ-162/temuan-pengujian-2026-11-18.md) track the 21 A parts and the B work awaiting verification. Browser, screen-reader and production checks remain in the release pass.
+
 | Track | Items | Owner | When |
 |---|---|---|---|
 | **Operations** | BQ-017 staging, BQ-019 backup and restore, BQ-020 scheduler and queue, BQ-021 mail and monitoring, BQ-022 production payment, BQ-074 step 2; TLS and `CUSTOM_DOMAIN_*` for own domains (`operations.md` §8); branch protection | Tech Lead | before the release |
