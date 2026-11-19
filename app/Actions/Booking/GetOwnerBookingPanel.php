@@ -212,7 +212,7 @@ final class GetOwnerBookingPanel
                 $description .= ' Selisih harga: '.($difference < 0 ? '−' : ($difference > 0 ? '+' : '')).self::rupiah(abs($difference)).'.';
             }
 
-            return ['at' => $log->created_at ? Carbon::parse($log->created_at)->format('d/m/Y H:i') : null, 'text' => $description, 'actor' => $actor];
+            return ['at' => $log->created_at->timezone('Asia/Jakarta')->format('d/m/Y H:i'), 'text' => $description, 'actor' => $actor];
         })->values()->all();
     }
 
