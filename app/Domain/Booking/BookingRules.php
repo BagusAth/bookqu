@@ -133,9 +133,10 @@ class BookingRules
     /**
      * Whether a slot still has room for the participants; "slot full" is its negation.
      */
-    public static function hasRoomFor(int $scheduleId, int $participants = 1, ?int $excludeBookingId = null): bool
+    public static function hasRoomFor(int $scheduleId, int $participants = 1, ?int $excludeBookingId = null, ?int $seatsTaken = null, ?int $capacity = null): bool
     {
-        return self::seatsTaken($scheduleId, $excludeBookingId) + max(1, $participants) <= self::capacityOf($scheduleId);
+        return ($seatsTaken ?? self::seatsTaken($scheduleId, $excludeBookingId)) + max(1, $participants)
+            <= ($capacity ?? self::capacityOf($scheduleId));
     }
 
     /**

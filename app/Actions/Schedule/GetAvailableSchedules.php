@@ -255,8 +255,11 @@ class GetAvailableSchedules
         ?int $excludeBookingId = null,
         int $participants = 1,
     ): Collection {
+        [$seatsTaken, $bindings] = BookingRules::seatsTakenSql(excludeBookingId: $excludeBookingId);
         // scope-bypass: filtered by the resolved storefront tenant
         $slots = Schedule::withoutGlobalScopes()->with('layanan')
+            ->select('schedules.*')->selectRaw($seatsTaken.' AS seats_taken', $bindings)
+            ->withExists(['bookings as current_booking' => fn ($query) => $query->where('id', $excludeBookingId ?? 0)])
             ->where('idtenant', $tenant->id)
             ->where('idlayanan', $serviceId)
             ->whereDate('tanggal', $date)
@@ -264,9 +267,14 @@ class GetAvailableSchedules
             ->orderBy('jam_mulai')
             ->get();
 
-        return $slots->map(function ($slot) use ($excludeBookingId, $participants) {
-            $isAvailable = AvailabilityRules::refusal($slot, excludeBookingId: $excludeBookingId, participants: $participants) === null;
-            $isCurrentSlot = ($excludeBookingId !== null && $slot->bookings()->where('id', $excludeBookingId)->exists());
+        $unitBusy = BookingRules::unitBusyRanges((int) $tenant->id, $serviceId, $date, $date, $excludeBookingId);
+        $dateBlocked = AvailabilityRules::isDateBlocked((int) $tenant->id, $date);
+
+        return $slots->map(function ($slot) use ($excludeBookingId, $participants, $unitBusy, $dateBlocked) {
+            $service = $slot->layanan;
+            $isAvailable = AvailabilityRules::refusal($slot, excludeBookingId: $excludeBookingId, participants: $participants,
+                seatsTaken: (int) $slot->getAttribute('seats_taken'), unitBusy: $unitBusy, dateBlocked: $dateBlocked) === null;
+            $isCurrentSlot = (bool) $slot->getAttribute('current_booking');
 
             return [
                 'id' => $slot->id,
@@ -275,6 +283,7 @@ class GetAvailableSchedules
                 'jam_selesai' => substr($slot->jam_selesai, 0, 5),
                 'is_available' => $isAvailable,
                 'is_current' => $isCurrentSlot,
+                'seats_left' => max(0, ($service instanceof Service ? max(1, (int) $service->kapasitas) : 1) - (int) $slot->getAttribute('seats_taken')),
             ];
         });
     }

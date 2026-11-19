@@ -24,6 +24,13 @@ class Tenant extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (Tenant $tenant): void {
+            $enabled = $tenant->auto_complete_bookings ?? true;
+            if ($enabled && ($tenant->auto_completion_started_at === null
+                || ($tenant->isDirty('auto_complete_bookings') && ! $tenant->getOriginal('auto_complete_bookings')))) {
+                $tenant->auto_completion_started_at = now();
+            }
+        });
         static::created(fn (Tenant $tenant) => app(CreateOwnerMembership::class)->execute($tenant));
     }
 
@@ -73,6 +80,7 @@ class Tenant extends Model
         return [
             'refunds_enabled' => 'boolean',
             'auto_complete_bookings' => 'boolean',
+            'auto_completion_started_at' => 'datetime',
             'booking_min_lead_hours' => 'integer',
             'booking_max_days_ahead' => 'integer',
             'slot_open_days_ahead' => 'integer',

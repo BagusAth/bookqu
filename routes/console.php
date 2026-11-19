@@ -5,6 +5,7 @@ use App\Actions\Owner\SendWeeklySummary;
 use App\Actions\Payment\RemindOpenRefundRequests;
 use App\Actions\Schedule\OpenAutomaticSlots;
 use App\Actions\Tenant\CheckCustomDomain;
+use App\Domain\Subscription\EntitlementRules;
 use App\Models\Tenant;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Inspiring;
@@ -65,17 +66,17 @@ Schedule::command('webhooks:prune')->daily()->withoutOverlapping();
 // tenants that keep automatic completion on. Each booking goes through CompleteBookings.
 Artisan::command('bookings:complete-ended', function (CompleteBookings $completeBookings): void {
     $cutoff = now('Asia/Jakarta')->subHours(CompleteBookings::AUTO_COMPLETE_AFTER_HOURS);
-    Tenant::query()->where('auto_complete_bookings', true)->select(['id'])
+    Tenant::query()->where('auto_complete_bookings', true)->whereNotNull('auto_completion_started_at')
+        ->select(['id', 'auto_completion_started_at'])
         ->chunkById(100, function ($tenants) use ($completeBookings, $cutoff): void {
             $context = app(TenantContext::class);
             foreach ($tenants as $tenant) {
                 // Same pattern as bookings:expire-payments: tenant-scoped relations resolve inside this tenant only.
                 $context->setTenantId((int) $tenant->id);
                 try {
-                    $ids = $completeBookings->endedIds($tenant, $cutoff);
-                    if ($ids !== []) {
-                        $completeBookings->execute($tenant, $ids, 'system', $cutoff);
-                    }
+                    $completeBookings->completeEnded($tenant, 'system', $cutoff, $tenant->auto_completion_started_at);
+                } catch (Throwable $exception) {
+                    report($exception);
                 } finally {
                     $context->clear();
                 }
@@ -98,6 +99,8 @@ Artisan::command('slots:open-automatic', function (OpenAutomaticSlots $openAutom
                 $context->setTenantId((int) $tenant->id);
                 try {
                     $openAutomaticSlots->execute($tenant);
+                } catch (Throwable $exception) {
+                    report($exception);
                 } finally {
                     $context->clear();
                 }
@@ -113,8 +116,20 @@ Schedule::call(fn () => Artisan::call('slots:open-automatic'))
 // BQ-162 (FR-NOTIFICATION-008, D-026): Monday-morning summary of last week for every Pemilik.
 Artisan::command('owners:weekly-summary', function (SendWeeklySummary $sendWeeklySummary): void {
     Tenant::query()->with('user')->chunkById(100, function ($tenants) use ($sendWeeklySummary): void {
+        $context = app(TenantContext::class);
         foreach ($tenants as $tenant) {
-            $sendWeeklySummary->execute($tenant);
+            $previous = $context->getTenantId();
+            $context->setTenantId((int) $tenant->id);
+            try {
+                $tenant->load('subscription.plan');
+                if (EntitlementRules::hasEffectivePlan($tenant->subscription)) {
+                    $sendWeeklySummary->execute($tenant);
+                }
+            } catch (Throwable $exception) {
+                report($exception);
+            } finally {
+                $context->setTenantId($previous);
+            }
         }
     });
 })->purpose('Email the summary of last week to every business owner');

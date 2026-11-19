@@ -3,6 +3,7 @@
 namespace Tests\Feature\Owner;
 
 use App\Actions\Owner\GetOwnerSettings;
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\WeeklySummaryNotification;
@@ -21,14 +22,19 @@ class WeeklySummaryTest extends TestCase
         Notification::fake();
         $this->travelTo(Carbon::parse('2026-11-16 07:00:00', 'Asia/Jakarta'));
         $on = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
-        Tenant::factory()->create(['iduser' => $on->id]);
+        $onTenant = Tenant::factory()->create(['iduser' => $on->id]);
+        app(CreateTrialSubscription::class)->execute($onTenant);
         $off = User::factory()->create(['role' => 'owner', 'email_verified_at' => now(), 'notification_preferences' => ['weekly_summary' => false]]);
-        Tenant::factory()->create(['iduser' => $off->id]);
+        $offTenant = Tenant::factory()->create(['iduser' => $off->id]);
+        app(CreateTrialSubscription::class)->execute($offTenant);
+        $expired = Tenant::factory()->create();
+        app(CreateTrialSubscription::class)->execute($expired)->update(['trial_berakhir' => now()->subDay()]);
 
         $this->artisan('owners:weekly-summary')->assertSuccessful();
 
         Notification::assertSentTo($on, WeeklySummaryNotification::class, fn (WeeklySummaryNotification $n): bool => $n->summary['from'] === '9 Nov' && $n->summary['to'] === '15 Nov 2026');
         Notification::assertNotSentTo($off, WeeklySummaryNotification::class);
+        Notification::assertNotSentTo($expired->user, WeeklySummaryNotification::class);
     }
 
     public function test_only_the_business_owner_sees_the_weekly_summary_preference(): void

@@ -7,9 +7,11 @@ namespace App\Actions\Booking;
 use App\Actions\Schedule\ClaimSlots;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
+use App\Domain\Booking\BookingTimeRange;
 use App\Models\Booking;
 use App\Models\Tenant;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -22,6 +24,10 @@ final class CompleteBookings
 {
     /** Hours after the session ends before the system completes a booking (D-026). */
     public const AUTO_COMPLETE_AFTER_HOURS = 6;
+
+    public const BATCH_SIZE = 200;
+
+    public const REQUEST_LIMIT = 500;
 
     public function __construct(private UpdateBookingStatus $updateBookingStatus) {}
 
@@ -65,18 +71,47 @@ final class CompleteBookings
      */
     public function endedIds(Tenant $tenant, Carbon $endedBefore): array
     {
+        return $this->endedQuery($tenant, $endedBefore)->orderBy('tanggalbooking')->pluck('id')->map(fn ($id): int => (int) $id)->all();
+    }
+
+    public function endedCount(Tenant $tenant, Carbon $endedBefore): int
+    {
+        return $this->endedQuery($tenant, $endedBefore)->count();
+    }
+
+    /** @return array{completed: int, skipped: int} */
+    public function completeEnded(Tenant $tenant, string $actor, ?Carbon $endedBefore = null, ?Carbon $endedSince = null, ?int $limit = null): array
+    {
+        $endedBefore ??= Carbon::now('Asia/Jakarta');
+        $query = $this->endedQuery($tenant, $endedBefore, $endedSince);
+        $result = ['completed' => 0, 'skipped' => 0];
+        $lastId = (clone $query)->max('id');
+        $query->where('id', '<=', $lastId ?? 0)->select('bookings.id')
+            ->when($limit !== null, fn (Builder $query) => $query->limit($limit))
+            ->chunkById(self::BATCH_SIZE, function ($bookings) use ($tenant, $actor, $endedBefore, &$result): void {
+                $batch = $this->execute($tenant, $bookings->modelKeys(), $actor, $endedBefore);
+                $result['completed'] += $batch['completed'];
+                $result['skipped'] += $batch['skipped'];
+            });
+
+        return $result;
+    }
+
+    /** @return Builder<Booking> */
+    private function endedQuery(Tenant $tenant, Carbon $endedBefore, ?Carbon $endedSince = null): Builder
+    {
+        $end = BookingTimeRange::slotEndSql(DB::connection()->getDriverName(), 'bookings.tanggalbooking', 'schedules.jam_mulai', 'schedules.jam_selesai');
+
         // scope-bypass: used by the scheduler without tenant context; filtered to this tenant.
         return Booking::withoutGlobalScopes()
             ->where('idtenant', $tenant->id)
             ->where('status', BookingState::STATUS_PAID)
             ->whereDate('tanggalbooking', '<=', $endedBefore->toDateString())
-            ->with('schedule')
-            ->orderBy('tanggalbooking')
-            ->get()
-            ->filter(fn (Booking $booking): bool => BookingRules::sessionHasEnded([$booking], $endedBefore))
-            ->map(fn (Booking $booking): int => (int) $booking->id)
-            ->values()
-            ->all();
+            ->whereExists(fn ($slots) => $slots->selectRaw('1')->from('schedules')
+                ->whereColumn('schedules.id', 'bookings.idschedule')
+                ->whereColumn('schedules.idtenant', 'bookings.idtenant')
+                ->whereRaw($end.' <= ?', [$endedBefore->toDateTimeString()])
+                ->when($endedSince !== null, fn ($query) => $query->whereRaw($end.' >= ?', [$endedSince?->toDateTimeString()])));
     }
 
     private function isEligible(Booking $booking, Carbon $endedBefore): bool

@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Booking\CompleteBookings;
+use App\Actions\Booking\UpdateBookingStatus;
+use App\Domain\Booking\BookingRules;
 use App\Models\Booking;
 use App\Models\BookingLog;
 use App\Models\Payment;
@@ -11,6 +14,7 @@ use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Models\User;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +38,7 @@ class BookingCompletionTest extends TestCase
         $this->travelTo(Carbon::parse('2026-11-17 20:00:00', 'Asia/Jakarta'));
         $this->owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $this->tenant = Tenant::factory()->create(['iduser' => $this->owner->id]);
+        $this->tenant->forceFill(['auto_completion_started_at' => now()->startOfDay()])->save();
         $this->service = Service::factory()->create(['idtenant' => $this->tenant->id]);
     }
 
@@ -131,6 +136,82 @@ class BookingCompletionTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->assertFalse($this->tenant->fresh()->auto_complete_bookings);
+    }
+
+    public function test_first_activation_keeps_old_sessions_for_manual_completion(): void
+    {
+        $old = $this->paidBooking('2026-11-16', '09:00', '10:00');
+        $this->artisan('bookings:complete-ended')->assertSuccessful();
+        $this->assertSame('paid', $old->fresh()->status);
+
+        $this->actingAs($this->owner)->post(route('owner.bookings.complete-many'), ['all_ended' => 1])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('completed', $old->fresh()->status);
+        $this->tenant->update(['auto_complete_bookings' => false]);
+        $this->travelTo(now()->addDay());
+        $this->tenant->update(['auto_complete_bookings' => true]);
+        $this->assertTrue($this->tenant->fresh()->auto_completion_started_at->equalTo(now()));
+    }
+
+    public function test_ended_count_matches_the_time_range_for_inclusive_and_overnight_slots(): void
+    {
+        app(TenantContext::class)->setTenantId((int) $this->tenant->id);
+        $bookings = [
+            $this->paidBooking('2026-11-17', '09:00', '09:59'),
+            $this->paidBooking('2026-11-16', '23:00', '00:59'),
+            $this->paidBooking('2026-11-17', '23:00', '00:59'),
+        ];
+        $action = app(CompleteBookings::class);
+        foreach (['2026-11-17 00:59', '2026-11-17 01:00', '2026-11-17 09:59', '2026-11-17 10:00', '2026-11-18 01:00'] as $time) {
+            $cutoff = Carbon::parse($time, 'Asia/Jakarta');
+            $expected = count(array_filter($bookings, fn (Booking $booking): bool => BookingRules::sessionHasEnded([$booking], $cutoff)));
+            $this->assertSame($expected, $action->endedCount($this->tenant, $cutoff));
+        }
+    }
+
+    public function test_bulk_completion_processes_more_than_one_batch(): void
+    {
+        app(TenantContext::class)->setTenantId((int) $this->tenant->id);
+        $this->service->update(['kapasitas' => 300]);
+        $first = $this->paidBooking('2026-11-16', '09:00', '10:00');
+        Booking::factory()->count(CompleteBookings::BATCH_SIZE + 5)->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $first->idschedule,
+            'tanggalbooking' => '2026-11-16', 'jam' => '09:00:00', 'status' => 'paid', 'peserta' => 1,
+        ]);
+
+        $action = app(CompleteBookings::class);
+        $result = $action->completeEnded($this->tenant, 'owner', limit: CompleteBookings::BATCH_SIZE + 1);
+        $this->assertSame(['completed' => CompleteBookings::BATCH_SIZE + 1, 'skipped' => 0], $result);
+        $this->assertSame(5, $action->endedCount($this->tenant, now()));
+    }
+
+    public function test_scheduler_reports_a_failed_tenant_and_continues_with_the_next(): void
+    {
+        $this->paidBooking('2026-11-17', '09:00', '10:00');
+        $other = Tenant::factory()->create();
+        $other->forceFill(['auto_completion_started_at' => now()->startOfDay()])->save();
+        $service = Service::factory()->create(['idtenant' => $other->id]);
+        $next = $this->paidBooking('2026-11-17', '09:00', '10:00', $other, $service);
+        $real = app(UpdateBookingStatus::class);
+        $this->mock(UpdateBookingStatus::class)->shouldReceive('execute')
+            ->andReturnUsing(function (Booking $booking, string $status, string $actor, ?string $reason, bool $notify) use ($real): array {
+                if ((int) $booking->idtenant === (int) $this->tenant->id) {
+                    throw new \RuntimeException('Simulated tenant failure');
+                }
+
+                return $real->execute($booking, $status, $actor, $reason, $notify);
+            });
+
+        $this->artisan('bookings:complete-ended')->assertSuccessful();
+        $this->assertSame('completed', $next->fresh()->status);
+        $this->assertNull(app(TenantContext::class)->getTenantId());
+    }
+
+    public function test_booking_log_uses_the_application_clock(): void
+    {
+        $booking = $this->paidBooking('2026-11-16', '09:00', '10:00');
+        $log = BookingLog::record($booking->id, 'viewed', 'Dilihat');
+        $this->assertSame(now()->format('Y-m-d H:i:s'), $log->fresh()->created_at->format('Y-m-d H:i:s'));
     }
 
     private function paidBooking(string $date, string $start, string $end, ?Tenant $tenant = null, ?Service $service = null): Booking

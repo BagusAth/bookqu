@@ -71,7 +71,7 @@ class OwnerBookingController extends Controller
         }
         // FR-BOOKING-025: ended sessions the team may close at once from "Perlu tindakan".
         $endedCount = $tab === 'action' && $canComplete && $tenant !== null
-            ? count(app(CompleteBookings::class)->endedIds($tenant, Carbon::now('Asia/Jakarta')))
+            ? app(CompleteBookings::class)->endedCount($tenant, Carbon::now('Asia/Jakarta'))
             : 0;
         $showUnits = EntitlementRules::canAccessFeature($tenant?->subscription, 'units')['allowed'] && config('modules.units') === 'released';
         if ($showUnits) {
@@ -280,17 +280,19 @@ class OwnerBookingController extends Controller
             'ids.*' => ['integer'],
         ]);
 
-        $ids = ($data['all_ended'] ?? false)
-            ? $completeBookings->endedIds($tenant, Carbon::now('Asia/Jakarta'))
-            : array_map('intval', $data['ids'] ?? []);
-        if ($ids === []) {
+        $result = ($data['all_ended'] ?? false)
+            ? $completeBookings->completeEnded($tenant, 'owner', limit: CompleteBookings::REQUEST_LIMIT)
+            : $completeBookings->execute($tenant, array_map('intval', $data['ids'] ?? []), 'owner');
+        if ($result['completed'] === 0 && $result['skipped'] === 0) {
             return back()->with('sukses', 'Tidak ada sesi lewat yang perlu ditutup.');
         }
 
-        $result = $completeBookings->execute($tenant, $ids, 'owner');
         $message = "{$result['completed']} booking ditandai selesai.";
         if ($result['skipped'] > 0) {
             $message .= " {$result['skipped']} dilewati karena belum selesai sesinya, sedang minta refund atau pembatalan, atau statusnya sudah berubah.";
+        }
+        if (($data['all_ended'] ?? false) && $result['completed'] + $result['skipped'] === CompleteBookings::REQUEST_LIMIT) {
+            $message .= ' Maksimal 500 sesi diproses per pengiriman. Periksa daftar untuk booking yang masih perlu ditutup.';
         }
 
         return back()->with('sukses', $message);

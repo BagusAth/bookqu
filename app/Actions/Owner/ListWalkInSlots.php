@@ -6,7 +6,6 @@ namespace App\Actions\Owner;
 
 use App\Actions\Booking\GetBookingAddOnOptions;
 use App\Actions\Schedule\GetAvailableSchedules;
-use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingTimeRange;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -76,7 +75,7 @@ final class ListWalkInSlots
                     'label' => $service->namalayanan.' · '.$range->label(),
                     'start' => $range->startTime(),
                     'available' => $slot['is_available'],
-                    'seats_left' => max(0, (int) $service->kapasitas - BookingRules::seatsTaken((int) $slot['id'])),
+                    'seats_left' => $slot['seats_left'],
                     'add_ons' => $addOns[$service->id] ?? [],
                 ];
             }

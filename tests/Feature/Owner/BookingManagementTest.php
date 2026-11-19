@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Owner\ListWalkInSlots;
 use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
@@ -12,8 +13,10 @@ use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class BookingManagementTest extends TestCase
@@ -74,6 +77,32 @@ class BookingManagementTest extends TestCase
         $response = $this->actingAs($this->user)->get('/owner/bookings?tab=all');
         $response->assertStatus(200);
         $response->assertSee('Alice Customer');
+    }
+
+    public function test_walk_in_picker_query_count_does_not_grow_per_slot(): void
+    {
+        app(TenantContext::class)->setTenantId((int) $this->tenant->id);
+        $this->service->update(['kapasitas' => 3]);
+        $this->schedule->update(['tanggal' => '2026-11-05', 'jam_mulai' => '09:00:00', 'jam_selesai' => '09:59:00']);
+        Booking::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $this->schedule->id,
+            'tanggalbooking' => '2026-11-05', 'jam' => '09:00:00', 'status' => 'paid', 'peserta' => 2,
+        ]);
+        $picker = app(ListWalkInSlots::class);
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $first = $picker->picker($this->tenant, '2026-11-05');
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+        $this->assertSame(1, $first['slots'][0]['seats_left']);
+        Schedule::factory()->count(3)->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'tanggal' => '2026-11-05',
+        ]);
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $picker->picker($this->tenant, '2026-11-05');
+        $this->assertSame($queries, count(DB::getQueryLog()));
+        DB::disableQueryLog();
     }
 
     public function test_owner_can_filter_bookings_by_status(): void

@@ -114,6 +114,27 @@ final class BookingTimeRange
         return $this->start->format('Ymd\THis').'/'.($this->end ?? $this->start)->format('Ymd\THis');
     }
 
+    /**
+     * SQL equivalent of slotEnd for aggregate listings, using trusted column references.
+     * Handles the inclusive minute and overnight sessions exactly as forSlot does.
+     */
+    public static function slotEndSql(string $driver, string $date, string $startTime, string $endTime): string
+    {
+        $start = "substr({$startTime}, 1, 5)";
+        $end = "substr({$endTime}, 1, 5)";
+        $overnight = "CASE WHEN {$end} <= {$start} THEN 1 ELSE 0 END";
+        if ($driver === 'sqlite') {
+            $length = "(CAST(strftime('%s', '2000-01-01 ' || {$end}) AS INTEGER) - CAST(strftime('%s', '2000-01-01 ' || {$start}) AS INTEGER)) / 60 + 1440";
+            $inclusive = "CASE WHEN ({$length}) % 5 = 4 THEN 1 ELSE 0 END";
+
+            return "datetime(date({$date}) || ' ' || {$end}, '+' || ({$overnight}) || ' days', '+' || ({$inclusive}) || ' minutes')";
+        }
+        $length = "TIMESTAMPDIFF(MINUTE, CONCAT('2000-01-01 ', {$start}), CONCAT('2000-01-01 ', {$end})) + 1440";
+        $inclusive = "CASE WHEN MOD(({$length}), 5) = 4 THEN 1 ELSE 0 END";
+
+        return "DATE_ADD(DATE_ADD(TIMESTAMP(DATE({$date}), {$end}), INTERVAL ({$overnight}) DAY), INTERVAL ({$inclusive}) MINUTE)";
+    }
+
     private static function slotEnd(CarbonImmutable $start, string $date, string $jamMulai, string $jamSelesai): CarbonImmutable
     {
         $end = self::at($date, $jamSelesai);

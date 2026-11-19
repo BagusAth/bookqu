@@ -53,7 +53,7 @@ final class SendWeeklySummary
                 'bookings' => (int) ($report['summary']['bookings'] ?? 0),
                 'occupancy' => (float) ($report['occupancy']['rate'] ?? 0),
                 'openUntil' => $openUntil !== null ? Carbon::parse($openUntil)->translatedFormat('j M') : null,
-                'endedNotClosed' => count($this->completeBookings->endedIds($tenant, Carbon::now('Asia/Jakarta'))),
+                'endedNotClosed' => $this->completeBookings->endedCount($tenant, Carbon::now('Asia/Jakarta')),
                 'openRefunds' => RefundRequest::where('status', 'open')->count(),
             ];
         } finally {

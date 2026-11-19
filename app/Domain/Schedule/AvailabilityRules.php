@@ -50,6 +50,8 @@ class AvailabilityRules
      * Checks, in order: ownership and requested date (when given), slot status, closed
      * date, past time, service and fulfillment eligibility, room for the participants
      * (capacity, ADR-0017), unit conflicts (FR-UNIT-003).
+     *
+     * @param  ?array<string, list<array{0: Carbon, 1: Carbon, 2: int}>>  $unitBusy  Preloaded read-only listing data; locked claims use live queries.
      */
     public static function refusal(
         Schedule $schedule,
@@ -59,6 +61,9 @@ class AvailabilityRules
         ?int $serviceId = null,
         ?string $date = null,
         int $participants = 1,
+        ?int $seatsTaken = null,
+        ?array $unitBusy = null,
+        ?bool $dateBlocked = null,
     ): ?SlotRefusal {
         $now = $now ? Carbon::instance($now) : Carbon::now('Asia/Jakarta');
 
@@ -84,7 +89,7 @@ class AvailabilityRules
             return SlotRefusal::NotOpen;
         }
 
-        if (self::isDateBlocked((int) $schedule->idtenant, $slotDate)) {
+        if ($dateBlocked ?? self::isDateBlocked((int) $schedule->idtenant, $slotDate)) {
             return SlotRefusal::DateClosed;
         }
 
@@ -101,12 +106,15 @@ class AvailabilityRules
             return SlotRefusal::ServiceUnavailable;
         }
 
-        if (! BookingRules::hasRoomFor((int) $schedule->id, $participants, $excludeBookingId)) {
-            return BookingRules::hasRoomFor((int) $schedule->id, 1, $excludeBookingId)
+        $capacity = $seatsTaken === null ? null : ($service instanceof Service ? max(1, (int) $service->kapasitas) : 1);
+        if (! BookingRules::hasRoomFor((int) $schedule->id, $participants, $excludeBookingId, $seatsTaken, $capacity)) {
+            return BookingRules::hasRoomFor((int) $schedule->id, 1, $excludeBookingId, $seatsTaken, $capacity)
                 ? SlotRefusal::NotEnoughRoom : SlotRefusal::Occupied;
         }
 
-        if (BookingRules::unitConflict($schedule, $excludeBookingId)) {
+        $unitConflict = $unitBusy === null ? BookingRules::unitConflict($schedule, $excludeBookingId)
+            : BookingRules::slotHitsBusyUnit($unitBusy, (int) $schedule->id, $slotDate, (string) $schedule->jam_mulai, (string) $schedule->jam_selesai);
+        if ($unitConflict) {
             return SlotRefusal::UnitBusy;
         }
 
