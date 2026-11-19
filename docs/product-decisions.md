@@ -43,7 +43,7 @@ Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
 
 ## Sudah diputuskan
 
-- D-027 · Sesi lama saat fitur selesai otomatis pertama kali berjalan · Disetujui 19 Nov 2026 melalui konfirmasi developer. Usulan utama diterapkan, mulai dari sesi yang berakhir sejak fitur diaktifkan, termasuk saat diaktifkan kembali. Sesi lama bisa ditutup manual → BQ-163
+- D-027 · Sesi lama saat fitur selesai otomatis pertama kali berjalan · Disetujui Product Lead dan Tech Lead pada 19 Nov 2026, dikonfirmasi melalui developer. Usulan utama diterapkan, mulai dari sesi yang berakhir sejak fitur diaktifkan, termasuk saat diaktifkan kembali. Sesi lama bisa ditutup manual → BQ-163
 
 ### Keputusan sebelum dokumen ini dibuat
 

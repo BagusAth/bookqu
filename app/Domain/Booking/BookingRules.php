@@ -124,10 +124,19 @@ class BookingRules
     /** Capacity per slot of the schedule's service (ADR-0017 decision 1). */
     public static function capacityOf(int $scheduleId): int
     {
-        return max(1, (int) DB::table('schedules')
+        return self::capacityFrom(DB::table('schedules')
             ->join('services', 'services.id', '=', 'schedules.idlayanan')
             ->where('schedules.id', $scheduleId)
             ->value('services.kapasitas'));
+    }
+
+    /**
+     * Capacity per slot from a preloaded service capacity (ADR-0017 decision 1); a missing
+     * service or an empty value holds one seat, as in capacityOf.
+     */
+    public static function capacityFrom(int|string|null $kapasitas): int
+    {
+        return max(1, (int) $kapasitas);
     }
 
     /**

@@ -180,7 +180,7 @@ class GetAvailableSchedules
                         'jam_selesai' => $row->jam_selesai,
                         'tanggal' => $row->tanggal,
                         'harga_override' => $row->harga_override !== null ? (float) $row->harga_override : null,
-                        'seats_left' => max(0, max(1, (int) $row->kapasitas) - (int) $row->seats_taken),
+                        'seats_left' => max(0, BookingRules::capacityFrom($row->kapasitas) - (int) $row->seats_taken),
                     ];
                 })
                 ->all();
@@ -283,7 +283,7 @@ class GetAvailableSchedules
                 'jam_selesai' => substr($slot->jam_selesai, 0, 5),
                 'is_available' => $isAvailable,
                 'is_current' => $isCurrentSlot,
-                'seats_left' => max(0, ($service instanceof Service ? max(1, (int) $service->kapasitas) : 1) - (int) $slot->getAttribute('seats_taken')),
+                'seats_left' => max(0, BookingRules::capacityFrom($service instanceof Service ? $service->kapasitas : null) - (int) $slot->getAttribute('seats_taken')),
             ];
         });
     }

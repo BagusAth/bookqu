@@ -106,7 +106,7 @@ class AvailabilityRules
             return SlotRefusal::ServiceUnavailable;
         }
 
-        $capacity = $seatsTaken === null ? null : ($service instanceof Service ? max(1, (int) $service->kapasitas) : 1);
+        $capacity = $seatsTaken === null ? null : BookingRules::capacityFrom($service instanceof Service ? $service->kapasitas : null);
         if (! BookingRules::hasRoomFor((int) $schedule->id, $participants, $excludeBookingId, $seatsTaken, $capacity)) {
             return BookingRules::hasRoomFor((int) $schedule->id, 1, $excludeBookingId, $seatsTaken, $capacity)
                 ? SlotRefusal::NotEnoughRoom : SlotRefusal::Occupied;
