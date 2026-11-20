@@ -1,225 +1,78 @@
-<section>
-    <div class="mb-6">
-        <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Data Pemesan<span class="sr-only"> Isi Data Diri</span></h1>
-        <p class="mt-1 text-sm text-[#64748B]">
-            Pastikan nama, email, dan nomor WhatsApp Anda sudah benar.
-        </p>
-    </div>
-
-    @if ($errors->any())
-        <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-700">
-            <p class="font-bold mb-1">Terdapat kesalahan pada input Anda:</p>
-            <ul class="list-disc list-inside space-y-0.5">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    {{-- session('error') is shown once by the booking shell --}}
-    @if (! empty($pendingCheckout))
-        <x-customer.pending-checkout-banner :pending="$pendingCheckout" class="mb-6" />
-    @endif
-
-    <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-7 shadow-xs space-y-5">
-        <div class="border-b border-[#F1F5F9] pb-3">
-            <h2 class="text-base font-bold text-[#0F172A]">Informasi Pemesan</h2>
-            <p class="text-xs text-[#64748B] mt-0.5">Pastikan data yang dimasukkan aktif dan valid.</p>
-        </div>
-
-        {{-- Security Trust Banner (S4.3) --}}
-        <div class="flex items-center gap-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/70 px-3.5 py-2.5 text-xs text-emerald-800">
-            <svg class="h-4 w-4 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            <span class="font-medium">Data kontak Anda aman, terenkripsi, dan hanya digunakan untuk konfirmasi reservasi.</span>
-        </div>
-
-        {{-- Nama Lengkap --}}
-        <div>
-            <label for="namapelanggan" class="block text-xs sm:text-sm font-bold text-[#0F172A] mb-1.5">
-                Nama Lengkap <span class="text-red-500">*</span>
-            </label>
-            <div class="relative">
-                <input
-                    type="text"
-                    name="namapelanggan"
-                    id="namapelanggan"
-                    required
-                    x-model="name"
-                    @blur="touched.name = true; validateName()"
-                    @input="validateName()"
-                    :class="nameError ? 'border-red-400 bg-red-50/30' : (touched.name && !nameError && name ? 'border-emerald-400 bg-emerald-50/20' : 'border-[#CBD5E1] bg-[#F8FAFC]')"
-                    class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-bq-primary focus:bg-white focus:ring-2 focus:ring-bq-primary-light focus:outline-none"
-                    value="{{ old('namapelanggan') }}"
-                    placeholder="Contoh: Budi Santoso"
-                />
-                <template x-if="touched.name && !nameError && name">
-                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-600">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </span>
-                </template>
+<div class="min-w-0 space-y-4">
+    <x-ui.panel>
+        <div class="grid gap-4">
+            <x-ui.field label="Nama lengkap" for="namapelanggan" name="namapelanggan" required>
+                <input id="namapelanggan" class="bq-input w-full" name="namapelanggan" type="text" x-model.trim="name"
+                    value="{{ old('namapelanggan') }}" autocomplete="name" minlength="2" maxlength="150" required>
+            </x-ui.field>
+            <x-ui.field label="Email" for="email" name="email" required>
+                <input id="email" class="bq-input w-full" name="email" type="email" x-model.trim="email"
+                    value="{{ old('email') }}" autocomplete="email" maxlength="100" required>
+            </x-ui.field>
+            <x-ui.field label="Nomor WhatsApp" for="nomorhp" name="nomorhp" required>
+                <input id="nomorhp" class="bq-input w-full" name="nomorhp" type="tel" x-model.trim="phone"
+                    @input="$el.setCustomValidity('')" value="{{ old('nomorhp') }}" autocomplete="tel" minlength="10" maxlength="20" required>
+            </x-ui.field>
+            <x-ui.field label="Catatan (opsional)" for="catatan" name="catatan">
+                <textarea id="catatan" class="bq-input w-full" name="catatan" rows="3" maxlength="500">{{ old('catatan') }}</textarea>
+            </x-ui.field>
+            <div class="space-y-1 border-t border-bq-border pt-3">
+                <x-ui.checkbox id="remember-customer-data" x-model="remember"
+                    :label="'Simpan nama, email dan nomor di perangkat ini untuk '.$tenant->namabisnis" />
+                <button type="button" class="bq-btn bq-btn-ghost min-h-11" x-show="hasSavedContact" x-cloak @click="forgetContact()">
+                    Hapus data tersimpan
+                </button>
             </div>
-            <p x-show="nameError" x-text="nameError" x-cloak class="mt-1.5 text-xs text-red-600 font-medium"></p>
-            @error('namapelanggan')
-                <p class="mt-1.5 text-xs text-red-600 font-medium">{{ $message }}</p>
-            @enderror
         </div>
+    </x-ui.panel>
 
-        {{-- Email --}}
-        <div>
-            <label for="email" class="block text-xs sm:text-sm font-bold text-[#0F172A] mb-1.5">
-                Alamat Email <span class="text-red-500">*</span>
-            </label>
-            <div class="relative">
-                <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    required
-                    x-model="email"
-                    @blur="touched.email = true; validateEmail()"
-                    @input="validateEmail()"
-                    :class="emailError ? 'border-red-400 bg-red-50/30' : (touched.email && !emailError && email ? 'border-emerald-400 bg-emerald-50/20' : 'border-[#CBD5E1] bg-[#F8FAFC]')"
-                    class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-bq-primary focus:bg-white focus:ring-2 focus:ring-bq-primary-light focus:outline-none"
-                    value="{{ old('email') }}"
-                    placeholder="Contoh: budi@gmail.com"
-                />
-                <template x-if="touched.email && !emailError && email">
-                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-600">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </span>
-                </template>
-            </div>
-            <p x-show="emailError" x-text="emailError" x-cloak class="mt-1.5 text-xs text-red-600 font-medium"></p>
-            <p class="mt-1.5 text-xs text-[#64748B]">Bukti reservasi &amp; e-ticket invoice akan dikirimkan ke email ini.</p>
-            @error('email')
-                <p class="mt-1.5 text-xs text-red-600 font-medium">{{ $message }}</p>
-            @enderror
-        </div>
-
-        {{-- WhatsApp / No. HP --}}
-        <div>
-            <label for="nomorhp" class="block text-xs sm:text-sm font-bold text-[#0F172A] mb-1.5">
-                Nomor WhatsApp / HP <span class="text-red-500">*</span>
-            </label>
-            <div class="relative">
-                <input
-                    type="tel"
-                    name="nomorhp"
-                    id="nomorhp"
-                    required
-                    x-model="phone"
-                    @blur="touched.phone = true; validatePhone()"
-                    @input="validatePhone()"
-                    :class="phoneError ? 'border-red-400 bg-red-50/30' : (touched.phone && !phoneError && phone ? 'border-emerald-400 bg-emerald-50/20' : 'border-[#CBD5E1] bg-[#F8FAFC]')"
-                    class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-bq-primary focus:bg-white focus:ring-2 focus:ring-bq-primary-light focus:outline-none"
-                    value="{{ old('nomorhp') }}"
-                    placeholder="Contoh: 081234567890"
-                />
-                <template x-if="touched.phone && !phoneError && phone">
-                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-600">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </span>
-                </template>
-            </div>
-            <p x-show="phoneError" x-text="phoneError" x-cloak class="mt-1.5 text-xs text-red-600 font-medium"></p>
-            <p class="mt-1.5 text-xs text-[#64748B]">Digunakan untuk pengingat jadwal dan konfirmasi langsung.</p>
-            @error('nomorhp')
-                <p class="mt-1.5 text-xs text-red-600 font-medium">{{ $message }}</p>
-            @enderror
-        </div>
-
-        {{-- Catatan Opsional --}}
-        <div>
-            <label for="catatan" class="block text-xs sm:text-sm font-bold text-[#0F172A] mb-1.5">
-                Catatan Khusus <span class="text-xs font-normal text-[#94A3B8]">(Opsional)</span>
-            </label>
-            <textarea
-                name="catatan"
-                id="catatan"
-                rows="3"
-                class="w-full rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] px-4 py-3 text-sm text-[#0F172A] transition focus:border-bq-primary focus:bg-white focus:ring-2 focus:ring-bq-primary-light focus:outline-none"
-                placeholder="Tuliskan catatan khusus atau permintaan tambahan untuk penyedia layanan jika ada..."
-            >{{ old('catatan') }}</textarea>
-        </div>
-
-        {{-- Remember Me / Auto-fill Checkbox --}}
-        <div class="pt-1 border-t border-[#F1F5F9]">
-            <label class="flex items-start sm:items-center gap-2.5 cursor-pointer select-none">
-                <input
-                    type="checkbox"
-                    id="remember-customer-data"
-                    class="mt-0.5 sm:mt-0 h-4 w-4 rounded border-gray-300 text-bq-primary focus:ring-bq-primary-light cursor-pointer"
-                />
-                <span class="text-xs font-semibold text-[#475569]">
-                    Simpan data kontak di perangkat ini untuk pemesanan berikutnya.
-                </span>
-            </label>
-        </div>
-    </div>
-
-    <div class="mt-6 space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-7">
-        <div>
-            <label for="checkout-participants" class="block text-sm font-bold">Jumlah peserta</label>
-            <input id="checkout-participants" name="peserta" type="number" min="1" max="{{ $service->kapasitas }}" required
-                value="{{ old('peserta', 1) }}" x-model.number="participants" class="mt-1 w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm">
-        </div>
-        @if ($addOnOptions !== [])
-            <fieldset class="space-y-2">
-                <legend class="text-sm font-bold">Add-on</legend>
-                @foreach ($addOnOptions as $item)
-                    <label class="flex items-center justify-between gap-3 text-sm">
-                        {{ $item['name'] }}
-                        <input type="number" min="0" max="9999" placeholder="0" aria-label="Jumlah {{ $item['name'] }}"
-                            value="{{ $oldAddOnQuantities[$item['id']] ?? 0 }}"
-                            x-model.number="quantities[@js($item['id'])]" class="w-24 rounded-xl border border-slate-300 px-3 py-2">
-                    </label>
-                @endforeach
-                <template x-for="(item, index) in selectedAddOns" :key="item.id">
-                    <div>
-                        <input type="hidden" :name="'selected_addons[' + index + '][id]'" :value="item.id">
-                        <input type="hidden" :name="'selected_addons[' + index + '][quantity]'" :value="item.quantity">
+    @if ($service->kapasitas > 1 || $addOnOptions !== [] || $showPromo)
+        <x-ui.panel class="space-y-4">
+            <div class="space-y-4">
+                @if ($service->kapasitas > 1)
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <label for="checkout-participants" class="text-bq-label">Jumlah peserta</label>
+                        <x-customer.stepper id="checkout-participants" model="participants" label="jumlah peserta"
+                            name="peserta" :min="1" :max="$service->kapasitas" :value="(int) old('peserta', 1)" />
                     </div>
-                </template>
-            </fieldset>
-        @endif
-        @if ($showPromo)
-            <div>
-                <label for="checkout-promo" class="block text-sm font-bold">Kode promo</label>
-                <input id="checkout-promo" name="voucher_code" maxlength="50" value="{{ $oldPromoCode }}" x-model.trim="voucherCode"
-                    class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                @endif
+                @if ($addOnOptions !== [])
+                    <fieldset>
+                        <legend class="mb-2 text-bq-section">Tambahan</legend>
+                        @foreach ($addOnOptions as $item)
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-bq-border py-2">
+                                <div>
+                                    <label for="checkout-addon-{{ $item['id'] }}" class="text-bq-label">{{ $item['name'] }}</label>
+                                    <p class="bq-num text-bq-small text-bq-text-muted">{{ $item['price_label'] }} per item</p>
+                                </div>
+                                <x-customer.stepper :id="'checkout-addon-'.$item['id']" :model="'quantities['.$item['id'].']'"
+                                    :label="$item['name']" :value="$oldAddOnQuantities[$item['id']] ?? 0" />
+                            </div>
+                        @endforeach
+                        <template x-for="(item, index) in selectedAddOns" :key="item.id">
+                            <div hidden>
+                                <input type="hidden" :name="'selected_addons[' + index + '][id]'" :value="item.id">
+                                <input type="hidden" :name="'selected_addons[' + index + '][quantity]'" :value="item.quantity">
+                            </div>
+                        </template>
+                    </fieldset>
+                @endif
+                @if ($showPromo)
+                    <x-ui.field label="Kode promo (opsional)" for="checkout-promo" name="voucher_code">
+                        <input id="checkout-promo" name="voucher_code" maxlength="50" value="{{ $oldPromoCode }}"
+                            x-model.trim="voucherCode" class="bq-input w-full">
+                    </x-ui.field>
+                @endif
             </div>
-        @endif
-        <button id="refresh-checkout-quote" type="button" @click="refreshQuote()" :disabled="quoteBusy"
-            class="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold">
-            <span x-text="quoteBusy ? 'Memuat harga…' : 'Perbarui ringkasan harga'">Perbarui ringkasan harga</span>
+        </x-ui.panel>
+    @endif
+
+    <div class="space-y-2" x-cloak>
+        <p role="status" class="text-bq-body text-bq-text-muted" x-text="feedback"></p>
+        <button type="button" class="bq-btn bq-btn-secondary min-h-11" x-show="quoteError" @click="queueQuote()">
+            Coba lagi
         </button>
-        <p x-show="quoteError" x-text="quoteError" x-cloak class="text-sm text-red-700" role="alert"></p>
-        <template x-if="quote && reviewed">
-            <dl class="space-y-1 text-sm" aria-live="polite">
-                <div class="flex justify-between gap-3"><dt>Subtotal sesi</dt><dd x-text="money(quote.base_subtotal)"></dd></div>
-                <template x-for="item in quote.add_ons" :key="item.id">
-                    <div class="flex justify-between gap-3"><dt x-text="item.name + ' × ' + item.quantity"></dt><dd x-text="money(item.amount)"></dd></div>
-                </template>
-                <div x-show="quote.promo" class="flex justify-between gap-3"><dt>Diskon promo</dt><dd x-text="quote.promo ? '−' + money(quote.promo.discount) : ''"></dd></div>
-                <div class="flex justify-between gap-3 font-semibold"><dt>Total</dt><dd x-text="money(quote.total)"></dd></div>
-            </dl>
-        </template>
     </div>
 
-    {{-- Mobile Reservation Review Card --}}
-    @include('customer.partials.booking.checkout-mobile-review')
-
-    {{-- Policy --}}
-    <div class="mt-6">
-        <x-customer.booking-policy :policy="$bookingPolicy" />
-    </div>
-</section>
+    <x-customer.booking-policy :policy="$bookingPolicy" />
+</div>

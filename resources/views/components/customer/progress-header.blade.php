@@ -1,55 +1,20 @@
-@props([
-    'current' => 1,
-    'step' => null,
-])
+@props(['current' => 1, 'step' => null])
 
 @php
-    $currentStep = $step ? intval($step) : intval($current);
-    // Simplified 3-step booking flow: Layanan -> Jadwal -> Data & Pembayaran
-    $steps = [
-        1 => 'Layanan',
-        2 => 'Jadwal',
-        3 => 'Data & Pembayaran',
-    ];
+    $currentStep = (int) ($step ?: $current);
+    $steps = [1 => 'Layanan', 2 => 'Jadwal', 3 => 'Data & Pembayaran'];
 @endphp
 
-<nav aria-label="Progres Pemesanan" class="w-full">
-    {{-- Centered 3-Step Stepper (Desktop & Mobile) --}}
-    <ol class="flex items-center justify-center max-w-2xl mx-auto w-full px-2 sm:px-4">
-        @foreach ($steps as $stepNum => $stepName)
-            @php
-                $isCompleted = $stepNum < $currentStep;
-                $isCurrent = $stepNum === $currentStep;
-            @endphp
-            <li class="flex items-center {{ !$loop->last ? 'flex-1' : '' }}">
-                <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
-                    @if ($isCompleted)
-                        {{-- Completed Step: Solid Blue/Indigo with White Checkmark --}}
-                        <span class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-bq-primary customer-primary text-white shadow-2xs transition-transform duration-200">
-                            <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                        </span>
-                        <span class="text-[10px] sm:text-sm font-semibold text-[#0F172A] whitespace-nowrap">{{ $stepName }}</span>
-                    @elseif ($isCurrent)
-                        {{-- Current Step: Solid Blue/Indigo with Step Number --}}
-                        <span class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-bq-primary customer-primary text-white font-bold text-[10px] sm:text-sm shadow-xs ring-4 ring-bq-primary-light">
-                            {{ $stepNum }}
-                        </span>
-                        <span class="text-[10px] sm:text-sm font-bold text-bq-primary whitespace-nowrap">{{ $stepName }}</span>
-                    @else
-                        {{-- Inactive Upcoming Step: Subtle Gray Circle with Number --}}
-                        <span class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full border border-[#CBD5E1] bg-[#F8FAFC] text-[#94A3B8] font-medium text-[10px] sm:text-sm">
-                            {{ $stepNum }}
-                        </span>
-                        <span class="text-[10px] sm:text-sm font-medium text-[#94A3B8] whitespace-nowrap">{{ $stepName }}</span>
-                    @endif
-                </div>
-
-                @if (!$loop->last)
-                    {{-- Connecting Line between Steps --}}
-                    <div class="mx-2 sm:mx-4 h-[2px] flex-1 rounded-full transition-all duration-500 ease-out {{ $stepNum < $currentStep ? 'bg-bq-primary' : 'bg-[#E2E8F0]' }}"></div>
-                @endif
+<nav aria-label="Progres pemesanan">
+    <ol class="mx-auto flex max-w-xl flex-wrap justify-between gap-x-2 gap-y-2">
+        @foreach ($steps as $number => $label)
+            <li @if ($number === $currentStep) aria-current="step" @endif class="flex items-center gap-1.5 text-bq-phone-nav sm:gap-2 sm:text-bq-small">
+                <span aria-hidden="true" @class([
+                    'grid size-6 shrink-0 place-items-center rounded-full border font-semibold',
+                    'border-bq-primary bg-bq-primary text-bq-on-primary' => $number === $currentStep,
+                    'border-bq-border-strong bg-bq-surface-2 text-bq-text-muted' => $number !== $currentStep,
+                ])>{{ $number }}</span>
+                <span @class(['font-semibold' => $number === $currentStep, 'text-bq-text-muted' => $number !== $currentStep])>{{ $label }}</span>
             </li>
         @endforeach
     </ol>

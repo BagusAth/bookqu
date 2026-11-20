@@ -91,14 +91,14 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->get('/'.$this->tenant->slug);
 
         $response->assertStatus(200);
-        $response->assertSee('Pilih Layanan');
+        $response->assertSee('Pilih layanan');
         $response->assertSee('Pilih salah satu layanan untuk memulai pemesanan.');
         $response->assertSee('placeholder="Cari layanan..."', false);
-        $response->assertSee('Pilih Layanan Ini');
+        $response->assertSee('Pilih layanan ini');
         $response->assertSee('name="service_id"', false);
         $response->assertDontSee('cdn.jsdelivr.net/npm/alpinejs');
         $response->assertSee('Foto Wisuda Personal');
-        $response->assertSee('Rp 150.000');
+        $response->assertSee('Rp150.000');
     }
 
     public function test_date_selection_view_renders_canonical_copy(): void
@@ -113,9 +113,9 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->get('/'.$this->tenant->slug.'/booking/schedule');
 
         $response->assertStatus(200);
-        $response->assertSee('Pilih Tanggal');
+        $response->assertSee('Pilih tanggal');
         $response->assertSee('Pilih tanggal yang tersedia untuk reservasi Anda.');
-        $response->assertSee('Kembali ke Pilih Layanan');
+        $response->assertSee('Kembali ke pilih layanan');
     }
 
     public function test_time_selection_provides_range_labels_and_prices(): void
@@ -131,12 +131,12 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->get('/'.$this->tenant->slug.'/booking/schedule');
 
         $response->assertStatus(200);
-        $response->assertSee('Pilih Waktu');
-        $response->assertSee('10:00 – 11:00');
-        $response->assertSee('11:00 – 12:00');
-        $response->assertSee('Rp 150.000');
+        $response->assertSee('Pilih waktu');
+        $response->assertSee('10.00 – 11.00');
+        $response->assertSee('11.00 – 12.00');
+        $response->assertSee('Rp150.000');
         $response->assertSee('Lanjutkan');
-        $response->assertSee('Kembali ke Pilih Layanan');
+        $response->assertSee('Kembali ke pilih layanan');
     }
 
     public function test_checkout_view_renders_mobile_reservation_review_card_and_canonical_copy(): void
@@ -154,12 +154,12 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->get('/'.$this->tenant->slug.'/booking/checkout');
 
         $response->assertStatus(200);
-        $response->assertSee('Data Pemesan');
+        $response->assertSee('Data pemesan');
         $response->assertSee('Pastikan nama, email, dan nomor WhatsApp Anda sudah benar.');
-        $response->assertSee('Detail Reservasi');
-        $response->assertSee('Simpan data kontak di perangkat ini untuk pemesanan berikutnya.');
-        $response->assertSee('Lanjut ke Pembayaran');
-        $response->assertSee('Kembali ke Jadwal');
+        $response->assertSee('Ringkasan reservasi');
+        $response->assertSee('Simpan nama, email dan nomor di perangkat ini untuk Studio Foto Bagus');
+        $response->assertSee('Lanjut ke pembayaran');
+        $response->assertSee('Kembali ke jadwal');
         $response->assertSee('2 sesi (120 menit)');
         // Ensure obsolete voucher input is removed
         $response->assertDontSee('voucher_code_input');

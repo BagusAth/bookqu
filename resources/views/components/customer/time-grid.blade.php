@@ -6,7 +6,8 @@
             :disabled="!slot.is_available" :aria-pressed="isSlotSelected(slot)"
             :class="{ 'bg-bq-primary-light border-bq-primary': isSlotSelected(slot) }"
             @click="selectSlot(slot)">
-            <span class="bq-num whitespace-nowrap" x-text="slot.time_range"></span>
+            <span class="bq-num whitespace-nowrap" x-text="slot.display_time || slot.time_range"></span>
+            <span class="bq-num text-bq-small" x-show="slot.price_label" x-text="slot.price_label"></span>
             <span class="text-bq-small" x-show="slot.detail" x-text="slot.detail"></span>
         </button>
     </template>

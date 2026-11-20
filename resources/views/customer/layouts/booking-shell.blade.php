@@ -8,9 +8,6 @@
         <link rel="icon" href="{{ asset('logo_icon.png') }}">
     @endunless
     @vite('resources/css/app.css')
-    @unless (View::hasSection('minimal'))
-        <link rel="stylesheet" href="{{ asset('css/booking-program.css') }}">
-    @endunless
     @yield('head')
     @isset ($branding)
         <link rel="preconnect" href="https://fonts.googleapis.com">

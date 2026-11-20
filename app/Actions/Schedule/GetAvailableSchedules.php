@@ -16,6 +16,7 @@ use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
+use App\Support\Rupiah;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -232,10 +233,17 @@ class GetAvailableSchedules
                 'duration_minutes' => $slotRange->durationMinutes(),
                 'range_label' => $timeRangeLabel,
                 'time_range' => $timeRangeLabel,
+                'display_time' => $slotRange->displayLabel(),
                 'period' => 'WIB',
                 'session' => $session,
                 'price' => $slotPrice,
-                'price_label' => 'Rp '.number_format($slotPrice, 0, ',', '.'),
+                'price_label' => Rupiah::format($slotPrice),
+                'detail' => match (true) {
+                    $isBooked => 'Penuh',
+                    ! $isAvailable => 'Tidak tersedia',
+                    (int) $service->kapasitas > 1 => 'Sisa '.$row['seats_left'].' tempat',
+                    default => null,
+                },
                 'is_available' => $isAvailable,
                 'is_disabled' => ! $isAvailable,
                 'is_booked' => $isBooked,

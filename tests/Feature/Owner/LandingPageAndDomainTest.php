@@ -169,7 +169,7 @@ class LandingPageAndDomainTest extends TestCase
             ->assertDontSee('<b>Foto keluarga</b>', false)
             ->assertSee('data-landing-template="creative"', false)
             ->assertSee($banner->url)
-            ->assertSee('Pilih Layanan');
+            ->assertSee('Pilih layanan');
 
         $this->post(route('owner.booking-page.landing'), ['template' => 'creative', 'headline' => 'Foto', 'action' => 'unpublish'])->assertRedirect();
         $this->get('/studio-rani')->assertOk()->assertDontSee('data-landing-template', false);

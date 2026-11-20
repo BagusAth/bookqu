@@ -95,14 +95,15 @@ final class StorefrontCheckoutState
         /** @var Collection<int, Booking> $bookings */
         $bookings = $payment->bookings->sortBy('jam')->values();
         $first = $bookings->first();
+        $ranges = app(GetBookingTimeRanges::class)->execute($bookings);
 
         return [
             'payment' => $payment,
             'url' => app(CustomerAccessLinks::class)->payment($payment, 'payment'),
             'service' => $first->layanan instanceof Service ? (string) $first->layanan->namalayanan : '',
-            'date' => Carbon::parse($first->getRawOriginal('tanggalbooking'))->locale('id')->translatedFormat('l, j F Y'),
-            'times' => $bookings->map(fn (Booking $booking) => substr((string) $booking->jam, 0, 5))->implode(', '),
-            'deadline' => $payment->expired_at ? Carbon::parse($payment->expired_at)->setTimezone('Asia/Jakarta')->format('H:i') : '',
+            'date' => $ranges['timeRange']->start->locale('id')->translatedFormat('l, d M Y'),
+            'times' => $ranges['timeRange']->displayLabel(),
+            'deadline' => $payment->expired_at ? Carbon::parse($payment->expired_at)->setTimezone('Asia/Jakarta')->format('H.i') : '',
         ];
     }
 }

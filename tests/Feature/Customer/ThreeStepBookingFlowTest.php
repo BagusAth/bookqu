@@ -153,13 +153,13 @@ class ThreeStepBookingFlowTest extends TestCase
         $response->assertSee('Jadwal');
         $response->assertSee('Layanan');
         $response->assertSee('Data &amp; Pembayaran', false);
-        $response->assertSee('Sesi Pagi');
-        $response->assertSee('Sesi Siang &amp; Sore', false);
-        $response->assertSee('10:00 – 11:00');
+        $response->assertSee('Sesi pagi');
+        $response->assertSee('Sesi siang dan sore');
+        $response->assertSee('10.00 – 11.00');
         $response->assertSee('Badminton Court Rental');
         $response->assertSee('Creative Hub Studio');
         $response->assertSee('Lanjutkan');
-        $response->assertSee('Pembayaran aman melalui BookQu');
+        $response->assertDontSee('Pembayaran aman melalui BookQu');
     }
 
     /**
@@ -227,8 +227,8 @@ class ThreeStepBookingFlowTest extends TestCase
         ])->get('/creative-hub-studio/booking/checkout');
 
         $response->assertStatus(200);
-        $response->assertSee('Data Pemesan');
-        $response->assertSee('Data Pemesan');
+        $response->assertSee('Data pemesan');
+        $response->assertSee('Data pemesan');
         $response->assertSee('Badminton Court Rental');
 
         preg_match('/name="checkout_fingerprint" value="([a-f0-9]{64})"/', $response->getContent(), $fingerprint);

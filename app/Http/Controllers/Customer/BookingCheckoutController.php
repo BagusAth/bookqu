@@ -20,6 +20,8 @@ use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Support\CustomerBookingRoutes;
+use App\Support\Rupiah;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -86,10 +88,8 @@ final class BookingCheckoutController extends StorefrontBookingController
         $quote = BookingPricing::quote($service, $schedules, PriceRules::forTenant($tenant, $selectedDate, $selectedDate));
         $hargaAkhir = $quote['total'];
         $slotPrices = array_column($quote['lines'], 'unit_price');
-        $hasPriceOverride = collect($quote['lines'])->contains(fn (array $line) => $line['unit_price'] !== (int) round((float) $service->harga));
         $selectedRanges = array_map(fn (Schedule $slot) => BookingTimeRange::forSlot($selectedDate, (string) $slot->jam_mulai, (string) $slot->jam_selesai), $schedules);
         $selectedMinutes = array_sum(array_map(fn (BookingTimeRange $range) => (int) $range->durationMinutes(), $selectedRanges));
-        $selectedTime = $selectedTimes[0] ?? null;
         $checkoutState = app(StorefrontCheckoutState::class);
         $checkoutFingerprint = $checkoutState->fingerprint($service, $selectedDate, $schedules);
         $pendingCheckout = $checkoutState->pending($tenant);
@@ -99,22 +99,24 @@ final class BookingCheckoutController extends StorefrontBookingController
             && EntitlementRules::canAccessFeature($subscription, 'promos')['allowed'];
         $addOnOptions = app(GetBookingAddOnOptions::class)->execute($tenant, [$service->id])[$service->id] ?? [];
 
+        $checkoutSummary = [
+            'date' => Carbon::parse($selectedDate)->locale('id')->translatedFormat('l, d M Y'),
+            'sessions' => array_map(fn (BookingTimeRange $range, $price): array => [
+                'time' => $range->displayLabel(),
+                'price' => Rupiah::format($price),
+            ], $selectedRanges, $slotPrices),
+            'total' => Rupiah::format($hargaAkhir),
+        ];
+
         return view('customer.booking.checkout', compact(
             'tenant',
             'service',
-            'selectedDate',
-            'selectedTime',
-            'selectedTimes',
-            'hargaAkhir',
-            'slotPrices',
-            'hasPriceOverride',
-            'schedules',
-            'selectedRanges',
             'selectedMinutes',
             'checkoutFingerprint',
             'pendingCheckout',
             'showPromo',
             'addOnOptions',
+            'checkoutSummary',
         ) + ['bookingPolicy' => $tenant->only([
             'refunds_enabled', 'cancel_before_hours', 'reschedule_before_hours',
             'booking_min_lead_hours', 'booking_max_days_ahead', 'booking_buffer_minutes',
@@ -274,6 +276,20 @@ final class BookingCheckoutController extends StorefrontBookingController
         $quote = $quoteBooking->execute($tenant, $currentService, $draft->date, $schedules, (int) ($request->validated('peserta') ?? 1),
             $request->validated('voucher_code'), $request->validated('selected_addons') ?? []);
 
-        return response()->json(['quote' => $quote, 'checkout_fingerprint' => $checkoutState->fingerprintOfQuote($service, $draft->date, $quote)]);
+        return response()->json([
+            'quote' => $quote,
+            'display' => [
+                'base' => Rupiah::format($quote['base_subtotal']),
+                'total' => Rupiah::format($quote['total']),
+                'addOns' => collect($quote['add_ons'])->map(fn (array $item): array => [
+                    'id' => $item['id'],
+                    'name' => $item['name'],
+                    'quantity' => $item['quantity'],
+                    'amount' => Rupiah::format($item['amount']),
+                ])->all(),
+                'promo' => $quote['promo'] ? Rupiah::format(-$quote['promo']['discount']) : null,
+            ],
+            'checkout_fingerprint' => $checkoutState->fingerprintOfQuote($service, $draft->date, $quote),
+        ]);
     }
 }

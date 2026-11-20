@@ -6,7 +6,7 @@ namespace App\Support;
 
 /**
  * Rupiah as the owner portal shows it (BQ-162, Papan Jadwal prototype): "Rp150.000", whole rupiah,
- * Indonesian thousands separator, no space after "Rp" (PUEBI). Customer pages and invoices keep their own format.
+ * Indonesian thousands separator, with no space after "Rp" (PUEBI).
  */
 final class Rupiah
 {

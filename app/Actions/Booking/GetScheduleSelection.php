@@ -6,6 +6,7 @@ use App\Actions\Schedule\GetAvailableSchedules;
 use App\Domain\Booking\BookingRules;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Support\Rupiah;
 use Carbon\Carbon;
 
 final class GetScheduleSelection
@@ -24,8 +25,7 @@ final class GetScheduleSelection
             $entry = $availability->get($iso);
             $dates[] = [
                 'date' => $iso,
-                'day_label' => $day->locale('id')->translatedFormat('D'),
-                'day_number' => $day->day,
+                'label' => $day->locale('id')->translatedFormat('D, d M'),
                 'is_available' => ($entry['available_slots'] ?? 0) > 0,
                 'is_blocked' => $entry['is_blocked'] ?? false,
             ];
@@ -37,7 +37,7 @@ final class GetScheduleSelection
         $date = $selected['date'];
         $slots = $selected['is_blocked'] ? [] : $this->availability->getTimeSlots($tenant, $service, $date);
         $groups = collect($slots)->groupBy('session');
-        $label = Carbon::parse($date, 'Asia/Jakarta')->locale('id')->translatedFormat('l, d F Y');
+        $label = Carbon::parse($date, 'Asia/Jakarta')->locale('id')->translatedFormat('l, d M Y');
 
         return [
             'dates' => $dates,
@@ -52,7 +52,7 @@ final class GetScheduleSelection
                 'id' => $service->id,
                 'name' => $service->namalayanan,
                 'price' => (float) $service->harga,
-                'price_label' => 'Rp '.number_format($service->harga, 0, ',', '.'),
+                'price_label' => Rupiah::format($service->harga),
                 'duration' => (int) $service->durasi,
                 'duration_unit' => $service->satuan_durasi ?: 'menit',
                 'image_url' => $service->cover_image_url,

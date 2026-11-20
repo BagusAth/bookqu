@@ -131,7 +131,7 @@ class BookingFlowTest extends TestCase
 
         $responseCheckout = $this->get('/my-business/booking/checkout');
         $responseCheckout->assertStatus(200);
-        $responseCheckout->assertSee('Isi Data Diri');
+        $responseCheckout->assertSee('Data pemesan');
     }
 
     public function test_customer_can_process_checkout(): void

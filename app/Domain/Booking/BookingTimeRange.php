@@ -118,6 +118,11 @@ final class BookingTimeRange
         return $this->end === null ? $this->startTime() : $this->startTime().$separator.$this->endTime();
     }
 
+    public function displayLabel(): string
+    {
+        return str_replace(':', '.', $this->label());
+    }
+
     /**
      * Google Calendar `dates` value; without an end the event starts and ends at the start.
      */
