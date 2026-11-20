@@ -29,6 +29,7 @@ use App\Models\SpecialDatePrice;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
 use App\Support\Rupiah;
+use App\Support\WeekdayRange;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -69,7 +70,7 @@ class OwnerScheduleController extends Controller
             $data['specialDates'] = SpecialDatePrice::where('idtenant', $tenant->id)->with('service')->orderBy('tanggal')->get();
             $data['peakRows'] = $data['peakRules']->map(fn (PeakHourRule $rule): array => [
                 'rule' => $rule,
-                'days' => self::dayRange((array) $rule->days),
+                'days' => WeekdayRange::label((array) $rule->days),
                 'time' => str_replace(':', '.', substr((string) $rule->starts_at, 0, 5)).'–'.str_replace(':', '.', substr((string) $rule->ends_at, 0, 5)),
                 'extra' => '+'.Rupiah::format($rule->extra_amount),
                 'services' => $rule->services->isEmpty() ? 'Semua layanan' : ($rule->services->count() === 1 ? (string) $rule->services->value('namalayanan') : $rule->services->count().' layanan'),
@@ -86,33 +87,6 @@ class OwnerScheduleController extends Controller
         }
 
         return view('owner.schedule', $data);
-    }
-
-    /**
-     * Short day label for a set of ISO weekdays: "Sen–Jum", "Sab–Min", "Sen, Rab".
-     *
-     * @param  array<int, int|string>  $days
-     */
-    public static function dayRange(array $days): string
-    {
-        $names = [1 => 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-        $days = collect($days)->map(fn ($day): int => (int) $day)->filter(fn (int $day): bool => isset($names[$day]))->unique()->sort()->values();
-        if ($days->count() === 7) {
-            return 'Setiap hari';
-        }
-        $groups = [];
-        foreach ($days as $day) {
-            $last = array_key_last($groups);
-            if ($last !== null && end($groups[$last]) === $day - 1) {
-                $groups[$last][] = $day;
-            } else {
-                $groups[] = [$day];
-            }
-        }
-
-        return collect($groups)->map(fn (array $group): string => count($group) > 2
-            ? $names[$group[0]].'–'.$names[end($group)]
-            : collect($group)->map(fn (int $day): string => $names[$day])->join(', '))->join(', ');
     }
 
     /** @return array<int, list<array{opens_at: string, closes_at: string}>> */

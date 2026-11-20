@@ -109,6 +109,9 @@
                                 <span class="bq-num block font-bq-display text-bq-figure-small font-semibold text-bq-ink">{{ $card['value'] }}</span>
                             </button>
                             <p class="text-bq-small text-bq-text-muted">Berlaku {{ $card['period'] }}</p>
+                            @if ($card['limits'])
+                                <p class="text-bq-small text-bq-text-muted" data-promo-limits>Hanya {{ $card['limits'] }}</p>
+                            @endif
                         </div>
                         <form method="POST" action="{{ route($promoRoute.'.destroy', $v->id) }}" id="form-delete-voucher-{{ $v->id }}">
                             @csrf
