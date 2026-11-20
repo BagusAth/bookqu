@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\GetBookingTimeRanges;
-use App\Actions\Booking\GetInvoiceAmounts;
 use App\Actions\Booking\RescheduleBooking;
+use App\Actions\Customer\GetCustomerInvoice;
 use App\Actions\Customer\GetCustomerPanel;
 use App\Actions\CustomerAccess\ResolveManagementTarget;
 use App\Actions\CustomerAccess\ReviewBooking;
@@ -87,14 +87,9 @@ class BookingManageController extends Controller
         $bookings = $payment->bookings;
         $tenant = $payment->tenant;
         abort_unless($tenant instanceof Tenant, 404);
-        $booking = $bookings->first();
 
-        return view('customer.manage.payment-invoice', app(GetInvoiceAmounts::class)->execute($payment) + app(GetBookingTimeRanges::class)->execute($bookings) + [
-            'payment' => $payment,
-            'bookings' => $bookings,
-            'booking' => $booking,
-            'tenant' => $tenant,
-        ]);
+        return view('customer.booking.invoice', app(GetCustomerInvoice::class)->execute($tenant, $payment, $bookings,
+            route('booking.manage.payment', ['order_id' => $orderId])));
     }
 
     // ── Shared token validation (Scoped) ───────────────────────────────────────
@@ -244,10 +239,11 @@ class BookingManageController extends Controller
             abort(404, 'Invoice hanya tersedia untuk pembayaran yang berhasil.');
         }
 
-        return view('customer.manage.invoice', app(GetInvoiceAmounts::class)->execute($booking->payment) + app(GetBookingTimeRanges::class)->execute([$booking]) + [
-            'booking' => $booking,
-            'invoiceDate' => $booking->payment?->updated_at ?? $booking->created_at,
-        ]);
+        $tenant = $booking->tenant;
+        abort_unless($tenant instanceof Tenant, 404);
+
+        return view('customer.booking.invoice', app(GetCustomerInvoice::class)->execute($tenant, $booking->payment, [$booking],
+            route('booking.manage', ['booking_code' => $bookingCode])));
     }
 
     // ── Customer Review ───────────────────────────────────────────────────────

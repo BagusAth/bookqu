@@ -351,12 +351,12 @@ class BookingFlowTest extends TestCase
 
         $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertStatus(200);
-        $response->assertSee('Booking Berhasil Dikonfirmasi!');
+        $response->assertSee('Invoice pembayaran');
         $response->assertSee('Google Calendar');
         $response->assertDontSee('Apple / Outlook (.ics)');
         $response->assertSee('Bagikan ke WhatsApp');
-        $response->assertSee('Petunjuk Arah');
-        $response->assertSee('Kembali ke Beranda');
+        $response->assertSee('Petunjuk arah');
+        $response->assertSee('aria-label="Kembali"', false);
         // Check header back button
         $response->assertSee('/my-business');
     }
@@ -391,7 +391,7 @@ class BookingFlowTest extends TestCase
 
         $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertStatus(200);
-        $response->assertSee('Booking Berhasil Dikonfirmasi!');
+        $response->assertSee('Invoice pembayaran');
 
         $booking->refresh();
         $this->assertNull($booking->booking_code);

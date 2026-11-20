@@ -331,7 +331,7 @@ class BookingManageTest extends TestCase
         $this->service->update(['harga' => 250000]);
         $this->schedule->update(['harga_override' => 275000]);
         $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'/invoice');
-        $response->assertOk()->assertSee('Rp 150.000')->assertDontSee('275.000')->assertDontSee('250.000');
+        $response->assertOk()->assertSee('Rp150.000')->assertDontSee('275.000')->assertDontSee('250.000');
         $this->assertEquals(150000, $this->payment->fresh()->jumlah);
         $this->assertSame('sukses', $this->payment->fresh()->status);
         $this->assertDatabaseCount('refunds', 0);

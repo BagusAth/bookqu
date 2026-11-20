@@ -13,11 +13,11 @@
 
         text.innerText = message;
         if (type === 'error') {
-            banner.className = 'mt-4 rounded-xl p-3 text-xs border border-red-200 bg-red-50 text-red-700 flex items-center gap-2';
-            icon.innerHTML = '<svg class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+            banner.className = 'mt-4 rounded-bq-panel p-3 text-bq-body border border-bq-danger-border bg-bq-danger-bg text-bq-danger flex items-center gap-2';
+            icon.innerHTML = '<svg class="w-4 h-4 text-bq-danger shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
         } else {
-            banner.className = 'mt-4 rounded-xl p-3 text-xs border border-blue-200 bg-blue-50 text-blue-700 flex items-center gap-2';
-            icon.innerHTML = '<svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+            banner.className = 'mt-4 rounded-bq-panel p-3 text-bq-body border border-bq-border bg-bq-info-bg text-bq-info flex items-center gap-2';
+            icon.innerHTML = '<svg class="w-4 h-4 text-bq-info shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
         }
     }
 
@@ -170,14 +170,14 @@
         if (loadingSpinner) loadingSpinner.classList.add('hidden');
         if (successIcon) {
             successIcon.classList.remove('hidden');
-            successIcon.classList.add('flex', 'animate-bounce-in');
+            successIcon.classList.add('flex');
         }
         if (overlayTitle) {
             overlayTitle.innerHTML = 'Pembayaran Berhasil Dikonfirmasi! 🎉';
-            overlayTitle.className = 'text-lg sm:text-xl font-black text-emerald-600';
+            overlayTitle.className = 'text-lg sm:text-xl font-black text-bq-success';
         }
         if (overlayDesc) overlayDesc.innerText = 'Mengalihkan Anda ke bukti reservasi...';
-        if (realtimeStatusText) realtimeStatusText.innerText = '✓ Pembayaran berhasil diterima!';
+        if (realtimeStatusText) realtimeStatusText.innerText = 'Pembayaran diterima.';
 
         setTimeout(() => {
             window.location.href = redirectUrl;
@@ -300,7 +300,7 @@
         const countdownColon = document.getElementById('countdown-colon');
 
         // Expiry countdown: synchronized with server remaining seconds
-        let remainingSeconds = {{ max(0, $payment->expired_at ? (int) now()->diffInSeconds($payment->expired_at, false) : 900) }};
+        let remainingSeconds = @js($paymentSeconds);
         // Count against a fixed deadline: background tabs (e.g. while paying in an e-wallet app) throttle timers
         const deadlineAt = Date.now() + remainingSeconds * 1000;
 
@@ -314,13 +314,13 @@
                 // Let the server reconcile at the deadline; a late success still redirects (BQ-064 T4-08)
                 checkPaymentStatus(true);
                 if (countdownCard) {
-                    countdownCard.className = "mt-4 mx-auto max-w-sm rounded-2xl border border-red-200 bg-red-50 p-3 sm:p-4 text-center";
+                    countdownCard.className = "mt-4 rounded-bq-panel border border-bq-danger-border bg-bq-danger-bg p-4";
                 }
                 if (countdownTitle) {
-                    countdownTitle.className = "text-[11px] font-bold uppercase tracking-wider text-red-700 flex items-center justify-center gap-1.5";
+                    countdownTitle.className = "flex items-center gap-2 text-bq-label text-bq-danger";
                 }
                 if (countdownTitleText) {
-                    countdownTitleText.innerText = "Waktu Pembayaran Habis";
+                    countdownTitleText.innerText = "Waktu pembayaran habis";
                 }
                 if (countdownMin) countdownMin.innerText = "00";
                 if (countdownSec) countdownSec.innerText = "00";
@@ -339,13 +339,13 @@
 
             // S5.1: Urgency state change when <= 3 minutes (180 seconds)
             if (remainingSeconds <= 180) {
-                if (countdownCard && !countdownCard.classList.contains('border-red-300')) {
-                    countdownCard.className = "mt-4 mx-auto max-w-sm rounded-2xl border border-red-300 bg-red-50/90 p-3 sm:p-4 transition-all duration-300";
-                    if (countdownTitle) countdownTitle.className = "text-[11px] font-bold uppercase tracking-wider text-red-700 flex items-center justify-center gap-1.5";
-                    if (countdownDot) countdownDot.className = "h-2 w-2 rounded-full bg-red-500 animate-ping";
-                    if (countdownMin) countdownMin.className = "inline-flex h-11 w-12 items-center justify-center rounded-xl bg-red-600 text-white font-mono text-xl sm:text-2xl font-black shadow-xs transition-colors";
-                    if (countdownColon) countdownColon.className = "text-2xl font-black text-red-600 -mt-4 transition-colors";
-                    if (countdownSec) countdownSec.className = "inline-flex h-11 w-12 items-center justify-center rounded-xl bg-red-600 text-white font-mono text-xl sm:text-2xl font-black shadow-xs transition-colors";
+                if (countdownCard && !countdownCard.classList.contains('border-bq-danger-border')) {
+                    countdownCard.className = "mt-4 rounded-bq-panel border border-bq-danger-border bg-bq-danger-bg p-4";
+                    if (countdownTitle) countdownTitle.className = "flex items-center gap-2 text-bq-label text-bq-danger";
+                    if (countdownDot) countdownDot.className = "size-2 rounded-full bg-bq-danger";
+                    if (countdownMin) countdownMin.className = "bq-num text-bq-danger";
+                    if (countdownColon) countdownColon.className = "bq-num text-bq-danger";
+                    if (countdownSec) countdownSec.className = "bq-num text-bq-danger";
                 }
             }
         }

@@ -73,7 +73,7 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
 
         $this->grantCustomerAccess($booking)->get('/manage/'.$booking->booking_code.'/invoice?token='.$booking->cancellation_token)
             ->assertOk()
-            ->assertSee('14:00 – 15:00', false)
+            ->assertSee('14.00 – 15.00', false)
             ->assertSee('60 menit')
             ->assertDontSee('90 menit');
 
@@ -115,8 +115,8 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
 
         $this->grantCustomerAccess($payment)->get('/manage/payment/'.$payment->order_id.'/invoice')
             ->assertOk()
-            ->assertSee('14:00 – 15:00 WIB', false)
-            ->assertSee('15:00 – 16:00 WIB', false)
+            ->assertSee('14.00 – 15.00 WIB', false)
+            ->assertSee('15.00 – 16.00 WIB', false)
             ->assertDontSee('16:30');
 
         app(TenantContext::class)->clear();

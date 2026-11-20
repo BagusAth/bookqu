@@ -197,14 +197,15 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/'.$this->tenant->slug.'/booking/payment/'.$orderId);
 
         $response->assertStatus(200);
-        $response->assertSee('Bayar Sekarang');
+        $response->assertSee('Bayar sekarang');
+        $response->assertSee('id="state-pending-card" class="block relative space-y-4"', false);
         $response->assertSee('Bayar sebelum');
-        $response->assertSee('Rp 300.000');
+        $response->assertSee('Rp300.000');
         // Auto-click script must NOT exist
         $response->assertDontSee('payButton.click()');
 
         // Expiration time must be formatted in WIB (Asia/Jakarta)
-        $expectedWib = now('Asia/Jakarta')->addMinutes(15)->format('H:i');
+        $expectedWib = now('Asia/Jakarta')->addMinutes(15)->format('H.i');
         $response->assertSee($expectedWib.' WIB');
 
         // Cancel action must point to the slug route, not http://{slug}
@@ -256,6 +257,35 @@ class CustomerFrontendSpecificationTest extends TestCase
         $this->assertEquals('cancelled', $booking->fresh()->status);
     }
 
+    public function test_failed_and_expired_payments_show_their_recovery_state_without_contacting_a_gateway(): void
+    {
+        foreach ([
+            ['status' => 'gagal', 'seconds' => 600, 'card' => 'failed', 'title' => 'Pembayaran gagal'],
+            ['status' => 'pending', 'seconds' => -60, 'card' => 'expired', 'title' => 'Pembayaran kedaluwarsa'],
+        ] as $state) {
+            $payment = Payment::factory()->create([
+                'idtenant' => $this->tenant->id,
+                'status' => $state['status'],
+                'provider' => 'singapay',
+                'expired_at' => now()->addSeconds($state['seconds']),
+            ]);
+            Booking::factory()->create([
+                'idtenant' => $this->tenant->id,
+                'idlayanan' => $this->service->id,
+                'idschedule' => $this->schedule1->id,
+                'idpayment' => $payment->id,
+                'status' => $state['card'] === 'failed' ? 'cancelled' : 'pending',
+            ]);
+
+            $this->grantCustomerAccess($payment, AccessProfile::Checkout)
+                ->get('/'.$this->tenant->slug.'/booking/payment/'.$payment->order_id)
+                ->assertOk()
+                ->assertSee('id="state-'.$state['card'].'-card" class="block"', false)
+                ->assertSeeText($state['title'])->assertSeeText('Pilih jadwal lagi')
+                ->assertSee('href="https://wa.me/6281299998888?', false);
+        }
+    }
+
     public function test_invoice_and_management_share_links_do_not_leak_manage_tokens(): void
     {
         $orderId = 'ORD-'.strtoupper(Str::random(10));
@@ -290,7 +320,7 @@ class CustomerFrontendSpecificationTest extends TestCase
         // 1. Check Invoice View
         $responseInvoice = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/'.$this->tenant->slug.'/booking/payment/'.$orderId.'/invoice');
         $responseInvoice->assertStatus(200);
-        $responseInvoice->assertSee('Bukti Reservasi & Pembayaran');
+        $responseInvoice->assertSee('Bukti pembayaran reservasi');
         $responseInvoice->assertSee('Tambahkan ke Google Calendar');
         $responseInvoice->assertSee('Bagikan ke WhatsApp');
 

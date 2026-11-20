@@ -1,32 +1,10 @@
-{{-- State: EXPIRED (Server-rendered or dynamically revealed) --}}
-<div id="state-expired-card" class="{{ $currentState === 'expired' ? 'block' : 'hidden' }} relative overflow-hidden rounded-2xl border border-amber-200 bg-white p-6 sm:p-8 shadow-sm mb-6 text-center">
-    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600 mb-4">
-        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-    </div>
-    <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Waktu Pembayaran Habis</h1>
-    <p class="mt-2 text-sm text-[#64748B] max-w-md mx-auto">
-        Batas waktu pembayaran telah berakhir sehingga reservasi ini tidak dapat dilanjutkan.
-    </p>
-
-    <div class="mt-4 rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] max-w-md mx-auto text-xs text-[#475569] space-y-1.5 text-left">
-        <div class="flex justify-between">
-            <span class="text-[#64748B]">Nomor pesanan:</span>
-            <span class="font-mono font-bold text-[#0F172A]">{{ $payment->order_id }}</span>
+<section id="state-expired-card" class="{{ $currentState === 'expired' ? 'block' : 'hidden' }}">
+    <x-ui.panel class="border-bq-warning-border">
+        <x-customer.page-header title="Pembayaran kedaluwarsa" description="Waktu pembayaran sudah habis. Pilih jadwal lagi untuk memesan kembali." />
+        <x-ui.kv class="mt-4" :items="['Nomor pesanan' => $payment->order_id]" />
+        <div class="fixed inset-x-0 bottom-0 z-30 border-t border-bq-border bg-bq-surface p-4 sm:static sm:mt-4 sm:border-0 sm:p-0">
+            <x-ui.button :href="$storefrontUrl ?? \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug)"
+                variant="primary" class="min-h-11 w-full sm:w-auto">Pilih jadwal lagi</x-ui.button>
         </div>
-        <div class="flex justify-between">
-            <span class="text-[#64748B]">Status:</span>
-            <span class="font-bold text-red-600">Kadaluarsa</span>
-        </div>
-    </div>
-
-    <div class="mt-6">
-        <a
-            href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}"
-            class="inline-flex justify-center items-center rounded-xl bg-bq-primary customer-primary px-6 py-3.5 text-sm font-bold text-white shadow-md hover:bg-bq-primary-hover transition-colors"
-        >
-            Buat Reservasi Baru
-        </a>
-    </div>
-</div>
+    </x-ui.panel>
+</section>

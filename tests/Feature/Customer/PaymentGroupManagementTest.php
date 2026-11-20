@@ -551,7 +551,7 @@ class PaymentGroupManagementTest extends TestCase
 
         $response = $this->grantCustomerAccess($payment)->get('/manage/payment/'.$payment->order_id.'/invoice?token='.$payment->manage_token);
         $response->assertStatus(200);
-        $response->assertSee('Bukti Reservasi Resmi');
+        $response->assertSee('Invoice pembayaran');
         $response->assertSee($payment->order_id);
     }
 
