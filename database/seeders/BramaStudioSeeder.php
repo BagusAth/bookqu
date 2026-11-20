@@ -24,6 +24,7 @@ use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BramaStudioSeeder extends Seeder
@@ -214,6 +215,57 @@ class BramaStudioSeeder extends Seeder
                 ['role' => $role, 'invited_by' => $tenant->iduser, 'invited_at' => now(), 'accepted_at' => now(), 'revoked_at' => null]
             );
         }
+    }
+
+    /**
+     * Tag successful booking payments with each voucher's promo, as checkout would, so Promo's
+     * "dipakai" and discount figures (read from price_breakdown) agree with the cards' used_count.
+     */
+    protected function seedPromoUsage(Tenant $tenant): void
+    {
+        $payments = Payment::where('idtenant', $tenant->id)->where('tipe', 'booking')->where('status', 'sukses')
+            ->whereNull('price_breakdown')->orderBy('id')->get();
+
+        foreach (Voucher::where('idtenant', $tenant->id)->orderBy('id')->get() as $voucher) {
+            $used = $payments->splice(0, (int) $voucher->used_count);
+            foreach ($used as $payment) {
+                $amount = (float) $payment->jumlah;
+                $discount = $voucher->discount_type === 'percentage'
+                    ? min($amount * (float) $voucher->discount_value / 100, (float) ($voucher->max_discount ?: $amount))
+                    : min((float) $voucher->discount_value, $amount);
+                $payment->forceFill(['price_breakdown' => ['promo' => [
+                    'id' => (int) $voucher->id, 'code' => $voucher->code, 'discount' => (int) round($discount),
+                ]]])->save();
+            }
+            $voucher->forceFill(['used_count' => $used->count()])->save();
+        }
+    }
+
+    /**
+     * Write a small stand-in file for a seeded asset so its picture or download works (T-22).
+     */
+    protected function ensurePlaceholderFile(string $path, string $mime, ?string $dimensions): void
+    {
+        $disk = Storage::disk('public');
+        if ($disk->exists($path)) {
+            return;
+        }
+
+        if (str_starts_with($mime, 'image/') && function_exists('imagecreatetruecolor')) {
+            [$width, $height] = array_map('intval', explode('x', $dimensions ?: '600x400'));
+            $image = imagecreatetruecolor(max(1, $width), max(1, $height));
+            imagefill($image, 0, 0, (int) imagecolorallocate($image, 56, 33, 134));
+            ob_start();
+            $mime === 'image/png' ? imagepng($image) : imagejpeg($image, null, 80);
+            $disk->put($path, (string) ob_get_clean());
+            imagedestroy($image);
+
+            return;
+        }
+
+        $disk->put($path, $mime === 'application/pdf'
+            ? "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n"
+            : 'BookQu demo file');
     }
 
     /**
@@ -597,7 +649,8 @@ class BramaStudioSeeder extends Seeder
 
         // ── 9. Blocked Dates ─────────────────────────────────────────────────
         OwnerBlockedDate::updateOrCreate(
-            ['idtenant' => $tenant->id, 'tanggal' => Carbon::today()->addDays(3)->toDateString()],
+            // Past the seeded bookings (they reach 14 days ahead), so a closed date never holds active bookings (T-40).
+            ['idtenant' => $tenant->id, 'tanggal' => Carbon::today()->addDays(21)->toDateString()],
             ['alasan' => 'Maintenance Peralatan & Kalibrasi Lighting Studio']
         );
         OwnerBlockedDate::updateOrCreate(
@@ -679,6 +732,7 @@ class BramaStudioSeeder extends Seeder
                 ['idtenant' => $tenant->id, 'title' => $da['title']],
                 array_merge($da, ['idtenant' => $tenant->id])
             );
+            $this->ensurePlaceholderFile($da['file_path'], $da['mime_type'], $da['dimensions']);
         }
 
         // ── 13. Comprehensive Schedules, Bookings & Payments ─────────────────
@@ -1017,6 +1071,9 @@ class BramaStudioSeeder extends Seeder
                 }
             }
         }
+
+        // ── 13b. Promo usage behind each voucher's used_count (T-21) ─────────
+        $this->seedPromoUsage($tenant);
 
         // ── 14. Customer Reviews ─────────────────────────────────────────────
         $reviewSamples = [

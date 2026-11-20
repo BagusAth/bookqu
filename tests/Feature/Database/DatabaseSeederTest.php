@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Database;
 
+use App\Actions\Booking\GetPromoFigures;
+use App\Models\Asset;
+use App\Models\Booking;
+use App\Models\OwnerBlockedDate;
 use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Models\User;
+use App\Models\Voucher;
+use App\Support\TenantContext;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -22,6 +29,7 @@ class DatabaseSeederTest extends TestCase
 
     public function test_seeded_owners_and_demo_team_reach_the_pages_of_their_role(): void
     {
+        Storage::fake('public');
         $this->seed(DatabaseSeeder::class);
 
         $tenants = Tenant::withoutGlobalScopes()->get();
@@ -42,5 +50,31 @@ class DatabaseSeederTest extends TestCase
         $kasir = User::where('email', 'kasir@bookqu.test')->firstOrFail();
         $this->actingAs($kasir)->get(route('owner.bookings'))->assertOk();
         $this->actingAs($kasir)->get(route('owner.analytics'))->assertForbidden();
+    }
+
+    /**
+     * BQ-162 QA T-21, T-22, T-40: no closed date holds active bookings, Promo's usage figures match
+     * the vouchers' used_count, and every seeded asset has its file.
+     */
+    public function test_seeded_demo_data_is_consistent(): void
+    {
+        Storage::fake('public');
+        $this->seed(DatabaseSeeder::class);
+
+        foreach (Tenant::withoutGlobalScopes()->whereIn('slug', ['brama-digital', 'brama-studio', 'brama-agency'])->get() as $tenant) {
+            $closedWithBookings = OwnerBlockedDate::withoutGlobalScopes()->where('idtenant', $tenant->id)->get()
+                ->filter(fn (OwnerBlockedDate $closed): bool => Booking::withoutGlobalScopes()->where('idtenant', $tenant->id)
+                    ->whereDate('tanggalbooking', $closed->tanggal)->whereIn('status', ['pending', 'paid'])->exists());
+            $this->assertCount(0, $closedWithBookings, "{$tenant->slug} closes a date that has active bookings");
+
+            app(TenantContext::class)->setTenantId((int) $tenant->id);
+            $figures = app(GetPromoFigures::class)->execute($tenant);
+            $this->assertSame((int) Voucher::withoutGlobalScopes()->where('idtenant', $tenant->id)->sum('used_count'), $figures['uses'], $tenant->slug);
+            $this->assertGreaterThan(0, $figures['uses'], $tenant->slug);
+
+            foreach (Asset::withoutGlobalScopes()->where('idtenant', $tenant->id)->pluck('file_path') as $path) {
+                Storage::disk('public')->assertExists($path);
+            }
+        }
     }
 }
