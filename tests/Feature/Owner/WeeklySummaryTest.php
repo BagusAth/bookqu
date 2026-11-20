@@ -51,6 +51,23 @@ class WeeklySummaryTest extends TestCase
         Notification::assertSentTo($owner, WeeklySummaryNotification::class, fn (WeeklySummaryNotification $n): bool => $n->summary['from'] === '30 Nov' && $n->summary['to'] === '6 Des 2026');
     }
 
+    public function test_the_summary_email_is_signed_by_bookqu_and_has_no_english_template_text(): void
+    {
+        app()->setLocale('id');
+        $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now(), 'namalengkap' => 'Rani']);
+        $tenant = Tenant::factory()->create(['iduser' => $owner->id]);
+        $summary = ['from' => '9 Nov', 'to' => '15 Nov 2026', 'revenue' => 0.0, 'bookings' => 0, 'occupancy' => 0.0, 'openUntil' => null, 'endedNotClosed' => 0, 'openRefunds' => 0];
+
+        $html = (string) (new WeeklySummaryNotification($tenant, $summary))->toMail($owner)->render();
+
+        $this->assertStringContainsString('Salam, Tim BookQu', $html);
+        $this->assertStringContainsString('tidak bisa diklik, salin dan buka URL berikut', $html);
+        $this->assertStringContainsString('Hak cipta dilindungi.', $html);
+        $this->assertStringNotContainsString('Regards', $html);
+        $this->assertStringNotContainsString('having trouble clicking', $html);
+        $this->assertStringNotContainsString('All rights reserved', $html);
+    }
+
     public function test_only_the_business_owner_sees_the_weekly_summary_preference(): void
     {
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
