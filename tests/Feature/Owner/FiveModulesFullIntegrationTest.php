@@ -250,7 +250,7 @@ class FiveModulesFullIntegrationTest extends TestCase
             $response = $this->get(route('owner.analytics', ['tab' => 'okupansi', 'periode' => $period]));
             $response->assertStatus(200);
             $response->assertSee('Okupansi');
-            $response->assertSee('slot terisi');
+            $response->assertSee('kursi terisi');
         }
     }
 

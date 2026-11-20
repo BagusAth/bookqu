@@ -111,11 +111,11 @@
                 <section aria-labelledby="occupancy-title" class="space-y-4">
                     <h2 id="occupancy-title" class="sr-only">Okupansi</h2>
                     <x-ui.panel>
-                        <x-ui.figures :value="$percent($occupancy['rate'])" label="slot terisi" :delta="$delta($comparison['current']['rate'] ?? $occupancy['rate'], $comparison['rate'] ?? null)"
-                            :context="$number($occupancy['seats']).' dari '.$number($occupancy['capacity']).' kursi, menurut tanggal sesi'"
+                        <x-ui.figures :value="$percent($occupancy['rate'])" label="kursi terisi" :delta="$delta($comparison['current']['rate'] ?? $occupancy['rate'], $comparison['rate'] ?? null)"
+                            :context="$number($occupancy['seats']).' dari '.$number($occupancy['capacity']).' kursi di slot yang dibuka, menurut tanggal sesi'"
                             :more="[
-                                ['value' => $number($occupancy['booked']), 'label' => 'slot terisi'],
-                                ['value' => $number($occupancy['free']), 'label' => 'slot kosong'],
+                                ['value' => $number($occupancy['booked']), 'label' => 'slot dengan booking'],
+                                ['value' => $number($occupancy['free']), 'label' => 'slot tanpa booking'],
                             ]" />
                     </x-ui.panel>
 
@@ -125,7 +125,7 @@
                         @else
                             <div class="overflow-x-auto">
                                 <table class="w-full min-w-[480px] border-separate border-spacing-1 text-bq-small">
-                                    <caption class="sr-only">Jumlah slot terisi per hari dan jam</caption>
+                                    <caption class="sr-only">Jumlah slot dengan booking per hari dan jam</caption>
                                     <thead>
                                         <tr>
                                             <td class="w-10"></td>
@@ -141,7 +141,7 @@
                                                 @foreach ($heatmap['hours'] as $hour)
                                                     @php $count = $heatmap['cells'][$day][$hour]; $level = $heatLevel($count, $heatmap['max']); @endphp
                                                     <td @class(['h-[22px] rounded', 'bg-bq-surface-2' => $level === 0, 'bg-bq-heat-1' => $level === 1, 'bg-bq-heat-2' => $level === 2, 'bg-bq-heat-3' => $level === 3, 'bg-bq-primary' => $level === 4])
-                                                        title="{{ $label }} {{ sprintf('%02d.00', $hour) }}: {{ $count }} slot terisi"><span class="sr-only">{{ $count }}</span></td>
+                                                        title="{{ $label }} {{ sprintf('%02d.00', $hour) }}: {{ $count }} slot dengan booking"><span class="sr-only">{{ $count }}</span></td>
                                                 @endforeach
                                             </tr>
                                         @endforeach
@@ -162,7 +162,7 @@
                         @endif
                     </x-ui.panel>
                     @if ($occupancy['units'] !== null)
-                        <x-ui.panel title="Pemakaian unit">
+                        <x-ui.panel title="Pemakaian unit" description="Menit unit terpakai dibanding menit yang dibuka, jadi angkanya bisa berbeda dari kursi terisi.">
                             @forelse ($occupancy['units'] as $unit)
                                 <div class="grid grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_auto] items-center gap-3 py-1.5 text-bq-body">
                                     <span class="truncate" title="{{ $unit['name'] }}">{{ $unit['name'] }}</span>
