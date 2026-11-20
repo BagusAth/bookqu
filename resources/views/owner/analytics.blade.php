@@ -41,7 +41,7 @@
     @else
         <div class="bq-toolbar">
             <x-ui.segmented label="Periode" :selected="$period['key']" :options="$presetOptions" />
-            <span class="text-bq-small text-bq-text-muted">{{ $periodLabel }}, dibanding {{ $comparison['label'] }}</span>
+            <span class="text-bq-small text-bq-text-muted">{{ $periodLabel }}, dibanding {{ $comparison['label'] }}@if ($comparison['current'] !== []) (perubahan dihitung sampai tanggal yang sama)@endif</span>
             <a href="{{ $exportUrl }}" class="bq-btn bq-btn-secondary bq-btn-sm ml-auto"><x-owner.icon name="download" class="h-4 w-4" />Ekspor CSV</a>
             @if ($period['key'] === 'kustom')
             <form id="pilih-periode" method="GET" action="{{ route('owner.analytics') }}" class="flex w-full flex-wrap items-end gap-2">
@@ -67,7 +67,7 @@
                 <section aria-labelledby="revenue-title" class="space-y-4">
                     <h2 id="revenue-title" class="sr-only">Pendapatan</h2>
                     <x-ui.panel>
-                        <x-ui.figures :value="$rupiah($revenue['net'])" label="pendapatan bersih" :delta="$delta($revenue['net'], $comparison['net'] ?? null)"
+                        <x-ui.figures :value="$rupiah($revenue['net'])" label="pendapatan bersih" :delta="$delta($comparison['current']['net'] ?? $revenue['net'], $comparison['net'] ?? null)"
                             :context="'Dari pembayaran berhasil dikurangi refund, menurut tanggal bayar · kotor '.$rupiah($revenue['gross'])"
                             :more="[
                                 ['value' => $rupiah($revenue['online']), 'label' => 'online'],
@@ -111,7 +111,7 @@
                 <section aria-labelledby="occupancy-title" class="space-y-4">
                     <h2 id="occupancy-title" class="sr-only">Okupansi</h2>
                     <x-ui.panel>
-                        <x-ui.figures :value="$percent($occupancy['rate'])" label="slot terisi" :delta="$delta($occupancy['rate'], $comparison['rate'] ?? null)"
+                        <x-ui.figures :value="$percent($occupancy['rate'])" label="slot terisi" :delta="$delta($comparison['current']['rate'] ?? $occupancy['rate'], $comparison['rate'] ?? null)"
                             :context="$number($occupancy['seats']).' dari '.$number($occupancy['capacity']).' kursi, menurut tanggal sesi'"
                             :more="[
                                 ['value' => $number($occupancy['booked']), 'label' => 'slot terisi'],
@@ -203,7 +203,7 @@
                 <section aria-labelledby="customers-title" class="space-y-4">
                     <h2 id="customers-title" class="sr-only">Pelanggan</h2>
                     @php
-                        $more = [['value' => $number($customers['returning']), 'label' => 'pelanggan kembali', 'delta' => $delta($customers['returning'], $comparison['returning'] ?? null)]];
+                        $more = [['value' => $number($customers['returning']), 'label' => 'pelanggan kembali', 'delta' => $delta($comparison['current']['returning'] ?? $customers['returning'], $comparison['returning'] ?? null)]];
                         if ($customers['advanceDays'] !== null) {
                             $more[] = ['value' => number_format($customers['advanceDays'], 1, ',', '.').' hari', 'label' => 'rata-rata booking sebelum sesi'];
                         }
@@ -212,7 +212,7 @@
                         }
                     @endphp
                     <x-ui.panel>
-                        <x-ui.figures :value="$number($customers['new'])" label="pelanggan baru" :delta="$delta($customers['new'], $comparison['new'] ?? null)"
+                        <x-ui.figures :value="$number($customers['new'])" label="pelanggan baru" :delta="$delta($comparison['current']['new'] ?? $customers['new'], $comparison['new'] ?? null)"
                             :context="$number($customers['active']).' pelanggan booking pada periode ini'" :more="$more" />
                     </x-ui.panel>
                     <section class="bq-panel" aria-labelledby="report-unpaid">
@@ -259,8 +259,8 @@
                     <h2 id="summary-title" class="sr-only">Ringkasan</h2>
                     <x-ui.panel>
                         <div class="grid gap-6 sm:grid-cols-2">
-                            <x-ui.figures :value="$rupiah($summary['revenue'])" label="pendapatan bersih" :delta="$delta($summary['revenue'], $comparison['net'] ?? null)" context="Menurut tanggal bayar" />
-                            <x-ui.figures :value="$number($summary['bookings'])" label="booking" :delta="$delta($summary['bookings'], $comparison['bookings'] ?? null)" context="Menurut tanggal sesi" />
+                            <x-ui.figures :value="$rupiah($summary['revenue'])" label="pendapatan bersih" :delta="$delta($comparison['current']['net'] ?? $summary['revenue'], $comparison['net'] ?? null)" context="Menurut tanggal bayar" />
+                            <x-ui.figures :value="$number($summary['bookings'])" label="booking" :delta="$delta($comparison['current']['bookings'] ?? $summary['bookings'], $comparison['bookings'] ?? null)" context="Menurut tanggal sesi" />
                         </div>
                     </x-ui.panel>
                     @php

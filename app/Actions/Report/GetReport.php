@@ -60,7 +60,7 @@ class GetReport
      *     period: array{key: string, label: string, from: string, to: string, query: array<string, string>},
      *     locked: bool,
      *     conclusion: ?string,
-     *     comparison: array<string, float|int|string>,
+     *     comparison: array<string, mixed>,
      *     summary: ?array<string, mixed>,
      *     revenue: ?array<string, mixed>,
      *     occupancy: ?array<string, mixed>,
@@ -127,13 +127,32 @@ class GetReport
             default => $report,
         };
 
-        $previous = $period->previous();
+        // T-10: a period that runs past today is compared up to today against an equal stretch.
+        $compared = $period->toDate();
+        $previous = $compared->previous();
         $report['comparison'] = [
             'label' => $previous->start->locale('id')->translatedFormat('j M Y').' – '.$previous->end->locale('id')->translatedFormat('j M Y'),
+            'current' => $compared === $period ? [] : $this->comparisonToDate($tenantId, $compared, $tab),
         ] + $this->comparison($tenantId, $previous, $tab);
         $report['conclusion'] = $this->conclusion($report);
 
         return $report;
+    }
+
+    /**
+     * The figures of the part of a running period up to today that differ from the whole period.
+     * Money and customers count payments, refunds and bookings by when they were made, which is
+     * never after today, so only session-dated figures (bookings, occupancy) need their own query.
+     *
+     * @return array<string, int|float>
+     */
+    private function comparisonToDate(int $tenantId, ReportPeriod $toDate, string $tab): array
+    {
+        return match ($tab) {
+            'okupansi' => $this->comparison($tenantId, $toDate, $tab),
+            'ringkasan' => ['bookings' => array_sum($this->bookingsPerService($tenantId, $toDate))],
+            default => [],
+        };
     }
 
     /** @return array<string, int|float> */
@@ -168,10 +187,11 @@ class GetReport
     private function conclusion(array $report): string
     {
         $previous = $report['comparison'];
+        $current = $previous['current'];
         $summary = $report['summary'];
 
         return match ($report['tab']) {
-            'pendapatan' => 'Pendapatan bersih '.$this->trend($report['revenue']['net'], $previous['net']).' dibanding periode sebelumnya.',
+            'pendapatan' => 'Pendapatan bersih '.$this->trend($current['net'] ?? $report['revenue']['net'], $previous['net']).' dibanding periode sebelumnya.',
             'okupansi' => $report['occupancy']['busiestDay'] === null
                 ? 'Belum ada slot terisi pada periode ini.'
                 : 'Slot paling sering terisi pada hari '.$report['occupancy']['busiestDay'].', dan jam tersibuk adalah '.$report['occupancy']['busiestHour'].'.',
@@ -180,8 +200,8 @@ class GetReport
                 : $summary['topService'].' menerima booking terbanyak pada periode ini.',
             'pelanggan' => number_format($report['customers']['new'], 0, ',', '.').' pelanggan baru dan '
                 .number_format($report['customers']['returning'], 0, ',', '.').' pelanggan kembali lagi.',
-            default => 'Pendapatan '.$this->trend($summary['revenue'], $previous['net']).' dan jumlah booking '
-                .$this->trend($summary['bookings'], $previous['bookings']).' dibanding periode sebelumnya.',
+            default => 'Pendapatan '.$this->trend($current['net'] ?? $summary['revenue'], $previous['net']).' dan jumlah booking '
+                .$this->trend($current['bookings'] ?? $summary['bookings'], $previous['bookings']).' dibanding periode sebelumnya.',
         };
     }
 

@@ -395,6 +395,24 @@ class LaporanPageTest extends TestCase
         $this->assertSame('Pendapatan naik dan jumlah booking naik dibanding periode sebelumnya.', $summary['conclusion']);
     }
 
+    public function test_this_month_trends_compare_up_to_today_with_the_same_days_last_month(): void
+    {
+        $this->booking($this->photo, '2026-11-10', payment: ['jumlah' => 50000]);
+        $this->booking($this->photo, '2026-11-27');
+        $this->booking($this->photo, '2026-10-12', payment: ['jumlah' => 100000]);
+        $this->booking($this->photo, '2026-10-25', payment: ['jumlah' => 400000]);
+
+        app(TenantContext::class)->setTenantId((int) $this->tenant->id);
+        $summary = app(GetReport::class)->execute($this->tenant, ReportPeriod::fromQuery(['periode' => 'bulan-ini']), 'ringkasan');
+
+        $this->assertSame(2, $summary['summary']['bookings']);
+        $this->assertSame('1 Okt 2026 – 20 Okt 2026', $summary['comparison']['label']);
+        $this->assertSame(1, $summary['comparison']['current']['bookings']);
+        $this->assertSame(1, $summary['comparison']['bookings']);
+        $this->assertSame(100000.0, $summary['comparison']['net']);
+        $this->assertSame('Pendapatan turun dan jumlah booking tetap dibanding periode sebelumnya.', $summary['conclusion']);
+    }
+
     public function test_each_tab_exports_formula_safe_rows_of_the_own_business_only(): void
     {
         $this->booking($this->photo, '2026-11-05', 1, 'paid', ['jumlah' => 150000], ['namapelanggan' => '=HYPERLINK("http://evil")', 'email' => 'evil@example.com']);
