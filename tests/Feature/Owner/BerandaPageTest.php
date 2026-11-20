@@ -114,6 +114,9 @@ class BerandaPageTest extends TestCase
         // 3. a service without an open slot in the next 7 days
         Service::factory()->create(['idtenant' => $this->tenant->id, 'namalayanan' => 'Tanpa Slot']);
         $this->assertBanner('slot-runway');
+        $kasir = (string) $this->actingAs($this->member('kasir'))->get(route('owner.dashboard'))->getContent();
+        $this->assertStringNotContainsString('data-beranda-banner="slot-runway"', $kasir);
+        $this->actingAs($this->owner);
 
         // 2. trial ends within 3 days
         $this->subscribe('pro', 'trial', now()->addDays(2));

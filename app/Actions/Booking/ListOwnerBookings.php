@@ -3,6 +3,8 @@
 namespace App\Actions\Booking;
 
 use App\Domain\Booking\BookingPricing;
+use App\Domain\Booking\BookingRules;
+use App\Domain\Booking\BookingState;
 use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Payment\PaymentState;
 use App\Models\Booking;
@@ -71,7 +73,10 @@ final class ListOwnerBookings
                 ->orWhere(fn (Builder $today) => $today->whereDate('tanggalbooking', $date)->where('jam', '>=', $time))),
             'completed' => $query->whereIn('status', ['completed', 'no_show']),
             'today' => $query->whereDate('tanggalbooking', $date),
-            'pending', 'paid', 'cancelled' => $query->where('status', $tab),
+            // T-38: "Menunggu bayar" lists what can still be paid, the same pending bookings whose slot is
+            // held that Beranda counts; an expired hold waits for bookings:expire-payments under "Semua".
+            'pending' => BookingRules::applyOccupiesSlotCondition($query->where('bookings.status', BookingState::STATUS_PENDING)),
+            'paid', 'cancelled' => $query->where('status', $tab),
             default => $query,
         };
     }

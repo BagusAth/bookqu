@@ -171,14 +171,17 @@ class GetBeranda
             ];
         }
 
-        $withoutSlots = collect($this->getSlotRunway->execute($tenant))->where('warning', true);
+        // T-39: only a member who can open slots gets this banner; for a Kasir it had no action.
+        $withoutSlots = TenantPermission::allowsRole($role, 'schedule.manage')
+            ? collect($this->getSlotRunway->execute($tenant))->where('warning', true)
+            : collect();
         if ($withoutSlots->isNotEmpty()) {
             return [
                 'kind' => 'slot-runway', 'tone' => 'warning',
                 'message' => $withoutSlots->count() === 1
                     ? 'Layanan "'.$withoutSlots->first()['service'].'" belum punya slot terbuka untuk 7 hari ke depan.'
                     : $withoutSlots->count().' layanan belum punya slot terbuka untuk 7 hari ke depan.',
-                'action' => TenantPermission::allowsRole($role, 'schedule.manage') ? ['label' => 'Buka slot', 'url' => route('owner.schedule')] : null,
+                'action' => ['label' => 'Buka slot', 'url' => route('owner.schedule')],
                 'note' => null,
             ];
         }

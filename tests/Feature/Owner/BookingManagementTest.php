@@ -134,6 +134,25 @@ class BookingManagementTest extends TestCase
         $response->assertDontSee('Pending Bob');
     }
 
+    public function test_waiting_for_payment_lists_only_bookings_whose_slot_is_still_held(): void
+    {
+        $held = Payment::factory()->create(['idtenant' => $this->tenant->id, 'tipe' => 'booking', 'status' => 'pending', 'expired_at' => now()->addMinutes(30)]);
+        $lapsed = Payment::factory()->create(['idtenant' => $this->tenant->id, 'tipe' => 'booking', 'status' => 'pending', 'expired_at' => now()->subDay()]);
+        foreach (['Masih Bisa Bayar' => $held, 'Sudah Lewat Batas' => $lapsed] as $name => $payment) {
+            Booking::factory()->create([
+                'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'status' => 'pending', 'namapelanggan' => $name,
+                'idschedule' => Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id])->id,
+                'idpayment' => $payment->id, 'created_at' => now()->subDays(2),
+            ]);
+        }
+
+        $response = $this->actingAs($this->user)->get('/owner/bookings?tab=pending');
+
+        $response->assertOk()->assertSee('Masih Bisa Bayar')->assertDontSee('Sudah Lewat Batas');
+        $this->assertSame(1, $response->viewData('tabCounts')['pending']);
+        $this->get('/owner/bookings?tab=all')->assertSee('Sudah Lewat Batas');
+    }
+
     public function test_owner_can_update_booking_status(): void
     {
         $booking = Booking::factory()->create([
