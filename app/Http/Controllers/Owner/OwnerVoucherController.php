@@ -11,7 +11,6 @@ use App\Models\Service;
 use App\Models\Voucher;
 use App\Support\ReportPeriod;
 use App\Support\Rupiah;
-use App\Support\WeekdayRange;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -89,7 +88,7 @@ class OwnerVoucherController extends Controller
                     default => 'Tanpa batas waktu',
                 },
                 'almostOut' => $promo->usage_limit > 0 && $promo->used_count >= $promo->usage_limit * 0.9,
-                'limits' => self::quietHoursLabel($promo),
+                'limits' => $promo->quietHoursLabel(),
             ]];
         });
 
@@ -209,25 +208,6 @@ class OwnerVoucherController extends Controller
 
         return redirect()->route('owner.promos')
             ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil diperbarui!');
-    }
-
-    /**
-     * The days and start-time range of a quiet-hour promo for its card, e.g. "Sen–Sel · 10.00–12.00"
-     * (FR-VOUCHER-006); null when the promo applies to every day and hour.
-     */
-    private static function quietHoursLabel(Voucher $promo): ?string
-    {
-        $days = $promo->valid_days ? WeekdayRange::label(explode(',', (string) $promo->valid_days)) : null;
-        $hour = fn (mixed $time): string => str_replace(':', '.', substr((string) $time, 0, 5));
-        $hours = match (true) {
-            $promo->valid_from_time !== null && $promo->valid_until_time !== null => $hour($promo->valid_from_time).'–'.$hour($promo->valid_until_time),
-            $promo->valid_from_time !== null => 'mulai '.$hour($promo->valid_from_time),
-            $promo->valid_until_time !== null => 'sebelum '.$hour($promo->valid_until_time),
-            default => null,
-        };
-        $label = implode(' · ', array_filter([$days, $hours]));
-
-        return $label === '' ? null : $label;
     }
 
     /**
