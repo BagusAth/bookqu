@@ -61,10 +61,10 @@
                     </span>
                 @else
                     <span class="inline-flex items-center rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-200 mb-2">
-                        LUNAS / SUKSES
+                        {{ \App\Domain\Payment\PaymentState::formatLabel($payment->status, customer: true) }}
                     </span>
                 @endif
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Order ID</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Nomor pesanan</p>
                 <p class="font-mono text-sm font-extrabold text-slate-900">{{ $payment->order_id }}</p>
                 <p class="text-[11px] text-slate-400 mt-1">{{ ($payment->updated_at ?? $payment->created_at)->format('d M Y, H:i') }} WIB</p>
             </div>
@@ -82,7 +82,7 @@
                 <span class="font-bold text-slate-400 uppercase tracking-wider block mb-1.5 text-[11px]">Informasi Layanan</span>
                 <p class="font-bold text-slate-900 text-sm">{{ $firstBooking->layanan?->namalayanan ?? 'Layanan' }}</p>
                 <p class="text-slate-600 mt-0.5">Tanggal: <span class="font-semibold text-slate-900">{{ $bookingDate }}</span></p>
-                <p class="text-slate-600">Total Sesi: <span class="font-semibold text-slate-900">{{ $bookings->count() }} slot</span></p>
+                <p class="text-slate-600">Total Sesi: <span class="font-semibold text-slate-900">{{ $bookings->count() }} sesi</span></p>
             </div>
         </div>
 
@@ -95,7 +95,7 @@
                         <tr class="border-b border-slate-100 text-slate-400">
                             <th class="py-2 pr-3 font-bold">No</th>
                             <th class="py-2 pr-3 font-bold">Waktu Sesi</th>
-                            <th class="hidden sm:table-cell py-2 pr-3 font-bold">Kode Slot</th>
+                            <th class="hidden sm:table-cell py-2 pr-3 font-bold">Kode sesi</th>
                             <th class="py-2 text-right font-bold">Harga</th>
                         </tr>
                     </thead>
@@ -129,7 +129,7 @@
             </div>
             <div class="flex justify-between text-slate-600">
                 <span>Metode Pembayaran</span>
-                <span class="font-semibold uppercase">{{ $payment->metode ?: 'Midtrans' }}</span>
+                <span class="font-semibold">{{ \App\Support\PaymentMethodLabel::for($payment->metode) ?? 'Pembayaran online' }}</span>
             </div>
             <div class="flex justify-between items-center pt-3 border-t border-slate-200">
                 <span class="text-sm font-black text-slate-900">Total Dibayar</span>

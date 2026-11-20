@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ubah Jadwal (Reschedule) — {{ $booking->booking_code }} | {{ $booking->tenant?->namabisnis ?? 'BookQu' }}</title>
+    <title>Ubah Jadwal — {{ $booking->booking_code }} | {{ $booking->tenant?->namabisnis ?? 'BookQu' }}</title>
     <link rel="icon" type="image/png" href="{{ asset('logo_icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -92,7 +92,7 @@
                                 {{ \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') }}
                             </p>
                             <p class="text-xs sm:text-sm font-semibold text-slate-500">
-                                Pukul {{ \Carbon\Carbon::parse($booking->jam)->format('H:i') }} WIB
+                                Pukul {{ $timeRange->label() }} WIB
                             </p>
                         </div>
                     </div>
@@ -291,7 +291,12 @@
                         <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 3"/>
                         </svg>
-                        <p class="text-xs sm:text-sm font-bold text-slate-700">Tidak ada slot waktu tersedia di tanggal ini</p>
+                        <p class="text-xs sm:text-sm font-bold text-slate-700" aria-live="polite" x-text="slotMessage || 'Tidak ada sesi tersedia di tanggal ini'"></p>
+                        @if($merchantWaUrl)
+                            <x-ui.button variant="secondary" href="{{ $merchantWaUrl }}" target="_blank" rel="noopener noreferrer" class="mt-3" x-show="slotMessage" x-cloak>
+                                Hubungi bisnis via WhatsApp
+                            </x-ui.button>
+                        @endif
                         <p class="text-xs text-slate-400 mt-1">Silakan pilih tanggal lain pada kalender di atas.</p>
                     </div>
                 </div>
@@ -302,7 +307,7 @@
             <div class="lg:sticky lg:top-20 space-y-6">
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <h3 class="text-base font-bold text-slate-900 pb-3 border-b border-slate-100">
-                        Ringkasan Reschedule
+                        Ringkasan perubahan jadwal
                     </h3>
 
                     <div class="space-y-3 text-xs sm:text-sm">
@@ -389,10 +394,10 @@
     </footer>
 
     <script>
-        const AVAILABILITY_DATA  = @json($availabilityPayload);
-        const MIN_DATE           = '{{ $minDate }}';
-        const MAX_DATE           = '{{ $maxDate }}';
-        const SLOTS_URL          = '{{ route('booking.manage.reschedule.slots', ['booking_code' => $booking->booking_code]) }}';
+        const AVAILABILITY_DATA  = @js($availabilityPayload);
+        const MIN_DATE           = @js($minDate);
+        const MAX_DATE           = @js($maxDate);
+        const SLOTS_URL          = @js(route('booking.manage.reschedule.slots', ['booking_code' => $booking->booking_code]));
 
 
         function rescheduleManager() {
@@ -404,6 +409,7 @@
                 selectedScheduleId: null,
                 selectedSlotTime:   '',
                 timeSlots:          [],
+                slotMessage:        '',
                 loadingSlots:       false,
                 isSubmitting:       false,
                 errorMsg:           '',
@@ -488,10 +494,15 @@
                     const current = () => request === this.slotRequest && this.selectedDate === dateStr;
                     this.loadingSlots = true;
                     this.timeSlots    = [];
+                    this.slotMessage  = '';
                     try {
                         const res = await fetch(`${SLOTS_URL}?tanggal=${dateStr}`);
                         const data = await res.json();
-                        if (current()) this.timeSlots = data.slots || [];
+                        if (!res.ok) throw new Error('Unable to load sessions');
+                        if (current()) {
+                            this.timeSlots = data.slots || [];
+                            this.slotMessage = data.message || '';
+                        }
                     } catch (e) {
                         if (current()) this.errorMsg = 'Gagal memuat slot waktu. Silakan coba lagi.';
                     } finally {

@@ -436,7 +436,7 @@ See session 7. Do not edit `docs/requirements.md` or `docs/product.md`: no requi
 
 ## Evidence (fill when done)
 
-- Session 1:
+- Session 1: PL-01, PL-02, PL-03, PL-09, PL-11, PL-13. PHP 8.4.25: Pint, Vite build, PHPStan and related PHPUnit checks passed (90 tests, 690 assertions). Full SQLite suite: 1,021 passed, 6,747 assertions. Browser: owner design reference consulted; the storefront, checkout, single and group management, reschedule and both management invoices fit 375, 768, 1024 and 1366 px with the default and light tenant themes, with no console errors on the final pass. Local checkout reproduced the SingaPay failure and retained the customer's email. The calendar reported zero available sessions on a higher-price-only date, and the empty slot response showed the server message and WhatsApp recovery in the browser. The browser used the local store and the documented test management grant.
 - Session 2:
 - Session 3:
 - Session 4:
@@ -446,4 +446,4 @@ See session 7. Do not edit `docs/requirements.md` or `docs/product.md`: no requi
 
 ## Open findings
 
-- (none yet)
+- Diputuskan agen, perlu review Tech Lead: PL-11 uses the customer option of the shared payment label formatter for “Lunas”. The existing owner label is “Berhasil”.

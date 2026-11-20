@@ -141,7 +141,7 @@ parameters:
 		-
 			message: '#^Instanceof between string and Carbon\\Carbon will always evaluate to false\.$#'
 			identifier: instanceof.alwaysFalse
-			count: 2
+			count: 1
 			path: app/Domain/Booking/BookingRules.php
 
 		-
@@ -167,12 +167,6 @@ parameters:
 			identifier: instanceof.alwaysTrue
 			count: 1
 			path: app/Domain/Schedule/SlotCompatibilityRules.php
-
-		-
-			message: '#^Cannot call method toDateString\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Http/Controllers/Customer/BookingManageController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>updated_at" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'

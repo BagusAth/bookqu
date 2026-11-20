@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Payment;
@@ -47,6 +48,7 @@ class BookingManageTest extends TestCase
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
         $this->tenant = Tenant::factory()->create([
             'iduser' => $owner->id,
+            'nomorhp' => '081299887766',
             'cancel_before_hours' => 24,
             'reschedule_before_hours' => 24,
         ]);
@@ -92,6 +94,21 @@ class BookingManageTest extends TestCase
         $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'?token='.$this->booking->cancellation_token);
         $response->assertStatus(200);
         $response->assertSee($this->booking->booking_code);
+    }
+
+    public function test_business_whatsapp_uses_the_country_code_and_customer_history_hides_views(): void
+    {
+        app(CreateTrialSubscription::class)->execute($this->tenant);
+        $this->grantCustomerAccess($this->payment);
+        $this->get('/'.$this->tenant->slug)->assertOk()->assertSee('href="https://wa.me/6281299887766?', false);
+        $this->get(route('booking.manage', $this->booking->booking_code))->assertOk()
+            ->assertSee('href="https://wa.me/6281299887766?', false)
+            ->assertSee('Reservasi Dibuat')->assertDontSee('Detail Dilihat');
+        $this->get(route('booking.manage.payment', $this->payment->order_id))->assertOk()
+            ->assertSee('href="https://wa.me/6281299887766?', false);
+        $this->assertDatabaseHas('booking_logs', ['booking_id' => $this->booking->id, 'event' => 'viewed']);
+        $this->actingAs($this->tenant->user)->getJson(route('owner.bookings.panel', $this->booking->id))
+            ->assertOk()->assertSee('Halaman manajemen booking dibuka oleh customer.');
     }
 
     public function test_customer_cannot_view_booking_with_invalid_token(): void
@@ -228,8 +245,12 @@ class BookingManageTest extends TestCase
         ]);
         $original = $this->booking->idschedule;
         $url = '/manage/'.$this->booking->booking_code.'/reschedule';
-        $this->grantCustomerAccess($this->booking)->getJson($url.'/slots?tanggal='.$date)
-            ->assertOk()->assertJsonCount(0, 'slots')->assertJsonPath('message', 'Ada slot dengan harga lebih tinggi. Hubungi pemilik.');
+        $calendar = $this->grantCustomerAccess($this->booking)->get($url)->assertOk()
+            ->assertSee('Hubungi bisnis via WhatsApp')->assertSee('slotMessage');
+        $day = collect($calendar->viewData('availabilityPayload'))->firstWhere('date', $date);
+        $this->assertSame(0, $day['available_slots']);
+        $this->getJson($url.'/slots?tanggal='.$date)
+            ->assertOk()->assertJsonCount(0, 'slots')->assertJsonPath('message', 'Ada sesi dengan harga lebih tinggi. Hubungi pemilik.');
         $this->post($url, ['tanggal' => $date, 'schedule_id' => $slot->id])->assertSessionHasErrors('reschedule');
         $this->assertSame($original, $this->booking->fresh()->idschedule);
 

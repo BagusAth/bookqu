@@ -179,7 +179,8 @@
                     <label class="flex items-center justify-between gap-3 text-sm">
                         {{ $item['name'] }}
                         <input type="number" min="0" max="9999" placeholder="0" aria-label="Jumlah {{ $item['name'] }}"
-                            x-model.number="quantities[{{ $item['id'] }}]" class="w-24 rounded-xl border border-slate-300 px-3 py-2">
+                            value="{{ $oldAddOnQuantities[$item['id']] ?? 0 }}"
+                            x-model.number="quantities[@js($item['id'])]" class="w-24 rounded-xl border border-slate-300 px-3 py-2">
                     </label>
                 @endforeach
                 <template x-for="(item, index) in selectedAddOns" :key="item.id">
@@ -193,7 +194,7 @@
         @if ($showPromo)
             <div>
                 <label for="checkout-promo" class="block text-sm font-bold">Kode promo</label>
-                <input id="checkout-promo" name="voucher_code" maxlength="50" x-model.trim="voucherCode"
+                <input id="checkout-promo" name="voucher_code" maxlength="50" value="{{ $oldPromoCode }}" x-model.trim="voucherCode"
                     class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
             </div>
         @endif

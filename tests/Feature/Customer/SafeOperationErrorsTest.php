@@ -89,10 +89,17 @@ class SafeOperationErrorsTest extends TestCase
         app(PaymentGatewayManager::class)->extend('midtrans', fn () => $gateway);
 
         $url = '/'.$tenant->slug.'/booking/checkout';
+        $input = ['namapelanggan' => 'Pelanggan', 'email' => 'customer@example.test', 'nomorhp' => '081234567890', 'catatan' => 'Catatan untuk studio', 'peserta' => 1];
         $this->from($url)->withSession($this->selection($tenant, $service, $schedule))
-            ->post($url, ['namapelanggan' => 'Pelanggan', 'email' => 'customer@example.test', 'nomorhp' => '081234567890'])
+            ->post($url, $input)
             ->assertRedirect($url)->assertSessionHas('error', 'Gagal memproses pembayaran. Silakan coba lagi.');
-        $this->get($url)->assertOk()->assertDontSee('fixture-secret')->assertDontSee('SQLSTATE')->assertDontSee('/private/config.php');
+        foreach ($input as $field => $value) {
+            $this->assertSame($value, session()->getOldInput($field));
+        }
+        $this->assertNull(session()->getOldInput('checkout_fingerprint'));
+        $this->get($url)->assertOk()->assertSee('value="Pelanggan"', false)
+            ->assertSee('value="customer@example.test"', false)->assertSee('value="081234567890"', false)
+            ->assertSee('Catatan untuk studio')->assertDontSee('fixture-secret')->assertDontSee('SQLSTATE')->assertDontSee('/private/config.php');
         $payment = DB::table('payments')->where('idtenant', $tenant->id)->sole();
         $this->assertSame('gagal', $payment->status);
         $this->assertDatabaseHas('bookings', ['idpayment' => $payment->id, 'status' => 'cancelled']);

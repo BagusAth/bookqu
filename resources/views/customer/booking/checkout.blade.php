@@ -6,13 +6,15 @@
 @section('back_label', 'Kembali ke Jadwal')
 
 @section('content')
+@php($oldAddOnQuantities = collect(old('selected_addons', []))->pluck('quantity', 'id')->filter(fn ($quantity) => is_numeric($quantity))->all())
+@php($oldPromoCode = is_string(old('voucher_code')) ? old('voucher_code') : '')
 <div id="booking-checkout-root"
      data-tenant-slug="{{ $tenant->slug }}"
      x-data="{
         participants: @js((int) old('peserta', 1)),
-        voucherCode: @js(old('voucher_code', '')),
+        voucherCode: @js($oldPromoCode),
         addOnOptions: @js($addOnOptions),
-        quantities: @js(collect(old('selected_addons', []))->pluck('quantity', 'id')->all()),
+        quantities: @js($oldAddOnQuantities),
         quote: null,
         quoteBusy: false,
         quoteError: '',

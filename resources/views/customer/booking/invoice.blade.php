@@ -16,7 +16,7 @@
     $eventTitle = 'Booking ' . ($firstSlot->layanan->namalayanan ?? 'Layanan') . ' - ' . $tenant->namabisnis;
     $eventLocation = ($tenant->alamat ? $tenant->alamat . ', ' : '') . $tenant->namabisnis;
 
-    $eventDetails = 'Reservasi resmi di ' . $tenant->namabisnis . "\nOrder ID: " . $payment->order_id;
+    $eventDetails = 'Reservasi resmi di ' . $tenant->namabisnis . "\nNomor pesanan: " . $payment->order_id;
 
     // Google Calendar URL (spans from earliest slot start to latest slot end)
     $gCalDates = $timeRange->googleCalendarDates();
@@ -32,7 +32,7 @@
     $waText = "Halo! Saya telah melakukan booking sesi *" . ($firstSlot->layanan->namalayanan ?? 'Layanan') . "* di *" . $tenant->namabisnis . "*\n"
         . "📅 Tanggal: " . \Carbon\Carbon::parse($firstSlot->tanggalbooking)->translatedFormat('l, d F Y') . "\n"
         . "⏰ Jadwal:\n" . $slotListText . "\n"
-        . "🔖 Order ID: " . $payment->order_id;
+        . "🔖 Nomor pesanan: " . $payment->order_id;
     $waShareUrl = 'https://api.whatsapp.com/send?text=' . urlencode($waText);
 
     // Google Maps Search URL
@@ -75,7 +75,7 @@
             <div class="sm:text-right">
                 <span class="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-xs px-3 py-1 text-xs font-bold text-white border border-white/30">
                     <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-                    {{ $payment->status === 'sukses' ? 'LUNAS' : strtoupper($payment->status) }}
+                    {{ \App\Domain\Payment\PaymentState::formatLabel($payment->status, customer: true) }}
                 </span>
             </div>
         </div>
@@ -112,14 +112,14 @@
                 </div>
             </div>
             <div class="sm:text-right">
-                <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider mb-1">Order ID</span>
+                <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider mb-1">Nomor pesanan</span>
                 <div class="flex items-center sm:justify-end gap-2">
                     <span class="font-mono text-xs sm:text-sm font-semibold text-[#0F172A]">{{ $payment->order_id }}</span>
                     <button
                         type="button"
                         @click="navigator.clipboard.writeText('{{ $payment->order_id }}'); copiedOrderId = true; setTimeout(() => copiedOrderId = false, 2000)"
                         class="inline-flex items-center gap-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer shrink-0"
-                        :title="copiedOrderId ? 'Tersalin!' : 'Salin Order ID'"
+                        :title="copiedOrderId ? 'Tersalin!' : 'Salin Nomor pesanan'"
                     >
                         <svg x-show="!copiedOrderId" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -154,10 +154,10 @@
                         <span class="font-bold text-[#0F172A]">{{ \Carbon\Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y') }}</span>
                     </div>
                     <div class="flex justify-between items-start">
-                        <span class="text-[#64748B]">Jam Sesi ({{ $allBookings->count() }} Slot)</span>
+                        <span class="text-[#64748B]">Jam Sesi ({{ $allBookings->count() }} sesi)</span>
                         <div class="text-right">
                             @foreach ($allBookings as $bItem)
-                                <span class="font-bold text-[#4F46E5] block">{{ substr($bItem->jam, 0, 5) }} WIB @if($allBookings->count() > 1)<span class="text-xs text-[#64748B] font-mono">({{ $bItem->booking_code }})</span>@endif @isset($invoiceSlotAmounts[$bItem->id]) · {{ $invoiceSlotAmounts[$bItem->id] }} @endisset</span>
+                                <span class="font-bold text-[#4F46E5] block">{{ $sessionRanges[$bItem->id]->label() }} WIB @if($allBookings->count() > 1)<span class="text-xs text-[#64748B] font-mono">({{ $bItem->booking_code }})</span>@endif @isset($invoiceSlotAmounts[$bItem->id]) · {{ $invoiceSlotAmounts[$bItem->id] }} @endisset</span>
                             @endforeach
                         </div>
                     </div>
@@ -198,7 +198,7 @@
                 <div class="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-2.5 text-xs sm:text-sm">
                     <div class="flex justify-between">
                         <span class="text-[#64748B]">Metode Pembayaran</span>
-                        <span class="font-bold text-[#0F172A] uppercase">{{ $payment->metode ?? 'Midtrans' }}</span>
+                        <span class="font-bold text-[#0F172A]">{{ \App\Support\PaymentMethodLabel::for($payment->metode) ?? 'Pembayaran online' }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-[#64748B]">Status Transaksi</span>

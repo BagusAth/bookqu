@@ -58,7 +58,7 @@
             </p>
 
             <div style="text-align:center; margin-bottom:24px;">
-                <p style="font-size:12px; color:#6B7280; margin-bottom:8px;">ORDER ID RESERVASI</p>
+                <p style="font-size:12px; color:#6B7280; margin-bottom:8px;">Nomor pesanan</p>
                 <span class="order-badge">{{ $orderId }}</span>
             </div>
 
@@ -74,7 +74,7 @@
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Jumlah Sesi</span>
-                    <span class="detail-value">{{ $bookings->count() }} Slot Waktu</span>
+                    <span class="detail-value">{{ $bookings->count() }} sesi</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Metode Pembayaran</span>
@@ -103,7 +103,7 @@
             <div class="total-card">
                 <p class="total-label">TOTAL PEMBAYARAN</p>
                 <p class="total-amount">{{ $totalAmountFormatted }}</p>
-                <span style="display:inline-block; background:#D1FAE5; color:#065F46; font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px; margin-top:8px;">LUNAS</span>
+                <span style="display:inline-block; background:#D1FAE5; color:#065F46; font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px; margin-top:8px;">{{ \App\Domain\Payment\PaymentState::formatLabel($payment->status, customer: true) }}</span>
             </div>
 
             <div class="cta-section">

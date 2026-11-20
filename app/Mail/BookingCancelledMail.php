@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Actions\Booking\GetBookingTimeRanges;
 use App\Models\Booking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,6 +34,7 @@ class BookingCancelledMail extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'emails.booking-cancelled',
+            with: app(GetBookingTimeRanges::class)->execute([$this->booking]),
         );
     }
 }

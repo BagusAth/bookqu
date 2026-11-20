@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Booking;
 
+use App\Models\Booking;
+use App\Models\Schedule;
 use Carbon\CarbonImmutable;
 
 /**
@@ -24,6 +26,16 @@ final class BookingTimeRange
         public readonly CarbonImmutable $start,
         public readonly ?CarbonImmutable $end,
     ) {}
+
+    public static function forBooking(Booking $booking, ?Schedule $slot): self
+    {
+        $date = substr((string) $booking->tanggalbooking, 0, 10);
+        if ($slot === null || (int) $slot->idtenant !== (int) $booking->idtenant) {
+            return self::withoutSlot($date, (string) $booking->jam);
+        }
+
+        return self::forSlot($date, (string) $slot->jam_mulai, (string) $slot->jam_selesai);
+    }
 
     public static function forSlot(string $date, string $jamMulai, string $jamSelesai): self
     {

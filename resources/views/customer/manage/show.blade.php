@@ -36,11 +36,6 @@
             . "🔖 Kode Booking: " . $booking->booking_code;
         $waShareUrl = 'https://api.whatsapp.com/send?text=' . urlencode($waText);
 
-        // Merchant WhatsApp URL
-        $cleanMerchantPhone = preg_replace('/[^0-9]/', '', $booking->tenant->nomorhp ?? '');
-        $merchantWaUrl = !empty($cleanMerchantPhone)
-            ? 'https://wa.me/' . $cleanMerchantPhone . '?text=' . urlencode("Halo {$booking->tenant->namabisnis}, saya ingin bertanya mengenai booking saya ({$booking->booking_code}).")
-            : null;
     @endphp
 
     {{-- ── Elevated Header ── --}}

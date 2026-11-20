@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\GetBookingTimeRanges;
 use App\Actions\Booking\GetInvoiceAmounts;
-use App\Actions\Booking\QuoteReschedule;
 use App\Actions\Booking\RescheduleBooking;
+use App\Actions\Customer\GetCustomerPanel;
 use App\Actions\CustomerAccess\ResolveManagementTarget;
 use App\Actions\CustomerAccess\ReviewBooking;
 use App\Actions\Payment\GetCustomerRefundForm;
@@ -19,7 +19,6 @@ use App\Models\Booking;
 use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Models\Review;
-use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use Carbon\Carbon;
@@ -48,6 +47,7 @@ class BookingManageController extends Controller
         $payment = $this->targets->payment($this->access($request), $orderId);
         $bookings = $payment->bookings;
         $tenant = $payment->tenant;
+        abort_unless($tenant instanceof Tenant, 404);
 
         // Log view event for the payment group (throttled)
         $viewKey = "manage:payment_viewed:{$payment->id}:".session()->getId();
@@ -66,6 +66,10 @@ class BookingManageController extends Controller
                 'bookings' => $bookings,
                 'tenant' => $tenant,
                 'isMultiSlot' => $isMultiSlot,
+                'merchantWaUrl' => GetCustomerPanel::whatsAppUrl(
+                    (string) $tenant->nomorhp,
+                    "Halo {$tenant->namabisnis}, saya ingin bertanya mengenai reservasi saya ({$payment->order_id}).",
+                ),
             ]);
     }
 
@@ -82,6 +86,7 @@ class BookingManageController extends Controller
 
         $bookings = $payment->bookings;
         $tenant = $payment->tenant;
+        abort_unless($tenant instanceof Tenant, 404);
         $booking = $bookings->first();
 
         return view('customer.manage.payment-invoice', app(GetInvoiceAmounts::class)->execute($payment) + app(GetBookingTimeRanges::class)->execute($bookings) + [
@@ -108,22 +113,21 @@ class BookingManageController extends Controller
         $isMultiSlot = $booking->isMultiSlot();
         $canReschedule = ! $isMultiSlot && $booking->canBeRescheduled();
 
-        // Build cancel deadline message
-        $rescheduleDeadline = null;
-        if ($booking->status === 'paid') {
-            $tenant = $booking->tenant;
-            $bookingDateTime = Carbon::parse($booking->tanggalbooking->toDateString().' '.$booking->jam);
-            $rescheduleHours = $tenant->reschedule_before_hours ?? 24;
+        $ranges = app(GetBookingTimeRanges::class)->execute([$booking]);
+        $tenant = $booking->tenant;
+        abort_unless($tenant instanceof Tenant, 404);
 
-            $rescheduleDeadline = $bookingDateTime->copy()->subHours($rescheduleHours);
-        }
-
-        return view('customer.manage.show', app(GetBookingTimeRanges::class)->execute([$booking])
+        return view('customer.manage.show', $ranges
             + $refundForm->execute($this->access($request), $booking) + [
                 'booking' => $booking,
                 'isMultiSlot' => $isMultiSlot,
                 'canReschedule' => $canReschedule,
-                'rescheduleDeadline' => $rescheduleDeadline,
+                'rescheduleDeadline' => $booking->status === 'paid' ? BookingRules::rescheduleDeadline($booking, $ranges['timeRange']) : null,
+                'customerLogs' => $booking->logs->where('event', '!=', 'viewed'),
+                'merchantWaUrl' => GetCustomerPanel::whatsAppUrl(
+                    (string) $tenant->nomorhp,
+                    "Halo {$tenant->namabisnis}, saya ingin bertanya mengenai reservasi saya ({$booking->booking_code}).",
+                ),
             ]);
     }
 
@@ -175,9 +179,14 @@ class BookingManageController extends Controller
                 ->withErrors(['reschedule' => "Reschedule hanya diizinkan minimal {$rescheduleHours} jam sebelum jadwal."]);
         }
 
+        $tenant = $booking->tenant;
+        abort_unless($tenant instanceof Tenant, 404);
         $calendar = app(GetAvailableSchedules::class)->getCustomerRescheduleCalendar($booking);
 
-        return view('customer.manage.reschedule', app(GetBookingTimeRanges::class)->execute([$booking]) + ['booking' => $booking] + $calendar);
+        return view('customer.manage.reschedule', app(GetBookingTimeRanges::class)->execute([$booking]) + [
+            'booking' => $booking,
+            'merchantWaUrl' => GetCustomerPanel::whatsAppUrl((string) $tenant->nomorhp),
+        ] + $calendar);
     }
 
     // ── Process reschedule ─────────────────────────────────────────────────────
@@ -221,19 +230,8 @@ class BookingManageController extends Controller
         $service = $booking->layanan;
 
         abort_unless($tenant instanceof Tenant && $service instanceof Service, 404);
-        $slots = app(GetAvailableSchedules::class)
-            ->getCustomerRescheduleSlots($tenant, $service, $selectedDate, (int) $booking->id);
 
-        $schedules = Schedule::where('idtenant', $tenant->id)->where('idlayanan', $service->id)
-            ->whereDate('tanggal', $selectedDate)->whereIn('id', array_column($slots, 'id'))->get();
-        $prices = app(QuoteReschedule::class)->execute($booking, $tenant, $service, $selectedDate, $schedules);
-        $eligible = array_values(array_filter($slots, fn (array $slot): bool => isset($prices[$slot['id']])
-            && ($prices[$slot['id']]['price_difference'] ?? 0) <= 0));
-
-        return response()->json([
-            'slots' => $eligible,
-            'message' => count($eligible) < count($slots) ? 'Ada slot dengan harga lebih tinggi. Hubungi pemilik.' : null,
-        ]);
+        return response()->json(app(GetAvailableSchedules::class)->getCustomerRescheduleSlots($booking, $tenant, $service, $selectedDate));
     }
 
     // ── Invoice ────────────────────────────────────────────────────────────────

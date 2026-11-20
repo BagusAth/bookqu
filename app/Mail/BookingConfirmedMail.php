@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Actions\Booking\GetBookingTimeRanges;
 use App\Models\Booking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -31,6 +32,7 @@ class BookingConfirmedMail extends Mailable
     {
         return new Content(
             view: 'emails.booking-confirmed',
+            with: app(GetBookingTimeRanges::class)->execute([$this->booking]),
         );
     }
 }

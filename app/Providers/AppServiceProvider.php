@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Actions\Customer\GetCustomerPanel;
 use App\Actions\Owner\GetOwnerShell;
 use App\Actions\Subscription\GetPublicPlanCards;
 use App\Actions\Team\TeamNotificationAccess;
@@ -119,6 +120,16 @@ class AppServiceProvider extends ServiceProvider
         }
 
         View::composer('components.landing.pricing', fn ($view) => $view->with(app(GetPublicPlanCards::class)->execute(auth()->user())));
+
+        View::composer('customer.layouts.booking-shell', function (\Illuminate\View\View $view): void {
+            $tenant = $view->getData()['tenant'] ?? null;
+            if ($tenant instanceof Tenant) {
+                $view->with('merchantWaUrl', GetCustomerPanel::whatsAppUrl(
+                    (string) $tenant->nomorhp,
+                    "Halo {$tenant->namabisnis}, saya butuh bantuan mengenai reservasi.",
+                ));
+            }
+        });
 
         Carbon::setLocale(config('app.locale', 'id'));
 

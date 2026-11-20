@@ -66,7 +66,7 @@
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Jam</span>
-                    <span class="detail-value">{{ \Carbon\Carbon::parse($booking->jam)->format('H:i') }} WIB</span>
+                    <span class="detail-value">{{ $timeRange->label() }} WIB</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Lokasi</span>

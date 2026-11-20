@@ -15,7 +15,7 @@ final class QuoteReschedule
     /** @param iterable<Schedule> $slots
      * @return array<int, array{price: int, price_difference: ?int}>
      */
-    public function execute(Booking $booking, Tenant $tenant, Service $service, string $date, iterable $slots): array
+    public function execute(Booking $booking, Tenant $tenant, Service $service, string $date, iterable $slots, ?string $lastDate = null): array
     {
         $payment = $booking->payment;
         $previous = null;
@@ -25,7 +25,7 @@ final class QuoteReschedule
             $previous = BookingPricing::frozenSlotAmount($payment, $originalSlot) ?? (int) $payment->jumlah;
         }
 
-        $quote = BookingPricing::quote($service, $slots, PriceRules::forTenant($tenant, $date, $date), max(1, (int) $booking->peserta));
+        $quote = BookingPricing::quote($service, $slots, PriceRules::forTenant($tenant, $date, $lastDate ?? $date), max(1, (int) $booking->peserta));
         $result = [];
         foreach ($quote['lines'] as $line) {
             $result[$line['schedule_id']] = [

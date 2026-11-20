@@ -452,31 +452,23 @@
 
         $statusConfig = [
             'paid' => [
-                'label' => 'LUNAS / BERHASIL',
                 'bg'    => 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40',
-                'badge' => '✓ LUNAS',
             ],
             'pending' => [
-                'label' => 'MENUNGGU PEMBAYARAN',
                 'bg'    => 'bg-amber-500/20 text-amber-300 border-amber-400/40',
-                'badge' => '⏳ PENDING',
             ],
             'completed' => [
-                'label' => 'SELESAI',
                 'bg'    => 'bg-indigo-500/20 text-indigo-200 border-indigo-400/40',
-                'badge' => '✓ SELESAI',
             ],
             'cancelled' => [
-                'label' => 'DIBATALKAN',
                 'bg'    => 'bg-rose-500/20 text-rose-300 border-rose-400/40',
-                'badge' => '✕ DIBATALKAN',
             ],
         ];
         $currentStatus = $statusConfig[$booking->status] ?? [
-            'label' => strtoupper($booking->status),
             'bg'    => 'bg-white/20 text-white border-white/30',
-            'badge' => strtoupper($booking->status),
         ];
+
+        $statusLabel = \App\Domain\Booking\BookingState::formatLabel($booking->status);
 
         // Back URL to manage booking
         $backUrl = route('booking.manage', ['booking_code' => $booking->booking_code]);
@@ -485,7 +477,7 @@
         $waShareText = "Halo! Berikut invoice resmi reservasi *" . ($booking->layanan->namalayanan ?? 'Layanan') . "* di *" . $booking->tenant->namabisnis . "*\n"
             . "🔖 Kode Booking: *" . $booking->booking_code . "*\n"
             . "📅 Tanggal: " . $bookingDate->translatedFormat('l, d F Y') . " (" . $jamFormatted . " WIB)\n"
-            . "💰 Total: *" . $invoiceAmount . "* (" . $currentStatus['badge'] . ")";
+            . "💰 Total: *" . $invoiceAmount . "* (" . $statusLabel . ")";
         $waShareUrl = 'https://api.whatsapp.com/send?text=' . urlencode($waShareText);
     @endphp
 
@@ -588,7 +580,7 @@
                                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                 </svg>
                             @endif
-                            {{ $currentStatus['label'] }}
+                            {{ $statusLabel }}
                         </span>
                     </div>
                 </div>
@@ -698,7 +690,7 @@
                                     </p>
                                     @if($booking->rescheduled_from_date)
                                         <span style="display: inline-block; font-size: 10px; font-weight: 700; color: #D97706; background: #FEF3C7; padding: 2px 6px; border-radius: 4px; margin-top: 4px;">
-                                            Jadwal Reschedule
+                                            Jadwal sebelumnya
                                         </span>
                                     @endif
                                 </td>
@@ -757,12 +749,12 @@
                     <div class="payment-grid">
                         <div>
                             <p style="font-size: 11px; color: #64748B; margin: 0 0 3px 0; text-transform: uppercase;">Metode Pembayaran</p>
-                            <p style="font-size: 13px; font-weight: 700; color: #0F172A; margin: 0; text-transform: uppercase;">
-                                {{ str_replace('_', ' ', $booking->payment->metode ?? 'Midtrans') }}
+                            <p style="font-size: 13px; font-weight: 700; color: #0F172A; margin: 0;">
+                                {{ \App\Support\PaymentMethodLabel::for($booking->payment->metode) ?? 'Pembayaran online' }}
                             </p>
                         </div>
                         <div>
-                            <p style="font-size: 11px; color: #64748B; margin: 0 0 3px 0; text-transform: uppercase;">Order ID Midtrans</p>
+                            <p style="font-size: 11px; color: #64748B; margin: 0 0 3px 0; text-transform: uppercase;">Nomor pesanan</p>
                             <p class="font-mono" style="font-size: 12px; font-weight: 700; color: #0F172A; margin: 0; word-break: break-all;">
                                 {{ $booking->payment->order_id ?? '-' }}
                             </p>
@@ -776,7 +768,7 @@
                         <div>
                             <p style="font-size: 11px; color: #64748B; margin: 0 0 3px 0; text-transform: uppercase;">Status Pembayaran</p>
                             <p style="font-size: 13px; font-weight: 800; color: #059669; margin: 0;">
-                                {{ $booking->payment->status === 'sukses' ? 'LUNAS (SUKSES)' : strtoupper($booking->payment->status) }}
+                                {{ \App\Domain\Payment\PaymentState::formatLabel($booking->payment->status, customer: true) }}
                             </p>
                         </div>
                     </div>

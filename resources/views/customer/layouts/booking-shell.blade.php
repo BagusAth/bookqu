@@ -99,8 +99,8 @@
                         </a>
                     @endif
 
-                    @if(isset($tenant) && $tenant->nomorhp)
-                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $tenant->nomorhp) }}?text=Halo%20{{ urlencode($tenant->namabisnis) }},%20saya%20butuh%20bantuan%20mengenai%20booking"
+                    @if($merchantWaUrl ?? null)
+                        <a href="{{ $merchantWaUrl }}"
                            target="_blank"
                            rel="noopener noreferrer"
                            class="inline-flex items-center gap-1.5 rounded-xl border border-transparent px-3 py-1.5 text-xs sm:text-sm font-medium text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#0F172A]"

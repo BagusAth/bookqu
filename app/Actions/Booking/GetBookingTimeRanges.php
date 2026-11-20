@@ -44,9 +44,7 @@ final class GetBookingTimeRanges
                 $slot = null;
             }
 
-            $sessionRanges[(int) $booking->id] = $slot !== null
-                ? BookingTimeRange::forSlot($bookingDate, (string) $slot->jam_mulai, (string) $slot->jam_selesai)
-                : BookingTimeRange::withoutSlot($bookingDate, (string) $booking->jam);
+            $sessionRanges[(int) $booking->id] = BookingTimeRange::forBooking($booking, $slot);
             $groupSlots[] = $slot;
         }
 

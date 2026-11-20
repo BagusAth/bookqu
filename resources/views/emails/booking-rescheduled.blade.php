@@ -70,7 +70,7 @@
                     <label>✅ Jadwal Baru</label>
                     <p>
                         {{ \Carbon\Carbon::parse($booking->tanggalbooking)->format('d M Y') }}<br/>
-                        {{ \Carbon\Carbon::parse($booking->jam)->format('H:i') }} WIB
+                        {{ $timeRange->label() }} WIB
                     </p>
                 </div>
             </div>

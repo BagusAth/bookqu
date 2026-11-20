@@ -7,7 +7,7 @@
                         Riwayat &amp; Status Reservasi
                     </h3>
                     <div class="mt-4 space-y-4">
-                        @forelse($booking->logs as $log)
+                        @forelse($customerLogs as $log)
                             @php
                                 $badgeStyle = match($log->event) {
                                     'created'         => ['bg' => 'bg-indigo-50 text-indigo-600 border-indigo-200', 'title' => 'Reservasi Dibuat'],
@@ -16,7 +16,6 @@
                                     'payment_failed'  => ['bg' => 'bg-rose-50 text-rose-600 border-rose-200', 'title' => 'Pembayaran Gagal'],
                                     'cancelled'       => ['bg' => 'bg-rose-50 text-rose-600 border-rose-200', 'title' => 'Booking Dibatalkan'],
                                     'rescheduled'     => ['bg' => 'bg-indigo-50 text-[#4F46E5] border-[#C7D2FE]', 'title' => 'Jadwal Diubah'],
-                                    'viewed'          => ['bg' => 'bg-slate-100 text-slate-600 border-slate-200', 'title' => 'Detail Dilihat'],
                                     'reviewed'        => ['bg' => 'bg-amber-50 text-amber-600 border-amber-200', 'title' => 'Ulasan Diberikan'],
                                     default           => ['bg' => 'bg-slate-100 text-slate-600 border-slate-200', 'title' => ucfirst($log->event)],
                                 };

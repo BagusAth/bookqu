@@ -44,7 +44,7 @@
 
                 <div class="mt-3 rounded-xl bg-[#F8FAFC] p-3 border border-[#E2E8F0] text-xs text-[#475569] space-y-1">
                     <div class="flex justify-between">
-                        <span class="text-[#64748B]">Order ID:</span>
+                        <span class="text-[#64748B]">Nomor pesanan:</span>
                         <span class="font-mono font-medium text-[#0F172A]">{{ $payment->order_id }}</span>
                     </div>
                     <div class="flex justify-between">

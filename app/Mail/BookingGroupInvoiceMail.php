@@ -7,6 +7,7 @@ namespace App\Mail;
 use App\Actions\Booking\GetBookingTimeRanges;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Support\PaymentMethodLabel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -36,7 +37,7 @@ class BookingGroupInvoiceMail extends Mailable
     ) {
         $this->orderId = $payment->order_id ?? ('PAY-'.$payment->id);
         $this->paymentDate = ($payment->updated_at ?? $payment->created_at)->format('d M Y, H:i').' WIB';
-        $this->paymentMethod = strtoupper($payment->metode ?: 'Midtrans');
+        $this->paymentMethod = PaymentMethodLabel::for($payment->metode) ?? 'Pembayaran online';
         $this->totalAmountFormatted = 'Rp '.number_format((float) $payment->jumlah, 0, ',', '.');
     }
 

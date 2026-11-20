@@ -56,7 +56,7 @@
             . "Layanan:\n" . ($layanan?->namalayanan ?? 'Layanan') . "\n\n"
             . "Tanggal:\n" . \Carbon\Carbon::parse($bookingDate)->translatedFormat('l, d F Y') . "\n\n"
             . "Waktu:\n" . $scheduleListText . " WIB\n\n"
-            . "Order ID:\n" . $payment->order_id;
+            . "Nomor pesanan:\n" . $payment->order_id;
 
         $gCalDates = $timeRange->googleCalendarDates();
         $gCalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
@@ -70,15 +70,10 @@
             . "Layanan: " . ($layanan?->namalayanan ?? 'Layanan') . "\n"
             . "Tanggal: " . \Carbon\Carbon::parse($bookingDate)->translatedFormat('l, d F Y') . "\n"
             . "Waktu: " . $scheduleListText . " WIB\n"
-            . "Order ID: " . $payment->order_id . "\n\n"
+            . "Nomor pesanan: " . $payment->order_id . "\n\n"
             . "Reservasi telah dikonfirmasi.";
         $waShareUrl = 'https://api.whatsapp.com/send?text=' . urlencode($waText);
 
-        // Merchant WhatsApp URL
-        $cleanMerchantPhone = preg_replace('/[^0-9]/', '', $tenant->nomorhp ?? '');
-        $merchantWaUrl = !empty($cleanMerchantPhone)
-            ? 'https://wa.me/' . $cleanMerchantPhone . '?text=' . urlencode("Halo {$tenant->namabisnis}, saya ingin bertanya mengenai reservasi saya ({$payment->order_id}).")
-            : null;
 
         $invoiceUrl = route('booking.manage.payment.invoice', ['order_id' => $payment->order_id]);
 
@@ -155,11 +150,11 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-100">
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2 mb-1.5">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Order ID</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Nomor pesanan</span>
                         <span class="font-mono text-xs font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">{{ $payment->order_id }}</span>
                         @if($isMultiSlot)
                             <span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-700 border border-purple-200">
-                                Multi-Slot ({{ $bookings->count() }} Sesi)
+                                {{ $bookings->count() }} sesi
                             </span>
                         @endif
                     </div>
@@ -208,7 +203,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-sm font-bold text-slate-900">Reservasi Multi-Slot</h2>
+                        <h2 class="text-sm font-bold text-slate-900">Reservasi beberapa sesi</h2>
                         <p class="text-xs text-slate-600 mt-1 leading-relaxed">
                             Reservasi ini terdiri dari beberapa sesi yang berurutan. Perubahan atau pembatalan per sesi tidak tersedia.
                         </p>
@@ -262,7 +257,7 @@
                         </div>
                         <div class="flex justify-between gap-3 py-1 border-b border-slate-200/50">
                             <span class="shrink-0 text-slate-500">Metode Pembayaran</span>
-                            <span class="min-w-0 break-words text-right font-bold text-slate-800 uppercase">{{ $payment->metode ?: 'Midtrans' }}</span>
+                            <span class="min-w-0 break-words text-right font-bold text-slate-800">{{ \App\Support\PaymentMethodLabel::for($payment->metode) ?? 'Pembayaran online' }}</span>
                         </div>
                         <div class="flex flex-wrap justify-between items-center gap-x-3 pt-2">
                             <span class="text-sm font-bold text-slate-900">Total Transaksi</span>

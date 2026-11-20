@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Actions\Schedule;
 
+use App\Actions\Booking\QuoteReschedule;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Schedule\AvailabilityRules;
 use App\Domain\Schedule\PriceRules;
 use App\Domain\Schedule\SlotPricing;
+use App\Domain\Schedule\SlotRefusal;
 use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -288,128 +290,103 @@ class GetAvailableSchedules
         });
     }
 
-    /**
-     * Get available time slots for customer reschedule flow (AJAX).
-     *
-     * @param  string  $selectedDate  (Y-m-d)
-     * @return array<int, array{id: int, jam_mulai: string, jam_selesai: string, is_available: bool, is_booked: bool, is_past: bool}>
-     */
-    public function getCustomerRescheduleSlots(
-        Tenant $tenant,
-        Service $service,
-        string $selectedDate,
-        int $excludeBookingId
-    ): array {
-        $cacheKey = "tenant:{$tenant->id}:service:{$service->id}:schedules:{$selectedDate}:reschedule:{$excludeBookingId}";
+    /** @return array{slots: list<array{id: int, jam_mulai: string, jam_selesai: string, is_available: bool, is_booked: bool, is_past: bool}>, message: ?string} */
+    public function getCustomerRescheduleSlots(Booking $booking, Tenant $tenant, Service $service, string $date): array
+    {
+        $days = $this->customerRescheduleDays($booking, $tenant, $service, $date, $date);
+        $day = $days[$date] ?? null;
 
-        // scope-bypass: the booking being rescheduled, already resolved for this tenant
-        $participants = max(1, (int) Booking::withoutGlobalScopes()->whereKey($excludeBookingId)->value('peserta'));
-        $unitBusy = BookingRules::unitBusyRanges((int) $tenant->id, (int) $service->id, $selectedDate, $selectedDate, $excludeBookingId);
-
-        $rows = Cache::remember($cacheKey, now()->addSeconds(300), function () use ($tenant, $service, $selectedDate, $excludeBookingId, $participants) {
-            [$hasRoom, $roomBindings] = BookingRules::hasRoomSql('schedules', $participants, $excludeBookingId);
-
-            return DB::table('schedules')
-                ->where('schedules.idtenant', $tenant->id)
-                ->where('schedules.idlayanan', $service->id)
-                ->where('schedules.status', 'tersedia')
-                ->whereDate('schedules.tanggal', $selectedDate)
-                ->orderBy('schedules.jam_mulai')
-                ->select(['schedules.id', 'schedules.jam_mulai', 'schedules.jam_selesai'])
-                ->selectRaw("case when {$hasRoom} then 0 else 1 end as booking_count", $roomBindings)
-                ->get()
-                ->map(function ($row) use ($selectedDate) {
-                    $wib = 'Asia/Jakarta';
-                    $nowWib = Carbon::now($wib);
-                    $selectedDateCarbon = Carbon::parse($selectedDate, $wib);
-                    $isToday = $selectedDateCarbon->isSameDay($nowWib);
-                    $isPastDate = $selectedDateCarbon->lt($nowWib->copy()->startOfDay());
-                    $slotDateTime = Carbon::parse($selectedDate.' '.$row->jam_mulai, $wib);
-                    $isBooked = (int) $row->booking_count > 0;
-                    $isPast = $isPastDate || ($isToday && $slotDateTime->lessThanOrEqualTo($nowWib));
-                    $isAvailable = ! $isBooked && ! $isPast;
-
-                    return [
-                        'id' => (int) $row->id,
-                        'jam_mulai' => $slotDateTime->format('H:i'),
-                        'jam_selesai' => Carbon::parse($selectedDate.' '.$row->jam_selesai, $wib)->format('H:i'),
-                        'is_available' => $isAvailable,
-                        'is_booked' => $isBooked,
-                        'is_past' => $isPast,
-                        'jam_selesai_raw' => (string) $row->jam_selesai,
-                    ];
-                })
-                ->all();
-        });
-
-        return array_map(function (array $slot) use ($unitBusy, $selectedDate): array {
-            if ($slot['is_available'] && BookingRules::slotHitsBusyUnit($unitBusy, $slot['id'], $selectedDate, $slot['jam_mulai'], $slot['jam_selesai_raw'])) {
-                $slot['is_available'] = false;
-                $slot['is_booked'] = true;
-            }
-            unset($slot['jam_selesai_raw']);
-
-            return $slot;
-        }, $rows);
+        return [
+            'slots' => $day['slots'] ?? [],
+            'message' => ($day['hasHigherPrice'] ?? false) ? 'Ada sesi dengan harga lebih tinggi. Hubungi pemilik.' : null,
+        ];
     }
 
     /** @return array{availabilityPayload: list<array{date: string, total_slots: int, available_slots: int}>, minDate: string, maxDate: string} */
     public function getCustomerRescheduleCalendar(Booking $booking): array
     {
-        $wib = 'Asia/Jakarta';
-        $nowWib = Carbon::now($wib);
-        $minDate = Carbon::today($wib);
-        $maxDate = Carbon::today($wib)->addDays(30);
-        $tenantId = $booking->idtenant;
-        $serviceId = $booking->idlayanan;
+        $today = Carbon::today('Asia/Jakarta');
+        $minDate = $today->toDateString();
+        $maxDate = $today->addDays(30)->toDateString();
+        $tenant = $booking->tenant;
+        $service = $booking->layanan;
+        $days = $tenant instanceof Tenant && $service instanceof Service
+            ? $this->customerRescheduleDays($booking, $tenant, $service, $minDate, $maxDate)
+            : [];
 
-        $todayStr = $minDate->toDateString();
-        $nowTimeStr = $nowWib->format('H:i');
+        $availabilityPayload = [];
+        foreach ($days as $date => $day) {
+            $availabilityPayload[] = [
+                'date' => $date,
+                'total_slots' => $day['total'],
+                'available_slots' => count(array_filter($day['slots'], fn (array $slot): bool => $slot['is_available'])),
+            ];
+        }
 
-        $availabilityKey = sprintf(
-            'tenant:%s:service:%s:availability:%s:%s:reschedule:%s',
-            $tenantId,
-            $serviceId,
-            $minDate->toDateString(),
-            $maxDate->toDateString(),
-            $booking->id
-        );
+        return compact('availabilityPayload', 'minDate', 'maxDate');
+    }
 
-        $availabilityPayload = Cache::remember($availabilityKey, now()->addSeconds(60), function () use ($tenantId, $serviceId, $minDate, $maxDate, $booking, $todayStr, $nowTimeStr) {
-            // The booking being moved frees its own seats (excluded).
-            $slots = DB::table('schedules')
-                ->where('schedules.idtenant', $tenantId)
-                ->where('schedules.idlayanan', $serviceId)
-                ->where('schedules.status', 'tersedia')
-                // Dates closed by the owner are not offered (BUG-T5-08); the claim refuses them too
-                ->whereNotExists(function ($closed) use ($booking) {
-                    $closed->selectRaw('1')
-                        ->from('owner_blocked_dates')
-                        ->where('owner_blocked_dates.idtenant', $booking->idtenant)
-                        ->whereRaw('substr(owner_blocked_dates.tanggal, 1, 10) = substr(schedules.tanggal, 1, 10)');
-                })
-                ->whereBetween('schedules.tanggal', [$minDate->toDateString(), $maxDate->toDateString()]);
-            $rows = $this->countPerDate(
-                $slots,
-                BookingRules::hasRoomSql('schedules', max(1, (int) $booking->peserta), (int) $booking->id),
-                $todayStr,
-                $nowTimeStr,
-            );
+    /** @return array<string, array{slots: list<array{id: int, jam_mulai: string, jam_selesai: string, is_available: bool, is_booked: bool, is_past: bool}>, total: int, hasHigherPrice: bool}> */
+    private function customerRescheduleDays(Booking $booking, Tenant $tenant, Service $service, string $from, string $through): array
+    {
+        $bookingId = (int) $booking->id;
+        $tenantId = (int) $tenant->id;
+        $serviceId = (int) $service->id;
+        $participants = max(1, (int) $booking->peserta);
+        [$seatsTaken, $bindings] = BookingRules::seatsTakenSql(excludeBookingId: $bookingId);
 
-            return $rows->map(function ($row) {
-                return [
-                    'date' => Carbon::parse($row->tanggal)->toDateString(),
-                    'total_slots' => (int) $row->total_slots,
-                    'available_slots' => (int) $row->available_slots,
-                ];
-            })->values()->all();
-        });
+        // scope-bypass: limited to the tenant and service of the authorized booking.
+        $schedules = Schedule::withoutGlobalScopes()
+            ->where('schedules.idtenant', $tenantId)
+            ->where('schedules.idlayanan', $serviceId)
+            ->where('schedules.status', 'tersedia')
+            ->whereDate('schedules.tanggal', '>=', $from)
+            ->whereDate('schedules.tanggal', '<=', $through)
+            ->where('schedules.id', '!=', (int) $booking->idschedule)
+            ->whereNotExists(function ($closed) use ($tenantId) {
+                $closed->selectRaw('1')->from('owner_blocked_dates')
+                    ->where('owner_blocked_dates.idtenant', $tenantId)
+                    ->whereRaw('substr(owner_blocked_dates.tanggal, 1, 10) = substr(schedules.tanggal, 1, 10)');
+            })
+            ->orderBy('schedules.tanggal')->orderBy('schedules.jam_mulai')
+            ->select('schedules.*')->selectRaw($seatsTaken.' AS seats_taken', $bindings)
+            ->get();
 
-        return [
-            'availabilityPayload' => $availabilityPayload,
-            'minDate' => $minDate->toDateString(),
-            'maxDate' => $maxDate->toDateString(),
-        ];
+        if ($schedules->isEmpty()) {
+            return [];
+        }
+
+        $prices = app(QuoteReschedule::class)->execute($booking, $tenant, $service, $from, $schedules, $through);
+        $unitBusy = BookingRules::unitBusyRanges($tenantId, $serviceId, $from, $through, $bookingId);
+        $now = Carbon::now('Asia/Jakarta');
+        $days = [];
+
+        foreach ($schedules as $schedule) {
+            $date = substr((string) $schedule->tanggal, 0, 10);
+            $days[$date] ??= ['slots' => [], 'total' => 0, 'hasHigherPrice' => false];
+            $days[$date]['total']++;
+
+            $schedule->setRelation('layanan', $service);
+            $refusal = AvailabilityRules::refusal($schedule, $now, $bookingId, participants: $participants,
+                seatsTaken: (int) $schedule->getAttribute('seats_taken'), unitBusy: $unitBusy, dateBlocked: false);
+            if (($prices[$schedule->id]['price_difference'] ?? 0) > 0) {
+                $days[$date]['hasHigherPrice'] = true;
+
+                continue;
+            }
+
+            $range = BookingTimeRange::forSlot($date, (string) $schedule->jam_mulai, (string) $schedule->jam_selesai);
+            $days[$date]['slots'][] = [
+                'id' => (int) $schedule->id,
+                'jam_mulai' => $range->startTime(),
+                'jam_selesai' => $range->endTime() ?? '',
+                'is_available' => $refusal === null,
+                'is_booked' => $refusal !== null && $refusal !== SlotRefusal::Past,
+                'is_past' => $refusal === SlotRefusal::Past,
+            ];
+        }
+
+        return $days;
     }
 
     /**

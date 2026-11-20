@@ -6,9 +6,11 @@ use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 class BookingRules
@@ -422,17 +424,21 @@ class BookingRules
             return false;
         }
 
+        $deadline = self::rescheduleDeadline($booking);
+
+        return $deadline !== null && now()->lessThan($deadline);
+    }
+
+    public static function rescheduleDeadline(Booking $booking, ?BookingTimeRange $range = null): ?CarbonImmutable
+    {
         $tenant = $booking->tenant;
-        if (! $tenant) {
-            return false;
+        if (! $tenant instanceof Tenant) {
+            return null;
         }
 
-        $rescheduleBeforeHours = $tenant->reschedule_before_hours ?? 24;
-        $bookingDateStr = $booking->tanggalbooking instanceof Carbon
-            ? $booking->tanggalbooking->toDateString()
-            : Carbon::parse($booking->tanggalbooking)->toDateString();
-        $bookingDateTime = Carbon::parse($bookingDateStr.' '.$booking->jam);
+        $slot = $booking->schedule;
+        $range ??= BookingTimeRange::forBooking($booking, $slot instanceof Schedule ? $slot : null);
 
-        return now()->addHours($rescheduleBeforeHours)->lessThan($bookingDateTime);
+        return $range->start->subHours($tenant->reschedule_before_hours ?? 24);
     }
 }

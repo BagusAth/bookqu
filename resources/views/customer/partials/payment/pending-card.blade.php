@@ -112,7 +112,7 @@
                                     <span class="text-[#64748B] text-xs block">Tanggal &amp; Waktu</span>
                                     <strong class="text-[#0F172A] font-semibold">
                                         {{ \Carbon\Carbon::parse($bItem->tanggalbooking)->translatedFormat('d M Y') }},
-                                        <span class="font-mono text-[#4F46E5]">{{ isset($sessionRanges[$bItem->id]) ? $sessionRanges[$bItem->id]->label() : substr((string) $bItem->jam, 0, 5) }}</span> WIB
+                                        <span class="font-mono text-[#4F46E5]">{{ $sessionRanges[$bItem->id]->label() }}</span> WIB
                                     </strong>
                                 </div>
                             </div>
@@ -122,17 +122,17 @@
             @endif
         </div>
 
-        {{-- 4. Secondary Metadata: Order ID & Status --}}
+        {{-- 4. Secondary Metadata: Nomor pesanan & Status --}}
         <div class="pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
             <div class="min-w-0">
-                <span class="text-xs font-semibold uppercase tracking-wider text-[#64748B] block mb-1">Order ID</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-[#64748B] block mb-1">Nomor pesanan</span>
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="font-mono text-sm font-bold text-[#0F172A] break-all">{{ $payment->order_id }}</span>
                     <button
                         type="button"
                         @click="navigator.clipboard.writeText('{{ $payment->order_id }}'); copied = true; setTimeout(() => copied = false, 2000)"
                         class="inline-flex items-center gap-1 rounded-lg bg-slate-100 hover:bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-[#475569] transition-colors cursor-pointer"
-                        title="Salin Order ID"
+                        title="Salin Nomor pesanan"
                     >
                         <svg x-show="!copied" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />

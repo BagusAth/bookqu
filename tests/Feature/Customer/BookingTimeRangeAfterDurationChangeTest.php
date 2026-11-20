@@ -8,7 +8,10 @@ use App\Actions\Booking\CreateBooking;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Actions\Subscription\CreateTrialSubscription;
 use App\Domain\CustomerAccess\AccessProfile;
+use App\Mail\BookingCancelledMail;
+use App\Mail\BookingConfirmedMail;
 use App\Mail\BookingGroupInvoiceMail;
+use App\Mail\BookingRescheduledMail;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
@@ -56,19 +59,26 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
     {
         [$payment, $bookings] = $this->paidGroup([['14:00:00', '14:59:00']]);
         $booking = $bookings[0];
+        $booking->update(['jam' => '17:32:00']);
         $this->service->update(['durasi' => 90]);
 
         $show = $this->grantCustomerAccess($booking)->get('/manage/'.$booking->booking_code.'?token='.$booking->cancellation_token)->assertOk();
         $show->assertSee('14:00 – 15:00', false)
             ->assertSee(str_replace('-', '', $this->date).'T140000/'.str_replace('-', '', $this->date).'T150000', false)
             ->assertSee('60 menit')
+            ->assertSee('03 Nov 2026, 14:00')
+            ->assertDontSee('17:32')
             ->assertDontSee('15:30')
             ->assertDontSee('90 menit');
 
         $this->grantCustomerAccess($booking)->get('/manage/'.$booking->booking_code.'/invoice?token='.$booking->cancellation_token)
             ->assertOk()
+            ->assertSee('14:00 – 15:00', false)
             ->assertSee('60 menit')
             ->assertDontSee('90 menit');
+
+        $this->get(route('booking.manage.reschedule.show', $booking->booking_code))->assertOk()
+            ->assertSee('Pukul 14:00 – 15:00 WIB', false)->assertDontSee('17:32');
 
         $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice')
             ->assertOk()
@@ -76,11 +86,23 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
             ->assertSee(str_replace('-', '', $this->date).'T140000/'.str_replace('-', '', $this->date).'T150000', false)
             ->assertSee('60 menit')
             ->assertDontSee('15:30');
+
+        $this->travelTo(Carbon::parse('2026-11-03 15:00:00', 'Asia/Jakarta'));
+        $this->grantCustomerAccess($booking)->get(route('booking.manage.reschedule.show', $booking->booking_code))
+            ->assertRedirect(route('booking.manage', $booking->booking_code))->assertSessionHasErrors('reschedule');
+
+        $manageUrl = 'https://example.test/manage';
+        foreach ([new BookingConfirmedMail($booking, $manageUrl), new BookingRescheduledMail($booking, $manageUrl), new BookingCancelledMail($booking)] as $mail) {
+            $html = $mail->render();
+            $this->assertStringContainsString('14:00 – 15:00 WIB', $html);
+            $this->assertStringNotContainsString('17:32', $html);
+        }
     }
 
     public function test_group_pages_and_mail_list_each_session_from_its_slot(): void
     {
         [$payment, $bookings] = $this->paidGroup([['14:00:00', '14:59:00'], ['15:00:00', '15:59:00']]);
+        $bookings[1]->update(['jam' => '17:32:00']);
         $this->service->update(['durasi' => 90]);
         $day = str_replace('-', '', $this->date);
 

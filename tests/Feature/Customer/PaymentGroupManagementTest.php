@@ -190,7 +190,7 @@ class PaymentGroupManagementTest extends TestCase
         $response->assertSee($payment->order_id);
         $response->assertSee('10:00');
         $response->assertSee('11:00');
-        $response->assertSee('Multi-Slot');
+        $response->assertSee('2 sesi');
     }
 
     public function test_payment_management_invalid_token_returns_403(): void

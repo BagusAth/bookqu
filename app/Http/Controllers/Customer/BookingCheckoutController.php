@@ -231,7 +231,7 @@ final class BookingCheckoutController extends StorefrontBookingController
         // Handle slot conflict or quota error
         if (isset($result['error'])) {
             if (! empty($result['snap_error'])) {
-                return back()->with('error', $result['error']);
+                return back()->with('error', $result['error'])->withInput($request->except('checkout_fingerprint'));
             }
             if (isset($result['quota_error'])) {
                 return CustomerBookingRoutes::route('customer.booking.date', $slug_usaha)
