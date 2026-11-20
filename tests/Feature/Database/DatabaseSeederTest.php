@@ -72,8 +72,9 @@ class DatabaseSeederTest extends TestCase
             $this->assertSame((int) Voucher::withoutGlobalScopes()->where('idtenant', $tenant->id)->sum('used_count'), $figures['uses'], $tenant->slug);
             $this->assertGreaterThan(0, $figures['uses'], $tenant->slug);
 
-            foreach (Asset::withoutGlobalScopes()->where('idtenant', $tenant->id)->pluck('file_path') as $path) {
-                Storage::disk('public')->assertExists($path);
+            foreach (Asset::withoutGlobalScopes()->where('idtenant', $tenant->id)->get(['file_path', 'mime_type']) as $asset) {
+                Storage::disk('public')->assertExists($asset->file_path);
+                $this->assertStringStartsWith('image/', (string) $asset->mime_type, 'the gallery holds images only');
             }
         }
     }

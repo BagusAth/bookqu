@@ -242,30 +242,23 @@ class BramaStudioSeeder extends Seeder
     }
 
     /**
-     * Write a small stand-in file for a seeded asset so its picture or download works (T-22).
+     * Write a plain-colour stand-in image for a seeded gallery asset so its picture loads (T-22).
+     * The gallery holds images only (FR-ASSET-005), so every seeded asset is a JPEG or PNG.
      */
     protected function ensurePlaceholderFile(string $path, string $mime, ?string $dimensions): void
     {
         $disk = Storage::disk('public');
-        if ($disk->exists($path)) {
+        if ($disk->exists($path) || ! function_exists('imagecreatetruecolor')) {
             return;
         }
 
-        if (str_starts_with($mime, 'image/') && function_exists('imagecreatetruecolor')) {
-            [$width, $height] = array_map('intval', explode('x', $dimensions ?: '600x400'));
-            $image = imagecreatetruecolor(max(1, $width), max(1, $height));
-            imagefill($image, 0, 0, (int) imagecolorallocate($image, 56, 33, 134));
-            ob_start();
-            $mime === 'image/png' ? imagepng($image) : imagejpeg($image, null, 80);
-            $disk->put($path, (string) ob_get_clean());
-            imagedestroy($image);
-
-            return;
-        }
-
-        $disk->put($path, $mime === 'application/pdf'
-            ? "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n"
-            : 'BookQu demo file');
+        [$width, $height] = array_map('intval', explode('x', $dimensions ?: '600x400'));
+        $image = imagecreatetruecolor(max(1, $width), max(1, $height));
+        imagefill($image, 0, 0, (int) imagecolorallocate($image, 56, 33, 134));
+        ob_start();
+        $mime === 'image/png' ? imagepng($image) : imagejpeg($image, null, 80);
+        $disk->put($path, (string) ob_get_clean());
+        imagedestroy($image);
     }
 
     /**
@@ -724,7 +717,7 @@ class BramaStudioSeeder extends Seeder
         // ── 12. Dummy Assets ─────────────────────────────────────────────────
         $dummyAssets = [
             ['title' => 'Logo Brama Digital Studio HD', 'category' => 'logo', 'file_path' => 'assets/brama-logo.png', 'mime_type' => 'image/png', 'file_size' => 245000, 'dimensions' => '512x512'],
-            ['title' => 'Brosur & Ratecard Studio 2026', 'category' => 'general', 'file_path' => 'assets/ratecard-2026.pdf', 'mime_type' => 'application/pdf', 'file_size' => 1250000, 'dimensions' => null],
+            ['title' => 'Ratecard Studio 2026', 'category' => 'general', 'file_path' => 'assets/ratecard-2026.jpg', 'mime_type' => 'image/jpeg', 'file_size' => 380000, 'dimensions' => '1080x1350'],
             ['title' => 'Banner Promo Happy Hour.jpg', 'category' => 'cover', 'file_path' => 'assets/banner-promo.jpg', 'mime_type' => 'image/jpeg', 'file_size' => 450000, 'dimensions' => '1200x630'],
         ];
         foreach ($dummyAssets as $da) {
