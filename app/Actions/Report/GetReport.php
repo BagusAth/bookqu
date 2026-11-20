@@ -554,12 +554,7 @@ class GetReport
                 $perHour[$hour] += $count;
             }
         }
-        // FR-VOUCHER-006: the quietest day and hour among those that had slots, to suggest a promo.
-        $slotDays = $slots->map(fn (Schedule $slot): int => CarbonImmutable::parse($slot->tanggal)->dayOfWeekIso)->unique()->all();
-        $quietDays = array_intersect_key($perDay, array_flip($slotDays));
-        asort($quietDays);
-        $quietHours = $perHour;
-        asort($quietHours);
+        $quiet = $this->quietestCell($slots);
         arsort($perDay);
         arsort($perHour);
 
@@ -578,9 +573,43 @@ class GetReport
             ],
             'busiestDay' => $booked > 0 ? self::DAYS[array_key_first($perDay)] : null,
             'busiestHour' => $booked > 0 ? sprintf('%02d.00', array_key_first($perHour)) : null,
-            'quietestDay' => $quietDays !== [] ? self::DAYS[array_key_first($quietDays)] : null,
-            'quietestHour' => $quietHours !== [] ? sprintf('%02d.00', array_key_first($quietHours)) : null,
+            'quietestDay' => $quiet !== null ? self::DAYS[$quiet['day']] : null,
+            'quietestHour' => $quiet !== null ? sprintf('%02d.00', $quiet['hour']) : null,
         ];
+    }
+
+    /**
+     * The weekday and start hour whose slots filled least (FR-VOUCHER-006, quiet-hour promo hint,
+     * T-07). Day and hour are chosen together, only among slots that were open and have already
+     * started, so an hour without slots or a future slot nobody could book yet is never suggested.
+     * Ties go to the cell with more seats on offer, then to the earlier day and hour.
+     *
+     * @param  Collection<int, Schedule>  $slots
+     * @return array{day: int, hour: int}|null
+     */
+    private function quietestCell(Collection $slots): ?array
+    {
+        $now = CarbonImmutable::now();
+        $cells = [];
+        foreach ($slots as $slot) {
+            $date = CarbonImmutable::parse($slot->tanggal);
+            $start = $date->setTimeFromTimeString(substr((string) $slot->jam_mulai, 0, 5));
+            if ($slot->status !== 'tersedia' || $start->gt($now)) {
+                continue;
+            }
+            $key = $date->dayOfWeekIso.'-'.(int) substr((string) $slot->jam_mulai, 0, 2);
+            $cells[$key] ??= ['day' => $date->dayOfWeekIso, 'hour' => (int) substr((string) $slot->jam_mulai, 0, 2), 'taken' => 0, 'capacity' => 0];
+            $cells[$key]['taken'] += (int) $slot->getAttribute('seats_taken');
+            $cells[$key]['capacity'] += max(1, (int) $slot->getAttribute('kapasitas'));
+        }
+        if ($cells === []) {
+            return null;
+        }
+
+        usort($cells, fn (array $a, array $b): int => [$a['taken'] / $a['capacity'], -$a['capacity'], $a['day'], $a['hour']]
+            <=> [$b['taken'] / $b['capacity'], -$b['capacity'], $b['day'], $b['hour']]);
+
+        return ['day' => $cells[0]['day'], 'hour' => $cells[0]['hour']];
     }
 
     /**

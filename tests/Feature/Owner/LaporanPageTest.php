@@ -395,6 +395,28 @@ class LaporanPageTest extends TestCase
         $this->assertSame('Pendapatan naik dan jumlah booking naik dibanding periode sebelumnya.', $summary['conclusion']);
     }
 
+    public function test_the_quiet_hour_hint_names_a_day_and_hour_that_had_open_slots_already(): void
+    {
+        $this->photo->update(['kapasitas' => 1]);
+        $this->booking($this->photo, '2026-11-16');
+        $this->booking($this->photo, '2026-11-17');
+        $slot = fn (string $date, string $start, string $status = 'tersedia') => Schedule::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->photo->id, 'tanggal' => $date,
+            'jam_mulai' => $start, 'jam_selesai' => substr($start, 0, 2).':59:00', 'status' => $status,
+        ]);
+        $slot('2026-11-16', '12:00:00');
+        $slot('2026-11-18', '14:00:00');
+        $slot('2026-11-17', '07:00:00', 'tidak_tersedia');
+        $slot('2026-11-21', '10:00:00');
+
+        app(TenantContext::class)->setTenantId((int) $this->tenant->id);
+        $period = ReportPeriod::fromQuery(['periode' => 'kustom', 'dari' => '2026-11-16', 'sampai' => '2026-11-22']);
+        $occupancy = app(GetReport::class)->execute($this->tenant, $period, 'okupansi')['occupancy'];
+
+        $this->assertSame('Sen', $occupancy['quietestDay']);
+        $this->assertSame('12.00', $occupancy['quietestHour']);
+    }
+
     public function test_this_month_trends_compare_up_to_today_with_the_same_days_last_month(): void
     {
         $this->booking($this->photo, '2026-11-10', payment: ['jumlah' => 50000]);
