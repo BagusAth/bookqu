@@ -18,6 +18,7 @@
     --color-bq-primary-hover: #2A1869;    /* Aubergine deep */
     --color-bq-primary-light: #ECE8FA;    /* Lilac mist: selected rows, active tab underlay */
     --color-bq-primary-border: #D6CEF3;
+    --color-bq-on-primary: #FFFFFF;
     --color-bq-accent: #FFB84D;           /* Marigold: "now" and "needs you" only; text on it is ink */
     --color-bq-accent-bg: #FFF1D6;
     --color-bq-ink: #1D1638;
@@ -566,4 +567,43 @@
 .sidebar-scroll::-webkit-scrollbar-thumb {
     background: var(--color-bq-border-strong);
     border-radius: 9999px;
+}
+
+.customer-shell {
+    font-family: var(--bq-customer-font, 'Plus Jakarta Sans'), system-ui, sans-serif;
+}
+
+.customer-shell[data-branded] {
+    --color-bq-primary: var(--bq-primary);
+    --color-bq-primary-hover: var(--bq-primary-hover);
+    --color-bq-primary-light: var(--bq-primary-light);
+    --color-bq-primary-border: var(--bq-primary-border);
+    --color-bq-on-primary: var(--bq-on-primary);
+}
+
+.customer-shell .bq-btn-primary,
+.customer-shell .customer-primary {
+    border-radius: var(--bq-button-radius, var(--radius-bq-control));
+    color: var(--color-bq-on-primary);
+}
+
+.customer-shell .booking-card {
+    border: var(--bq-card-border);
+    box-shadow: var(--bq-card-shadow);
+}
+
+@media print {
+    .customer-shell {
+        background: white;
+        font-family: system-ui, sans-serif;
+    }
+
+    .customer-shell .no-print {
+        display: none;
+    }
+
+    .customer-shell main.booking-shell {
+        max-width: none;
+        padding: 0;
+    }
 }

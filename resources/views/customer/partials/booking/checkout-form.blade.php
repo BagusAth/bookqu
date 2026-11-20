@@ -51,7 +51,7 @@
                     @blur="touched.name = true; validateName()"
                     @input="validateName()"
                     :class="nameError ? 'border-red-400 bg-red-50/30' : (touched.name && !nameError && name ? 'border-emerald-400 bg-emerald-50/20' : 'border-[#CBD5E1] bg-[#F8FAFC]')"
-                    class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
+                    class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-bq-primary focus:bg-white focus:ring-2 focus:ring-bq-primary-light focus:outline-none"
                     value="{{ old('namapelanggan') }}"
                     placeholder="Contoh: Budi Santoso"
                 />
@@ -84,7 +84,7 @@
                     @blur="touched.email = true; validateEmail()"
                     @input="validateEmail()"
                     :class="emailError ? 'border-red-400 bg-red-50/30' : (touched.email && !emailError && email ? 'border-emerald-400 bg-emerald-50/20' : 'border-[#CBD5E1] bg-[#F8FAFC]')"
-                    class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
+                    class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-bq-primary focus:bg-white focus:ring-2 focus:ring-bq-primary-light focus:outline-none"
                     value="{{ old('email') }}"
                     placeholder="Contoh: budi@gmail.com"
                 />
@@ -118,7 +118,7 @@
                     @blur="touched.phone = true; validatePhone()"
                     @input="validatePhone()"
                     :class="phoneError ? 'border-red-400 bg-red-50/30' : (touched.phone && !phoneError && phone ? 'border-emerald-400 bg-emerald-50/20' : 'border-[#CBD5E1] bg-[#F8FAFC]')"
-                    class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
+                    class="w-full rounded-xl border px-4 py-3 text-sm text-[#0F172A] transition focus:border-bq-primary focus:bg-white focus:ring-2 focus:ring-bq-primary-light focus:outline-none"
                     value="{{ old('nomorhp') }}"
                     placeholder="Contoh: 081234567890"
                 />
@@ -146,7 +146,7 @@
                 name="catatan"
                 id="catatan"
                 rows="3"
-                class="w-full rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] px-4 py-3 text-sm text-[#0F172A] transition focus:border-[#4F46E5] focus:bg-white focus:ring-2 focus:ring-[#EEF2FF] focus:outline-none"
+                class="w-full rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] px-4 py-3 text-sm text-[#0F172A] transition focus:border-bq-primary focus:bg-white focus:ring-2 focus:ring-bq-primary-light focus:outline-none"
                 placeholder="Tuliskan catatan khusus atau permintaan tambahan untuk penyedia layanan jika ada..."
             >{{ old('catatan') }}</textarea>
         </div>
@@ -157,7 +157,7 @@
                 <input
                     type="checkbox"
                     id="remember-customer-data"
-                    class="mt-0.5 sm:mt-0 h-4 w-4 rounded border-gray-300 text-[#4F46E5] focus:ring-[#EEF2FF] cursor-pointer"
+                    class="mt-0.5 sm:mt-0 h-4 w-4 rounded border-gray-300 text-bq-primary focus:ring-bq-primary-light cursor-pointer"
                 />
                 <span class="text-xs font-semibold text-[#475569]">
                     Simpan data kontak di perangkat ini untuk pemesanan berikutnya.

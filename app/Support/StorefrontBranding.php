@@ -45,17 +45,32 @@ final class StorefrontBranding
     /**
      * Safe values for the storefront `<style>` block.
      *
-     * @return array{color: string, font: string, buttonStyle: string, buttonRadius: string, cardStyle: string, cardShadow: string, cardBorder: string}
+     * @return array{color: string, hover: string, light: string, border: string, onPrimary: string, font: string, buttonStyle: string, buttonRadius: string, cardStyle: string, cardShadow: string, cardBorder: string}
      */
     public static function for(Tenant $tenant): array
     {
-        $color = is_string($tenant->theme_color) && preg_match(self::COLOR_PATTERN, $tenant->theme_color) === 1 ? strtoupper($tenant->theme_color) : self::DEFAULT_COLOR;
+        $stored = strtolower(trim($tenant->theme_color ?? ''));
+        // Legacy names share the category palette. Unknown values keep the storefront default.
+        $color = strtoupper(match (true) {
+            preg_match(self::COLOR_PATTERN, $stored) === 1 => $stored,
+            in_array($stored, CategoryColor::keys(), true) => CategoryColor::hex($stored),
+            default => self::DEFAULT_COLOR,
+        });
+        [$red, $green, $blue] = self::rgb($color);
+        $luminance = 0.2126 * self::linear($red) + 0.7152 * self::linear($green) + 0.0722 * self::linear($blue);
+        $whiteContrast = 1.05 / ($luminance + 0.05);
+        $darkContrast = ($luminance + 0.05) / 0.05;
+        $useWhite = $whiteContrast >= $darkContrast;
         $font = in_array($tenant->font_family, self::FONTS, true) ? (string) $tenant->font_family : self::DEFAULT_FONT;
         $button = self::buttonStyle($tenant->button_style);
         $card = self::cardStyle($tenant->card_style);
 
         return [
             'color' => $color,
+            'hover' => self::mix($color, $useWhite ? 0 : 255, 0.14),
+            'light' => self::mix($color, 255, 0.90),
+            'border' => self::mix($color, 255, 0.72),
+            'onPrimary' => $useWhite ? '#FFFFFF' : '#000000',
             'font' => $font,
             'buttonStyle' => $button,
             'buttonRadius' => self::BUTTON_STYLES[$button]['radius'],
@@ -63,6 +78,26 @@ final class StorefrontBranding
             'cardShadow' => self::CARD_STYLES[$card]['shadow'],
             'cardBorder' => self::CARD_STYLES[$card]['border'],
         ];
+    }
+
+    /** @return array{int, int, int} */
+    private static function rgb(string $hex): array
+    {
+        return [hexdec(substr($hex, 1, 2)), hexdec(substr($hex, 3, 2)), hexdec(substr($hex, 5, 2))];
+    }
+
+    private static function linear(int $channel): float
+    {
+        $scaled = $channel / 255;
+
+        return $scaled <= 0.04045 ? $scaled / 12.92 : (($scaled + 0.055) / 1.055) ** 2.4;
+    }
+
+    private static function mix(string $color, int $target, float $ratio): string
+    {
+        $mixed = array_map(fn (int $channel): int => (int) round($channel + ($target - $channel) * $ratio), self::rgb($color));
+
+        return sprintf('#%02X%02X%02X', ...$mixed);
     }
 
     public static function buttonStyle(?string $value): string

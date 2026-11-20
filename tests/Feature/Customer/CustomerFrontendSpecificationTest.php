@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Domain\CustomerAccess\AccessProfile;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -85,6 +86,8 @@ class CustomerFrontendSpecificationTest extends TestCase
 
     public function test_program_selection_contains_prescribed_copy_and_affordance(): void
     {
+        app(CreateTrialSubscription::class)->execute($this->tenant);
+
         $response = $this->get('/'.$this->tenant->slug);
 
         $response->assertStatus(200);
@@ -92,6 +95,8 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response->assertSee('Pilih salah satu layanan untuk memulai pemesanan.');
         $response->assertSee('placeholder="Cari layanan..."', false);
         $response->assertSee('Pilih Layanan Ini');
+        $response->assertSee('name="service_id"', false);
+        $response->assertDontSee('cdn.jsdelivr.net/npm/alpinejs');
         $response->assertSee('Foto Wisuda Personal');
         $response->assertSee('Rp 150.000');
     }

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
-    @vite('resources/css/app.css')
+    @vite(['resources/css/app.css', 'resources/js/customer.js'])
     <link rel="stylesheet" href="{{ asset('css/booking-manage.css') }}" />
 </head>
 <body class="bg-slate-50 font-sans text-slate-900 antialiased min-h-screen flex flex-col" x-data="rescheduleManager()" x-init="init()" @pageshow.window="isSubmitting = false" @pagehide.window="isSubmitting = false" @popstate.window="isSubmitting = false">
@@ -529,6 +529,5 @@
             };
         }
     </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 </body>
 </html>

@@ -49,7 +49,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-[#64748B]">Total:</span>
-                        <span class="font-bold text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</span>
+                        <span class="font-bold text-bq-primary">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>

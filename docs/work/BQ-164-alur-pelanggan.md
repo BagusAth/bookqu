@@ -437,7 +437,7 @@ See session 7. Do not edit `docs/requirements.md` or `docs/product.md`: no requi
 ## Evidence (fill when done)
 
 - Session 1: PL-01, PL-02, PL-03, PL-09, PL-11, PL-13. PHP 8.4.25: Pint, Vite build, PHPStan and related PHPUnit checks passed (90 tests, 690 assertions). Full SQLite suite: 1,021 passed, 6,747 assertions. Browser: owner design reference consulted; the storefront, checkout, single and group management, reschedule and both management invoices fit 375, 768, 1024 and 1366 px with the default and light tenant themes, with no console errors on the final pass. Local checkout reproduced the SingaPay failure and retained the customer's email. The calendar reported zero available sessions on a higher-price-only date, and the empty slot response showed the server message and WhatsApp recovery in the browser. The browser used the local store and the documented test management grant.
-- Session 2:
+- Session 2: PL-05, PL-06, PL-07, PL-14, PL-15, PL-16, PL-31, PL-32. Pint, Vite and PHPStan passed. The related suite passed (74 tests, 662 assertions). The full SQLite run had 1,024 passes and two presentation assertion failures. The assertions now check the bundled Alpine asset and JSON-escaped route values, and the targeted rerun passed. At 375, 768, 1024 and 1366 px the storefront, schedule, access recovery, and both live 404 variants fit in default and light themes. The 403, 419, 500 and 503 templates were rendered in Chromium at the same widths. Service selection worked with JavaScript disabled.
 - Session 3:
 - Session 4:
 - Session 5:
@@ -447,3 +447,4 @@ See session 7. Do not edit `docs/requirements.md` or `docs/product.md`: no requi
 ## Open findings
 
 - Diputuskan agen, perlu review Tech Lead: PL-11 uses the customer option of the shared payment label formatter for “Lunas”. The existing owner label is “Berhasil”.
+- Diputuskan agen, perlu review Tech Lead: an invalid access link has no verified business identity. Recovery points back to the original confirmation email and offers the public BookQu home.

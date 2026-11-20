@@ -186,8 +186,9 @@ class BookingFlowTest extends TestCase
         $response->assertSee('Sistem memantau pembayaran Anda secara otomatis');
         $response->assertSee('BQ-TEST-12345');
         // Ensure the generated route contains the order_id, not a raw numerical id
-        $response->assertSee('/my-business/booking/payment/BQ-TEST-12345/callback');
-        $response->assertSee('/my-business/booking/payment/BQ-TEST-12345/check-status');
+        $script = str_replace('\\/', '/', (string) $response->getContent());
+        $this->assertStringContainsString('/my-business/booking/payment/BQ-TEST-12345/callback', $script);
+        $this->assertStringContainsString('/my-business/booking/payment/BQ-TEST-12345/check-status', $script);
     }
 
     public function test_customer_check_payment_status_fast_path_when_already_paid(): void

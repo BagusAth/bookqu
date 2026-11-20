@@ -17,7 +17,7 @@
         </div>
         <div class="flex justify-between">
             <span class="text-[#64748B]">Total:</span>
-            <span class="font-bold text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</span>
+            <span class="font-bold text-bq-primary">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</span>
         </div>
     </div>
 
@@ -26,14 +26,14 @@
             <button
                 type="button"
                 onclick="openSnapPayment()"
-                class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#4338CA] transition-colors cursor-pointer"
+                class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl bg-bq-primary customer-primary px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-bq-primary-hover transition-colors cursor-pointer"
             >
                 Coba Bayar Lagi
             </button>
         @else
             <a
                 href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}"
-                class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#4338CA] transition-colors"
+                class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl bg-bq-primary customer-primary px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-bq-primary-hover transition-colors"
             >
                 Buat Reservasi Baru
             </a>

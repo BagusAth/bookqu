@@ -124,7 +124,6 @@
 @endsection
 
 @section('scripts')
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const inputName = document.getElementById('namapelanggan');

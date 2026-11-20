@@ -10,7 +10,7 @@
         {{-- 1. Total Tagihan & Prominent Countdown (S5.1) --}}
         <div class="text-center pb-6 border-b border-[#F1F5F9]">
             <p class="text-xs font-bold uppercase tracking-wider text-[#64748B] mb-1">Total Tagihan</p>
-            <p class="text-3xl sm:text-4xl font-black text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</p>
+            <p class="text-3xl sm:text-4xl font-black text-bq-primary">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</p>
             
             @php
                 $expiredTime = $payment->expired_at ? \Carbon\Carbon::parse($payment->expired_at)->timezone('Asia/Jakarta') : now('Asia/Jakarta')->addMinutes(15);
@@ -44,15 +44,15 @@
                 <p class="font-bold text-[#0F172A] text-xs mb-2">Panduan Pembayaran Cepat:</p>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div class="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-[#F1F5F9]">
-                        <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white text-[10px] font-bold mt-0.5">1</span>
+                        <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-bq-primary customer-primary text-white text-[10px] font-bold mt-0.5">1</span>
                         <span>Klik <strong>"Bayar Sekarang"</strong></span>
                     </div>
                     <div class="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-[#F1F5F9]">
-                        <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white text-[10px] font-bold mt-0.5">2</span>
+                        <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-bq-primary customer-primary text-white text-[10px] font-bold mt-0.5">2</span>
                         <span>Pilih metode (QRIS, VA, E-Wallet)</span>
                     </div>
                     <div class="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-[#F1F5F9]">
-                        <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white text-[10px] font-bold mt-0.5">3</span>
+                        <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-bq-primary customer-primary text-white text-[10px] font-bold mt-0.5">3</span>
                         <span>Selesai, e-ticket otomatis terbit</span>
                     </div>
                 </div>
@@ -61,7 +61,7 @@
             <button
                 id="pay-button"
                 type="button"
-                class="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#4F46E5] px-6 py-4 text-base font-bold text-white shadow-lg shadow-[#4F46E5]/25 transition-all hover:bg-[#4338CA] hover:shadow-xl hover:shadow-[#4F46E5]/30 active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4F46E5]"
+                class="w-full flex items-center justify-center gap-2.5 rounded-xl bg-bq-primary customer-primary px-6 py-4 text-base font-bold text-white shadow-lg shadow-[#4F46E5]/25 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:shadow-[#4F46E5]/30 active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bq-primary"
             >
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -92,7 +92,7 @@
                     @foreach ($displayBookings as $bItem)
                         <div class="rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
                             <div class="flex items-center gap-2.5">
-                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-bq-primary-light text-bq-primary">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                     </svg>
@@ -103,7 +103,7 @@
                                 </div>
                             </div>
                             <div class="flex items-center sm:justify-end gap-2.5">
-                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-bq-primary-light text-bq-primary">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
@@ -112,7 +112,7 @@
                                     <span class="text-[#64748B] text-xs block">Tanggal &amp; Waktu</span>
                                     <strong class="text-[#0F172A] font-semibold">
                                         {{ \Carbon\Carbon::parse($bItem->tanggalbooking)->translatedFormat('d M Y') }},
-                                        <span class="font-mono text-[#4F46E5]">{{ $sessionRanges[$bItem->id]->label() }}</span> WIB
+                                        <span class="font-mono text-bq-primary">{{ $sessionRanges[$bItem->id]->label() }}</span> WIB
                                     </strong>
                                 </div>
                             </div>

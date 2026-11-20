@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -496,7 +497,7 @@ class ThreeStepBookingFlowTest extends TestCase
         $this->get('/creative-hub-studio/booking/time')->assertRedirect('/creative-hub-studio/booking/schedule');
     }
 
-    public function test_schedule_safely_serializes_alpine_configuration_and_pins_runtime(): void
+    public function test_schedule_safely_serializes_alpine_configuration_and_loads_the_local_bundle(): void
     {
         $this->tenant->update(['slug' => "studio-quote'", 'namabisnis' => 'Studio "Uji"']);
         $this->service->update(['namalayanan' => "Layanan '\" </script><script>window.injected=true</script>"]);
@@ -508,6 +509,7 @@ class ThreeStepBookingFlowTest extends TestCase
         $this->assertStringContainsString('schedulePicker(', $root->getAttribute('x-data'));
         $this->assertStringNotContainsString('</script>', $root->getAttribute('x-data'));
         $response->assertDontSee('<script>window.injected=true</script>', false)
-            ->assertSee('alpinejs@3.15.12/dist/cdn.min.js', false)->assertDontSee('alpinejs@3.x.x', false);
+            ->assertSee(app(Vite::class)->asset('resources/js/customer.js'))
+            ->assertDontSee('cdn.jsdelivr.net/npm/alpinejs', false);
     }
 }

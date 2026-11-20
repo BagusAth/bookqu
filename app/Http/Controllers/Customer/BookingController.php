@@ -53,6 +53,8 @@ final class BookingController extends StorefrontBookingController
             ];
         })->values();
 
+        $serviceImages = $services->mapWithKeys(fn (Service $service) => [$service->id => $service->cover_image_url])->all();
+
         // FR-CATEGORY-006: the public page follows the owner's display order.
         $categories = $services->pluck('category')->filter(fn ($cat) => $cat && $cat->is_active)->unique('id')
             ->sortBy([['sort_order', 'asc'], ['name', 'asc']])->values();
@@ -65,7 +67,7 @@ final class BookingController extends StorefrontBookingController
 
         $tracking = app(GetOwnerIntegrations::class)->storefront($tenant);
 
-        return view('customer.booking.program-selection', compact('tenant', 'services', 'servicesPayload', 'categories', 'pendingCheckout', 'acceptsOnlineBookings', 'landing', 'tracking'));
+        return view('customer.booking.program-selection', compact('tenant', 'services', 'servicesPayload', 'serviceImages', 'categories', 'pendingCheckout', 'acceptsOnlineBookings', 'landing', 'tracking'));
     }
 
     public function selectProgram(Request $request, string $slug_usaha)

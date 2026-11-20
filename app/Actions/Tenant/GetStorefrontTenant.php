@@ -28,6 +28,11 @@ final class GetStorefrontTenant
         Cache::forget($this->key($tenantId));
     }
 
+    public function knownSlug(string $candidate): ?string
+    {
+        return Tenant::query()->where('slug', $candidate)->value('slug');
+    }
+
     private function key(int $tenantId): string
     {
         return 'tenant:public:v2:'.$tenantId;

@@ -1,10 +1,9 @@
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 <script>
-    const snapToken = @json($payment->snap_token ?? null);
-    const paymentUrl = @json($payment->payment_url ?? null);
-    const callbackUrl = '{{ \App\Support\CustomerBookingRoutes::url("customer.booking.callback", [$tenant->slug, $payment]) }}';
-    const checkStatusUrl = '{{ \App\Support\CustomerBookingRoutes::url("customer.booking.check-status", [$tenant->slug, $payment]) }}';
-    const csrfToken = '{{ csrf_token() }}';
+    const snapToken = @js($payment->snap_token ?? null);
+    const paymentUrl = @js($payment->payment_url ?? null);
+    const callbackUrl = @js(\App\Support\CustomerBookingRoutes::url("customer.booking.callback", [$tenant->slug, $payment]));
+    const checkStatusUrl = @js(\App\Support\CustomerBookingRoutes::url("customer.booking.check-status", [$tenant->slug, $payment]));
+    const csrfToken = @js(csrf_token());
 
     function showInlineFeedback(message, type = 'error') {
         const banner = document.getElementById('inline-feedback-banner');

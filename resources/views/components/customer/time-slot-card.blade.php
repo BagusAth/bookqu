@@ -4,8 +4,8 @@
     type="button"
     class="booking-time-slot relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl border transition-all text-center"
     :class="{
-        'border-[#E2E8F0] bg-white hover:border-[#4F46E5] hover:bg-[#EEF2FF]/40 cursor-pointer shadow-2xs': {{ $slotVar }}.isAvailable && !{{ $slotVar }}.isSelected,
-        'booking-time-slot--selected border-[#4F46E5] bg-[#4F46E5] text-white shadow-md shadow-[#4F46E5]/25': {{ $slotVar }}.isSelected,
+        'border-[#E2E8F0] bg-white hover:border-bq-primary hover:bg-bq-primary-light/40 cursor-pointer shadow-2xs': {{ $slotVar }}.isAvailable && !{{ $slotVar }}.isSelected,
+        'booking-time-slot--selected border-bq-primary bg-bq-primary customer-primary text-white shadow-md shadow-[#4F46E5]/25': {{ $slotVar }}.isSelected,
         'booking-time-slot--disabled border-[#E2E8F0] bg-[#F8FAFC] opacity-60 cursor-not-allowed': {{ $slotVar }}.isDisabled
     }"
     :disabled="{{ $slotVar }}.isDisabled"
@@ -14,7 +14,7 @@
 >
     {{-- Active Checkmark --}}
     <template x-if="{{ $slotVar }}.isSelected">
-        <span class="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#4F46E5]">
+        <span class="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-white text-bq-primary">
             <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -27,7 +27,7 @@
 
     {{-- Slot Price (Section 23) --}}
     <template x-if="{{ $slotVar }}.price_label">
-        <span class="mt-1 text-xs font-semibold" :class="{{ $slotVar }}.isSelected ? 'text-white/90' : 'text-[#4F46E5]'" x-text="{{ $slotVar }}.price_label"></span>
+        <span class="mt-1 text-xs font-semibold" :class="{{ $slotVar }}.isSelected ? 'text-white/90' : 'text-bq-primary'" x-text="{{ $slotVar }}.price_label"></span>
     </template>
 
     {{-- Status Badge --}}

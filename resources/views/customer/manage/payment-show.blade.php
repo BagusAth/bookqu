@@ -16,7 +16,7 @@
         $buttonRadius = $branding['buttonRadius'];
     @endphp
     <link href="https://fonts.googleapis.com/css2?family={{ str_replace(' ', '+', $fontFamily) }}:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
-    @vite('resources/css/app.css')
+    @vite(['resources/css/app.css', 'resources/js/customer.js'])
     <link rel="stylesheet" href="{{ asset('css/booking-manage.css') }}" />
     <style>
         :root {
@@ -336,6 +336,5 @@
         <p>&copy; {{ date('Y') }} {{ $tenant->namabisnis }} — Didukung oleh BookQu Platform.</p>
     </footer>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 </body>
 </html>

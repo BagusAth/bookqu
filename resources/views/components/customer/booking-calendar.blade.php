@@ -38,7 +38,7 @@
         <span>Rab</span>
         <span>Kam</span>
         <span>Jum</span>
-        <span class="text-[#4F46E5]">Sab</span>
+        <span class="text-bq-primary">Sab</span>
         <span class="text-[#EF4444]">Min</span>
     </div>
 
@@ -50,10 +50,10 @@
                 class="booking-calendar__cell min-h-[50px] sm:min-h-[64px] p-1 sm:p-2 rounded-xl flex flex-col items-center justify-center transition-all relative select-none"
                 :class="{
                     'opacity-25 pointer-events-none': !day.isCurrentMonth,
-                    'booking-calendar__cell--available hover:bg-[#EEF2FF] hover:border-[#C7D2FE] cursor-pointer': day.isAvailable && !day.isSelected,
-                    'booking-calendar__cell--selected bg-[#4F46E5] text-white shadow-md font-bold': day.isSelected,
+                    'booking-calendar__cell--available hover:bg-bq-primary-light hover:border-bq-primary-border cursor-pointer': day.isAvailable && !day.isSelected,
+                    'booking-calendar__cell--selected bg-bq-primary customer-primary text-white shadow-md font-bold': day.isSelected,
                     'booking-calendar__cell--disabled opacity-35 cursor-not-allowed': day.isDisabled && day.isCurrentMonth,
-                    'border border-[#4F46E5] font-bold': day.isToday && !day.isSelected,
+                    'border border-bq-primary font-bold': day.isToday && !day.isSelected,
                     'bg-red-50 text-red-600 cursor-not-allowed': day.isFull && day.isCurrentMonth,
                     'bg-slate-50 text-slate-400 cursor-not-allowed': day.isBlocked && day.isCurrentMonth
                 }"
@@ -66,7 +66,7 @@
 
                 {{-- Hari Ini Indicator (S2.3) --}}
                 <template x-if="day.isToday && !day.isSelected">
-                    <span class="text-[8px] font-extrabold text-[#4F46E5] uppercase tracking-wider leading-none mt-0.5">
+                    <span class="text-[8px] font-extrabold text-bq-primary uppercase tracking-wider leading-none mt-0.5">
                         Hari Ini
                     </span>
                 </template>

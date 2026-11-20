@@ -51,6 +51,7 @@ class TenantMiddleware
             }
             if ($resolvedTenant && ! $isOwnerRoute) {
                 app(TenantContext::class)->setTenantId($resolvedTenant->id);
+                $request->attributes->set('storefront_tenant', $resolvedTenant);
 
                 return $next($request);
             }

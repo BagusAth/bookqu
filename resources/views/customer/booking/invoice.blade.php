@@ -45,7 +45,7 @@
     <div class="text-center mb-8 relative overflow-hidden py-3">
         {{-- Decorative Confetti Particles --}}
         <div class="no-print absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-            <span class="confetti-dot bg-[#4F46E5]" style="left: 12%; top: 5px; animation-delay: 0.1s;"></span>
+            <span class="confetti-dot bg-bq-primary" style="left: 12%; top: 5px; animation-delay: 0.1s;"></span>
             <span class="confetti-dot bg-emerald-500" style="left: 26%; top: 15px; animation-delay: 0.35s;"></span>
             <span class="confetti-dot bg-amber-400" style="left: 45%; top: 0px; animation-delay: 0.2s;"></span>
             <span class="confetti-dot bg-indigo-400" style="left: 65%; top: 12px; animation-delay: 0.4s;"></span>
@@ -90,14 +90,14 @@
             <div>
                 <span class="text-[#64748B] block text-[11px] font-semibold uppercase tracking-wider mb-1">Kode Booking</span>
                 <div class="flex items-center gap-2">
-                    <span class="font-mono text-base font-bold text-[#4F46E5] tracking-wide break-all">
+                    <span class="font-mono text-base font-bold text-bq-primary tracking-wide break-all">
                         {{ $bookingCodes ?: '-' }}
                     </span>
                     @if(!empty($bookingCodes))
                         <button
                             type="button"
                             @click="navigator.clipboard.writeText('{{ $bookingCodes }}'); copiedCode = true; setTimeout(() => copiedCode = false, 2000)"
-                            class="inline-flex items-center gap-1 rounded-lg bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#4F46E5] px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer shrink-0"
+                            class="inline-flex items-center gap-1 rounded-lg bg-bq-primary-light hover:bg-[#E0E7FF] text-bq-primary px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer shrink-0"
                             :title="copiedCode ? 'Tersalin!' : 'Salin Kode Booking'"
                         >
                             <svg x-show="!copiedCode" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -157,7 +157,7 @@
                         <span class="text-[#64748B]">Jam Sesi ({{ $allBookings->count() }} sesi)</span>
                         <div class="text-right">
                             @foreach ($allBookings as $bItem)
-                                <span class="font-bold text-[#4F46E5] block">{{ $sessionRanges[$bItem->id]->label() }} WIB @if($allBookings->count() > 1)<span class="text-xs text-[#64748B] font-mono">({{ $bItem->booking_code }})</span>@endif @isset($invoiceSlotAmounts[$bItem->id]) · {{ $invoiceSlotAmounts[$bItem->id] }} @endisset</span>
+                                <span class="font-bold text-bq-primary block">{{ $sessionRanges[$bItem->id]->label() }} WIB @if($allBookings->count() > 1)<span class="text-xs text-[#64748B] font-mono">({{ $bItem->booking_code }})</span>@endif @isset($invoiceSlotAmounts[$bItem->id]) · {{ $invoiceSlotAmounts[$bItem->id] }} @endisset</span>
                             @endforeach
                         </div>
                     </div>
@@ -206,7 +206,7 @@
                     </div>
                     <div class="flex justify-between items-center pt-3 border-t border-[#E2E8F0]">
                         <span class="text-sm font-bold text-[#0F172A]">Total Pembayaran</span>
-                        <span class="text-lg font-black text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</span>
+                        <span class="text-lg font-black text-bq-primary">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
@@ -222,9 +222,9 @@
                 href="{{ $gCalUrl }}"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-xs font-semibold text-[#0F172A] hover:border-[#4F46E5] hover:bg-white transition-all shadow-2xs group"
+                class="flex items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-xs font-semibold text-[#0F172A] hover:border-bq-primary hover:bg-white transition-all shadow-2xs group"
             >
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5] group-hover:scale-105 transition-transform shrink-0">
+                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-bq-primary-light text-bq-primary group-hover:scale-105 transition-transform shrink-0">
                     <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 4h-2v-2h2v2zm4 0h-2v-2h2v2z"/>
                     </svg>
@@ -289,7 +289,7 @@
 
         <a
                             href="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) }}"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] px-6 py-3 text-sm font-bold text-white shadow-md shadow-[#4F46E5]/20 transition active:scale-98"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-bq-primary customer-primary hover:bg-bq-primary-hover px-6 py-3 text-sm font-bold text-white shadow-md shadow-[#4F46E5]/20 transition active:scale-98"
         >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -312,5 +312,4 @@
 @endsection
 
 @section('scripts')
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 @endsection

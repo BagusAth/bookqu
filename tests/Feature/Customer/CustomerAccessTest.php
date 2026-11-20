@@ -280,11 +280,27 @@ class CustomerAccessTest extends TestCase
     public function test_bootstrap_has_no_external_resources_and_rejects_invalid_attempts_with_rate_limit(): void
     {
         $this->get('/access')->assertOk()->assertSee('history.replaceState', false)
+            ->assertSee('Membuka reservasi Anda…')->assertSee('Tautan tidak berlaku atau sudah kedaluwarsa.')
             ->assertDontSee('src=', false)->assertHeader('X-Robots-Tag', 'noindex, nofollow');
         for ($attempt = 0; $attempt < 15; $attempt++) {
             $this->postJson('/access', ['credential' => 'invalid'])->assertNotFound();
         }
         $this->postJson('/access', ['credential' => 'invalid'])->assertTooManyRequests();
+    }
+
+    public function test_missing_storefront_and_private_management_pages_use_the_indonesian_error_layout(): void
+    {
+        [, $booking] = $this->reservation();
+        $existingCode = $booking->booking_code;
+
+        $this->get('/bq164-unknown-storefront')->assertNotFound()->assertSeeText('Halaman tidak tersedia.');
+        $unknown = $this->get('/manage/BQ164-UNKNOWN')->assertNotFound()
+            ->assertSeeText('Halaman tidak tersedia.')->assertDontSee('BQ164-UNKNOWN');
+        $known = $this->get('/manage/'.$existingCode)->assertNotFound()->assertDontSee($existingCode);
+
+        $this->assertSame($unknown->getContent(), $known->getContent());
+        $this->get('/'.$booking->tenant->slug.'/missing-page')->assertNotFound()
+            ->assertSee('href="'.config('app.url').'/'.$booking->tenant->slug.'"', false);
     }
 
     public function test_custom_domain_cannot_host_private_credentials_or_resume_a_canonical_session(): void

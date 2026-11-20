@@ -89,26 +89,26 @@
                                     @click="selectDate(@js($d['date']))"
                                     {{ !$d['is_available'] ? 'disabled' : '' }}
                                     :class="{
-                                        'border-2 border-[#4F46E5] bg-[#EEF2FF] text-[#4F46E5] shadow-xs font-bold scale-[1.03]': selectedDate === @js($d['date']),
-                                        'border border-slate-200/70 bg-white text-slate-700 hover:border-[#4F46E5]/40 hover:bg-slate-50': selectedDate !== @js($d['date']) && @js($d['is_available']),
+                                        'border-2 border-bq-primary bg-bq-primary-light text-bq-primary shadow-xs font-bold scale-[1.03]': selectedDate === @js($d['date']),
+                                        'border border-slate-200/70 bg-white text-slate-700 hover:border-bq-primary/40 hover:bg-slate-50': selectedDate !== @js($d['date']) && @js($d['is_available']),
                                         'border border-transparent bg-slate-50/60 text-slate-300 cursor-not-allowed opacity-40': @js(!$d['is_available'])
                                     }"
                                     class="flex flex-col items-center justify-center rounded-2xl w-14 sm:w-16 h-18 sm:h-20 shrink-0 transition-all duration-150 cursor-pointer text-center relative focus:outline-none">
 
                                 {{-- Day Name (Mon, Tue, Wed...) --}}
                                 <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider"
-                                      :class="selectedDate === @js($d['date']) ? 'text-[#4F46E5]' : (@js($d['is_available']) ? 'text-slate-500' : 'text-slate-300')">
+                                      :class="selectedDate === @js($d['date']) ? 'text-bq-primary' : (@js($d['is_available']) ? 'text-slate-500' : 'text-slate-300')">
                                     {{ $d['day_label'] }}
                                 </span>
 
                                 {{-- Day Number (13, 14, 15...) --}}
                                 <span class="text-lg sm:text-xl font-extrabold mt-0.5 leading-none"
-                                      :class="selectedDate === @js($d['date']) ? 'text-[#4F46E5]' : (@js($d['is_available']) ? 'text-[#0F172A]' : 'text-slate-300')">
+                                      :class="selectedDate === @js($d['date']) ? 'text-bq-primary' : (@js($d['is_available']) ? 'text-[#0F172A]' : 'text-slate-300')">
                                     {{ $d['day_number'] }}
                                 </span>
 
                                 {{-- Active Indicator Dot --}}
-                                <span x-show="selectedDate === @js($d['date'])" class="w-1.5 h-1.5 rounded-full bg-[#4F46E5] mt-1.5"></span>
+                                <span x-show="selectedDate === @js($d['date'])" class="w-1.5 h-1.5 rounded-full bg-bq-primary mt-1.5"></span>
                             </button>
                         @endforeach
                     </div>
@@ -127,7 +127,7 @@
                 {{-- Multi-Session Guidance Pill --}}
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div class="inline-flex items-center gap-2 text-xs font-semibold text-indigo-700 bg-indigo-50/80 border border-indigo-200/60 rounded-xl px-3.5 py-2">
-                        <svg class="w-4 h-4 text-[#4F46E5] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <svg class="w-4 h-4 text-bq-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span>Anda dapat memilih <strong>lebih dari 1 sesi berurutan</strong> (misal: 2 jam atau lebih).</span>
@@ -174,8 +174,8 @@
                                         @click="slot.is_available ? toggleSlot(slot) : null"
                                         :disabled="!slot.is_available"
                                         :class="{
-                                            'bg-[#4F46E5] border-2 border-[#4F46E5] text-white shadow-md shadow-indigo-200/60 scale-[1.02]': isSlotSelected(slot),
-                                            'bg-white border-1.5 border-slate-200 text-[#0F172A] hover:border-[#4F46E5]/60 hover:bg-indigo-50/20 active:scale-[0.98]': !isSlotSelected(slot) && slot.is_available,
+                                            'bg-bq-primary customer-primary border-2 border-bq-primary text-white shadow-md shadow-indigo-200/60 scale-[1.02]': isSlotSelected(slot),
+                                            'bg-white border-1.5 border-slate-200 text-[#0F172A] hover:border-bq-primary/60 hover:bg-indigo-50/20 active:scale-[0.98]': !isSlotSelected(slot) && slot.is_available,
                                             'bg-[#F8FAFC] border border-slate-200/80 text-slate-400 cursor-not-allowed opacity-60': !slot.is_available
                                         }"
                                         class="flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl transition-all duration-150 text-center select-none cursor-pointer focus:outline-none relative">
@@ -237,8 +237,8 @@
                                         @click="slot.is_available ? toggleSlot(slot) : null"
                                         :disabled="!slot.is_available"
                                         :class="{
-                                            'bg-[#4F46E5] border-2 border-[#4F46E5] text-white shadow-md shadow-indigo-200/60 scale-[1.02]': isSlotSelected(slot),
-                                            'bg-white border-1.5 border-slate-200 text-[#0F172A] hover:border-[#4F46E5]/60 hover:bg-indigo-50/20 active:scale-[0.98]': !isSlotSelected(slot) && slot.is_available,
+                                            'bg-bq-primary customer-primary border-2 border-bq-primary text-white shadow-md shadow-indigo-200/60 scale-[1.02]': isSlotSelected(slot),
+                                            'bg-white border-1.5 border-slate-200 text-[#0F172A] hover:border-bq-primary/60 hover:bg-indigo-50/20 active:scale-[0.98]': !isSlotSelected(slot) && slot.is_available,
                                             'bg-[#F8FAFC] border border-slate-200/80 text-slate-400 cursor-not-allowed opacity-60': !slot.is_available
                                         }"
                                         class="flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl transition-all duration-150 text-center select-none cursor-pointer focus:outline-none relative">
@@ -293,8 +293,8 @@
                                         @click="slot.is_available ? toggleSlot(slot) : null"
                                         :disabled="!slot.is_available"
                                         :class="{
-                                            'bg-[#4F46E5] border-2 border-[#4F46E5] text-white shadow-md shadow-indigo-200/60 scale-[1.02]': isSlotSelected(slot),
-                                            'bg-white border-1.5 border-slate-200 text-[#0F172A] hover:border-[#4F46E5]/60 hover:bg-indigo-50/20 active:scale-[0.98]': !isSlotSelected(slot) && slot.is_available,
+                                            'bg-bq-primary customer-primary border-2 border-bq-primary text-white shadow-md shadow-indigo-200/60 scale-[1.02]': isSlotSelected(slot),
+                                            'bg-white border-1.5 border-slate-200 text-[#0F172A] hover:border-bq-primary/60 hover:bg-indigo-50/20 active:scale-[0.98]': !isSlotSelected(slot) && slot.is_available,
                                             'bg-[#F8FAFC] border border-slate-200/80 text-slate-400 cursor-not-allowed opacity-60': !slot.is_available
                                         }"
                                         class="flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl transition-all duration-150 text-center select-none cursor-pointer focus:outline-none relative">
@@ -407,10 +407,10 @@
                                 <template x-for="(s, idx) in sortedSelectedSlots" :key="s.id">
                                     <div class="flex items-center justify-between text-xs bg-white/70 rounded-xl px-3 py-2 border border-slate-200/60 shadow-2xs">
                                         <div class="flex items-center gap-2 min-w-0">
-                                            <span class="w-4 h-4 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[10px] font-bold shrink-0" x-text="idx + 1"></span>
+                                            <span class="w-4 h-4 rounded-full bg-bq-primary customer-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0" x-text="idx + 1"></span>
                                             <span class="font-bold text-slate-800 truncate" x-text="s.time_range || (s.time + ' – ' + s.end_time)"></span>
                                         </div>
-                                        <span class="font-extrabold text-[#4F46E5] shrink-0" x-text="s.price_label || formatRupiah(s.price)"></span>
+                                        <span class="font-extrabold text-bq-primary shrink-0" x-text="s.price_label || formatRupiah(s.price)"></span>
                                     </div>
                                 </template>
                             </div>
@@ -441,7 +441,7 @@
                         {{-- Total Row --}}
                         <div class="pt-2 flex items-baseline justify-between">
                             <span class="text-sm sm:text-base font-bold text-[#0F172A]">Total</span>
-                            <span class="text-xl sm:text-2xl font-black text-[#4F46E5] tracking-tight" x-text="formatRupiah(total)">
+                            <span class="text-xl sm:text-2xl font-black text-bq-primary tracking-tight" x-text="formatRupiah(total)">
                                 {{ $servicePayload['price_label'] }}
                             </span>
                         </div>
@@ -453,7 +453,7 @@
                                 id="schedule-checkout-btn"
                                 :disabled="selectedSlots.length === 0 || isSubmitting || loadingSlots || !!errorMessage"
                                 :class="{
-                                    'bg-[#4F46E5] hover:bg-[#4338CA] text-white shadow-lg shadow-indigo-200/70 active:scale-[0.98] cursor-pointer': selectedSlots.length > 0 && !isSubmitting,
+                                    'bg-bq-primary customer-primary hover:bg-bq-primary-hover text-white shadow-lg shadow-indigo-200/70 active:scale-[0.98] cursor-pointer': selectedSlots.length > 0 && !isSubmitting,
                                     'bg-slate-300 text-white cursor-not-allowed opacity-60': selectedSlots.length === 0 || isSubmitting
                                 }"
                                 class="w-full py-3.5 px-6 rounded-2xl font-bold text-sm sm:text-base transition-all duration-150 flex items-center justify-center gap-2">
@@ -489,12 +489,12 @@
         <div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-3 shadow-lg flex items-center justify-between gap-3">
             <div class="flex flex-col min-w-0">
                 <span class="text-[11px] text-[#64748B] font-medium truncate" x-text="selectedSlots.length > 0 ? (selectedDateFormatted + ' • ' + selectedSlots.length + ' Sesi (' + selectedDurationFormatted + ')') : 'Belum pilih jam'"></span>
-                <span class="text-base font-extrabold text-[#4F46E5]" x-text="formatRupiah(total)">{{ $servicePayload['price_label'] }}</span>
+                <span class="text-base font-extrabold text-bq-primary" x-text="formatRupiah(total)">{{ $servicePayload['price_label'] }}</span>
             </div>
             <button type="submit"
                     :disabled="selectedSlots.length === 0 || isSubmitting || loadingSlots || !!errorMessage"
                     :class="{
-                        'bg-[#4F46E5] text-white cursor-pointer': selectedSlots.length > 0 && !isSubmitting,
+                        'bg-bq-primary customer-primary text-white cursor-pointer': selectedSlots.length > 0 && !isSubmitting,
                         'bg-slate-300 text-white cursor-not-allowed opacity-60': selectedSlots.length === 0 || isSubmitting
                     }"
                     class="py-2.5 px-6 rounded-xl font-bold text-xs sm:text-sm shrink-0">
@@ -507,5 +507,4 @@
 
 @section('scripts')
 <script defer src="{{ asset('js/booking-schedule.js') }}"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
 @endsection
