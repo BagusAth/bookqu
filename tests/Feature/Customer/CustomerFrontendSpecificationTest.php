@@ -405,8 +405,8 @@ class CustomerFrontendSpecificationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Reservasi ini terdiri dari beberapa sesi yang berurutan. Perubahan atau pembatalan per sesi tidak tersedia.');
-        $response->assertDontSee('Ubah Jadwal');
-        $response->assertDontSee('Batalkan Reservasi');
+        $response->assertDontSee('Ubah jadwal');
+        $response->assertDontSee('Batalkan reservasi');
     }
 
     public function test_single_slot_management_displays_reschedule_and_hides_direct_cancellation(): void
@@ -443,8 +443,8 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->grantCustomerAccess($payment)->get('/manage/payment/'.$orderId.'?token='.$manageToken);
 
         $response->assertStatus(200);
-        $response->assertSee('Ubah Jadwal');
-        $response->assertDontSee('Batalkan Reservasi');
-        $response->assertDontSee('Ya, Batalkan Reservasi');
+        $response->assertSee('Ubah jadwal');
+        $response->assertDontSee('Batalkan reservasi');
+        $response->assertDontSee('Ya, batalkan reservasi');
     }
 }

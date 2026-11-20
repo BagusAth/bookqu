@@ -63,10 +63,10 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
         $this->service->update(['durasi' => 90]);
 
         $show = $this->grantCustomerAccess($booking)->get('/manage/'.$booking->booking_code.'?token='.$booking->cancellation_token)->assertOk();
-        $show->assertSee('14:00 – 15:00', false)
+        $show->assertSee('14.00 – 15.00', false)
             ->assertSee(str_replace('-', '', $this->date).'T140000/'.str_replace('-', '', $this->date).'T150000', false)
             ->assertSee('60 menit')
-            ->assertSee('03 Nov 2026, 14:00')
+            ->assertSee('03 Nov 2026, 14.00')
             ->assertDontSee('17:32')
             ->assertDontSee('15:30')
             ->assertDontSee('90 menit');
@@ -78,7 +78,7 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
             ->assertDontSee('90 menit');
 
         $this->get(route('booking.manage.reschedule.show', $booking->booking_code))->assertOk()
-            ->assertSee('Pukul 14:00 – 15:00 WIB', false)->assertDontSee('17:32');
+            ->assertSee('Pukul 14.00 – 15.00 WIB', false)->assertDontSee('17:32');
 
         $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice')
             ->assertOk()
@@ -108,8 +108,8 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
 
         $this->grantCustomerAccess($payment)->get('/manage/payment/'.$payment->order_id)
             ->assertOk()
-            ->assertSee('14:00 – 15:00 WIB', false)
-            ->assertSee('15:00 – 16:00 WIB', false)
+            ->assertSee('14.00 – 15.00 WIB', false)
+            ->assertSee('15.00 – 16.00 WIB', false)
             ->assertSee($day.'T140000/'.$day.'T160000', false)
             ->assertDontSee('16:30');
 

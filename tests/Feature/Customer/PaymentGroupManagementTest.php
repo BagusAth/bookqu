@@ -188,8 +188,8 @@ class PaymentGroupManagementTest extends TestCase
         $response = $this->grantCustomerAccess($payment)->get('/manage/payment/'.$payment->order_id.'?token='.$payment->manage_token);
         $response->assertStatus(200);
         $response->assertSee($payment->order_id);
-        $response->assertSee('10:00');
-        $response->assertSee('11:00');
+        $response->assertSee('10.00 – 11.00');
+        $response->assertSee('11.00 – 12.00');
         $response->assertSee('2 sesi');
     }
 

@@ -310,7 +310,7 @@ class GetAvailableSchedules
         ];
     }
 
-    /** @return array{availabilityPayload: list<array{date: string, total_slots: int, available_slots: int}>, minDate: string, maxDate: string} */
+    /** @return array<string, mixed> */
     public function getCustomerRescheduleCalendar(Booking $booking): array
     {
         $today = Carbon::today('Asia/Jakarta');
@@ -331,7 +331,21 @@ class GetAvailableSchedules
             ];
         }
 
-        return compact('availabilityPayload', 'minDate', 'maxDate');
+        $dates = [];
+        $availableOnDate = array_column($availabilityPayload, 'available_slots', 'date');
+        for ($date = Carbon::parse($minDate); $date->toDateString() <= $maxDate; $date->addDay()) {
+            $iso = $date->toDateString();
+            $dates[] = [
+                'date' => $iso,
+                'label' => $date->locale('id')->translatedFormat('D, d M'),
+                'full_label' => $date->locale('id')->translatedFormat('l, d M Y'),
+                'is_available' => ($availableOnDate[$iso] ?? 0) > 0,
+            ];
+        }
+
+        return compact('availabilityPayload', 'minDate', 'maxDate', 'dates') + [
+            'pricePolicy' => 'Pilih sesi dengan harga yang sama atau lebih rendah. Selisih ke harga yang lebih rendah tidak dikembalikan. Untuk jadwal yang lebih mahal, hubungi bisnis.',
+        ];
     }
 
     /** @return array<string, array{slots: list<array{id: int, jam_mulai: string, jam_selesai: string, is_available: bool, is_booked: bool, is_past: bool}>, total: int, hasHigherPrice: bool}> */
@@ -388,6 +402,12 @@ class GetAvailableSchedules
                 'id' => (int) $schedule->id,
                 'jam_mulai' => $range->startTime(),
                 'jam_selesai' => $range->endTime() ?? '',
+                'display_time' => $range->displayLabel(),
+                'detail' => match ($refusal) {
+                    SlotRefusal::Occupied, SlotRefusal::NotEnoughRoom, SlotRefusal::UnitBusy => 'Penuh',
+                    null => null,
+                    default => 'Tidak tersedia',
+                },
                 'is_available' => $refusal === null,
                 'is_booked' => $refusal !== null && $refusal !== SlotRefusal::Past,
                 'is_past' => $refusal === SlotRefusal::Past,

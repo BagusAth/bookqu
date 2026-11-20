@@ -103,7 +103,7 @@ class BookingManageTest extends TestCase
         $this->get('/'.$this->tenant->slug)->assertOk()->assertSee('href="https://wa.me/6281299887766?', false);
         $this->get(route('booking.manage', $this->booking->booking_code))->assertOk()
             ->assertSee('href="https://wa.me/6281299887766?', false)
-            ->assertSee('Reservasi Dibuat')->assertDontSee('Detail Dilihat');
+            ->assertSee('Reservasi dibuat')->assertDontSee('Detail Dilihat');
         $this->get(route('booking.manage.payment', $this->payment->order_id))->assertOk()
             ->assertSee('href="https://wa.me/6281299887766?', false);
         $this->assertDatabaseHas('booking_logs', ['booking_id' => $this->booking->id, 'event' => 'viewed']);
@@ -193,7 +193,8 @@ class BookingManageTest extends TestCase
     public function test_customer_can_view_reschedule_page_and_get_slots(): void
     {
         $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'/reschedule?token='.$this->booking->reschedule_token);
-        $response->assertStatus(200);
+        $response->assertOk()->assertSee('aria-current="date"', false)
+            ->assertSeeText('Jadwal saat ini')->assertSeeText('Selisih ke harga yang lebih rendah tidak dikembalikan.');
 
         // New slot for tomorrow
         $newDate = Carbon::tomorrow()->format('Y-m-d');
@@ -208,7 +209,9 @@ class BookingManageTest extends TestCase
 
         $ajaxResponse = $this->getJson('/manage/'.$this->booking->booking_code.'/reschedule/slots?token='.$this->booking->reschedule_token.'&tanggal='.$newDate);
         $ajaxResponse->assertStatus(200);
-        $ajaxResponse->assertJsonStructure(['slots']);
+        $ajaxResponse->assertJsonPath('slots.0.display_time', '10.00 – 11.00');
+        $this->getJson('/manage/'.$this->booking->booking_code.'/reschedule/slots?tanggal=invalid')
+            ->assertUnprocessable()->assertJsonValidationErrors('tanggal');
     }
 
     public function test_reschedule_page_does_not_offer_a_date_closed_by_the_owner(): void
