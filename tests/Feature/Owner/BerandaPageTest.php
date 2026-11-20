@@ -312,7 +312,9 @@ class BerandaPageTest extends TestCase
         $this->assertFalse($data['today'][1]['in_progress']);
         $this->assertSame('Terkonfirmasi', $data['today'][0]['status']['label']);
         $this->assertSame(2, $data['tomorrow']['count']);
-        $this->assertSame('09:00', $data['tomorrow']['first_time']);
+        $this->assertSame('09.00', $data['tomorrow']['first_time']);
+        $this->assertSame(['09.00', '15.00'], array_column($data['tomorrow']['bookings'], 'time'));
+        $this->assertStringNotContainsString(':', $data['today'][0]['time']);
 
         $this->get(route('owner.dashboard'))->assertSee('Sedang berlangsung')->assertSee('Besok');
     }

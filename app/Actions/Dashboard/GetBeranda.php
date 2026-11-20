@@ -116,7 +116,7 @@ class GetBeranda
             $empty = collect($picker['slots'])->where('available', true)->whereNotIn('id', $occupiedSchedules)
                 ->map(fn (array $slot): array => [
                     'id' => $slot['id'], 'service_id' => $slot['service'],
-                    'date' => $today->toDateString(), 'start' => $slot['start'], 'label' => $slot['label'],
+                    'date' => $today->toDateString(), 'start' => $slot['start'], 'label' => self::dotted($slot['label']),
                 ])->values()->all();
         }
 
@@ -349,7 +349,7 @@ class GetBeranda
             return [
                 'id' => (int) $booking->id,
                 'code' => (string) ($booking->booking_code ?: 'BKQ-'.$booking->id),
-                'time' => $range?->label() ?? $start,
+                'time' => self::dotted($range?->label() ?? $start),
                 'start' => $start,
                 'customer' => (string) $booking->namapelanggan,
                 'service' => (string) ($booking->layanan->namalayanan ?? '-'),
@@ -392,12 +392,12 @@ class GetBeranda
 
         return [
             'count' => $bookings->count(),
-            'first_time' => $first ? substr((string) $first->jam, 0, 5) : null,
+            'first_time' => $first ? self::dotted(substr((string) $first->jam, 0, 5)) : null,
             'first_customer' => $first ? (string) $first->namapelanggan : null,
             'date' => $date->locale('id')->translatedFormat('l, j M'),
             'bookings' => $bookings->take(5)->map(fn (Booking $booking): array => [
                 'customer' => $booking->namapelanggan,
-                'time' => substr((string) $booking->jam, 0, 5),
+                'time' => self::dotted(substr((string) $booking->jam, 0, 5)),
                 'status' => BookingState::formatLabel($booking->status),
                 'url' => route('owner.bookings.panel', $booking->id),
             ])->values()->all(),
@@ -420,7 +420,7 @@ class GetBeranda
 
         return $next === null ? null : [
             'date' => Carbon::parse((string) $next->tanggalbooking)->locale('id')->translatedFormat('l, j M'),
-            'time' => substr((string) $next->jam, 0, 5),
+            'time' => self::dotted(substr((string) $next->jam, 0, 5)),
             'customer' => (string) $next->namapelanggan,
         ];
     }
@@ -449,5 +449,14 @@ class GetBeranda
         }
 
         return $actions;
+    }
+
+    /**
+     * Clock times as the owner portal shows them, "08.00 – 09.00" (Papan Jadwal prototype, T-20).
+     * Only display strings go through here; `start` keeps "H:i" for the rail's own arithmetic.
+     */
+    private static function dotted(string $text): string
+    {
+        return (string) preg_replace('/\b(\d{2}):(\d{2})\b/', '$1.$2', $text);
     }
 }
