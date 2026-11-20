@@ -725,14 +725,14 @@ class GetReport
         $buckets = [];
         if ($period->isDaily()) {
             for ($day = $period->start->startOfDay(); $day->lte($period->end); $day = $day->addDay()) {
-                $buckets[$day->format('Y-m-d')] = $day->translatedFormat('j M');
+                $buckets[$day->format('Y-m-d')] = $day->locale('id')->translatedFormat('j M');
             }
 
             return $buckets;
         }
 
         for ($month = $period->start->startOfMonth(); $month->lte($period->end); $month = $month->addMonthNoOverflow()) {
-            $buckets[$month->format('Y-m')] = $month->translatedFormat('M Y');
+            $buckets[$month->format('Y-m')] = $month->locale('id')->translatedFormat('M Y');
         }
 
         return $buckets;

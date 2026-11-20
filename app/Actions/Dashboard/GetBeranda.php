@@ -394,7 +394,7 @@ class GetBeranda
             'count' => $bookings->count(),
             'first_time' => $first ? substr((string) $first->jam, 0, 5) : null,
             'first_customer' => $first ? (string) $first->namapelanggan : null,
-            'date' => $date->translatedFormat('l, j M'),
+            'date' => $date->locale('id')->translatedFormat('l, j M'),
             'bookings' => $bookings->take(5)->map(fn (Booking $booking): array => [
                 'customer' => $booking->namapelanggan,
                 'time' => substr((string) $booking->jam, 0, 5),
@@ -419,7 +419,7 @@ class GetBeranda
             ->first(['id', 'tanggalbooking', 'jam', 'namapelanggan']);
 
         return $next === null ? null : [
-            'date' => Carbon::parse((string) $next->tanggalbooking)->translatedFormat('l, j M'),
+            'date' => Carbon::parse((string) $next->tanggalbooking)->locale('id')->translatedFormat('l, j M'),
             'time' => substr((string) $next->jam, 0, 5),
             'customer' => (string) $next->namapelanggan,
         ];

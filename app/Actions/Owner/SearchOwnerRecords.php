@@ -55,7 +55,7 @@ final class SearchOwnerRecords
             'code' => (string) $booking->booking_code,
             'customer' => (string) $booking->namapelanggan,
             'service' => (string) ($booking->layanan->namalayanan ?? ''),
-            'date' => Carbon::parse((string) $booking->tanggalbooking)->translatedFormat('j M Y'),
+            'date' => Carbon::parse((string) $booking->tanggalbooking)->locale('id')->translatedFormat('j M Y'),
             'time' => substr((string) $booking->jam, 0, 5),
             'status' => array_combine(['label', 'tone'], StatusBadge::for('booking', (string) $booking->status)),
             'panel_url' => Route::has('owner.bookings.panel') ? route('owner.bookings.panel', $booking->id) : null,

@@ -317,6 +317,17 @@ class BerandaPageTest extends TestCase
         $this->get(route('owner.dashboard'))->assertSee('Sedang berlangsung')->assertSee('Besok');
     }
 
+    public function test_tomorrow_is_named_in_indonesian_even_when_the_app_locale_is_english(): void
+    {
+        $this->finishGuide();
+        $this->booking('2026-11-21', '09:00:00', '09:59:00', ['namapelanggan' => 'Besok Pagi']);
+        app()->setLocale('en');
+
+        $data = $this->actingAs($this->owner)->getJson(route('owner.dashboard.polling'))->assertOk()->json('data');
+
+        $this->assertSame('Sabtu, 21 Nov', $data['tomorrow']['date']);
+    }
+
     public function test_an_empty_day_names_the_next_booking(): void
     {
         $this->finishGuide();

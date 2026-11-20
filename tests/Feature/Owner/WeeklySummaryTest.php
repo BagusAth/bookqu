@@ -37,6 +37,20 @@ class WeeklySummaryTest extends TestCase
         Notification::assertNotSentTo($expired->user, WeeklySummaryNotification::class);
     }
 
+    public function test_the_summary_period_uses_indonesian_month_names_even_when_the_app_locale_is_english(): void
+    {
+        Notification::fake();
+        $this->travelTo(Carbon::parse('2026-12-07 07:00:00', 'Asia/Jakarta'));
+        $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
+        $tenant = Tenant::factory()->create(['iduser' => $owner->id]);
+        app(CreateTrialSubscription::class)->execute($tenant);
+        app()->setLocale('en');
+
+        $this->artisan('owners:weekly-summary')->assertSuccessful();
+
+        Notification::assertSentTo($owner, WeeklySummaryNotification::class, fn (WeeklySummaryNotification $n): bool => $n->summary['from'] === '30 Nov' && $n->summary['to'] === '6 Des 2026');
+    }
+
     public function test_only_the_business_owner_sees_the_weekly_summary_preference(): void
     {
         $owner = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);

@@ -112,7 +112,7 @@ final readonly class ReportPeriod
             return self::PRESETS[$this->key];
         }
 
-        return $this->start->translatedFormat('j M Y').' – '.$this->end->translatedFormat('j M Y');
+        return $this->start->locale('id')->translatedFormat('j M Y').' – '.$this->end->locale('id')->translatedFormat('j M Y');
     }
 
     /**
