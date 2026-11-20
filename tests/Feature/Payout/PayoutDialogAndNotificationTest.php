@@ -70,8 +70,8 @@ class PayoutDialogAndNotificationTest extends TestCase
 
     public function test_payout_state_owner_labels_and_tones(): void
     {
-        $this->assertSame('Pending', PayoutState::ownerLabel(PayoutState::PENDING));
-        $this->assertSame('Pending', PayoutState::ownerLabel(PayoutState::APPROVED));
+        $this->assertSame('Diproses', PayoutState::ownerLabel(PayoutState::PENDING));
+        $this->assertSame('Diproses', PayoutState::ownerLabel(PayoutState::APPROVED));
         $this->assertSame('Berhasil', PayoutState::ownerLabel(PayoutState::SUCCESS));
         $this->assertSame('Gagal', PayoutState::ownerLabel(PayoutState::REJECTED));
         $this->assertSame('Gagal', PayoutState::ownerLabel(PayoutState::FAILED));

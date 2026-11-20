@@ -67,8 +67,17 @@
             $dispatch('open-dialog', { id: 'withdraw-dialog', trigger });
         },
         amountValid() {
+            return this.amountProblem() === '';
+        },
+        {{-- Why "Lanjut" is off (T-32); empty when the amount can be requested. --}}
+        amountProblem() {
+            if (String(this.amount).trim() === '') return 'Isi jumlah yang ingin dicairkan.';
             const n = Number(this.amount);
-            return Number.isInteger(n) && n >= this.min && n <= this.max;
+            if (!Number.isInteger(n)) return 'Isi jumlah tanpa sen.';
+            if (this.max < this.min) return 'Saldo belum mencapai minimal pencairan Rp' + this.formatted(this.min) + '.';
+            if (n < this.min) return 'Minimal pencairan Rp' + this.formatted(this.min) + '.';
+            if (n > this.max) return 'Paling banyak Rp' + this.formatted(this.max) + ' untuk pengajuan ini.';
+            return '';
         },
         selectedAccount() { return this.accounts.find(a => String(a.id) === String(this.accountId)) || null; },
         formatted(n) { return new Intl.NumberFormat('id-ID').format(Number(n) || 0); },
@@ -250,6 +259,7 @@
                     </div>
                     <input id="withdraw-amount" type="number" inputmode="numeric" step="1" x-model="amount" min="{{ $payoutRules['min'] }}" max="{{ $maxAmount }}" class="{{ $field }}">
                     <p class="mt-1 text-xs text-bq-text-muted">Saldo tersedia {{ $rupiah($summary['available']) }} · Minimal {{ $rupiah($payoutRules['min']) }}@if ($payoutRules['cap'] !== null) · maksimal {{ $rupiah($payoutRules['cap']) }} per pengajuan @endif</p>
+                    <p x-show="String(amount).trim() !== '' && !payoutErrors.jumlah && amountProblem()" x-cloak x-text="amountProblem()" class="mt-1 text-bq-small text-bq-danger" aria-live="polite" data-payout-amount-problem></p>
                     <p x-show="payoutErrors.jumlah" x-text="payoutErrors.jumlah?.[0]" class="mt-1 text-bq-small text-bq-danger" role="alert"></p>
                     @error('jumlah')<p class="mt-1 text-bq-small text-bq-danger">{{ $message }}</p>@enderror
                 </div>
@@ -289,7 +299,7 @@
                 <div x-show="!payoutUnconfirmed" class="space-y-3">
                     <p class="text-xs text-bq-text-muted">Langkah 3 dari 3: konfirmasi</p>
                     <dl class="space-y-1.5 rounded-lg bg-bq-background px-3 py-2 text-sm">
-                        <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Jumlah</dt><dd class="font-medium bq-num text-bq-text">Rp <span x-text="formatted(amount)"></span></dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Jumlah</dt><dd class="font-medium bq-num text-bq-text">Rp<span x-text="formatted(amount)"></span></dd></div>
                         <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Bank</dt><dd class="text-bq-text" x-text="selectedAccount()?.bank_nama"></dd></div>
                         <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Nomor rekening</dt><dd class="bq-num text-bq-text" x-text="selectedAccount()?.masked_number"></dd></div>
                         <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Atas nama</dt><dd class="text-bq-text" x-text="selectedAccount()?.nama_pemilik_rekening"></dd></div>

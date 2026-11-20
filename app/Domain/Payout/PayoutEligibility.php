@@ -39,7 +39,7 @@ class PayoutEligibility
 
         // 3. Payment mode
         if (($tenant->payment_mode ?? 'platform') !== 'platform') {
-            $reasons[] = 'Withdraw hanya tersedia untuk mode pembayaran platform.';
+            $reasons[] = 'Pencairan hanya tersedia untuk mode pembayaran platform.';
         }
 
         // 4. Available balance
@@ -56,7 +56,7 @@ class PayoutEligibility
                 ->whereIn('status', ['pending', 'approved'])
                 ->count();
             if ($openCount >= (int) $maxOpen) {
-                $reasons[] = 'Masih ada pengajuan withdraw yang sedang diproses. Tunggu sampai selesai sebelum mengajukan lagi.';
+                $reasons[] = 'Masih ada pengajuan pencairan yang sedang diproses. Tunggu sampai selesai sebelum mengajukan lagi.';
             }
         }
 

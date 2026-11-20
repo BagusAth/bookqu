@@ -50,7 +50,7 @@ final class PayoutState
     public static function ownerLabel(string $status): string
     {
         return match ($status) {
-            self::PENDING, self::APPROVED => 'Pending',
+            self::PENDING, self::APPROVED => 'Diproses',
             self::SUCCESS => 'Berhasil',
             self::FAILED, self::REJECTED => 'Gagal',
             default => ucfirst($status),
