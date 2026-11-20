@@ -1,6 +1,6 @@
 <div x-show="{{ $model }}.discount_type === 'percentage'">
     <label class="block space-y-1 text-xs font-semibold text-bq-text">
-        <span>Diskon maksimum (Rp)</span>
+        <span>Potongan maksimum (Rp)</span>
         <input type="number" name="max_discount_amount" min="0" step="0.01"
                x-model="{{ $model }}.max_discount_amount"
                placeholder="Kosongkan jika tanpa batas"
@@ -10,8 +10,8 @@
 </div>
 
 <fieldset class="space-y-2">
-    <legend class="text-xs font-semibold text-bq-text">Berlaku untuk layanan</legend>
-    <p class="text-xs text-bq-text-muted">Kosongkan pilihan untuk semua layanan.</p>
+    <legend class="text-xs font-semibold text-bq-text">Berlaku untuk</legend>
+    <p class="text-xs text-bq-text-muted">Kosongkan untuk semua layanan.</p>
     <input type="hidden" name="applicable_services" value="">
     <div class="max-h-32 space-y-2 overflow-y-auto">
         @foreach ($services as $service)
