@@ -46,6 +46,12 @@ Two Halaman Booking sections for Pro (owner-portal.md §8.9, FR-PUBLIC-007, D-00
 
 Evidence: `Owner/LandingPageAndDomainTest`, `Customer/CustomDomainBookingTest`.
 
+## Customer storefront design (BQ-164)
+
+Storefront and management pages share the customer booking shell, the owner portal's `bq-*` tokens and the `x-customer.*` components. `StorefrontBranding` derives hover, light and border shades and chooses dark or white primary text by contrast. Legacy palette keys resolve through `CategoryColor`. Unrecognized colours use the storefront default.
+
+The service list is server-rendered and eligible services can be selected without JavaScript. The customer Vite bundle adds search, filters and the date and time picker. The checkout uses the server quote and refreshes it after changes to participants, additional items or a promo. Saved contact details are scoped to that business on the device and can be cleared from checkout.
+
 ## Evidence
 
 `tests/Feature/LandingPagePricingTest.php`, `PrivacyPolicyTest.php`, `TermsConditionsTest.php`, `SitemapTest.php`.

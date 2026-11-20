@@ -2,7 +2,7 @@
 id: BQ-164
 title: Bring every customer-facing page and email to the owner portal standard
 type: improvement
-status: approved
+status: in-progress
 priority: P1
 phase: 4
 domain: public-site
@@ -442,7 +442,7 @@ See session 7. Do not edit `docs/requirements.md` or `docs/product.md`: no requi
 - Session 4: PL-10, PL-11, PL-19–PL-21. Pint, Vite and PHPStan passed. The full SQLite run had 1,026 passes and one guardrail failure for a duplicated countdown literal. Reusing the remaining seconds resolved it. The guardrail and payment render rerun passed 18 tests with 88 assertions. The related suite passed 186 tests with 1,166 assertions and rendered waiting, failed and expired payment states without a gateway call. Payment browser check pending: sandbox 403. Chromium checked all three invoices at 375, 768, 1024 and 1366 px with default and light themes, and at 375 px in print media. The print view retains the amounts and hides interactive controls.
 - Session 5: PL-07, PL-08, PL-12, PL-28, PL-30. Pint, Vite and PHPStan passed. Full SQLite: 1027 passed (6825 assertions). The related suite passed 96 tests with 915 assertions. In Chromium, single management, group management and reschedule fit 375, 768, 1024 and 1366 px in default and light themes. Both themes exposed the current date and the server price policy, and accepted a choice of a new date and time. The browser left the existing reservation intact. Automated tests cover submitting changes and the refusal paths.
 - Session 6: PL-17 and PL-09 for email. Pint, Vite and PHPStan passed. Full SQLite: 1027 passed (6853 assertions). Related suite: 58 passed, 583 assertions. Chromium opened eight scratch HTML files rendered from the four Mailables in the default and light themes. Each fit 375, 600, 768, 1024 and 1366 px. The render assertions cover business identity, booked session ranges, Indonesian dates, total and action links. The historical range in the reschedule mail uses its former session when present. Emails were rendered locally without sending them.
-- Session 7:
+- Session 7: Pint, Vite, PHPStan and documentation guardrails passed. Full SQLite: 1027 passed (6853 assertions). SQLite used a temporary application storage directory to isolate its files from the overlapping MySQL run. MySQL 8.4.3 on `bookqu_testing`: 1,046 tests, 6,921 assertions, one expected SQLite-only skip and zero failures. Chromium checked storefront, schedule, checkout, access, both management pages, reschedule, all three invoices and both live 404 variants at 375, 768, 1024 and 1366 px in the default and `#FDE047` themes with reduced motion enabled. The 403, 419, 500 and 503 templates were checked as rendered HTML. The keyboard-only pass reached the payment action in both themes. Focus stayed visible, the summary sheet returned focus on Escape, and reduced motion suppressed transitions. The customer shell differs from the owner reference through tenant branding, the horizontal date strip and the phone payment bar. Payment browser check pending: sandbox 403.
 
 ## Open findings
 
@@ -452,3 +452,6 @@ See session 7. Do not edit `docs/requirements.md` or `docs/product.md`: no requi
 - Session 4: The existing payment script can run the zero-time countdown branch when a failed payment also has a past deadline. Live browser confirmation is pending with the sandbox. Preserve the polling logic for this presentation batch.
 - Diputuskan agen, perlu review Tech Lead: the payment group timeline collapses identical customer-visible events in the same displayed minute. The full events stay in the owner slip.
 - Diputuskan agen, perlu review Tech Lead: the cancellation email links to the public service list. It does not issue a new management grant.
+- Session 7: NVDA and VoiceOver remain open for a manual assistive-technology pass. Email HTML passed in Chromium. Rendering in actual Gmail and Outlook clients remains open.
+- Session 7: Opening a new hash-only link in a tab already on the access recovery screen does not rerun the existing page-load exchange. A fresh navigation exchanges the link. Review this edge case under the access bootstrap contract.
+- Session 7: The shared Pro landing presenter still supplies the older money format for featured services. The core picker, checkout, payments and invoices use the shared Rupiah format. A few palette classes also remain in the Pro hero and the payment feedback icon, and the older calendar and time card are unused by the active customer flow.

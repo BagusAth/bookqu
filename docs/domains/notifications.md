@@ -30,6 +30,10 @@ Sends happen after the main transaction and dispatch failures are wrapped in `tr
 
 Customer confirmation/invoice/reschedule flows persist delivery intent, then queue `SendManagementAccess` with only the delivery ID after commit. The worker validates the family, mints a fresh link and sends `BookingConfirmedMail`, `BookingGroupInvoiceMail` or `BookingRescheduledMail` synchronously inside the job; these credential-bearing mailables must not implement `ShouldQueue`. SMTP delivery therefore runs outside checkout and webhook requests when `QUEUE_CONNECTION=database` (§4 of operations).
 
+## Customer email layout (BQ-164)
+
+The four customer booking mails share a responsive table layout with inline styling. The mail presenter supplies the business identity, absolute logo when present, contrast-safe button text, booked session ranges, an Indonesian date, total and address with directions when present. Mail views use those prepared fields. The confirmation, payment receipt and reschedule emails receive the existing send-time management link. The cancellation email links to the business service list.
+
 ## Evidence
 
 `tests/Feature/Owner/OwnerDashboardPollingTest.php`; `SingaPayIntegrationTest::test_webhook_paid_status` proves queued owner notification and ID-only customer delivery without immediate mail; `CustomerAccessTest::test_queued_delivery_captures_recipient_and_rejects_stale_family_generations` exercises worker delivery and stale-intent refusal.

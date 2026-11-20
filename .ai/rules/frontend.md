@@ -39,3 +39,12 @@ Do not unhide Tier 3 navigation or remove Tier 2 locks; `OwnerSidebarNavigationT
 
 ## User text
 User-facing copy is Indonesian; keep status labels consistent with `BookingState::formatLabel` / `PaymentState::formatLabel`.
+
+## Customer views
+
+- Inherit the shared customer booking shell and build with the customer components and `x-ui.*` primitives. The shell shows business identity, one contextual back link when applicable, WhatsApp help and the BookQu footer. Use the customer Vite entry for Alpine.
+- Use the `bq-*` colour tokens. `StorefrontBranding` supplies the tenant primary, hover, light and border colours plus text with a WCAG contrast ratio of at least 4.5:1 on the primary. Keep raw palette colours, hex values and class overrides out of customer views.
+- Apply the tenant font and sentence case. Text is at least 13 px, with 12 px allowed for badges, step numbers and phone navigation. Format amounts through `Rupiah` and session ranges through `BookingTimeRange`. Use Indonesian dates and `bq-num` for times and amounts.
+- Group related content in panels. Keep one primary action, in a bottom bar on a phone, and use the shared confirmation pattern for destructive actions.
+- Keep inputs and give the customer a next action when an error occurs. Explain empty states and avoid claims about security, taxes or actions that the system does not guarantee. Use customer terms such as “sesi”, “ubah jadwal”, “tambahan” and “nomor pesanan”.
+- Name every control, keep visible focus and use at least 44 px for touch actions. Use `aria-pressed` for selected time buttons and one polite live region for status updates. Motion responds to an action and respects `prefers-reduced-motion`. Avoid continuous animation, decorative gradients, hover lift and emoji.
