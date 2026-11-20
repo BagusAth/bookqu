@@ -92,10 +92,31 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
             ->assertRedirect(route('booking.manage', $booking->booking_code))->assertSessionHasErrors('reschedule');
 
         $manageUrl = 'https://example.test/manage';
+        $this->tenant->update(['theme_color' => '#FDE047', 'logo_path' => 'fixtures/business-logo.png']);
+        $former = $this->slot('08:00:00', '08:59:00');
+        $booking->update([
+            'rescheduled_from_date' => $this->date,
+            'rescheduled_from_time' => '07:32',
+            'rescheduled_from_schedule' => $former->id,
+        ]);
+        $booking->unsetRelation('tenant');
         foreach ([new BookingConfirmedMail($booking, $manageUrl), new BookingRescheduledMail($booking, $manageUrl), new BookingCancelledMail($booking)] as $mail) {
             $html = $mail->render();
-            $this->assertStringContainsString('14:00 – 15:00 WIB', $html);
+            $this->assertStringContainsString(e($this->tenant->namabisnis), $html);
+            $this->assertStringContainsString('14.00 – 15.00 WIB', $html);
+            $this->assertStringContainsString('Rabu, 04 Nov 2026', $html);
+            $this->assertStringContainsString('Rp150.000', $html);
+            $this->assertStringContainsString('bgcolor="#FDE047"', $html);
+            $this->assertStringContainsString('color:#000000', $html);
+            $this->assertMatchesRegularExpression('/src="https?:\/\/[^"]+business-logo\.png"/', $html);
+            $action = $mail instanceof BookingCancelledMail
+                ? rtrim(config('app.url'), '/').'/'.$this->tenant->slug : $manageUrl;
+            $this->assertStringContainsString('href="'.$action.'"', $html);
             $this->assertStringNotContainsString('17:32', $html);
+            if ($mail instanceof BookingRescheduledMail) {
+                $this->assertStringContainsString('08.00 – 09.00 WIB', $html);
+                $this->assertStringNotContainsString('07.32', $html);
+            }
         }
     }
 
@@ -121,9 +142,14 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
 
         app(TenantContext::class)->clear();
         $html = (new BookingGroupInvoiceMail($payment->fresh(), collect($bookings)->map->fresh(), 'https://example.test/manage'))->render();
-        $this->assertStringContainsString('14:00 – 15:00 WIB', $html);
-        $this->assertStringContainsString('15:00 – 16:00 WIB', $html);
-        $this->assertStringNotContainsString('16:30', $html);
+        $this->assertStringContainsString(e($this->tenant->namabisnis), $html);
+        $this->assertStringContainsString('14.00 – 15.00 WIB', $html);
+        $this->assertStringContainsString('15.00 – 16.00 WIB', $html);
+        $this->assertStringContainsString('Rp300.000', $html);
+        $this->assertStringContainsString('href="https://example.test/manage"', $html);
+        $this->assertStringNotContainsString('16.30', $html);
+        $this->assertStringNotContainsString('linear-gradient', $html);
+        $this->assertStringNotContainsString('display:flex', $html);
     }
 
     public function test_slot_picker_shows_the_slot_end_not_the_current_duration(): void
