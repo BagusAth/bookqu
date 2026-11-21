@@ -48,6 +48,12 @@
     @endisset
 </head>
 <body class="customer-shell booking-page flex min-h-screen flex-col bg-sf-page text-sf-text antialiased" @isset($branding) data-branded data-button-style="{{ $branding['buttonStyle'] }}" data-card-style="{{ $branding['cardStyle'] }}" @endisset @yield('body_attributes')>
+    @php
+        // Design A pages (BQ-165) draw their own hero or step header and use the full width.
+        $immersive = View::hasSection('immersive');
+    @endphp
+
+    @unless ($immersive)
     <header class="no-print sticky top-0 z-40 border-b border-sf-divider bg-sf-surface">
         <div class="booking-shell mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-6">
             <a href="{{ $storefrontUrl ?? url('/') }}" class="flex min-w-0 items-center gap-3 rounded-sf-card-small">
@@ -70,17 +76,6 @@
         </div>
     </header>
 
-    @if (isset($tenant) && request()->routeIs('customer.booking.program', 'customer.booking.slug.program'))
-        @if ($businessBanner ?? null)
-            <img src="{{ $businessBanner }}" alt="Banner {{ $tenant->namabisnis }}" class="no-print h-40 w-full object-cover sm:h-56">
-        @endif
-        @if (filled($tenant->deskripsi))
-            <section class="no-print border-b border-sf-divider bg-sf-surface">
-                <p class="mx-auto max-w-7xl whitespace-pre-line px-4 py-3 text-sm text-sf-muted sm:px-6">{{ $tenant->deskripsi }}</p>
-            </section>
-        @endif
-    @endif
-
     @hasSection('current_step')
         <div class="no-print border-b border-sf-divider bg-sf-surface px-4 py-3 sm:px-6">
             <div class="mx-auto max-w-7xl">
@@ -88,24 +83,40 @@
             </div>
         </div>
     @endif
+    @endunless
 
-    <main class="booking-shell mx-auto w-full max-w-7xl grow space-y-4 px-4 py-6 sm:px-6 sm:py-8 @unless(View::hasSection('minimal')) pb-28 sm:pb-24 @endunless">
+    <main @class([
+        'grow' => $immersive,
+        'booking-shell mx-auto w-full max-w-7xl grow space-y-4 px-4 py-6 sm:px-6 sm:py-8' => ! $immersive,
+        'pb-28 sm:pb-24' => ! $immersive && ! View::hasSection('minimal'),
+    ])>
         @unless (View::hasSection('minimal'))
-            @if (session('info'))
-                <x-ui.banner :title="session('info')" />
-            @endif
-            @if (session('success'))
-                <x-ui.banner :title="session('success')" icon="check" />
-            @endif
-            @if (session('error'))
-                <x-ui.banner :title="session('error')" tone="danger" />
+            @if (session('info') || session('success') || session('error'))
+                <div @class(['space-y-2', 'mx-auto max-w-[1240px] px-4 pt-4 md:px-8 lg:px-14' => $immersive]) role="status">
+                    @if (session('info'))
+                        <x-customer.status-note>{{ session('info') }}</x-customer.status-note>
+                    @endif
+                    @if (session('success'))
+                        <x-customer.status-note tone="success">{{ session('success') }}</x-customer.status-note>
+                    @endif
+                    @if (session('error'))
+                        <x-customer.status-note tone="danger">{{ session('error') }}</x-customer.status-note>
+                    @endif
+                </div>
             @endif
         @endunless
         @yield('content')
     </main>
 
-    <footer class="no-print mt-auto border-t border-sf-divider px-4 py-5 text-center text-sm text-sf-muted">
-        © {{ date('Y') }} {{ $tenant->namabisnis ?? 'BookQu' }} · Didukung oleh BookQu
+    <footer @class(['no-print mt-auto border-t border-sf-divider text-[13px] text-sf-muted', 'px-4 py-5 text-center' => ! $immersive, 'mx-auto mt-9 w-full max-w-[1240px] px-4 pb-7 pt-5 md:px-8 lg:px-14' => $immersive, 'sf-footer-bar' => $immersive && View::hasSection('bottom_bar'), 'sf-footer-bar-always' => $immersive && trim(View::yieldContent('bottom_bar')) === 'always'])>
+        @if ($immersive)
+            <div class="flex flex-wrap justify-between gap-x-6 gap-y-2">
+                <span>{{ $tenant->namabisnis ?? 'BookQu' }}@if (filled($tenant->alamat ?? null)) · {{ $tenant->alamat }}@endif</span>
+                <span>Reservasi melalui BookQu</span>
+            </div>
+        @else
+            © {{ date('Y') }} {{ $tenant->namabisnis ?? 'BookQu' }} · Didukung oleh BookQu
+        @endif
     </footer>
 
     @unless (View::hasSection('minimal'))

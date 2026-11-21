@@ -170,12 +170,12 @@ class BookingFlowHardeningTest extends TestCase
         $payment = Payment::withoutGlobalScopes()->sole();
 
         $this->get('/my-business')->assertOk()
-            ->assertSee('Anda masih memiliki pembayaran yang belum selesai')
+            ->assertSee('Pembayaran belum selesai') // Design A §7.1 pending bar.
             ->assertSee('/my-business/booking/payment/'.$payment->order_id, false);
 
         $payment->update(['status' => 'gagal']);
 
-        $this->get('/my-business')->assertOk()->assertDontSee('Anda masih memiliki pembayaran yang belum selesai');
+        $this->get('/my-business')->assertOk()->assertDontSee('Pembayaran belum selesai');
     }
 
     public function test_cancelling_a_checkout_that_was_paid_meanwhile_returns_to_the_payment_page(): void

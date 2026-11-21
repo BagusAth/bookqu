@@ -91,10 +91,11 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->get('/'.$this->tenant->slug);
 
         $response->assertStatus(200);
-        $response->assertSee('Pilih layanan');
-        $response->assertSee('Pilih salah satu layanan untuk memulai pemesanan.');
-        $response->assertSee('placeholder="Cari layanan..."', false);
-        $response->assertSee('Pilih layanan ini');
+        // Design A §7.1: hero titled "Reservasi di {bisnis}", search, and each service is a submit button.
+        $response->assertSee('Reservasi di '.$this->tenant->namabisnis);
+        $response->assertSee('placeholder="Cari layanan"', false);
+        $response->assertSee('Semua layanan');
+        $response->assertSee('aria-label="Pilih Foto Wisuda Personal"', false);
         $response->assertSee('name="service_id"', false);
         $response->assertDontSee('cdn.jsdelivr.net/npm/alpinejs');
         $response->assertSee('Foto Wisuda Personal');

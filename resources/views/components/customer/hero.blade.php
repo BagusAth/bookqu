@@ -18,6 +18,7 @@
     'phoneLabel' => null,
     'phoneUrl' => null,
     'waUrl' => null,
+    'homeUrl' => null,
 ])
 
 @php
@@ -34,11 +35,13 @@
 
     <div class="mx-auto max-w-[1240px] px-4 pb-[22px] pt-3 md:px-8 md:pb-7 md:pt-[18px] lg:px-14 lg:pb-11 lg:pt-5">
         <div class="flex items-center gap-3">
-            @if ($logo)
-                <img src="{{ $logo }}" alt="Logo {{ $name }}" class="size-10 shrink-0 rounded-sf-card-small bg-sf-surface object-cover md:size-11">
-            @else
-                <span aria-hidden="true" class="grid size-10 shrink-0 place-items-center rounded-sf-card-small bg-sf-surface text-[15px] font-bold text-sf-primary-text md:size-11 md:text-base">{{ $initials }}</span>
-            @endif
+            <a href="{{ $homeUrl ?? '#' }}" class="shrink-0 rounded-sf-card-small" aria-label="Beranda {{ $name }}">
+                @if ($logo)
+                    <img src="{{ $logo }}" alt="" class="size-10 shrink-0 rounded-sf-card-small bg-sf-surface object-cover md:size-11">
+                @else
+                    <span aria-hidden="true" class="grid size-10 shrink-0 place-items-center rounded-sf-card-small bg-sf-surface text-[15px] font-bold text-sf-primary-text md:size-11 md:text-base">{{ $initials }}</span>
+                @endif
+            </a>
             <span class="grow text-xs font-semibold text-sf-hero-soft md:hidden">{{ $eyebrow }}</span>
             <span class="hidden grow truncate text-base font-bold md:block" title="{{ $name }}">{{ $name }}</span>
             @if ($waUrl)

@@ -125,7 +125,8 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('components.landing.pricing', fn ($view) => $view->with(app(GetPublicPlanCards::class)->execute(auth()->user())));
 
-        View::composer('customer.layouts.booking-shell', function (\Illuminate\View\View $view): void {
+        // Design A pages (BQ-165) draw the business hero themselves, so they get the same display data as the shell.
+        View::composer(['customer.layouts.booking-shell', 'customer.booking.program-selection', 'customer.booking.schedule-selection'], function (\Illuminate\View\View $view): void {
             $data = $view->getData();
             $tenant = $data['tenant'] ?? null;
             if ($tenant instanceof Tenant) {

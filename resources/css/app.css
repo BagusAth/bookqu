@@ -958,9 +958,17 @@
         border-radius: var(--sf-radius-card-small);
     }
     a.sf-card,
-    a.sf-card-small {
+    a.sf-card-small,
+    button.sf-card,
+    button.sf-card-small {
         color: var(--sf-text);
         text-decoration: none;
+    }
+    button.sf-card,
+    button.sf-card-small {
+        border: 0;
+        padding: 0;
+        font: inherit;
     }
 
     /* Hero (§5): brand colour with three thin rings and one disc, or the business banner under a dark scrim. */
@@ -1042,10 +1050,14 @@
         box-shadow: 0 -1px 0 var(--sf-divider), 0 -8px 24px rgba(23, 21, 31, 0.08);
         padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
     }
-    .sf-has-bottom-bar {
+    .sf-has-bottom-bar,
+    .sf-footer-bar {
         padding-bottom: calc(var(--sf-bottom-bar-height) + 24px + env(safe-area-inset-bottom));
     }
     @media (min-width: 1024px) {
+        .sf-footer-bar:not(.sf-footer-bar-always) {
+            padding-bottom: 28px;
+        }
         .sf-bottom-bar[data-phone-tablet] {
             display: none;
         }

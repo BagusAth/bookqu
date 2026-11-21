@@ -126,7 +126,7 @@ class ThreeStepBookingFlowTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Badminton Court Rental');
         $response->assertSee('Creative Hub Studio');
-        $response->assertSee('Layanan');
+        $response->assertSee('Semua layanan'); // Design A §7.1: the storefront has no step bar.
 
         $responseSelect = $this->post('/creative-hub-studio/booking/select-program', [
             'service_id' => $this->service->id,

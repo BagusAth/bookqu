@@ -16,6 +16,19 @@ document.addEventListener('alpine:init', () => {
             return categoryMatches && serviceName.toLowerCase().includes(this.searchQuery.trim().toLowerCase());
         },
 
+        visibleCount() {
+            return this.services.filter((service) => this.isCardVisible(service.category_id || '', service.name)).length;
+        },
+
+        isFiltering() {
+            return this.activeCategory !== 'all' || this.searchQuery.trim() !== '';
+        },
+
+        clearFilters() {
+            this.searchQuery = '';
+            this.activeCategory = 'all';
+        },
+
         setCategory(categoryId) {
             this.activeCategory = categoryId;
         },

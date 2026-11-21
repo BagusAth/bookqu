@@ -1,9 +1,11 @@
 {{--
     Service row (design A §6, §7.1). Phone: a list row with icon, name, duration · category, price and chevron.
     Tablet and desktop: a card in a two-column grid with a two-line description.
+    Without `href`, pass `value` to render a submit button (`name="service_id"`) inside the selection form.
 --}}
 @props([
-    'href',
+    'href' => null,
+    'value' => null,
     'name',
     'price',
     'duration' => null,
@@ -14,7 +16,11 @@
     'tone' => 0,
 ])
 
+@if ($href)
 <a href="{{ $href }}" {{ $attributes->class('sf-card-small flex items-center gap-3.5 p-3 md:items-stretch md:p-3.5 lg:gap-4 lg:p-4') }}>
+@else
+<button type="submit" name="service_id" value="{{ $value }}" aria-label="Pilih {{ $name }}" {{ $attributes->class('sf-card-small flex items-center gap-3.5 p-3 md:items-stretch md:p-3.5 lg:gap-4 lg:p-4 w-full cursor-pointer text-left') }}>
+@endif
     <span @class([
         'relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-sf-card-small text-sf-primary-text md:size-[88px]',
         'bg-sf-tint' => ! $image && $tone % 2 === 0,
@@ -40,4 +46,4 @@
         </span>
     </span>
     <x-customer.icon name="chevron-right" :stroke="2" class="text-sf-muted md:hidden" />
-</a>
+@if ($href)</a>@else</button>@endif

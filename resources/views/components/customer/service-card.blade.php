@@ -2,9 +2,11 @@
     Favourite service card (design A §6, §7.1): photo or icon on a light brand tile, "Favorit" label, category ·
     duration, name, price and an action. Phone: put it in a `sf-scroll-row` with a fixed width (290 px).
     Tablet: compact, three columns. Desktop: three columns with a two-line description.
+    Without `href`, pass `value` to render a submit button (`name="service_id"`) inside the selection form.
 --}}
 @props([
-    'href',
+    'href' => null,
+    'value' => null,
     'name',
     'price',
     'duration' => null,
@@ -16,7 +18,11 @@
     'tone' => 0,
 ])
 
+@if ($href)
 <a href="{{ $href }}" {{ $attributes->class('sf-card group block overflow-hidden') }}>
+@else
+<button type="submit" name="service_id" value="{{ $value }}" aria-label="Pilih {{ $name }}" {{ $attributes->class('sf-card group block overflow-hidden w-full cursor-pointer text-left') }}>
+@endif
     <span @class([
         'relative flex h-[168px] items-center justify-center md:h-[120px] lg:h-[168px]',
         'bg-sf-tint' => ! $image && $tone % 2 === 0,
@@ -48,4 +54,4 @@
             <span class="sf-btn sf-btn-sm md:hidden lg:inline-flex" aria-hidden="true"><span class="lg:hidden">Pilih</span><span class="hidden lg:inline">Pilih jadwal</span></span>
         </span>
     </span>
-</a>
+@if ($href)</a>@else</button>@endif
