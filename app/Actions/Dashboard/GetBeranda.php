@@ -222,6 +222,15 @@ class GetBeranda
             return null;
         }
 
+        // The guide is for a new owner. A business that already has a booking would otherwise lose its
+        // daily view to it, e.g. a tenant from before opening hours existed (T-04, approved by the Tech
+        // Lead on 21 Nov 2026), so its guide counts as done.
+        if (Booking::where('idtenant', $tenant->id)->exists()) {
+            $tenant->forceFill(['owner_guide_completed_at' => Carbon::now()])->save();
+
+            return null;
+        }
+
         $profileDone = collect(['namabisnis', 'jenisbisnis', 'nomorhp', 'alamat'])
             ->every(fn (string $field): bool => trim((string) $tenant->{$field}) !== '');
         $serviceDone = Service::where('idtenant', $tenant->id)->exists();

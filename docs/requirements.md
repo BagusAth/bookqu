@@ -984,7 +984,7 @@ Dashboard aggregation must not become an independent source of truth.
 
 ### FR-DASH-008 — Today and Needs Action (Accepted 2026-11-04, D-007 Revisi 1)
 
-The dashboard (Beranda) shows today only: one status banner by priority, today's figures, items needing action (refund and cancellation requests, ended bookings without an outcome, low-rated reviews without a reply, payout changes), today's schedule, a summary of tomorrow, and a new-owner guide until its steps are done. Trends and charts belong to reports (FR-ANALYTICS).
+The dashboard (Beranda) shows today only: one status banner by priority, today's figures, items needing action (refund and cancellation requests, ended bookings without an outcome, low-rated reviews without a reply, payout changes), today's schedule, a summary of tomorrow, and a new-owner guide until its steps are done or the business has a booking. Trends and charts belong to reports (FR-ANALYTICS).
 
 ## Calendar Requirements
 
