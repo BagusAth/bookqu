@@ -4,7 +4,7 @@ Dokumen ini berisi keputusan yang perlu divalidasi Product Lead, dan catatan kep
 
 **Cara menjawab:** balas dengan nomor entri dan poinnya, misalnya "D-001 setuju semua" atau "D-001 setuju kecuali poin 3: …". Setelah disetujui, Tech Lead membuat pekerjaannya. Keputusan yang sudah diambil bisa dibuka lagi kapan saja dengan menyebut nomornya.
 
-Terakhir diperbarui: 19 November 2026
+Terakhir diperbarui: 21 November 2026
 
 ---
 
@@ -25,6 +25,21 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 *Jawaban Product Lead:* —
 
+### D-028 · Template tampilan siap pakai di menu Tampilan
+
+*Status:* Menunggu · *Diajukan:* 21 Nov 2026 · *Menahan rilis:* tidak (hanya sesi 7 BQ-165)
+
+*Masalah*
+Owner sudah bisa memilih bentuk tombol (pil, membulat, kotak), gaya kartu (terangkat, garis tepi, lembut), dan huruf di Halaman Booking → Tampilan. Ada 9 kombinasi bentuk dan kartu, ditambah 6 huruf. Owner baru sering tidak tahu kombinasi mana yang cocok, padahal halaman pelanggan yang baru (BQ-165) berubah total mengikuti pilihan itu.
+
+*Usulan keputusan*
+1. Menu Tampilan menyediakan 3 template siap pakai: **Modern** (pil + terangkat + Plus Jakarta Sans), **Rapi** (membulat + garis tepi + Inter), dan **Tegas** (kotak + lembut + Outfit).
+2. Memilih template hanya mengisi ketiga pengaturan itu di formulir. Warna merek, logo, banner, dan deskripsi tidak berubah. Owner tetap menekan Simpan.
+3. Setelah memilih template, owner tetap bebas mengubah tiap pengaturan. Bila kombinasinya tidak sama dengan template mana pun, label menjadi "Kustom".
+4. Berlaku untuk semua paket, sama seperti pengaturan Tampilan saat ini (D-009). Tidak ada data baru yang disimpan.
+
+*Jawaban Product Lead:* —
+
 ---
 
 ## Untuk diketahui (tidak perlu keputusan)
@@ -38,6 +53,7 @@ Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
 - *4 Nov 2026:* satu akun hanya untuk satu bisnis. Owner yang ingin membuka bisnis lain mendaftar dengan akun terpisah.
 - *16 Nov 2026:* di Beranda, "Tandai selesai" muncul begitu sesi dimulai, sama seperti di panel booking. "Tidak datang" bisa ditandai langsung dari Beranda setelah sesi berakhir. (BQ-160)
 - *16 Nov 2026:* tampilan portal owner memakai warna BookQu (ungu dan oranye) dan huruf Plus Jakarta Sans. Jadwal hari ini di Beranda tampil sebagai garis waktu dengan penanda jam sekarang. Tombol tengah di HP bernama "Walk-in". Fitur dan alurnya tidak berubah. (BQ-161)
+- *21 Nov 2026:* semua halaman pelanggan (toko, jadwal, pembayaran, kelola reservasi, ubah jadwal, invoice, dan halaman error) mendapat tampilan baru yang sepenuhnya mengikuti warna merek, huruf, bentuk tombol, dan gaya kartu pilihan owner. Banner bisnis menjadi latar sampul toko. Judul toko menjadi "Reservasi di {nama bisnis}". Aturan harga, jadwal, pembayaran, dan refund tidak berubah. (BQ-165)
 
 ---
 
