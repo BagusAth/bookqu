@@ -22,7 +22,7 @@ final class GetCustomerInvoice
      * @param  iterable<Booking>  $bookings  Bookings already authorized for this invoice.
      * @return array<string, mixed>
      */
-    public function execute(Tenant $tenant, Payment $payment, iterable $bookings, ?string $backUrl = null): array
+    public function execute(Tenant $tenant, Payment $payment, iterable $bookings, ?string $backUrl = null, ?string $manageUrl = null): array
     {
         $bookings = collect($bookings)->values();
         $booking = $bookings->first();
@@ -82,6 +82,7 @@ final class GetCustomerInvoice
             'shareUrl' => 'https://api.whatsapp.com/send?text='.urlencode($shareText),
             'mapsUrl' => filled($tenant->alamat) ? 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($tenant->alamat) : null,
             'invoiceBackUrl' => $backUrl,
+            'manageUrl' => $manageUrl,
         ];
     }
 }

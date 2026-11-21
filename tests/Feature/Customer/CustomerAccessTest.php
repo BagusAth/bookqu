@@ -126,6 +126,43 @@ class CustomerAccessTest extends TestCase
         ];
     }
 
+    public function test_success_page_only_offers_management_to_a_session_with_the_matching_management_grant(): void
+    {
+        [$payment] = $this->reservation();
+        $invoice = route('customer.booking.slug.invoice', ['slug_usaha' => $payment->tenant->slug, 'payment' => $payment->order_id]);
+        $destination = route('booking.manage.payment', ['order_id' => $payment->order_id]);
+
+        $this->get($invoice)->assertNotFound();
+
+        [$foreign] = $this->reservation();
+        $this->enter($foreign);
+        $this->get($invoice)->assertNotFound();
+
+        [$sibling] = $this->reservation(tenant: $payment->tenant);
+        $this->enter($sibling);
+        $this->enter($payment, AccessProfile::Checkout);
+        $response = $this->get($invoice)->assertOk()->assertViewHas('manageUrl');
+        $this->assertNull($response->viewData('manageUrl'));
+        $this->get($destination)->assertNotFound();
+
+        $this->enter($payment);
+        $this->enter($payment, AccessProfile::Checkout);
+        $this->get($invoice)->assertOk()->assertViewHas('manageUrl', $destination);
+        $this->get($destination)->assertOk();
+    }
+
+    public function test_success_page_has_no_management_destination_after_booking_cancellation(): void
+    {
+        [$payment, $booking] = $this->reservation();
+        $this->enter($payment);
+        $booking->update(['status' => 'cancelled']);
+
+        $response = $this->get(route('customer.booking.slug.invoice', [
+            'slug_usaha' => $payment->tenant->slug, 'payment' => $payment->order_id,
+        ]))->assertOk()->assertViewHas('manageUrl');
+        $this->assertNull($response->viewData('manageUrl'));
+    }
+
     #[DataProvider('managementRoutes')]
     public function test_management_routes_reject_identifiers_checkout_and_foreign_grants(string $method, string $suffix): void
     {

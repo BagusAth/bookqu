@@ -2,15 +2,26 @@
 
 namespace App\Actions\CustomerAccess;
 
+use App\Domain\Booking\BookingState;
 use App\Domain\CustomerAccess\AccessContext;
+use App\Domain\CustomerAccess\AccessOperation;
 use App\Domain\CustomerAccess\AccessProfile;
 use App\Domain\CustomerAccess\IssuedGrant;
 use App\Models\Payment;
 use App\Models\Tenant;
 use App\Support\CustomerBookingRoutes;
+use Illuminate\Http\Request;
 
 final class CustomerAccessLinks
 {
+    public function managementForPayment(Request $request, Payment $payment): ?string
+    {
+        $context = app(CustomerAccessSession::class)->find($request, fn (AccessContext $context): bool => $context->allows(AccessOperation::Manage, $payment)
+            && ! $context->bookings->contains('status', BookingState::STATUS_CANCELLED));
+
+        return $context === null ? null : $this->destination($context);
+    }
+
     public function canonical(string $path): string
     {
         $origin = rtrim((string) config('app.url'), '/');

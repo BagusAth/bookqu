@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Actions\Booking\GetBookingTimeRanges;
 use App\Actions\Customer\GetCustomerInvoice;
 use App\Actions\CustomerAccess\CancelCheckoutPayment;
+use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Actions\Payment\OutcomeIntakeResult;
 use App\Actions\Payment\PaymentOutcomeIntake;
 use App\Models\Booking;
@@ -12,6 +13,7 @@ use App\Models\Payment;
 use App\Support\CustomerBookingRoutes;
 use App\Support\Rupiah;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 final class BookingPaymentController extends StorefrontBookingController
@@ -150,7 +152,7 @@ final class BookingPaymentController extends StorefrontBookingController
         };
     }
 
-    public function showInvoice(string $slug_usaha, Payment $payment)
+    public function showInvoice(Request $request, string $slug_usaha, Payment $payment, GetCustomerInvoice $invoice, CustomerAccessLinks $links)
     {
         $tenant = $this->resolveTenant($slug_usaha);
         if (! $tenant || $payment->idtenant !== $tenant->id) {
@@ -178,7 +180,8 @@ final class BookingPaymentController extends StorefrontBookingController
             abort(404, 'Data booking tidak ditemukan.');
         }
 
-        return view('customer.booking.invoice', app(GetCustomerInvoice::class)->execute($tenant, $payment, $bookings,
-            CustomerBookingRoutes::url('customer.booking.program', $slug_usaha)));
+        return view('customer.booking.invoice', $invoice->execute($tenant, $payment, $bookings,
+            CustomerBookingRoutes::url('customer.booking.program', $slug_usaha),
+            $links->managementForPayment($request, $payment)));
     }
 }
