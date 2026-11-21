@@ -34,11 +34,11 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Nee
 
 | Gap | Item |
 |---|---|
-| Login and registration have no rate limiting | BQ-007 |
-| The current-password check on account changes and deletion has no rate limit of its own (`routes/web.php` is reserved for BQ-128/BQ-130) | FR-AUTH-008 |
 | Audit P0: dead "forgot password" link, redirect loop, logout without CSRF handling on verify notice (status unknown since `ab24193`) | BQ-040 … BQ-042 |
 
 BQ-131: platform owner role is distinct from the tenant role. TenantPermission owns the Pemilik/Manajer/Kasir map; permission middleware and policies enforce it server-side. Own account fields refer to the signed-in member, not the business owner. Cashier dashboard/customer responses omit revenue/spending, and notification delivery/feed/counts are role-filtered. Existing admin/customer authorization mechanisms are unchanged.
 
 BQ-146: a team invitation expires after 24 hours. The emailed fragment is exchanged via a rate-limited, CSRF-protected POST for a session-bound invitation reference. Storage contains only the selector and secret hash. Delivery uses an encrypted queue job and a non-logging mailer. Acceptance rechecks expiry, invited email, membership and seats before consuming the invitation. New invitees create an account without opening a business or starting a trial.
+
+BQ-170: the account update, account deletion and payout account mutations share a current-password budget of five requests per minute per signed-in user. Payout account mutations retain their stricter throttle. Validation never flashes the deletion password back into the session. The Google Calendar OAuth callback has a separate throttle, and a role gate with no configured roles denies access.
 A revoked or otherwise invalid existing membership invalidates the session on the next owner request.

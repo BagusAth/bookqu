@@ -18,7 +18,7 @@ The minimum payout is `payouts.min_amount` (request rule, `RequestOwnerPayout` a
 
 ## Data
 
-`tenants.saldo_platform`; `tenant_payout_accounts`: `idtenant`, `bank_kode`, `bank_nama`, `nomor_rekening`, `nama_pemilik_rekening`, `is_default`, `changed_at` (at most `payouts.max_accounts` live accounts per tenant, default 3, BQ-123; the unique `idtenant`+`bank_kode`+`nomor_rekening` index includes soft-deleted rows, so re-adding a deleted account restores its row and a live duplicate is refused, BQ-127); `payments.balance_credited_at`; `owner_payouts`: `idtenant`, `request_key` (UUID), `payout_account_id`, `bank_kode`, amount, snapshot bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `approved_at`, `approved_by` (foreign key to `users.id`, `nullOnDelete`, BQ-127), `processed_at`, `processed_by` (no foreign key yet), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk). `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
+`tenants.saldo_platform`; `tenant_payout_accounts`: `idtenant`, `bank_kode`, `bank_nama`, `nomor_rekening`, `nama_pemilik_rekening`, `is_default`, `changed_at` (at most `payouts.max_accounts` live accounts per tenant, default 3, BQ-123; the unique `idtenant`+`bank_kode`+`nomor_rekening` index includes soft-deleted rows, so re-adding a deleted account restores its row and a live duplicate is refused, BQ-127); `payments.balance_credited_at`; `owner_payouts`: `idtenant`, `request_key` (UUID), `payout_account_id`, `bank_kode`, amount, snapshot bank account, `status` (`pending`, `approved`, `success`, `failed`, `rejected`), `approved_at`, `approved_by` (foreign key to `users.id`, `nullOnDelete`, BQ-127), `processed_at`, `processed_by` (nullable foreign key to `users.id` with `nullOnDelete`, BQ-170), `rejection_reason`, `transfer_reference`, `proof_path` (private `local` disk). `DeleteOwnerAccount` refuses account deletion whenever `saldo_platform != 0` or when in-flight payouts (`pending`, `approved`) exist (BQ-122).
 
 BQ-141: the balance ledger has no table. `GetBalanceLedger` reads the records whose writes change `saldo_platform`:
 
@@ -42,7 +42,6 @@ Functional: Implemented (BQ-015, BQ-103, BQ-122, BQ-123, BQ-124, BQ-125) · Veri
 | Gap | Item |
 |---|---|
 | Transfers are manual (no disbursement API); the admin records the reference and proof | — (v1 decision) |
-| `owner_payouts.processed_by` has no foreign key to `users.id` (found during BQ-127) | — (not yet an item) |
 | A refund can drive the balance below zero when the owner has already withdrawn; the admin settles it outside the app | — (v1 decision) |
 
 BQ-138: an accepted partial refund debits the recorded refund amount. Admin failure and retry change transfer status and leave the existing debit in place.
