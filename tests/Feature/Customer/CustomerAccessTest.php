@@ -163,6 +163,46 @@ class CustomerAccessTest extends TestCase
         $this->assertNull($response->viewData('manageUrl'));
     }
 
+    public function test_management_pages_offer_the_exact_pending_payment_until_the_deadline(): void
+    {
+        [$payment, $booking] = $this->reservation('pending');
+        $pages = [
+            route('booking.manage', ['booking_code' => $booking->booking_code]),
+            route('booking.manage.payment', ['order_id' => $payment->order_id]),
+        ];
+        $destination = route('customer.booking.slug.payment', [
+            'slug_usaha' => $payment->tenant->slug, 'payment' => $payment->order_id,
+        ]);
+
+        $this->get($pages[0])->assertNotFound();
+        [$foreign] = $this->reservation('pending');
+        $this->enter($foreign);
+        $this->get($pages[1])->assertNotFound();
+        $this->enter($payment);
+
+        foreach ($pages as $page) {
+            $this->get($page)->assertOk()->assertViewHas('continuePaymentUrl', $destination);
+        }
+        $this->get($destination)->assertOk()->assertViewHas('paymentState', 'pending');
+
+        $payment->update(['expired_at' => now()]);
+        foreach ($pages as $page) {
+            $response = $this->get($page)->assertOk()->assertViewHas('continuePaymentUrl');
+            $this->assertNull($response->viewData('continuePaymentUrl'));
+        }
+    }
+
+    public function test_management_page_cannot_continue_payment_after_its_booking_is_cancelled(): void
+    {
+        [$payment, $booking] = $this->reservation('pending');
+        $this->enter($payment);
+        $booking->update(['status' => 'cancelled']);
+
+        $response = $this->get(route('booking.manage', ['booking_code' => $booking->booking_code]))
+            ->assertOk()->assertViewHas('continuePaymentUrl');
+        $this->assertNull($response->viewData('continuePaymentUrl'));
+    }
+
     #[DataProvider('managementRoutes')]
     public function test_management_routes_reject_identifiers_checkout_and_foreign_grants(string $method, string $suffix): void
     {

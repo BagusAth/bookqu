@@ -3,10 +3,12 @@
 namespace App\Actions\Customer;
 
 use App\Actions\Booking\GetBookingTimeRanges;
+use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Actions\Payment\GetCustomerRefundForm;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
 use App\Domain\CustomerAccess\AccessContext;
+use App\Domain\CustomerAccess\AccessOperation;
 use App\Domain\Payment\PaymentState;
 use App\Models\Booking;
 use App\Models\BookingLog;
@@ -21,7 +23,11 @@ use Carbon\Carbon;
 
 final class GetCustomerManagementPage
 {
-    public function __construct(private GetBookingTimeRanges $ranges, private GetCustomerRefundForm $refundForm) {}
+    public function __construct(
+        private GetBookingTimeRanges $ranges,
+        private GetCustomerRefundForm $refundForm,
+        private CustomerAccessLinks $links,
+    ) {}
 
     /**
      * @param  iterable<Booking>  $bookings  Bookings resolved from the management grant.
@@ -64,6 +70,10 @@ final class GetCustomerManagementPage
             in_array($booking->status, [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED], true) => route('booking.manage.invoice', ['booking_code' => $bookingCode]),
             default => null,
         };
+        $continuePaymentUrl = $payment !== null && $payment->expired_at !== null && $payment->isPending()
+            && $access->allows(AccessOperation::Payment, $payment, $booking)
+            && $access->bookings->every(fn (Booking $row): bool => $row->status === BookingState::STATUS_PENDING)
+            ? $this->links->payment($payment, 'payment') : null;
 
         return $this->refundForm->execute($access, $booking) + [
             'tenant' => $tenant,
@@ -89,6 +99,7 @@ final class GetCustomerManagementPage
             'rescheduleUrl' => $canReschedule && $bookingCode ? route('booking.manage.reschedule.show', ['booking_code' => $bookingCode]) : null,
             'rescheduleDeadline' => $deadline?->locale('id')->translatedFormat('d M Y, H.i'),
             'invoiceUrl' => $invoiceUrl,
+            'continuePaymentUrl' => $continuePaymentUrl,
             'mapsUrl' => $address !== '' ? 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($address) : null,
             'history' => $this->history($bookings->flatMap(fn (Booking $row) => $row->logs)->whereInstanceOf(BookingLog::class)->values()->all()),
             'canReview' => ! $group && $booking->status === BookingState::STATUS_COMPLETED,
