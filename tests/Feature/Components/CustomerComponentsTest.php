@@ -7,19 +7,6 @@ use Tests\TestCase;
 
 final class CustomerComponentsTest extends TestCase
 {
-    public function test_summary_and_heading_render_prepared_customer_data(): void
-    {
-        $html = Blade::render(<<<'BLADE'
-            <x-customer.page-header title="Reservasi Anda" description="Periksa jadwal" />
-            <x-customer.summary :items="['Layanan' => 'Sesi foto']" total="Rp150.000" />
-            <x-customer.status label="Lunas" tone="success" />
-            BLADE);
-
-        foreach (['Reservasi Anda', 'Periksa jadwal', 'Sesi foto', 'Rp150.000', 'Lunas'] as $text) {
-            $this->assertStringContainsString($text, $html);
-        }
-    }
-
     public function test_date_time_and_quantity_controls_have_accessible_states(): void
     {
         $html = Blade::render(<<<'BLADE'

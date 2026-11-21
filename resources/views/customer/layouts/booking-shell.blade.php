@@ -34,15 +34,12 @@
                 --sf-shadow-card: {{ $branding['surface']['card'] }};
                 --sf-shadow-raised: {{ $branding['surface']['raised'] }};
                 --sf-font: '{{ $branding['font'] }}';
-                {{-- BQ-164 bridge for pages not yet rebuilt on design A; removed with the last of them. --}}
+                {{-- The Pro landing section (BQ-154, out of BQ-165 scope) still uses bq-* classes in the business colour. --}}
                 --bq-primary: {{ $branding['color'] }};
                 --bq-primary-hover: {{ $branding['hover'] }};
                 --bq-primary-light: {{ $branding['light'] }};
                 --bq-primary-border: {{ $branding['border'] }};
                 --bq-on-primary: {{ $branding['onPrimary'] }};
-                --bq-button-radius: {{ $branding['buttonRadius'] }};
-                --bq-card-shadow: {{ $branding['cardShadow'] }};
-                --bq-card-border: {{ $branding['cardBorder'] }};
             }
         </style>
     @endisset
@@ -66,9 +63,10 @@
             </a>
             <div class="flex shrink-0 items-center gap-1 sm:gap-2">
                 @hasSection('back_url')
-                    <x-ui.button :href="trim($__env->yieldContent('back_url'))" icon="chevron-left" :aria-label="$__env->yieldContent('back_label', 'Kembali')" class="min-h-11">
+                    <a href="{{ trim($__env->yieldContent('back_url')) }}" class="sf-btn-secondary sf-btn-sm min-w-11" aria-label="@yield('back_label', 'Kembali')">
+                        <x-customer.icon name="chevron-left" :size="18" :stroke="2" />
                         <span class="hidden sm:inline">@yield('back_label', 'Kembali')</span>
-                    </x-ui.button>
+                    </a>
                 @endif
                 <x-customer.help-link :href="$merchantWaUrl ?? null" />
                 @yield('header_actions')
@@ -76,13 +74,6 @@
         </div>
     </header>
 
-    @hasSection('current_step')
-        <div class="no-print border-b border-sf-divider bg-sf-surface px-4 py-3 sm:px-6">
-            <div class="mx-auto max-w-7xl">
-                <x-customer.progress-header :current="intval($__env->yieldContent('current_step', 1))" />
-            </div>
-        </div>
-    @endif
     @endunless
 
     <main @class([

@@ -35,4 +35,6 @@ Classes: `sf-btn` (primary), `sf-btn-secondary`, `sf-btn-on-primary` (on the her
 | `x-customer.empty-state` | `title`, `description`, `icon`, `tone` (`brand`, `warning`, `danger`), `code`, `headingLevel`; slot `actions` | Empty search, bookings closed, error pages |
 | `x-customer.icon` | `name`, `size`, `stroke` | Line icons, `aria-hidden` |
 
-Still from BQ-164, replaced as each screen is rebuilt (BQ-165 sessions 2–6): `x-customer.page-header`, `x-customer.summary`, `x-customer.stepper`, `x-customer.status`, `x-customer.progress-header`, `x-customer.pending-checkout-banner`, `x-customer.booking-policy`, `x-customer.help-link`.
+Other customer components: `x-customer.stepper` (−/+ quantity, 44 px), `x-customer.help-link` (WhatsApp help in the plain header of the access and error pages). `x-customer.booking-policy` is shared with the owner policy settings and keeps the owner tokens.
+
+The shell's `@section('immersive')` is for design A pages that draw their own hero or step header; `@section('bottom_bar')` keeps room for a bottom bar (`'always'` when it also shows on desktop). The Pro landing section (BQ-154) is the only customer markup left on `bq-*` classes; inside `[data-landing-template]` they take the business colour.

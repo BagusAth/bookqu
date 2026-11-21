@@ -663,24 +663,13 @@
     color: var(--sf-text);
 }
 
-/* BQ-164 bridge: pages not yet rebuilt on design A still use bq-* classes. Removed with the last of them (BQ-165 session 6). */
-.customer-shell[data-branded] {
+/* The Pro landing section (BQ-154) keeps its bq-* classes; inside it they take the business colour. */
+.customer-shell[data-branded] [data-landing-template] {
     --color-bq-primary: var(--bq-primary);
     --color-bq-primary-hover: var(--bq-primary-hover);
     --color-bq-primary-light: var(--bq-primary-light);
     --color-bq-primary-border: var(--bq-primary-border);
     --color-bq-on-primary: var(--bq-on-primary);
-}
-
-.customer-shell .bq-btn-primary,
-.customer-shell .customer-primary {
-    border-radius: var(--sf-radius-control);
-    color: var(--color-bq-on-primary);
-}
-
-.customer-shell .booking-card {
-    border: var(--bq-card-border);
-    box-shadow: var(--bq-card-shadow);
 }
 
 .customer-shell :focus-visible {
@@ -1189,6 +1178,38 @@
     }
     [data-urgent] .sf-countdown-value {
         color: var(--sf-error);
+    }
+
+    /* Kelola reservasi (spec §7.6): one column on phone, schedule and review full width on tablet,
+       schedule + review + history | payment + customer + location + help on desktop. */
+    .sf-manage-grid {
+        display: grid;
+        gap: 14px;
+        align-items: start;
+        grid-template-areas: 'jadwal' 'ulasan' 'bayar' 'pemesan' 'lokasi' 'bantuan' 'riwayat';
+    }
+    @media (min-width: 768px) {
+        .sf-manage-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-areas: 'jadwal jadwal' 'ulasan ulasan' 'bayar pemesan' 'lokasi bantuan' 'riwayat riwayat';
+        }
+    }
+    /* Column wrappers vanish below desktop so their cards take the grid areas above. */
+    .sf-manage-col {
+        display: contents;
+    }
+    @media (min-width: 1024px) {
+        .sf-manage-grid {
+            grid-template-columns: minmax(0, 1fr) 360px;
+            grid-template-areas: none;
+            gap: 20px;
+        }
+        .sf-manage-col {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+        }
     }
 
     /* Dot under a date: has sessions or full. */
