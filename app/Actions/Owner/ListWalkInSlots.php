@@ -23,8 +23,7 @@ final class ListWalkInSlots
      */
     public function execute(Tenant $tenant, string $date): array
     {
-        // scope-bypass: filtered by the server-resolved tenant of the signed-in member
-        $services = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->where('is_active', true)->orderBy('namalayanan')->get(['id', 'namalayanan']);
+        $services = Service::query()->where('idtenant', $tenant->id)->where('is_active', true)->orderBy('namalayanan')->get(['id', 'namalayanan']);
 
         $addOns = app(GetBookingAddOnOptions::class)->execute($tenant, $services->pluck('id')->values()->all());
         $slots = [];

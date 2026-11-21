@@ -16,6 +16,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\CustomerBookingRoutes;
+use App\Support\TenantContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -46,8 +47,14 @@ final class GetOwnerShell
 
         $tenant = $member->tenant;
         $role = (string) $member->role;
-        // scope-bypass: the subscription of the signed-in member's own business
-        $subscription = Subscription::withoutGlobalScopes()->with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
+
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): array => $this->forMember($user, $tenant, $role, $currentRoute));
+    }
+
+    /** @return array<string, mixed> */
+    private function forMember(User $user, Tenant $tenant, string $role, ?string $currentRoute): array
+    {
+        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
 
         $items = $this->navigation->execute($user);
         $activeId = $this->activeItem($items, (string) $currentRoute);
@@ -133,8 +140,7 @@ final class GetOwnerShell
         if (in_array('bookings', $visible, true)) {
             $count = 0;
             if (TenantPermission::allowsRole($role, 'refunds.decide')) {
-                // scope-bypass: open refund requests of the member's own business
-                $count += RefundRequest::withoutGlobalScopes()->where('idtenant', $tenant->id)->where('status', 'open')->count();
+                $count += RefundRequest::where('idtenant', $tenant->id)->where('status', 'open')->count();
             }
             if (TenantPermission::allowsRole($role, 'bookings.cancel')) {
                 $count += DB::table('booking_cancellation_requests')->where('idtenant', $tenant->id)->where('status', 'pending')->count();
@@ -145,8 +151,7 @@ final class GetOwnerShell
         }
 
         if (in_array('reviews', $visible, true)) {
-            // scope-bypass: reviews of the member's own business
-            $unanswered = Review::withoutGlobalScopes()->where('idtenant', $tenant->id)->whereNull('balasan')->count();
+            $unanswered = Review::where('idtenant', $tenant->id)->whereNull('balasan')->count();
             if ($unanswered > 0) {
                 $badges['reviews'] = ['text' => (string) $unanswered, 'tone' => 'info', 'label' => $unanswered.' ulasan belum dibalas'];
             }

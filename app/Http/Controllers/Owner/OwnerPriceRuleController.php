@@ -115,7 +115,6 @@ class OwnerPriceRuleController extends Controller
 
     private function service(Tenant $tenant, int $serviceId): Service
     {
-        // scope-bypass: filtered by the authenticated tenant
-        return Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->findOrFail($serviceId);
+        return Service::query()->where('idtenant', $tenant->id)->findOrFail($serviceId);
     }
 }
