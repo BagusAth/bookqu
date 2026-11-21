@@ -143,6 +143,12 @@ class ReleaseGateAndHardeningTest extends TestCase
         $this->post('/login', ['email' => $this->owner->email, 'password' => 'wrong-password'])->assertTooManyRequests();
     }
 
+    public function test_role_middleware_refuses_access_when_no_roles_are_configured(): void
+    {
+        Route::middleware(['web', 'auth', 'role'])->get('/_test/role-gated', fn () => 'ok');
+        $this->actingAs($this->owner)->get('/_test/role-gated')->assertForbidden();
+    }
+
     public function test_test_token_command_refuses_outside_local_and_testing(): void
     {
         $this->app['env'] = 'production';
