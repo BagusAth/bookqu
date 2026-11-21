@@ -6,6 +6,7 @@ use App\Actions\Admin\ProcessOwnerPayout;
 use App\Domain\Payout\PayoutState;
 use App\Http\Controllers\Controller;
 use App\Models\OwnerPayout;
+use App\Models\Scopes\TenantScope;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,12 +19,22 @@ class AdminPayoutController extends Controller
 
         // scope-bypass: platform admin (role:admin route) lists payouts of every tenant
         $payouts = OwnerPayout::withoutGlobalScopes()
-            ->with(['tenant:id,namabisnis,iduser,saldo_platform', 'tenant.user:id,email', 'payoutAccount'])
+            ->with([
+                'tenant:id,namabisnis,iduser,saldo_platform', 'tenant.user:id,email',
+                // scope-bypass: the platform-admin list reads the accounts referenced by the displayed payouts.
+                'payoutAccount' => fn ($query) => $query->withoutGlobalScope(TenantScope::class),
+            ])
             ->when(is_string($status) && $status !== '', fn ($query) => $query->where('status', $status))
             ->orderByRaw("CASE WHEN status IN ('pending', 'approved') THEN 0 ELSE 1 END")
             ->orderByDesc('requested_at')
             ->paginate(25)
             ->withQueryString();
+
+        $payouts->each(function (OwnerPayout $payout): void {
+            if ((int) $payout->payoutAccount?->idtenant !== (int) $payout->idtenant) {
+                $payout->setRelation('payoutAccount', null);
+            }
+        });
 
         return view('admin.payouts', ['payouts' => $payouts, 'status' => $status]);
     }

@@ -7,6 +7,8 @@ use App\Domain\Integrations\RefundIntegrationEvent;
 use App\Jobs\SendRefundCustomerUpdate;
 use App\Models\Payment;
 use App\Models\Refund;
+use App\Support\TenantContext;
+use App\Support\TenantDiscovery;
 use Illuminate\Support\Facades\DB;
 
 final class ProcessRefundTransfer
@@ -15,11 +17,10 @@ final class ProcessRefundTransfer
 
     public function execute(Refund $refund, string $result, ?string $reference, ?string $reason): void
     {
-        // scope-bypass: platform admin processes the refund's stored payment; recheck under the tenant lock.
-        $payment = Payment::withoutGlobalScopes()->findOrFail($refund->payment_id);
-        DB::transaction(function () use ($refund, $payment, $result, $reference, $reason): void {
-            $tenantId = (int) $payment->idtenant;
+        $tenantId = app(TenantDiscovery::class)->payment((int) $refund->payment_id) ?? abort(404);
+        app(TenantContext::class)->run($tenantId, fn () => DB::transaction(function () use ($refund, $tenantId, $result, $reference, $reason): void {
             ClaimSlots::lockTenant($tenantId);
+            $payment = Payment::findOrFail($refund->payment_id);
             $current = Refund::where('payment_id', $payment->id)->lockForUpdate()->findOrFail($refund->id);
             if ($current->status === $result) {
                 return;
@@ -41,6 +42,6 @@ final class ProcessRefundTransfer
                     SendRefundCustomerUpdate::dispatch($tenantId, (int) $current->booking_id, $result)->afterCommit();
                 }
             }
-        });
+        }));
     }
 }

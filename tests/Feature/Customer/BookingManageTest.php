@@ -151,6 +151,10 @@ class BookingManageTest extends TestCase
         $this->get('/admin/refunds')->assertForbidden();
         $this->actingAs(User::factory()->create(['role' => 'admin']))->get('/admin/refunds')
             ->assertOk()->assertDontSee($payload['nomor_rekening']);
+        $foreign = Tenant::factory()->create();
+        DB::table('refund_requests')->where('id', $refundRequest->id)->update(['idtenant' => $foreign->id]);
+        $this->post("/admin/refunds/{$refund->id}/transfer")->assertNotFound();
+        DB::table('refund_requests')->where('id', $refundRequest->id)->update(['idtenant' => $this->booking->idtenant]);
         $this->post("/admin/refunds/{$refund->id}/transfer")->assertOk()->assertSee($payload['nomor_rekening']);
         $this->patch("/admin/refunds/{$refund->id}", ['status' => 'processed', 'reference' => 'TEST-TRANSFER'])->assertRedirect();
         $this->assertDatabaseHas('refunds', ['id' => $refund->id, 'status' => 'processed', 'refund_reference' => 'TEST-TRANSFER']);

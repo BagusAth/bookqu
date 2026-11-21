@@ -47,7 +47,6 @@ class OwnerPayout extends Model
 
     public function payoutAccount(): BelongsTo
     {
-        // scope-bypass: payout references its own snapshot account row regardless of current tenant context
-        return $this->belongsTo(TenantPayoutAccount::class, 'payout_account_id')->withoutGlobalScopes()->withTrashed();
+        return $this->belongsTo(TenantPayoutAccount::class, 'payout_account_id')->withTrashed();
     }
 }
