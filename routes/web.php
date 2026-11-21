@@ -275,7 +275,8 @@ Route::prefix('owner')
                 Route::get('/', [OwnerIntegrationController::class, 'index']);
                 Route::put('/tracking', [OwnerIntegrationController::class, 'saveTracking'])->name('.tracking');
                 Route::post('/calendar/connect', [OwnerIntegrationController::class, 'beginCalendar'])->name('.calendar.connect');
-                Route::get('/calendar/callback', [OwnerIntegrationController::class, 'connectCalendar'])->name('.calendar.callback');
+                Route::get('/calendar/callback', [OwnerIntegrationController::class, 'connectCalendar'])
+                    ->middleware('throttle:10,1,owner-calendar-callback:')->name('.calendar.callback');
                 Route::post('/calendar/test', [OwnerIntegrationController::class, 'testCalendar'])->name('.calendar.test');
                 Route::delete('/calendar', [OwnerIntegrationController::class, 'disconnectCalendar'])->name('.calendar.disconnect');
             });
