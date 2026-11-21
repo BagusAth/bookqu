@@ -108,6 +108,32 @@ class ReleaseGateAndHardeningTest extends TestCase
         $this->actingAs($userWithoutTenant)->get('/_test/subscription-gated')->assertForbidden();
     }
 
+    public function test_subscription_gate_refuses_an_owners_relation_without_verified_context(): void
+    {
+        app(CreateTrialSubscription::class)->execute($this->tenant);
+        Route::middleware(['web', 'auth', 'subscription:promos'])->get('/_test/subscription-gated', fn () => 'ok');
+
+        $this->actingAs($this->owner)->get('/_test/subscription-gated')->assertForbidden();
+        $this->get(route('owner.promos'))->assertOk();
+    }
+
+    public function test_feature_gates_require_tenant_middleware_and_leave_tenantless_entry_points_available(): void
+    {
+        foreach (Route::getRoutes() as $route) {
+            $middleware = $route->gatherMiddleware();
+            foreach ($middleware as $entry) {
+                if (str_starts_with($entry, 'subscription:')) {
+                    $this->assertContains('tenant', $middleware, (string) $route->getName());
+                }
+            }
+        }
+
+        $this->get(route('login'))->assertOk();
+        $this->get(route('register'))->assertOk();
+        $userWithoutTenant = User::factory()->create(['role' => 'owner', 'email_verified_at' => now()]);
+        $this->actingAs($userWithoutTenant)->get(route('owner.dashboard'))->assertOk();
+    }
+
     public function test_login_attempts_are_throttled(): void
     {
         foreach (range(1, 10) as $attempt) {
