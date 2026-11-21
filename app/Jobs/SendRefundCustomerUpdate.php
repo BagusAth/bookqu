@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Booking;
+use App\Support\TenantContext;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Mail;
@@ -15,8 +16,7 @@ final class SendRefundCustomerUpdate implements ShouldQueue
 
     public function handle(): void
     {
-        // scope-bypass: a queued notification is bound to its stored booking and tenant.
-        $booking = Booking::withoutGlobalScopes()->where('idtenant', $this->tenantId)->find($this->bookingId);
+        $booking = app(TenantContext::class)->run($this->tenantId, fn (): ?Booking => Booking::find($this->bookingId));
         if ($booking === null || ! $booking->email) {
             return;
         }

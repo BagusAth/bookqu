@@ -5,6 +5,7 @@ namespace App\Actions\Payment;
 use App\Actions\Schedule\ClaimSlots;
 use App\Domain\Payment\RefundRequestState;
 use App\Models\RefundRequest;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 
 final class RemindOpenRefundRequests
@@ -18,17 +19,16 @@ final class RemindOpenRefundRequests
         RefundRequest::withoutGlobalScopes()->where('status', RefundRequestState::Open->value)
             ->where(fn ($query) => $query->whereNull('last_reminded_on')->orWhere('last_reminded_on', '<', $date))
             ->select(['id', 'idtenant'])->eachById(function (RefundRequest $candidate) use ($date): void {
-                DB::transaction(function () use ($candidate, $date): void {
-                    $tenantId = (int) $candidate->idtenant;
+                $tenantId = (int) $candidate->idtenant;
+                app(TenantContext::class)->run($tenantId, fn () => DB::transaction(function () use ($candidate, $date, $tenantId): void {
                     ClaimSlots::lockTenant($tenantId);
-                    // scope-bypass: scheduler rechecks the same request inside its tenant lock.
-                    $request = RefundRequest::withoutGlobalScopes()->where('idtenant', $tenantId)->lockForUpdate()->find($candidate->id);
+                    $request = RefundRequest::lockForUpdate()->find($candidate->id);
                     if ($request?->status !== RefundRequestState::Open || $request->last_reminded_on === $date) {
                         return;
                     }
                     $request->update(['last_reminded_on' => $date]);
                     DB::afterCommit(fn () => $this->notify->execute($tenantId, $request->id, 'refund_reminder'));
-                });
+                }));
             });
     }
 }

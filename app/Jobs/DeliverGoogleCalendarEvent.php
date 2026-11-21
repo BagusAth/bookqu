@@ -34,15 +34,11 @@ final class DeliverGoogleCalendarEvent implements ShouldQueue
             return;
         }
 
-        $previous = $context->getTenantId();
-        $context->setTenantId($this->event->tenantId);
-        try {
+        $context->run($this->event->tenantId, function () use ($context, $calendar): void {
             $tenant = $context->tenant();
             if ($tenant !== null && EntitlementRules::canAccessFeature($tenant->subscription()->with('plan')->first(), 'integrations')['allowed']) {
                 $calendar->deliver($tenant, $this->event);
             }
-        } finally {
-            $context->setTenantId($previous);
-        }
+        });
     }
 }
