@@ -64,11 +64,7 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 |---|---|
 
 
-| Owner bookings list shows the service's current price instead of the charged amount, and maps payment states that do not exist | BQ-135 |
-| The reschedule UI still needs to render the owner quote difference and the customer contact hint from the slot API | BQ-140 |
-| Unit page, capacity and unit fields in Layanan, participants input in checkout and walk-in, Kalender unit filter and the no-show panel action have backend only; the UI follows | BQ-151, BQ-152, BQ-153 |
 | The customer reschedule calendar counts capacity but not unit conflicts (advisory; the time list and the claim do) | BQ-152 |
-| The hidden staff-resources module keeps its own `resources` tables until BQ-157 removes it; units were copied from it once | BQ-157 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). BQ-029 uses a typed checkout draft and separates catalog, schedule, checkout and payment routes. The session adapter retains the legacy shape, and placement retains the BQ-083 quote fingerprint and transactional slot claim.
 

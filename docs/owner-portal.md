@@ -62,7 +62,7 @@ These rules decide where anything new goes. Breaking one needs a Tech Lead decis
 | Pemasaran | Ulasan | `/owner/reviews` | unanswered reviews |
 | Keuangan | Pembayaran | `/owner/payments` (new; tabs Ringkasan, Transaksi, Saldo & Pencairan, Rekening, Pengaturan) | — |
 | Keuangan | Laporan | `/owner/analytics` (tabs Ringkasan, Pendapatan, Okupansi, Layanan, Pelanggan) | — |
-| Lainnya | Pengaturan | `/owner/settings/business` (tabs Profil Bisnis, Kebijakan Booking, Notifikasi, Integrasi, Akun, Tim) | — |
+| Lainnya | Pengaturan | `/owner/settings` (tabs Profil Bisnis, Kebijakan Booking, Notifikasi, Integrasi, Akun, Tim) | — |
 | Lainnya | Paket & Tagihan | `/owner/subscription` | trial days left |
 | Lainnya | Bantuan | `/owner/help` (new) | — |
 
@@ -405,7 +405,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 - **Not here:** slots, slot prices and opening hours (Jam Buka & Harga); staff as service providers (removed, D-011).
 - **Empty states:** the first-service guide continues to Jam Buka & Harga after saving.
 - **Source:**
-  - inventory §2.5: the services and programs routes. `owner.programs.*` redirects to `owner.services.*`.
+  - inventory §2.5: services use `owner.services.*`. The old `/owner/programs` bookmark redirects to Layanan.
   - YATIM-2 (popular), YATIM-3 (units of price and duration).
   - §2.6 categories, including YATIM-4 (colour).
   - §2.7 add-ons, including `is_unlimited`.
@@ -630,7 +630,7 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
 
 ### 8.14 Pengaturan
 
-- **Path:** `/owner/settings/business`. `/owner/settings` redirects here. One page with tabs; each tab saves separately. **Access:** per tab (§5).
+- **Path:** `/owner/settings`. `/owner/settings/business` redirects here. One page with tabs; each tab saves separately. **Access:** per tab (§5).
 
 | Tab | Question | Contents | Access, plan |
 |---|---|---|---|
@@ -774,15 +774,15 @@ Every current page and route is placed. The route-level detail is in `inventaris
 
 | Old path or route name | New | How |
 |---|---|---|
-| `owner.programs.*` (`/owner/programs`) | `owner.services.*` | Permanent redirect for GET; write routes removed |
+| `/owner/programs` | `/owner/services` | Permanent GET redirect |
 | `/owner/vouchers` | `/owner/promos` | Redirect |
 | `/owner/settings/balance` | `/owner/payments?tab=saldo` | Redirect |
-| `/owner/settings/payments`, `/owner/settings/payment-setting`, `owner.settings.payment` | — | Removed (D-016); GET redirects to `/owner/payments` |
+| `/owner/settings/payments`, `/owner/settings/payment-setting` | `/owner/payments` | Permanent GET redirects (D-016) |
 | `/owner/settings/appearance`, `/owner/settings/assets`, `/owner/landing-page` | `/owner/booking-page` sections | Redirect |
 | `/owner/schedule-report` | `/owner/analytics?tab=okupansi` | Redirect |
-| `/owner/staff-resources` | `/owner/units` or `/owner/settings/business?tab=tim` | Redirect to Unit (Pro) or Tim |
-| `/owner/settings/integrations` | `/owner/settings/business?tab=integrasi` | Redirect |
-| `/owner/settings` | `/owner/settings/business` | Redirect |
+| `/owner/staff-resources` | `/owner/settings?tab=tim` | Redirect to Tim |
+| `/owner/settings/integrations` | `/owner/settings?tab=integrasi` | Redirect |
+| `/owner/settings/business` | `/owner/settings` | Permanent GET redirect |
 
 Every other path stays as it is.
 

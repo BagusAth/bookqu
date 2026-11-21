@@ -43,12 +43,7 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Tar
 
 | Gap | Item |
 |---|---|
-| `CheckSubscription` lets the request through when no tenant is resolved | BQ-006 |
-
-| What an expired tenant may still do, trial-to-paid timing, renewal losing remaining paid days, reminders | BQ-139 |
-| Expiry command updates status with raw queries | BQ-130 |
 | Quota also re-checked in `BookingController::selectDate` | BQ-029 |
-| Audit P1: "Change plan" button dead, sidebar subscription card wrong for paid plans | BQ-066 |
 
 Target decisions: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) (release gate separate from entitlement; both fail closed, BQ-006/BQ-033) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (subscription payments swept, BQ-071). Not implemented yet.
 
