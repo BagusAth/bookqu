@@ -20,7 +20,7 @@ final class OwnerApiController extends Controller
 
     public function index(): RedirectResponse
     {
-        return redirect()->to(route('owner.settings.business', ['tab' => 'integrasi']).'#api', 301);
+        return redirect()->to(route('owner.settings', ['tab' => 'integrasi']).'#api', 301);
     }
 
     public function createKey(SaveApiCredentialRequest $request, ManageOwnerApiCredentials $action): Response
@@ -35,7 +35,7 @@ final class OwnerApiController extends Controller
     {
         $action->revoke($this->tenant(), $id);
 
-        return redirect()->to(route('owner.settings.business', ['tab' => 'integrasi']).'#api')->with('sukses', 'Kunci API dicabut.');
+        return redirect()->to(route('owner.settings', ['tab' => 'integrasi']).'#api')->with('sukses', 'Kunci API dicabut.');
     }
 
     public function createWebhook(SaveApiCredentialRequest $request, ManageOwnerApiCredentials $action): Response
@@ -50,14 +50,14 @@ final class OwnerApiController extends Controller
     {
         $action->deleteWebhook($this->tenant(), $id);
 
-        return redirect()->to(route('owner.settings.business', ['tab' => 'integrasi']).'#api')->with('sukses', 'Endpoint webhook dihapus.');
+        return redirect()->to(route('owner.settings', ['tab' => 'integrasi']).'#api')->with('sukses', 'Endpoint webhook dihapus.');
     }
 
     public function testWebhook(int $id, QueueManualWebhook $webhook): RedirectResponse
     {
         $webhook->test($this->tenant(), $id);
 
-        return redirect()->to(route('owner.settings.business', ['tab' => 'integrasi']).'#api')
+        return redirect()->to(route('owner.settings', ['tab' => 'integrasi']).'#api')
             ->with('sukses', 'Webhook uji masuk antrean pengiriman.');
     }
 
@@ -65,7 +65,7 @@ final class OwnerApiController extends Controller
     {
         $webhook->redeliver($this->tenant(), $id);
 
-        return redirect()->to(route('owner.settings.business', ['tab' => 'integrasi']).'#api')
+        return redirect()->to(route('owner.settings', ['tab' => 'integrasi']).'#api')
             ->with('sukses', 'Webhook masuk antrean pengiriman ulang.');
     }
 

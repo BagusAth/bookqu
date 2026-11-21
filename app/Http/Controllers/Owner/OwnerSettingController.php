@@ -38,6 +38,11 @@ class OwnerSettingController extends Controller
         ));
     }
 
+    public function legacyBusiness(Request $request): RedirectResponse
+    {
+        return redirect()->route('owner.settings', $request->query(), 301);
+    }
+
     /**
      * Simpan profil bisnis untuk owner baru.
      */

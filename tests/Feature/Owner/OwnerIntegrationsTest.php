@@ -57,13 +57,13 @@ final class OwnerIntegrationsTest extends TestCase
         parse_str((string) parse_url((string) $response->headers->get('Location'), PHP_URL_QUERY), $query);
         $this->assertSame('S256', $query['code_challenge_method']);
         $url = $callback.'?'.http_build_query(['state' => $query['state'], 'code' => 'test-code']);
-        $this->get($url)->assertRedirect(route('owner.settings.business', ['tab' => 'integrasi']))->assertSessionHasNoErrors();
+        $this->get($url)->assertRedirect(route('owner.settings', ['tab' => 'integrasi']))->assertSessionHasNoErrors();
         $this->get($url)->assertForbidden();
 
         $raw = DB::table('owner_integrations')->where('idtenant', $this->tenant->id)->value('google_refresh_token');
         $this->assertNotNull($raw);
         $this->assertNotSame('test-refresh', $raw);
-        $this->get(route('owner.settings.business', ['tab' => 'integrasi']))->assertOk()->assertSee('Terhubung')
+        $this->get(route('owner.settings', ['tab' => 'integrasi']))->assertOk()->assertSee('Terhubung')
             ->assertDontSee('test-access')->assertDontSee('test-refresh');
         $this->delete(route('owner.settings.integrations.calendar.disconnect'))->assertSessionHasNoErrors();
         $this->assertDatabaseHas('owner_integrations', ['idtenant' => $this->tenant->id, 'google_refresh_token' => null]);

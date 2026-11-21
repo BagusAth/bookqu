@@ -3,6 +3,7 @@
 namespace Tests\Feature\Customer;
 
 use App\Actions\Subscription\CreateTrialSubscription;
+use App\Domain\Tenant\CustomDomain;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
@@ -73,6 +74,40 @@ class CustomDomainBookingTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Studio Brama');
         $response->assertSee('Photoshoot Personal');
+    }
+
+    public function test_platform_hosts_keep_the_landing_page_and_generate_slug_storefront_urls(): void
+    {
+        app(CreateTrialSubscription::class)->execute($this->tenant);
+
+        foreach (['bookqu.my.id', 'preview.bookqu.test'] as $host) {
+            $this->get('http://'.$host.'/')->assertOk()->assertDontSee('Studio Brama');
+            $this->get('http://'.$host.'/studio-brama')->assertOk()->assertSee('Studio Brama')
+                ->assertSee('action="http://'.$host.'/studio-brama/booking/select-program"', false);
+        }
+    }
+
+    public function test_platform_domain_matching_uses_a_label_boundary_for_custom_domains(): void
+    {
+        $host = 'bookqu.test.studiobrama.com';
+        $this->tenant->update(['custom_domain' => $host]);
+        app(CreateTrialSubscription::class)->execute($this->tenant);
+
+        $this->get('http://'.$host.'/')->assertOk()->assertSee('Studio Brama')
+            ->assertSee('action="http://'.$host.'/booking/select-program"', false);
+    }
+
+    public function test_the_configured_app_host_is_reserved_for_platform_routing_and_domain_registration(): void
+    {
+        config(['app.url' => 'https://booking.example:8443']);
+        $pattern = '~^'.CustomDomain::tenantHostPattern().'$~iD';
+
+        foreach (['booking.example', 'preview.booking.example'] as $host) {
+            $this->assertTrue(CustomDomain::isPlatformHost($host));
+            $this->assertFalse(CustomDomain::isAllowed($host));
+            $this->assertDoesNotMatchRegularExpression($pattern, $host);
+        }
+        $this->assertMatchesRegularExpression($pattern, 'booking.example.studiobrama.com');
     }
 
     public function test_customer_can_select_program_via_custom_domain(): void

@@ -25,8 +25,8 @@ class OwnerPortalWorkflowTest extends TestCase
         app(CreateTrialSubscription::class)->execute($tenant);
         $this->actingAs($tenant->user);
 
-        $team = route('owner.settings.business', ['tab' => 'tim']);
-        $integrations = route('owner.settings.business', ['tab' => 'integrasi']);
+        $team = route('owner.settings', ['tab' => 'tim']);
+        $integrations = route('owner.settings', ['tab' => 'integrasi']);
         $this->get(route('owner.team.index'))->assertRedirect($team);
         $this->get(route('owner.settings.integrations'))->assertRedirect($integrations);
         $this->get(route('owner.api.index'))->assertRedirect($integrations.'#api');

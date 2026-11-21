@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Tenant\CustomDomain;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminPayoutController;
 use App\Http\Controllers\Admin\AdminRefundController;
@@ -141,7 +142,7 @@ Route::prefix('owner')
         Route::get('/checkout/{payment:order_id}/invoice', [OwnerCheckoutController::class, 'showInvoice'])->name('owner.checkout.invoice');
 
         Route::middleware('owner.profile')->group(function () {
-            Route::get('/programs', [OwnerProgramController::class, 'legacyIndex'])->name('owner.programs');
+            Route::get('/programs', [OwnerProgramController::class, 'legacyIndex'])->name('owner.services.legacy-programs');
             Route::get('/schedule', [OwnerScheduleController::class, 'index'])->name('owner.schedule');
             Route::post('/schedule/bulk-slots', [OwnerScheduleController::class, 'bulkStore'])->name('owner.schedule.bulk-store');
             Route::post('/schedule/selected-slots', [OwnerScheduleController::class, 'changeSelectedSlots'])->name('owner.schedule.slots.bulk');
@@ -231,7 +232,7 @@ Route::prefix('owner')
             Route::post('/customers/note', [OwnerCustomerController::class, 'saveNote'])->name('owner.customers.note');
 
             // Settings & Configurations
-            Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
+            Route::get('/settings/business', [OwnerSettingController::class, 'legacyBusiness'])->name('owner.settings.legacy-business');
             // BQ-142 (owner-portal.md §8.9): Halaman Booking for every plan (D-009, D-010), behind its module until released (ADR-0021).
             Route::middleware('module:booking-page')->group(function () {
                 Route::get('/booking-page', [OwnerBookingPageController::class, 'index'])->name('owner.booking-page');
@@ -256,9 +257,9 @@ Route::prefix('owner')
             Route::get('/payments', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.payments');
             Route::get('/settings/balance', [OwnerBalanceController::class, 'legacyBalance'])->middleware('module:balance')->name('owner.settings.balance');
             // BQ-157 (owner-portal.md §10.2): removed gateway settings (D-016) and the withdrawn staff page.
-            Route::permanentRedirect('/settings/payments', '/owner/payments')->name('owner.payments.legacy-settings');
-            Route::permanentRedirect('/settings/payment-setting', '/owner/payments')->name('owner.payments.legacy-setting');
-            Route::permanentRedirect('/staff-resources', '/owner/settings/business?tab=tim')->name('owner.settings.staff-resources');
+            Route::get('/settings/payments', [OwnerBalanceController::class, 'legacyPaymentSettings'])->name('owner.payments.legacy-settings');
+            Route::get('/settings/payment-setting', [OwnerBalanceController::class, 'legacyPaymentSettings'])->name('owner.payments.legacy-setting');
+            Route::permanentRedirect('/staff-resources', '/owner/settings?tab=tim')->name('owner.settings.staff-resources');
             Route::get('/payouts/{payout}/proof', [OwnerBalanceController::class, 'proof'])->whereNumber('payout')->middleware('module:balance')->name('owner.payouts.proof');
             Route::prefix('payout-accounts')->middleware('module:balance')->group(function () {
                 // BQ-127: the strict limit guards account changes only; switching the primary account has its own.
@@ -392,16 +393,11 @@ $bookingSubRoutes = function (string $namePrefix) {
 };
 
 // Custom domain routing:
-// Route::domain('{custom_domain}') acts as a wildcard that matches any hostname that
-// is NOT the main bookqu.my.id domain (excluded via the 'custom_domain' where constraint).
+// Only non-platform hosts match the wildcard custom domain.
 // TenantMiddleware resolves the tenant from $request->getHost() and injects slug_usaha
 // into route parameters, so the controller still receives $slug_usaha correctly.
-$mainDomain = explode(':', parse_url(config('app.url'), PHP_URL_HOST) ?? 'bookqu.my.id')[0];
-$excludedDomains = array_unique(array_filter([$mainDomain, 'localhost', '127.0.0.1', 'bookqu.my.id', 'bookqu.test']));
-$customDomainPattern = '^(?!('.implode('|', array_map(fn ($d) => preg_quote($d, '/'), $excludedDomains)).')$).*';
-
 Route::domain('{custom_domain}')
-    ->where(['custom_domain' => $customDomainPattern])
+    ->where(['custom_domain' => CustomDomain::tenantHostPattern()])
     ->middleware(['tenant', 'no-store'])
     ->group(function () use ($bookingSubRoutes) {
         Route::get('/', [BookingController::class, 'showProgramSelection'])
