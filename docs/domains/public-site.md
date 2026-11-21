@@ -54,6 +54,14 @@ Every customer page — storefront, schedule, checkout, waiting for payment, suc
 
 Evidence: `Unit/StorefrontBrandingTest`, `Components/CustomerComponentsTest`, `Owner/HalamanBookingPageTest`, `Customer/CustomerFrontendSpecificationTest`, `Customer/ThreeStepBookingFlowTest`, `Customer/BookingManageTest`.
 
+## Customer navigation and error view data (BQ-166)
+
+- The storefront payment success view receives `manageUrl` only when the browser session has a live [Management grant](../adr/ADR-0006-management-link-module.md) covering the payment and its exact booking group. Checkout-only access and cancelled bookings receive a null value.
+- Single-booking and payment-group management views receive `continuePaymentUrl` while the grant covers that payment, the bookings are pending and the stored payment deadline has not passed. The destination is the existing payment page. Both destinations use the canonical platform origin and carry no credentials.
+- Customer error views receive `branding`, `businessName` and `storefrontUrl` for a storefront tenant established by the tenant middleware with an effective subscription. A connected custom domain also needs the existing Pro entitlement. Errors without eligible storefront context and private access refusals use BookQu branding. Existing storefront CSRF recovery continues to redirect back to the form.
+
+Evidence: `Customer/CustomerAccessTest`, `Customer/StorefrontErrorBrandingTest`.
+
 ## Evidence
 
 `tests/Feature/LandingPagePricingTest.php`, `PrivacyPolicyTest.php`, `TermsConditionsTest.php`, `SitemapTest.php`.

@@ -2,7 +2,7 @@
 id: BQ-166
 title: Prepare authorized navigation and storefront error branding
 type: improvement
-status: approved
+status: in-progress
 priority: P1
 phase: 4
 domain: public-site
@@ -46,4 +46,10 @@ Update `docs/domains/public-site.md` with the view-data contract and tenant visi
 
 ## Evidence
 
-Pending implementation and verification.
+- The approved design and test plan were committed as `ef11b2a` before implementation. The branch `agathan-bq-166-akses-lanjutan` starts at `agathan-bq-165-sync` (`5cc3afd`). Git rejected the requested slash name because the local `agathan` ref already exists.
+- `3e70d18` adds the session-authorized management destination, `a1fe88d` adds the eligible payment destination, and `8f5f149` adds error branding scoped to the resolved storefront.
+- `vendor/bin/pint --dirty --format agent` and `git diff --check` passed.
+- The related customer access, booking management, payment group, custom domain, frontend specification, error branding and architecture tests passed (112 tests, 844 assertions). They cover access without a grant, foreign tenants and bookings, cancellation, the payment deadline, and generic error responses when branding is unavailable. The 419 view is exercised directly because storefront CSRF failures normally redirect to the form.
+- `php artisan test --compact` ran once and passed (1,065 tests, 7,260 assertions).
+- PHPStan passed on PHP 8.4.25 with `-d opcache.enable_cli=0` and a 1 GB memory limit.
+- The backend view-data contract is ready for review. Presentation and integration review are pending.
