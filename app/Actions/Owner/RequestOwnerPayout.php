@@ -80,8 +80,7 @@ class RequestOwnerPayout
             if ($maxPerDay !== null && is_numeric($maxPerDay)) {
                 $todayStart = now('Asia/Jakarta')->startOfDay();
                 $todayEnd = now('Asia/Jakarta')->endOfDay();
-                // scope-bypass: count today's payouts for locked tenant
-                $requestsToday = OwnerPayout::withoutGlobalScopes()
+                $requestsToday = OwnerPayout::query()
                     ->where('idtenant', $lockedTenant->id)
                     ->whereBetween('requested_at', [$todayStart, $todayEnd])
                     ->count();
@@ -94,8 +93,7 @@ class RequestOwnerPayout
             }
 
             // Reload scoped account under tenant lock
-            // scope-bypass: load payout account for locked tenant
-            $lockedAccount = TenantPayoutAccount::withoutGlobalScopes()
+            $lockedAccount = TenantPayoutAccount::query()
                 ->where('idtenant', $lockedTenant->id)
                 ->whereNull('deleted_at')
                 ->find($account->id);

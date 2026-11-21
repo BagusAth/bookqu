@@ -7,6 +7,7 @@ namespace App\Actions\Schedule;
 use App\Models\OwnerBlockedDate;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 
 class DeleteBlockedDate
@@ -24,8 +25,7 @@ class DeleteBlockedDate
     {
         $target = $blockedDate instanceof OwnerBlockedDate
             ? $blockedDate
-            // scope-bypass: filtered by the authenticated tenant and re-checked below
-            : OwnerBlockedDate::withoutGlobalScopes()->where('idtenant', $tenant->id)->findOrFail((int) $blockedDate);
+            : app(TenantContext::class)->run((int) $tenant->id, fn (): OwnerBlockedDate => OwnerBlockedDate::findOrFail((int) $blockedDate));
 
         if ((int) $target->idtenant !== (int) $tenant->id) {
             return [

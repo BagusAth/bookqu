@@ -124,8 +124,7 @@ class PaymentOutcomeIntake
             return OutcomeIntakeResult::REJECTED_PROVIDER_MISMATCH;
         }
 
-        // scope-bypass: the tenant is the payment's stored tenant; webhooks carry no tenant context.
-        if (! $payment->idtenant || ! Tenant::withoutGlobalScopes()->whereKey($payment->idtenant)->exists()) {
+        if (! $payment->idtenant || ! Tenant::whereKey($payment->idtenant)->exists()) {
             return OutcomeIntakeResult::REJECTED_TENANT_INVALID;
         }
 

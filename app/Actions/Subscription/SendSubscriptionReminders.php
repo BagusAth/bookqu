@@ -8,6 +8,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\SubscriptionReminderNotification;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -27,10 +28,9 @@ final class SendSubscriptionReminders
                 if (! in_array($days, [3, 1, 0], true)) {
                     continue;
                 }
-                $queued = DB::transaction(function () use ($subscription, $days): bool {
+                $queued = app(TenantContext::class)->run((int) $subscription->idtenant, fn (): bool => DB::transaction(function () use ($subscription, $days): bool {
                     ClaimSlots::lockTenant((int) $subscription->idtenant);
-                    // scope-bypass: candidate belongs to this stored tenant, reloaded under the tenant-first lock.
-                    $current = Subscription::withoutGlobalScopes()->where('idtenant', $subscription->idtenant)->lockForUpdate()->find($subscription->id);
+                    $current = Subscription::lockForUpdate()->find($subscription->id);
                     if (! $current || DB::table('subscriptions')->where('idtenant', $subscription->idtenant)->where('id', '>', $subscription->id)->exists()) {
                         return false;
                     }
@@ -56,7 +56,7 @@ final class SendSubscriptionReminders
                     });
 
                     return true;
-                });
+                }));
                 $sent += $queued ? 1 : 0;
             }
         });

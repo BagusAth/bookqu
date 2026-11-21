@@ -114,31 +114,18 @@ class BookingGroupConsequences implements PaymentConsequences
     }
 
     /**
-     * Lock the bookings of the payment group. Bookings of another tenant that point at
-     * this payment are an anomaly: they are logged and left untouched.
+     * Lock only the payment group's bookings under the verified payment tenant.
      *
      * @return Collection<int, Booking>
      */
     private function lockGroup(Payment $payment): Collection
     {
-        // scope-bypass: the group is resolved by payment id; bookings of another tenant are filtered out below.
-        $bookings = Booking::withoutGlobalScopes()
-            ->with(['layanan', 'tenant.user', 'payment'])
+        return Booking::with(['layanan', 'tenant.user', 'payment'])
             ->where('idpayment', $payment->id)
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
 
-        $foreign = $bookings->filter(fn (Booking $booking) => (int) $booking->idtenant !== (int) $payment->idtenant);
-
-        if ($foreign->isNotEmpty()) {
-            Log::warning('PaymentLifecycle: booking of another tenant attached to payment group', [
-                'payment_id' => $payment->id,
-                'booking_ids' => $foreign->pluck('id')->all(),
-            ]);
-        }
-
-        return $bookings->reject(fn (Booking $booking) => (int) $booking->idtenant !== (int) $payment->idtenant)->values();
     }
 
     /**

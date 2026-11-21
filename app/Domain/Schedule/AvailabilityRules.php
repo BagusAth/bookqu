@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use DateTimeInterface;
 
@@ -93,16 +94,16 @@ class AvailabilityRules
             return SlotRefusal::Past;
         }
 
-        $service = $schedule->relationLoaded('layanan') && $schedule->layanan
+        $service = $schedule->relationLoaded('layanan')
             ? $schedule->layanan
-            // scope-bypass: the schedule's own service, read for eligibility only.
-            : Service::withoutGlobalScopes()->find($schedule->idlayanan);
+            : app(TenantContext::class)->run((int) $schedule->idtenant, fn (): ?Service => Service::find($schedule->idlayanan));
 
-        if ($service && (! $service->is_active || ! $service->hasActiveFulfillment())) {
+        if (! $service instanceof Service || (int) $service->idtenant !== (int) $schedule->idtenant
+            || ! $service->is_active || ! $service->hasActiveFulfillment()) {
             return SlotRefusal::ServiceUnavailable;
         }
 
-        $capacity = $seatsTaken === null ? null : BookingRules::capacityFrom($service instanceof Service ? $service->kapasitas : null);
+        $capacity = $seatsTaken === null ? null : BookingRules::capacityFrom($service->kapasitas);
         if (! BookingRules::hasRoomFor((int) $schedule->id, $participants, $excludeBookingId, $seatsTaken, $capacity)) {
             return BookingRules::hasRoomFor((int) $schedule->id, 1, $excludeBookingId, $seatsTaken, $capacity)
                 ? SlotRefusal::NotEnoughRoom : SlotRefusal::Occupied;
@@ -122,11 +123,10 @@ class AvailabilityRules
      */
     public static function isDateBlocked(int $tenantId, string $date): bool
     {
-        // scope-bypass: filtered by the given tenant id
-        return OwnerBlockedDate::withoutGlobalScopes()
+        return app(TenantContext::class)->run($tenantId, fn (): bool => OwnerBlockedDate::query()
             ->where('idtenant', $tenantId)
             ->whereDate('tanggal', $date)
-            ->exists();
+            ->exists());
     }
 
     /**

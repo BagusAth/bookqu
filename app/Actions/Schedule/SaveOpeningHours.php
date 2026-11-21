@@ -7,6 +7,7 @@ namespace App\Actions\Schedule;
 use App\Models\OpeningHour;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -41,18 +42,16 @@ class SaveOpeningHours
             }
         }
 
-        DB::transaction(function () use ($tenant, $rows, $slotOpenDaysAhead, $autoOpenSlots): void {
-            // scope-bypass: filtered by the authenticated tenant
-            OpeningHour::withoutGlobalScopes()->where('idtenant', $tenant->id)->delete();
+        app(TenantContext::class)->run((int) $tenant->id, fn () => DB::transaction(function () use ($tenant, $rows, $slotOpenDaysAhead, $autoOpenSlots): void {
+            OpeningHour::query()->where('idtenant', $tenant->id)->delete();
             foreach ($rows as $row) {
                 OpeningHour::create($row);
             }
             $tenant->forceFill(['slot_open_days_ahead' => $slotOpenDaysAhead])->save();
             if ($autoOpenSlots !== null) {
-                // scope-bypass: filtered by the authenticated tenant
-                Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->where('is_active', true)
+                Service::query()->where('idtenant', $tenant->id)->where('is_active', true)
                     ->update(['auto_open_slots' => $autoOpenSlots]);
             }
-        });
+        }));
     }
 }

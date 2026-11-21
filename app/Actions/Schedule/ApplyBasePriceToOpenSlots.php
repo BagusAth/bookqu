@@ -9,6 +9,7 @@ use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -31,11 +32,10 @@ class ApplyBasePriceToOpenSlots
         $now = Carbon::now('Asia/Jakarta');
         $today = $now->toDateString();
 
-        [$count, $dates] = DB::transaction(function () use ($tenant, $service, $now, $today): array {
+        [$count, $dates] = app(TenantContext::class)->run((int) $tenant->id, fn (): array => DB::transaction(function () use ($tenant, $service, $now, $today): array {
             ClaimSlots::lockTenant((int) $tenant->id);
 
-            // scope-bypass: filtered by the authenticated tenant
-            $slots = Schedule::withoutGlobalScopes()
+            $slots = Schedule::query()
                 ->where('idtenant', $tenant->id)
                 ->where('idlayanan', $service->id)
                 ->where('status', 'tersedia')
@@ -49,11 +49,10 @@ class ApplyBasePriceToOpenSlots
                 return [0, []];
             }
 
-            // scope-bypass: ids selected above for the authenticated tenant
-            Schedule::withoutGlobalScopes()->whereIn('id', $slots->pluck('id'))->update(['harga_override' => null]);
+            Schedule::whereIn('id', $slots->pluck('id'))->update(['harga_override' => null]);
 
             return [$slots->count(), $slots->map(fn (Schedule $slot): string => Carbon::parse($slot->tanggal)->toDateString())->unique()->values()->all()];
-        });
+        }));
 
         if ($dates !== []) {
             $this->availabilityCache->clearScheduleCache((int) $tenant->id, (int) $service->id, $dates);

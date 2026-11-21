@@ -8,6 +8,7 @@ use App\Models\PeakHourRule;
 use App\Models\Service;
 use App\Models\SpecialDatePrice;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -68,16 +69,15 @@ class SavePriceRules
             throw ValidationException::withMessages(['service_ids' => 'Pilih minimal satu layanan.']);
         }
 
-        DB::transaction(function () use ($tenant, $date, $price, $serviceIds): void {
+        app(TenantContext::class)->run((int) $tenant->id, fn () => DB::transaction(function () use ($tenant, $date, $price, $serviceIds): void {
             ClaimSlots::lockTenant((int) $tenant->id);
             foreach ($serviceIds as $serviceId) {
-                // scope-bypass: filtered by the authenticated tenant
-                SpecialDatePrice::withoutGlobalScopes()->updateOrCreate(
+                SpecialDatePrice::updateOrCreate(
                     ['idtenant' => $tenant->id, 'service_id' => $serviceId, 'tanggal' => $date],
                     ['price' => $price],
                 );
             }
-        });
+        }));
 
         return count($serviceIds);
     }
@@ -103,8 +103,8 @@ class SavePriceRules
         if ($serviceIds === []) {
             return [];
         }
-        // scope-bypass: filtered by the authenticated tenant
-        $owned = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->whereIn('id', $serviceIds)->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $owned = app(TenantContext::class)->run((int) $tenant->id, fn (): array => Service::whereIn('id', $serviceIds)
+            ->pluck('id')->map(fn ($id): int => (int) $id)->all());
         if (count($owned) !== count($serviceIds)) {
             throw ValidationException::withMessages(['service_ids' => 'Layanan tidak ditemukan.']);
         }

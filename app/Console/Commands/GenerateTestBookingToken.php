@@ -6,6 +6,7 @@ use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Actions\CustomerAccess\IssueCustomerAccess;
 use App\Domain\CustomerAccess\AccessProfile;
 use App\Models\Booking;
+use App\Support\TenantContext;
 use Illuminate\Console\Command;
 
 class GenerateTestBookingToken extends Command
@@ -21,11 +22,9 @@ class GenerateTestBookingToken extends Command
 
             return self::FAILURE;
         }
-        // scope-bypass: explicit local diagnostic selection; no production access and issuance validates the subject.
-        $query = Booking::withoutGlobalScopes()->where('idtenant', (int) $this->option('tenant-id'));
-        $booking = $this->option('booking-id')
-            ? $query->find($this->option('booking-id'))
-            : $query->where('status', $this->option('status'))->latest()->first();
+        $booking = app(TenantContext::class)->run((int) $this->option('tenant-id'), fn (): ?Booking => $this->option('booking-id')
+            ? Booking::find($this->option('booking-id'))
+            : Booking::where('status', $this->option('status'))->latest()->first());
         if ($booking === null) {
             $this->error('Booking tidak ditemukan.');
 

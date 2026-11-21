@@ -7,6 +7,7 @@ namespace App\Domain\Schedule;
 use App\Models\PeakHourRule;
 use App\Models\SpecialDatePrice;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 
 /**
@@ -37,10 +38,14 @@ final class PriceRules
      */
     public static function forTenant(Tenant $tenant, ?string $fromDate = null, ?string $toDate = null): self
     {
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): self => self::loadForTenant($tenant, $fromDate, $toDate));
+    }
+
+    private static function loadForTenant(Tenant $tenant, ?string $fromDate, ?string $toDate): self
+    {
         $from = $fromDate !== null ? Carbon::parse($fromDate)->toDateString() : Carbon::today('Asia/Jakarta')->toDateString();
 
-        // scope-bypass: filtered by the given tenant
-        $peakRules = PeakHourRule::withoutGlobalScopes()->where('idtenant', $tenant->id)->with('services:id')->orderBy('id')->get()
+        $peakRules = PeakHourRule::where('idtenant', $tenant->id)->with('services:id')->orderBy('id')->get()
             ->map(fn (PeakHourRule $rule): array => [
                 'name' => (string) $rule->name,
                 'days' => array_map('intval', (array) $rule->days),
@@ -50,8 +55,7 @@ final class PriceRules
                 'service_ids' => $rule->services->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
             ])->values()->all();
 
-        // scope-bypass: filtered by the given tenant
-        $special = SpecialDatePrice::withoutGlobalScopes()->where('idtenant', $tenant->id)->whereDate('tanggal', '>=', $from);
+        $special = SpecialDatePrice::where('idtenant', $tenant->id)->whereDate('tanggal', '>=', $from);
         if ($toDate !== null) {
             $special->whereDate('tanggal', '<=', Carbon::parse($toDate)->toDateString());
         }

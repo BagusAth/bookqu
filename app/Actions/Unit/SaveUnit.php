@@ -95,8 +95,7 @@ class SaveUnit
     private static function ownedServiceIds(Tenant $tenant, array $ids): array
     {
         $ids = array_values(array_unique(array_map('intval', $ids)));
-        // scope-bypass: filtered by the authenticated tenant
-        $owned = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->whereIn('id', $ids)->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $owned = Service::query()->where('idtenant', $tenant->id)->whereIn('id', $ids)->pluck('id')->map(fn ($id): int => (int) $id)->all();
         if (count($owned) !== count($ids)) {
             throw ValidationException::withMessages(['service_ids' => 'Layanan yang dipilih tidak tersedia. Muat ulang halaman dan coba lagi.']);
         }

@@ -6,8 +6,7 @@ namespace App\Console\Commands;
 
 use App\Actions\Payment\ProcessSingaPayWebhook;
 use App\Infrastructure\Payments\SingaPay\SingaPayWebhookVerifier;
-use App\Models\Payment;
-use App\Models\Scopes\TenantScope;
+use App\Support\TenantDiscovery;
 use Illuminate\Console\Command;
 use Illuminate\Http\Request;
 
@@ -40,8 +39,7 @@ class SimulateSingaPayWebhook extends Command
             return self::FAILURE;
         }
 
-        // scope-bypass: a console command has no tenant context; the payment is looked up by its order id only.
-        $payment = Payment::withoutGlobalScope(TenantScope::class)->where('order_id', $this->argument('order_id'))->first();
+        $payment = app(TenantDiscovery::class)->diagnosticPayment((string) $this->argument('order_id'));
         if ($payment === null) {
             $this->error('Payment not found.');
 

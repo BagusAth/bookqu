@@ -157,9 +157,9 @@ class OwnerBookingController extends Controller
         // An export without a tab keeps exporting every booking; only the page opens on Perlu tindakan.
         $filters['tab'] ??= $filters['status'] ?? 'all';
         $tab = $this->selectedTab($filters);
-        $query = $list->tab($list->query($tenant, $filters, streaming: true), $tab, TenantPermission::allowsRole($member->role, 'bookings.cancel'));
+        $query = $list->tab($list->query($tenant, $filters), $tab, TenantPermission::allowsRole($member->role, 'bookings.cancel'));
 
-        return $export->execute($query->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')
+        return $export->execute($tenant, $query->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')
             ->orderBy('jam', $filters['sort'] ?? 'desc')->orderBy('bookings.id'));
     }
 

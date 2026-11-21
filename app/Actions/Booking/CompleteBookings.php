@@ -10,6 +10,7 @@ use App\Domain\Booking\BookingState;
 use App\Domain\Booking\BookingTimeRange;
 use App\Models\Booking;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -37,12 +38,20 @@ final class CompleteBookings
      */
     public function execute(Tenant $tenant, array $bookingIds, string $actor, ?Carbon $endedBefore = null): array
     {
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): array => $this->completeIds($tenant, $bookingIds, $actor, $endedBefore));
+    }
+
+    /**
+     * @param  list<int>  $bookingIds
+     * @return array{completed: int, skipped: int}
+     */
+    private function completeIds(Tenant $tenant, array $bookingIds, string $actor, ?Carbon $endedBefore): array
+    {
         $endedBefore ??= Carbon::now('Asia/Jakarta');
         $ids = array_values(array_unique(array_map('intval', $bookingIds)));
         $completed = 0;
 
-        // scope-bypass: the scheduler has no tenant context; every row is filtered to this tenant.
-        $bookings = Booking::withoutGlobalScopes()->where('idtenant', $tenant->id)->whereIn('id', $ids)->get();
+        $bookings = Booking::query()->where('idtenant', $tenant->id)->whereIn('id', $ids)->get();
 
         foreach ($bookings as $booking) {
             $done = DB::transaction(function () use ($tenant, $booking, $actor, $endedBefore): bool {
@@ -71,16 +80,23 @@ final class CompleteBookings
      */
     public function endedIds(Tenant $tenant, Carbon $endedBefore): array
     {
-        return $this->endedQuery($tenant, $endedBefore)->orderBy('tanggalbooking')->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): array => $this->endedQuery($tenant, $endedBefore)
+            ->orderBy('tanggalbooking')->pluck('id')->map(fn ($id): int => (int) $id)->all());
     }
 
     public function endedCount(Tenant $tenant, Carbon $endedBefore): int
     {
-        return $this->endedQuery($tenant, $endedBefore)->count();
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): int => $this->endedQuery($tenant, $endedBefore)->count());
     }
 
     /** @return array{completed: int, skipped: int} */
     public function completeEnded(Tenant $tenant, string $actor, ?Carbon $endedBefore = null, ?Carbon $endedSince = null, ?int $limit = null): array
+    {
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): array => $this->completeAllEnded($tenant, $actor, $endedBefore, $endedSince, $limit));
+    }
+
+    /** @return array{completed: int, skipped: int} */
+    private function completeAllEnded(Tenant $tenant, string $actor, ?Carbon $endedBefore, ?Carbon $endedSince, ?int $limit): array
     {
         $endedBefore ??= Carbon::now('Asia/Jakarta');
         $query = $this->endedQuery($tenant, $endedBefore, $endedSince);
@@ -102,8 +118,7 @@ final class CompleteBookings
     {
         $end = BookingTimeRange::slotEndSql(DB::connection()->getDriverName(), 'bookings.tanggalbooking', 'schedules.jam_mulai', 'schedules.jam_selesai');
 
-        // scope-bypass: used by the scheduler without tenant context; filtered to this tenant.
-        return Booking::withoutGlobalScopes()
+        return Booking::query()
             ->where('idtenant', $tenant->id)
             ->where('status', BookingState::STATUS_PAID)
             ->whereDate('tanggalbooking', '<=', $endedBefore->toDateString())

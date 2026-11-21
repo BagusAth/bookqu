@@ -4,9 +4,9 @@ namespace App\Actions\Tenant;
 
 use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Subscription\PlanCapability;
-use App\Models\Scopes\TenantScope;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\Cache;
 use PDOException;
 
@@ -41,9 +41,9 @@ final class GetStorefrontTenant
     public function canBrandError(Tenant $tenant, bool $customDomain): bool
     {
         try {
-            // scope-bypass: errors may render after TenantContext clears; the middleware-resolved tenant is explicit.
-            $subscription = Subscription::withoutGlobalScope(TenantScope::class)
-                ->where('idtenant', $tenant->id)->with('plan')->latest('id')->first();
+            // Errors may render after TenantContext clears; the middleware-resolved tenant is explicit.
+            $subscription = app(TenantContext::class)->run((int) $tenant->id, fn (): ?Subscription => Subscription::query()
+                ->where('idtenant', $tenant->id)->with('plan')->latest('id')->first());
         } catch (PDOException) {
             return false;
         }

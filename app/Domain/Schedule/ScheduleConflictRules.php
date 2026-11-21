@@ -8,6 +8,7 @@ use App\Domain\Booking\BookingRules;
 use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 
 class ScheduleConflictRules
@@ -23,8 +24,7 @@ class ScheduleConflictRules
         string $jamSelesai,
         ?int $excludeScheduleId = null
     ): bool {
-        // scope-bypass: filtered by the given tenant id or an already-resolved schedule id
-        return Schedule::withoutGlobalScopes()
+        return app(TenantContext::class)->run($tenantId, fn (): bool => Schedule::query()
             ->where('idtenant', $tenantId)
             ->where('idlayanan', $serviceId)
             ->whereDate('tanggal', $date)
@@ -33,7 +33,7 @@ class ScheduleConflictRules
                     ->where('jam_selesai', '>=', $jamMulai);
             })
             ->when($excludeScheduleId !== null, fn ($q) => $q->where('id', '!=', $excludeScheduleId))
-            ->exists();
+            ->exists());
     }
 
     /**
@@ -51,8 +51,7 @@ class ScheduleConflictRules
      */
     public static function slotTimesOnDate(int $tenantId, int $serviceId, string $date): array
     {
-        // scope-bypass: filtered by the given tenant id
-        return Schedule::withoutGlobalScopes()
+        return app(TenantContext::class)->run($tenantId, fn (): array => Schedule::query()
             ->where('idtenant', $tenantId)
             ->where('idlayanan', $serviceId)
             ->whereDate('tanggal', $date)
@@ -62,7 +61,7 @@ class ScheduleConflictRules
                 'jam_selesai' => (string) $slot->jam_selesai,
             ])
             ->values()
-            ->all();
+            ->all());
     }
 
     /**
@@ -89,15 +88,13 @@ class ScheduleConflictRules
      */
     public static function activeBookingsOnDate(int $tenantId, string $date): Collection
     {
-        // scope-bypass: filtered by the given, server-resolved tenant id
-        return Booking::withoutGlobalScopes()
-            ->with(['layanan' => fn ($query) => $query->withoutGlobalScopes()])
+        return app(TenantContext::class)->run($tenantId, fn (): Collection => Booking::with('layanan')
             ->where('bookings.idtenant', $tenantId)
             ->whereDate('bookings.tanggalbooking', $date)
             ->where(fn ($query) => BookingRules::applyOccupiesSlotCondition($query, 'bookings.'))
             ->orderBy('bookings.jam')
             ->orderBy('bookings.id')
-            ->get();
+            ->get());
     }
 
     /**

@@ -7,7 +7,6 @@ use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Payment\PaymentState;
 use App\Models\Booking;
 use App\Models\Payment;
-use App\Models\Scopes\TenantScope;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,7 +22,7 @@ final class ListOwnerBookings
     /** @param array<string, mixed> $filters
      * @return Builder<Booking>
      */
-    public function query(?Tenant $tenant, array $filters, bool $streaming = false): Builder
+    public function query(?Tenant $tenant, array $filters): Builder
     {
         $keyword = trim((string) ($filters['katakunci'] ?? ''));
         $query = Booking::query()->with([
@@ -32,11 +31,6 @@ final class ListOwnerBookings
         ]);
         if ($tenant === null) {
             return $query->whereRaw('1 = 0');
-        }
-
-        if ($streaming) {
-            // scope-bypass: the stream runs after middleware clears context, and every row is filtered to the authenticated tenant below.
-            $query->withoutGlobalScope(TenantScope::class);
         }
 
         return $query->where('bookings.idtenant', $tenant->id)

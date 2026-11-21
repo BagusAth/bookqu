@@ -145,18 +145,6 @@ parameters:
 			path: app/Domain/Booking/BookingRules.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_active\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domain/Schedule/AvailabilityRules.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:hasActiveFulfillment\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Domain/Schedule/AvailabilityRules.php
-
-		-
 			message: '#^Instanceof between App\\Models\\Schedule and App\\Models\\Schedule will always evaluate to true\.$#'
 			identifier: instanceof.alwaysTrue
 			count: 1

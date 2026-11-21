@@ -8,6 +8,7 @@ use App\Jobs\SendManagementAccess;
 use App\Models\Booking;
 use App\Models\CustomerAccessDelivery;
 use App\Models\Payment;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -15,16 +16,16 @@ final class RequestManagementDelivery
 {
     public function execute(Payment|Booking $subject, string $reason, ?AccessContext $source = null): bool
     {
-        return DB::transaction(function () use ($subject, $reason, $source): bool {
-            ClaimSlots::lockTenant((int) $subject->idtenant);
+        return app(TenantContext::class)->run((int) $subject->idtenant, fn (): bool => DB::transaction(function () use ($subject, $reason, $source): bool {
+            $tenantId = (int) $subject->idtenant;
+            ClaimSlots::lockTenant($tenantId);
             $subject->refresh();
+            abort_unless((int) $subject->idtenant === $tenantId, 404);
             if ($subject instanceof Booking && $subject->idpayment !== null) {
-                // scope-bypass: trusted business booking; require payment ownership before creating delivery intent.
-                $subject = Payment::withoutGlobalScopes()->where('idtenant', $subject->idtenant)->findOrFail($subject->idpayment);
+                $subject = Payment::findOrFail($subject->idpayment);
             }
             if ($subject instanceof Payment) {
-                // scope-bypass: complete group snapshot is checked again by the delivery handler before minting.
-                $bookings = Booking::withoutGlobalScopes()->where('idpayment', $subject->id)->orderBy('id')->get();
+                $bookings = app(LoadAccessSubject::class)->paymentBookings($subject);
             } else {
                 $bookings = collect([$subject]);
             }
@@ -52,6 +53,6 @@ final class RequestManagementDelivery
             });
 
             return true;
-        });
+        }));
     }
 }

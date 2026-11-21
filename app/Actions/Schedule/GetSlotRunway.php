@@ -30,8 +30,7 @@ class GetSlotRunway
         $warningDate = $today->copy()->addDays(self::WARNING_DAYS)->toDateString();
         $result = [];
 
-        // scope-bypass: filtered by the authenticated tenant
-        $services = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->where('is_active', true)->orderBy('namalayanan')->get();
+        $services = Service::query()->where('idtenant', $tenant->id)->where('is_active', true)->orderBy('namalayanan')->get();
 
         foreach ($services as $service) {
             $openDates = collect($this->availability->getDateAvailability($tenant, $service))

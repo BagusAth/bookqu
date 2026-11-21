@@ -10,6 +10,7 @@ use App\Domain\Booking\BookingTimeRange;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 
 /**
@@ -59,10 +60,9 @@ final class ListWalkInSlots
      */
     public function picker(Tenant $tenant, string $date, ?int $serviceId = null): array
     {
-        // scope-bypass: filtered by the server-resolved tenant of the signed-in member
-        $services = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->where('is_active', true)
+        $services = app(TenantContext::class)->run((int) $tenant->id, fn () => Service::query()->where('idtenant', $tenant->id)->where('is_active', true)
             ->when($serviceId !== null, fn ($query) => $query->whereKey($serviceId))
-            ->orderBy('namalayanan')->get(['id', 'namalayanan', 'kapasitas']);
+            ->orderBy('namalayanan')->get(['id', 'namalayanan', 'kapasitas']));
 
         $addOns = app(GetBookingAddOnOptions::class)->execute($tenant, $services->modelKeys());
         $slots = [];

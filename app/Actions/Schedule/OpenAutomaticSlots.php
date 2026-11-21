@@ -42,21 +42,18 @@ final class OpenAutomaticSlots
     private function open(Tenant $tenant, ?Carbon $today): int
     {
         $today = ($today ?? Carbon::today('Asia/Jakarta'))->copy()->startOfDay();
-        // scope-bypass: the scheduler has no tenant context; filtered to this tenant.
-        $subscription = Subscription::withoutGlobalScopes()->with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
+        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
         if (! EntitlementRules::hasEffectivePlan($subscription)) {
             return 0;
         }
 
-        // scope-bypass: the scheduler has no tenant context; every query is filtered to this tenant.
-        $services = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)
+        $services = Service::query()->where('idtenant', $tenant->id)
             ->where('auto_open_slots', true)->where('is_active', true)->get();
         if ($services->isEmpty()) {
             return 0;
         }
 
-        // scope-bypass: filtered to this tenant.
-        $hours = OpeningHour::withoutGlobalScopes()->where('idtenant', $tenant->id)
+        $hours = OpeningHour::query()->where('idtenant', $tenant->id)
             ->orderBy('opens_at')->get()->groupBy('day_of_week');
         $horizon = min(self::HORIZON_DAYS, $tenant->slot_open_days_ahead ?? self::HORIZON_DAYS, BookingRules::maximumAdvanceDays($tenant));
 

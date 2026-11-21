@@ -35,8 +35,7 @@ final class SearchOwnerRecords
         $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query).'%';
         $digits = preg_replace('/\D+/', '', $query) ?? '';
 
-        // scope-bypass: filtered by the server-resolved tenant of the signed-in member
-        $matches = Booking::withoutGlobalScopes()
+        $matches = Booking::query()
             ->with(['layanan:id,namalayanan'])
             ->where('idtenant', $tenant->id)
             ->where(function ($builder) use ($like, $digits): void {

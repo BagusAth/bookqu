@@ -15,6 +15,7 @@ use App\Support\PaymentMethodLabel;
 use App\Support\Rupiah;
 use App\Support\StatusBadge;
 use App\Support\StorefrontBranding;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
 use LogicException;
@@ -36,6 +37,16 @@ final class GetCustomerEmailData
             throw new LogicException('Customer email must belong to a single business.');
         }
 
+        // Mail renders on the queue without a request tenant; every row above belongs to this one business.
+        return app(TenantContext::class)->run((int) $booking->idtenant, fn (): array => $this->build($bookings, $booking, $manageUrl, $groupPayment));
+    }
+
+    /**
+     * @param  Collection<int, Booking>  $bookings
+     * @return array<string, mixed>
+     */
+    private function build(Collection $bookings, Booking $booking, ?string $manageUrl, ?Payment $groupPayment): array
+    {
         $bookings->loadMissing(['tenant', 'layanan', 'payment', 'refund', 'schedule']);
         $tenant = $booking->tenant;
         if (! $tenant instanceof Tenant) {

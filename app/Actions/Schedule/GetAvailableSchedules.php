@@ -17,6 +17,7 @@ use App\Models\Service;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
 use App\Support\Rupiah;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -266,8 +267,7 @@ class GetAvailableSchedules
         int $participants = 1,
     ): Collection {
         [$seatsTaken, $bindings] = BookingRules::seatsTakenSql(excludeBookingId: $excludeBookingId);
-        // scope-bypass: filtered by the resolved storefront tenant
-        $slots = Schedule::withoutGlobalScopes()->with('layanan')
+        $slots = app(TenantContext::class)->run((int) $tenant->id, fn (): Collection => Schedule::with('layanan')
             ->select('schedules.*')->selectRaw($seatsTaken.' AS seats_taken', $bindings)
             ->withExists(['bookings as current_booking' => fn ($query) => $query->where('id', $excludeBookingId ?? 0)])
             ->where('idtenant', $tenant->id)
@@ -275,7 +275,7 @@ class GetAvailableSchedules
             ->whereDate('tanggal', $date)
             ->where('status', 'tersedia')
             ->orderBy('jam_mulai')
-            ->get();
+            ->get());
 
         $unitBusy = BookingRules::unitBusyRanges((int) $tenant->id, $serviceId, $date, $date, $excludeBookingId);
         $dateBlocked = AvailabilityRules::isDateBlocked((int) $tenant->id, $date);
@@ -357,8 +357,7 @@ class GetAvailableSchedules
         $participants = max(1, (int) $booking->peserta);
         [$seatsTaken, $bindings] = BookingRules::seatsTakenSql(excludeBookingId: $bookingId);
 
-        // scope-bypass: limited to the tenant and service of the authorized booking.
-        $schedules = Schedule::withoutGlobalScopes()
+        $schedules = app(TenantContext::class)->run($tenantId, fn (): Collection => Schedule::query()
             ->where('schedules.idtenant', $tenantId)
             ->where('schedules.idlayanan', $serviceId)
             ->where('schedules.status', 'tersedia')
@@ -372,7 +371,7 @@ class GetAvailableSchedules
             })
             ->orderBy('schedules.tanggal')->orderBy('schedules.jam_mulai')
             ->select('schedules.*')->selectRaw($seatsTaken.' AS seats_taken', $bindings)
-            ->get();
+            ->get());
 
         if ($schedules->isEmpty()) {
             return [];

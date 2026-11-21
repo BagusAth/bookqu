@@ -28,8 +28,7 @@ class DeleteCategory
 
         $category = Category::where('idtenant', $tenant->id)->findOrFail($categoryId);
 
-        // scope-bypass: filtered by the authenticated tenant; inactive services count as members too
-        $serviceCount = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->where('idcategory', $category->id)->count();
+        $serviceCount = Service::query()->where('idtenant', $tenant->id)->where('idcategory', $category->id)->count();
         if ($serviceCount > 0) {
             throw ValidationException::withMessages([
                 'error' => 'Kategori "'.$category->name.'" masih dipakai '.$serviceCount.' layanan. Pindahkan layanannya ke kategori lain atau nonaktifkan kategori ini.',

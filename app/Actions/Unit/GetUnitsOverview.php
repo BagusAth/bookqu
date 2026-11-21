@@ -26,8 +26,7 @@ class GetUnitsOverview
      */
     public function execute(Tenant $tenant): array
     {
-        // scope-bypass: filtered by the authenticated tenant
-        $units = Unit::withoutGlobalScopes()->where('idtenant', $tenant->id)
+        $units = Unit::query()->where('idtenant', $tenant->id)
             ->with(['services' => fn ($query) => $query->where('services.idtenant', $tenant->id)->select('services.id', 'namalayanan')])
             ->orderBy('name')->get();
         [$seats, $bindings] = BookingRules::seatsTakenSql();

@@ -15,6 +15,7 @@ use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -51,8 +52,7 @@ class CreateWalkInBooking
                     throw ValidationException::withMessages(['error' => 'Perpanjang paket untuk mencatat booking baru.']);
                 }
 
-                // scope-bypass: read the selected schedule under the tenant lock, before ClaimSlots checks availability.
-                $selected = Schedule::withoutGlobalScopes()->where('idtenant', $tenant->id)->find($data['idschedule']);
+                $selected = app(TenantContext::class)->run((int) $tenant->id, fn () => Schedule::query()->where('idtenant', $tenant->id)->find($data['idschedule']));
                 if (! $selected) {
                     return null;
                 }

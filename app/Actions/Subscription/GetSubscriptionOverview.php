@@ -16,6 +16,7 @@ use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Support\Rupiah;
 use App\Support\StatusBadge;
+use App\Support\TenantContext;
 use Illuminate\Support\Collection;
 
 class GetSubscriptionOverview
@@ -64,11 +65,16 @@ class GetSubscriptionOverview
             ];
         }
 
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): array => $this->forTenant($tenant));
+    }
+
+    /** @return array<string, mixed> */
+    private function forTenant(Tenant $tenant): array
+    {
         $idtenant = $tenant->id;
 
         /** @var Subscription|null $langgananaktif */
-        // scope-bypass: filtered by the authenticated tenant
-        $langgananaktif = Subscription::withoutGlobalScopes()
+        $langgananaktif = Subscription::query()
             ->where('idtenant', $idtenant)
             ->with('plan')
             ->latest('id')
@@ -95,8 +101,7 @@ class GetSubscriptionOverview
         $sisahari = SubscriptionState::getRemainingTrialDays($langgananaktif);
         $statustrial = $isTrial && $langgananaktif?->trial_berakhir !== null;
 
-        // scope-bypass: filtered by the authenticated tenant
-        $riwayatpembayaran = Payment::withoutGlobalScopes()
+        $riwayatpembayaran = Payment::query()
             ->where('idtenant', $idtenant)
             ->where('tipe', 'subscription')
             ->orderByDesc('created_at')
@@ -104,8 +109,7 @@ class GetSubscriptionOverview
             ->get();
 
         // BQ-145 (owner-portal.md §8.15): status, end date, the three usage figures and billing rows.
-        // scope-bypass: members of the authenticated tenant
-        $teamUsed = TenantMember::withoutGlobalScopes()->where('idtenant', $idtenant)->whereNotNull('accepted_at')->count();
+        $teamUsed = TenantMember::query()->where('idtenant', $idtenant)->whereNotNull('accepted_at')->count();
         $periodEnd = $langgananaktif !== null ? SubscriptionState::periodEnd($langgananaktif)?->timezone('Asia/Jakarta') : null;
 
         return [

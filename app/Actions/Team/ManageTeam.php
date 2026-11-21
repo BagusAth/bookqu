@@ -10,6 +10,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Models\User;
+use App\Support\TenantContext;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -90,21 +91,18 @@ final class ManageTeam
                 abort_if($user->isAdmin() || strcasecmp($user->email, $email) !== 0, 403);
             }
 
-            // scope-bypass: invitation acceptance checks every membership of this verified user before choosing a tenant.
-            $members = TenantMember::withoutGlobalScopes()->where('iduser', $user->id);
-            $active = (clone $members)->whereNotNull('accepted_at')->whereNull('revoked_at')->lockForUpdate()->first();
-            if ($active !== null) {
+            if (app(ResolveTenantMembership::class)->hasActiveMembershipForUpdate($user)) {
                 throw ValidationException::withMessages(['email' => 'Akun ini sudah menjadi anggota bisnis.']);
             }
 
             $user->forceFill(['role' => 'owner', 'email_verified_at' => $user->email_verified_at ?? now()])->save();
-            $members->updateOrCreate(['idtenant' => $tenantId, 'iduser' => $user->id], [
+            app(TenantContext::class)->run($tenantId, fn () => TenantMember::updateOrCreate(['idtenant' => $tenantId, 'iduser' => $user->id], [
                 'role' => $invite->role,
                 'invited_by' => $invite->invited_by,
                 'invited_at' => $invite->created_at,
                 'accepted_at' => now(),
                 'revoked_at' => null,
-            ]);
+            ]));
             DB::table('tenant_invitations')->where('id', $id)->update(['accepted_at' => now()]);
             $this->record($tenantId, $user->id, (string) $invite->role, 'team.accepted', $id);
 
@@ -155,8 +153,8 @@ final class ManageTeam
         $reservations = $this->pending()->where('idtenant', $tenant->id)
             ->when($excludingInvitation !== null, fn (Builder $query) => $query->where('id', '!=', $excludingInvitation))->count();
 
-        // scope-bypass: public acceptance reads only the subscription of the locked invitation tenant.
-        $subscription = Subscription::withoutGlobalScopes()->with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
+        $subscription = app(TenantContext::class)->run((int) $tenant->id,
+            fn (): ?Subscription => Subscription::with('plan')->latest('id')->first());
         if ($members + $reservations >= EntitlementRules::teamLimit($subscription)) {
             throw ValidationException::withMessages(['email' => 'Kursi tim pada paket ini sudah penuh.']);
         }
