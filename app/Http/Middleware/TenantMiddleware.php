@@ -46,6 +46,9 @@ class TenantMiddleware
                 abort_if($resolvedTenant && (int) $resolvedTenant->id !== (int) $access->grant->idtenant, 404);
                 abort_if(is_string($slug) && $slug !== '' && ! $resolvedTenant, 404);
                 app(TenantContext::class)->setTenantId((int) $access->grant->idtenant);
+                if ($resolvedTenant !== null && $request->routeIs('customer.booking.*')) {
+                    $request->attributes->set('storefront_tenant', $resolvedTenant);
+                }
 
                 return $next($request);
             }

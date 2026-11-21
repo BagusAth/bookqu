@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Actions\Customer\GetCustomerPanel;
+use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Actions\Owner\GetOwnerShell;
 use App\Actions\Subscription\GetPublicPlanCards;
 use App\Actions\Team\TeamNotificationAccess;
@@ -146,16 +147,32 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('errors.customer', function (\Illuminate\View\View $view): void {
             $data = $view->getData();
+            $storefrontTenants = app(GetStorefrontTenant::class);
             $tenant = ($data['private'] ?? false) ? null : request()->attributes->get('storefront_tenant');
             $candidate = request()->segment(1);
             $slug = ($data['publicNotFound'] ?? false) && ! $tenant instanceof Tenant && is_string($candidate)
                 && ! request()->is('manage', 'manage/*', 'access', 'access/*')
-                ? app(GetStorefrontTenant::class)->knownSlug($candidate)
+                ? $storefrontTenants->knownSlug($candidate)
                 : null;
+            $slugRoute = request()->routeIs('customer.booking.slug.*');
+            $storefrontUrl = match (true) {
+                ! $tenant instanceof Tenant => null,
+                $slugRoute => CustomerBookingRoutes::canonical('customer.booking.program', ['slug_usaha' => $tenant->slug]),
+                default => CustomerBookingRoutes::url('customer.booking.program', $tenant->slug),
+            };
+            $brandedTenant = $tenant instanceof Tenant && request()->routeIs('customer.booking.*')
+                && $storefrontTenants->canBrandError($tenant, customDomain: ! $slugRoute)
+                ? $tenant : null;
+
+            $view->with([
+                'branding' => $brandedTenant === null ? null : StorefrontBranding::for($brandedTenant),
+                'businessName' => $brandedTenant === null ? 'BookQu' : $brandedTenant->namabisnis,
+                'storefrontUrl' => ($brandedTenant !== null ? $storefrontUrl : null) ?? app(CustomerAccessLinks::class)->canonical('/'),
+            ]);
 
             $view->with('recoveryUrl', match (true) {
                 ($data['owner'] ?? false) && auth()->check() => url('/owner/dashboard'),
-                $tenant instanceof Tenant => CustomerBookingRoutes::url('customer.booking.program', $tenant->slug),
+                $storefrontUrl !== null => $storefrontUrl,
                 $slug !== null => CustomerBookingRoutes::canonical('customer.booking.program', ['slug_usaha' => $slug]),
                 default => url('/'),
             });
