@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Database;
 
 use App\Actions\Booking\GetPromoFigures;
+use App\Actions\Owner\GetBalanceLedger;
 use App\Models\Asset;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
@@ -53,8 +54,8 @@ class DatabaseSeederTest extends TestCase
     }
 
     /**
-     * BQ-162 QA T-21, T-22, T-40: no closed date holds active bookings, Promo's usage figures match
-     * the vouchers' used_count, and every seeded asset has its file.
+     * BQ-162 QA T-21, T-22, T-33, T-40: no closed date holds active bookings, the balance equals its
+     * ledger, Promo's usage figures match the vouchers' used_count, and every seeded asset has its file.
      */
     public function test_seeded_demo_data_is_consistent(): void
     {
@@ -71,6 +72,10 @@ class DatabaseSeederTest extends TestCase
             $figures = app(GetPromoFigures::class)->execute($tenant);
             $this->assertSame((int) Voucher::withoutGlobalScopes()->where('idtenant', $tenant->id)->sum('used_count'), $figures['uses'], $tenant->slug);
             $this->assertGreaterThan(0, $figures['uses'], $tenant->slug);
+
+            $ledger = app(GetBalanceLedger::class)->execute($tenant);
+            $this->assertGreaterThan(0, $ledger['total'], $tenant->slug);
+            $this->assertSame($ledger['total'], (float) $tenant->fresh()->saldo_platform, "{$tenant->slug} balance differs from its ledger");
 
             foreach (Asset::withoutGlobalScopes()->where('idtenant', $tenant->id)->get(['file_path', 'mime_type']) as $asset) {
                 Storage::disk('public')->assertExists($asset->file_path);

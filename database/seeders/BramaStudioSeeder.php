@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Owner\GetBalanceLedger;
 use App\Actions\Team\CreateOwnerMembership;
 use App\Models\AdditionalItem;
 use App\Models\Asset;
@@ -23,6 +24,7 @@ use App\Models\Voucher;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -109,7 +111,6 @@ class BramaStudioSeeder extends Seeder
                 'payment_mode' => 'platform',
                 'midtrans_status' => 'approved',
                 'midtrans_environment' => 'sandbox',
-                'saldo_platform' => 34500000,
                 'weekend_price_type' => 'multiplier',
                 'weekend_price_value' => 1.10,
                 'cancel_before_hours' => 24,
@@ -131,7 +132,6 @@ class BramaStudioSeeder extends Seeder
                 'deskripsi' => 'Studio kreatif foto dan video profesional.',
                 'nomorhp' => '081299887766',
                 'payment_mode' => 'platform',
-                'saldo_platform' => 18500000,
                 'weekend_price_type' => 'multiplier',
                 'weekend_price_value' => 1.10,
                 'cancel_before_hours' => 24,
@@ -155,7 +155,6 @@ class BramaStudioSeeder extends Seeder
                 'payment_mode' => 'platform',
                 'midtrans_status' => 'approved',
                 'midtrans_environment' => 'sandbox',
-                'saldo_platform' => 28500000,
                 'weekend_price_type' => 'multiplier',
                 'weekend_price_value' => 1.10,
                 'cancel_before_hours' => 24,
@@ -215,6 +214,21 @@ class BramaStudioSeeder extends Seeder
                 ['role' => $role, 'invited_by' => $tenant->iduser, 'invited_at' => now(), 'accepted_at' => now(), 'revoked_at' => null]
             );
         }
+    }
+
+    /**
+     * Credit every successful booking payment to the platform balance, as the payment lifecycle does
+     * (TenantBalanceLedger::creditPaidBooking), and take the balance from the ledger (T-33). Before,
+     * the seeder wrote a fixed saldo_platform with no credited payment behind it, so Pembayaran showed
+     * a balance next to an empty ledger and a refund of a seeded payment did not lower the balance.
+     */
+    protected function seedBalance(Tenant $tenant): void
+    {
+        Payment::where('idtenant', $tenant->id)->where('tipe', 'booking')->where('status', 'sukses')
+            ->whereNull('balance_credited_at')
+            ->update(['balance_credited_at' => DB::raw('COALESCE(updated_at, created_at)')]);
+
+        $tenant->forceFill(['saldo_platform' => app(GetBalanceLedger::class)->execute($tenant)['total']])->save();
     }
 
     /**
@@ -1067,6 +1081,9 @@ class BramaStudioSeeder extends Seeder
 
         // ── 13b. Promo usage behind each voucher's used_count (T-21) ─────────
         $this->seedPromoUsage($tenant);
+
+        // ── 13c. Platform balance from the paid bookings (T-33) ──────────────
+        $this->seedBalance($tenant);
 
         // ── 14. Customer Reviews ─────────────────────────────────────────────
         $reviewSamples = [
