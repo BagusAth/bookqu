@@ -18,8 +18,8 @@ use App\Models\Booking;
 use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Models\RefundRequest;
-use App\Models\Scopes\TenantScope;
 use App\Support\TenantActor;
+use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +44,7 @@ class CancelBooking
     public function execute(Booking $booking, string $actor = 'customer', ?string $reason = null, ?AccessContext $access = null, bool $teamDecision = false, ?RefundRequest $refundRequest = null, ?RefundRequestState $refundDecision = null): array
     {
         try {
-            $error = DB::transaction(function () use ($booking, $actor, $reason, $access, $teamDecision, $refundRequest, $refundDecision): ?string {
+            $error = app(TenantContext::class)->run((int) $booking->idtenant, fn (): ?string => DB::transaction(function () use ($booking, $actor, $reason, $access, $teamDecision, $refundRequest, $refundDecision): ?string {
                 // Tenant-first synchronization with claims and payment outcomes (ADR-0005 decision 4)
                 ClaimSlots::lockTenant((int) $booking->idtenant);
                 if ($access !== null) {
@@ -86,9 +86,7 @@ class CancelBooking
                 }
                 // If owner cancels a multi-slot booking, cancel all linked bookings for this payment group
                 $targetBookings = ($actor === 'owner' && $booking->isMultiSlot() && $booking->idpayment)
-                    // scope-bypass: payment group re-filtered by the booking's own idtenant
-                    ? Booking::withoutGlobalScope(TenantScope::class)
-                        ->where('idpayment', $booking->idpayment)
+                    ? Booking::where('idpayment', $booking->idpayment)
                         ->where('idtenant', $booking->idtenant)
                         ->get()
                     : collect([$booking]);
@@ -146,7 +144,7 @@ class CancelBooking
                 }
 
                 return null;
-            });
+            }));
             if ($error !== null) {
                 return ['success' => false, 'error' => $error];
             }

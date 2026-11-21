@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Domain\Booking\BookingPricing;
 use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingSeats;
-use App\Models\Scopes\TenantScope;
+use App\Support\TenantContext;
 use App\Traits\BelongsToTenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -70,8 +70,7 @@ class Booking extends Model
 
     public function layanan(): BelongsTo
     {
-        // scope-bypass: resolve the stored service relation; booking writes verify service and tenant ownership.
-        return $this->belongsTo(Service::class, 'idlayanan')->withoutGlobalScope(TenantScope::class);
+        return $this->belongsTo(Service::class, 'idlayanan');
     }
 
     public function schedule(): BelongsTo
@@ -81,8 +80,7 @@ class Booking extends Model
 
     public function payment(): BelongsTo
     {
-        // scope-bypass: resolve the stored payment relation; customer grants validate the complete payment family.
-        return $this->belongsTo(Payment::class, 'idpayment')->withoutGlobalScope(TenantScope::class);
+        return $this->belongsTo(Payment::class, 'idpayment');
     }
 
     public function logs(): HasMany
@@ -146,10 +144,8 @@ class Booking extends Model
      */
     public function isMultiSlot(): bool
     {
-        // scope-bypass: count members of the stored payment group; callers authorize the booking before using this refusal.
-        return ! empty($this->idpayment) && static::withoutGlobalScope(TenantScope::class)
-            ->where('idpayment', $this->idpayment)
-            ->count() > 1;
+        return ! empty($this->idpayment) && app(TenantContext::class)->run((int) $this->idtenant,
+            fn (): bool => static::where('idpayment', $this->idpayment)->count() > 1);
     }
 
     /**
@@ -184,8 +180,9 @@ class Booking extends Model
     public function getPriceLabelAttribute(): string
     {
         // FR-BOOKING-023: the frozen amount; bookings placed before the breakdown keep the old label
-        $amount = BookingPricing::frozenSlotAmount($this->payment instanceof Payment ? $this->payment : null, (int) $this->idschedule)
-            ?? (float) ($this->schedule?->harga_override ?? $this->layanan?->harga ?? 0);
+        $amount = app(TenantContext::class)->run((int) $this->idtenant, fn (): float => BookingPricing::frozenSlotAmount(
+            $this->payment instanceof Payment ? $this->payment : null, (int) $this->idschedule,
+        ) ?? (float) ($this->schedule?->harga_override ?? $this->layanan?->harga ?? 0));
 
         return 'Rp '.number_format($amount, 0, ',', '.');
     }

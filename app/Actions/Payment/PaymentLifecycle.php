@@ -25,6 +25,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\PaymentRefundOwedOwnerNotification;
 use App\Support\TenantContext;
+use App\Support\TenantDiscovery;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -147,8 +148,7 @@ class PaymentLifecycle
             return null;
         }
 
-        // scope-bypass: the payment is resolved by the booking's id; tenant equality is checked under lock.
-        $payment = Payment::withoutGlobalScopes()->find($booking->idpayment);
+        $payment = $this->tenantContext->run((int) $booking->idtenant, fn (): ?Payment => Payment::find($booking->idpayment));
 
         if ($payment === null) {
             return null;
@@ -223,8 +223,7 @@ class PaymentLifecycle
             ]);
 
             try {
-                // scope-bypass: alerts run after commit, outside any request tenant context.
-                $owner = Tenant::withoutGlobalScopes()->with('user')->find($payment->idtenant)?->user;
+                $owner = Tenant::with('user')->find($payment->idtenant)?->user;
                 if ($owner instanceof User) {
                     $owner->notify(new PaymentRefundOwedOwnerNotification($payment, $refund));
                 }
@@ -272,13 +271,12 @@ class PaymentLifecycle
      */
     private function lock(Payment $payment, ?int $tenantId): ?Payment
     {
-        if ($tenantId !== null) {
-            // scope-bypass: tenant-first lock on the payment's stored tenant (ADR-0005 decision 4).
-            Tenant::withoutGlobalScopes()->lockForUpdate()->find($tenantId);
+        if ($tenantId === null) {
+            return null;
         }
+        Tenant::lockForUpdate()->find($tenantId);
 
-        // scope-bypass: webhooks and commands have no tenant context; the tenant comes from the stored row.
-        return Payment::withoutGlobalScopes()->lockForUpdate()->find($payment->id);
+        return Payment::lockForUpdate()->find($payment->id);
     }
 
     /**
@@ -292,17 +290,10 @@ class PaymentLifecycle
      */
     private function withinPaymentTenant(Payment $payment, callable $work): mixed
     {
-        // scope-bypass: the stored tenant of the payment decides the lock and the context.
-        $storedTenantId = Payment::withoutGlobalScopes()->whereKey($payment->id)->value('idtenant');
-        $tenantId = $storedTenantId === null ? null : (int) $storedTenantId;
+        $tenantId = app(TenantDiscovery::class)->payment((int) $payment->id);
 
-        $previousTenantId = $this->tenantContext->getTenantId();
-        $this->tenantContext->setTenantId($tenantId);
-
-        try {
-            return DB::transaction(fn () => $work($tenantId));
-        } finally {
-            $this->tenantContext->setTenantId($previousTenantId);
-        }
+        return $tenantId === null
+            ? DB::transaction(fn () => $work(null))
+            : $this->tenantContext->run($tenantId, fn () => DB::transaction(fn () => $work($tenantId)));
     }
 }

@@ -39,12 +39,10 @@ final class BookingPricingReservations
         if ($paid) {
             foreach ($reservations->get() as $reservation) {
                 if ($reservation->voucher_id !== null) {
-                    // scope-bypass: settlement uses the stored payment tenant, including synchronous placement.
-                    Voucher::withoutGlobalScopes()->where('idtenant', $payment->idtenant)
+                    Voucher::query()->where('idtenant', $payment->idtenant)
                         ->whereKey($reservation->voucher_id)->increment('used_count', $reservation->quantity);
                 } else {
-                    // scope-bypass: settlement uses the stored payment tenant, including synchronous placement.
-                    AdditionalItem::withoutGlobalScopes()->where('idtenant', $payment->idtenant)
+                    AdditionalItem::query()->where('idtenant', $payment->idtenant)
                         ->whereKey($reservation->additional_item_id)->decrement('stock', $reservation->quantity);
                 }
             }

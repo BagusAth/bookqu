@@ -131,7 +131,8 @@ class BookingManageTest extends TestCase
         $url = '/manage/'.$this->booking->booking_code.'/cancel';
         $this->grantCustomerAccess($this->booking)->post($url, $payload)->assertSessionHasErrors('cancel');
         $this->booking->tenant->update(['refunds_enabled' => true]);
-        $this->booking->payment->update(['jumlah' => 150001]);
+        DB::table('payments')->where('idtenant', $this->booking->idtenant)->where('id', $this->booking->idpayment)
+            ->update(['jumlah' => 150001]);
         $this->grantCustomerAccess($this->booking)->post($url, $payload)->assertSessionHas('success');
         $this->post($url, $payload)->assertSessionHasErrors('cancel');
         $refundRequest = DB::table('refund_requests')->first();

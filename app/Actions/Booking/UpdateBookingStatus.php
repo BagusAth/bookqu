@@ -13,6 +13,7 @@ use App\Models\Booking;
 use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Notifications\BookingStatusChangedOwnerNotification;
+use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -45,12 +46,12 @@ class UpdateBookingStatus
             return $this->markBookingNoShow->execute($booking);
         }
 
-        return DB::transaction(function () use ($booking, $newStatus, $actor): array {
+        return app(TenantContext::class)->run((int) $booking->idtenant, fn (): array => DB::transaction(function () use ($booking, $newStatus, $actor): array {
             ClaimSlots::lockTenant((int) $booking->idtenant);
             $booking->refresh();
 
             return $this->updateLocked($booking, $newStatus, $actor);
-        });
+        }));
     }
 
     /** @return array{success: bool, error?: string, booking?: Booking} */
@@ -60,6 +61,9 @@ class UpdateBookingStatus
             return ['success' => false, 'error' => "Status tidak dapat diubah dari '{$booking->status}' ke '{$newStatus}'."];
         }
         $payment = $booking->payment;
+        if ($booking->idpayment !== null && ! $payment instanceof Payment) {
+            return ['success' => false, 'error' => 'Pembayaran booking tidak tersedia.'];
+        }
         if ($payment instanceof Payment) {
             if ((int) $payment->idtenant !== (int) $booking->idtenant) {
                 return ['success' => false, 'error' => 'Pembayaran booking tidak tersedia.'];

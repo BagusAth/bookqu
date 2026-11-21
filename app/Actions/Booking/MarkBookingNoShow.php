@@ -9,6 +9,7 @@ use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
 use App\Models\Booking;
 use App\Models\BookingLog;
+use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Illuminate\Support\Facades\DB;
 
@@ -23,7 +24,7 @@ class MarkBookingNoShow
     /** @return array{success: bool, error?: string, booking?: Booking} */
     public function execute(Booking $booking): array
     {
-        return DB::transaction(function () use ($booking): array {
+        return app(TenantContext::class)->run((int) $booking->idtenant, fn (): array => DB::transaction(function () use ($booking): array {
             ClaimSlots::lockTenant((int) $booking->idtenant);
             $booking->refresh();
 
@@ -45,7 +46,7 @@ class MarkBookingNoShow
             }
 
             return ['success' => true, 'booking' => $booking->refresh()];
-        });
+        }));
     }
 
     /** @return list<Booking> the booking and every booking that shares its payment */
@@ -55,9 +56,7 @@ class MarkBookingNoShow
             return [$booking];
         }
 
-        // scope-bypass: members of this booking's own payment group, filtered by its tenant
-        return Booking::withoutGlobalScopes()
-            ->where('idtenant', $booking->idtenant)
+        return Booking::where('idtenant', $booking->idtenant)
             ->where('idpayment', $booking->idpayment)
             ->with('schedule')
             ->orderBy('id')

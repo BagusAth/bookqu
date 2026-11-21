@@ -52,8 +52,7 @@ class CreateWalkInBooking
         try {
             $booking = DB::transaction(function () use ($tenant, $data, $participants) {
                 ClaimSlots::lockTenant((int) $tenant->id);
-                // scope-bypass: only to read the schedule's service; ClaimSlots verifies tenant ownership under lock.
-                $serviceId = Schedule::withoutGlobalScopes()->whereKey($data['idschedule'])->value('idlayanan');
+                $serviceId = Schedule::where('idtenant', $tenant->id)->whereKey($data['idschedule'])->value('idlayanan');
 
                 if ($serviceId === null) {
                     return null;
