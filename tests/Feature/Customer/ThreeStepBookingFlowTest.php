@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class ThreeStepBookingFlowTest extends TestCase
@@ -160,6 +161,29 @@ class ThreeStepBookingFlowTest extends TestCase
         $response->assertSee('Creative Hub Studio');
         $response->assertSee('Lanjutkan');
         $response->assertDontSee('Pembayaran aman melalui BookQu');
+        $dates = collect($response->viewData('dates'))->keyBy('date');
+        $this->assertSame(3, $dates[$this->tomorrow]['session_count']);
+        $this->assertSame(0, $dates['2026-11-03']['session_count']);
+        $this->assertArrayNotHasKey('weekend_price_label', $response->viewData('servicePayload'));
+    }
+
+    #[TestWith(['fixed', 35000, null])]
+    #[TestWith(['fixed', 40000, 'Rp40.000'])]
+    #[TestWith(['multiplier', 1.1, 'Rp38.500'])]
+    public function test_schedule_payload_includes_the_weekend_price_only_when_it_changes_the_price(string $type, float $value, ?string $label): void
+    {
+        $this->tenant->update(['weekend_price_type' => $type, 'weekend_price_value' => $value]);
+
+        $response = $this->withSession([
+            'booking' => ['tenant_id' => $this->tenant->id, 'service_id' => $this->service->id],
+        ])->get('/creative-hub-studio/booking/schedule')->assertOk();
+
+        $payload = $response->viewData('servicePayload');
+        if ($label === null) {
+            $this->assertArrayNotHasKey('weekend_price_label', $payload);
+        } else {
+            $this->assertSame($label, $payload['weekend_price_label']);
+        }
     }
 
     /**
