@@ -21,7 +21,9 @@ The owner sets the look of the storefront in Halaman Booking (`owner.booking-pag
 - logo and cover from the media gallery;
 - theme colour, button style (pill, rounded, square), card style (elevated, outline, soft), font and description.
 
-`App\Support\StorefrontBranding` holds the allowed values and normalises stored ones for `customer/layouts/booking-shell` and the payment page. Unknown values fall back to the defaults, so nothing reaches the style block unvalidated. Older values map to the new names.
+`App\Support\StorefrontBranding` holds the allowed values and normalises stored ones for `customer/layouts/booking-shell`, which writes them as `--sf-*` variables for every customer page (BQ-165). Unknown values fall back to the defaults, so nothing reaches the style block unvalidated. Older values map to the new names. It also derives the text colours on the brand colour, the brand text colour and tints (every text pair at 4.5:1 or more), the corner radii per button style and the shadows per card style.
+
+Templates (D-028): Modern, Rapi and Tegas fill button style, card style and font in Tampilan; the brand colour stays the business's. `StorefrontBranding::templateFor()` recognises the current template from the three saved values, otherwise `custom` ("Kustom"); nothing new is stored.
 
 Sharing (FR-PUBLIC-006, D-010):
 
@@ -46,11 +48,11 @@ Two Halaman Booking sections for Pro (owner-portal.md §8.9, FR-PUBLIC-007, D-00
 
 Evidence: `Owner/LandingPageAndDomainTest`, `Customer/CustomDomainBookingTest`.
 
-## Customer storefront design (BQ-164)
+## Customer pages design (BQ-165)
 
-Storefront and management pages share the customer booking shell, the owner portal's `bq-*` tokens and the `x-customer.*` components. `StorefrontBranding` derives hover, light and border shades and chooses dark or white primary text by contrast. Legacy palette keys resolve through `CategoryColor`. Unrecognized colours use the storefront default.
+Every customer page — storefront, schedule, checkout, waiting for payment, success and invoice, payment status, manage, reschedule, access link and errors — uses design A "Sampul Imersif" ([spec](../design/booking-pelanggan/desain-a-sampul-imersif.md)) and follows the owner's appearance: colour, font, button style and card style. Phone, tablet and desktop have their own layouts. Views only display server data; availability, prices, payment status and access stay with the existing Actions. The service list is server-rendered and services can be chosen without JavaScript; the customer Vite bundle and the page scripts add search, filters, the calendar and the time picker. The checkout refreshes the server quote after changes. Saved contact details are scoped to the business on the device. BQ-164 brought the pages onto one shell first; BQ-165 replaced its look.
 
-The service list is server-rendered and eligible services can be selected without JavaScript. The customer Vite bundle adds search, filters and the date and time picker. The checkout uses the server quote and refreshes it after changes to participants, additional items or a promo. Saved contact details are scoped to that business on the device and can be cleared from checkout.
+Evidence: `Unit/StorefrontBrandingTest`, `Components/CustomerComponentsTest`, `Owner/HalamanBookingPageTest`, `Customer/CustomerFrontendSpecificationTest`, `Customer/ThreeStepBookingFlowTest`, `Customer/BookingManageTest`.
 
 ## Evidence
 

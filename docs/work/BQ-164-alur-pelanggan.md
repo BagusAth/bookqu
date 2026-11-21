@@ -15,6 +15,8 @@ launch-blocker: true
 depends-on: [BQ-162]
 ---
 
+> **Look superseded (21 Nov 2026).** The visual rules of this work item (owner `bq-*` tokens on customer pages, fixed corners and shadows, bottom bar on phone only) are replaced by [BQ-165](BQ-165-tampilan-pelanggan-dinamis.md) design A. Its flow, copy and accessibility rules still apply.
+
 ## Problem
 
 The owner portal was rebuilt on one design system in BQ-162 (tokens in `resources/css/app.css`, `x-ui.*` components, Papan Jadwal rules). Everything a customer sees still uses an older look: raw Tailwind colours, hard-coded hex values and five different page layouts. It also has broken paths.

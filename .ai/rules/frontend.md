@@ -42,9 +42,13 @@ User-facing copy is Indonesian; keep status labels consistent with `BookingState
 
 ## Customer views
 
-- Inherit the shared customer booking shell and build with the customer components and `x-ui.*` primitives. The shell shows business identity, one contextual back link when applicable, WhatsApp help and the BookQu footer. Use the customer Vite entry for Alpine.
-- Use the `bq-*` colour tokens. `StorefrontBranding` supplies the tenant primary, hover, light and border colours plus text with a WCAG contrast ratio of at least 4.5:1 on the primary. Keep raw palette colours, hex values and class overrides out of customer views.
-- Apply the tenant font and sentence case. Text is at least 13 px, with 12 px allowed for badges, step numbers and phone navigation. Format amounts through `Rupiah` and session ranges through `BookingTimeRange`. Use Indonesian dates and `bq-num` for times and amounts.
-- Group related content in panels. Keep one primary action, in a bottom bar on a phone, and use the shared confirmation pattern for destructive actions.
+The look is design A "Sampul Imersif" ([spec](../../docs/design/booking-pelanggan/desain-a-sampul-imersif.md), BQ-165); the components and tokens are listed in `resources/views/components/customer/README.md`.
+
+- Inherit the customer booking shell. Design A pages set `@section('immersive')` and draw their own `x-customer.hero` or `x-customer.step-header`; use the `x-customer.*` components and the customer Vite entry for Alpine.
+- Colours only from the `sf-*` tokens: the business colour derived by `StorefrontBranding` plus fixed neutrals and status colours. No `bq-*` owner tokens, BookQu ink or marigold, raw hex values, Tailwind palette colours or `!important` in customer views (the Pro landing section is the one exception).
+- Shapes and surfaces follow the owner's settings: `button_style` sets every control and card corner (`rounded-sf-*`), `card_style` sets every surface (`sf-card`, `sf-card-raised`, `sf-card-small`). Touch size (44 px), status colours, spacing and type sizes do not change with them.
+- Text on the brand colour uses `text-sf-on-primary`/`text-sf-hero-soft`, brand text on light surfaces uses `text-sf-primary-text`; `StorefrontBranding` keeps every such pair at 4.5:1 or more.
+- Build phone (< 768 px), tablet (768–1023 px) and desktop (≥ 1024 px) on purpose; the primary action sits in `x-customer.bottom-bar` on phone and tablet, and content above it keeps room for it. A grid or flex item that holds a `sf-scroll-row` needs `min-w-0`.
+- Apply the tenant font and sentence case (no uppercase micro-labels). Text is at least 12 px. Format amounts through `Rupiah` and session ranges through `BookingTimeRange`; use `sf-num` for times and amounts.
 - Keep inputs and give the customer a next action when an error occurs. Explain empty states and avoid claims about security, taxes or actions that the system does not guarantee. Use customer terms such as “sesi”, “ubah jadwal”, “tambahan” and “nomor pesanan”.
-- Name every control, keep visible focus and use at least 44 px for touch actions. Use `aria-pressed` for selected time buttons and one polite live region for status updates. Motion responds to an action and respects `prefers-reduced-motion`. Avoid continuous animation, decorative gradients, hover lift and emoji.
+- Name every control, keep visible focus, use `aria-pressed` for selected dates and times and one polite live region for status updates. Bottom sheets (`x-customer.sheet`) trap focus and close with Esc. Motion responds to an action, lasts 150–200 ms and stops under `prefers-reduced-motion`; no hover lift or emoji.

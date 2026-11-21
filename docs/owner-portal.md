@@ -495,10 +495,11 @@ Opened from Beranda, Kalender, Booking, Pelanggan, search and notifications. One
   - a printable poster with the QR code and business name.
 - **Section Materi promosi:** ready text for an Instagram bio and a WhatsApp message, each with a copy button.
 - **Section Tampilan:**
+  - three ready-made templates (D-028): Modern (pill, elevated, Plus Jakarta Sans), Rapi (rounded, outline, Inter), Tegas (square, soft, Outfit); choosing one fills button style, card style and font, the owner still saves, and the label shows the matching template or "Kustom";
   - logo, cover image, theme colour;
   - button style (pill, rounded, square), card style (elevated, outline, soft), font;
   - description;
-  - live phone-sized preview.
+  - live phone-sized preview built from the customer page components.
 - **Section Galeri media:**
   - all images of the business: upload (image up to 10 MB), title, category (`logo`, `cover`, `service`, `gallery`, `other`), delete;
   - the same gallery opens as the image picker in Layanan, Unit and the landing page;

@@ -23,7 +23,7 @@
     <div class="flex items-center justify-between gap-3 px-5 pb-[18px] pt-3.5" x-data="{ copied: false }">
         <div>
             <p class="text-xs text-sf-muted">Kode reservasi</p>
-            <p class="sf-num text-[21px] font-bold tracking-[2px]">{{ $code }}</p>
+            <p class="sf-num break-all text-lg font-bold tracking-[1px] md:text-[21px] md:tracking-[2px]">{{ $code }}</p>
         </div>
         <button type="button" class="sf-btn-secondary px-3.5 text-sm"
             x-on:click="navigator.clipboard && navigator.clipboard.writeText(@js($code)).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">

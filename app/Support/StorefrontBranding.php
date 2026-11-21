@@ -108,20 +108,38 @@ final class StorefrontBranding
         $font = in_array($tenant->font_family, self::FONTS, true) ? (string) $tenant->font_family : self::DEFAULT_FONT;
         $button = self::buttonStyle($tenant->button_style);
         $card = self::cardStyle($tenant->card_style);
+        $onPrimary = $useWhite ? '#FFFFFF' : self::TEXT_ON_LIGHT;
+        $tintStrong = self::mix($color, 255, 0.84);
+        // Design A §8: every text pair stays at 4.5:1 or more, also for mid-tone brands (BQ-165 session 8).
+        $soft = $useWhite ? [255, 255, 255, 0.86] : [23, 21, 31, 0.80];
+        $faint = $useWhite ? [255, 255, 255, 0.14] : [23, 21, 31, 0.10];
+        // When the chip layer would wash the text out, it shades the other way instead (darker under white text,
+        // lighter under dark text).
+        if (self::contrast(self::rgb($onPrimary), self::blend($faint, self::rgb($color))) < self::MIN_CONTRAST) {
+            $faint = $useWhite ? [23, 21, 31, 0.16] : [255, 255, 255, 0.24];
+        }
+        if (self::contrast(self::blend($soft, self::rgb($color)), self::rgb($color)) < self::MIN_CONTRAST) {
+            $soft[3] = 1.0;
+        }
+        $primaryText = $isLight ? self::mix($color, 0, 0.58) : $color;
+        for ($step = 0.06; self::contrast(self::rgb($primaryText), self::rgb($tintStrong)) < self::MIN_CONTRAST && $step <= 0.6; $step += 0.06) {
+            $primaryText = self::mix($isLight ? self::mix($color, 0, 0.58) : $color, 0, $step);
+        }
 
         return [
             'color' => $color,
             'hover' => self::mix($color, $useWhite ? 0 : 255, 0.14),
             'light' => self::mix($color, 255, 0.90),
             'border' => self::mix($color, 255, 0.72),
-            'onPrimary' => $useWhite ? '#FFFFFF' : self::TEXT_ON_LIGHT,
-            'onPrimarySoft' => $useWhite ? 'rgba(255, 255, 255, 0.86)' : 'rgba(23, 21, 31, 0.80)',
-            'onPrimaryFaint' => $useWhite ? 'rgba(255, 255, 255, 0.14)' : 'rgba(23, 21, 31, 0.10)',
+            'onPrimary' => $onPrimary,
+            'onPrimarySoft' => self::rgba($soft),
+            'onPrimaryFaint' => self::rgba($faint),
             'onPrimaryLine' => $useWhite ? 'rgba(255, 255, 255, 0.24)' : 'rgba(23, 21, 31, 0.18)',
-            // A light brand is unreadable on white, so its text colour keeps 42% of the brand over black.
-            'primaryText' => $isLight ? self::mix($color, 0, 0.58) : $color,
+            // A light brand is unreadable on white, so its text colour keeps 42% of the brand over black; a
+            // mid-tone brand is darkened just enough to stay readable on the strong tint.
+            'primaryText' => $primaryText,
             'tint' => self::mix($color, 255, 0.91),
-            'tintStrong' => self::mix($color, 255, 0.84),
+            'tintStrong' => $tintStrong,
             'isLight' => $isLight,
             'font' => $font,
             'buttonStyle' => $button,
@@ -132,6 +150,38 @@ final class StorefrontBranding
             'shape' => self::SHAPES[$button],
             'surface' => self::SURFACES[$card],
         ];
+    }
+
+    /** WCAG AA for normal text (design A §8). */
+    private const MIN_CONTRAST = 4.5;
+
+    /** @param array{int|float, int|float, int|float} $first @param array{int|float, int|float, int|float} $second */
+    private static function contrast(array $first, array $second): float
+    {
+        $luminance = fn (array $rgb): float => 0.2126 * self::linear((int) round($rgb[0])) + 0.7152 * self::linear((int) round($rgb[1])) + 0.0722 * self::linear((int) round($rgb[2]));
+        [$lighter, $darker] = [max($luminance($first), $luminance($second)), min($luminance($first), $luminance($second))];
+
+        return ($lighter + 0.05) / ($darker + 0.05);
+    }
+
+    /**
+     * @param  array{int, int, int, float}  $layer
+     * @param  array{int, int, int}  $base
+     * @return array{float, float, float}
+     */
+    private static function blend(array $layer, array $base): array
+    {
+        return [
+            $layer[0] * $layer[3] + $base[0] * (1 - $layer[3]),
+            $layer[1] * $layer[3] + $base[1] * (1 - $layer[3]),
+            $layer[2] * $layer[3] + $base[2] * (1 - $layer[3]),
+        ];
+    }
+
+    /** @param array{int, int, int, float} $layer */
+    private static function rgba(array $layer): string
+    {
+        return sprintf('rgba(%d, %d, %d, %s)', $layer[0], $layer[1], $layer[2], rtrim(rtrim(number_format($layer[3], 2, '.', ''), '0'), '.'));
     }
 
     /** @return array{int, int, int} */

@@ -44,8 +44,43 @@ final class StorefrontBrandingTest extends TestCase
         // 42% brand mixed with black.
         $this->assertSame('#674205', $amber['primaryText']);
         $this->assertGreaterThanOrEqual(4.5, $this->contrast($amber['primaryText'], '#FFFFFF'));
-        $this->assertSame('#0F766E', $dark['primaryText']);
+        $this->assertSame('#382186', StorefrontBranding::for(new Tenant(['theme_color' => '#382186']))['primaryText']);
+        // A mid-tone brand is darkened just enough to read on the strong tint (design A §8).
+        $this->assertNotSame('#0F766E', $dark['primaryText']);
         $this->assertGreaterThanOrEqual(4.5, $this->contrast($dark['primaryText'], '#FFFFFF'));
+    }
+
+    /**
+     * Design A §8: every text pair on a brand surface reaches 4.5:1, for the owner palette, the test colours and
+     * hard mid-tone cases.
+     */
+    public function test_every_brand_text_pair_meets_wcag_aa(): void
+    {
+        foreach (['#4F46E5', '#382186', '#0F766E', '#B45309', '#BE123C', '#0369A1', '#111827', '#F59E0B', '#FDE047', '#22C55E', '#FFFFFF', '#808080'] as $color) {
+            $branding = StorefrontBranding::for(new Tenant(['theme_color' => $color]));
+            $pairs = [
+                'on-primary on primary' => [$branding['onPrimary'], $branding['color']],
+                'on-primary on hover' => [$branding['onPrimary'], $branding['hover']],
+                'soft text on primary' => [$this->flatten($branding['onPrimarySoft'], $branding['color']), $branding['color']],
+                'on-primary on faint chip' => [$branding['onPrimary'], $this->flatten($branding['onPrimaryFaint'], $branding['color'])],
+                'primary text on white' => [$branding['primaryText'], '#FFFFFF'],
+                'primary text on tint' => [$branding['primaryText'], $branding['tint']],
+                'primary text on strong tint' => [$branding['primaryText'], $branding['tintStrong']],
+            ];
+            foreach ($pairs as $name => [$text, $background]) {
+                $this->assertGreaterThanOrEqual(4.5, $this->contrast($text, $background), "{$color}: {$name}");
+            }
+        }
+    }
+
+    /** An `rgba()` layer over a hex colour, as hex. */
+    private function flatten(string $layer, string $base): string
+    {
+        preg_match('/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/', $layer, $m);
+        $alpha = (float) $m[4];
+        $channels = [hexdec(substr($base, 1, 2)), hexdec(substr($base, 3, 2)), hexdec(substr($base, 5, 2))];
+
+        return sprintf('#%02X%02X%02X', ...array_map(fn (int $i): int => (int) round((int) $m[$i + 1] * $alpha + $channels[$i] * (1 - $alpha)), [0, 1, 2]));
     }
 
     public function test_tints_mix_the_brand_over_white(): void
