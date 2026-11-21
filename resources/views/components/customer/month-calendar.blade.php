@@ -2,10 +2,10 @@
     Month calendar (design A §6, §7.2): seven columns, a dot for days with sessions or full, today ringed.
     A panel on tablet and desktop (`panel`), the body of the calendar sheet on phone.
     Alpine contract, provided by the page script from server data:
-      monthLabel, canGoPrev, canGoNext, prevMonth(), nextMonth(), selectDate(date) and
+      monthLabel, canGoPrev, canGoNext, prevMonth(), nextMonth(), a select method (`select`, default selectDate) and
       calendarDays: [{ key, date, label, ariaLabel, inMonth, isToday, isSelected, isDisabled, hasSessions, isFull }].
 --}}
-@props(['panel' => true, 'headingId' => 'kalender-bulan'])
+@props(['panel' => true, 'headingId' => 'kalender-bulan', 'select' => 'selectDate'])
 
 <section aria-labelledby="{{ $headingId }}" {{ $attributes->class(['sf-card p-[18px]' => $panel]) }}>
     <div class="flex items-center justify-between gap-3">
@@ -33,7 +33,7 @@
                     x-bind:aria-pressed="day.isSelected.toString()"
                     x-bind:aria-label="day.ariaLabel"
                     x-bind:data-today="day.isToday ? '' : null"
-                    x-on:click="selectDate(day.date)">
+                    x-on:click="{{ $select }}(day.date)">
                     <span class="sf-num" x-text="day.label"></span>
                     <span class="sf-dot" aria-hidden="true"
                         x-bind:class="day.hasSessions ? 'text-sf-primary-text' : (day.isFull ? 'text-sf-disabled-text' : 'invisible')"></span>

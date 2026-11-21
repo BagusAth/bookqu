@@ -150,11 +150,11 @@ class ThreeStepBookingFlowTest extends TestCase
         ])->get('/creative-hub-studio/booking/schedule');
 
         $response->assertStatus(200);
-        $response->assertSee('Jadwal');
-        $response->assertSee('Layanan');
-        $response->assertSee('Data &amp; Pembayaran', false);
-        $response->assertSee('Sesi pagi');
-        $response->assertSee('Sesi siang dan sore');
+        // Design A §7.2: "Langkah n dari 3" header and time groups by part of day.
+        $response->assertSee('Pilih jadwal');
+        $response->assertSee('Langkah 2 dari 3');
+        $response->assertSee('Pagi');
+        $response->assertSee('Siang dan sore');
         $response->assertSee('10.00 – 11.00');
         $response->assertSee('Badminton Court Rental');
         $response->assertSee('Creative Hub Studio');

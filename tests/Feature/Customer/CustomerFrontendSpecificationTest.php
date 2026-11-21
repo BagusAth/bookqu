@@ -114,8 +114,10 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->get('/'.$this->tenant->slug.'/booking/schedule');
 
         $response->assertStatus(200);
+        // Design A §7.2: step header, date strip and calendar sheet.
+        $response->assertSee('Langkah 2 dari 3');
         $response->assertSee('Pilih tanggal');
-        $response->assertSee('Pilih tanggal yang tersedia untuk reservasi Anda.');
+        $response->assertSee('Kalender');
         $response->assertSee('Kembali ke pilih layanan');
     }
 

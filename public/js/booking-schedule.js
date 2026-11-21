@@ -1,5 +1,9 @@
 document.addEventListener('alpine:init', () => {
     const visibleSlots = slots => slots.filter(slot => !slot.is_past);
+    // Display helpers only (BQ-165 design A): availability and prices come from the server.
+    const monthOf = date => date.slice(0, 7);
+    const isoDate = day => [day.getFullYear(), String(day.getMonth() + 1).padStart(2, '0'), String(day.getDate()).padStart(2, '0')].join('-');
+    const rupiah = amount => 'Rp' + new Intl.NumberFormat('id-ID').format(Math.round(amount));
 
     Alpine.data('schedulePicker', (config) => ({
         ...config,
@@ -15,6 +19,7 @@ document.addEventListener('alpine:init', () => {
         requestController: null,
         requestNumber: 0,
         resetSubmitting: null,
+        viewMonth: monthOf(config.initialDate),
 
         init() {
             this.selectedSlots = this.allCurrentSlots.filter(slot => slot.is_available
@@ -43,8 +48,95 @@ document.addEventListener('alpine:init', () => {
             return [...this.selectedSlots].sort((a, b) => a.time.localeCompare(b.time));
         },
 
+        get monthLabel() {
+            const [year, month] = this.viewMonth.split('-').map(Number);
+            return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1));
+        },
+
+        get stripMonthLabel() {
+            const [year, month] = monthOf(this.selectedDate).split('-').map(Number);
+            return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1));
+        },
+
+        get canGoPrev() {
+            return this.dates.length > 0 && this.viewMonth > monthOf(this.dates[0].date);
+        },
+
+        get canGoNext() {
+            return this.dates.length > 0 && this.viewMonth < monthOf(this.dates[this.dates.length - 1].date);
+        },
+
+        shiftMonth(step) {
+            const [year, month] = this.viewMonth.split('-').map(Number);
+            this.viewMonth = isoDate(new Date(year, month - 1 + step, 1)).slice(0, 7);
+        },
+
+        prevMonth() {
+            if (this.canGoPrev) this.shiftMonth(-1);
+        },
+
+        nextMonth() {
+            if (this.canGoNext) this.shiftMonth(1);
+        },
+
+        get calendarDays() {
+            const [year, month] = this.viewMonth.split('-').map(Number);
+            const first = new Date(year, month - 1, 1);
+            const start = new Date(year, month - 1, 1 - ((first.getDay() + 6) % 7));
+            const today = this.dates[0]?.date;
+            const days = [];
+            for (let index = 0; index < 42; index++) {
+                const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+                if (index >= 35 && day.getMonth() !== month - 1) break;
+                const date = isoDate(day);
+                const entry = this.dates.find(item => item.date === date);
+                days.push({
+                    key: date,
+                    date,
+                    label: day.getDate(),
+                    inMonth: day.getMonth() === month - 1,
+                    isToday: date === today,
+                    isSelected: date === this.selectedDate,
+                    isDisabled: !entry || !entry.is_available,
+                    hasSessions: Boolean(entry?.is_available),
+                    isFull: Boolean(entry && !entry.is_available),
+                    ariaLabel: (entry?.label || date) + (entry?.is_available ? '' : ', tidak ada sesi'),
+                });
+            }
+            return days;
+        },
+
+        get selectedDayShort() {
+            return this.dates.find(day => day.date === this.selectedDate)?.label || '';
+        },
+
+        get nearestAvailableDay() {
+            const later = this.dates.find(day => day.is_available && day.date > this.selectedDate);
+            return later || [...this.dates].reverse().find(day => day.is_available && day.date < this.selectedDate) || null;
+        },
+
+        get selectedTimeLabel() {
+            const sorted = this.sortedSelectedSlots;
+            if (!sorted.length) return 'Belum dipilih';
+            return this.startLabel(sorted[0]) + ' – ' + sorted[sorted.length - 1].end_time.replace(':', '.');
+        },
+
+        get subtotalLabel() {
+            return rupiah(this.selectedSlots.reduce((sum, slot) => sum + Number(slot.price || 0), 0));
+        },
+
+        startLabel(slot) {
+            return (slot.time || '').replace(':', '.');
+        },
+
+        pickFromCalendar(date) {
+            this.selectDate(date);
+            this.$dispatch('close-dialog', { id: 'kalender-jadwal' });
+        },
+
         async selectDate(date) {
             if (this.isSubmitting || !this.dates.some(day => day.date === date && day.is_available)) return;
+            this.viewMonth = monthOf(date);
             this.requestController?.abort();
             this.requestController = new AbortController();
             const requestNumber = ++this.requestNumber;
