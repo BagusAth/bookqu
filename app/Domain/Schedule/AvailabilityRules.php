@@ -97,7 +97,7 @@ class AvailabilityRules
             ? $schedule->layanan
             : app(TenantContext::class)->run((int) $schedule->idtenant, fn (): ?Service => Service::find($schedule->idlayanan));
 
-        if ($service === null || (int) $service->idtenant !== (int) $schedule->idtenant
+        if (! $service instanceof Service || (int) $service->idtenant !== (int) $schedule->idtenant
             || ! $service->is_active || ! $service->hasActiveFulfillment()) {
             return SlotRefusal::ServiceUnavailable;
         }

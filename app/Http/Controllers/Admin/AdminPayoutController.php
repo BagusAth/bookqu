@@ -7,6 +7,7 @@ use App\Domain\Payout\PayoutState;
 use App\Http\Controllers\Controller;
 use App\Models\OwnerPayout;
 use App\Models\Scopes\TenantScope;
+use App\Models\TenantPayoutAccount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -31,7 +32,8 @@ class AdminPayoutController extends Controller
             ->withQueryString();
 
         $payouts->each(function (OwnerPayout $payout): void {
-            if ((int) $payout->payoutAccount?->idtenant !== (int) $payout->idtenant) {
+            $account = $payout->payoutAccount;
+            if ($account instanceof TenantPayoutAccount && (int) $account->idtenant !== (int) $payout->idtenant) {
                 $payout->setRelation('payoutAccount', null);
             }
         });
