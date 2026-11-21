@@ -246,6 +246,17 @@ The Tech Lead reviews at the end of each batch, in the browser at 390, 834 and 1
 - **Audit of the rebuilt pages** (390 px, real interactions): storefront category chips filter and search with the empty state work; date strip, calendar sheet (picks and closes), nearest-date button, contiguous-session rule and its error note work; checkout add-on stepper refreshes the quote, server validation shows "Periksa n isian", the red field and message and keeps every input and add-on; Kelola actions and help render. Fixed: the ticket "Salin" did nothing without the Clipboard API (http) — it now falls back to selecting a hidden field; the date strip now scrolls to a date chosen in the calendar sheet or by the nearest-date button; the payment page title follows the state the script switches to (expired, failed); Ubah jadwal time buttons show the start time and the server note only (full range as the accessible name), like Pilih jadwal.
 - Verification: full suite 1043 passed before the new test, component tests 4 passed after; pint passed; `npm run build` passed. No PHP change, so PHPStan is unaffected.
 
+### Integration sync (21 Nov 2026)
+
+- `git fetch` succeeded. The local sync branch starts at `agathan-bq-165-tampilan-pelanggan` (`918962b`). Its name is `agathan-bq-165-sync` because Git reserves the `agathan/` prefix for the existing local `agathan` ref.
+- `git merge --ff-only agathan-bq-165-data` brought in `724f2b6`, `17170d6`, `15b9ba5` and `ee8c781`. `git merge origin/integration` reported “Already up to date” because the fetched tip (`9176fbf`) is already an ancestor. Both merges completed without conflicts.
+- `php artisan migrate --no-interaction` on the local `bookqu` database reported no pending migrations.
+- `vendor/bin/pint --dirty --format agent` passed on a clean working tree. The related customer booking, reschedule command and Midtrans tests passed (68 tests, 435 assertions). The first related-test invocation failed at argument parsing because the runner forwarded `--no-interaction` to PHPUnit. The successful invocation used `php artisan test --compact` with the test paths.
+- `php artisan test --compact` ran once on SQLite and passed (1,052 tests, 7,138 assertions). PHPStan passed on PHP 8.4.25 with `-d opcache.enable_cli=0` and a 1 GB memory limit.
+- `npm run build` passed. Vite reported that Tailwind CSS generation took 9.6 seconds of the 9.9-second build.
+- `vendor/bin/phpunit -c phpunit.mysql.xml` passed on the local `bookqu_testing` database (1,071 total, 7,206 assertions, 1 skipped). The skipped test covers a rollback specific to SQLite.
+- `git diff --check` passed. The sync and its verification evidence remain local.
+
 ## Open findings
 
 - **Bridge (sessions 1–6).** Kept through session 5 so unconverted pages stayed in the business colour; removed in session 6 except for the Pro landing section, which still uses `bq-*` classes.
