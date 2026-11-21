@@ -6,6 +6,7 @@ namespace App\Actions\Schedule;
 
 use App\Models\OpeningHour;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -37,13 +38,12 @@ class SaveOpeningHours
             }
         }
 
-        DB::transaction(function () use ($tenant, $rows, $slotOpenDaysAhead): void {
-            // scope-bypass: filtered by the authenticated tenant
-            OpeningHour::withoutGlobalScopes()->where('idtenant', $tenant->id)->delete();
+        app(TenantContext::class)->run((int) $tenant->id, fn () => DB::transaction(function () use ($tenant, $rows, $slotOpenDaysAhead): void {
+            OpeningHour::where('idtenant', $tenant->id)->delete();
             foreach ($rows as $row) {
                 OpeningHour::create($row);
             }
             $tenant->forceFill(['slot_open_days_ahead' => $slotOpenDaysAhead])->save();
-        });
+        }));
     }
 }

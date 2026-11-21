@@ -12,6 +12,7 @@ use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -81,8 +82,7 @@ class BulkCreateSchedules
                 );
 
                 if ($rows !== []) {
-                    // scope-bypass: every row carries the authenticated tenant's idtenant
-                    Schedule::withoutGlobalScopes()->insert($rows);
+                    Schedule::insert($rows);
                     $count += count($rows);
                 }
             }
@@ -132,8 +132,7 @@ class BulkCreateSchedules
      */
     private function plan(Tenant $tenant, array $data): array
     {
-        // scope-bypass: filtered by the authenticated tenant
-        $service = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->find($data['idlayanan']);
+        $service = app(TenantContext::class)->run((int) $tenant->id, fn (): ?Service => Service::find($data['idlayanan']));
         if (! $service) {
             return ['error' => 'Program tidak ditemukan.', 'error_field' => 'idlayanan'];
         }
@@ -163,12 +162,11 @@ class BulkCreateSchedules
             }
         }
 
-        // scope-bypass: filtered by the authenticated tenant
-        $blocked = OwnerBlockedDate::withoutGlobalScopes()->where('idtenant', $tenant->id)
+        $blocked = app(TenantContext::class)->run((int) $tenant->id, fn (): array => OwnerBlockedDate::query()
             ->whereIn('tanggal', $dates)
             ->pluck('tanggal')
             ->map(fn ($t) => Carbon::parse($t)->format('Y-m-d'))
-            ->toArray();
+            ->toArray());
 
         return [
             'service' => $service,

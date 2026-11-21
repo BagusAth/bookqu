@@ -98,8 +98,8 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
-            // scope-bypass: an after-commit event contains the tenant of the saved booking.
-            if (OwnerIntegration::withoutGlobalScopes()->where('idtenant', $event->tenantId)->whereNotNull('google_refresh_token')->exists()) {
+            if (app(TenantContext::class)->run($event->tenantId,
+                fn (): bool => OwnerIntegration::whereNotNull('google_refresh_token')->exists())) {
                 DeliverGoogleCalendarEvent::dispatch($event);
             }
         });

@@ -11,6 +11,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 
 class CreateTrialSubscription
@@ -20,11 +21,10 @@ class CreateTrialSubscription
      */
     public function execute(Tenant $tenant, int $trialDays = 7): Subscription
     {
-        return DB::transaction(function () use ($tenant, $trialDays): Subscription {
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): Subscription => DB::transaction(function () use ($tenant, $trialDays): Subscription {
             ClaimSlots::lockTenant((int) $tenant->id);
             $owner = User::query()->lockForUpdate()->findOrFail($tenant->iduser);
-            // scope-bypass: trial issuance is tied to the stored owning account and locked tenant.
-            $existing = Subscription::withoutGlobalScopes()->where('idtenant', $tenant->id)->latest('id')->first();
+            $existing = Subscription::latest('id')->first();
             if ($existing) {
                 return $existing;
             }
@@ -49,6 +49,6 @@ class CreateTrialSubscription
                 'status' => $used ? SubscriptionState::STATUS_EXPIRED : SubscriptionState::STATUS_TRIAL,
                 'trial_berakhir' => $used ? now() : now()->addDays($trialDays),
             ]);
-        });
+        }));
     }
 }

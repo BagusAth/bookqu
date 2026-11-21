@@ -9,6 +9,7 @@ use App\Domain\Schedule\ScheduleConflictRules;
 use App\Models\Schedule;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -26,10 +27,15 @@ class DeleteSchedule
      */
     public function execute(Tenant $tenant, Schedule|int|string $schedule): array
     {
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): array => $this->deleteForTenant($tenant, $schedule));
+    }
+
+    /** @return array{success: bool, error?: string, code?: int} */
+    private function deleteForTenant(Tenant $tenant, Schedule|int|string $schedule): array
+    {
         $slot = $schedule instanceof Schedule
             ? $schedule
-            // scope-bypass: filtered by the authenticated tenant and re-checked below
-            : Schedule::withoutGlobalScopes()->where('idtenant', $tenant->id)->findOrFail((int) $schedule);
+            : Schedule::findOrFail((int) $schedule);
 
         if ((int) $slot->idtenant !== (int) $tenant->id) {
             return [
