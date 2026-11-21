@@ -16,6 +16,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Tests\TestCase;
 
 class CheckoutMidtransTest extends TestCase
@@ -59,11 +61,8 @@ class CheckoutMidtransTest extends TestCase
         $this->withSession(['current_tenant_id' => $this->tenant->id]);
     }
 
-    /**
-     * @runInSeparateProcess
-     *
-     * @preserveGlobalState disabled
-     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function test_owner_can_initiate_checkout_and_generate_snap_token(): void
     {
         $snapMock = Mockery::mock('alias:Midtrans\Snap');
@@ -493,11 +492,8 @@ class CheckoutMidtransTest extends TestCase
         $response->assertSee(route('owner.checkout.payment', $existingPayment));
     }
 
-    /**
-     * @runInSeparateProcess
-     *
-     * @preserveGlobalState disabled
-     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function test_owner_can_initiate_checkout_without_catatan(): void
     {
         $snapMock = Mockery::mock('alias:Midtrans\Snap');
