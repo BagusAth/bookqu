@@ -171,3 +171,14 @@ This snapshot records 122 calls in 73 files on `origin/integration` at `9176fbf`
 ### Follow-up evidence
 
 Initial characterization on the base branch passed (162 tests, 1,326 assertions), covering team permissions, access grants, payments, owner payouts and console commands.
+
+- Tenant runner (`da60bc5`) restores the previous tenant on nested calls and exceptions. The local branch is `agathan-bq-009-scope-bypass` because the existing `agathan` ref blocks the slash form.
+- Owner operations (`bd696dd`) use scoped queries, including the streamed booking export. Owner security, export and account-deletion regressions passed.
+- Background work (`590bcfe`) revalidates sweep candidates inside the stored tenant context. The refund notification regression verifies that a foreign booking ID sends no mail. The related group passed 47 tests.
+- Customer and payment paths (`e53f80d`, `8fa3d21`) keep grant-group checks and locks scoped to their subjects. A schedule referencing another tenant's service is refused. Related customer and payment coverage passed.
+- Platform administration (`13219da`) scopes payout and refund mutations and checks related records before display. An admin cannot fetch transfer details for a refund request with a mismatched tenant. The related group passed 69 tests.
+- Shared schedule, subscription and membership work (`8394132`) passed 81 related tests. The final test of the architecture, availability, admin and payout group passed 75 tests.
+- The follow-up leaves 31 explicit bypass calls across 15 files in the four ADR-0010 boundaries. The guardrail (`a621946`) rejected a temporary out-of-bound call. Pint and PHPStan passed on PHP 8.4.25 with CLI OPcache disabled for PHPStan.
+- The first full runs found a walk-in test that read a payment relation after request middleware cleared its context. Commit `74ccc3b` reads that fixture within the verified tenant and preserves the original assertions. The focused booking-management tests passed (12 tests, 63 assertions).
+- The final SQLite suite passed (986 tests, 6,511 assertions).
+- The final MySQL suite passed (1,004 passed, 1 skipped, 6,579 assertions). The skipped test covers a SQLite-specific rollback.
