@@ -206,7 +206,8 @@ class AccountChangeRequiresCurrentPasswordTest extends TestCase
                 'confirm_account' => 'owner@example.com',
                 'delete_password' => 'not-the-password',
             ])
-            ->assertSessionHasErrors('delete_password');
+            ->assertSessionHasErrors('delete_password')
+            ->assertSessionMissing('_old_input.delete_password');
 
         $this->assertDatabaseHas('users', ['id' => $this->user->id]);
     }
