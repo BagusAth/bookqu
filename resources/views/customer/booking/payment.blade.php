@@ -1,7 +1,10 @@
 @extends('customer.layouts.booking-shell')
 
 @section('title', 'Pembayaran')
-@section('current_step', 3)
+@section('immersive', true)
+@if ($paymentState === 'pending')
+    @section('bottom_bar', true)
+@endif
 
 @section('head')
     @if (!empty($snapUrl) && !empty($clientKey))
@@ -10,8 +13,14 @@
 @endsection
 
 @section('content')
-    <div class="mx-auto max-w-2xl">
-        @php($currentState = $paymentState)
+    @php($currentState = $paymentState)
+    @include('customer.partials.payment.brand-header', ['title' => match ($currentState) {
+        'failed' => 'Pembayaran gagal',
+        'expired' => 'Waktu pembayaran habis',
+        default => 'Selesaikan pembayaran',
+    }])
+
+    <div class="mx-auto max-w-[1120px] px-4 md:max-w-[744px] md:px-8 lg:max-w-[1120px] lg:px-14">
         @include('customer.partials.payment.failed-state')
         @include('customer.partials.payment.expired-state')
         @include('customer.partials.payment.pending-card')

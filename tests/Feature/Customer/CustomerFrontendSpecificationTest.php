@@ -158,7 +158,7 @@ class CustomerFrontendSpecificationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Data pemesan');
-        $response->assertSee('Pastikan nama, email, dan nomor WhatsApp Anda sudah benar.');
+        $response->assertSee('Bukti reservasi dan tautan kelola dikirim ke email ini.'); // Design A §7.3
         $response->assertSee('Ringkasan reservasi');
         $response->assertSee('Simpan nama, email dan nomor di perangkat ini untuk Studio Foto Bagus');
         $response->assertSee('Lanjut ke pembayaran');

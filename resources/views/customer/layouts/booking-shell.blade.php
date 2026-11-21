@@ -111,7 +111,7 @@
     <footer @class(['no-print mt-auto border-t border-sf-divider text-[13px] text-sf-muted', 'px-4 py-5 text-center' => ! $immersive, 'mx-auto mt-9 w-full max-w-[1240px] px-4 pb-7 pt-5 md:px-8 lg:px-14' => $immersive, 'sf-footer-bar' => $immersive && View::hasSection('bottom_bar'), 'sf-footer-bar-always' => $immersive && trim(View::yieldContent('bottom_bar')) === 'always'])>
         @if ($immersive)
             <div class="flex flex-wrap justify-between gap-x-6 gap-y-2">
-                <span>{{ $tenant->namabisnis ?? 'BookQu' }}@if (filled($tenant->alamat ?? null)) · {{ $tenant->alamat }}@endif</span>
+                <span><a href="{{ $storefrontUrl ?? url('/') }}" class="font-semibold text-sf-text hover:underline">{{ $tenant->namabisnis ?? 'BookQu' }}</a>@if (filled($tenant->alamat ?? null)) · {{ $tenant->alamat }}@endif</span>
                 <span>Reservasi melalui BookQu</span>
             </div>
         @else

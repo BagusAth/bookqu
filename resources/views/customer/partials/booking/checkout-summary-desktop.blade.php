@@ -1,31 +1,29 @@
-<x-customer.summary :items="['Layanan' => $service->namalayanan, 'Tanggal' => $checkoutSummary['date']]">
-    <p class="mb-2 mt-3 text-bq-small text-bq-text-muted">{{ count($checkoutSummary['sessions']) }} sesi ({{ $selectedMinutes }} menit)</p>
-    <ul class="space-y-2">
-        @foreach ($checkoutSummary['sessions'] as $session)
-            <li class="bq-num flex flex-wrap justify-between gap-2 text-bq-small">
-                <span>{{ $session['time'] }} WIB</span>
-                <span>{{ $session['price'] }}</span>
-            </li>
-        @endforeach
-    </ul>
-    <dl class="mt-3 space-y-2 border-t border-bq-border pt-3 text-bq-body">
-        <div class="flex justify-between gap-2">
-            <dt>Harga sesi</dt>
-            <dd class="bq-num whitespace-nowrap" x-text="ready ? (display?.base || initialTotal) : '—'">{{ $checkoutSummary['total'] }}</dd>
-        </div>
-        <template x-for="item in ready ? (display?.addOns || []) : []" :key="item.id">
-            <div class="flex justify-between gap-2">
-                <dt x-text="item.name + ' × ' + item.quantity"></dt>
-                <dd class="bq-num whitespace-nowrap" x-text="item.amount"></dd>
-            </div>
-        </template>
-        <div class="flex justify-between gap-2" x-show="ready && display?.promo" x-cloak>
-            <dt>Diskon promo</dt>
-            <dd class="bq-num whitespace-nowrap" x-text="display?.promo"></dd>
-        </div>
-        <div class="flex justify-between gap-2 border-t border-bq-border pt-3 font-semibold">
-            <dt>Total</dt>
-            <dd class="bq-num whitespace-nowrap" x-text="totalLabel">{{ $checkoutSummary['total'] }}</dd>
-        </div>
-    </dl>
-</x-customer.summary>
+{{-- Price lines of the checkout (design A §7.3), used inside a <dl>. Amounts come from the server quote. --}}
+<div class="flex justify-between gap-4">
+    <dt class="text-sf-muted">Tanggal</dt>
+    <dd class="text-right font-bold">{{ $checkoutSummary['date'] }}</dd>
+</div>
+<div class="flex justify-between gap-4">
+    <dt class="text-sf-muted">Sesi</dt>
+    <dd class="sf-num text-right font-bold">{{ count($checkoutSummary['sessions']) }} sesi ({{ $selectedMinutes }} menit)</dd>
+</div>
+@foreach ($checkoutSummary['sessions'] as $session)
+    <div class="sf-num flex justify-between gap-4 text-[13px] text-sf-muted">
+        <dt>{{ $session['time'] }} WIB</dt>
+        <dd class="whitespace-nowrap">{{ $session['price'] }}</dd>
+    </div>
+@endforeach
+<div class="flex justify-between gap-4 border-t border-sf-divider pt-2.5">
+    <dt class="text-sf-muted">Harga sesi</dt>
+    <dd class="sf-num whitespace-nowrap" x-text="ready ? (display?.base || initialTotal) : '—'">{{ $checkoutSummary['total'] }}</dd>
+</div>
+<template x-for="item in ready ? (display?.addOns || []) : []" :key="item.id">
+    <div class="flex justify-between gap-4">
+        <dt class="text-sf-muted" x-text="item.name + ' × ' + item.quantity"></dt>
+        <dd class="sf-num whitespace-nowrap" x-text="item.amount"></dd>
+    </div>
+</template>
+<div class="flex justify-between gap-4" x-show="ready && display?.promo" x-cloak>
+    <dt class="text-sf-muted">Diskon promo</dt>
+    <dd class="sf-num whitespace-nowrap text-sf-success" x-text="display?.promo"></dd>
+</div>

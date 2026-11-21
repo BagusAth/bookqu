@@ -12,13 +12,10 @@
         if (!banner || !text) return;
 
         text.innerText = message;
-        if (type === 'error') {
-            banner.className = 'mt-4 rounded-bq-panel p-3 text-bq-body border border-bq-danger-border bg-bq-danger-bg text-bq-danger flex items-center gap-2';
-            icon.innerHTML = '<svg class="w-4 h-4 text-bq-danger shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
-        } else {
-            banner.className = 'mt-4 rounded-bq-panel p-3 text-bq-body border border-bq-border bg-bq-info-bg text-bq-info flex items-center gap-2';
-            icon.innerHTML = '<svg class="w-4 h-4 text-bq-info shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
-        }
+        // Design A §2.3: status colours via the customer note (BQ-165).
+        banner.className = 'sf-note mt-4 items-center';
+        banner.dataset.tone = type === 'error' ? 'danger' : 'info';
+        icon.innerHTML = '<svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="' + (type === 'error' ? 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' : 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z') + '"/></svg>';
     }
 
     function hideInlineFeedback() {
@@ -173,10 +170,10 @@
             successIcon.classList.add('flex');
         }
         if (overlayTitle) {
-            overlayTitle.innerHTML = 'Pembayaran Berhasil Dikonfirmasi! 🎉';
-            overlayTitle.className = 'text-lg sm:text-xl font-black text-bq-success';
+            overlayTitle.innerText = 'Pembayaran diterima';
+            overlayTitle.className = 'mt-2 text-lg font-bold text-sf-success';
         }
-        if (overlayDesc) overlayDesc.innerText = 'Mengalihkan Anda ke bukti reservasi...';
+        if (overlayDesc) overlayDesc.innerText = 'Membuka bukti reservasi…';
         if (realtimeStatusText) realtimeStatusText.innerText = 'Pembayaran diterima.';
 
         setTimeout(() => {
@@ -190,8 +187,7 @@
 
         const checkStatusBtn = document.getElementById('check-status-btn');
         if (!isSilent && checkStatusBtn) {
-            checkStatusBtn.innerText = 'Memverifikasi...';
-            checkStatusBtn.disabled = true;
+            setCheckingState(true);
         }
 
         try {
@@ -255,15 +251,25 @@
         } finally {
             isChecking = false;
             if (!isSilent && checkStatusBtn) {
-                checkStatusBtn.innerHTML = `
-                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span>Periksa Status Pembayaran</span>
-                `;
-                checkStatusBtn.disabled = false;
+                setCheckingState(false);
             }
         }
+    }
+
+    // Design A §7.4: checking state on the button and the status pill (BQ-165).
+    function setCheckingState(checking) {
+        const pill = document.getElementById('payment-status-pill');
+        const pillText = document.getElementById('payment-status-text');
+        const monitor = document.getElementById('realtime-status-text');
+        document.querySelectorAll('[data-check-status]').forEach(button => {
+            button.innerText = checking ? 'Memeriksa…' : 'Periksa status';
+            button.disabled = checking;
+            button.setAttribute('aria-busy', checking ? 'true' : 'false');
+        });
+        if (pill) pill.dataset.tone = checking ? 'info' : 'warning';
+        if (pillText) pillText.innerText = checking ? 'Memeriksa pembayaran…' : 'Menunggu pembayaran';
+        if (monitor && checking) monitor.innerText = 'Menghubungi penyedia pembayaran, tunggu sebentar.';
+        if (monitor && !checking) monitor.innerText = 'Status dipantau otomatis.';
     }
 
     function startAutoPolling() {
@@ -289,15 +295,14 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        const payButton = document.getElementById('pay-button');
+        const payButtons = document.querySelectorAll('[data-pay-button]');
+        const countdownProgress = document.getElementById('countdown-progress');
+        const countdownTotal = Math.max(900, @js($paymentSeconds));
         const checkStatusBtn = document.getElementById('check-status-btn');
         const countdownCard = document.getElementById('countdown-card');
-        const countdownTitle = document.getElementById('countdown-title');
         const countdownTitleText = document.getElementById('countdown-title-text');
-        const countdownDot = document.getElementById('countdown-dot');
         const countdownMin = document.getElementById('countdown-min');
         const countdownSec = document.getElementById('countdown-sec');
-        const countdownColon = document.getElementById('countdown-colon');
 
         // Expiry countdown: synchronized with server remaining seconds
         let remainingSeconds = @js($paymentSeconds);
@@ -313,12 +318,8 @@
                 stopAutoPolling();
                 // Let the server reconcile at the deadline; a late success still redirects (BQ-064 T4-08)
                 checkPaymentStatus(true);
-                if (countdownCard) {
-                    countdownCard.className = "mt-4 rounded-bq-panel border border-bq-danger-border bg-bq-danger-bg p-4";
-                }
-                if (countdownTitle) {
-                    countdownTitle.className = "flex items-center gap-2 text-bq-label text-bq-danger";
-                }
+                if (countdownCard) countdownCard.dataset.urgent = 'true';
+                if (countdownProgress) countdownProgress.setAttribute('aria-valuenow', '0');
                 if (countdownTitleText) {
                     countdownTitleText.innerText = "Waktu pembayaran habis";
                 }
@@ -336,17 +337,16 @@
 
             if (countdownMin) countdownMin.innerText = minStr;
             if (countdownSec) countdownSec.innerText = secStr;
+            if (countdownProgress) {
+                countdownProgress.setAttribute('aria-valuenow', String(remainingSeconds));
+                countdownProgress.setAttribute('aria-valuetext', minutes + ' menit ' + seconds + ' detik');
+                const bar = countdownProgress.firstElementChild;
+                if (bar) bar.style.width = Math.max(0, Math.min(100, remainingSeconds / countdownTotal * 100)) + '%';
+            }
 
             // S5.1: Urgency state change when <= 3 minutes (180 seconds)
-            if (remainingSeconds <= 180) {
-                if (countdownCard && !countdownCard.classList.contains('border-bq-danger-border')) {
-                    countdownCard.className = "mt-4 rounded-bq-panel border border-bq-danger-border bg-bq-danger-bg p-4";
-                    if (countdownTitle) countdownTitle.className = "flex items-center gap-2 text-bq-label text-bq-danger";
-                    if (countdownDot) countdownDot.className = "size-2 rounded-full bg-bq-danger";
-                    if (countdownMin) countdownMin.className = "bq-num text-bq-danger";
-                    if (countdownColon) countdownColon.className = "bq-num text-bq-danger";
-                    if (countdownSec) countdownSec.className = "bq-num text-bq-danger";
-                }
+            if (remainingSeconds <= 180 && countdownCard) {
+                countdownCard.dataset.urgent = 'true';
             }
         }
 
@@ -358,13 +358,9 @@
             }, 1000);
         }
 
-        if (payButton) {
-            payButton.addEventListener('click', openSnapPayment);
-        }
+        payButtons.forEach(button => button.addEventListener('click', openSnapPayment));
 
-        if (checkStatusBtn) {
-            checkStatusBtn.addEventListener('click', () => checkPaymentStatus(false));
-        }
+        document.querySelectorAll('[data-check-status]').forEach(button => button.addEventListener('click', () => checkPaymentStatus(false)));
 
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && !isProcessingSuccess) {

@@ -57,6 +57,7 @@
                 @endforeach
             </div>
         @endif
+        {{ $slot }}
     </div>
     <div @class(['h-5', 'h-9 lg:h-14' => $overlap])></div>
 </header>

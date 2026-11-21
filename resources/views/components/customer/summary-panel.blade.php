@@ -32,7 +32,7 @@
             <div class="mt-4">{{ $action }}</div>
         @endisset
         @isset($note)
-            <p class="mt-3.5 text-[13px] leading-[19px] text-sf-muted">{{ $note }}</p>
+            <div class="mt-3.5 text-[13px] leading-[19px] text-sf-muted">{{ $note }}</div>
         @endisset
     </div>
 </aside>

@@ -183,7 +183,7 @@ class BookingFlowTest extends TestCase
 
         $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id);
         $response->assertStatus(200);
-        $response->assertSee('Sistem memantau pembayaran Anda secara otomatis');
+        $response->assertSee('Status dipantau otomatis.'); // Design A §7.4
         $response->assertSee('BQ-TEST-12345');
         // Ensure the generated route contains the order_id, not a raw numerical id
         $script = str_replace('\\/', '/', (string) $response->getContent());

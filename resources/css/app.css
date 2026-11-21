@@ -1134,6 +1134,63 @@
         color: var(--sf-text);
     }
 
+    /* Status pill (payment and booking states); tones as `sf-note`. */
+    .sf-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: var(--sf-radius-chip);
+        font-size: 13px;
+        font-weight: 700;
+        background: var(--sf-info-bg);
+        color: var(--sf-info);
+    }
+    .sf-pill::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        background: currentColor;
+    }
+    .sf-pill[data-tone='warning'] {
+        background: var(--sf-warning-bg);
+        color: var(--sf-warning);
+    }
+    .sf-pill[data-tone='success'] {
+        background: var(--sf-success-bg);
+        color: var(--sf-success);
+    }
+    .sf-pill[data-tone='danger'] {
+        background: var(--sf-danger-bg);
+        color: var(--sf-danger);
+    }
+    .sf-pill[data-tone='neutral'] {
+        background: var(--sf-disabled);
+        color: var(--sf-disabled-text);
+    }
+
+    /* Payment countdown: value and progress turn red in the last three minutes. */
+    .sf-meter {
+        height: 6px;
+        overflow: hidden;
+        border-radius: 9999px;
+        background: var(--sf-disabled);
+    }
+    .sf-meter > span {
+        display: block;
+        height: 100%;
+        border-radius: 9999px;
+        background: var(--sf-primary);
+        transition: width 1s linear;
+    }
+    [data-urgent] .sf-meter > span {
+        background: var(--sf-error);
+    }
+    [data-urgent] .sf-countdown-value {
+        color: var(--sf-error);
+    }
+
     /* Dot under a date: has sessions or full. */
     .sf-dot {
         display: inline-block;
