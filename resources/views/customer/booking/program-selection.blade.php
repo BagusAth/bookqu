@@ -165,5 +165,5 @@
     @if ($tracking ?? null)
         @include('customer.booking.partials.tracking')
     @endif
-    <script defer src="{{ asset('js/booking-program.js') }}"></script>
+    <script defer src="{{ asset('js/booking-program.js') }}?v={{ filemtime(public_path('js/booking-program.js')) }}"></script>
 @endsection

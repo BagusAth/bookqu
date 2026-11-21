@@ -178,5 +178,5 @@
 
 @section('scripts')
     <script defer src="{{ asset('js/owner-ui.js') }}"></script>
-    <script defer src="{{ asset('js/booking-schedule.js') }}"></script>
+    <script defer src="{{ asset('js/booking-schedule.js') }}?v={{ filemtime(public_path('js/booking-schedule.js')) }}"></script>
 @endsection

@@ -131,5 +131,5 @@
 @endsection
 
 @section('scripts')
-    <script defer src="{{ asset('js/booking-checkout.js') }}"></script>
+    <script defer src="{{ asset('js/booking-checkout.js') }}?v={{ filemtime(public_path('js/booking-checkout.js')) }}"></script>
 @endsection
