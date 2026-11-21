@@ -263,8 +263,9 @@ class CustomerFrontendSpecificationTest extends TestCase
     public function test_failed_and_expired_payments_show_their_recovery_state_without_contacting_a_gateway(): void
     {
         foreach ([
-            ['status' => 'gagal', 'seconds' => 600, 'card' => 'failed', 'title' => 'Pembayaran gagal'],
-            ['status' => 'pending', 'seconds' => -60, 'card' => 'expired', 'title' => 'Pembayaran kedaluwarsa'],
+            // Design A §7.8 copy.
+            ['status' => 'gagal', 'seconds' => 600, 'card' => 'failed', 'title' => 'Pembayaran gagal', 'action' => 'Coba bayar lagi'],
+            ['status' => 'pending', 'seconds' => -60, 'card' => 'expired', 'title' => 'Waktu pembayaran habis', 'action' => 'Pilih jadwal lagi'],
         ] as $state) {
             $payment = Payment::factory()->create([
                 'idtenant' => $this->tenant->id,
@@ -284,7 +285,7 @@ class CustomerFrontendSpecificationTest extends TestCase
                 ->get('/'.$this->tenant->slug.'/booking/payment/'.$payment->order_id)
                 ->assertOk()
                 ->assertSee('id="state-'.$state['card'].'-card" class="block"', false)
-                ->assertSeeText($state['title'])->assertSeeText('Pilih jadwal lagi')
+                ->assertSeeText($state['title'])->assertSeeText($state['action'])
                 ->assertSee('href="https://wa.me/6281299998888?', false);
         }
     }

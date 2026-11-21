@@ -7,17 +7,22 @@
     <meta name="robots" content="noindex,nofollow">
 @endsection
 
+{{-- Opening an access link (design A §7.9): the business is not known yet, so the page shows BookQu. --}}
 @section('content')
-    <x-ui.panel class="mx-auto max-w-md">
-        <h1 class="text-bq-section text-bq-ink">Akses reservasi</h1>
-        <p id="message" class="mt-2 text-bq-body text-bq-text-muted" role="status">Membuka reservasi Anda…</p>
-        <progress id="access-progress" aria-label="Membuka reservasi" class="mt-4 h-2 w-full accent-bq-primary motion-reduce:hidden"></progress>
-        <div id="access-recovery" hidden class="mt-4 space-y-4">
-            <p class="text-bq-body text-bq-text-muted">Buka kembali tautan di email konfirmasi atau hubungi bisnis tempat Anda memesan.</p>
-            <x-ui.button href="/" class="min-h-11">Kembali ke BookQu</x-ui.button>
+    <section class="sf-card mx-auto mt-6 max-w-md px-6 py-8 text-center">
+        {{-- Text mark, not an image: this page loads no resources while it holds the credential. --}}
+        <span class="mx-auto grid size-12 place-items-center rounded-sf-card-small bg-sf-text text-base font-bold text-sf-surface" aria-label="BookQu" role="img">BQ</span>
+        <h1 class="mt-4 text-lg font-bold">Akses reservasi</h1>
+        <div id="access-progress" class="mt-4" aria-hidden="true">
+            <span class="mx-auto block size-8 animate-spin rounded-full border-[3px] border-sf-divider border-t-sf-primary motion-reduce:hidden"></span>
         </div>
-        <noscript><p class="mt-4 text-bq-body">Aktifkan JavaScript, lalu buka kembali tautan di email konfirmasi.</p></noscript>
-    </x-ui.panel>
+        <p id="message" class="mt-3 text-sm text-sf-muted" role="status">Membuka reservasi Anda…</p>
+        <div id="access-recovery" hidden class="mt-4 space-y-4">
+            <p class="text-sm text-sf-muted">Buka kembali tautan di email konfirmasi atau hubungi bisnis tempat Anda memesan.</p>
+            <a href="/" class="sf-btn">Kembali ke BookQu</a>
+        </div>
+        <noscript><p class="mt-4 text-sm">Aktifkan JavaScript, lalu buka kembali tautan di email konfirmasi.</p></noscript>
+    </section>
 @endsection
 
 @section('scripts')

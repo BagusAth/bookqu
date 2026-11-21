@@ -105,9 +105,8 @@
         </aside>
     </div>
 
-    @if ($currentState === 'pending')
-        <x-customer.bottom-bar class="md:hidden" aria-label="Bayar">
-            <button type="button" data-pay-button class="sf-btn sf-btn-lg w-full">Bayar sekarang · <span class="sf-num">{{ $paymentTotal }}</span></button>
-        </x-customer.bottom-bar>
-    @endif
+    {{-- The bar sits inside the section, so it shows only while this state is shown. --}}
+    <x-customer.bottom-bar class="md:hidden" aria-label="Bayar">
+        <button type="button" data-pay-button class="sf-btn sf-btn-lg w-full">Bayar sekarang · <span class="sf-num">{{ $paymentTotal }}</span></button>
+    </x-customer.bottom-bar>
 </section>

@@ -2,9 +2,7 @@
 
 @section('title', 'Pembayaran')
 @section('immersive', true)
-@if ($paymentState === 'pending')
-    @section('bottom_bar', true)
-@endif
+@section('bottom_bar', true)
 
 @section('head')
     @if (!empty($snapUrl) && !empty($clientKey))

@@ -202,6 +202,17 @@ The Tech Lead reviews at the end of each batch, in the browser at 390, 834 and 1
 - Tests updated for spec §7.3/§7.4 copy: `CustomerFrontendSpecificationTest` (checkout subtitle), `BookingFlowTest` ("Status dipantau otomatis.").
 - Browser: checkout at 1440/834/390 (purple) and the payment page at 1440/834/390 after a local test checkout (`Uji Desain`, `uji.desain@example.test`, local SingaPay sandbox accepted it): no horizontal scroll, no console errors; "Periksa status" shows the checking state and returns.
 
+### Session 5: success, invoice, status and error pages (21 Nov 2026)
+
+- `invoice` (spec §7.5) has two modes from the route: success (storefront route after paying) shows the check badge, "Pembayaran berhasil" and the email it was sent to; invoice mode (opened from Kelola) shows "Invoice pembayaran", the order number and a Cetak button. Both: ticket (`x-customer.ticket`, date block, time, location, code + Salin), actions (Google Calendar, WhatsApp, Petunjuk arah, Cetak/Unduh invoice), invoice card (status pill, Pemesan, Bisnis, sessions, extras, note, total, method). Phone one column with 2×2 actions; tablet ticket | stacked actions; desktop ticket + actions (420 px) | invoice. Print hides the hero and actions and outlines cards.
+- `partials/payment/expired-state` and `failed-state` (spec §7.8): centred card with icon. Expired: "Waktu pembayaran habis", "Pilih jadwal lagi", note "Sudah terlanjur membayar? Simpan bukti pembayaran dan hubungi bisnis." Failed: "Pembayaran gagal", "Coba bayar lagi" (opens the storefront to book again) and "Hubungi bisnis". Phone buttons in a bottom bar that lives inside each state section, so it shows only with its state, also when the script switches state.
+- `customer/access` (spec §7.9): BookQu text mark (no image, the page loads no resources while it holds the credential), spinner hidden under reduced motion, recovery text and button. `errors/customer` + 403/404/419/500/503: icon, small "Kode n", title, explanation, "Kembali" and "Muat ulang" (419/5xx) or "Halaman sebelumnya".
+- Customer email layout: BookQu ink/lilac neutrals replaced by the design A neutrals; the map link uses the text colour instead of BookQu purple. No content change.
+- Fixed from session 4: the payment script's feedback icon now assigns two fixed `innerHTML` literals (ADR-0012 guardrail).
+- Tests updated for spec §7.8 copy: `CustomerFrontendSpecificationTest` (expired title "Waktu pembayaran habis", failed action "Coba bayar lagi").
+- Browser: the local test booking from session 4 was marked paid with `singapay:simulate-webhook` (local sandbox only); the success page at 1440/834/390, a 404 under `/brama-digital/…` and `/access` without a credential at 390: no horizontal scroll, no console errors.
+- Batch 3 verification (PHP 8.4.25): pint passed; `npm run build` passed; full suite 1039 passed with one failure, the ADR-0012 guardrail above, fixed and `tests/Guardrails` re-run green (13 passed); PHPStan no errors.
+
 ## Open findings
 
 - **Bridge kept (session 1, step 3).** The `--bq-*` values in the shell and the `.customer-shell[data-branded]`, `.bq-btn-primary`, `.customer-primary` and `.booking-card` overrides are still needed by the pages sessions 2–6 rebuild; removing them now would turn those pages BookQu purple. Remove them in session 6, when the last page uses the `sf-*` layer.
@@ -210,4 +221,7 @@ The Tech Lead reviews at the end of each batch, in the browser at 390, 834 and 1
 - **Weekend price note.** Spec §7.2 shows "akhir pekan +10%" on the price line, but the schedule page only receives the service price, not the price rules. The line shows "{harga} per {satuan}" until the controller passes a prepared rule label (heavy lane, Tech Lead).
 - **Session counts per date.** The nearest-date button cannot say "(5 sesi)" because `dates` carries only `is_available`; same fix as above if wanted.
 - **Test isolation (pre-existing).** `Owner/CheckoutMidtransTest` uses `Mockery::mock('alias:Midtrans\Snap')`; when another test in the same process has loaded the class first it fails with "class already exists". It passes alone and in the normal full-suite order. Not caused by BQ-165.
+- **No manage link on the success page.** The success page only has booking codes; whether the checkout access opens `booking.manage` is not clear from the view, so the "Kelola reservasi" box points to the email link and offers WhatsApp instead of linking. A prepared manage URL from the controller would complete spec §7.5.
+- **Business brand on 404.** A 404 under a business address shows the BookQu header, because the error composer only resolves a recovery URL, not the tenant's branding. Spec §7.9 asks for the business brand when known.
+- **Test booking in local data.** Session 4–5 browser checks left one paid booking (`Uji Desain`, order `BKG-7-1795250152-521`) on tenant 7 in the local database.
 - **Service icons.** Services have no icon or kind field; `service-card` and `service-row` take an `icon` name. Session 2 decides the mapping (for example by category) or keeps the default.

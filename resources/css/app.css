@@ -1290,6 +1290,13 @@
         display: none;
     }
 
+    .customer-shell .sf-card,
+    .customer-shell .sf-card-raised,
+    .customer-shell .sf-card-small {
+        box-shadow: none;
+        border: 1px solid var(--sf-line);
+    }
+
     .customer-shell main.booking-shell {
         max-width: none;
         padding: 0;

@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title') · {{ $businessName }}</title>
 </head>
-<body style="margin:0;padding:0;background:#F5F4F9;color:#1D1638;font-family:Arial,Helvetica,sans-serif;">
-<table width="100%" role="presentation" cellpadding="0" cellspacing="0" bgcolor="#F5F4F9">
+<body style="margin:0;padding:0;background:#F6F6F8;color:#17151F;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" role="presentation" cellpadding="0" cellspacing="0" bgcolor="#F6F6F8">
     <tr><td align="center" style="padding:16px 8px;">
         <!--[if mso]><table width="600" role="presentation" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
         <table width="100%" role="presentation" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF"
-            style="width:100%;max-width:600px;border:1px solid #E3E0EE;">
+            style="width:100%;max-width:600px;border:1px solid #E6E5EA;">
             <tr><td bgcolor="{{ $brandColor }}" style="padding:20px;color:{{ $brandText }};font-size:16px;line-height:24px;">
                 @if ($logoUrl)
                     <img src="{{ $logoUrl }}" alt="" width="44" height="44" style="display:block;margin:0 0 10px;">
@@ -31,13 +31,13 @@
 
                 <table width="100%" role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:21px;">
                     @foreach ($sessions as $session)
-                        <tr><td style="padding:10px 0;border-top:1px solid #E3E0EE;">
+                        <tr><td style="padding:10px 0;border-top:1px solid #E6E5EA;">
                             <strong>{{ $session['service'] }}</strong><br>
                             {{ $session['date'] }}<br>
                             {{ $session['time'] }}
                         </td></tr>
                     @endforeach
-                    <tr><td style="padding:10px 0;border-top:1px solid #E3E0EE;">
+                    <tr><td style="padding:10px 0;border-top:1px solid #E6E5EA;">
                         Total <strong>{{ $totalLabel }}</strong>
                         @if ($paymentMethod)
                             <br>Metode pembayaran {{ $paymentMethod }}
@@ -48,7 +48,7 @@
                 @yield('extra')
                 @if ($address !== '')
                     <p style="margin:12px 0;font-size:14px;line-height:21px;">{{ $address }}<br>
-                        <a href="{{ $mapUrl }}" style="color:#382186;text-decoration:underline;">Petunjuk arah</a>
+                        <a href="{{ $mapUrl }}" style="color:#17151F;text-decoration:underline;">Petunjuk arah</a>
                     </p>
                 @endif
 
@@ -60,7 +60,7 @@
                     </table>
                 @endif
             </td></tr>
-            <tr><td bgcolor="#F5F4F9" style="padding:16px 20px;border-top:1px solid #E3E0EE;color:#625E75;font-size:13px;line-height:19px;">
+            <tr><td bgcolor="#F6F6F8" style="padding:16px 20px;border-top:1px solid #E6E5EA;color:#5E5A68;font-size:13px;line-height:19px;">
                 Dikirim atas nama {{ $businessName }} · Didukung oleh BookQu
             </td></tr>
         </table>
