@@ -25,7 +25,7 @@
         </x-ui.form-row>
     @endisset
     <x-ui.savebar class="!static flex-wrap">
-        <x-ui.button variant="ghost" :href="route('owner.settings.business', ['tab' => 'notifications'])">Batal</x-ui.button>
+        <x-ui.button variant="ghost" :href="route('owner.settings', ['tab' => 'notifications'])">Batal</x-ui.button>
         <x-ui.button type="submit" variant="primary">Simpan preferensi</x-ui.button>
     </x-ui.savebar>
 </form>

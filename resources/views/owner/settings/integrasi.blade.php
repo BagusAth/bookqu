@@ -40,7 +40,7 @@
         </div>
         </x-ui.form-row>
         <x-ui.savebar class="!static flex-wrap">
-            <x-ui.button variant="ghost" :href="route('owner.settings.business', ['tab' => 'integrasi'])">Batal</x-ui.button>
+            <x-ui.button variant="ghost" :href="route('owner.settings', ['tab' => 'integrasi'])">Batal</x-ui.button>
             <x-ui.button type="submit" variant="primary">Simpan</x-ui.button>
         </x-ui.savebar>
     </form>

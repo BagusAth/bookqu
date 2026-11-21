@@ -218,7 +218,7 @@
 
                 <p class="text-sm text-bq-text-muted">
                     Deskripsi bisnis ditampilkan pada pratinjau.
-                    <a @click="confirmSection($event)" href="{{ route('owner.settings.business', ['tab' => 'profile']) }}" class="bq-link">Ubah di Profil bisnis</a>
+                    <a @click="confirmSection($event)" href="{{ route('owner.settings', ['tab' => 'profile']) }}" class="bq-link">Ubah di Profil bisnis</a>
                 </p>
 
                 <x-ui.savebar class="!static !px-0">

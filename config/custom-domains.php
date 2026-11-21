@@ -9,6 +9,7 @@ declare(strict_types=1);
 */
 
 return [
+    'platform_hosts' => ['bookqu.my.id', 'bookqu.test', 'localhost', '127.0.0.1'],
     'cname_target' => env('CUSTOM_DOMAIN_CNAME_TARGET', ''),
     'a_records' => array_values(array_filter(array_map('trim', explode(',', (string) env('CUSTOM_DOMAIN_A_RECORDS', ''))))),
 ];

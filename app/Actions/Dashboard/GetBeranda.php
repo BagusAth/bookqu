@@ -445,7 +445,7 @@ class GetBeranda
             $actions[] = ['key' => 'promo', 'label' => 'Promo', 'event' => '', 'url' => route('owner.promos', ['buat' => 1])];
         }
         if (TenantPermission::allowsRole($role, 'team.manage') && EntitlementRules::teamLimit($subscription) > 0 && Route::has('owner.team.index')) {
-            $actions[] = ['key' => 'team', 'label' => 'Anggota tim', 'event' => '', 'url' => route('owner.settings.business', ['tab' => 'tim'])];
+            $actions[] = ['key' => 'team', 'label' => 'Anggota tim', 'event' => '', 'url' => route('owner.settings', ['tab' => 'tim'])];
         }
 
         return $actions;

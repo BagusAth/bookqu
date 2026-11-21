@@ -47,11 +47,3 @@ Charts are CSS bars and a heat-map table, so no chart library loads. Each tab ex
 ## Status
 
 Functional: Implemented · Verification: Needs Verification (metric definitions not specified) · Architecture: Needs Refactor
-
-## Known gaps
-
-| Gap | Item |
-|---|---|
-| Calendar counts every `pending` booking as occupied, ignoring the 15-minute grace (Laporan uses `BookingRules` since BQ-147) | BQ-012 |
-| Audit P0/P1: deleting a slot from the calendar redirects out of it; week view hides free slots; empty AJAX error | BQ-046, BQ-062 |
-| Owner dialog and drawer accessibility gaps (missing role="dialog", focus trapping, and keyboard escape handling) | BQ-129 |

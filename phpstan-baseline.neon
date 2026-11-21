@@ -157,12 +157,6 @@ parameters:
 			path: app/Domain/Schedule/AvailabilityRules.php
 
 		-
-			message: '#^Strict comparison using \=\=\= between ''tersedia''\|''tidak_tersedia'' and ''diblokir'' will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: app/Domain/Schedule/AvailabilityRules.php
-
-		-
 			message: '#^Instanceof between App\\Models\\Schedule and App\\Models\\Schedule will always evaluate to true\.$#'
 			identifier: instanceof.alwaysTrue
 			count: 1

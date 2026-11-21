@@ -57,7 +57,7 @@
         </label>
     </x-ui.form-row>
     <x-ui.savebar class="!static flex-wrap">
-        <x-ui.button variant="ghost" :href="route('owner.settings.business', ['tab' => 'profile'])">Batal</x-ui.button>
+        <x-ui.button variant="ghost" :href="route('owner.settings', ['tab' => 'profile'])">Batal</x-ui.button>
         <x-ui.button type="submit" variant="primary">Simpan profil</x-ui.button>
     </x-ui.savebar>
 </form>

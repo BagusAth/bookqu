@@ -6,7 +6,7 @@ Owns what customers can book: services and their categories.
 
 | Route | Controller |
 |---|---|
-| `owner.services*` (Layanan page, tabs Layanan and Kategori); `GET owner.programs` answers 301 to `owner.services` with the query kept, the `owner.programs.*` write aliases still work | `Owner/OwnerProgramController` |
+| `owner.services*` (Layanan page, tabs Layanan and Kategori); the `/owner/programs` bookmark redirects permanently to `owner.services` with its query string | `Owner/OwnerProgramController` |
 | `owner.categories*` (`GET` renders the Layanan page on its Kategori tab) | `Owner/OwnerCategoryController` |
 | Storefront `customer.booking.*program` | `Customer/BookingController::showProgramSelection`, `selectProgram` |
 
@@ -46,7 +46,6 @@ Functional: Implemented · Verification: Verified · Architecture: Target
 
 | Gap | Item |
 |---|---|
-| Legacy "program" names in routes, controller and views | BQ-035, BQ-036 |
-| Audit P0: quote characters break `@click` on cards; staff/resource relations not detached | BQ-044, BQ-045 |
+| Legacy "program" naming in the controller and storefront booking flow | BQ-036 |
 
 BQ-150 backend: add-ons linked to the selected service can enter the booking quote when the module and plan allow it. A null stock in the existing owner form means unlimited. Finite stock accounts for pending payment reservations and is decremented on settlement.

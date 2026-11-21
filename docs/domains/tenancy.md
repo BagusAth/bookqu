@@ -14,7 +14,7 @@ Owns tenant isolation, tenant resolution (slug and custom domain), and the busin
 ## Operations
 
 `Actions/Tenant/CreateInitialProfile`, `UpdateBusinessProfile` (also uploads logo), `UpdatePaymentSettings` (Tier 3), `UpdateAppearanceSettings` (Tier 3).
-Tenant creation happens at registration (`Auth/RegisteredUserController::store`, slug = `Str::slug(business name)` with numeric suffix on collision).
+Registration derives the slug from the business name and appends a numeric suffix for taken or reserved slugs. `ReservedTenantSlugs` uses registered route prefixes and reserved words. Owner profile creation and updates also refuse reserved slugs.
 
 `GetStorefrontTenant` loads a public-field projection under `tenant:public:v2:{id}` using the tenant id already verified by middleware. Profile, appearance, landing-page and payment-setting writes invalidate it. Missing middleware context fails closed; a slug used as an unregistered hostname is not a custom-domain mapping.
 
@@ -24,6 +24,7 @@ Tenant creation happens at registration (`Auth/RegisteredUserController::store`,
 - `App\Models\Scopes\TenantScope` + `App\Traits\BelongsToTenant` — global scope on 15 tenant-owned models (AdditionalItem, Asset, Booking, Category, CustomerNote, OwnerBlockedDate, OwnerPayout, Payment, Resource, Review, Schedule, Service, Staff, Subscription, Voucher). Empty context ⇒ `WHERE 1 = 0` (fail closed). `creating` fills `idtenant` from context.
 - `App\Traits\ResolvesOwnerTenant::resolveTenant()` — controllers get the owner's tenant and re-check `iduser`.
 - `App\Support\CustomerBookingRoutes` — builds storefront URLs for slug vs custom domain.
+- `App\Domain\Tenant\CustomDomain` — shares the host rule across route matching, tenant lookup, storefront URLs and domain registration. Platform hosts come from `custom-domains.platform_hosts` and the host in `app.url`. Their subdomains stay on platform routing.
 - Models without the scope: `Tenant`, `User`, `Plan`, `Refund`, `BookingLog`, `UsageLog` (reach them through an owned parent).
 
 ## Data
@@ -51,10 +52,6 @@ Functional: Implemented · Verification: Needs Verification · Architecture: Tar
 
 | Gap | Item |
 |---|---|
-| 55 `withoutGlobalScope(s)` calls in 29 files not individually justified | BQ-009 |
-| Main-domain detection defined twice (`TenantMiddleware::$isCustomDomain` vs `routes/web.php` exclusion list) | BQ-035 |
-| Slugs can collide with app routes (`login`, `owner`, `manage`, `admin`, …) | BQ-011 |
-| Custom-domain storefront behaviour only partly tested | BQ-039 |
 | Owner views write `/owner/...` URLs by hand; storefront links bypass `CustomerBookingRoutes` | BQ-128 |
 | Renaming the business changes the slug and breaks old links (no redirect); old slug cache not cleared | BQ-144 |
 | TLS certificates for custom domains are not issued by the application; the server needs on-demand certificates before the feature is released | Tech Lead (ops) |

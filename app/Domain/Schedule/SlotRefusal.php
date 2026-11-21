@@ -14,7 +14,6 @@ enum SlotRefusal: string
     case ForeignTenant = 'foreign-tenant';
     case ForeignService = 'foreign-service';
     case WrongDate = 'wrong-date';
-    case Blocked = 'blocked';
     case NotOpen = 'not-open';
     case DateClosed = 'date-closed';
     case Past = 'past';
@@ -31,7 +30,7 @@ enum SlotRefusal: string
     public function availabilityStatus(): string
     {
         return match ($this) {
-            self::Blocked, self::DateClosed => AvailabilityRules::STATUS_BLOCKED,
+            self::DateClosed => AvailabilityRules::STATUS_BLOCKED,
             self::Occupied, self::NotEnoughRoom, self::UnitBusy, self::InconsistentGroup => AvailabilityRules::STATUS_BOOKED,
             default => AvailabilityRules::STATUS_UNAVAILABLE,
         };
@@ -47,7 +46,7 @@ enum SlotRefusal: string
             self::ForeignTenant => 'Jadwal tidak sesuai dengan unit bisnis terpilih.',
             self::ForeignService => 'Jadwal tidak sesuai dengan paket layanan terpilih.',
             self::WrongDate => 'Tanggal jadwal tidak sesuai dengan tanggal pemesanan.',
-            self::Blocked, self::NotOpen => "Jadwal untuk jam {$time} tidak tersedia.",
+            self::NotOpen => "Jadwal untuk jam {$time} tidak tersedia.",
             self::DateClosed => 'Tanggal ini ditutup oleh pengelola. Silakan pilih tanggal lain.',
             self::Past => "Waktu sesi {$time} sudah terlewat (WIB). Silakan pilih waktu lain.",
             self::BookingPolicy => 'Jadwal tidak memenuhi kebijakan pemesanan bisnis.',

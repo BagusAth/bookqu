@@ -43,7 +43,7 @@
         </x-ui.form-row>
     @endif
     <x-ui.savebar class="!static flex-wrap">
-        <x-ui.button variant="ghost" :href="route('owner.settings.business', ['tab' => 'account'])">Batal</x-ui.button>
+        <x-ui.button variant="ghost" :href="route('owner.settings', ['tab' => 'account'])">Batal</x-ui.button>
         <x-ui.button type="submit" variant="primary">Simpan akun</x-ui.button>
     </x-ui.savebar>
 </form>

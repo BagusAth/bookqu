@@ -81,10 +81,6 @@ class AvailabilityRules
             return SlotRefusal::WrongDate;
         }
 
-        if ($schedule->status === 'diblokir') {
-            return SlotRefusal::Blocked;
-        }
-
         if ($schedule->status !== 'tersedia') {
             return SlotRefusal::NotOpen;
         }

@@ -45,6 +45,11 @@ class OwnerBalanceController extends Controller
         return redirect()->route('owner.payments', ['tab' => 'saldo'] + $request->query(), 301);
     }
 
+    public function legacyPaymentSettings(Request $request): RedirectResponse
+    {
+        return redirect()->route('owner.payments', $request->query(), 301);
+    }
+
     public function store(RequestPayoutRequest $request, RequestOwnerPayout $requestOwnerPayout): JsonResponse|RedirectResponse
     {
         $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');

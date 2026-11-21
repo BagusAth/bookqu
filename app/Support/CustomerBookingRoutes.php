@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Actions\CustomerAccess\CustomerAccessLinks;
+use App\Domain\Tenant\CustomDomain;
 use App\Models\Tenant;
 use Illuminate\Http\RedirectResponse;
 
@@ -35,13 +36,7 @@ final class CustomerBookingRoutes
      */
     private static function isCustomDomain(): bool
     {
-        $host = request()->getHost();
-        $mainHost = parse_url(config('app.url'), PHP_URL_HOST) ?? 'bookqu.my.id';
-
-        return $host !== $mainHost
-            && $host !== '127.0.0.1'
-            && $host !== 'localhost'
-            && ! str_contains($host, 'bookqu.test');
+        return ! CustomDomain::isPlatformHost(request()->getHost());
     }
 
     /**

@@ -435,7 +435,7 @@
                     @else
                         Refund tidak aktif.
                     @endif
-                    <a class="bq-link" href="{{ route('owner.settings.business', ['tab' => 'policy']) }}">Ubah kebijakan</a>
+                    <a class="bq-link" href="{{ route('owner.settings', ['tab' => 'policy']) }}">Ubah kebijakan</a>
                 </dd>
             </x-ui.kv>
         </section>

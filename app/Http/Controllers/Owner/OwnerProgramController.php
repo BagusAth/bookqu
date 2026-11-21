@@ -50,7 +50,7 @@ class OwnerProgramController extends Controller
     }
 
     /**
-     * The former programs page moved to Layanan (owner-portal.md §8.6: `owner.programs.*` redirects to `owner.services.*`).
+     * The former programs page moved to Layanan (owner-portal.md §8.6).
      */
     public function legacyIndex(Request $request): RedirectResponse
     {

@@ -34,9 +34,7 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Nee
 
 | Gap | Item |
 |---|---|
-| Login and registration have no rate limiting | BQ-007 |
 | The current-password check on account changes and deletion has no rate limit of its own (`routes/web.php` is reserved for BQ-128/BQ-130) | FR-AUTH-008 |
-| Audit P0: dead "forgot password" link, redirect loop, logout without CSRF handling on verify notice (status unknown since `ab24193`) | BQ-040 … BQ-042 |
 
 BQ-131: platform owner role is distinct from the tenant role. TenantPermission owns the Pemilik/Manajer/Kasir map; permission middleware and policies enforce it server-side. Own account fields refer to the signed-in member, not the business owner. Cashier dashboard/customer responses omit revenue/spending, and notification delivery/feed/counts are role-filtered. Existing admin/customer authorization mechanisms are unchanged.
 
