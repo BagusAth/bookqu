@@ -14,6 +14,7 @@ use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -254,14 +255,13 @@ class GetAvailableSchedules
         string $date,
         ?int $excludeBookingId = null
     ): Collection {
-        // scope-bypass: filtered by the resolved storefront tenant
-        $slots = Schedule::withoutGlobalScopes()->with('layanan')
+        $slots = app(TenantContext::class)->run((int) $tenant->id, fn (): Collection => Schedule::with('layanan')
             ->where('idtenant', $tenant->id)
             ->where('idlayanan', $serviceId)
             ->whereDate('tanggal', $date)
             ->where('status', 'tersedia')
             ->orderBy('jam_mulai')
-            ->get();
+            ->get());
 
         return $slots->map(function ($slot) use ($excludeBookingId) {
             $isAvailable = AvailabilityRules::isSlotAvailable($slot, excludeBookingId: $excludeBookingId);
@@ -292,8 +292,8 @@ class GetAvailableSchedules
     ): array {
         $cacheKey = "tenant:{$tenant->id}:service:{$service->id}:schedules:{$selectedDate}:reschedule:{$excludeBookingId}";
 
-        // scope-bypass: the booking being rescheduled, already resolved for this tenant
-        $participants = max(1, (int) Booking::withoutGlobalScopes()->whereKey($excludeBookingId)->value('peserta'));
+        $participants = max(1, (int) app(TenantContext::class)->run((int) $tenant->id,
+            fn () => Booking::whereKey($excludeBookingId)->value('peserta')));
         $unitBusy = BookingRules::unitBusyRanges((int) $tenant->id, (int) $service->id, $selectedDate, $selectedDate, $excludeBookingId);
 
         $rows = Cache::remember($cacheKey, now()->addSeconds(300), function () use ($tenant, $service, $selectedDate, $excludeBookingId, $participants) {

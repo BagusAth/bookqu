@@ -120,4 +120,15 @@ class AvailabilityRulesTest extends TestCase
         );
         $this->assertTrue(AvailabilityRules::isSlotAvailable($schedule, null, $booking->id));
     }
+
+    public function test_a_slot_cannot_use_a_service_owned_by_another_tenant(): void
+    {
+        $schedule = Schedule::factory()->create([
+            'idtenant' => Tenant::factory()->create()->id,
+            'idlayanan' => $this->service->id,
+        ]);
+
+        $this->assertSame(AvailabilityRules::STATUS_UNAVAILABLE, AvailabilityRules::getSlotAvailabilityStatus($schedule));
+        $this->assertFalse(AvailabilityRules::isSlotAvailable($schedule));
+    }
 }

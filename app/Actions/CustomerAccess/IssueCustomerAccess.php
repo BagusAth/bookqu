@@ -10,6 +10,7 @@ use App\Domain\CustomerAccess\IssuedGrant;
 use App\Models\Booking;
 use App\Models\CustomerAccessGrant;
 use App\Models\Payment;
+use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -17,19 +18,17 @@ final class IssueCustomerAccess
 {
     public function execute(Payment|Booking $subject, AccessProfile $profile, ?string $recipient = null): IssuedGrant
     {
-        return DB::transaction(function () use ($subject, $profile, $recipient): IssuedGrant {
+        return app(TenantContext::class)->run((int) $subject->idtenant, fn (): IssuedGrant => DB::transaction(function () use ($subject, $profile, $recipient): IssuedGrant {
             $tenantId = (int) $subject->idtenant;
             ClaimSlots::lockTenant($tenantId);
             $subject->refresh();
             abort_unless((int) $subject->idtenant === $tenantId, 404);
             if ($subject instanceof Booking && $subject->idpayment !== null) {
-                // scope-bypass: trusted booking subject; payment must belong to that same tenant.
-                $subject = Payment::withoutGlobalScopes()->where('idtenant', $tenantId)->findOrFail($subject->idpayment);
+                $subject = Payment::findOrFail($subject->idpayment);
             }
             abort_if($subject instanceof Payment && $subject->tipe !== 'booking', 404);
             if ($subject instanceof Payment) {
-                // scope-bypass: validate the full group, including any foreign-tenant membership, before issuance.
-                $bookings = Booking::withoutGlobalScopes()->with('layanan')->where('idpayment', $subject->id)->orderBy('id')->get();
+                $bookings = app(LoadAccessSubject::class)->paymentBookings($subject)->load('layanan');
             } else {
                 $bookings = collect([$subject]);
             }
@@ -58,6 +57,6 @@ final class IssueCustomerAccess
             ]);
 
             return new IssuedGrant($grant, $grant->selector.'.'.$secret);
-        });
+        }));
     }
 }
