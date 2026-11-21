@@ -12,6 +12,7 @@ use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -273,7 +274,8 @@ class BookingManagementTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('sukses');
 
-        $booking = Booking::withoutGlobalScopes()->where('namapelanggan', 'Walkin Guest')->first();
+        $booking = app(TenantContext::class)->run((int) $this->tenant->id,
+            fn (): ?Booking => Booking::with('payment')->where('namapelanggan', 'Walkin Guest')->first());
         $this->assertNotNull($booking);
         $this->assertNotNull($booking->payment);
         $this->assertNull($booking->payment->manage_token);
