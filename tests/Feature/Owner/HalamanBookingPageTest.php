@@ -172,6 +172,27 @@ class HalamanBookingPageTest extends TestCase
             ->assertSee('Studio foto keluarga di Bandung.');
     }
 
+    public function test_storefront_writes_customer_tokens_for_the_saved_button_and_card_style(): void
+    {
+        $this->tenant->forceFill(['theme_color' => '#F59E0B', 'button_style' => 'pill', 'card_style' => 'outline', 'font_family' => 'Inter'])->save();
+        app(GetStorefrontTenant::class)->forget((int) $this->tenant->id);
+
+        $this->get('/studio-cahaya')
+            ->assertOk()
+            ->assertSee('--sf-primary: #F59E0B;', false)
+            ->assertSee('--sf-on-primary: #17151F;', false)
+            ->assertSee('--sf-primary-text: #674205;', false)
+            ->assertSee('--sf-radius-control: 9999px;', false)
+            ->assertSee('--sf-radius-card: 24px;', false)
+            ->assertSee('--sf-radius-card-small: 18px;', false)
+            ->assertSee('--sf-shadow-card: 0 0 0 1.5px #D5D3DC;', false)
+            ->assertSee('--sf-shadow-raised: 0 0 0 1.5px #D5D3DC;', false)
+            ->assertSee("--sf-font: 'Inter';", false)
+            ->assertSee('family=Inter:wght@400;500;600;700&', false)
+            ->assertSee('data-button-style="pill"', false)
+            ->assertSee('data-card-style="outline"', false);
+    }
+
     public function test_appearance_values_are_validated_so_nothing_is_injected_into_the_storefront(): void
     {
         $this->actingAs($this->owner)->post(route('owner.booking-page.appearance'), [

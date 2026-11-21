@@ -42,10 +42,40 @@ final class StorefrontBranding
 
     public const COLOR_PATTERN = '/^#[0-9A-Fa-f]{6}$/';
 
+    /** A brand lighter than this takes dark text and a darkened text colour (design A §2.1). */
+    public const LIGHT_BRAND_LUMINANCE = 0.18;
+
+    public const TEXT_ON_LIGHT = '#17151F';
+
     /**
-     * Safe values for the storefront `<style>` block.
+     * Corner radii of customer controls and cards per button style (design A §3.1). Card corners follow the
+     * button style so they match.
      *
-     * @return array{color: string, hover: string, light: string, border: string, onPrimary: string, font: string, buttonStyle: string, buttonRadius: string, cardStyle: string, cardShadow: string, cardBorder: string}
+     * @var array<string, array{control: string, tile: string, area: string, chip: string, card: string, cardSmall: string}>
+     */
+    public const SHAPES = [
+        'pill' => ['control' => '9999px', 'tile' => '9999px', 'area' => '20px', 'chip' => '9999px', 'card' => '24px', 'cardSmall' => '18px'],
+        'rounded' => ['control' => '12px', 'tile' => '14px', 'area' => '12px', 'chip' => '10px', 'card' => '18px', 'cardSmall' => '12px'],
+        'square' => ['control' => '4px', 'tile' => '4px', 'area' => '4px', 'chip' => '4px', 'card' => '6px', 'cardSmall' => '4px'],
+    ];
+
+    /**
+     * Shadows of customer surfaces per card style (design A §3.2). Outlines are drawn as a box-shadow ring so
+     * switching style never shifts the layout.
+     *
+     * @var array<string, array{card: string, raised: string}>
+     */
+    public const SURFACES = [
+        'elevated' => ['card' => '0 1px 2px rgba(23, 21, 31, 0.05), 0 6px 18px rgba(23, 21, 31, 0.06)', 'raised' => '0 16px 40px rgba(23, 21, 31, 0.14)'],
+        'outline' => ['card' => '0 0 0 1.5px #D5D3DC', 'raised' => '0 0 0 1.5px #D5D3DC'],
+        'soft' => ['card' => 'none', 'raised' => '0 1px 0 rgba(23, 21, 31, 0.04)'],
+    ];
+
+    /**
+     * Safe values for the storefront `<style>` block. The derived colours, `shape` and `surface` feed the
+     * customer `--sf-*` tokens (design A §2–§3); the other keys stay for the owner preview and emails.
+     *
+     * @return array{color: string, hover: string, light: string, border: string, onPrimary: string, onPrimarySoft: string, onPrimaryFaint: string, onPrimaryLine: string, primaryText: string, tint: string, tintStrong: string, isLight: bool, font: string, buttonStyle: string, buttonRadius: string, cardStyle: string, cardShadow: string, cardBorder: string, shape: array{control: string, tile: string, area: string, chip: string, card: string, cardSmall: string}, surface: array{card: string, raised: string}}
      */
     public static function for(Tenant $tenant): array
     {
@@ -58,9 +88,8 @@ final class StorefrontBranding
         });
         [$red, $green, $blue] = self::rgb($color);
         $luminance = 0.2126 * self::linear($red) + 0.7152 * self::linear($green) + 0.0722 * self::linear($blue);
-        $whiteContrast = 1.05 / ($luminance + 0.05);
-        $darkContrast = ($luminance + 0.05) / 0.05;
-        $useWhite = $whiteContrast >= $darkContrast;
+        $isLight = $luminance > self::LIGHT_BRAND_LUMINANCE;
+        $useWhite = ! $isLight;
         $font = in_array($tenant->font_family, self::FONTS, true) ? (string) $tenant->font_family : self::DEFAULT_FONT;
         $button = self::buttonStyle($tenant->button_style);
         $card = self::cardStyle($tenant->card_style);
@@ -70,13 +99,23 @@ final class StorefrontBranding
             'hover' => self::mix($color, $useWhite ? 0 : 255, 0.14),
             'light' => self::mix($color, 255, 0.90),
             'border' => self::mix($color, 255, 0.72),
-            'onPrimary' => $useWhite ? '#FFFFFF' : '#000000',
+            'onPrimary' => $useWhite ? '#FFFFFF' : self::TEXT_ON_LIGHT,
+            'onPrimarySoft' => $useWhite ? 'rgba(255, 255, 255, 0.86)' : 'rgba(23, 21, 31, 0.80)',
+            'onPrimaryFaint' => $useWhite ? 'rgba(255, 255, 255, 0.14)' : 'rgba(23, 21, 31, 0.10)',
+            'onPrimaryLine' => $useWhite ? 'rgba(255, 255, 255, 0.24)' : 'rgba(23, 21, 31, 0.18)',
+            // A light brand is unreadable on white, so its text colour keeps 42% of the brand over black.
+            'primaryText' => $isLight ? self::mix($color, 0, 0.58) : $color,
+            'tint' => self::mix($color, 255, 0.91),
+            'tintStrong' => self::mix($color, 255, 0.84),
+            'isLight' => $isLight,
             'font' => $font,
             'buttonStyle' => $button,
             'buttonRadius' => self::BUTTON_STYLES[$button]['radius'],
             'cardStyle' => $card,
             'cardShadow' => self::CARD_STYLES[$card]['shadow'],
             'cardBorder' => self::CARD_STYLES[$card]['border'],
+            'shape' => self::SHAPES[$button],
+            'surface' => self::SURFACES[$card],
         ];
     }
 

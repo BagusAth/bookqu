@@ -569,10 +569,101 @@
     border-radius: 9999px;
 }
 
-.customer-shell {
-    font-family: var(--bq-customer-font, 'Plus Jakarta Sans'), system-ui, sans-serif;
+/* ── Customer pages, design A "Sampul Imersif" (BQ-165, docs/design/booking-pelanggan/desain-a-sampul-imersif.md).
+   Colours come from the business colour plus neutrals; BookQu ink and marigold are not used here (§1, §2).
+   The booking shell writes the business values (`--sf-*`) on `.customer-shell`; `:root` holds fallbacks only.
+   Utilities: bg-sf-*, text-sf-*, rounded-sf-*, shadow-sf-*, font-sf. ── */
+:root {
+    --sf-primary: #4F46E5;
+    --sf-primary-hover: #443CC5;
+    --sf-on-primary: #FFFFFF;
+    --sf-on-primary-soft: rgba(255, 255, 255, 0.86);
+    --sf-on-primary-faint: rgba(255, 255, 255, 0.14);
+    --sf-on-primary-line: rgba(255, 255, 255, 0.24);
+    --sf-primary-text: #4F46E5;
+    --sf-tint: #F0F0FD;
+    --sf-tint-strong: #E4E3FB;
+    --sf-radius-control: 12px;
+    --sf-radius-tile: 14px;
+    --sf-radius-area: 12px;
+    --sf-radius-chip: 10px;
+    --sf-radius-card: 18px;
+    --sf-radius-card-small: 12px;
+    --sf-shadow-card: 0 1px 2px rgba(23, 21, 31, 0.05), 0 6px 18px rgba(23, 21, 31, 0.06);
+    --sf-shadow-raised: 0 16px 40px rgba(23, 21, 31, 0.14);
+    --sf-font: 'Plus Jakarta Sans';
+
+    /* Neutrals and status colours do not follow the brand (§2.2, §2.3). */
+    --sf-page: #F6F6F8;
+    --sf-surface: #FFFFFF;
+    --sf-text: #17151F;
+    --sf-muted: #5E5A68;
+    --sf-line: #D5D3DC;
+    --sf-divider: #E6E5EA;
+    --sf-disabled: #ECEBF0;
+    --sf-disabled-text: #6B6776;
+    --sf-scrim: rgba(23, 21, 31, 0.5);
+    --sf-success-bg: #DDF0E5;
+    --sf-success: #1A6B43;
+    --sf-warning-bg: #FFF4DE;
+    --sf-warning: #8A5A00;
+    --sf-warning-dot: #C77700;
+    --sf-danger-bg: #FCEBEA;
+    --sf-danger: #8C1D18;
+    --sf-error: #B3261E;
+    --sf-info-bg: #E8F0FB;
+    --sf-info: #285E9F;
+    --sf-bottom-bar-height: 84px;
 }
 
+@theme inline {
+    --color-sf-primary: var(--sf-primary);
+    --color-sf-primary-hover: var(--sf-primary-hover);
+    --color-sf-on-primary: var(--sf-on-primary);
+    --color-sf-on-primary-soft: var(--sf-on-primary-soft);
+    --color-sf-on-primary-faint: var(--sf-on-primary-faint);
+    --color-sf-on-primary-line: var(--sf-on-primary-line);
+    --color-sf-primary-text: var(--sf-primary-text);
+    --color-sf-tint: var(--sf-tint);
+    --color-sf-tint-strong: var(--sf-tint-strong);
+    --color-sf-page: var(--sf-page);
+    --color-sf-surface: var(--sf-surface);
+    --color-sf-text: var(--sf-text);
+    --color-sf-muted: var(--sf-muted);
+    --color-sf-line: var(--sf-line);
+    --color-sf-divider: var(--sf-divider);
+    --color-sf-disabled: var(--sf-disabled);
+    --color-sf-disabled-text: var(--sf-disabled-text);
+    --color-sf-success-bg: var(--sf-success-bg);
+    --color-sf-success: var(--sf-success);
+    --color-sf-warning-bg: var(--sf-warning-bg);
+    --color-sf-warning: var(--sf-warning);
+    --color-sf-warning-dot: var(--sf-warning-dot);
+    --color-sf-danger-bg: var(--sf-danger-bg);
+    --color-sf-danger: var(--sf-danger);
+    --color-sf-error: var(--sf-error);
+    --color-sf-info-bg: var(--sf-info-bg);
+    --color-sf-info: var(--sf-info);
+    --radius-sf-control: var(--sf-radius-control);
+    --radius-sf-tile: var(--sf-radius-tile);
+    --radius-sf-area: var(--sf-radius-area);
+    --radius-sf-chip: var(--sf-radius-chip);
+    --radius-sf-card: var(--sf-radius-card);
+    --radius-sf-card-small: var(--sf-radius-card-small);
+    --shadow-sf-card: var(--sf-shadow-card);
+    --shadow-sf-raised: var(--sf-shadow-raised);
+    --color-sf-hero-soft: var(--sf-hero-soft);
+    --color-sf-hero-faint: var(--sf-hero-faint);
+    --font-sf: var(--sf-font), system-ui, sans-serif;
+}
+
+.customer-shell {
+    font-family: var(--sf-font), system-ui, sans-serif;
+    background: var(--sf-page);
+    color: var(--sf-text);
+}
+
+/* BQ-164 bridge: pages not yet rebuilt on design A still use bq-* classes. Removed with the last of them (BQ-165 session 6). */
 .customer-shell[data-branded] {
     --color-bq-primary: var(--bq-primary);
     --color-bq-primary-hover: var(--bq-primary-hover);
@@ -583,7 +674,7 @@
 
 .customer-shell .bq-btn-primary,
 .customer-shell .customer-primary {
-    border-radius: var(--bq-button-radius, var(--radius-bq-control));
+    border-radius: var(--sf-radius-control);
     color: var(--color-bq-on-primary);
 }
 
@@ -593,8 +684,521 @@
 }
 
 .customer-shell :focus-visible {
-    outline: 2px solid var(--color-bq-ink);
+    outline: 2px solid var(--sf-text);
     outline-offset: 2px;
+}
+
+@layer components {
+    /* Controls follow the button style (§3.1); the 44 px touch size never changes (§3.3). */
+    .sf-btn,
+    .sf-btn-secondary,
+    .sf-btn-on-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: var(--sf-radius-control);
+        font: inherit;
+        font-size: 15px;
+        line-height: 20px;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 150ms ease, box-shadow 150ms ease, color 150ms ease;
+    }
+    .sf-btn {
+        background: var(--sf-primary);
+        color: var(--sf-on-primary);
+    }
+    .sf-btn:hover {
+        background: var(--sf-primary-hover);
+        color: var(--sf-on-primary);
+    }
+    .sf-btn-secondary {
+        background: var(--sf-surface);
+        color: var(--sf-text);
+        box-shadow: inset 0 0 0 1px var(--sf-line);
+        font-weight: 600;
+    }
+    .sf-btn-secondary:hover {
+        background: var(--sf-page);
+        color: var(--sf-text);
+    }
+    /* A button on the brand colour or a banner (hero, success header). */
+    .sf-btn-on-primary {
+        background: var(--sf-hero-faint, var(--sf-on-primary-faint));
+        color: inherit;
+        font-weight: 600;
+    }
+    .sf-btn-lg {
+        min-height: 52px;
+        padding: 0 22px;
+        font-size: 16px;
+    }
+    .sf-btn-sm {
+        min-height: 40px;
+        padding: 0 14px;
+        font-size: 14px;
+    }
+    .sf-btn-icon {
+        width: 44px;
+        padding: 0;
+    }
+    .sf-btn:disabled,
+    .sf-btn[aria-disabled='true'],
+    .sf-btn-secondary:disabled,
+    .sf-btn-secondary[aria-disabled='true'] {
+        background: var(--sf-disabled);
+        color: var(--sf-disabled-text);
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+    .sf-btn[aria-busy='true'],
+    .sf-btn-secondary[aria-busy='true'] {
+        cursor: progress;
+    }
+
+    .sf-chip {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: var(--sf-radius-chip);
+        background: var(--sf-surface);
+        color: var(--sf-text);
+        box-shadow: inset 0 0 0 1px var(--sf-line);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        white-space: nowrap;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 150ms ease, color 150ms ease;
+    }
+    .sf-chip-count {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--sf-muted);
+    }
+    .sf-chip[aria-pressed='true'],
+    .sf-chip[aria-current='true'] {
+        background: var(--sf-primary);
+        color: var(--sf-on-primary);
+        box-shadow: none;
+        font-weight: 700;
+    }
+    .sf-chip[aria-pressed='true'] .sf-chip-count,
+    .sf-chip[aria-current='true'] .sf-chip-count {
+        color: inherit;
+        opacity: 0.8;
+    }
+    /* Desktop side navigation item for categories. */
+    .sf-nav-item {
+        display: flex;
+        width: 100%;
+        min-height: 44px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: var(--sf-radius-card-small);
+        background: transparent;
+        color: var(--sf-text);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        text-align: left;
+        cursor: pointer;
+    }
+    .sf-nav-item:hover {
+        background: var(--sf-surface);
+    }
+    .sf-nav-item[aria-pressed='true'],
+    .sf-nav-item[aria-current='true'] {
+        background: var(--sf-tint-strong);
+        color: var(--sf-primary-text);
+        font-weight: 700;
+    }
+
+    .sf-field,
+    .sf-area {
+        display: block;
+        width: 100%;
+        min-height: 48px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: var(--sf-radius-control);
+        background: var(--sf-surface);
+        color: var(--sf-text);
+        box-shadow: inset 0 0 0 1px var(--sf-line);
+        font: inherit;
+        font-size: 16px;
+        line-height: 22px;
+        transition: box-shadow 150ms ease;
+    }
+    .sf-area {
+        min-height: 96px;
+        padding: 12px 14px;
+        border-radius: var(--sf-radius-area);
+        resize: vertical;
+    }
+    .sf-field::placeholder,
+    .sf-area::placeholder {
+        color: var(--sf-disabled-text);
+    }
+    .sf-field:focus,
+    .sf-area:focus,
+    .sf-field:focus-within {
+        outline: none;
+        box-shadow: inset 0 0 0 2px var(--sf-primary-text);
+    }
+    .sf-field[aria-invalid='true'],
+    .sf-area[aria-invalid='true'] {
+        box-shadow: inset 0 0 0 2px var(--sf-error);
+    }
+    /* A label that wraps an icon and a bare input, as in the search box. */
+    .sf-field-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--sf-muted);
+    }
+    .sf-field-group input {
+        min-width: 0;
+        flex-grow: 1;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: var(--sf-text);
+        font: inherit;
+        font-size: 16px;
+    }
+    .sf-field-error {
+        margin-top: 6px;
+        font-size: 13px;
+        line-height: 18px;
+        color: var(--sf-error);
+    }
+
+    /* Date cards, time buttons, calendar cells and −/+ buttons. */
+    .sf-tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 6px 8px;
+        border: 0;
+        border-radius: var(--sf-radius-tile);
+        background: var(--sf-surface);
+        color: var(--sf-text);
+        box-shadow: inset 0 0 0 1px var(--sf-line);
+        font: inherit;
+        font-size: 14px;
+        line-height: 18px;
+        font-weight: 700;
+        text-align: center;
+        cursor: pointer;
+        transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+    }
+    .sf-tile:hover:not(:disabled):not([aria-pressed='true']):not([aria-selected='true']) {
+        box-shadow: inset 0 0 0 1.5px var(--sf-primary-text);
+    }
+    .sf-tile[aria-pressed='true'],
+    .sf-tile[aria-selected='true'] {
+        background: var(--sf-primary);
+        color: var(--sf-on-primary);
+        box-shadow: none;
+    }
+    .sf-tile:disabled,
+    .sf-tile[aria-disabled='true'] {
+        background: var(--sf-disabled);
+        color: var(--sf-disabled-text);
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+    /* Calendar cell for today: a ring in the brand text colour. */
+    .sf-tile[data-today]:not([aria-pressed='true']):not([aria-selected='true']) {
+        box-shadow: inset 0 0 0 2px var(--sf-primary-text);
+    }
+    .sf-tile-note {
+        font-size: 12px;
+        line-height: 16px;
+        font-weight: 600;
+        color: var(--sf-muted);
+    }
+    .sf-tile[aria-pressed='true'] .sf-tile-note,
+    .sf-tile[aria-selected='true'] .sf-tile-note,
+    .sf-tile:disabled .sf-tile-note,
+    .sf-tile[aria-pressed='true'] .sf-dot,
+    .sf-tile[aria-selected='true'] .sf-dot {
+        color: inherit;
+    }
+
+    /* Surfaces follow the card style (§3.2); corners follow the button style. */
+    .sf-card,
+    .sf-card-raised,
+    .sf-card-small {
+        background: var(--sf-surface);
+        border-radius: var(--sf-radius-card);
+        box-shadow: var(--sf-shadow-card);
+    }
+    .sf-card-raised {
+        box-shadow: var(--sf-shadow-raised);
+    }
+    .sf-card-small {
+        border-radius: var(--sf-radius-card-small);
+    }
+    a.sf-card,
+    a.sf-card-small {
+        color: var(--sf-text);
+        text-decoration: none;
+    }
+
+    /* Hero (§5): brand colour with three thin rings and one disc, or the business banner under a dark scrim. */
+    .sf-hero {
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+        background: var(--sf-primary);
+        color: var(--sf-on-primary);
+        --sf-hero-soft: var(--sf-on-primary-soft);
+        --sf-hero-faint: var(--sf-on-primary-faint);
+    }
+    .sf-hero-ornament {
+        position: absolute;
+        z-index: -1;
+        pointer-events: none;
+        color: var(--sf-on-primary-line);
+    }
+    .sf-hero-ornament .sf-hero-disc {
+        fill: var(--sf-on-primary-faint);
+    }
+    .sf-hero-banner,
+    .sf-hero-scrim {
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        width: 100%;
+        height: 100%;
+    }
+    .sf-hero-banner {
+        object-fit: cover;
+    }
+    .sf-hero-scrim {
+        z-index: -1;
+        background: linear-gradient(rgba(23, 21, 31, 0.55), rgba(23, 21, 31, 0.7));
+    }
+    .sf-hero[data-banner] {
+        background: var(--sf-text);
+        color: #FFFFFF;
+        --sf-hero-soft: rgba(255, 255, 255, 0.88);
+        --sf-hero-faint: rgba(255, 255, 255, 0.16);
+    }
+    .sf-hero[data-banner] .sf-hero-ornament {
+        display: none;
+    }
+    .sf-hero-soft {
+        color: var(--sf-hero-soft);
+    }
+    .sf-hero-faint {
+        background: var(--sf-hero-faint);
+    }
+
+    /* Step header progress in three parts (§6). */
+    .sf-progress {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+    .sf-progress > span {
+        height: 4px;
+        border-radius: 9999px;
+        background: var(--sf-hero-faint, var(--sf-on-primary-faint));
+    }
+    .sf-progress > span[data-done],
+    .sf-progress > span[data-current] {
+        background: currentColor;
+    }
+    .sf-progress > span[data-current] {
+        opacity: 0.6;
+    }
+
+    /* Bottom action bar on phone and tablet (§5); the page keeps room for it (§8). */
+    .sf-bottom-bar {
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 50;
+        background: var(--sf-surface);
+        box-shadow: 0 -1px 0 var(--sf-divider), 0 -8px 24px rgba(23, 21, 31, 0.08);
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    }
+    .sf-has-bottom-bar {
+        padding-bottom: calc(var(--sf-bottom-bar-height) + 24px + env(safe-area-inset-bottom));
+    }
+    @media (min-width: 1024px) {
+        .sf-bottom-bar[data-phone-tablet] {
+            display: none;
+        }
+        .sf-has-bottom-bar {
+            padding-bottom: 0;
+        }
+    }
+
+    /* Bottom sheet (§6): handle, title, close, body, primary action. */
+    .sf-sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: var(--sf-scrim);
+    }
+    .sf-sheet {
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 110;
+        max-height: 90dvh;
+        overflow-y: auto;
+        background: var(--sf-surface);
+        border-radius: var(--sf-radius-card) var(--sf-radius-card) 0 0;
+        box-shadow: var(--sf-shadow-raised);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .sf-sheet:focus {
+        outline: none;
+    }
+    .sf-sheet-handle {
+        display: block;
+        width: 40px;
+        height: 4px;
+        margin: 8px auto 0;
+        border-radius: 9999px;
+        background: var(--sf-line);
+    }
+    @media (min-width: 768px) {
+        .sf-sheet {
+            left: 50%;
+            right: auto;
+            width: min(560px, calc(100vw - 32px));
+            transform: translateX(-50%);
+        }
+    }
+
+    /* Coloured notes use status colours, never the brand (§2.3), except the brand tint for help boxes. */
+    .sf-note {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 12px 14px;
+        border-radius: var(--sf-radius-card-small);
+        font-size: 14px;
+        line-height: 20px;
+        background: var(--sf-info-bg);
+        color: var(--sf-info);
+    }
+    .sf-note[data-tone='success'] {
+        background: var(--sf-success-bg);
+        color: var(--sf-success);
+    }
+    .sf-note[data-tone='warning'] {
+        background: var(--sf-warning-bg);
+        color: var(--sf-warning);
+    }
+    .sf-note[data-tone='danger'] {
+        background: var(--sf-danger-bg);
+        color: var(--sf-danger);
+    }
+    .sf-note[data-tone='brand'] {
+        background: var(--sf-tint);
+        color: var(--sf-text);
+    }
+
+    /* Dot under a date: has sessions or full. */
+    .sf-dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 9999px;
+        background: currentColor;
+    }
+
+    .sf-skeleton {
+        background: var(--sf-disabled);
+        border-radius: var(--sf-radius-tile);
+        animation: sf-pulse 1.2s ease-in-out infinite;
+    }
+
+    /* Scroll row with snap for the date strip, chips and the favourites carousel. */
+    .sf-scroll-row {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-padding-inline: 16px;
+        scrollbar-width: none;
+        overscroll-behavior-x: contain;
+    }
+    .sf-scroll-row::-webkit-scrollbar {
+        display: none;
+    }
+    .sf-scroll-row > * {
+        scroll-snap-align: start;
+    }
+    .sf-fade-end {
+        position: relative;
+    }
+    .sf-fade-end::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 44px;
+        pointer-events: none;
+        background: linear-gradient(to right, transparent, var(--sf-page));
+    }
+
+    /* Ticket tear line on the success page. */
+    .sf-ticket-tear {
+        position: relative;
+        height: 0;
+        margin-inline: 20px;
+        border-top: 2px dashed var(--sf-divider);
+    }
+    .sf-ticket-tear::before,
+    .sf-ticket-tear::after {
+        content: '';
+        position: absolute;
+        top: -11px;
+        width: 20px;
+        height: 20px;
+        border-radius: 9999px;
+        background: var(--sf-page);
+    }
+    .sf-ticket-tear::before {
+        left: -30px;
+    }
+    .sf-ticket-tear::after {
+        right: -30px;
+    }
+
+    .sf-num {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+@keyframes sf-pulse {
+    50% {
+        opacity: 0.55;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

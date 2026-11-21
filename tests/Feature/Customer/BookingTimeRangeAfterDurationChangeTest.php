@@ -107,7 +107,7 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
             $this->assertStringContainsString('Rabu, 04 Nov 2026', $html);
             $this->assertStringContainsString('Rp150.000', $html);
             $this->assertStringContainsString('bgcolor="#FDE047"', $html);
-            $this->assertStringContainsString('color:#000000', $html);
+            $this->assertStringContainsString('color:#17151F', $html); // Design A §2.1 dark text on a light brand.
             $this->assertMatchesRegularExpression('/src="https?:\/\/[^"]+business-logo\.png"/', $html);
             $action = $mail instanceof BookingCancelledMail
                 ? rtrim(config('app.url'), '/').'/'.$this->tenant->slug : $manageUrl;
