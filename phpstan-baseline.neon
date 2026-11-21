@@ -193,12 +193,6 @@ parameters:
 			path: app/Http/Controllers/Owner/OwnerBookingController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Middleware/CheckSubscription.php
-
-		-
 			message: '#^Cannot access property \$id on object\|string\.$#'
 			identifier: property.nonObject
 			count: 1
