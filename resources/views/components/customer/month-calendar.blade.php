@@ -33,6 +33,7 @@
                     x-bind:aria-pressed="day.isSelected.toString()"
                     x-bind:aria-label="day.ariaLabel"
                     x-bind:data-today="day.isToday ? '' : null"
+                    x-bind:data-empty="day.inMonth && !day.isDisabled && !day.hasSessions ? '' : null"
                     x-on:click="{{ $select }}(day.date)">
                     <span class="sf-num" x-text="day.label"></span>
                     <span class="sf-dot" aria-hidden="true"

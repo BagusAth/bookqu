@@ -17,7 +17,7 @@
         </a>
         <div class="min-w-0 grow">
             <p class="truncate text-xs font-semibold text-sf-hero-soft">{{ $tenant->namabisnis }}</p>
-            <h1 class="text-lg font-bold md:text-2xl">{{ $headerTitle }}</h1>
+            <h1 id="page-title" class="text-lg font-bold md:text-2xl">{{ $headerTitle }}</h1>
         </div>
         {{ $headerActions ?? '' }}
         @if ($merchantWaUrl ?? null)

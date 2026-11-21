@@ -914,6 +914,13 @@
         box-shadow: none;
         cursor: not-allowed;
     }
+    /* A date without sessions: still selectable (shows the empty-day state), visibly quieter. */
+    .sf-tile[data-empty]:not([aria-pressed='true']):not([aria-selected='true']) {
+        background: var(--sf-page);
+        color: var(--sf-disabled-text);
+        box-shadow: inset 0 0 0 1px var(--sf-divider);
+    }
+
     /* Calendar cell for today: a ring in the brand text colour. */
     .sf-tile[data-today]:not([aria-pressed='true']):not([aria-selected='true']) {
         box-shadow: inset 0 0 0 2px var(--sf-primary-text);

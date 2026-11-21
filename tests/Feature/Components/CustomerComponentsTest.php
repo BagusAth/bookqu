@@ -47,6 +47,18 @@ final class CustomerComponentsTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/#[0-9A-Fa-f]{6}\b/', $html, 'Customer components use tokens, not hex colours.');
     }
 
+    public function test_a_date_without_sessions_stays_selectable_so_the_empty_day_state_can_show(): void
+    {
+        // Design A §7.2: choosing an empty date shows "Tidak ada sesi di tanggal ini" and the nearest date with sessions.
+        $html = Blade::render(<<<'BLADE'
+            <x-customer.date-strip :dates="[['date' => '2026-11-23', 'label' => 'Sen, 23 Nov', 'is_available' => false], ['date' => '2026-11-24', 'label' => 'Sel, 24 Nov', 'is_available' => true]]" />
+            BLADE);
+
+        $this->assertStringNotContainsString('disabled', $html);
+        $this->assertSame(1, substr_count($html, 'data-empty'));
+        $this->assertStringContainsString('Sen, 23 Nov, tidak ada sesi', $html);
+    }
+
     public function test_sheet_is_a_labelled_modal_dialog(): void
     {
         $html = Blade::render('<x-customer.sheet id="kalender" title="Pilih tanggal">Isi</x-customer.sheet>');

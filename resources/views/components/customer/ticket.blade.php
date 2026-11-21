@@ -25,8 +25,13 @@
             <p class="text-xs text-sf-muted">Kode reservasi</p>
             <p class="sf-num break-all text-lg font-bold tracking-[1px] md:text-[21px] md:tracking-[2px]">{{ $code }}</p>
         </div>
+        <input x-ref="code" type="text" readonly value="{{ $code }}" tabindex="-1" aria-hidden="true" class="sr-only">
         <button type="button" class="sf-btn-secondary px-3.5 text-sm"
-            x-on:click="navigator.clipboard && navigator.clipboard.writeText(@js($code)).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
+            x-on:click="
+                const done = () => { copied = true; setTimeout(() => copied = false, 2000) };
+                const fallback = () => { $refs.code.select(); if (document.execCommand('copy')) done(); };
+                navigator.clipboard ? navigator.clipboard.writeText(@js($code)).then(done, fallback) : fallback();
+            ">
             <x-customer.icon name="copy" :size="16" :stroke="2" />
             <span x-text="copied ? 'Disalin' : 'Salin'">Salin</span>
         </button>

@@ -97,7 +97,7 @@ document.addEventListener('alpine:init', () => {
                     inMonth: day.getMonth() === month - 1,
                     isToday: date === today,
                     isSelected: date === this.selectedDate,
-                    isDisabled: !entry || !entry.is_available,
+                    isDisabled: !entry,
                     hasSessions: Boolean(entry?.is_available),
                     isFull: Boolean(entry && !entry.is_available),
                     ariaLabel: (entry?.label || date) + (entry?.is_available ? '' : ', tidak ada sesi'),
@@ -135,12 +135,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         async selectDate(date) {
-            if (this.isSubmitting || !this.dates.some(day => day.date === date && day.is_available)) return;
+            if (this.isSubmitting || !this.dates.some(day => day.date === date)) return;
             this.viewMonth = monthOf(date);
             this.requestController?.abort();
             this.requestController = new AbortController();
             const requestNumber = ++this.requestNumber;
             this.selectedDate = date;
+            this.$nextTick(() => this.$refs.dateStrip?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' }));
             this.selectedDateFormatted = this.dates.find(day => day.date === date).label;
             this.selectedSlots = [];
             this.morningSlots = [];

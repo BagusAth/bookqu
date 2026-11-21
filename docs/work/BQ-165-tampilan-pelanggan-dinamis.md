@@ -240,6 +240,12 @@ The Tech Lead reviews at the end of each batch, in the browser at 390, 834 and 1
 - Docs: `.ai/rules/frontend.md` (customer views follow design A, from spec §10), `docs/domains/public-site.md` (appearance covers every customer page, templates, BQ-165 section replaces the BQ-164 one), `docs/owner-portal.md` §8.9 (templates and the preview), `docs/work/ROADMAP.md`, and a "look superseded" note at the top of BQ-164.
 - Final verification (PHP 8.4.25): pint passed; `npm run build` passed; full suite 1043 passed (7101 assertions); PHPStan no errors.
 
+### Follow-up: calendar bug and UI audit (21 Nov 2026)
+
+- **Bug (reported by the Tech Lead):** on Pilih jadwal, dates without sessions could not be clicked (cursor "not allowed"). Cause: `date-strip` set `disabled` and `month-calendar`/`booking-schedule.js` treated every date without sessions as disabled, and `selectDate()` refused them, so the empty-day state of spec §7.2 could never show. The data was correct (only 21 Nov has sessions locally). Fix: dates inside the bookable range stay selectable and look muted (`data-empty`); only dates outside the range are disabled; the same on Ubah jadwal. Regression test: `Components/CustomerComponentsTest::test_a_date_without_sessions_stays_selectable_so_the_empty_day_state_can_show`.
+- **Audit of the rebuilt pages** (390 px, real interactions): storefront category chips filter and search with the empty state work; date strip, calendar sheet (picks and closes), nearest-date button, contiguous-session rule and its error note work; checkout add-on stepper refreshes the quote, server validation shows "Periksa n isian", the red field and message and keeps every input and add-on; Kelola actions and help render. Fixed: the ticket "Salin" did nothing without the Clipboard API (http) — it now falls back to selecting a hidden field; the date strip now scrolls to a date chosen in the calendar sheet or by the nearest-date button; the payment page title follows the state the script switches to (expired, failed); Ubah jadwal time buttons show the start time and the server note only (full range as the accessible name), like Pilih jadwal.
+- Verification: full suite 1043 passed before the new test, component tests 4 passed after; pint passed; `npm run build` passed. No PHP change, so PHPStan is unaffected.
+
 ## Open findings
 
 - **Bridge (sessions 1–6).** Kept through session 5 so unconverted pages stayed in the business colour; removed in session 6 except for the Pro landing section, which still uses `bq-*` classes.

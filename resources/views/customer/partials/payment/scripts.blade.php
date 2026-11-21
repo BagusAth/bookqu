@@ -27,7 +27,13 @@
         if (banner) banner.classList.add('hidden');
     }
 
+    function setPageTitle(text) {
+        const title = document.getElementById('page-title');
+        if (title) title.innerText = text;
+    }
+
     function showFailedState() {
+        setPageTitle('Pembayaran gagal');
         const pendingCard = document.getElementById('state-pending-card');
         const failedCard = document.getElementById('state-failed-card');
         const expiredCard = document.getElementById('state-expired-card');
@@ -43,6 +49,7 @@
     }
 
     function showExpiredState() {
+        setPageTitle('Waktu pembayaran habis');
         const pendingCard = document.getElementById('state-pending-card');
         const failedCard = document.getElementById('state-failed-card');
         const expiredCard = document.getElementById('state-expired-card');

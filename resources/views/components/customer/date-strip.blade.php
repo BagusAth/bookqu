@@ -1,7 +1,8 @@
 {{--
     Scrollable date strip with snap (design A §6, §7.2). Dates are prepared by the server:
     ['date' => 'Y-m-d', 'label' => 'Sen, 23 Nov', 'is_available' => bool]. Selection is Alpine state
-    (`selectedDate`, `selectDate()`); availability is never decided here.
+    (`selectedDate`, `selectDate()`); availability is never decided here. A date without sessions stays selectable
+    (muted, `data-empty`) so the page can show the empty-day state and the nearest date with sessions (spec §7.2).
     `heading` and `calendarSheet` (a sheet id) add the month title and the "Kalender" button above the strip.
 --}}
 @props(['dates', 'currentDate' => null, 'label' => 'Pilih tanggal', 'heading' => null, 'calendarSheet' => null])
@@ -27,7 +28,7 @@
             $date = \Illuminate\Support\Carbon::parse($day['date'])->locale('id');
             $isCurrent = $currentDate === $day['date'];
         @endphp
-        <button type="button" @disabled(! $day['is_available'])
+        <button type="button" @unless ($day['is_available']) data-empty @endunless
             x-on:click="selectDate(@js($day['date']))"
             aria-pressed="false"
             x-bind:aria-pressed="(selectedDate === @js($day['date'])).toString()"

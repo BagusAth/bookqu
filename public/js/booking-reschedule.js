@@ -66,7 +66,7 @@ document.addEventListener('alpine:init', () => {
                     inMonth: day.getMonth() === month - 1,
                     isToday: date === config.currentDate,
                     isSelected: date === this.selectedDate,
-                    isDisabled: !entry || !entry.is_available,
+                    isDisabled: !entry,
                     hasSessions: Boolean(entry?.is_available),
                     isFull: Boolean(entry && !entry.is_available),
                     ariaLabel: (entry?.full_label || date) + (date === config.currentDate ? ', jadwal saat ini' : '') + (entry?.is_available ? '' : ', tidak ada sesi'),
@@ -90,11 +90,12 @@ document.addEventListener('alpine:init', () => {
 
         async selectDate(date, restoreId = null) {
             const day = config.dates.find(item => item.date === date);
-            if (!day?.is_available || this.submitting) return;
+            if (!day || this.submitting) return;
             this.request?.abort();
             const request = new AbortController();
             this.request = request;
             this.selectedDate = date;
+            this.$nextTick(() => this.$refs.dateStrip?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' }));
             this.viewMonth = monthOf(date);
             this.selectedDayLabel = day.full_label;
             this.selectedSlot = null;
