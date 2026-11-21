@@ -84,6 +84,18 @@ final class OwnerIntegrationsTest extends TestCase
         $this->get('/'.$this->tenant->slug)->assertOk()->assertSee('G-LOCAL')->assertDontSee('G-FOREIGN');
     }
 
+    public function test_repeated_calendar_callback_attempts_are_throttled_before_provider_contact(): void
+    {
+        Http::fake();
+        $callback = route('owner.settings.integrations.calendar.callback', ['state' => 'invalid']);
+        $this->actingAs($this->owner);
+        foreach (range(1, 10) as $attempt) {
+            $this->get($callback)->assertForbidden();
+        }
+        $this->get($callback)->assertTooManyRequests();
+        Http::assertNothingSent();
+    }
+
     public function test_calendar_delivery_failure_does_not_undo_the_booking(): void
     {
         Bus::fake([DeliverGoogleCalendarEvent::class]);

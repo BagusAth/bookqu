@@ -21,14 +21,7 @@ class CheckSubscription
     public function handle(Request $request, Closure $next, ...$features): Response
     {
         $tenantId = app(TenantContext::class)->getTenantId();
-        if (! $tenantId) {
-            $tenantId = auth()->user()?->tenant?->id;
-        }
-
-        // Fail closed: a gated route without a tenant is never served (BQ-006)
-        if (! $tenantId) {
-            abort(403);
-        }
+        abort_if($tenantId === null, 403);
 
         /** @var Subscription|null $subscription */
         $subscription = Subscription::with('plan')->where('idtenant', $tenantId)->latest('id')->first();

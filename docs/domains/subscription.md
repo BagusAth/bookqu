@@ -47,7 +47,7 @@ Functional: Implemented · Verification: Verified (partial) · Architecture: Tar
 |---|---|
 | Quota also re-checked in `BookingController::selectDate` | BQ-029 |
 
-Target decisions: [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) (release gate separate from entitlement; both fail closed, BQ-006/BQ-033) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (subscription payments swept, BQ-071). Not implemented yet.
+The [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) entitlement gate requires verified tenant context and responds with 403 when the context is missing (BQ-006, BQ-170). Unscoped authentication, onboarding and subscription purchase entry points sit outside the feature gate. [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) also applies to the subscription payment sweep.
 
 BQ-086: creation and unlimited checks fail closed without a date-active subscription and plan (`hasEffectivePlan`); Pro badge uses `isPro`. Storefront date validation and transactional creation refuse inactive tenants with neutral copy. Expired owners retain dashboard/subscription access with a renewal banner. Evidence: `ExpiredEntitlementTest` (four regressions), updated happy-path fixtures retain their original assertions.
 

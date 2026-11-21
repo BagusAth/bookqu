@@ -129,8 +129,10 @@ Route::prefix('owner')
         });
         Route::post('/profile/complete', [OwnerSettingController::class, 'storeProfile'])->name('owner.profile.complete');
         Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');
-        Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
-        Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');
+        Route::middleware('throttle:current-password')->group(function () {
+            Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
+            Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');
+        });
         Route::post('/payouts', [OwnerBalanceController::class, 'store'])->middleware('module:balance')->name('owner.payouts.request');
 
         // ── Checkout Routes (tanpa owner.profile middleware, karena ini billing) ──
@@ -264,7 +266,7 @@ Route::prefix('owner')
             Route::get('/payouts/{payout}/proof', [OwnerBalanceController::class, 'proof'])->whereNumber('payout')->middleware('module:balance')->name('owner.payouts.proof');
             Route::prefix('payout-accounts')->middleware('module:balance')->group(function () {
                 // BQ-127: the strict limit guards account changes only; switching the primary account has its own.
-                Route::middleware('throttle:3,10,payout-account-changes')->group(function () {
+                Route::middleware(['throttle:3,10,payout-account-changes', 'throttle:current-password'])->group(function () {
                     Route::post('/', [OwnerPayoutAccountController::class, 'store'])->name('owner.payout-accounts.store');
                     Route::put('/{account}', [OwnerPayoutAccountController::class, 'update'])->whereNumber('account')->name('owner.payout-accounts.update');
                     Route::delete('/{account}', [OwnerPayoutAccountController::class, 'destroy'])->whereNumber('account')->name('owner.payout-accounts.destroy');
@@ -275,7 +277,8 @@ Route::prefix('owner')
                 Route::get('/', [OwnerIntegrationController::class, 'index']);
                 Route::put('/tracking', [OwnerIntegrationController::class, 'saveTracking'])->name('.tracking');
                 Route::post('/calendar/connect', [OwnerIntegrationController::class, 'beginCalendar'])->name('.calendar.connect');
-                Route::get('/calendar/callback', [OwnerIntegrationController::class, 'connectCalendar'])->name('.calendar.callback');
+                Route::get('/calendar/callback', [OwnerIntegrationController::class, 'connectCalendar'])
+                    ->middleware('throttle:10,1,owner-calendar-callback:')->name('.calendar.callback');
                 Route::post('/calendar/test', [OwnerIntegrationController::class, 'testCalendar'])->name('.calendar.test');
                 Route::delete('/calendar', [OwnerIntegrationController::class, 'disconnectCalendar'])->name('.calendar.disconnect');
             });

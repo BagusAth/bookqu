@@ -41,11 +41,14 @@ use App\Support\StorefrontBranding;
 use App\Support\TenantActor;
 use App\Support\TenantContext;
 use Carbon\Carbon;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Events\DiagnosingHealth;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -77,6 +80,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('current-password', fn (Request $request): Limit => Limit::perMinute(5)
+            ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip())));
+
         Event::listen(DiagnosingHealth::class, function (DiagnosingHealth $event): void {
             $heartbeat = Cache::get('ops:scheduler-heartbeat');
 
