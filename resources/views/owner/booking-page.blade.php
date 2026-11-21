@@ -90,14 +90,71 @@
                 initialLook: null,
                 init() { this.initialLook = JSON.stringify(this.look); },
                 images: @js($pickerImages),
-                radius: @js(collect($branding['buttons'])->map(fn ($style) => $style['radius'])),
-                cards: @js($branding['cards']),
                 image(id) { const found = this.images.find(i => String(i.id) === String(id)); return found ? found.url : null; },
+                templates: @js(\App\Support\StorefrontBranding::TEMPLATES),
+                shapes: @js(\App\Support\StorefrontBranding::SHAPES),
+                surfaces: @js(\App\Support\StorefrontBranding::SURFACES),
+                get template() {
+                    const match = Object.entries(this.templates).find(([, t]) => t.button_style === this.look.button_style && t.card_style === this.look.card_style && t.font_family === this.look.font_family);
+                    return match ? match[0] : 'custom';
+                },
+                applyTemplate(key) {
+                    const t = this.templates[key];
+                    this.look.button_style = t.button_style;
+                    this.look.card_style = t.card_style;
+                    this.look.font_family = t.font_family;
+                },
+                get previewStyle() {
+                    const hex = /^#[0-9a-f]{6}$/i.test(this.look.theme_color) ? this.look.theme_color : '#4F46E5';
+                    const channel = i => { const c = parseInt(hex.slice(i, i + 2), 16) / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+                    const light = 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5) > 0.18;
+                    const shape = this.shapes[this.look.button_style] || this.shapes.rounded;
+                    const surface = this.surfaces[this.look.card_style] || this.surfaces.elevated;
+                    const font = String(this.look.font_family).replace(/[^A-Za-z ]/g, '');
+                    return [
+                        '--sf-primary:' + hex,
+                        '--sf-primary-hover:color-mix(in srgb,' + hex + ' 86%,' + (light ? '#FFFFFF' : '#000000') + ')',
+                        '--sf-on-primary:' + (light ? '#17151F' : '#FFFFFF'),
+                        '--sf-on-primary-soft:' + (light ? 'rgba(23,21,31,0.80)' : 'rgba(255,255,255,0.86)'),
+                        '--sf-on-primary-faint:' + (light ? 'rgba(23,21,31,0.10)' : 'rgba(255,255,255,0.14)'),
+                        '--sf-on-primary-line:' + (light ? 'rgba(23,21,31,0.18)' : 'rgba(255,255,255,0.24)'),
+                        '--sf-primary-text:' + (light ? 'color-mix(in srgb,' + hex + ' 42%,#000000)' : hex),
+                        '--sf-tint:color-mix(in srgb,' + hex + ' 9%,#FFFFFF)',
+                        '--sf-tint-strong:color-mix(in srgb,' + hex + ' 16%,#FFFFFF)',
+                        '--sf-radius-control:' + shape.control, '--sf-radius-tile:' + shape.tile, '--sf-radius-area:' + shape.area,
+                        '--sf-radius-chip:' + shape.chip, '--sf-radius-card:' + shape.card, '--sf-radius-card-small:' + shape.cardSmall,
+                        '--sf-shadow-card:' + surface.card, '--sf-shadow-raised:' + surface.raised,
+                        'font-family:' + JSON.stringify(font) + ',system-ui,sans-serif',
+                    ].join(';');
+                },
             }"
             x-effect="dirtyAppearance = initialLook !== null && JSON.stringify(look) !== initialLook"
         >
             <form method="POST" action="{{ route('owner.booking-page.appearance') }}" class="{{ $card }} space-y-5 p-4">
                 @csrf
+                @php($currentTemplate = \App\Support\StorefrontBranding::templateKey(old('button_style', $appearance['button_style']), old('card_style', $appearance['card_style']), old('font_family', $appearance['font_family'])))
+                {{-- Ready-made looks (D-028): a template fills button style, card style and font; the owner still saves. --}}
+                <fieldset>
+                    <div class="flex flex-wrap items-baseline justify-between gap-2">
+                        <legend class="{{ $label }}">Template</legend>
+                        <p class="text-sm text-bq-text-muted" aria-live="polite">Dipakai: <span class="font-semibold text-bq-text" x-text="template === 'custom' ? 'Kustom' : templates[template].label">{{ $currentTemplate === 'custom' ? 'Kustom' : \App\Support\StorefrontBranding::TEMPLATES[$currentTemplate]['label'] }}</span></p>
+                    </div>
+                    <div class="mt-2 grid gap-2 sm:grid-cols-3">
+                        @foreach (\App\Support\StorefrontBranding::TEMPLATES as $key => $template)
+                            <button type="button" data-template="{{ $key }}" aria-pressed="{{ $currentTemplate === $key ? 'true' : 'false' }}"
+                                x-on:click="applyTemplate(@js($key))" x-bind:aria-pressed="(template === @js($key)).toString()"
+                                class="rounded-bq-control border border-bq-border bg-bq-surface p-3 text-left transition-colors hover:border-bq-border-strong aria-pressed:border-bq-primary aria-pressed:bg-bq-primary-light">
+                                <span class="flex items-center gap-2" aria-hidden="true">
+                                    <span class="h-9 w-16 bg-bq-primary" style="border-radius: {{ \App\Support\StorefrontBranding::SHAPES[$template['button_style']]['control'] }}"></span>
+                                    <span class="h-9 w-10 border border-bq-border bg-bq-surface" style="border-radius: {{ \App\Support\StorefrontBranding::SHAPES[$template['button_style']]['cardSmall'] }}"></span>
+                                </span>
+                                <span class="mt-2 block text-sm font-semibold text-bq-text">{{ $template['label'] }}</span>
+                                <span class="block text-xs text-bq-text-muted">{{ \App\Support\StorefrontBranding::BUTTON_STYLES[$template['button_style']]['label'] }} · {{ \App\Support\StorefrontBranding::CARD_STYLES[$template['card_style']]['label'] }} · {{ $template['font_family'] }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-sm text-bq-text-muted">Warna tema tetap milik Anda. Setelah memilih template, setiap pengaturan masih bisa diubah.</p>
+                </fieldset>
                 @if (count($pickerImages) === 0)
                     <x-owner.empty-state title="Halaman Anda masih memakai tampilan bawaan BookQu" description="Tambahkan logo dan sampul ke galeri media, lalu pilih di sini." action-label="Buka galeri media" :action-href="route('owner.booking-page', ['section' => 'galeri'])" />
                 @endif
@@ -170,30 +227,47 @@
                 </x-ui.savebar>
             </form>
 
-            {{-- Live phone-sized preview (D-009) --}}
+            {{-- Live phone-sized preview (D-009), built from the customer components so it matches the storefront (BQ-165). --}}
             <section aria-label="Pratinjau di HP" class="lg:sticky lg:top-20 lg:self-start">
                 <p class="mb-2 text-sm text-bq-text-muted">Pratinjau di HP</p>
-                <div class="mx-auto w-full max-w-72 overflow-hidden rounded-[2rem] border-8 border-bq-ink bg-white shadow-bq" x-bind:style="'font-family: \'' + look.font_family + '\', system-ui, sans-serif'">
-                    <div class="flex items-center gap-2 border-b border-bq-border px-3 py-2">
-                        <template x-if="image(look.logo_asset_id)"><img x-bind:src="image(look.logo_asset_id)" alt="" class="h-7 w-7 rounded-lg object-cover"></template>
-                        <template x-if="!image(look.logo_asset_id)"><span class="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-white" x-bind:style="'background-color:' + look.theme_color">{{ mb_strtoupper(mb_substr($tenant->namabisnis ?: 'BQ', 0, 2)) }}</span></template>
-                        <span class="truncate text-sm font-semibold text-bq-ink" title="{{ $tenant->namabisnis }}">{{ $tenant->namabisnis }}</span>
+                <div class="mx-auto w-full max-w-72 overflow-hidden rounded-[2rem] border-8 border-bq-ink bg-sf-page text-sf-text" x-bind:style="previewStyle" inert>
+                    <div class="sf-hero px-3 pb-4 pt-3" x-bind:data-banner="image(look.cover_asset_id) ? '' : null">
+                        <template x-if="image(look.cover_asset_id)">
+                            <span><img x-bind:src="image(look.cover_asset_id)" alt="" class="sf-hero-banner"><span class="sf-hero-scrim"></span></span>
+                        </template>
+                        <x-customer.hero-ornament class="-right-16 -top-16 size-40" />
+                        <div class="flex items-center gap-2">
+                            <template x-if="image(look.logo_asset_id)"><img x-bind:src="image(look.logo_asset_id)" alt="" class="size-8 rounded-sf-card-small bg-sf-surface object-cover"></template>
+                            <template x-if="!image(look.logo_asset_id)"><span class="grid size-8 place-items-center rounded-sf-card-small bg-sf-surface text-xs font-bold text-sf-primary-text">{{ mb_strtoupper(mb_substr($tenant->namabisnis ?: 'BQ', 0, 2)) }}</span></template>
+                            <span class="text-[11px] font-semibold text-sf-hero-soft">Reservasi online</span>
+                        </div>
+                        <p class="mt-3 truncate text-lg font-bold" title="{{ $tenant->namabisnis }}">{{ $tenant->namabisnis }}</p>
+                        @if ($appearance['deskripsi'])
+                            <p class="mt-1 line-clamp-2 text-[11px] text-sf-hero-soft">{{ $appearance['deskripsi'] }}</p>
+                        @endif
                     </div>
-                    <template x-if="image(look.cover_asset_id)"><img x-bind:src="image(look.cover_asset_id)" alt="" class="h-24 w-full object-cover"></template>
-                    @if ($appearance['deskripsi'])
-                        <p class="whitespace-pre-line border-b border-bq-border px-3 py-2 text-xs text-bq-text-muted">{{ $appearance['deskripsi'] }}</p>
-                    @endif
-                    <div class="space-y-2 bg-bq-surface-2 p-3">
+                    <div class="space-y-2 p-3">
+                        <div class="flex gap-1.5">
+                            <span class="sf-chip min-h-8 px-3 text-xs" aria-pressed="true">Semua</span>
+                            <span class="sf-chip min-h-8 px-3 text-xs" aria-pressed="false">Kategori</span>
+                        </div>
                         @forelse ($previewServices as $service)
-                            <div class="rounded-bq-panel bg-white p-3" x-bind:style="'box-shadow:' + (cards[look.card_style] || cards.elevated).shadow + ';border:' + (cards[look.card_style] || cards.elevated).border">
-                                <p class="truncate text-bq-body font-semibold text-bq-ink" title="{{ $service['name'] }}">{{ $service['name'] }}</p>
-                                <p class="text-bq-small text-bq-text-muted">{{ $service['price'] }} / {{ $service['priceUnit'] }} · <x-ui.duration :minutes="$service['duration']" /></p>
+                            {{-- Phone layout of x-customer.service-row; the component's breakpoints follow the screen, not this frame. --}}
+                            <div class="sf-card-small flex items-center gap-3 p-2.5">
+                                <span @class(['grid size-12 shrink-0 place-items-center rounded-sf-card-small text-sf-primary-text', 'bg-sf-tint' => $loop->even, 'bg-sf-tint-strong' => $loop->odd])>
+                                    <x-customer.icon name="calendar" :size="20" :stroke="1.5" />
+                                </span>
+                                <span class="min-w-0 grow">
+                                    <span class="block truncate text-[13px] font-bold" title="{{ $service['name'] }}">{{ $service['name'] }}</span>
+                                    <span class="block text-[11px] text-sf-muted">{{ $service['duration'] }} menit</span>
+                                    <span class="sf-num block text-[13px] font-bold text-sf-primary-text">{{ $service['price'] }}</span>
+                                </span>
                             </div>
                         @empty
-                            <p class="text-bq-small text-bq-text-muted">Belum ada layanan aktif.</p>
+                            <p class="text-xs text-sf-muted">Belum ada layanan aktif.</p>
                         @endforelse
                         @if ($previewServices)
-                            <span class="inline-block px-3 py-1.5 text-bq-small font-semibold text-white" x-bind:style="'background-color:' + look.theme_color + ';border-radius:' + (radius[look.button_style] || '0.75rem')">Pilih jadwal</span>
+                            <span class="sf-btn sf-btn-sm w-full">Pilih jadwal</span>
                         @endif
                     </div>
                 </div>

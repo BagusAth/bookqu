@@ -116,6 +116,30 @@ final class StorefrontBrandingTest extends TestCase
         $this->assertSame(StorefrontBranding::DEFAULT_COLOR, $fallback['primaryText']);
     }
 
+    public function test_each_template_is_recognised_from_the_three_saved_settings(): void
+    {
+        foreach (StorefrontBranding::TEMPLATES as $key => $template) {
+            $tenant = new Tenant([
+                'theme_color' => '#0F766E',
+                'button_style' => $template['button_style'],
+                'card_style' => $template['card_style'],
+                'font_family' => $template['font_family'],
+            ]);
+
+            $this->assertSame($key, StorefrontBranding::templateFor($tenant));
+        }
+
+        $this->assertSame(['modern', 'rapi', 'tegas'], array_keys(StorefrontBranding::TEMPLATES));
+    }
+
+    public function test_a_mixed_or_legacy_look_is_custom_unless_it_normalises_to_a_template(): void
+    {
+        $this->assertSame('custom', StorefrontBranding::templateFor(new Tenant(['button_style' => 'pill', 'card_style' => 'outline', 'font_family' => 'Inter'])));
+        $this->assertSame('custom', StorefrontBranding::templateFor(new Tenant(['button_style' => 'square', 'card_style' => 'soft', 'font_family' => 'Lora'])));
+        // Legacy names normalise first: rounded-full = pill, shadow = elevated; an unknown font falls back to Plus Jakarta Sans.
+        $this->assertSame('modern', StorefrontBranding::templateFor(new Tenant(['button_style' => 'rounded-full', 'card_style' => 'shadow', 'font_family' => 'Comic'])));
+    }
+
     private function contrast(string $first, string $second): float
     {
         $luminance = function (string $hex): float {

@@ -27,7 +27,7 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 ### D-028 · Template tampilan siap pakai di menu Tampilan
 
-*Status:* Menunggu · *Diajukan:* 21 Nov 2026 · *Menahan rilis:* tidak (hanya sesi 7 BQ-165)
+*Status:* Disetujui · *Diajukan:* 21 Nov 2026 · *Diputuskan:* 21 Nov 2026 · *Menahan rilis:* tidak (hanya sesi 7 BQ-165)
 
 *Masalah*
 Owner sudah bisa memilih bentuk tombol (pil, membulat, kotak), gaya kartu (terangkat, garis tepi, lembut), dan huruf di Halaman Booking → Tampilan. Ada 9 kombinasi bentuk dan kartu, ditambah 6 huruf. Owner baru sering tidak tahu kombinasi mana yang cocok, padahal halaman pelanggan yang baru (BQ-165) berubah total mengikuti pilihan itu.
@@ -38,7 +38,7 @@ Owner sudah bisa memilih bentuk tombol (pil, membulat, kotak), gaya kartu (teran
 3. Setelah memilih template, owner tetap bebas mengubah tiap pengaturan. Bila kombinasinya tidak sama dengan template mana pun, label menjadi "Kustom".
 4. Berlaku untuk semua paket, sama seperti pengaturan Tampilan saat ini (D-009). Tidak ada data baru yang disimpan.
 
-*Jawaban Product Lead:* —
+*Jawaban Product Lead:* Disetujui sesuai usulan (dikonfirmasi lewat Tech Lead, 21 Nov 2026).
 
 ---
 

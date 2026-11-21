@@ -111,6 +111,28 @@ class HalamanBookingPageTest extends TestCase
             ->assertDontSee('Layanan Tidak Aktif')->assertDontSee('Layanan Tenant Lain');
     }
 
+    public function test_tampilan_offers_three_templates_and_marks_the_one_matching_the_saved_look(): void
+    {
+        // D-028: Rapi = membulat + garis tepi + Inter.
+        $this->tenant->forceFill(['button_style' => 'rounded', 'card_style' => 'outline', 'font_family' => 'Inter'])->save();
+
+        $this->actingAs($this->owner)->get(route('owner.booking-page', ['section' => 'tampilan']))
+            ->assertOk()
+            ->assertSeeInOrder(['Modern', 'Rapi', 'Tegas'])
+            ->assertSee('data-template="rapi" aria-pressed="true"', false)
+            ->assertSee('data-template="modern" aria-pressed="false"', false)
+            ->assertSee('data-template="tegas" aria-pressed="false"', false)
+            ->assertSee('Membulat · Garis tepi · Inter');
+
+        $this->tenant->forceFill(['font_family' => 'Lora'])->save();
+
+        $this->actingAs($this->owner)->get(route('owner.booking-page', ['section' => 'tampilan']))
+            ->assertOk()->assertSeeText('Dipakai: Kustom')
+            ->assertSee('data-template="modern" aria-pressed="false"', false)
+            ->assertSee('data-template="rapi" aria-pressed="false"', false)
+            ->assertSee('data-template="tegas" aria-pressed="false"', false);
+    }
+
     public function test_the_page_stays_hidden_until_the_module_is_released(): void
     {
         config(['modules.booking-page' => 'hidden']);

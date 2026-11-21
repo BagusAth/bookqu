@@ -10,7 +10,7 @@ requirements: [FR-PUBLIC-001, FR-PUBLIC-002, FR-PUBLIC-003, FR-PUBLIC-004, FR-BO
 invariants: [INV-TEN-01, INV-TOK-01, INV-BOOK-03, INV-SCH-01]
 lane: heavy
 approval: tech-lead
-decision: D-028 (session 7 only, pending)
+decision: D-028 (session 7 only, approved 21 Nov 2026)
 launch-blocker: true
 depends-on: [BQ-164]
 ---
@@ -223,6 +223,15 @@ The Tech Lead reviews at the end of each batch, in the browser at 390, 834 and 1
 - Tests: no copy assertion changed; the multi-session sentence was kept verbatim.
 - Browser: `/manage/payment/{order}` for the local test booking (deadline-passed state) at 1440/834/390: no horizontal scroll, no console errors. The reschedule page was not opened in the browser: the only local booking is past its change deadline and no later sessions exist; its markup is covered by `BookingManageTest`.
 - Batch 4 verification (PHP 8.4.25): pint passed; `npm run build` passed; full suite 1039 passed (6914 assertions); PHPStan no errors.
+
+### Session 7: owner templates (21 Nov 2026, D-028 approved)
+
+- D-028 recorded as approved in `docs/product-decisions.md` (Product Lead's answer confirmed through the Tech Lead on 21 Nov 2026).
+- `StorefrontBranding::TEMPLATES` (Modern = pil + terangkat + Plus Jakarta Sans, Rapi = membulat + garis tepi + Inter, Tegas = kotak + lembut + Outfit), `templateFor(Tenant)` (normalises legacy and unknown values first) and `templateKey()`; anything else is `custom`. No database change, no change to `UpdateAppearanceRequest`.
+- `owner/booking-page` Tampilan: three template cards above the fields (shape swatches, "Pil · Terangkat · Plus Jakarta Sans" etc., `aria-pressed`), "Dipakai: {template | Kustom}" (polite live region), note that the colour stays the owner's. Choosing a template fills button style, card style and font in the form; the owner still saves (the existing unsaved-changes guard reacts). The live phone preview is rebuilt on the customer layer — brand hero with ornament or banner scrim, chips, service rows in the phone layout and the button — with the `--sf-*` tokens derived in the browser the same way as `StorefrontBranding` (preview only; the stored values still go through the server normaliser).
+- Tests: `Unit/StorefrontBrandingTest` (each template recognised; mixed and legacy looks), `Owner/HalamanBookingPageTest::test_tampilan_offers_three_templates_and_marks_the_one_matching_the_saved_look` (Rapi marked; a changed font gives "Kustom").
+- Browser `/owner/booking-page?section=tampilan` as the local seeded owner of tenant 7 (seed password from `BramaStudioSeeder`): saved look shows "Kustom"; choosing Tegas marks it, sets Kotak/Lembut/Outfit and the preview turns to 4 px corners without card shadow; changing the card style afterwards shows "Kustom". Nothing was saved. 1440 and 390 px without horizontal scroll. The 403s in the console are seeded gallery files missing on disk (pre-existing).
+- Batch 5 verification (PHP 8.4.25): pint passed; `npm run build` passed; full suite 1042 passed (6932 assertions); PHPStan no errors.
 
 ## Open findings
 

@@ -32,6 +32,21 @@ final class StorefrontBranding
         'soft' => ['label' => 'Lembut', 'shadow' => 'none', 'border' => '1px solid #F1F5F9'],
     ];
 
+    /**
+     * Ready-made looks in Halaman Booking → Tampilan (D-028, design A §3.4). A template only fills the three
+     * settings; the brand colour stays the business's. Nothing new is stored: the current template is
+     * recognised from the saved values.
+     *
+     * @var array<string, array{label: string, button_style: string, card_style: string, font_family: string}>
+     */
+    public const TEMPLATES = [
+        'modern' => ['label' => 'Modern', 'button_style' => 'pill', 'card_style' => 'elevated', 'font_family' => 'Plus Jakarta Sans'],
+        'rapi' => ['label' => 'Rapi', 'button_style' => 'rounded', 'card_style' => 'outline', 'font_family' => 'Inter'],
+        'tegas' => ['label' => 'Tegas', 'button_style' => 'square', 'card_style' => 'soft', 'font_family' => 'Outfit'],
+    ];
+
+    public const CUSTOM_TEMPLATE = 'custom';
+
     /** @var list<string> Google Fonts families offered to every plan. */
     public const FONTS = ['Plus Jakarta Sans', 'Inter', 'Poppins', 'Outfit', 'Nunito', 'Lora'];
 
@@ -137,6 +152,26 @@ final class StorefrontBranding
         $mixed = array_map(fn (int $channel): int => (int) round($channel + ($target - $channel) * $ratio), self::rgb($color));
 
         return sprintf('#%02X%02X%02X', ...$mixed);
+    }
+
+    /** The template matching the tenant's saved look, or `custom`. */
+    public static function templateFor(Tenant $tenant): string
+    {
+        $font = in_array($tenant->font_family, self::FONTS, true) ? (string) $tenant->font_family : self::DEFAULT_FONT;
+
+        return self::templateKey(self::buttonStyle($tenant->button_style), self::cardStyle($tenant->card_style), $font);
+    }
+
+    /** The template whose three settings equal these values, or `custom`. */
+    public static function templateKey(?string $buttonStyle, ?string $cardStyle, ?string $fontFamily): string
+    {
+        foreach (self::TEMPLATES as $key => $template) {
+            if ($template['button_style'] === $buttonStyle && $template['card_style'] === $cardStyle && $template['font_family'] === $fontFamily) {
+                return $key;
+            }
+        }
+
+        return self::CUSTOM_TEMPLATE;
     }
 
     public static function buttonStyle(?string $value): string
