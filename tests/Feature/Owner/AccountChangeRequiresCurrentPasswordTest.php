@@ -62,6 +62,29 @@ class AccountChangeRequiresCurrentPasswordTest extends TestCase
             ->assertSee('name="delete_password"', false);
     }
 
+    public function test_password_confirmation_routes_share_a_budget_per_authenticated_user(): void
+    {
+        $change = route('owner.settings.account');
+        $delete = route('owner.settings.account.delete');
+        $payload = $this->accountPayload(['namalengkap' => 'Changed name', 'current_password' => 'wrong-password']);
+        $this->actingAs($this->user);
+
+        foreach (range(1, 5) as $attempt) {
+            $this->postJson($change, $payload)->assertUnprocessable()->assertJsonValidationErrors('current_password');
+        }
+
+        $this->deleteJson($delete, ['delete_password' => 'wrong-password'])->assertTooManyRequests();
+        $this->postJson(route('owner.payout-accounts.store'))->assertTooManyRequests();
+        $this->putJson(route('owner.payout-accounts.update', ['account' => 1]))->assertTooManyRequests();
+        $this->deleteJson(route('owner.payout-accounts.destroy', ['account' => 1]))->assertTooManyRequests();
+        $this->assertSame('Owner Lama', $this->user->fresh()->namalengkap);
+
+        $otherOwner = Tenant::factory()->create()->user;
+        $this->actingAs($otherOwner)->postJson($change, [
+            'namalengkap' => 'Other owner', 'email' => $otherOwner->email, 'current_password' => 'wrong-password',
+        ])->assertUnprocessable()->assertJsonValidationErrors('current_password');
+    }
+
     public function test_name_and_phone_change_requires_the_current_password(): void
     {
         $payload = $this->accountPayload(['namalengkap' => 'Owner Baru', 'nomorhp' => '081200000002']);
