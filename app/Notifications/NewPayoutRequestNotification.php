@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Models\OwnerPayout;
 use Illuminate\Notifications\Notification;
 
@@ -37,7 +38,8 @@ class NewPayoutRequestNotification extends Notification
             'payout_id' => $this->payout->id,
             'tenant_id' => $this->payout->idtenant,
             'jumlah' => (float) $this->payout->jumlah,
-            'url' => url('/admin/payouts?status=pending'),
+            // Sent during the owner's request: build the stored link from APP_URL, not the Host header (BQ-173).
+            'url' => app(CustomerAccessLinks::class)->canonical('/admin/payouts?status=pending'),
             'icon' => 'banknotes',
             'badge_color' => 'indigo',
         ];

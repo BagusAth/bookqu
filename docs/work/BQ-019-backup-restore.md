@@ -26,3 +26,5 @@ Scheduled database + uploads backup with retention, stored outside the web root;
 ## Evidence
 
 2026-11-01: deferred until after launch; waiting for the Tech Lead to set up scheduled backups, uploads and a restore drill. Per-deploy database dumps already exist (operations §3/§6); this does not close scheduled backup/restore work or change its launch-blocker flag.
+
+2026-11-22 (BQ-173): every production deploy now also archives `storage/app` as `db-backups/uploads-<timestamp>.tar.gz` (14 days). Scheduled backups between deploys and the restore drill remain for the Tech Lead.

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Actions\Team\FilterRevenueFigures;
 use App\Actions\Team\TeamNotificationAccess;
 use App\Models\Booking;
@@ -53,7 +54,7 @@ class NewBookingOwnerNotification extends Notification implements ShouldQueue
             $harga = 'Tidak ditampilkan';
         }
 
-        $dashboardUrl = url('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan));
+        $dashboardUrl = app(CustomerAccessLinks::class)->canonical('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan));
 
         $mail = (new MailMessage)
             ->subject('📅 Booking Baru Masuk — '.($tenant->namabisnis ?? 'BookQu'))
@@ -105,7 +106,7 @@ class NewBookingOwnerNotification extends Notification implements ShouldQueue
             'status' => $booking->status,
             'badge_color' => 'emerald',
             'icon' => 'calendar-plus',
-            'url' => url('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan)),
+            'url' => app(CustomerAccessLinks::class)->canonical('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan)),
         ];
 
         return app(TeamNotificationAccess::class)->maySeeRevenue($notifiable) ? $data : app(FilterRevenueFigures::class)->execute($data);

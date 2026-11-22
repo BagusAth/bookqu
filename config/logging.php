@@ -1,5 +1,6 @@
 <?php
 
+use App\Infrastructure\Logging\AlertMailHandler;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -50,7 +51,20 @@ return [
     |
     */
 
+    /*
+    | Recipient of the error alert mail (BQ-021). Add "alert" to LOG_STACK to send it; an empty
+    | address turns the alert off.
+    */
+
+    'alert_email' => env('OPS_ALERT_EMAIL'),
+
     'channels' => [
+
+        'alert' => [
+            'driver' => 'monolog',
+            'handler' => AlertMailHandler::class,
+            'level' => env('OPS_ALERT_LEVEL', 'error'),
+        ],
 
         'stack' => [
             'driver' => 'stack',

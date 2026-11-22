@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Models\Booking;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
@@ -50,7 +51,7 @@ class BookingStatusChangedOwnerNotification extends Notification implements Shou
         $namaLayanan = $layanan?->namalayanan ?? 'Layanan';
         $bisnisName = $tenant->namabisnis ?? 'BookQu';
 
-        $dashboardUrl = url('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan));
+        $dashboardUrl = app(CustomerAccessLinks::class)->canonical('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan));
 
         $mail = (new MailMessage)->greeting('Halo '.($notifiable->namalengkap ?? 'Owner').',');
 
@@ -151,7 +152,7 @@ class BookingStatusChangedOwnerNotification extends Notification implements Shou
             'badge_color' => $badgeColor,
             'icon' => $icon,
             'extra' => $this->extra,
-            'url' => url('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan)),
+            'url' => app(CustomerAccessLinks::class)->canonical('/owner/bookings?katakunci='.urlencode($booking->booking_code ?? $booking->namapelanggan)),
         ];
     }
 
