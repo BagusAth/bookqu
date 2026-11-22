@@ -133,6 +133,10 @@ An owner who forgot the password can request a reset link by e-mail and set a ne
 
 Login, registration, password-reset requests and other public state-changing endpoints are rate limited per account and per IP. Tracked in BQ-007.
 
+### FR-AUTH-009 — Sign in and register with Google (Accepted 2026-11-22, D-029)
+
+An owner or team member (Manajer, Kasir) can sign in with a Google account whose email Google reports as verified. A platform admin cannot. The first Google sign-in links an existing account with the same email. A new owner who registers through Google still completes the business data and terms of FR-AUTH-001, receives the normal trial, and is treated as email-verified. An account without a password must set one through FR-AUTH-007 before any action that requires the current password. Tracked in BQ-172.
+
 ## Tenant and Business Requirements
 
 ### FR-TENANT-001 — Tenant Association

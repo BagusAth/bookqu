@@ -19,6 +19,7 @@ Developer A's BQ-162 findings were implemented through BQ-163 on 19 Nov 2026. Th
 | **Merge the rebuild** | Branch `agathan` (BQ-161 … BQ-170, closed in `done/`) into `integration` through one heavy-lane PR | Tech Lead | before the regression pass |
 | **Release** | BQ-158: regression pass on staging against every `AC-*`, then release v1.0.0; it also takes the screen-reader pass, real mail clients and the review items left by BQ-162 and BQ-164 | Tech Lead (execution), Product Lead (go) | after the operations track and BQ-162 (D-026) |
 | **After the release** | BQ-075 (phase 6), [BQ-171](BQ-171-remaining-audit-polish.md) (audit polish left after the BQ-082 re-triage) | Tech Lead | after launch |
+| **New features** | [BQ-172](done/BQ-172-google-sign-in.md) Google sign-in and registration (D-029), closed on branch `agathan-bq-172-login-google`; manual check with a real Google account left | Tech Lead | merge with the rebuild; not a launch blocker |
 | **Open product decisions** | D-003 (admin scope beyond payouts and refunds), D-021 items | Product Lead | when decided |
 
 ## Phases

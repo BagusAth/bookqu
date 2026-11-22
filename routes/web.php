@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminPayoutController;
 use App\Http\Controllers\Admin\AdminRefundController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Owner\OwnerDashboardController;
 use App\Http\Controllers\Owner\OwnerHelpController;
 use App\Http\Controllers\Owner\OwnerIntegrationController;
 use App\Http\Controllers\Owner\OwnerNotificationController;
+use App\Http\Controllers\Owner\OwnerPasswordSetupController;
 use App\Http\Controllers\Owner\OwnerPayoutAccountController;
 use App\Http\Controllers\Owner\OwnerPriceRuleController;
 use App\Http\Controllers\Owner\OwnerProgramController;
@@ -72,6 +74,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:10,1,auth-login:')->name('login.store');
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store'])->middleware('throttle:5,1,auth-register:')->name('register.store');
+    // BQ-172 (FR-AUTH-009): sign in and register with Google.
+    Route::prefix('auth/google')->middleware('throttle:10,1,auth-google:')->group(function () {
+        Route::get('/redirect', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
+        Route::get('/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+        Route::get('/lengkapi', [GoogleAuthController::class, 'complete'])->name('auth.google.complete');
+        Route::post('/lengkapi', [GoogleAuthController::class, 'store'])->middleware('throttle:5,1,auth-register:')->name('auth.google.complete.store');
+    });
 
     Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->middleware('throttle:5,1,auth-password:')->name('password.email');
@@ -129,6 +138,7 @@ Route::prefix('owner')
         });
         Route::post('/profile/complete', [OwnerSettingController::class, 'storeProfile'])->name('owner.profile.complete');
         Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');
+        Route::post('/settings/account/password-link', [OwnerPasswordSetupController::class, 'store'])->middleware('throttle:5,1,auth-password:')->name('owner.settings.account.password-link');
         Route::middleware('throttle:current-password')->group(function () {
             Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
             Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');

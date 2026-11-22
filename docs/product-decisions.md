@@ -4,7 +4,7 @@ Dokumen ini berisi keputusan yang perlu divalidasi Product Lead, dan catatan kep
 
 **Cara menjawab:** balas dengan nomor entri dan poinnya, misalnya "D-001 setuju semua" atau "D-001 setuju kecuali poin 3: …". Setelah disetujui, Tech Lead membuat pekerjaannya. Keputusan yang sudah diambil bisa dibuka lagi kapan saja dengan menyebut nomornya.
 
-Terakhir diperbarui: 21 November 2026
+Terakhir diperbarui: 22 November 2026
 
 ---
 
@@ -60,6 +60,7 @@ Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
 ## Sudah diputuskan
 
 - D-027 · Sesi lama saat fitur selesai otomatis pertama kali berjalan · Disetujui Product Lead dan Tech Lead pada 19 Nov 2026, dikonfirmasi melalui developer. Usulan utama diterapkan, mulai dari sesi yang berakhir sejak fitur diaktifkan, termasuk saat diaktifkan kembali. Sesi lama bisa ditutup manual → BQ-163
+- D-029 · Masuk dan daftar dengan akun Google · Disetujui Product Lead dan Tech Lead pada 22 Nov 2026, dikonfirmasi melalui developer: tombol "Masuk dengan Google" di halaman masuk dan daftar; bisa dipakai pemilik dan anggota tim (Manajer, Kasir), admin platform tetap memakai email dan password; daftar baru lewat Google mengambil nama dan email dari Google, lalu pemilik tetap mengisi nomor HP, nama, jenis, dan alamat bisnis serta menyetujui ketentuan, mendapat trial 7 hari seperti biasa, dan emailnya langsung terverifikasi; akun lama dengan email yang sama otomatis terhubung saat pertama kali masuk dengan Google, hanya bila Google menyatakan email itu terverifikasi; akun yang dibuat lewat Google belum punya password, jadi untuk mengubah email, menghapus akun, dan mengubah rekening penarikan (D-004) pemilik membuat password dulu lewat link email; pelanggan tetap tidak perlu login → BQ-172
 
 ### Keputusan sebelum dokumen ini dibuat
 
