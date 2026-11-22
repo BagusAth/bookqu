@@ -40,6 +40,7 @@ The values below describe what to fill in; they are not secrets. Verify on the s
 | `APP_URL` | `https://bookqu.my.id` (exact, no path or trailing slash; customer access links require the request host to equal it) |
 | `APP_KEY` | Keep the key that matches the database; back it up separately from the database (§6) |
 | `LOG_LEVEL` | `warning` |
+| `LOG_STACK`, `OPS_ALERT_EMAIL`, `OPS_ALERT_LEVEL` | `single,alert`, a monitored address, `error`: every error and unhandled exception is mailed through SMTP, once per message per 15 minutes and at most 20 mails per hour (BQ-173) |
 | `DB_CONNECTION`, `SESSION_DRIVER`, `CACHE_STORE` | `mysql`, `database`, `database` |
 | `QUEUE_CONNECTION` | `database` |
 | `MAIL_MAILER` | `smtp` |
@@ -129,7 +130,7 @@ Other workflows: `validate-deploy.yml` (manual: build and transfer test), `test-
 | `app:check-expired-subscriptions` | daily | Expire trials and subscriptions; warn trials about to end |
 | `ops:scheduler-heartbeat` | every minute | Record a timestamp in shared cache for the `/up` health check (retained for one day) |
 
-Implemented (ADR-0013, BQ-013/020): scheduled commands use named `Schedule::call()` callbacks calling `Artisan::call()` in-process, with cache-based `withoutOverlapping()` locks. No child process or `proc_open` is needed. The payment sweep remains every minute; subscription expiry remains daily.
+Implemented (ADR-0013, BQ-013/020): scheduled commands use named `Schedule::call()` callbacks calling `Artisan::call()` in-process, with cache-based `withoutOverlapping()` locks. No child process or `proc_open` is needed; `OperationsReadinessTest` fails on any `Schedule::command`. Each lock expires before the job's next run (10 minutes for every-minute jobs, 50 for hourly, 120 for daily and weekly), so a run the host kills cannot stop the job for a day (BQ-173). The payment sweep remains every minute; subscription expiry remains daily.
 
 The Tech Lead installs **two cron entries, each every minute**, in the HostData panel (not yet done):
 
@@ -148,13 +149,13 @@ Retry failed jobs (`php artisan queue:failed`, `queue:retry`) only after confirm
 
 ## 5. Mail and monitoring
 
-Production needs a real mail transport (credentials, sender, test delivery) and an error alerting channel; both are **Target** (BQ-021). Until then, `storage/logs/laravel.log` is the only diagnostic source. Never enable `APP_DEBUG` in production to debug.
+Production needs a real mail transport (credentials, sender, test delivery) and an error alerting channel (BQ-021). The alert channel exists (BQ-173): with `LOG_STACK=single,alert` and `OPS_ALERT_EMAIL` set (§2), `App\Infrastructure\Logging\AlertMailHandler` mails every record at `OPS_ALERT_LEVEL` and above, including unhandled exceptions, synchronously through SMTP so it does not depend on the queue. It is **Target** until one alert mail is proven on the server. `storage/logs/laravel.log` keeps the full detail. Never enable `APP_DEBUG` in production to debug.
 
 Configuration and the health check are ready; BQ-021 stays **in-progress** until the Tech Lead fills in SMTP, proves one test e-mail and enables a free UptimeRobot monitor on `https://bookqu.my.id/up` every five minutes. Application exception alerts and queue failures still need verification; a healthy uptime does not prove that e-mail works.
 
 ## 6. Backups and recovery
 
-Every production deploy writes `~/domains/bookqu.my.id/db-backups/bookqu-<timestamp>.sql.gz` before migrating (§3) and keeps 14 days. **Target** (BQ-019): scheduled backups as well, user uploads (`storage/app`) included, and a restore drill on the server. A backup counts only after a successful restore test.
+Every production deploy writes `~/domains/bookqu.my.id/db-backups/bookqu-<timestamp>.sql.gz` and `uploads-<timestamp>.tar.gz` (`storage/app`: gallery, logos, payout proofs; BQ-173) before migrating (§3) and keeps 14 days. **Target** (BQ-019): scheduled backups between deploys, and a restore drill on the server. A backup counts only after a successful restore test.
 
 Since BQ-004, `APP_KEY` also decrypts tenant gateway credentials. An encrypted database backup is usable only with its matching `APP_KEY` (or that key retained in `APP_PREVIOUS_KEYS`). Back up the key separately in protected secret storage; do not commit it or include it in diagnostic output. Rotation requires a new `APP_KEY` plus the previous key in `APP_PREVIOUS_KEYS`, followed by config-cache rebuild and worker restart. Keep previous keys until all dependent database values and relevant backups can be decrypted without them; `key:generate` alone would make existing tenant credentials unreadable.
 
@@ -202,6 +203,8 @@ All must be checked before the first real customer (gate G5 in `docs/work/ROADMA
 - [ ] Production mail and error alerting working (BQ-021)
 - [ ] Production payment credentials set, webhooks registered and tested end-to-end (BQ-022)
 - [ ] `APP_DEBUG=false`, HTTPS enforced, `storage:link` present
+- [ ] The server answers only its own hosts: `curl -sk -o /dev/null -w '%{http_code}' --resolve evil.example:443:<SERVER_IP> https://evil.example/forgot-password` must not return 200. Mailed auth links are built from `APP_URL` (BQ-173), but other pages would still render on a foreign host
+- [ ] Client IPs are real: rate limits are per IP, so `laravel.log` and the `sessions` table must show different visitor IPs, not one proxy address (`TRUSTED_PROXIES`, §2)
 - [ ] Own domains (BQ-154): `CUSTOM_DOMAIN_CNAME_TARGET` and/or `CUSTOM_DOMAIN_A_RECORDS` set, TLS certificates issued by the server for custom domains (for example on-demand certificates), and `php artisan domains:check` run right after the migration, because domains saved before BQ-154 do not resolve until a check connects them and their owners have added the `_bookqu` TXT record
 - [ ] Smoke test: public page, booking with payment, management link (view/cancel/reschedule), owner portal, subscription checkout
 - [ ] Legal pages reviewed

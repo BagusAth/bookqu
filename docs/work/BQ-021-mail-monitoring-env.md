@@ -29,3 +29,5 @@ Configure a transactional mail provider and an alert channel (for example mail o
 
 2026-11-01, plan approved by the Tech Lead: production env checklist, opt-in cached trusted-proxy configuration and scheduler health checks implemented/documented; release notes prepared.
 Waiting for the Tech Lead: production SMTP + queued test email, config cache rebuild, UptimeRobot `/up` every five minutes, payment live setup/smoke test, and operational alert verification. No production secrets were read or changed.
+
+2026-11-22 (BQ-173): the `alert` log channel mails errors and unhandled exceptions to `OPS_ALERT_EMAIL` (operations §2, §5). Waiting for the Tech Lead: set `LOG_STACK=single,alert` and `OPS_ALERT_EMAIL`, rebuild the config cache and prove one alert mail.

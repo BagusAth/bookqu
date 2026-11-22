@@ -41,6 +41,8 @@ use App\Support\StorefrontBranding;
 use App\Support\TenantActor;
 use App\Support\TenantContext;
 use Carbon\Carbon;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Http\Request;
@@ -186,13 +188,36 @@ class AppServiceProvider extends ServiceProvider
 
         Carbon::setLocale(config('app.locale', 'id'));
 
-        if (! $this->app->runningInConsole() && request()->getHost()) {
-            URL::forceRootUrl(request()->getSchemeAndHttpHost());
-        }
+        $this->buildMailedAuthLinksFromAppUrl();
 
         // The owner app shell (sidebar, top bar, phone navigation) is prepared once per request (BQ-128).
         View::composer('layouts.owner-layout', function ($view): void {
             $view->with('shell', app(GetOwnerShell::class)->execute(auth()->user(), request()->route()?->getName()));
+        });
+    }
+
+    /**
+     * Password reset and email verification links are mailed from a web request, where URLs
+     * follow the Host header. A forged Host would mail the reset token to the attacker's
+     * host (BQ-173), so both links are built from APP_URL instead.
+     */
+    private function buildMailedAuthLinksFromAppUrl(): void
+    {
+        ResetPassword::createUrlUsing(fn (object $user, string $token): string => app(CustomerAccessLinks::class)
+            ->canonical(route('password.reset', ['token' => $token, 'email' => $user->getEmailForPasswordReset()], false)));
+
+        VerifyEmail::createUrlUsing(function (object $user): string {
+            // The signature covers the absolute URL, so it is signed on the APP_URL origin it is opened at.
+            URL::forceRootUrl(app(CustomerAccessLinks::class)->canonical(''));
+
+            try {
+                return URL::temporarySignedRoute('verification.verify', now()->addMinutes((int) config('auth.verification.expire', 60)), [
+                    'id' => $user->getKey(),
+                    'hash' => sha1($user->getEmailForVerification()),
+                ]);
+            } finally {
+                URL::forceRootUrl(null);
+            }
         });
     }
 }

@@ -25,12 +25,12 @@ Schedule::call(fn () => Cache::put('ops:scheduler-heartbeat', now()->timestamp, 
 Schedule::call(fn () => Artisan::call('app:check-expired-subscriptions'))
     ->name('app:check-expired-subscriptions')
     ->daily()
-    ->withoutOverlapping();
+    ->withoutOverlapping(120);
 
 Schedule::call(fn () => Artisan::call('bookings:expire-payments'))
     ->name('bookings:expire-payments')
     ->everyMinute()
-    ->withoutOverlapping();
+    ->withoutOverlapping(10);
 
 Artisan::command('refunds:remind-open', function (): void {
     app(RemindOpenRefundRequests::class)->execute();
@@ -39,7 +39,7 @@ Artisan::command('refunds:remind-open', function (): void {
 Schedule::call(fn () => Artisan::call('refunds:remind-open'))
     ->name('refunds:remind-open')
     ->daily()
-    ->withoutOverlapping();
+    ->withoutOverlapping(120);
 
 // BQ-154: every own domain is re-checked hourly; one that no longer points here stops resolving.
 Artisan::command('domains:check', function (CheckCustomDomain $checkCustomDomain): void {
@@ -54,7 +54,7 @@ Artisan::command('domains:check', function (CheckCustomDomain $checkCustomDomain
 Schedule::call(fn () => Artisan::call('domains:check'))
     ->name('domains:check')
     ->hourly()
-    ->withoutOverlapping();
+    ->withoutOverlapping(50);
 
 Artisan::command('webhooks:prune', function (): void {
     DB::table('webhook_deliveries')->where('created_at', '<', now()->subDays(30))->delete();
@@ -63,7 +63,7 @@ Artisan::command('webhooks:prune', function (): void {
 Schedule::call(fn () => Artisan::call('webhooks:prune'))
     ->name('webhooks:prune')
     ->daily()
-    ->withoutOverlapping();
+    ->withoutOverlapping(120);
 
 // BQ-162 (FR-BOOKING-024, D-026): paid sessions that ended 6 hours ago are completed for
 // tenants that keep automatic completion on. Each booking goes through CompleteBookings.
@@ -90,7 +90,7 @@ Artisan::command('bookings:complete-ended', function (CompleteBookings $complete
 Schedule::call(fn () => Artisan::call('bookings:complete-ended'))
     ->name('bookings:complete-ended')
     ->hourly()
-    ->withoutOverlapping();
+    ->withoutOverlapping(50);
 
 // BQ-162 (FR-SCHEDULE-015, D-026): every night, open the missing slots of services that switched on
 // automatic opening, from opening hours up to 30 days ahead.
@@ -114,7 +114,7 @@ Artisan::command('slots:open-automatic', function (OpenAutomaticSlots $openAutom
 Schedule::call(fn () => Artisan::call('slots:open-automatic'))
     ->name('slots:open-automatic')
     ->dailyAt('01:00')
-    ->withoutOverlapping();
+    ->withoutOverlapping(120);
 
 // BQ-162 (FR-NOTIFICATION-008, D-026): Monday-morning summary of last week for every Pemilik.
 Artisan::command('owners:weekly-summary', function (SendWeeklySummary $sendWeeklySummary): void {
@@ -140,4 +140,4 @@ Artisan::command('owners:weekly-summary', function (SendWeeklySummary $sendWeekl
 Schedule::call(fn () => Artisan::call('owners:weekly-summary'))
     ->name('owners:weekly-summary')
     ->weeklyOn(1, '07:00')
-    ->withoutOverlapping();
+    ->withoutOverlapping(120);

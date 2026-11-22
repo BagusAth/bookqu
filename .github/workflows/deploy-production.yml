@@ -298,6 +298,15 @@ jobs:
             chmod 600 "$DB_BACKUP_FILE"
             echo "Database backup created: $DB_BACKUP_FILE ($(du -h "$DB_BACKUP_FILE" | cut -f1))"
 
+            # Uploads (gallery, logos, payout proofs) live only on this server (BQ-019).
+            UPLOADS_BACKUP_FILE="$DB_BACKUP_DIR/uploads-$TIMESTAMP.tar.gz"
+            if [ -d "$LARAVEL_DIR/storage/app" ]; then
+              (umask 077; tar -czf "$UPLOADS_BACKUP_FILE" -C "$LARAVEL_DIR/storage" app)
+              gzip -t "$UPLOADS_BACKUP_FILE"
+              echo "Uploads backup created: $UPLOADS_BACKUP_FILE ($(du -h "$UPLOADS_BACKUP_FILE" | cut -f1))"
+            fi
+
+            find "$DB_BACKUP_DIR" -maxdepth 1 -name 'uploads-*.tar.gz' -mtime +"$BACKUP_RETENTION_DAYS" -delete
             find "$DB_BACKUP_DIR" -maxdepth 1 -name 'bookqu-*.sql.gz' -mtime +"$BACKUP_RETENTION_DAYS" -delete
             find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -mtime +"$BACKUP_RETENTION_DAYS" -exec rm -rf {} +
 

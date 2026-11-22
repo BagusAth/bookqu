@@ -40,6 +40,23 @@ class OperationsReadinessTest extends TestCase
         $this->assertSame(now()->timestamp, Cache::get('ops:scheduler-heartbeat'));
     }
 
+    /**
+     * A run killed by the host leaves its overlap lock behind. The lock must expire before the next
+     * run is due, or the job stops for a day (Laravel's default is 1440 minutes) (BQ-173).
+     */
+    public function test_overlap_locks_expire_before_the_next_run_is_due(): void
+    {
+        $maxMinutes = ['* * * * *' => 10, '0 * * * *' => 50, '0 0 * * *' => 120, '0 1 * * *' => 120, '0 7 * * 1' => 120];
+
+        foreach (app(Schedule::class)->events() as $event) {
+            if (! $event->withoutOverlapping) {
+                continue;
+            }
+            $this->assertArrayHasKey($event->expression, $maxMinutes, "No lock budget for [{$event->getSummaryForDisplay()}].");
+            $this->assertLessThanOrEqual($maxMinutes[$event->expression], $event->expiresAt, "[{$event->getSummaryForDisplay()}] keeps its lock too long.");
+        }
+    }
+
     public function test_health_only_fails_when_an_existing_scheduler_heartbeat_is_older_than_five_minutes(): void
     {
         $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
