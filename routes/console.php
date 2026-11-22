@@ -60,7 +60,10 @@ Artisan::command('webhooks:prune', function (): void {
     DB::table('webhook_deliveries')->where('created_at', '<', now()->subDays(30))->delete();
 })->purpose('Prune webhook delivery logs older than 30 days');
 
-Schedule::command('webhooks:prune')->daily()->withoutOverlapping();
+Schedule::call(fn () => Artisan::call('webhooks:prune'))
+    ->name('webhooks:prune')
+    ->daily()
+    ->withoutOverlapping();
 
 // BQ-162 (FR-BOOKING-024, D-026): paid sessions that ended 6 hours ago are completed for
 // tenants that keep automatic completion on. Each booking goes through CompleteBookings.
