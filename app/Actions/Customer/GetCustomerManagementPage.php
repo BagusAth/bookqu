@@ -104,7 +104,7 @@ final class GetCustomerManagementPage
             'history' => $this->history($bookings->flatMap(fn (Booking $row) => $row->logs)->whereInstanceOf(BookingLog::class)->values()->all()),
             'canReview' => ! $group && $booking->status === BookingState::STATUS_COMPLETED,
             'calendarUrl' => 'https://calendar.google.com/calendar/render?'.http_build_query([
-                'action' => 'TEMPLATE', 'text' => 'Reservasi '.$tenant->namabisnis, 'location' => $address,
+                'action' => 'TEMPLATE', 'text' => 'Reservasi '.$tenant->namabisnis, 'location' => $address, 'ctz' => 'Asia/Jakarta',
             ]).'&dates='.$ranges['timeRange']->googleCalendarDates(),
             'shareUrl' => 'https://api.whatsapp.com/send?text='.urlencode("Reservasi di {$tenant->namabisnis}\n{$date}\n".$ranges['timeRange']->label().' WIB'),
         ];

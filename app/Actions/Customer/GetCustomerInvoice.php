@@ -55,6 +55,8 @@ final class GetCustomerInvoice
             'text' => 'Reservasi '.$tenant->namabisnis,
             'details' => 'Nomor pesanan: '.$payment->order_id,
             'location' => $tenant->alamat,
+            // Session times are WIB wall-clock times; without ctz Google reads them in the viewer's zone.
+            'ctz' => 'Asia/Jakarta',
         ]).'&dates='.$ranges['timeRange']->googleCalendarDates();
         $sharedTimes = collect($ranges['sessionRanges'])->map(fn ($range): string => $range->label(' - ').' WIB')->implode("\n");
         $shareText = "Reservasi di {$tenant->namabisnis}\n{$sessionDate}\n{$sharedTimes}\nNomor pesanan: {$payment->order_id}";

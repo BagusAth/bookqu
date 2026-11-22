@@ -2,7 +2,7 @@
 id: BQ-162
 title: Rebuild the owner portal on the "Papan Jadwal" prototype
 type: improvement
-status: approved
+status: done
 priority: P1
 phase: 4
 domain: booking
@@ -165,7 +165,7 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 
 `docs/owner-portal.md` §8–§9, `.ai/rules/frontend.md`, `docs/requirements.md` (C items), domain files `booking.md`, `schedule.md`, `insights.md`, `catalog.md` (promo) and `notifications.md`, `components/owner/README.md`. Session 9 owns the final pass.
 
-## Evidence (fill when done)
+## Evidence
 
 - Session 0 (prototype, 17 Nov 2026): prototype moved into the repo; audit P1 closed (tablet rail and one-column layout, error states, busy data, touch actions, full titles); checks `alat/cek.py` (44 routes × 3 switch sets, 0 issues), `alat/tepi.py lebar` and data = Ramai at 375/768/1024/1366 (0 issues), `alat/uji4.py` (9 error-state checks pass).
 - Session 1 (17 Nov 2026):
@@ -232,7 +232,7 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
 - Fixed T-06, T-15 (calendar and reschedule), T-17a, T-18, T-19, T-23, T-27, T-28, T-29a, T-30, T-31, T-34 and T-36. The cancellation decision is available from the action row.
 - Evidence: full SQLite suite on PHP 8.4.25 with GD, 1,014 tests and 6,677 assertions passed. PHPStan, changed-file Pint, frontend build and the three opening-hours payload cases passed.
 - Follow-up on 19 Nov 2026: T-11, T-12, T-13 and T-26 were approved through the developer and implemented in BQ-163. D-027 uses activation time as the automatic-completion boundary.
-- Imported reports with per-finding status: [assignment and results](BQ-162/pembagian-perbaikan-dev-a-b.md), [test findings](BQ-162/temuan-pengujian-2026-11-18.md). The full SQLite follow-up passed 1,020 tests; related MySQL suites passed 35 tests. Full evidence is recorded in [BQ-163](done/BQ-163-owner-automation-and-booking-follow-up.md).
+- Imported reports with per-finding status: [assignment and results](BQ-162/pembagian-perbaikan-dev-a-b.md), [test findings](BQ-162/temuan-pengujian-2026-11-18.md). The full SQLite follow-up passed 1,020 tests; related MySQL suites passed 35 tests. Full evidence is recorded in [BQ-163](BQ-163-owner-automation-and-booking-follow-up.md).
 
 ## Open findings
 
@@ -265,3 +265,8 @@ Listed per session above. Every session ends with the full suite; sessions 7 and
   - Beranda: compare it after refreshing the local demo data (`BramaStudioSeeder` rebuilds the demo tenants' bookings and slots relative to today; ask before running it). The local data was stale, so Beranda showed its setup guide.
   - Halaman Booking: close to the prototype, so give it a final check only.
   - Then a phone check of every page at 375 px, the full suite, PHPStan, and `owner-portal.md` §9 for the new blocks.
+
+### Closed (22 Nov 2026)
+
+- Sessions 1–9, the remaining visual pass, the visual fidelity pass and the Developer A follow-up (BQ-163) are done; full SQLite and MySQL suites passed (Evidence above).
+- Left for the release pass in BQ-158, not code work in this item: the screen-reader pass with NVDA or VoiceOver (needs a person), and the cosmetic empty table-header strip on Booking → Perlu tindakan on phones.

@@ -2,7 +2,7 @@
 id: BQ-170
 title: Harden password confirmation, subscription gates and payout processing data
 type: improvement
-status: approved
+status: done
 priority: P1
 phase: 4
 domain: auth
@@ -48,3 +48,8 @@ Update the auth, subscription and balance-payout domains.
 - Follow-up: provider webhook ingress and invalid API-key attempts need a separate edge and application rate-limit design. Review retry contracts, provider source traffic, proxy behavior and shared-IP limits before applying a blanket throttle. The valid API-key path already has a per-key budget.
 - Verification: Pint and PHPStan passed on PHP 8.4.25 with CLI OPcache disabled for PHPStan. Focused checks passed for account/payout confirmation (26 tests), subscription/route gating (33), payout and migration (18), and audit changes (26).
 - SQLite: 988 passed, 6,582 assertions. MySQL: 1,007 total, 6,650 assertions, one SQLite-only regression skipped. The new migration regression ran in both suites.
+
+### Closed (22 Nov 2026)
+
+- Steps 1–4 and the audit fixes are done with SQLite and MySQL evidence above.
+- The webhook and invalid API-key rate-limit design stays a separate follow-up (noted above); it is not part of this item's plan.

@@ -2,7 +2,7 @@
 id: BQ-165
 title: Rebuild the customer pages on design A and follow the owner's appearance settings
 type: improvement
-status: approved
+status: done
 priority: P1
 phase: 4
 domain: public-site
@@ -23,7 +23,7 @@ BQ-164 brought every customer page onto one layout and fixed broken paths. The r
 2. **Owner settings ignored.** Owners choose a button style (pill, rounded, square) and a card style (elevated, outline, soft) in Halaman Booking → Tampilan (owner-portal.md §8.9, FR-PUBLIC-003, D-009). `StorefrontBranding` already returns `buttonRadius`, `cardShadow` and `cardBorder`, but the customer pages apply them only to a few classes.
 3. **Screen sizes.** Phone, tablet and desktop share one stretched layout. On a tablet the reschedule summary drops below the content.
 
-The approved design is [`docs/design/booking-pelanggan/desain-a-sampul-imersif.md`](../design/booking-pelanggan/desain-a-sampul-imersif.md) ("the spec"). It is self-contained; section numbers below (§n) point into it.
+The approved design is [`docs/design/booking-pelanggan/desain-a-sampul-imersif.md`](../../design/booking-pelanggan/desain-a-sampul-imersif.md) ("the spec"). It is self-contained; section numbers below (§n) point into it.
 
 **Approval.** The Tech Lead approved this work item on 21 Nov 2026. These Tech Lead decisions are part of that approval:
 
@@ -33,7 +33,7 @@ The approved design is [`docs/design/booking-pelanggan/desain-a-sampul-imersif.m
 - Title copy becomes "Reservasi di {bisnis}".
 - A business banner, when present, becomes the hero background (spec §5).
 - The Pro landing page is out of scope.
-- Three ready-made templates for the Tampilan menu (spec §3.4) are a product change and wait for [D-028](../product-decisions.md). Only session 7 depends on it.
+- Three ready-made templates for the Tampilan menu (spec §3.4) are a product change and wait for [D-028](../../product-decisions.md). Only session 7 depends on it.
 
 **Out of scope:**
 - the Pro landing page (BQ-154 templates);
@@ -163,7 +163,7 @@ The Tech Lead reviews at the end of each batch, in the browser at 390, 834 and 1
 
 `.ai/rules/frontend.md`, `docs/domains/public-site.md`, `docs/owner-portal.md` §8.9 (after D-028), `docs/work/ROADMAP.md`, this file's Evidence.
 
-## Evidence (fill when done)
+## Evidence
 
 ### Session 1: foundation (21 Nov 2026)
 
@@ -278,3 +278,8 @@ The Tech Lead reviews at the end of each batch, in the browser at 390, 834 and 1
 - **Reschedule not seen in the browser.** Needs a local booking more than the reschedule window ahead with free sessions on other dates.
 - **Tampilan preview colours.** The live preview derives the tokens in the browser and does not repeat the session 8 contrast adjustments, so for mid-tone colours its brand text can be a shade lighter than the storefront. Preview only; saved values go through `StorefrontBranding`.
 - **Service icons.** Services have no icon or kind field; `service-card` and `service-row` take an `icon` name. Session 2 decides the mapping (for example by category) or keeps the default.
+
+### Closed (22 Nov 2026)
+
+- Sessions 1–8 and every follow-up (calendar selection, UI audit, date marks) are done; D-028 approved.
+- Open findings resolved since: manage link on the success page, "Lanjutkan pembayaran" on Kelola and business branding on storefront errors ([BQ-166](BQ-166-akses-lanjutan-pelanggan.md)); unversioned page scripts (every `public/js/booking-*.js` now loads with a `filemtime` version); session counts per date (`dates` carries `session_count`). The other findings are recorded above for the BQ-158 regression pass or later items.

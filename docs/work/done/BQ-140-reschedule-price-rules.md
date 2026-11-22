@@ -17,7 +17,7 @@ depends-on: [BQ-113, BQ-120, BQ-135]
 
 # BQ-140: Reschedule price rules: customers same or cheaper, owners any slot with the difference recorded
 
-Epic **E3 · Approved decisions D-001, D-002, D-006** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E3 · Approved decisions D-001, D-002, D-006** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 

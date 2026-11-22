@@ -116,7 +116,7 @@
                             <div class="card-desc-container">
                                 <div class="card-desc-inner">
                                     <p class="card-desc text-sm md:text-base text-slate-500 leading-relaxed mt-2">
-                                        Pantau performa bisnis, tren pendapatan, hingga staf paling produktif melalui data visual yang intuitif dan laporan yang mudah diunduh.
+                                        Pantau pendapatan, jam ramai dan sepi, layanan terlaris, serta pelanggan baru dan lama. Unduh laporannya dalam CSV (paket Medium dan Pro).
                                     </p>
                                 </div>
                             </div>

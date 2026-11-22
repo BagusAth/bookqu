@@ -2,7 +2,7 @@
 id: BQ-082
 title: Post-launch polish from the 2026-10 audit (P2/P3)
 type: improvement
-status: proposed
+status: rejected         # superseded 22 Nov 2026: re-triaged, open items moved to BQ-171
 priority: P2
 phase: 8
 domain: booking
@@ -155,4 +155,20 @@ Kode hanya menghapus karakter non-digit. Nomor yang sah dan lazim dimasukkan seb
 - Teks kontak tetap terbaca; `target="_blank"` tetap memiliki `rel="noopener noreferrer"`. Periksa klik bantuan pada browser mobile tanpa mengirim pesan nyata.
 - Requirement terkait: FR-PUBLIC-004, FR-BOOKING-008, FR-MANAGE-003, NFR-UX-002. Tambahkan bukti implementasi/PR di Evidence setelah selesai; bukti audit di atas bukan bukti perbaikan.
 
-## Evidence (fill when done)
+## Re-triage (22 Nov 2026)
+
+Every item was checked against the current code after the owner portal rebuild (BQ-161, BQ-162), the customer pages rebuild (BQ-164, BQ-165) and BQ-166/BQ-170. The checkboxes above stay as the audit record; this table is the result. **Carried** items continue in [BQ-171](../BQ-171-remaining-audit-polish.md).
+
+| Result | Items | Evidence |
+|---|---|---|
+| Fixed in the current code | T1-09, T1-11, T1-12, T1-13, T1-16, T1-17, T3-09, T3-10, T3-15, T3-17, T3-19, T3-20, T4-10, T4-14, T4-15, T5-13, T5-14, T5-17, T5-20, T5-23, T5-28, T5-29, T6-10, T6-12, T6-15, T6-17, T6-20, T6-21, T6-22, T6-23, T6-25, T6-27 | No `href="#"` in the landing views; verify-email cooldown; `old('remember')`; `+62` handled in the profile requests; login spinner; no hard-coded year; 44 px touch targets (design A); checkout keeps every input on errors (BQ-165 audit); `CustomDomain::isPlatformHost`; `@js()` rule (frontend rules); name `min:2` on the server and no stricter client rule; clipboard fallback (BQ-165); Midtrans reads no SingaPay config; Snap `onClose`; deadlines shown with "WIB"; cancel confirmations pass their own label; `BookingLog::record` in `UpdateBookingStatus`; reschedule binds `old('tanggal')`/`old('schedule_id')`; review rating keeps `old('rating')`; state notes on Kelola; reschedule fetch errors caught; owner reschedule dialog uses fetch; every customer and owner `wa.me` link goes through a `0`→`62` formatter; opening a notification marks it read (AC-NTF-01); no hard-coded review paths; pending subscription note on checkout; `isExpired()` guard in `OwnerCheckoutController`; customer note `saving` state; "Kode Booking" gone from the subscription invoice; native dialogs banned by guardrail; no hard-coded "Terkunci" badge; reviews paginated (`GetReviewsPage`). |
+| Fixed in this re-triage | T3-13, T4-12 | Google Calendar links on the invoice and Kelola pass `ctz=Asia/Jakarta` (assertion in `CustomerAccessTest`); `bookings:expire-payments` no longer prints a "0 slots cleared" line, because cache clearing happens inside the payment intake. |
+| Obsolete: the page or component was rebuilt or deleted | T2-12, T2-14, T2-15, T2-16, T2-18, T2-19, T2-20, T2-22, T2-23, T2-24, T2-25, T2-26, T3-08, T3-12, T3-18, T4-13, T4-16, T5-18, T5-19, T5-22, T5-24, T5-25, T5-26, T5-27, T5-30, T6-11, T6-13, T6-16, T6-18, T6-24, T6-26 | Owner services, calendar, schedule, bookings, reviews, settings, subscription, topbar and customer panel rebuilt in BQ-162; storefront, schedule, payment, success, invoice and Kelola rebuilt in BQ-165; `manage/show`, `manage/payment-show`, `ticket-card`, `owner/partials/customers/table` and `owner/partials/bookings/mobile-cards` no longer exist. New findings on the rebuilt pages go through the BQ-158 regression pass. |
+| Rejected: not a defect | T2-13, T2-21, T3-11, T3-14 | BookQu has no staff on services or the calendar (units instead, ADR-0017); `?simulate=1` is a local-only tool; leaving the payment page keeps the hold until the payment deadline by design (ADR-0009), and "Batalkan pesanan" releases it. |
+| Carried to BQ-171 | T1-10 (register), T1-14, T1-15, T1-18, T1-19, T1-20, T1-21 (landing and storefront), T2-17, T3-16, T4-11, T5-12, T5-15, T5-16, T5-21, T6-14, T6-19 | Still present or not verifiable from code; listed with the current evidence in BQ-171. |
+
+## Evidence
+
+- Re-triage done on 22 Nov 2026 on branch `agathan` against the current code (85 items: 32 fixed, 2 fixed here, 31 obsolete, 4 rejected, 16 carried).
+- The WhatsApp extension above is fixed: `GetCustomerPanel::whatsAppUrl`, `GetOwnerBookingPanel` and `GetLandingPage` build international `62…` destinations.
+- Closed as `rejected` (superseded by BQ-171) so `docs/work/` keeps only open items.

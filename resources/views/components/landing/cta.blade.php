@@ -2,7 +2,7 @@
     <div class="mx-auto max-w-6xl px-6 py-16 text-center text-white lg:px-8">
         <h2 class="text-3xl font-semibold">Siap Mengembangkan Bisnis Anda?</h2>
         <p class="mt-3 text-sm text-indigo-100">
-            Bergabunglah dengan pemilik bisnis yang telah beralih ke BookQu dan hemat hingga 15 jam kerja setiap minggunya.
+            Coba BookQu gratis 7 hari dan rasakan booking yang tertata, dari jadwal sampai pembayaran.
         </p>
         @auth
             @if (auth()->user()->isOwner())

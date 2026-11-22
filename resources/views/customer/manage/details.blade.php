@@ -70,6 +70,9 @@
 
                 {{-- Actions by state --}}
                 <div class="mt-4 flex flex-wrap gap-2">
+                    @if ($continuePaymentUrl ?? null)
+                        <a href="{{ $continuePaymentUrl }}" class="sf-btn">Lanjutkan pembayaran</a>
+                    @endif
                     @if ($rescheduleUrl)
                         <a href="{{ $rescheduleUrl }}" class="sf-btn">Ubah jadwal</a>
                     @elseif (($deadlinePassed || $isMultiSlot) && $merchantWaUrl)
@@ -106,7 +109,13 @@
                     @if ($isMultiSlot)
                         <x-customer.status-note tone="info">Reservasi ini terdiri dari beberapa sesi yang berurutan. Perubahan atau pembatalan per sesi tidak tersedia. Hubungi bisnis bila perlu bantuan.</x-customer.status-note>
                     @elseif ($state === 'pending')
-                        <x-customer.status-note tone="warning" title="Pembayaran belum selesai">Selesaikan pembayaran lewat halaman pembayaran sebelum batas waktunya, atau hubungi bisnis.</x-customer.status-note>
+                        <x-customer.status-note tone="warning" title="Pembayaran belum selesai">
+                            @if ($continuePaymentUrl ?? null)
+                                Selesaikan pembayaran sebelum batas waktunya agar jadwal tidak dilepas.
+                            @else
+                                Selesaikan pembayaran lewat halaman pembayaran sebelum batas waktunya, atau hubungi bisnis.
+                            @endif
+                        </x-customer.status-note>
                     @elseif ($state === 'cancelled')
                         <x-customer.status-note tone="danger" title="Reservasi ini dibatalkan">Jadwal sudah dilepas. Bantuan pengembalian dana ada di bagian Bantuan.</x-customer.status-note>
                     @elseif ($deadlinePassed)

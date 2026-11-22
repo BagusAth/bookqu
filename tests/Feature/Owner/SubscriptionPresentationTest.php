@@ -34,6 +34,32 @@ class SubscriptionPresentationTest extends TestCase
         $this->assertSame('119', $match[1]);
     }
 
+    public function test_landing_pricing_advertises_features_whose_module_is_released(): void
+    {
+        foreach (['small', 'medium', 'pro'] as $key) {
+            Plan::create(['namapaket' => $key, 'hargabulanan' => 149000, 'maxlayanan' => 5, 'maxbooking' => 300]);
+            foreach (config('plans.'.$key.'.feature_modules') as $feature => $module) {
+                $this->assertArrayHasKey($module, config('modules'), "Plan {$key} feature {$feature} names unknown module {$module}.");
+            }
+        }
+
+        $labels = function (string $html, string $key): array {
+            $document = new \DOMDocument;
+            @$document->loadHTML('<?xml encoding="UTF-8">'.$html);
+            $nodes = (new \DOMXPath($document))->query('//ul[@data-plan-features="'.$key.'"]//span[@data-feature-label]');
+
+            return array_map(fn (\DOMNode $node): string => trim($node->textContent), iterator_to_array($nodes));
+        };
+
+        $landing = $this->get('/')->assertOk()->getContent();
+        $this->assertContains('Logo dan tampilan', $labels($landing, 'small'));
+        $this->assertContains('Laporan dan ekspor', $labels($landing, 'medium'));
+        $this->assertContains('Domain sendiri', $labels($landing, 'pro'));
+
+        config(['modules.reports' => 'hidden']);
+        $this->assertNotContains('Laporan dan ekspor', $labels($this->get('/')->assertOk()->getContent(), 'medium'));
+    }
+
     public function test_subscription_compares_configured_features_and_database_limits_to_the_previous_plan(): void
     {
         $tenant = Tenant::factory()->create();

@@ -1,6 +1,6 @@
 # Desain halaman pelanggan: arah A "Sampul Imersif" (revisi 3)
 
-Spesifikasi tampilan untuk semua halaman yang dilihat pelanggan: toko (`/{slug}`), pilih jadwal, data & pembayaran, menunggu pembayaran, berhasil & invoice, kelola reservasi, ubah jadwal, status pembayaran, tautan akses, dan halaman error. Dipakai oleh [BQ-165](../../work/BQ-165-tampilan-pelanggan-dinamis.md).
+Spesifikasi tampilan untuk semua halaman yang dilihat pelanggan: toko (`/{slug}`), pilih jadwal, data & pembayaran, menunggu pembayaran, berhasil & invoice, kelola reservasi, ubah jadwal, status pembayaran, tautan akses, dan halaman error. Dipakai oleh [BQ-165](../../work/done/BQ-165-tampilan-pelanggan-dinamis.md).
 
 - **Status:** disetujui Tech Lead pada 21 Nov 2026 sebagai acuan implementasi. Bagian template siap pakai menunggu [D-028](../../product-decisions.md).
 - **Sumber:** audit [`audit-ui-2026-11-20.md`](audit-ui-2026-11-20.md), audit desain revisi 2 (21 Nov 2026), dan mockup kanvas pribadi Tech Lead. Dokumen ini berdiri sendiri; implementasi tidak perlu membuka kanvas.

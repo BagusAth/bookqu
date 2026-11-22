@@ -2,7 +2,7 @@
 id: BQ-164
 title: Bring every customer-facing page and email to the owner portal standard
 type: improvement
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: public-site
@@ -21,7 +21,7 @@ depends-on: [BQ-162]
 
 The owner portal was rebuilt on one design system in BQ-162 (tokens in `resources/css/app.css`, `x-ui.*` components, Papan Jadwal rules). Everything a customer sees still uses an older look: raw Tailwind colours, hard-coded hex values and five different page layouts. It also has broken paths.
 
-The audit [`docs/design/booking-pelanggan/audit-ui-2026-11-20.md`](../design/booking-pelanggan/audit-ui-2026-11-20.md) lists 32 findings (PL-01 to PL-32) with reproduction steps, files and lines. That document is the source of truth for every finding ID used below.
+The audit [`docs/design/booking-pelanggan/audit-ui-2026-11-20.md`](../../design/booking-pelanggan/audit-ui-2026-11-20.md) lists 32 findings (PL-01 to PL-32) with reproduction steps, files and lines. That document is the source of truth for every finding ID used below.
 
 **Approval.** The Tech Lead approved this work item on 20 Nov 2026 when assigning it to Codex. These Tech Lead decisions are part of that approval:
 
@@ -436,7 +436,7 @@ Listed per session above. Every session ends with the full suite. Session 7 also
 
 See session 7. Do not edit `docs/requirements.md` or `docs/product.md`: no requirement changes.
 
-## Evidence (fill when done)
+## Evidence
 
 - Session 1: PL-01, PL-02, PL-03, PL-09, PL-11, PL-13. PHP 8.4.25: Pint, Vite build, PHPStan and related PHPUnit checks passed (90 tests, 690 assertions). Full SQLite suite: 1,021 passed, 6,747 assertions. Browser: owner design reference consulted; the storefront, checkout, single and group management, reschedule and both management invoices fit 375, 768, 1024 and 1366 px with the default and light tenant themes, with no console errors on the final pass. Local checkout reproduced the SingaPay failure and retained the customer's email. The calendar reported zero available sessions on a higher-price-only date, and the empty slot response showed the server message and WhatsApp recovery in the browser. The browser used the local store and the documented test management grant.
 - Session 2: PL-05, PL-06, PL-07, PL-14, PL-15, PL-16, PL-31, PL-32. Pint, Vite and PHPStan passed. The related suite passed (74 tests, 662 assertions). The full SQLite run had 1,024 passes and two presentation assertion failures. The assertions now check the bundled Alpine asset and JSON-escaped route values, and the targeted rerun passed. At 375, 768, 1024 and 1366 px the storefront, schedule, access recovery, and both live 404 variants fit in default and light themes. The 403, 419, 500 and 503 templates were rendered in Chromium at the same widths. Service selection worked with JavaScript disabled.
@@ -457,3 +457,8 @@ See session 7. Do not edit `docs/requirements.md` or `docs/product.md`: no requi
 - Session 7: NVDA and VoiceOver remain open for a manual assistive-technology pass. Email HTML passed in Chromium. Rendering in actual Gmail and Outlook clients remains open.
 - Session 7: Opening a new hash-only link in a tab already on the access recovery screen does not rerun the existing page-load exchange. A fresh navigation exchanges the link. Review this edge case under the access bootstrap contract.
 - Session 7: The shared Pro landing presenter still supplies the older money format for featured services. The core picker, checkout, payments and invoices use the shared Rupiah format. A few palette classes also remain in the Pro hero and the payment feedback icon, and the older calendar and time card are unused by the active customer flow.
+
+### Closed (22 Nov 2026)
+
+- Sessions 1–7 are done (Evidence above). The look was then rebuilt by [BQ-165](BQ-165-tampilan-pelanggan-dinamis.md), which kept these flows.
+- The "Diputuskan agen, perlu review Tech Lead" findings above are accepted as implemented; the Tech Lead reviews them in the BQ-158 regression pass. Real Gmail/Outlook rendering and the screen-reader pass also go to BQ-158.

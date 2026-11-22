@@ -2,7 +2,7 @@
 id: BQ-161
 title: Give the owner portal a visual design system and restyle every owner page
 type: improvement
-status: approved           # Tech Lead 2026-11-16; implemented by the Tech Lead session, not by a separate agent
+status: done
 priority: P1
 phase: 5
 domain: tenancy            # cross-cutting: every owner page (docs/owner-portal.md)
@@ -376,7 +376,7 @@ per section, docs per "Docs to update". Push the branch and open ONE PR into int
 done per section, what was skipped and why, and the PR link.
 ```
 
-## Evidence (fill when done)
+## Evidence
 
 | Section | Done | Skipped (why) | Tests | Manual checks |
 |---|---|---|---|---|
@@ -393,3 +393,8 @@ Measured after the change (83 owner and `ui` Blade files): 100 uses of `bq-btn-*
 Verification on 2026-11-16: `vendor/bin/phpunit` 982 tests, 979 pass; the 3 errors need the GD extension the local PHP CLI lacks (CI has it). PHPStan: no errors. Pint: passed. `npm run build`: passed. Screenshots at 1366 px were checked during the work; the browser pane was hidden for the last pages, so the phone pass (375 px) and the Kasir pass are left for the PR review.
 
 Follow-up (not in this PR): the items in the "Skipped" column above.
+
+### Closed (22 Nov 2026)
+
+- Merged into `integration` through PR #67 (`7f77ec6`).
+- The "Skipped" column above was taken over by [BQ-162](BQ-162-papan-jadwal.md), which rebuilt every owner page on the Papan Jadwal prototype; the phone (375 px) and Kasir passes were run in BQ-162 session 9.

@@ -56,8 +56,8 @@ Evidence: `Unit/StorefrontBrandingTest`, `Components/CustomerComponentsTest`, `O
 
 ## Customer navigation and error view data (BQ-166)
 
-- The storefront payment success view receives `manageUrl` only when the browser session has a live [Management grant](../adr/ADR-0006-management-link-module.md) covering the payment and its exact booking group. Checkout-only access and cancelled bookings receive a null value.
-- Single-booking and payment-group management views receive `continuePaymentUrl` while the grant covers that payment, the bookings are pending and the stored payment deadline has not passed. The destination is the existing payment page. Both destinations use the canonical platform origin and carry no credentials.
+- The storefront payment success view shows a "Kelola" link to `manageUrl`, which it receives only when the browser session has a live [Management grant](../adr/ADR-0006-management-link-module.md) covering the payment and its exact booking group. Checkout-only access and cancelled bookings receive a null value.
+- Single-booking and payment-group management views receive `continuePaymentUrl` while the grant covers that payment, the bookings are pending and the stored payment deadline has not passed. The view shows it as the primary "Lanjutkan pembayaran" action. The destination is the existing payment page. Both destinations use the canonical platform origin and carry no credentials.
 - Customer error views receive `branding`, `businessName` and `storefrontUrl` for a storefront tenant established by the tenant middleware with an effective subscription. A connected custom domain also needs the existing Pro entitlement. Errors without eligible storefront context and private access refusals use BookQu branding. Existing storefront CSRF recovery continues to redirect back to the form.
 
 Evidence: `Customer/CustomerAccessTest`, `Customer/StorefrontErrorBrandingTest`.

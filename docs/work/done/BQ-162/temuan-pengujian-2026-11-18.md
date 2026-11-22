@@ -7,7 +7,7 @@ Commit yang diuji: `22e1318` (tip `origin/agathan-bq-162-papan-jadwal`, tidak be
 
 Implementasi **21 bagian Developer A selesai** pada branch `agathan-bq-162-papan-jadwal`, sampai commit `379dfd7`. Status Developer B belum diverifikasi dalam sesi ini. T-15, T-17, dan T-29 memiliki bagian A dan B yang dilacak terpisah.
 
-Bukti terbaru tercatat pada [BQ-163](../done/BQ-163-owner-automation-and-booking-follow-up.md) dan [BQ-162](../BQ-162-papan-jadwal.md). Suite penuh SQLite lulus 1.020 tes / 6.695 assertion. Suite MySQL terkait lulus 35 tes / 147 assertion. Regresi batas batch setelahnya lulus di kedua database. PHPStan, Pint pada file berubah, dan pemeriksaan integritas dokumentasi lulus. Build frontend lulus pada tahap perbaikan UI.
+Bukti terbaru tercatat pada [BQ-163](../BQ-163-owner-automation-and-booking-follow-up.md) dan [BQ-162](../BQ-162-papan-jadwal.md). Suite penuh SQLite lulus 1.020 tes / 6.695 assertion. Suite MySQL terkait lulus 35 tes / 147 assertion. Regresi batas batch setelahnya lulus di kedua database. PHPStan, Pint pada file berubah, dan pemeriksaan integritas dokumentasi lulus. Build frontend lulus pada tahap perbaikan UI.
 
 Crawl browser setelah perbaikan, pemeriksaan NVDA/VoiceOver, pemeriksaan zona waktu produksi, serta verifikasi setelah pekerjaan B digabung masih perlu dijalankan saat verifikasi rilis. Status selesai di sini merujuk pada implementasi dan bukti otomatis yang disebutkan.
 

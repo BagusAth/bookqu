@@ -47,7 +47,6 @@ class ExpireBookingPayments extends Command
         $this->info("Found {$expiredPayments->count()} expired payment(s).");
 
         $processed = 0;
-        $cacheCleared = [];
 
         foreach ($expiredPayments as $payment) {
             app(TenantContext::class)->run((int) $payment->idtenant, function () use ($payment, $isDryRun, $intake, &$processed): void {
@@ -92,7 +91,6 @@ class ExpireBookingPayments extends Command
 
         if (! $isDryRun) {
             $this->info("Done. Cancelled {$processed} expired booking payment(s).");
-            $this->info('Cache cleared for '.count($cacheCleared).' slot(s).');
         }
 
         return Command::SUCCESS;

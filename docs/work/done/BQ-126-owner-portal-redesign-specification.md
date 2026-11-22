@@ -2,7 +2,7 @@
 id: BQ-126
 title: Write the specification and reference documents for the owner portal redesign, then audit the backlog
 type: docs
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: staged-modules
@@ -388,7 +388,7 @@ Tidak ada tes kode di item ini. Pemeriksaan dokumen:
 - `docs/work/BQ-*.md`
 - lampiran di `docs/work/BQ-126/`
 
-## Evidence (fill when done)
+## Evidence
 
 Per fase: PR, gerbang dan tanggal persetujuannya, perintah pemeriksaan yang dijalankan. Tabel "Backlog audit" dari Fase 9 ditulis di sini.
 
@@ -475,3 +475,9 @@ Per fase: PR, gerbang dan tanggal persetujuannya, perintah pemeriksaan yang dija
 | BQ-124 | Selesai | dipindah ke `docs/work/done/` |  |
 | BQ-125 | Selesai | dipindah ke `docs/work/done/` |  |
 | BQ-127 | Tetap | E0 (payout), prerequisite of BQ-141 | Fix payout account follow-ups found in the PR #31 audit |
+
+### Closed (22 Nov 2026)
+
+- Every gate G0–G4 is approved (table above) and phases 0–6, 8 and 9 are done.
+- Phase 7 (aligning `BQ-126/prototype-portal-owner.html`) is superseded: the visual and structural reference became the "Papan Jadwal" prototype in `docs/design/papan-jadwal/` (D-025, BQ-162), built on the approved `owner-portal.md`. The old prototype stays as a historical attachment.
+- The epics this item planned (BQ-128 … BQ-158) are in `done/` except BQ-158, which carries the release itself. The roadmap line "BQ-126 closes with BQ-158" is replaced by this closure at the Tech Lead's request.

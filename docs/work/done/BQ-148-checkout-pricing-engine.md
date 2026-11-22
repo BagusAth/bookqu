@@ -17,7 +17,7 @@ depends-on: [BQ-088, BQ-133]
 
 # BQ-148: One booking pricing rule with a frozen price breakdown
 
-Epic **E5 · Medium value** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E5 · Medium value** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 

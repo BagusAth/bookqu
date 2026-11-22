@@ -143,11 +143,13 @@ class CustomerAccessTest extends TestCase
         $this->enter($payment, AccessProfile::Checkout);
         $response = $this->get($invoice)->assertOk()->assertViewHas('manageUrl');
         $this->assertNull($response->viewData('manageUrl'));
+        $response->assertDontSee('href="'.e($destination).'"', false);
         $this->get($destination)->assertNotFound();
 
         $this->enter($payment);
         $this->enter($payment, AccessProfile::Checkout);
-        $this->get($invoice)->assertOk()->assertViewHas('manageUrl', $destination);
+        $this->get($invoice)->assertOk()->assertViewHas('manageUrl', $destination)
+            ->assertSee('href="'.e($destination).'"', false);
         $this->get($destination)->assertOk();
     }
 
@@ -181,7 +183,8 @@ class CustomerAccessTest extends TestCase
         $this->enter($payment);
 
         foreach ($pages as $page) {
-            $this->get($page)->assertOk()->assertViewHas('continuePaymentUrl', $destination);
+            $this->get($page)->assertOk()->assertViewHas('continuePaymentUrl', $destination)
+                ->assertSee('href="'.e($destination).'"', false)->assertSee('Lanjutkan pembayaran');
         }
         $this->get($destination)->assertOk()->assertViewHas('paymentState', 'pending');
 
@@ -189,6 +192,7 @@ class CustomerAccessTest extends TestCase
         foreach ($pages as $page) {
             $response = $this->get($page)->assertOk()->assertViewHas('continuePaymentUrl');
             $this->assertNull($response->viewData('continuePaymentUrl'));
+            $response->assertDontSee('Lanjutkan pembayaran');
         }
     }
 
@@ -249,6 +253,9 @@ class CustomerAccessTest extends TestCase
             preg_match_all('/href="([^"<>]*(?:calendar.google.com|api.whatsapp.com)[^"<>]*)"/', $html, $urls);
             foreach ($urls[1] as $url) {
                 $this->assertStringNotContainsString('/manage/', urldecode(html_entity_decode($url)));
+                if (str_contains($url, 'calendar.google.com')) {
+                    $this->assertStringContainsString('ctz=Asia/Jakarta', urldecode(html_entity_decode($url)), 'Calendar times are WIB.');
+                }
             }
         }
     }

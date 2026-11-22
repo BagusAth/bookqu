@@ -2,7 +2,7 @@
 id: BQ-166
 title: Prepare authorized navigation and storefront error branding
 type: improvement
-status: in-progress
+status: done
 priority: P1
 phase: 4
 domain: public-site
@@ -53,3 +53,9 @@ Update `docs/domains/public-site.md` with the view-data contract and tenant visi
 - `php artisan test --compact` ran once and passed (1,065 tests, 7,260 assertions).
 - PHPStan passed on PHP 8.4.25 with `-d opcache.enable_cli=0` and a 1 GB memory limit.
 - The backend view-data contract is ready for review. Presentation and integration review are pending.
+
+### Closed (22 Nov 2026)
+
+- Presentation wired on 22 Nov 2026: the success page's "Kelola reservasi" box links to `manageUrl` with a "Kelola" button (text changes when the link is available); Kelola shows a primary "Lanjutkan pembayaran" button to `continuePaymentUrl` and a matching pending note. Error views already render the prepared branding through the booking shell.
+- `CustomerAccessTest` now also asserts the rendered links: the management link appears only with a Management grant, and "Lanjutkan pembayaran" disappears after the deadline. Customer access, management and error-branding tests: 58 passed.
+- Browser: a private-access 404 under `/brama-digital/booking/payment/…` keeps the generic BookQu branding, as designed for private access failures.

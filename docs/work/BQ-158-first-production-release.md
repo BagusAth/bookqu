@@ -17,7 +17,7 @@ depends-on: [BQ-017, BQ-019, BQ-020, BQ-021, BQ-022, BQ-157]
 
 # BQ-158: First production release of the redesigned BookQu
 
-Epic **E7 · Release** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E7 · Release** of the owner portal redesign, planned in [BQ-126](done/BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 

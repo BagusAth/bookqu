@@ -17,7 +17,7 @@ depends-on: [BQ-141, BQ-146, BQ-152]
 
 # BQ-157: Remove withdrawn modules, stored gateway credentials and duplicate paths
 
-Epic **E7 · Release** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E7 · Release** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 

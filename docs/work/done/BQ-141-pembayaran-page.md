@@ -17,7 +17,7 @@ depends-on: [BQ-129, BQ-131, BQ-127]
 
 # BQ-141: Pembayaran page: summary, transactions, balance and payouts, accounts, explanation
 
-Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E4 · Trust and acquisition pages** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 

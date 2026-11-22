@@ -83,8 +83,15 @@
                     <div class="flex min-h-16 items-center gap-3 rounded-sf-card-small bg-sf-tint px-[18px] py-3">
                         <span class="min-w-0 grow">
                             <span class="block text-[15px] font-bold">Kelola reservasi</span>
-                            <span class="block text-[13px] text-sf-muted">Ubah jadwal atau hubungi bisnis lewat tautan di email konfirmasi.</span>
+                            @if ($manageUrl ?? null)
+                                <span class="block text-[13px] text-sf-muted">Lihat status, ubah jadwal, atau minta bantuan.</span>
+                            @else
+                                <span class="block text-[13px] text-sf-muted">Ubah jadwal atau hubungi bisnis lewat tautan di email konfirmasi.</span>
+                            @endif
                         </span>
+                        @if ($manageUrl ?? null)
+                            <a href="{{ $manageUrl }}" class="sf-btn sf-btn-sm shrink-0">Kelola</a>
+                        @endif
                         @if ($merchantWaUrl ?? null)
                             <a href="{{ $merchantWaUrl }}" target="_blank" rel="noopener noreferrer" aria-label="Hubungi bisnis lewat WhatsApp" class="sf-btn sf-btn-icon shrink-0">
                                 <x-customer.icon name="whatsapp" :size="18" :stroke="2" />
