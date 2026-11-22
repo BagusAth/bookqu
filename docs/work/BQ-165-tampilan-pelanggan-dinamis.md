@@ -246,6 +246,12 @@ The Tech Lead reviews at the end of each batch, in the browser at 390, 834 and 1
 - **Audit of the rebuilt pages** (390 px, real interactions): storefront category chips filter and search with the empty state work; date strip, calendar sheet (picks and closes), nearest-date button, contiguous-session rule and its error note work; checkout add-on stepper refreshes the quote, server validation shows "Periksa n isian", the red field and message and keeps every input and add-on; Kelola actions and help render. Fixed: the ticket "Salin" did nothing without the Clipboard API (http) — it now falls back to selecting a hidden field; the date strip now scrolls to a date chosen in the calendar sheet or by the nearest-date button; the payment page title follows the state the script switches to (expired, failed); Ubah jadwal time buttons show the start time and the server note only (full range as the accessible name), like Pilih jadwal.
 - Verification: full suite 1043 passed before the new test, component tests 4 passed after; pint passed; `npm run build` passed. No PHP change, so PHPStan is unaffected.
 
+### Follow-up: date marks (22 Nov 2026)
+
+- **Reported by the Tech Lead:** every muted date still showed a grey dot, because a date without sessions was treated as "full". Decision (Tech Lead, as developer of the UI): drop the dots entirely; a date with sessions is bright, a date without is muted (`data-empty`).
+- Removed the dot from `date-strip` and `month-calendar`, the "Ada sesi / Penuh atau tutup" legend, and `isFull` from `booking-schedule.js` and `booking-reschedule.js`. Spec §6 rows "Kartu tanggal" and "Kalender bulan" updated. No server change.
+- Browser `/brama-digital/booking/schedule` at 1440 and 375 px with local dummy schedules (tenant 7, 22 Nov–13 Dec, every fourth day empty, 27 Nov closed): no dots; 25, 27 and 29 Nov muted. Customer and Components tests 225 passed.
+
 ### Integration sync (21 Nov 2026)
 
 - `git fetch` succeeded. The local sync branch starts at `agathan-bq-165-tampilan-pelanggan` (`918962b`). Its name is `agathan-bq-165-sync` because Git reserves the `agathan/` prefix for the existing local `agathan` ref.

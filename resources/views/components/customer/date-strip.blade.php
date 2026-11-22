@@ -1,6 +1,6 @@
 {{--
     Scrollable date strip with snap (design A §6, §7.2). Dates are prepared by the server:
-    ['date' => 'Y-m-d', 'label' => 'Sen, 23 Nov', 'is_available' => bool]. Selection is Alpine state
+    ['date' => 'Y-m-d', 'label' => 'Sen, 23 Nov', 'is_available' => bool]. Dates with sessions are bright. Selection is Alpine state
     (`selectedDate`, `selectDate()`); availability is never decided here. A date without sessions stays selectable
     (muted, `data-empty`) so the page can show the empty-day state and the nearest date with sessions (spec §7.2).
     `heading` and `calendarSheet` (a sheet id) add the month title and the "Kalender" button above the strip.
@@ -39,8 +39,6 @@
             <span class="sf-num text-xl leading-6">{{ $date->format('j') }}</span>
             @if ($isCurrent)
                 <span class="sf-tile-note">Jadwal saat ini</span>
-            @else
-                <span @class(['sf-dot', 'text-sf-primary-text' => $day['is_available'], 'text-sf-line' => ! $day['is_available']]) aria-hidden="true"></span>
             @endif
         </button>
     @endforeach

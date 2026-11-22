@@ -116,8 +116,8 @@ Sampul semua layar: warna merek dengan ornamen tiga cincin tipis (`--bq-on-prima
 | Kartu layanan favorit | foto atau ikon di atas warna merek tipis, label Favorit (`is_popular`), kategori · durasi, nama, harga, tombol | ponsel: carousel geser; tablet: 3 kolom; desktop: 3 kolom dengan deskripsi |
 | Baris layanan | foto/ikon, nama, durasi · kategori, harga | ponsel: daftar; tablet/desktop: grid 2 kolom dengan deskripsi 2 baris |
 | Chip kategori | nama pendek + jumlah | ponsel: baris geser dengan pudar di tepi; tablet: membungkus; desktop: navigasi samping |
-| Kartu tanggal | hari, tanggal, titik ketersediaan | ponsel: pita geser dengan snap + tombol "Kalender" |
-| Kalender bulan | 7 kolom, titik ada sesi / penuh, hari ini bergaris | tablet/desktop: panel; ponsel: lembar bawah |
+| Kartu tanggal | hari, tanggal; ada sesi terang, tanpa sesi redup (tanpa titik) | ponsel: pita geser dengan snap + tombol "Kalender" |
+| Kalender bulan | 7 kolom; ada sesi terang, tanpa sesi redup (tanpa titik dan legenda), hari ini bergaris | tablet/desktop: panel; ponsel: lembar bawah |
 | Tombol jam | jam mulai, keterangan (Penuh, Sisa n tempat) | 3 kolom ponsel/tablet, 4 kolom desktop; `aria-pressed` |
 | Bilah aksi bawah | label ringkas, total, tombol utama | ponsel dan tablet |
 | Ringkasan samping | kepala `--bq-primary-tint`, baris rincian, total, tombol utama, aturan singkat | desktop |

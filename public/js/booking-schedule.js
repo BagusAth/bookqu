@@ -99,7 +99,6 @@ document.addEventListener('alpine:init', () => {
                     isSelected: date === this.selectedDate,
                     isDisabled: !entry,
                     hasSessions: Boolean(entry?.is_available),
-                    isFull: Boolean(entry && !entry.is_available),
                     ariaLabel: (entry?.label || date) + (entry?.is_available ? '' : ', tidak ada sesi'),
                 });
             }

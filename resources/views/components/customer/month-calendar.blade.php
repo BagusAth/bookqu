@@ -1,9 +1,9 @@
 {{--
-    Month calendar (design A §6, §7.2): seven columns, a dot for days with sessions or full, today ringed.
+    Month calendar (design A §6, §7.2): seven columns; days with sessions are bright, days without are muted, today ringed.
     A panel on tablet and desktop (`panel`), the body of the calendar sheet on phone.
     Alpine contract, provided by the page script from server data:
       monthLabel, canGoPrev, canGoNext, prevMonth(), nextMonth(), a select method (`select`, default selectDate) and
-      calendarDays: [{ key, date, label, ariaLabel, inMonth, isToday, isSelected, isDisabled, hasSessions, isFull }].
+      calendarDays: [{ key, date, label, ariaLabel, inMonth, isToday, isSelected, isDisabled, hasSessions }].
 --}}
 @props(['panel' => true, 'headingId' => 'kalender-bulan', 'select' => 'selectDate'])
 
@@ -27,7 +27,7 @@
     <div class="mt-1.5 grid grid-cols-7 gap-y-0.5">
         <template x-for="day in calendarDays" :key="day.key">
             <span class="flex justify-center">
-                <button type="button" class="sf-tile size-11 gap-0.5 p-0 text-sm font-semibold"
+                <button type="button" class="sf-tile size-11 p-0 text-sm font-semibold"
                     x-bind:class="{ 'invisible': !day.inMonth }"
                     x-bind:disabled="day.isDisabled || !day.inMonth"
                     x-bind:aria-pressed="day.isSelected.toString()"
@@ -36,15 +36,9 @@
                     x-bind:data-empty="day.inMonth && !day.isDisabled && !day.hasSessions ? '' : null"
                     x-on:click="{{ $select }}(day.date)">
                     <span class="sf-num" x-text="day.label"></span>
-                    <span class="sf-dot" aria-hidden="true"
-                        x-bind:class="day.hasSessions ? 'text-sf-primary-text' : (day.isFull ? 'text-sf-disabled-text' : 'invisible')"></span>
                 </button>
             </span>
         </template>
-    </div>
-    <div class="mt-2.5 flex flex-wrap gap-3.5 text-xs text-sf-muted">
-        <span class="inline-flex items-center gap-1.5"><span class="sf-dot text-sf-primary-text" aria-hidden="true"></span>Ada sesi</span>
-        <span class="inline-flex items-center gap-1.5"><span class="sf-dot text-sf-disabled-text" aria-hidden="true"></span>Penuh atau tutup</span>
     </div>
     {{ $slot }}
 </section>

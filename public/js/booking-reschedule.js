@@ -68,7 +68,6 @@ document.addEventListener('alpine:init', () => {
                     isSelected: date === this.selectedDate,
                     isDisabled: !entry,
                     hasSessions: Boolean(entry?.is_available),
-                    isFull: Boolean(entry && !entry.is_available),
                     ariaLabel: (entry?.full_label || date) + (date === config.currentDate ? ', jadwal saat ini' : '') + (entry?.is_available ? '' : ', tidak ada sesi'),
                 });
             }
