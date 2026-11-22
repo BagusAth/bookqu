@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Team\CreateOwnerMembership;
 use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
@@ -171,6 +172,11 @@ class BramaStudioSeeder extends Seeder
 
         // Also seed Brama Creative Agency with standard data
         $this->seedTenantFullSuite($tenantSilver, $planPro);
+
+        // Each owner needs an active Pemilik membership, or TenantMiddleware refuses /owner.
+        foreach ([$tenantBrama, $tenantStudio, $tenantSilver] as $tenant) {
+            app(CreateOwnerMembership::class)->execute($tenant);
+        }
 
         $this->command->info('Brama Digital comprehensive dataset successfully seeded!');
     }
