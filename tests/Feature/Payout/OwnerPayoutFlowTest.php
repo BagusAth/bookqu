@@ -299,7 +299,7 @@ class OwnerPayoutFlowTest extends TestCase
             'payout_account_id' => $this->payoutAccount->id,
         ])->assertSessionHasErrors('jumlah');
 
-        $this->assertStringContainsString('Rp 50.000', session('errors')->first('jumlah'));
+        $this->assertStringContainsString('Rp50.000', session('errors')->first('jumlah'));
         $this->assertDatabaseCount('owner_payouts', 0);
         $this->actingAs($this->owner)->get(route('owner.payments', ['tab' => 'saldo']))
             ->assertOk()

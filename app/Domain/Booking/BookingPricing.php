@@ -71,7 +71,7 @@ final class BookingPricing
             // FR-VOUCHER-006: a quiet-hour promo applies only when every slot starts inside its days and hours.
             foreach ($lines as $line) {
                 if (! $voucher->coversSlot($line['date'], $line['start'])) {
-                    throw ValidationException::withMessages(['voucher_code' => 'Kode promo ini hanya berlaku pada hari dan jam tertentu.']);
+                    throw ValidationException::withMessages(['voucher_code' => 'Kode promo ini hanya berlaku '.$voucher->quietHoursLabel().'. Pilih jadwal di dalam waktu itu.']);
                 }
             }
             $promo = ['id' => (int) $voucher->id, 'code' => $voucher->code, 'discount' => (int) round($voucher->discountOn($baseSubtotal))];

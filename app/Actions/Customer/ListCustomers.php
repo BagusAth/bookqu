@@ -26,7 +26,7 @@ class ListCustomers
     /** A regular customer has at least this many bookings. */
     public const REGULAR_MIN_BOOKINGS = 3;
 
-    /** A customer is dormant after this many days without a booking. */
+    /** A customer is dormant after this many days without a visit and with nothing booked ahead. */
     public const DORMANT_AFTER_DAYS = 60;
 
     public function __construct(private SumCustomerPayments $sumCustomerPayments) {}
@@ -62,7 +62,7 @@ class ListCustomers
             ->select('customers.*')
             ->when($filter === 'new', fn (Builder $query) => $query->where('first_seen', '>=', $monthStart))
             ->when($filter === 'regular', fn (Builder $query) => $query->where('total_bookings', '>=', self::REGULAR_MIN_BOOKINGS))
-            ->when($filter === 'dormant', fn (Builder $query) => $query->where('last_booking_date', '<', $dormantBefore))
+            ->when($filter === 'dormant', fn (Builder $query) => $query->where('last_visit_date', '<', $dormantBefore)->where('has_upcoming', 0))
             ->when($sort === 'bookings', fn (Builder $query) => $query->orderByDesc('total_bookings'))
             ->when($sort === 'spent', fn (Builder $query) => $query
                 ->leftJoinSub($this->sumCustomerPayments->query((int) $tenant->id), 'spending', 'spending.identifier', '=', 'customers.identifier')
@@ -82,12 +82,12 @@ class ListCustomers
             $customer->total_bookings = (int) $customer->total_bookings;
             $customer->total_spent = $canViewRevenue ? ($spent[$identifier] ?? 0.0) : null;
             $customer->formatted_spent = $canViewRevenue ? Rupiah::format($spent[$identifier] ?? 0) : null;
-            $customer->last_booking = $customer->last_booking_date ? self::shortDate((string) $customer->last_booking_date) : '—';
+            $customer->last_booking = $customer->last_visit_date ? self::shortDate((string) $customer->last_visit_date) : '—';
             $customer->upcoming_booking = $upcoming[$identifier] ?? null;
             $customer->panel_url = route('owner.customers.panel', ['identifier' => $identifier]);
             $customer->whatsapp_url = GetCustomerPanel::whatsAppUrl((string) $customer->phone);
             $customer->segment = match (true) {
-                $customer->last_booking_date && $customer->last_booking_date < $dormantBefore => 'Lama tidak datang',
+                $customer->last_visit_date && $customer->last_visit_date < $dormantBefore && ! (int) $customer->has_upcoming => 'Lama tidak datang',
                 $customer->first_seen >= $monthStart => 'Baru',
                 default => null,
             };
@@ -105,7 +105,7 @@ class ListCustomers
             ->selectRaw('SUM(CASE WHEN first_seen >= ? THEN 1 ELSE 0 END) AS new_customers', [$monthStart])
             ->selectRaw('SUM(CASE WHEN total_bookings >= 2 THEN 1 ELSE 0 END) AS returning_customers')
             ->selectRaw('SUM(CASE WHEN total_bookings >= ? THEN 1 ELSE 0 END) AS regular_customers', [self::REGULAR_MIN_BOOKINGS])
-            ->selectRaw('SUM(CASE WHEN last_booking_date < ? THEN 1 ELSE 0 END) AS dormant_customers', [$dormantBefore])
+            ->selectRaw('SUM(CASE WHEN last_visit_date < ? AND has_upcoming = 0 THEN 1 ELSE 0 END) AS dormant_customers', [$dormantBefore])
             ->first();
 
         return [
@@ -131,11 +131,18 @@ class ListCustomers
     /**
      * One row per customer identity. The identity is computed in a derived table because MariaDB's
      * ONLY_FULL_GROUP_BY rejects selecting an expression that is only repeated in GROUP BY.
+     *
+     * `last_booking_date` is the latest booking of any status (sort "Booking terakhir");
+     * `last_visit_date` is the latest session that took place: completed, or paid with a past date
+     * ("Terakhir datang" and the dormant segment). `has_upcoming` flags a pending or paid booking
+     * from today on, so a customer who already booked again is not dormant.
      */
     private function grouped(int $tenantId, string $search): Builder
     {
+        $today = Carbon::today()->toDateString();
+
         $bookings = DB::table('bookings')
-            ->select(['namapelanggan', 'email', 'nomorhp', 'tanggalbooking', 'created_at'])
+            ->select(['namapelanggan', 'email', 'nomorhp', 'tanggalbooking', 'created_at', 'status'])
             ->selectRaw(CustomerIdentity::sql().' AS identifier')
             ->where('idtenant', $tenantId)
             ->when($search !== '', function (Builder $query) use ($search): void {
@@ -158,6 +165,14 @@ class ListCustomers
                 DB::raw('MAX(tanggalbooking) AS last_booking_date'),
                 DB::raw('MIN(created_at) AS first_seen'),
             ])
+            ->selectRaw(
+                'MAX(CASE WHEN status = ? OR (status = ? AND tanggalbooking < ?) THEN tanggalbooking END) AS last_visit_date',
+                [BookingState::STATUS_COMPLETED, BookingState::STATUS_PAID, $today],
+            )
+            ->selectRaw(
+                'MAX(CASE WHEN status IN (?, ?) AND tanggalbooking >= ? THEN 1 ELSE 0 END) AS has_upcoming',
+                [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, $today],
+            )
             ->groupBy('identifier');
     }
 

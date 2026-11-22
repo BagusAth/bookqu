@@ -92,9 +92,9 @@ final class GetNotificationsPage
             'title' => (string) ($data['title'] ?? 'Pemberitahuan'),
             'message' => (string) ($data['message'] ?? ''),
             'day' => $day,
-            'time' => $createdAt?->diffForHumans(),
+            'time' => $createdAt?->locale('id')->diffForHumans(),
             'dateTime' => $createdAt?->toIso8601String(),
-            'timeLabel' => $createdAt?->translatedFormat($createdAt->isCurrentYear() ? 'j M, H.i' : 'j M Y, H.i'),
+            'timeLabel' => $createdAt?->locale('id')->translatedFormat($createdAt->isCurrentYear() ? 'j M, H.i' : 'j M Y, H.i'),
             'icon' => match ($category) {
                 'booking' => 'calendar',
                 'refund' => 'card',

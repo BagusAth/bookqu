@@ -88,6 +88,7 @@ class OwnerVoucherController extends Controller
                     default => 'Tanpa batas waktu',
                 },
                 'almostOut' => $promo->usage_limit > 0 && $promo->used_count >= $promo->usage_limit * 0.9,
+                'limits' => $promo->quietHoursLabel(),
             ]];
         });
 

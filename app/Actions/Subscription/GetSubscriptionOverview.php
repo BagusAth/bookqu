@@ -162,7 +162,7 @@ class GetSubscriptionOverview
 
         return [
             'orderId' => $orderId,
-            'date' => $date?->translatedFormat($date->isCurrentYear() ? 'j M' : 'j M Y'),
+            'date' => $date?->locale('id')->translatedFormat($date->isCurrentYear() ? 'j M' : 'j M Y'),
             'amount' => Rupiah::format($payment->jumlah),
             'status' => array_combine(['label', 'tone'], StatusBadge::for('payment', (string) $payment->status)),
             'invoiceUrl' => $payment->status === PaymentState::STATUS_SUKSES && $orderId !== '' ? route('owner.checkout.invoice', $orderId) : null,

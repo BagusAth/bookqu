@@ -26,7 +26,7 @@ BQ-136: Beranda (owner-portal.md §8.1, FR-DASH-008) replaces the old dashboard 
 - "Perlu tindakan" with counts and links (AC-BRD-04);
 - today's schedule with "Sedang berlangsung" (`GetBookingTimeRanges`), tomorrow's summary and the next booking on an empty day;
 - the booking link card and the role- and plan-aware quick actions;
-- the new owner guide. Its steps come from data. `tenants.booking_link_shared_at` is recorded by `owner.dashboard.link-shared`, and `tenants.owner_guide_completed_at` is set once all steps are true, so the guide never returns (AC-BRD-05).
+- the new owner guide. Its steps come from data. `tenants.booking_link_shared_at` is recorded by `owner.dashboard.link-shared`, and `tenants.owner_guide_completed_at` is set once all steps are true or the business has a booking (`GetBeranda::guide`, T-04), so the guide never returns (AC-BRD-05).
 
 Sections 2–4 refresh every 60 seconds only while the tab is visible (`ownerBeranda` in `public/js/owner-ui.js`) and render with `x-text` (AC-BRD-06). Evidence: `Owner/BerandaPageTest`, `Owner/OwnerDashboardPollingTest`.
 

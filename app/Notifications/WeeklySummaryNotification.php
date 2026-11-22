@@ -45,6 +45,7 @@ class WeeklySummaryNotification extends Notification implements ShouldQueue
         }
 
         return $mail->action('Buka Beranda', route('owner.dashboard'))
-            ->line('Ringkasan ini bisa dimatikan di Pengaturan → Notifikasi.');
+            ->line('Ringkasan ini bisa dimatikan di Pengaturan → Notifikasi.')
+            ->salutation('Salam, Tim BookQu');
     }
 }

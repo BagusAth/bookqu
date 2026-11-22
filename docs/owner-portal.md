@@ -223,7 +223,7 @@ Home of the rule: `product.md` §7 (D-017). Entitlement is decided only by `Enti
   4. **Jadwal hari ini.** Bookings in time order: time, customer, service, participants, booking status and payment status. The booking happening now is marked "Sedang berlangsung". Below it, a summary of tomorrow (count, first booking).
   5. **Booking link card** with copy and share buttons. These are the same as Halaman Booking (§8.8).
   6. **Quick actions:** + Booking, + Layanan, + Promo (Medium and up), + Anggota tim (Pemilik, Medium and up).
-  7. **New owner guide.** Shown instead of sections 2–4 until completed, then never again. Four steps, each ticked from real data:
+  7. **New owner guide.** Shown instead of sections 2–4 until completed, then never again. A business that already has a booking is not a new owner: its guide counts as done (T-04, approved by the Tech Lead on 21 Nov 2026). Four steps, each ticked from real data:
      1. complete the business profile (`owner.profile.complete` fields: business name, business type, phone, address);
      2. add a service;
      3. set opening hours and open slots;
@@ -241,7 +241,7 @@ Home of the rule: `product.md` §7 (D-017). Entitlement is decided only by `Enti
   - **AC-BRD-02:** Revenue in the figures equals the sum of successful booking payments today.
   - **AC-BRD-03:** A Kasir sees no amount on this page.
   - **AC-BRD-04:** Every "Perlu tindakan" item opens the exact place where it is resolved, and disappears once it is resolved.
-  - **AC-BRD-05:** The guide shows until all four steps are true from data, and never again afterwards.
+  - **AC-BRD-05:** The guide shows until all four steps are true from data or the business has a booking, and never again afterwards.
   - **AC-BRD-06:** Polling stops while the page is hidden, and the refreshed content is rendered as text.
   - **AC-BRD-07:** The page contains no chart.
   - **AC-BRD-08:** A successful walk-in shows its booking code and opens that booking's authorized detail panel from the confirmation link.

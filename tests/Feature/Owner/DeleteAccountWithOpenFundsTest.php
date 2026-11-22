@@ -90,7 +90,7 @@ class DeleteAccountWithOpenFundsTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors([
-            'confirm_account' => 'Masih ada pengajuan withdraw yang sedang diproses.',
+            'confirm_account' => 'Masih ada pengajuan pencairan yang sedang diproses.',
         ]);
         $this->assertDatabaseHas('users', ['id' => $this->user->id]);
         $this->assertDatabaseHas('tenants', ['id' => $this->tenant->id]);
@@ -116,7 +116,7 @@ class DeleteAccountWithOpenFundsTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors([
-            'confirm_account' => 'Masih ada pengajuan withdraw yang sedang diproses.',
+            'confirm_account' => 'Masih ada pengajuan pencairan yang sedang diproses.',
         ]);
         $this->assertDatabaseHas('users', ['id' => $this->user->id]);
         $this->assertDatabaseHas('tenants', ['id' => $this->tenant->id]);
@@ -191,7 +191,7 @@ class DeleteAccountWithOpenFundsTest extends TestCase
             $action->execute($this->user, $this->tenant, 'owner@example.com');
             $this->fail('Expected ValidationException for open payout');
         } catch (ValidationException $e) {
-            $this->assertSame('Masih ada pengajuan withdraw yang sedang diproses.', $e->errors()['confirm_account'][0]);
+            $this->assertSame('Masih ada pengajuan pencairan yang sedang diproses.', $e->errors()['confirm_account'][0]);
         }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\WeekdayRange;
 use App\Traits\BelongsToTenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -85,6 +86,25 @@ class Voucher extends Model
     public function hasQuietHours(): bool
     {
         return ! empty($this->valid_days) || $this->valid_from_time !== null || $this->valid_until_time !== null;
+    }
+
+    /**
+     * The promo's days and start-time range as owners and customers read it, e.g.
+     * "Sen, Sel · 10.00–12.00" (FR-VOUCHER-006); null when it applies to every day and hour.
+     */
+    public function quietHoursLabel(): ?string
+    {
+        $days = $this->valid_days ? WeekdayRange::label(explode(',', (string) $this->valid_days)) : null;
+        $hour = fn (mixed $time): string => str_replace(':', '.', substr((string) $time, 0, 5));
+        $hours = match (true) {
+            $this->valid_from_time !== null && $this->valid_until_time !== null => $hour($this->valid_from_time).'–'.$hour($this->valid_until_time),
+            $this->valid_from_time !== null => 'mulai '.$hour($this->valid_from_time),
+            $this->valid_until_time !== null => 'sebelum '.$hour($this->valid_until_time),
+            default => null,
+        };
+        $label = implode(' · ', array_filter([$days, $hours]));
+
+        return $label === '' ? null : $label;
     }
 
     /**

@@ -75,6 +75,11 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // WithoutModelEvents mutes Tenant::created, which normally creates the owner membership.
+        $createOwnerMembership = app(CreateOwnerMembership::class);
+        $createOwnerMembership->execute($tenantBadminton);
+        $createOwnerMembership->execute($tenantStudio);
+
         $badmintonServices = [
             [
                 'namalayanan' => 'Lapangan Badminton A',

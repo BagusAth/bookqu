@@ -54,7 +54,7 @@ class DeleteOwnerAccount
 
             if ($hasInFlightPayout) {
                 throw ValidationException::withMessages([
-                    'confirm_account' => 'Masih ada pengajuan withdraw yang sedang diproses.',
+                    'confirm_account' => 'Masih ada pengajuan pencairan yang sedang diproses.',
                 ]);
             }
         }

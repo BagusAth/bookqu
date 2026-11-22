@@ -191,7 +191,7 @@ class GetPaymentsPage
 
         return [
             'id' => (int) $payout->id,
-            'requestedAt' => ($payout->requested_at ?? $payout->created_at)?->timezone('Asia/Jakarta')->translatedFormat('j M Y, H:i'),
+            'requestedAt' => ($payout->requested_at ?? $payout->created_at)?->timezone('Asia/Jakarta')->locale('id')->translatedFormat('j M Y, H:i'),
             'amount' => Rupiah::format($payout->jumlah),
             'account' => trim(($payout->bank_nama ?? '-').' '.($account instanceof TenantPayoutAccount ? $account->masked_number : '••••'.substr((string) $payout->nomor_rekening, -4))),
             'label' => PayoutState::ownerLabel($status),

@@ -114,6 +114,9 @@ class BerandaPageTest extends TestCase
         // 3. a service without an open slot in the next 7 days
         Service::factory()->create(['idtenant' => $this->tenant->id, 'namalayanan' => 'Tanpa Slot']);
         $this->assertBanner('slot-runway');
+        $kasir = (string) $this->actingAs($this->member('kasir'))->get(route('owner.dashboard'))->getContent();
+        $this->assertStringNotContainsString('data-beranda-banner="slot-runway"', $kasir);
+        $this->actingAs($this->owner);
 
         // 2. trial ends within 3 days
         $this->subscribe('pro', 'trial', now()->addDays(2));
@@ -264,6 +267,19 @@ class BerandaPageTest extends TestCase
         $this->get(route('owner.dashboard'))->assertDontSee('data-owner-guide', false);
     }
 
+    public function test_a_business_with_a_booking_skips_the_guide_even_without_opening_hours(): void
+    {
+        $this->booking('2026-11-20', '13:00:00', '13:59:00', ['namapelanggan' => 'Pelanggan Lama']);
+
+        $this->actingAs($this->owner)->get(route('owner.dashboard'))
+            ->assertOk()
+            ->assertDontSee('data-owner-guide', false)
+            ->assertSee('Booking hari ini');
+
+        $this->assertNotNull($this->tenant->fresh()->owner_guide_completed_at);
+        $this->assertNull($this->tenant->fresh()->booking_link_shared_at);
+    }
+
     public function test_ac_brd_06_refresh_runs_only_while_visible_and_renders_text(): void
     {
         $this->finishGuide();
@@ -312,9 +328,22 @@ class BerandaPageTest extends TestCase
         $this->assertFalse($data['today'][1]['in_progress']);
         $this->assertSame('Terkonfirmasi', $data['today'][0]['status']['label']);
         $this->assertSame(2, $data['tomorrow']['count']);
-        $this->assertSame('09:00', $data['tomorrow']['first_time']);
+        $this->assertSame('09.00', $data['tomorrow']['first_time']);
+        $this->assertSame(['09.00', '15.00'], array_column($data['tomorrow']['bookings'], 'time'));
+        $this->assertStringNotContainsString(':', $data['today'][0]['time']);
 
         $this->get(route('owner.dashboard'))->assertSee('Sedang berlangsung')->assertSee('Besok');
+    }
+
+    public function test_tomorrow_is_named_in_indonesian_even_when_the_app_locale_is_english(): void
+    {
+        $this->finishGuide();
+        $this->booking('2026-11-21', '09:00:00', '09:59:00', ['namapelanggan' => 'Besok Pagi']);
+        app()->setLocale('en');
+
+        $data = $this->actingAs($this->owner)->getJson(route('owner.dashboard.polling'))->assertOk()->json('data');
+
+        $this->assertSame('Sabtu, 21 Nov', $data['tomorrow']['date']);
     }
 
     public function test_an_empty_day_names_the_next_booking(): void

@@ -47,12 +47,12 @@ final class SendWeeklySummary
             $report = $this->report->execute($tenant, $period, 'okupansi');
             $openUntil = collect($this->runway->execute($tenant))->pluck('open_until')->filter()->min();
             $summary = [
-                'from' => $from->translatedFormat('j M'),
-                'to' => $to->translatedFormat('j M Y'),
+                'from' => $from->locale('id')->translatedFormat('j M'),
+                'to' => $to->locale('id')->translatedFormat('j M Y'),
                 'revenue' => (float) ($report['summary']['revenue'] ?? 0),
                 'bookings' => (int) ($report['summary']['bookings'] ?? 0),
                 'occupancy' => (float) ($report['occupancy']['rate'] ?? 0),
-                'openUntil' => $openUntil !== null ? Carbon::parse($openUntil)->translatedFormat('j M') : null,
+                'openUntil' => $openUntil !== null ? Carbon::parse($openUntil)->locale('id')->translatedFormat('j M') : null,
                 'endedNotClosed' => $this->completeBookings->endedCount($tenant, Carbon::now('Asia/Jakarta')),
                 'openRefunds' => RefundRequest::where('status', 'open')->count(),
             ];

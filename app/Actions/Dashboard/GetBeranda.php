@@ -116,7 +116,7 @@ class GetBeranda
             $empty = collect($picker['slots'])->where('available', true)->whereNotIn('id', $occupiedSchedules)
                 ->map(fn (array $slot): array => [
                     'id' => $slot['id'], 'service_id' => $slot['service'],
-                    'date' => $today->toDateString(), 'start' => $slot['start'], 'label' => $slot['label'],
+                    'date' => $today->toDateString(), 'start' => $slot['start'], 'label' => self::dotted($slot['label']),
                 ])->values()->all();
         }
 
@@ -171,14 +171,17 @@ class GetBeranda
             ];
         }
 
-        $withoutSlots = collect($this->getSlotRunway->execute($tenant))->where('warning', true);
+        // T-39: only a member who can open slots gets this banner; for a Kasir it had no action.
+        $withoutSlots = TenantPermission::allowsRole($role, 'schedule.manage')
+            ? collect($this->getSlotRunway->execute($tenant))->where('warning', true)
+            : collect();
         if ($withoutSlots->isNotEmpty()) {
             return [
                 'kind' => 'slot-runway', 'tone' => 'warning',
                 'message' => $withoutSlots->count() === 1
                     ? 'Layanan "'.$withoutSlots->first()['service'].'" belum punya slot terbuka untuk 7 hari ke depan.'
                     : $withoutSlots->count().' layanan belum punya slot terbuka untuk 7 hari ke depan.',
-                'action' => TenantPermission::allowsRole($role, 'schedule.manage') ? ['label' => 'Buka slot', 'url' => route('owner.schedule')] : null,
+                'action' => ['label' => 'Buka slot', 'url' => route('owner.schedule')],
                 'note' => null,
             ];
         }
@@ -216,6 +219,15 @@ class GetBeranda
     private function guide(Tenant $tenant): ?array
     {
         if ($tenant->owner_guide_completed_at !== null) {
+            return null;
+        }
+
+        // The guide is for a new owner. A business that already has a booking would otherwise lose its
+        // daily view to it, e.g. a tenant from before opening hours existed (T-04, approved by the Tech
+        // Lead on 21 Nov 2026), so its guide counts as done.
+        if (Booking::where('idtenant', $tenant->id)->exists()) {
+            $tenant->forceFill(['owner_guide_completed_at' => Carbon::now()])->save();
+
             return null;
         }
 
@@ -349,7 +361,7 @@ class GetBeranda
             return [
                 'id' => (int) $booking->id,
                 'code' => (string) ($booking->booking_code ?: 'BKQ-'.$booking->id),
-                'time' => $range?->label() ?? $start,
+                'time' => self::dotted($range?->label() ?? $start),
                 'start' => $start,
                 'customer' => (string) $booking->namapelanggan,
                 'service' => (string) ($booking->layanan->namalayanan ?? '-'),
@@ -392,12 +404,12 @@ class GetBeranda
 
         return [
             'count' => $bookings->count(),
-            'first_time' => $first ? substr((string) $first->jam, 0, 5) : null,
+            'first_time' => $first ? self::dotted(substr((string) $first->jam, 0, 5)) : null,
             'first_customer' => $first ? (string) $first->namapelanggan : null,
-            'date' => $date->translatedFormat('l, j M'),
+            'date' => $date->locale('id')->translatedFormat('l, j M'),
             'bookings' => $bookings->take(5)->map(fn (Booking $booking): array => [
                 'customer' => $booking->namapelanggan,
-                'time' => substr((string) $booking->jam, 0, 5),
+                'time' => self::dotted(substr((string) $booking->jam, 0, 5)),
                 'status' => BookingState::formatLabel($booking->status),
                 'url' => route('owner.bookings.panel', $booking->id),
             ])->values()->all(),
@@ -419,8 +431,8 @@ class GetBeranda
             ->first(['id', 'tanggalbooking', 'jam', 'namapelanggan']);
 
         return $next === null ? null : [
-            'date' => Carbon::parse((string) $next->tanggalbooking)->translatedFormat('l, j M'),
-            'time' => substr((string) $next->jam, 0, 5),
+            'date' => Carbon::parse((string) $next->tanggalbooking)->locale('id')->translatedFormat('l, j M'),
+            'time' => self::dotted(substr((string) $next->jam, 0, 5)),
             'customer' => (string) $next->namapelanggan,
         ];
     }
@@ -449,5 +461,14 @@ class GetBeranda
         }
 
         return $actions;
+    }
+
+    /**
+     * Clock times as the owner portal shows them, "08.00 – 09.00" (Papan Jadwal prototype, T-20).
+     * Only display strings go through here; `start` keeps "H:i" for the rail's own arithmetic.
+     */
+    private static function dotted(string $text): string
+    {
+        return (string) preg_replace('/\b(\d{2}):(\d{2})\b/', '$1.$2', $text);
     }
 }

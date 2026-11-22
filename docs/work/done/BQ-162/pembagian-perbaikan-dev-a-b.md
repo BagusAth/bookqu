@@ -4,7 +4,7 @@ Sumber: hasil pengujian branch `agathan-bq-162-papan-jadwal` @ `22e1318` (18 Nov
 
 ## Status tindak lanjut per 19 November 2026
 
-Implementasi **21 bagian Developer A selesai** pada branch `agathan-bq-162-papan-jadwal`, sampai commit `379dfd7`. Status Developer B belum diverifikasi dalam sesi ini. T-15, T-17, dan T-29 memiliki bagian A dan B yang dilacak terpisah.
+Implementasi **21 bagian Developer A selesai** pada branch `agathan-bq-162-papan-jadwal`, sampai commit `379dfd7`. Status Developer B tercatat di bagian berikutnya. T-15, T-17, dan T-29 memiliki bagian A dan B yang dilacak terpisah.
 
 Bukti terbaru tercatat pada [BQ-163](../BQ-163-owner-automation-and-booking-follow-up.md) dan [BQ-162](../BQ-162-papan-jadwal.md). Suite penuh SQLite lulus 1.020 tes / 6.695 assertion. Suite MySQL terkait lulus 35 tes / 147 assertion. Regresi batas batch setelahnya lulus di kedua database. PHPStan, Pint pada file berubah, dan pemeriksaan integritas dokumentasi lulus. Build frontend lulus pada tahap perbaikan UI.
 
@@ -36,6 +36,32 @@ Crawl browser setelah perbaikan, pemeriksaan NVDA/VoiceOver, pemeriksaan zona wa
 
 Laporan reproduksi awal tersedia di [temuan pengujian](temuan-pengujian-2026-11-18.md).
 
+## Status tindak lanjut Developer B per 21 November 2026
+
+Implementasi **22 bagian Developer B selesai** pada branch `bagus-bq-162-perbaikan`, yang dibuat dari `agathan-bq-162-papan-jadwal` @ `2e4efb3` dan belum di-push. Suite penuh SQLite lulus 1.041 tes. Suite MySQL (`phpunit.mysql.xml`) lulus 1.060 tes (1 dilewati). Crawl Edge 3 role × 4 lebar layar (620 cek) tanpa overflow, error console, atau gambar rusak. PHPStan tanpa error.
+
+| ID | Status | Hasil implementasi | Commit |
+|---|---|---|---|
+| T-03 | Selesai | "Terakhir datang" dan segmen "Lama tidak datang" dihitung dari sesi yang benar-benar terjadi; pelanggan yang sudah pesan lagi tidak dianggap lama tidak datang. | `9df09b5` |
+| T-04 | Selesai | Keputusan Tech Lead 21 Nov 2026 (melalui developer): panduan hanya untuk pemilik baru. Bisnis yang sudah punya booking langsung melihat Beranda harian. Tanpa migrasi. AC-BRD-05 dan §8.1 diperbarui. | `c872a7f` |
+| T-05 | Selesai | Seeder membuat membership Pemilik dan akun demo Manajer/Kasir terverifikasi. | `5a686ab` |
+| T-07 | Selesai | Saran jam sepi memilih satu sel hari × jam dari slot yang dibuka dan sudah lewat. | `cea60fd` |
+| T-08 | Selesai | Label Okupansi menyebut satuannya (kursi, slot, menit). | `0d6a0e2` |
+| T-10 | Selesai | Periode berjalan dibandingkan sampai tanggal yang sama. | `039aa22` |
+| T-14 | Selesai | Ringkasan mingguan ditandatangani "Tim BookQu"; `lang/id.json` menerjemahkan template email; `APP_NAME=BookQu` di `.env.example`. | `178005c` |
+| T-15b | Selesai | Tanggal halaman B memakai locale Indonesia. | `297e570` |
+| T-16 | Selesai | Kartu promo menampilkan batas hari/jam (`App\Support\WeekdayRange`). | `ee929d2` |
+| T-17b | Selesai | Angka pendukung membungkus ke bawah di layar sempit. | `5de5884` |
+| T-20 | Selesai | Jam di Beranda memakai titik. | `6703208` |
+| T-21, T-22, T-40 | Selesai | Data seed konsisten: pemakaian promo nyata, file aset ditulis dan galeri hanya berisi gambar, tanggal tutup tanpa booking aktif. | `e8f3522`, `6e2560c` |
+| T-24, T-37 | Selesai | Form promo memakai copy prototipe dan label terhubung. Live region shell tidak perlu diubah. | `c8083f6` |
+| T-29b, T-32 | Selesai | Dialog pencairan menjelaskan alasan tombol nonaktif; copy "pencairan" dan status "Diproses". | `c0866ae` |
+| T-33 | Selesai | Desain kode sudah konsisten (saldo = total mutasi, refund memotong saldo saat dicatat). Penyebabnya seed: saldo kini dibangun dari pembayaran yang dikreditkan. | `d2fadc7` |
+| T-35 | Selesai | Pesan tolak promo jam sepi menyebut hari dan jamnya. | `3835f7d` |
+| T-38, T-39 | Selesai | Tab "Menunggu bayar" memakai aturan slot ditahan yang sama dengan Beranda; banner slot tidak tampil untuk Kasir. | `9daa7ce` |
+
+Masih terbuka untuk verifikasi rilis: pass screen reader manual (NVDA/VoiceOver) dan pemeriksaan visual pesan alasan di dialog pencairan.
+
 ## 1. Prinsip pembagian
 
 - **Dibagi per area file** supaya dua developer tidak mengedit file yang sama:
@@ -55,7 +81,7 @@ Laporan reproduksi awal tersedia di [temuan pengujian](temuan-pengujian-2026-11-
 | P1 | T-01, T-02 | T-03, T-04, T-05 |
 | P2 | T-06, T-09, T-11, T-13, T-26, T-27 | T-07, T-08, T-10, T-14, T-15, T-16 |
 | P3 | T-17a, T-18, T-19, T-23, T-25, T-28, T-29a, T-30, T-31, T-34, T-36 | T-17b, T-20, T-21, T-22, T-24, T-29b, T-32, T-35, T-37, T-38, T-39, T-40 |
-| Keputusan awal | T-12 selesai melalui D-027 | T-33 belum diverifikasi |
+| Keputusan awal | T-12 selesai melalui D-027 | T-33 selesai (perbaikan seed), T-04 disetujui Tech Lead 21 Nov 2026 |
 | Jumlah bagian | 21 (termasuk T-15a) | 22 |
 
 Test yang gagal pada pengujian awal (4, sama di SQLite dan MySQL; kini lulus pada suite SQLite terbaru) semuanya milik **Developer A**:

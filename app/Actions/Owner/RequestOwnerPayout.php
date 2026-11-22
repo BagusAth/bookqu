@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use App\Notifications\NewPayoutRequestNotification;
+use App\Support\Rupiah;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -33,7 +34,7 @@ class RequestOwnerPayout
         $minAmount = (int) config('payouts.min_amount', 10000);
         if (! is_finite($amount) || $amount < $minAmount || floor((float) $amount) != $amount) {
             throw ValidationException::withMessages([
-                'jumlah' => 'Nominal withdraw harus berupa angka bulat dan minimal Rp '.number_format($minAmount, 0, ',', '.').'.',
+                'jumlah' => 'Jumlah pencairan harus berupa angka bulat dan minimal '.Rupiah::format($minAmount).'.',
             ]);
         }
 
@@ -87,7 +88,7 @@ class RequestOwnerPayout
 
                 if ($requestsToday >= (int) $maxPerDay) {
                     throw ValidationException::withMessages([
-                        'jumlah' => 'Batas '.((int) $maxPerDay).' pengajuan withdraw per hari sudah tercapai.',
+                        'jumlah' => 'Batas '.((int) $maxPerDay).' pengajuan pencairan per hari sudah tercapai.',
                     ]);
                 }
             }

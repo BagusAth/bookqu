@@ -146,6 +146,36 @@ class PelangganPageTest extends TestCase
         $this->assertSame('https://wa.me/6281234567890', $dormant->viewData('customers')->items()[0]->whatsapp_url);
     }
 
+    public function test_last_visit_shows_the_latest_session_that_took_place(): void
+    {
+        $this->booking(['tanggalbooking' => '2026-11-05', 'status' => 'completed']);
+        $this->booking(['tanggalbooking' => '2026-11-15', 'status' => 'cancelled']);
+        $this->booking(['tanggalbooking' => '2026-11-25', 'status' => 'paid']);
+
+        $response = $this->actingAs($this->owner)->get(route('owner.customers'));
+
+        $response->assertOk();
+        $customer = $response->viewData('customers')->items()[0];
+        $this->assertSame('5 Nov', $customer->last_booking);
+        $this->assertSame('25 Nov · 10.00', $customer->upcoming_booking);
+    }
+
+    public function test_dormant_segment_skips_customers_who_booked_again_or_never_came(): void
+    {
+        $this->booking(['namapelanggan' => 'Sudah Pesan Lagi', 'email' => 'lagi@example.com', 'tanggalbooking' => '2026-08-01', 'status' => 'completed']);
+        $this->booking(['namapelanggan' => 'Sudah Pesan Lagi', 'email' => 'lagi@example.com', 'tanggalbooking' => '2026-11-25', 'status' => 'paid']);
+        $this->booking(['namapelanggan' => 'Lama Hilang', 'email' => 'hilang@example.com', 'tanggalbooking' => '2026-08-01', 'status' => 'completed']);
+        $this->booking(['namapelanggan' => 'Tidak Jadi', 'email' => 'batal@example.com', 'tanggalbooking' => '2026-08-01', 'status' => 'cancelled']);
+
+        $response = $this->actingAs($this->owner)->get(route('owner.customers', ['filter' => 'dormant']));
+
+        $response->assertOk()
+            ->assertSee('Lama Hilang')
+            ->assertDontSee('Sudah Pesan Lagi')
+            ->assertDontSee('Tidak Jadi');
+        $this->assertSame(1, $response->viewData('counts')['dormant']);
+    }
+
     public function test_ac_plg_02_totals_use_the_paid_amounts(): void
     {
         $paid = $this->booking();

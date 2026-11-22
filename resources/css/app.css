@@ -415,9 +415,17 @@
 
     /* ── Papan Jadwal blocks (BQ-162): ported from docs/design/papan-jadwal/prototype/css/components.css ── */
     /* Headline figure with supporting figures (prototype .angka) */
+    /* Flex, not a two-column grid: when the supporting figures do not fit beside the headline (long
+       rupiah amounts in a narrow panel), they wrap below it instead of overflowing (T-17b). */
     .bq-figures {
-        @apply grid items-end gap-6;
-        grid-template-columns: minmax(200px, auto) minmax(0, 1fr);
+        @apply flex flex-wrap items-end gap-6;
+    }
+    .bq-figures-main {
+        flex: 0 1 auto;
+        min-width: min(200px, 100%);
+    }
+    .bq-figures-more {
+        flex: 1 1 auto;
     }
     .bq-figures-main > b {
         @apply tabular-nums block font-bq-display text-bq-figure font-semibold text-bq-ink;
@@ -517,7 +525,7 @@
     }
     @media (width < 48rem) {
         .bq-figures {
-            @apply grid-cols-1 gap-4;
+            @apply gap-4;
         }
         .bq-form-row {
             @apply grid-cols-1 gap-4 p-4;

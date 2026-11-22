@@ -41,7 +41,7 @@
     @else
         <div class="bq-toolbar">
             <x-ui.segmented label="Periode" :selected="$period['key']" :options="$presetOptions" />
-            <span class="text-bq-small text-bq-text-muted">{{ $periodLabel }}, dibanding {{ $comparison['label'] }}</span>
+            <span class="text-bq-small text-bq-text-muted">{{ $periodLabel }}, dibanding {{ $comparison['label'] }}@if ($comparison['current'] !== []) (perubahan dihitung sampai tanggal yang sama)@endif</span>
             <a href="{{ $exportUrl }}" class="bq-btn bq-btn-secondary bq-btn-sm ml-auto"><x-owner.icon name="download" class="h-4 w-4" />Ekspor CSV</a>
             @if ($period['key'] === 'kustom')
             <form id="pilih-periode" method="GET" action="{{ route('owner.analytics') }}" class="flex w-full flex-wrap items-end gap-2">
@@ -67,7 +67,7 @@
                 <section aria-labelledby="revenue-title" class="space-y-4">
                     <h2 id="revenue-title" class="sr-only">Pendapatan</h2>
                     <x-ui.panel>
-                        <x-ui.figures :value="$rupiah($revenue['net'])" label="pendapatan bersih" :delta="$delta($revenue['net'], $comparison['net'] ?? null)"
+                        <x-ui.figures :value="$rupiah($revenue['net'])" label="pendapatan bersih" :delta="$delta($comparison['current']['net'] ?? $revenue['net'], $comparison['net'] ?? null)"
                             :context="'Dari pembayaran berhasil dikurangi refund, menurut tanggal bayar · kotor '.$rupiah($revenue['gross'])"
                             :more="[
                                 ['value' => $rupiah($revenue['online']), 'label' => 'online'],
@@ -111,11 +111,11 @@
                 <section aria-labelledby="occupancy-title" class="space-y-4">
                     <h2 id="occupancy-title" class="sr-only">Okupansi</h2>
                     <x-ui.panel>
-                        <x-ui.figures :value="$percent($occupancy['rate'])" label="slot terisi" :delta="$delta($occupancy['rate'], $comparison['rate'] ?? null)"
-                            :context="$number($occupancy['seats']).' dari '.$number($occupancy['capacity']).' kursi, menurut tanggal sesi'"
+                        <x-ui.figures :value="$percent($occupancy['rate'])" label="kursi terisi" :delta="$delta($comparison['current']['rate'] ?? $occupancy['rate'], $comparison['rate'] ?? null)"
+                            :context="$number($occupancy['seats']).' dari '.$number($occupancy['capacity']).' kursi di slot yang dibuka, menurut tanggal sesi'"
                             :more="[
-                                ['value' => $number($occupancy['booked']), 'label' => 'slot terisi'],
-                                ['value' => $number($occupancy['free']), 'label' => 'slot kosong'],
+                                ['value' => $number($occupancy['booked']), 'label' => 'slot dengan booking'],
+                                ['value' => $number($occupancy['free']), 'label' => 'slot tanpa booking'],
                             ]" />
                     </x-ui.panel>
 
@@ -125,7 +125,7 @@
                         @else
                             <div class="overflow-x-auto">
                                 <table class="w-full min-w-[480px] border-separate border-spacing-1 text-bq-small">
-                                    <caption class="sr-only">Jumlah slot terisi per hari dan jam</caption>
+                                    <caption class="sr-only">Jumlah slot dengan booking per hari dan jam</caption>
                                     <thead>
                                         <tr>
                                             <td class="w-10"></td>
@@ -141,7 +141,7 @@
                                                 @foreach ($heatmap['hours'] as $hour)
                                                     @php $count = $heatmap['cells'][$day][$hour]; $level = $heatLevel($count, $heatmap['max']); @endphp
                                                     <td @class(['h-[22px] rounded', 'bg-bq-surface-2' => $level === 0, 'bg-bq-heat-1' => $level === 1, 'bg-bq-heat-2' => $level === 2, 'bg-bq-heat-3' => $level === 3, 'bg-bq-primary' => $level === 4])
-                                                        title="{{ $label }} {{ sprintf('%02d.00', $hour) }}: {{ $count }} slot terisi"><span class="sr-only">{{ $count }}</span></td>
+                                                        title="{{ $label }} {{ sprintf('%02d.00', $hour) }}: {{ $count }} slot dengan booking"><span class="sr-only">{{ $count }}</span></td>
                                                 @endforeach
                                             </tr>
                                         @endforeach
@@ -162,7 +162,7 @@
                         @endif
                     </x-ui.panel>
                     @if ($occupancy['units'] !== null)
-                        <x-ui.panel title="Pemakaian unit">
+                        <x-ui.panel title="Pemakaian unit" description="Menit unit terpakai dibanding menit yang dibuka, jadi angkanya bisa berbeda dari kursi terisi.">
                             @forelse ($occupancy['units'] as $unit)
                                 <div class="grid grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_auto] items-center gap-3 py-1.5 text-bq-body">
                                     <span class="truncate" title="{{ $unit['name'] }}">{{ $unit['name'] }}</span>
@@ -203,7 +203,7 @@
                 <section aria-labelledby="customers-title" class="space-y-4">
                     <h2 id="customers-title" class="sr-only">Pelanggan</h2>
                     @php
-                        $more = [['value' => $number($customers['returning']), 'label' => 'pelanggan kembali', 'delta' => $delta($customers['returning'], $comparison['returning'] ?? null)]];
+                        $more = [['value' => $number($customers['returning']), 'label' => 'pelanggan kembali', 'delta' => $delta($comparison['current']['returning'] ?? $customers['returning'], $comparison['returning'] ?? null)]];
                         if ($customers['advanceDays'] !== null) {
                             $more[] = ['value' => number_format($customers['advanceDays'], 1, ',', '.').' hari', 'label' => 'rata-rata booking sebelum sesi'];
                         }
@@ -212,7 +212,7 @@
                         }
                     @endphp
                     <x-ui.panel>
-                        <x-ui.figures :value="$number($customers['new'])" label="pelanggan baru" :delta="$delta($customers['new'], $comparison['new'] ?? null)"
+                        <x-ui.figures :value="$number($customers['new'])" label="pelanggan baru" :delta="$delta($comparison['current']['new'] ?? $customers['new'], $comparison['new'] ?? null)"
                             :context="$number($customers['active']).' pelanggan booking pada periode ini'" :more="$more" />
                     </x-ui.panel>
                     <section class="bq-panel" aria-labelledby="report-unpaid">
@@ -259,8 +259,8 @@
                     <h2 id="summary-title" class="sr-only">Ringkasan</h2>
                     <x-ui.panel>
                         <div class="grid gap-6 sm:grid-cols-2">
-                            <x-ui.figures :value="$rupiah($summary['revenue'])" label="pendapatan bersih" :delta="$delta($summary['revenue'], $comparison['net'] ?? null)" context="Menurut tanggal bayar" />
-                            <x-ui.figures :value="$number($summary['bookings'])" label="booking" :delta="$delta($summary['bookings'], $comparison['bookings'] ?? null)" context="Menurut tanggal sesi" />
+                            <x-ui.figures :value="$rupiah($summary['revenue'])" label="pendapatan bersih" :delta="$delta($comparison['current']['net'] ?? $summary['revenue'], $comparison['net'] ?? null)" context="Menurut tanggal bayar" />
+                            <x-ui.figures :value="$number($summary['bookings'])" label="booking" :delta="$delta($comparison['current']['bookings'] ?? $summary['bookings'], $comparison['bookings'] ?? null)" context="Menurut tanggal sesi" />
                         </div>
                     </x-ui.panel>
                     @php

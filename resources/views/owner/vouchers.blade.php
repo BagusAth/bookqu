@@ -109,6 +109,9 @@
                                 <span class="bq-num block font-bq-display text-bq-figure-small font-semibold text-bq-ink">{{ $card['value'] }}</span>
                             </button>
                             <p class="text-bq-small text-bq-text-muted">Berlaku {{ $card['period'] }}</p>
+                            @if ($card['limits'])
+                                <p class="text-bq-small text-bq-text-muted" data-promo-limits>Hanya {{ $card['limits'] }}</p>
+                            @endif
                         </div>
                         <form method="POST" action="{{ route($promoRoute.'.destroy', $v->id) }}" id="form-delete-voucher-{{ $v->id }}">
                             @csrf
@@ -147,53 +150,54 @@
 
     {{-- Add Voucher Modal --}}
     <div x-show="addModalOpen" class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-bq-ink/40 backdrop-blur-xs" style="display: none;" x-cloak>
-        <div class="my-auto w-full max-w-md rounded-2xl bg-bq-surface p-6 shadow-2xl border border-bq-border" @click.outside="addModalOpen = false">
-            <h3 class="text-base font-bold text-bq-text">Buat Kode Promo Baru</h3>
-            <p class="text-xs text-bq-text-muted mt-1">Konfigurasi nilai diskon, kuota pemakaian, dan masa berlaku promo.</p>
+        <div class="my-auto w-full max-w-md rounded-2xl bg-bq-surface p-6 shadow-2xl border border-bq-border" role="dialog" aria-modal="true" aria-labelledby="promo-create-title" @click.outside="addModalOpen = false">
+            <h3 id="promo-create-title" class="text-base font-bold text-bq-text">Buat promo</h3>
+            <p class="text-xs text-bq-text-muted mt-1">Potongan, kuota dan masa berlakunya.</p>
             <form method="POST" action="{{ route($promoRoute.'.store') }}" class="mt-4 space-y-3.5" id="form-add-voucher">
                 @csrf
                 <input type="hidden" name="_form" value="promo-create">
                 <div>
-                    <label class="text-xs font-semibold text-bq-text">Kode Promo <span class="text-bq-danger">*</span></label>
-                    <input type="text" name="code" value="{{ $promoCreating ? old('code') : '' }}" required placeholder="Contoh: MERDEKA20" class="bq-input mt-1 w-full font-mono uppercase">
+                    <label for="promo-new-code" class="text-xs font-semibold text-bq-text">Kode promo <span class="text-bq-danger">*</span></label>
+                    <input id="promo-new-code" type="text" name="code" value="{{ $promoCreating ? old('code') : '' }}" required placeholder="Contoh: MERDEKA20" class="bq-input mt-1 w-full font-mono uppercase placeholder:normal-case placeholder:font-sans" aria-describedby="promo-code-hint">
+                        <p id="promo-code-hint" class="mt-1 text-bq-small text-bq-text-muted">Huruf, angka, tanda hubung dan garis bawah. Paling banyak 50 karakter.</p>
                         <x-owner.field-error name="code" form="promo-create" />
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Tipe Diskon <span class="text-bq-danger">*</span></label>
-                        <select name="discount_type" x-model="newVoucher.discount_type" class="bq-input mt-1 w-full">
-                            <option value="percentage">Persentase (%)</option>
-                            <option value="fixed">Nominal Tetap (Rp)</option>
+                        <label for="promo-new-discount-type" class="text-xs font-semibold text-bq-text">Jenis potongan <span class="text-bq-danger">*</span></label>
+                        <select id="promo-new-discount-type" name="discount_type" x-model="newVoucher.discount_type" class="bq-input mt-1 w-full">
+                            <option value="percentage">Persen (%)</option>
+                            <option value="fixed">Nominal (Rp)</option>
                         </select>
                         <x-owner.field-error name="discount_type" form="promo-create" />
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Nilai Diskon <span class="text-bq-danger">*</span></label>
-                        <input type="number" name="discount_value" value="{{ $promoCreating ? old('discount_value') : '' }}" required min="1" step="0.01" :max="newVoucher.discount_type === 'percentage' ? 100 : null" placeholder="20 atau 25000" class="bq-input mt-1 w-full">
+                        <label for="promo-new-discount-value" class="text-xs font-semibold text-bq-text">Nilai <span class="text-bq-danger">*</span></label>
+                        <input id="promo-new-discount-value" type="number" name="discount_value" value="{{ $promoCreating ? old('discount_value') : '' }}" required min="1" step="0.01" :max="newVoucher.discount_type === 'percentage' ? 100 : null" placeholder="20 atau 25000" class="bq-input mt-1 w-full">
                         <x-owner.field-error name="discount_value" form="promo-create" />
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Min. Transaksi (Rp)</label>
-                        <input type="number" name="min_order_amount" value="{{ $promoCreating ? old('min_order_amount') : '' }}" min="0" placeholder="0" class="bq-input mt-1 w-full">
+                        <label for="promo-new-min-order-amount" class="text-xs font-semibold text-bq-text">Belanja minimum (Rp)</label>
+                        <input id="promo-new-min-order-amount" type="number" name="min_order_amount" value="{{ $promoCreating ? old('min_order_amount') : '' }}" min="0" placeholder="0" class="bq-input mt-1 w-full">
                         <x-owner.field-error name="min_order_amount" form="promo-create" />
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Batas Kuota Pemakaian</label>
-                        <input type="number" name="usage_limit" value="{{ $promoCreating ? old('usage_limit') : '' }}" min="1" placeholder="Kosongkan jika tanpa batas" class="bq-input mt-1 w-full">
+                        <label for="promo-new-usage-limit" class="text-xs font-semibold text-bq-text">Kuota</label>
+                        <input id="promo-new-usage-limit" type="number" name="usage_limit" value="{{ $promoCreating ? old('usage_limit') : '' }}" min="1" placeholder="Tanpa batas" class="bq-input mt-1 w-full">
                         <x-owner.field-error name="usage_limit" form="promo-create" />
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Mulai Berlaku</label>
-                        <input type="date" name="start_date" value="{{ $promoCreating ? old('start_date') : '' }}" class="bq-input mt-1 w-full">
+                        <label for="promo-new-start-date" class="text-xs font-semibold text-bq-text">Mulai</label>
+                        <input id="promo-new-start-date" type="date" name="start_date" value="{{ $promoCreating ? old('start_date') : '' }}" class="bq-input mt-1 w-full">
                         <x-owner.field-error name="start_date" form="promo-create" />
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Berakhir Pada</label>
-                        <input type="date" name="end_date" value="{{ $promoCreating ? old('end_date') : '' }}" class="bq-input mt-1 w-full">
+                        <label for="promo-new-end-date" class="text-xs font-semibold text-bq-text">Berakhir</label>
+                        <input id="promo-new-end-date" type="date" name="end_date" value="{{ $promoCreating ? old('end_date') : '' }}" class="bq-input mt-1 w-full">
                         <x-owner.field-error name="end_date" form="promo-create" />
                     </div>
                 </div>
@@ -208,60 +212,60 @@
 
     {{-- Edit Voucher Modal --}}
     <div x-show="editModalOpen" class="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 bg-bq-ink/40 backdrop-blur-xs" style="display: none;" x-cloak>
-        <div class="my-auto w-full max-w-md rounded-2xl bg-bq-surface p-6 shadow-2xl border border-bq-border" @click.outside="editModalOpen = false">
-            <h3 class="text-base font-bold text-bq-text">Edit Kode Promo</h3>
-            <p class="text-xs text-bq-text-muted mt-1">Perbarui ketentuan diskon dan ketersediaan promo.</p>
+        <div class="my-auto w-full max-w-md rounded-2xl bg-bq-surface p-6 shadow-2xl border border-bq-border" role="dialog" aria-modal="true" aria-labelledby="promo-edit-title" @click.outside="editModalOpen = false">
+            <h3 id="promo-edit-title" class="text-base font-bold text-bq-text">Ubah promo</h3>
+            <p class="text-xs text-bq-text-muted mt-1">Perubahan berlaku untuk booking berikutnya.</p>
             <form method="POST" :action="@js(route($promoRoute.'.update', ['id' => '__ID__'])).replace('__ID__', encodeURIComponent(activeVoucher.id))" class="mt-4 space-y-3.5" id="form-edit-voucher">
                 @csrf
                 <input type="hidden" name="_form" :value="'promo-edit-' + activeVoucher.id">
                 @method('PUT')
                 <div>
-                    <label class="text-xs font-semibold text-bq-text">Kode Promo <span class="text-bq-danger">*</span></label>
-                    <input type="text" name="code" x-model="activeVoucher.code" required class="bq-input mt-1 w-full font-mono uppercase">
+                    <label for="promo-edit-code" class="text-xs font-semibold text-bq-text">Kode promo <span class="text-bq-danger">*</span></label>
+                    <input id="promo-edit-code" type="text" name="code" x-model="activeVoucher.code" required class="bq-input mt-1 w-full font-mono uppercase">
                         <x-owner.field-error name="code" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Tipe Diskon <span class="text-bq-danger">*</span></label>
-                        <select name="discount_type" x-model="activeVoucher.discount_type" class="bq-input mt-1 w-full">
-                            <option value="percentage">Persentase (%)</option>
-                            <option value="fixed">Nominal Tetap (Rp)</option>
+                        <label for="promo-edit-discount-type" class="text-xs font-semibold text-bq-text">Jenis potongan <span class="text-bq-danger">*</span></label>
+                        <select id="promo-edit-discount-type" name="discount_type" x-model="activeVoucher.discount_type" class="bq-input mt-1 w-full">
+                            <option value="percentage">Persen (%)</option>
+                            <option value="fixed">Nominal (Rp)</option>
                         </select>
                         <x-owner.field-error name="discount_type" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Nilai Diskon <span class="text-bq-danger">*</span></label>
-                        <input type="number" name="discount_value" x-model="activeVoucher.discount_value" required min="1" step="0.01" :max="activeVoucher.discount_type === 'percentage' ? 100 : null" class="bq-input mt-1 w-full">
+                        <label for="promo-edit-discount-value" class="text-xs font-semibold text-bq-text">Nilai <span class="text-bq-danger">*</span></label>
+                        <input id="promo-edit-discount-value" type="number" name="discount_value" x-model="activeVoucher.discount_value" required min="1" step="0.01" :max="activeVoucher.discount_type === 'percentage' ? 100 : null" class="bq-input mt-1 w-full">
                         <x-owner.field-error name="discount_value" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Min. Transaksi (Rp)</label>
-                        <input type="number" name="min_order_amount" x-model="activeVoucher.min_order_amount" min="0" class="bq-input mt-1 w-full">
+                        <label for="promo-edit-min-order-amount" class="text-xs font-semibold text-bq-text">Belanja minimum (Rp)</label>
+                        <input id="promo-edit-min-order-amount" type="number" name="min_order_amount" x-model="activeVoucher.min_order_amount" min="0" class="bq-input mt-1 w-full">
                         <x-owner.field-error name="min_order_amount" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Batas Kuota Pemakaian</label>
-                        <input type="number" name="usage_limit" x-model="activeVoucher.usage_limit" min="1" placeholder="Tanpa batas" class="bq-input mt-1 w-full">
+                        <label for="promo-edit-usage-limit" class="text-xs font-semibold text-bq-text">Kuota</label>
+                        <input id="promo-edit-usage-limit" type="number" name="usage_limit" x-model="activeVoucher.usage_limit" min="1" placeholder="Tanpa batas" class="bq-input mt-1 w-full">
                         <x-owner.field-error name="usage_limit" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Mulai Berlaku</label>
-                        <input type="date" name="start_date" x-model="activeVoucher.start_date" class="bq-input mt-1 w-full">
+                        <label for="promo-edit-start-date" class="text-xs font-semibold text-bq-text">Mulai</label>
+                        <input id="promo-edit-start-date" type="date" name="start_date" x-model="activeVoucher.start_date" class="bq-input mt-1 w-full">
                         <x-owner.field-error name="start_date" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-bq-text">Berakhir Pada</label>
-                        <input type="date" name="end_date" x-model="activeVoucher.end_date" class="bq-input mt-1 w-full">
+                        <label for="promo-edit-end-date" class="text-xs font-semibold text-bq-text">Berakhir</label>
+                        <input id="promo-edit-end-date" type="date" name="end_date" x-model="activeVoucher.end_date" class="bq-input mt-1 w-full">
                         <x-owner.field-error name="end_date" :form="$promoErrorForm" x-cloak x-show="{{ \Illuminate\Support\Js::from($promoErrorForm) }} === 'promo-edit-' + activeVoucher.id" />
                     </div>
                 </div>
                 <div>
-                    <label class="text-xs font-semibold text-bq-text">Status</label>
-                    <select name="is_active" x-model="activeVoucher.is_active" class="bq-input mt-1 w-full">
+                    <label for="promo-edit-is-active" class="text-xs font-semibold text-bq-text">Status</label>
+                    <select id="promo-edit-is-active" name="is_active" x-model="activeVoucher.is_active" class="bq-input mt-1 w-full">
                         <option :value="1">Aktif</option>
                         <option :value="0">Nonaktif</option>
                     </select>
@@ -270,7 +274,7 @@
                 @include('owner.partials.promo-limits', ['model' => 'activeVoucher', 'errorForm' => $promoErrorForm])
                 <div class="flex items-center justify-end gap-2 pt-2 border-t border-bq-border">
                     <button type="button" @click="editModalOpen = false" class="bq-btn bq-btn-secondary">Batal</button>
-                    <button type="submit" class="bq-btn bq-btn-primary bq-btn-sm">Simpan Perubahan</button>
+                    <button type="submit" class="bq-btn bq-btn-primary bq-btn-sm">Simpan promo</button>
                 </div>
             </form>
         </div>
