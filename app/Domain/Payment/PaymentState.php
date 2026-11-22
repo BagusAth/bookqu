@@ -7,16 +7,22 @@ namespace App\Domain\Payment;
 class PaymentState
 {
     public const STATUS_PENDING = 'pending';
-    public const STATUS_SUKSES  = 'sukses';
-    public const STATUS_GAGAL   = 'gagal';
 
-    public const TIPE_BOOKING      = 'booking';
+    public const STATUS_SUKSES = 'sukses';
+
+    public const STATUS_GAGAL = 'gagal';
+
+    public const TIPE_BOOKING = 'booking';
+
     public const TIPE_SUBSCRIPTION = 'subscription';
 
     public const METODE_SINGAPAY = 'singapay';
+
     public const METODE_MIDTRANS = 'midtrans';
-    public const METODE_GRATIS   = 'gratis';
-    public const METODE_CASH     = 'cash';
+
+    public const METODE_GRATIS = 'gratis';
+
+    public const METODE_CASH = 'cash';
 
     /**
      * Allowed status transitions mapped from current status to target statuses.
@@ -27,7 +33,7 @@ class PaymentState
             self::STATUS_GAGAL,
         ],
         self::STATUS_SUKSES => [],
-        self::STATUS_GAGAL  => [],
+        self::STATUS_GAGAL => [],
     ];
 
     /**
@@ -67,8 +73,6 @@ class PaymentState
     /**
      * Map external Midtrans transaction_status and fraud_status to BookQu payment status.
      *
-     * @param string|null $transactionStatus
-     * @param string|null $fraudStatus
      * @return string One of 'sukses', 'pending', 'gagal', or 'unknown'
      */
     public static function mapTransactionStatus(?string $transactionStatus, ?string $fraudStatus = null): string
@@ -99,7 +103,7 @@ class PaymentState
     /**
      * Map external SingaPay transaction status to BookQu payment status.
      *
-     * @param string|null $singaPayStatus (e.g. 'paid', 'pending', 'expired', 'failed', 'cancelled')
+     * @param  string|null  $singaPayStatus  (e.g. 'paid', 'pending', 'expired', 'failed', 'cancelled')
      * @return string One of 'sukses', 'pending', 'gagal', or 'unknown'
      */
     public static function mapSingaPayStatus(?string $singaPayStatus): string
@@ -124,13 +128,13 @@ class PaymentState
     /**
      * Human-readable Indonesian label for payment status.
      */
-    public static function formatLabel(string $status): string
+    public static function formatLabel(string $status, bool $customer = false): string
     {
         return match ($status) {
-            self::STATUS_SUKSES  => 'Berhasil',
+            self::STATUS_SUKSES => $customer ? 'Lunas' : 'Berhasil',
             self::STATUS_PENDING => 'Menunggu Pembayaran',
-            self::STATUS_GAGAL   => 'Gagal / Dibatalkan',
-            default              => ucfirst($status),
+            self::STATUS_GAGAL => 'Gagal / Dibatalkan',
+            default => ucfirst($status),
         };
     }
 }

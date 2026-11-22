@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -43,7 +44,7 @@ class UpdateScheduleAvailability
     public function execute(Tenant $tenant, array $data): array
     {
         // Closing a date and claiming a slot share the tenant-first protocol (ADR-0005 decision 7)
-        $result = DB::transaction(function () use ($tenant, $data): array {
+        $result = app(TenantContext::class)->run((int) $tenant->id, fn (): array => DB::transaction(function () use ($tenant, $data): array {
             ClaimSlots::lockTenant((int) $tenant->id);
             $record = null;
             if (! empty($data['tanggal_block'])) {
@@ -54,8 +55,7 @@ class UpdateScheduleAvailability
                     return ['success' => false, 'date' => $date, 'conflicts' => $conflicts];
                 }
 
-                // scope-bypass: the record is keyed by the server-resolved tenant.
-                $record = OwnerBlockedDate::withoutGlobalScopes()->updateOrCreate(
+                $record = OwnerBlockedDate::updateOrCreate(
                     ['idtenant' => $tenant->id, 'tanggal' => $data['tanggal_block']],
                     ['alasan' => $data['alasan'] ?? null]
                 );
@@ -70,7 +70,7 @@ class UpdateScheduleAvailability
             }
 
             return ['success' => true, 'record' => $record];
-        });
+        }));
 
         if (! $result['success']) {
             $count = $result['conflicts']->count();

@@ -1,21 +1,35 @@
-<form method="POST" action="{{ route('owner.settings.account') }}" class="space-y-4 bq-panel p-4"
+<form method="POST" action="{{ route('owner.settings.account') }}"
     x-data="{ password: '' }">
     @csrf
-    <h2 class="font-semibold">Akun</h2>
+    <x-ui.form-row title="Data diri">
     <div class="grid gap-3 sm:grid-cols-2">
         <label class="grid gap-1 text-sm">Nama lengkap
             <input name="namalengkap" required value="{{ old('namalengkap', $accountUser?->namalengkap) }}" autocomplete="name" class="bq-input w-full">
             <x-owner.field-error name="namalengkap" />
         </label>
         <label class="grid gap-1 text-sm">Email
-            <input type="email" name="email" required value="{{ old('email', $accountUser?->email) }}" autocomplete="email" class="bq-input w-full">
+            <input type="email" name="email" required value="{{ old('email', $accountUser?->email) }}" autocomplete="email" @readonly(! ($accountUser?->hasPassword() ?? true)) class="bq-input w-full">
             <x-owner.field-error name="email" />
         </label>
         <label class="grid gap-1 text-sm">Nomor telepon
             <input type="tel" name="nomorhp" required value="{{ old('nomorhp', $accountUser?->nomorhp) }}" autocomplete="tel" class="bq-input w-full">
             <x-owner.field-error name="nomorhp" />
         </label>
-        <label class="grid gap-1 text-sm">Kata sandi saat ini
+    </div>
+    </x-ui.form-row>
+    @php($accountHasPassword = $accountUser?->hasPassword() ?? true)
+    @unless ($accountHasPassword)
+    {{-- BQ-172 (D-029): an account created through Google sets its first password through the email link. --}}
+    <x-ui.form-row title="Kata sandi" description="Akun ini masuk lewat Google dan belum punya kata sandi.">
+        <div class="grid gap-2 text-sm">
+            <p class="text-bq-text-muted">Buat kata sandi dulu untuk mengganti email, menghapus akun, dan mengubah rekening penarikan. Kami kirim link ke {{ $accountUser?->email }}; Anda akan keluar lalu masuk lagi setelah membuatnya.</p>
+            <div><x-ui.button type="submit" variant="secondary" form="settings-password-link">Kirim link buat kata sandi</x-ui.button></div>
+        </div>
+    </x-ui.form-row>
+    @else
+    <x-ui.form-row title="Kata sandi" description="Kosongkan kata sandi baru bila tidak ingin menggantinya.">
+    <div class="grid gap-3 sm:grid-cols-2">
+        <label class="grid gap-1 text-sm sm:col-span-2">Kata sandi saat ini
             <input type="password" name="current_password" autocomplete="current-password"
                 required class="bq-input w-full">
             <x-owner.field-error name="current_password" />
@@ -30,15 +44,28 @@
             <x-owner.field-error name="password_confirmation" />
         </label>
     </div>
-    <button class="bq-btn bq-btn-primary">Simpan akun</button>
+    </x-ui.form-row>
+    @endunless
+    @if ($canDeleteBusiness && $accountHasPassword)
+        <x-ui.form-row title="Hapus akun bisnis" description="Tindakan ini menghapus akun dan data bisnis secara permanen.">
+            <div>
+                <x-ui.button variant="danger" @click="$dispatch('open-dialog', { id: 'settings-delete-business' })">Hapus akun bisnis</x-ui.button>
+            </div>
+        </x-ui.form-row>
+    @endif
+    <x-ui.savebar class="!static flex-wrap">
+        <x-ui.button variant="ghost" :href="route('owner.settings', ['tab' => 'account'])">Batal</x-ui.button>
+        <x-ui.button type="submit" variant="primary">Simpan akun</x-ui.button>
+    </x-ui.savebar>
 </form>
 
+@unless ($accountHasPassword)
+    <form id="settings-password-link" method="POST" action="{{ route('owner.settings.account.password-link') }}" class="hidden">
+        @csrf
+    </form>
+@endunless
+
 @if ($canDeleteBusiness)
-    <div x-data class="mt-4 bq-panel p-4">
-        <h2 class="font-semibold">Hapus akun bisnis</h2>
-        <p class="my-2 text-sm text-bq-text-muted">Tindakan ini menghapus akun dan data bisnis secara permanen.</p>
-        <button type="button" @click="$dispatch('open-dialog', { id: 'settings-delete-business' })" class="text-sm font-semibold text-bq-danger">Hapus akun bisnis</button>
-    </div>
     <x-owner.dialog id="settings-delete-business" reopen-for="settings-delete-business" title="Hapus akun bisnis" description="Masukkan email akun dan kata sandi saat ini untuk mengonfirmasi.">
         <form method="POST" action="{{ route('owner.settings.account.delete') }}" class="space-y-3">
             @csrf

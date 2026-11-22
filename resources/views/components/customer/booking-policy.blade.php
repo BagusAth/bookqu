@@ -1,7 +1,7 @@
 @props(['policy'])
 
 <div class="booking-policy rounded-2xl border border-bq-border bg-bq-background p-4 sm:p-5">
-    <h4 class="text-sm font-semibold">Kebijakan booking</h4>
+    <h4 class="text-sm font-semibold">Kebijakan reservasi</h4>
     <ul class="mt-2 space-y-1 text-sm text-bq-text-muted">
         <li>Pindah jadwal paling lambat {{ $policy['reschedule_before_hours'] ?? 24 }} jam sebelum sesi.</li>
         @if ($policy['refunds_enabled'] ?? false)

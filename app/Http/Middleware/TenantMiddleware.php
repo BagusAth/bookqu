@@ -23,13 +23,12 @@ class TenantMiddleware
         // P0-01: Customer context (based on slug or custom domain)
         $slug = $request->route('slug') ?? $request->route('slug_usaha');
         $host = $request->getHost();
-        $isCustomDomain = $host !== '127.0.0.1' && $host !== 'localhost' && ! str_contains($host, 'bookqu.test');
 
         $resolvedTenant = null;
 
         if (is_string($slug) && $slug !== '') {
             $resolvedTenant = Tenant::where('slug', $slug)->first();
-        } elseif ($isCustomDomain) {
+        } elseif (! CustomDomain::isPlatformHost($host)) {
             // BQ-154: a domain serves its business only while its last DNS check connected it.
             $resolvedTenant = Tenant::where('custom_domain', mb_strtolower($host))
                 ->where('custom_domain_status', CustomDomain::STATUS_CONNECTED)
@@ -46,11 +45,15 @@ class TenantMiddleware
                 abort_if($resolvedTenant && (int) $resolvedTenant->id !== (int) $access->grant->idtenant, 404);
                 abort_if(is_string($slug) && $slug !== '' && ! $resolvedTenant, 404);
                 app(TenantContext::class)->setTenantId((int) $access->grant->idtenant);
+                if ($resolvedTenant !== null && $request->routeIs('customer.booking.*')) {
+                    $request->attributes->set('storefront_tenant', $resolvedTenant);
+                }
 
                 return $next($request);
             }
             if ($resolvedTenant && ! $isOwnerRoute) {
                 app(TenantContext::class)->setTenantId($resolvedTenant->id);
+                $request->attributes->set('storefront_tenant', $resolvedTenant);
 
                 return $next($request);
             }

@@ -416,8 +416,8 @@ class CustomerManagementTest extends TestCase
         $response->assertOk();
         // BQ-137: the §8.5 summary counts customers; spending (sukses payments only) shows per customer.
         $response->assertViewHas('summary', fn (array $summary): bool => $summary['total'] === 2);
-        $response->assertSee('Rp 100.000');
-        $response->assertSee('Rp 200.000');
+        $response->assertSee('Rp100.000');
+        $response->assertSee('Rp200.000');
     }
 
     /** 19. Upcoming booking shows the customer's earliest future booking with its own time */
@@ -441,6 +441,6 @@ class CustomerManagementTest extends TestCase
         $response = $this->actingAs($this->ownerA)->get(route('owner.customers'));
 
         $response->assertOk();
-        $response->assertViewHas('customers', fn ($customers) => $customers->first()->upcoming_booking === '05 Nov 2026 14:00');
+        $response->assertViewHas('customers', fn ($customers) => $customers->first()->upcoming_booking === '5 Nov · 14.00');
     }
 }

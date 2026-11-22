@@ -1,59 +1,39 @@
 {{--
-    Customer payments of the Pembayaran page (BQ-141, owner-portal.md §8.12 Tab Transaksi): order id,
-    time, customer, service, amount, method, status and refund amount. Rows come prepared from
-    App\Actions\Owner\GetPaymentsPage.
+    Customer payments of the Pembayaran page (BQ-141, owner-portal.md §8.12 Tab Transaksi). BQ-162 (prototype K6, K7):
+    one line per payment; the status shows only when it is not a success, beside the amount; the order code stays in the booking panel.
 --}}
 @if ($rows->total() === 0)
-    <p class="px-4 py-6 text-sm text-bq-text-muted">{{ $emptyText }}</p>
+    <p class="px-5 py-6 text-bq-small text-bq-text-muted">{{ $emptyText }}</p>
 @else
-    <div class="hidden overflow-x-auto md:block">
-        <table class="w-full text-left text-sm">
-            <thead class="border-b border-bq-border bg-bq-background text-xs text-bq-text-muted">
-                <tr>
-                    <th scope="col" class="px-4 py-2.5 font-medium">Order</th>
-                    <th scope="col" class="px-4 py-2.5 font-medium">Pelanggan</th>
-                    <th scope="col" class="px-4 py-2.5 font-medium">Layanan</th>
-                    <th scope="col" class="px-4 py-2.5 text-right font-medium">Jumlah</th>
-                    <th scope="col" class="px-4 py-2.5 font-medium">Metode</th>
-                    <th scope="col" class="px-4 py-2.5 font-medium">Status</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-bq-border">
-                @foreach ($rows as $row)
-                    <tr>
-                        <td class="px-4 py-3">
-                            <span class="block text-bq-text">{{ $row['orderId'] }}</span>
-                            <span class="block text-xs bq-num text-bq-text-muted">{{ $row['time'] }}</span>
-                        </td>
-                        <td class="px-4 py-3 text-bq-text">
-                            {{ $row['customer'] }}
-                            @include('owner.partials.payments.booking-link')
-                        </td>
-                        <td class="px-4 py-3 text-bq-text-muted">{{ $row['service'] }}</td>
-                        <td class="whitespace-nowrap px-4 py-3 text-right bq-num text-bq-text">
-                            {{ $row['amount'] }}
-                            @if ($row['refund'])<span class="block text-xs text-bq-danger">{{ $row['refund'] }}</span>@endif
-                        </td>
-                        <td class="px-4 py-3 text-bq-text-muted">{{ $row['method'] }}</td>
-                        <td class="px-4 py-3"><span class="bq-badge {{ $toneClass($row['status']['tone']) }}">{{ $row['status']['label'] }}</span></td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-
-    <ul class="divide-y divide-bq-border md:hidden">
+    <x-ui.table class="rounded-none border-0" :columns="['Waktu', 'Pelanggan', 'Layanan', 'Metode', 'Jumlah']" widths="auto minmax(160px, 1fr) minmax(0, 1.5fr) auto auto" label="Transaksi pembayaran">
         @foreach ($rows as $row)
-            <li class="space-y-1 px-4 py-3 text-sm">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="truncate text-bq-text">{{ $row['customer'] }}</span>
-                    <span class="bq-badge {{ $toneClass($row['status']['tone']) }}">{{ $row['status']['label'] }}</span>
+            @php $success = $row['status']['tone'] === 'success'; @endphp
+            <div role="row" @class(['bq-table-row', 'text-bq-text-muted' => $row['status']['tone'] === 'danger'])>
+                <div role="cell" class="bq-table-cell whitespace-nowrap">
+                    <span class="bq-num">{{ $row['time'] }}</span>
+                    <span class="sr-only">{{ $row['orderId'] }}</span>
                 </div>
-                <p class="text-xs text-bq-text-muted">{{ $row['orderId'] }} · {{ $row['time'] }}</p>
-                <p class="text-xs text-bq-text-muted">{{ $row['service'] }} · {{ $row['method'] }}</p>
-                @include('owner.partials.payments.booking-link')
-                <p class="bq-num text-bq-text">{{ $row['amount'] }}@if ($row['refund']) <span class="text-xs text-bq-danger">· {{ $row['refund'] }}</span>@endif</p>
-            </li>
+                <div role="cell" class="bq-table-cell bq-table-main min-w-0">
+                    <span class="block truncate font-semibold text-bq-ink" title="{{ $row['customer'] }}">{{ $row['customer'] }}</span>
+                    <span class="bq-table-caption block truncate text-bq-small text-bq-text-muted md:hidden">{{ $success ? '' : $row['status']['label'].' · ' }}{{ $row['time'] }} · {{ $row['method'] }}</span>
+                </div>
+                <div role="cell" class="bq-table-cell min-w-0 truncate" title="{{ $row['service'] }}">
+                    @if ($row['bookingPanel'])
+                        <a href="{{ $row['bookingHref'] }}" x-data class="text-bq-ink hover:text-bq-primary" title="{{ $row['bookingCode'] }} · {{ $row['service'] }}"
+                            @click.prevent="$dispatch('open-booking-panel', { url: @js($row['bookingPanel']), trigger: $el })">{{ $row['service'] }}</a>
+                    @else
+                        {{ $row['service'] }}
+                    @endif
+                </div>
+                <div role="cell" class="bq-table-cell whitespace-nowrap">{{ $row['method'] }}</div>
+                <div role="cell" class="bq-table-cell bq-table-end">
+                    <span class="flex items-center justify-end gap-2 whitespace-nowrap">
+                        @unless ($success)<x-ui.badge :tone="$row['status']['tone'] === 'danger' ? 'danger' : ($row['status']['tone'] === 'warning' ? 'warning' : 'neutral')">{{ $row['status']['label'] }}</x-ui.badge>@endunless
+                        <span class="bq-num">{{ $row['amount'] }}</span>
+                    </span>
+                    @if ($row['refund'])<span class="block text-right text-bq-small text-bq-danger">{{ $row['refund'] }}</span>@endif
+                </div>
+            </div>
         @endforeach
-    </ul>
+    </x-ui.table>
 @endif

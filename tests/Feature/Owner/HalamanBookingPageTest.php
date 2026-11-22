@@ -73,14 +73,14 @@ class HalamanBookingPageTest extends TestCase
         return $user;
     }
 
-    public function test_page_has_link_and_qr_promotion_materials_appearance_and_gallery(): void
+    public function test_page_has_sharing_materials_appearance_and_gallery(): void
     {
         $this->actingAs($this->owner)->get(route('owner.booking-page'))
             ->assertOk()
-            ->assertSee('Link &amp; QR', false)
-            ->assertSee('Materi promosi')
+            ->assertSee('Bagikan')
+            ->assertSee('Teks siap pakai')
             ->assertSee('Tampilan')
-            ->assertSee('Galeri media')
+            ->assertSee('Galeri')
             ->assertSee($this->link())
             ->assertSee('https://wa.me/?text=', false);
 
@@ -91,6 +91,46 @@ class HalamanBookingPageTest extends TestCase
 
         $this->actingAs($this->member('manajer'))->get(route('owner.booking-page'))->assertOk();
         $this->actingAs($this->member('kasir'))->get(route('owner.booking-page'))->assertForbidden();
+    }
+
+    public function test_appearance_previews_only_active_services_of_the_current_tenant(): void
+    {
+        Service::factory()->create([
+            'idtenant' => $this->tenant->id, 'namalayanan' => 'Foto Pratinjau', 'is_active' => true,
+            'harga' => 175000, 'durasi' => 45,
+        ]);
+        Service::factory()->create([
+            'idtenant' => $this->tenant->id, 'namalayanan' => 'Layanan Tidak Aktif', 'is_active' => false,
+        ]);
+        Service::factory()->create([
+            'idtenant' => Tenant::factory()->create()->id, 'namalayanan' => 'Layanan Tenant Lain', 'is_active' => true,
+        ]);
+
+        $this->actingAs($this->owner)->get(route('owner.booking-page', ['section' => 'tampilan']))
+            ->assertOk()->assertSee('Foto Pratinjau')->assertSee('Rp 175.000')->assertSee('45 menit')
+            ->assertDontSee('Layanan Tidak Aktif')->assertDontSee('Layanan Tenant Lain');
+    }
+
+    public function test_tampilan_offers_three_templates_and_marks_the_one_matching_the_saved_look(): void
+    {
+        // D-028: Rapi = membulat + garis tepi + Inter.
+        $this->tenant->forceFill(['button_style' => 'rounded', 'card_style' => 'outline', 'font_family' => 'Inter'])->save();
+
+        $this->actingAs($this->owner)->get(route('owner.booking-page', ['section' => 'tampilan']))
+            ->assertOk()
+            ->assertSeeInOrder(['Modern', 'Rapi', 'Tegas'])
+            ->assertSee('data-template="rapi" aria-pressed="true"', false)
+            ->assertSee('data-template="modern" aria-pressed="false"', false)
+            ->assertSee('data-template="tegas" aria-pressed="false"', false)
+            ->assertSee('Membulat · Garis tepi · Inter');
+
+        $this->tenant->forceFill(['font_family' => 'Lora'])->save();
+
+        $this->actingAs($this->owner)->get(route('owner.booking-page', ['section' => 'tampilan']))
+            ->assertOk()->assertSeeText('Dipakai: Kustom')
+            ->assertSee('data-template="modern" aria-pressed="false"', false)
+            ->assertSee('data-template="rapi" aria-pressed="false"', false)
+            ->assertSee('data-template="tegas" aria-pressed="false"', false);
     }
 
     public function test_the_page_stays_hidden_until_the_module_is_released(): void
@@ -152,6 +192,27 @@ class HalamanBookingPageTest extends TestCase
             ->assertSee(Storage::url($logo->file_path), false)
             ->assertSee(Storage::url($cover->file_path), false)
             ->assertSee('Studio foto keluarga di Bandung.');
+    }
+
+    public function test_storefront_writes_customer_tokens_for_the_saved_button_and_card_style(): void
+    {
+        $this->tenant->forceFill(['theme_color' => '#F59E0B', 'button_style' => 'pill', 'card_style' => 'outline', 'font_family' => 'Inter'])->save();
+        app(GetStorefrontTenant::class)->forget((int) $this->tenant->id);
+
+        $this->get('/studio-cahaya')
+            ->assertOk()
+            ->assertSee('--sf-primary: #F59E0B;', false)
+            ->assertSee('--sf-on-primary: #17151F;', false)
+            ->assertSee('--sf-primary-text: #674205;', false)
+            ->assertSee('--sf-radius-control: 9999px;', false)
+            ->assertSee('--sf-radius-card: 24px;', false)
+            ->assertSee('--sf-radius-card-small: 18px;', false)
+            ->assertSee('--sf-shadow-card: 0 0 0 1.5px #D5D3DC;', false)
+            ->assertSee('--sf-shadow-raised: 0 0 0 1.5px #D5D3DC;', false)
+            ->assertSee("--sf-font: 'Inter';", false)
+            ->assertSee('family=Inter:wght@400;500;600;700&', false)
+            ->assertSee('data-button-style="pill"', false)
+            ->assertSee('data-card-style="outline"', false);
     }
 
     public function test_appearance_values_are_validated_so_nothing_is_injected_into_the_storefront(): void

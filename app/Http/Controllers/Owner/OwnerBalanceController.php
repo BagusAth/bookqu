@@ -11,6 +11,7 @@ use App\Http\Requests\Owner\RequestPayoutRequest;
 use App\Models\OwnerPayout;
 use App\Models\TenantPayoutAccount;
 use App\Traits\ResolvesOwnerTenant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -44,7 +45,12 @@ class OwnerBalanceController extends Controller
         return redirect()->route('owner.payments', ['tab' => 'saldo'] + $request->query(), 301);
     }
 
-    public function store(RequestPayoutRequest $request, RequestOwnerPayout $requestOwnerPayout): RedirectResponse
+    public function legacyPaymentSettings(Request $request): RedirectResponse
+    {
+        return redirect()->route('owner.payments', $request->query(), 301);
+    }
+
+    public function store(RequestPayoutRequest $request, RequestOwnerPayout $requestOwnerPayout): JsonResponse|RedirectResponse
     {
         $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
 
@@ -60,7 +66,10 @@ class OwnerBalanceController extends Controller
             $request->user()
         );
 
-        return redirect()->route('owner.payments', ['tab' => 'saldo'])->with('sukses', 'Permintaan pencairan dibuat dan menunggu review admin.');
+        $url = route('owner.payments', ['tab' => 'saldo']);
+        $request->session()->flash('sukses', 'Permintaan pencairan dibuat dan menunggu review admin.');
+
+        return $request->expectsJson() ? response()->json(['redirect' => $url]) : redirect()->to($url);
     }
 
     /**

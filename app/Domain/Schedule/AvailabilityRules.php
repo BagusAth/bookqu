@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use DateTimeInterface;
 
@@ -50,6 +51,8 @@ class AvailabilityRules
      * Checks, in order: ownership and requested date (when given), slot status, closed
      * date, past time, service and fulfillment eligibility, room for the participants
      * (capacity, ADR-0017), unit conflicts (FR-UNIT-003).
+     *
+     * @param  ?array<string, list<array{0: Carbon, 1: Carbon, 2: int}>>  $unitBusy  Preloaded read-only listing data; locked claims use live queries.
      */
     public static function refusal(
         Schedule $schedule,
@@ -59,6 +62,9 @@ class AvailabilityRules
         ?int $serviceId = null,
         ?string $date = null,
         int $participants = 1,
+        ?int $seatsTaken = null,
+        ?array $unitBusy = null,
+        ?bool $dateBlocked = null,
     ): ?SlotRefusal {
         $now = $now ? Carbon::instance($now) : Carbon::now('Asia/Jakarta');
 
@@ -76,15 +82,11 @@ class AvailabilityRules
             return SlotRefusal::WrongDate;
         }
 
-        if ($schedule->status === 'diblokir') {
-            return SlotRefusal::Blocked;
-        }
-
         if ($schedule->status !== 'tersedia') {
             return SlotRefusal::NotOpen;
         }
 
-        if (self::isDateBlocked((int) $schedule->idtenant, $slotDate)) {
+        if ($dateBlocked ?? self::isDateBlocked((int) $schedule->idtenant, $slotDate)) {
             return SlotRefusal::DateClosed;
         }
 
@@ -92,21 +94,24 @@ class AvailabilityRules
             return SlotRefusal::Past;
         }
 
-        $service = $schedule->relationLoaded('layanan') && $schedule->layanan
+        $service = $schedule->relationLoaded('layanan')
             ? $schedule->layanan
-            // scope-bypass: the schedule's own service, read for eligibility only.
-            : Service::withoutGlobalScopes()->find($schedule->idlayanan);
+            : app(TenantContext::class)->run((int) $schedule->idtenant, fn (): ?Service => Service::find($schedule->idlayanan));
 
-        if ($service && (! $service->is_active || ! $service->hasActiveFulfillment())) {
+        if (! $service instanceof Service || (int) $service->idtenant !== (int) $schedule->idtenant
+            || ! $service->is_active || ! $service->hasActiveFulfillment()) {
             return SlotRefusal::ServiceUnavailable;
         }
 
-        if (! BookingRules::hasRoomFor((int) $schedule->id, $participants, $excludeBookingId)) {
-            return BookingRules::hasRoomFor((int) $schedule->id, 1, $excludeBookingId)
+        $capacity = $seatsTaken === null ? null : BookingRules::capacityFrom($service->kapasitas);
+        if (! BookingRules::hasRoomFor((int) $schedule->id, $participants, $excludeBookingId, $seatsTaken, $capacity)) {
+            return BookingRules::hasRoomFor((int) $schedule->id, 1, $excludeBookingId, $seatsTaken, $capacity)
                 ? SlotRefusal::NotEnoughRoom : SlotRefusal::Occupied;
         }
 
-        if (BookingRules::unitConflict($schedule, $excludeBookingId)) {
+        $unitConflict = $unitBusy === null ? BookingRules::unitConflict($schedule, $excludeBookingId)
+            : BookingRules::slotHitsBusyUnit($unitBusy, (int) $schedule->id, $slotDate, (string) $schedule->jam_mulai, (string) $schedule->jam_selesai);
+        if ($unitConflict) {
             return SlotRefusal::UnitBusy;
         }
 
@@ -118,11 +123,10 @@ class AvailabilityRules
      */
     public static function isDateBlocked(int $tenantId, string $date): bool
     {
-        // scope-bypass: filtered by the given tenant id
-        return OwnerBlockedDate::withoutGlobalScopes()
+        return app(TenantContext::class)->run($tenantId, fn (): bool => OwnerBlockedDate::query()
             ->where('idtenant', $tenantId)
             ->whereDate('tanggal', $date)
-            ->exists();
+            ->exists());
     }
 
     /**

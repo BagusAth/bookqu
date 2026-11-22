@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Booking;
 
+use App\Models\Booking;
+use App\Models\Schedule;
 use Carbon\CarbonImmutable;
 
 /**
@@ -24,6 +26,16 @@ final class BookingTimeRange
         public readonly CarbonImmutable $start,
         public readonly ?CarbonImmutable $end,
     ) {}
+
+    public static function forBooking(Booking $booking, ?Schedule $slot): self
+    {
+        $date = substr((string) $booking->tanggalbooking, 0, 10);
+        if ($slot === null || (int) $slot->idtenant !== (int) $booking->idtenant) {
+            return self::withoutSlot($date, (string) $booking->jam);
+        }
+
+        return self::forSlot($date, (string) $slot->jam_mulai, (string) $slot->jam_selesai);
+    }
 
     public static function forSlot(string $date, string $jamMulai, string $jamSelesai): self
     {
@@ -106,12 +118,38 @@ final class BookingTimeRange
         return $this->end === null ? $this->startTime() : $this->startTime().$separator.$this->endTime();
     }
 
+    public function displayLabel(): string
+    {
+        return str_replace(':', '.', $this->label());
+    }
+
     /**
      * Google Calendar `dates` value; without an end the event starts and ends at the start.
      */
     public function googleCalendarDates(): string
     {
         return $this->start->format('Ymd\THis').'/'.($this->end ?? $this->start)->format('Ymd\THis');
+    }
+
+    /**
+     * SQL equivalent of slotEnd for aggregate listings, using trusted column references.
+     * Handles the inclusive minute and overnight sessions exactly as forSlot does.
+     */
+    public static function slotEndSql(string $driver, string $date, string $startTime, string $endTime): string
+    {
+        $start = "substr({$startTime}, 1, 5)";
+        $end = "substr({$endTime}, 1, 5)";
+        $overnight = "CASE WHEN {$end} <= {$start} THEN 1 ELSE 0 END";
+        if ($driver === 'sqlite') {
+            $length = "(CAST(strftime('%s', '2000-01-01 ' || {$end}) AS INTEGER) - CAST(strftime('%s', '2000-01-01 ' || {$start}) AS INTEGER)) / 60 + 1440";
+            $inclusive = "CASE WHEN ({$length}) % 5 = 4 THEN 1 ELSE 0 END";
+
+            return "datetime(date({$date}) || ' ' || {$end}, '+' || ({$overnight}) || ' days', '+' || ({$inclusive}) || ' minutes')";
+        }
+        $length = "TIMESTAMPDIFF(MINUTE, CONCAT('2000-01-01 ', {$start}), CONCAT('2000-01-01 ', {$end})) + 1440";
+        $inclusive = "CASE WHEN MOD(({$length}), 5) = 4 THEN 1 ELSE 0 END";
+
+        return "DATE_ADD(DATE_ADD(TIMESTAMP(DATE({$date}), {$end}), INTERVAL ({$overnight}) DAY), INTERVAL ({$inclusive}) MINUTE)";
     }
 
     private static function slotEnd(CarbonImmutable $start, string $date, string $jamMulai, string $jamSelesai): CarbonImmutable

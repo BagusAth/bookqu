@@ -14,16 +14,17 @@ Owns tenant isolation, tenant resolution (slug and custom domain), and the busin
 ## Operations
 
 `Actions/Tenant/CreateInitialProfile`, `UpdateBusinessProfile` (also uploads logo), `UpdatePaymentSettings` (Tier 3), `UpdateAppearanceSettings` (Tier 3).
-Tenant creation happens at registration (`Auth/RegisteredUserController::store`, slug = `Str::slug(business name)` with numeric suffix on collision).
+Registration derives the slug from the business name and appends a numeric suffix for taken or reserved slugs. `ReservedTenantSlugs` uses registered route prefixes and reserved words. Owner profile creation and updates also refuse reserved slugs.
 
 `GetStorefrontTenant` loads a public-field projection under `tenant:public:v2:{id}` using the tenant id already verified by middleware. Profile, appearance, landing-page and payment-setting writes invalidate it. Missing middleware context fails closed; a slug used as an unregistered hostname is not a custom-domain mapping.
 
 ## Mechanism
 
-- `App\Support\TenantContext` — request-scoped holder of the current tenant id (registered `scoped` in `AppServiceProvider`), cleared after each request.
-- `App\Models\Scopes\TenantScope` + `App\Traits\BelongsToTenant` — global scope on 15 tenant-owned models (AdditionalItem, Asset, Booking, Category, CustomerNote, OwnerBlockedDate, OwnerPayout, Payment, Resource, Review, Schedule, Service, Staff, Subscription, Voucher). Empty context ⇒ `WHERE 1 = 0` (fail closed). `creating` fills `idtenant` from context.
+- `App\Support\TenantContext` holds the current tenant ID. Request middleware establishes and clears it. Jobs, webhook processing, commands and streamed exports use `run()` with a trusted tenant ID and restore the previous context on return or exception.
+- `App\Traits\BelongsToTenant` applies `TenantScope` to tenant-owned models. An empty context admits no rows. Creation fills a missing `idtenant` from the context.
 - `App\Traits\ResolvesOwnerTenant::resolveTenant()` — controllers get the owner's tenant and re-check `iduser`.
 - `App\Support\CustomerBookingRoutes` — builds storefront URLs for slug vs custom domain.
+- `App\Domain\Tenant\CustomDomain` — shares the host rule across route matching, tenant lookup, storefront URLs and domain registration. Platform hosts come from `custom-domains.platform_hosts` and the host in `app.url`. Their subdomains stay on platform routing.
 - Models without the scope: `Tenant`, `User`, `Plan`, `Refund`, `BookingLog`, `UsageLog` (reach them through an owned parent).
 
 ## Data
@@ -35,7 +36,7 @@ The four Midtrans sandbox/production client/server key columns use encrypted cas
 ## Invariants
 
 - **INV-TEN-01** — no cross-tenant read or write; `TenantScope` fails closed.
-- **INV-TEN-02** — tenant context is set by `TenantMiddleware`, never from request input.
+- **INV-TEN-02** — request tenant context comes from verified middleware resolution. Background work establishes context from a trusted stored subject or queued tenant ID.
 
 ## Evidence
 
@@ -51,15 +52,11 @@ Functional: Implemented · Verification: Needs Verification · Architecture: Tar
 
 | Gap | Item |
 |---|---|
-| 55 `withoutGlobalScope(s)` calls in 29 files not individually justified | BQ-009 |
-| Main-domain detection defined twice (`TenantMiddleware::$isCustomDomain` vs `routes/web.php` exclusion list) | BQ-035 |
-| Slugs can collide with app routes (`login`, `owner`, `manage`, `admin`, …) | BQ-011 |
-| Custom-domain storefront behaviour only partly tested | BQ-039 |
 | Owner views write `/owner/...` URLs by hand; storefront links bypass `CustomerBookingRoutes` | BQ-128 |
 | Renaming the business changes the slug and breaks old links (no redirect); old slug cache not cleared | BQ-144 |
 | TLS certificates for custom domains are not issued by the application; the server needs on-demand certificates before the feature is released | Tech Lead (ops) |
 
-Target decision: [ADR-0010](../adr/ADR-0010-authorization-and-tenant-scoping.md) — owner Policies with foreign-id 404s, a tenant-context runner for jobs/webhooks/commands, and scope bypasses only in four named places (BQ-009, BQ-031). Not implemented yet.
+BQ-009 limits explicit scope bypasses to platform-admin reads, tenant discovery, cross-tenant candidate scans before the runner, and customer-access resolution. The architecture test checks the reviewed files and call counts. Payment route binding and normal tenant-owned relationships keep their scopes. See [ADR-0010](../adr/ADR-0010-authorization-and-tenant-scoping.md) and the [BQ-009 inventory](../work/done/BQ-009-audit-scope-bypasses.md#inventory).
 
 BQ-131: accepted, non-revoked `tenant_members` are resolved fresh for each owner request; ambiguous memberships fail closed, and a pemilik must equal tenants.iduser. Migration backfills existing owners; new tenant creation establishes the membership. Resource policies check tenant plus TenantPermission ability; foreign bound records remain 404. Revocation and per-route ability mapping are covered by `Team/TenantPermissionTest`; MySQL backfill by `TenantMembershipBackfillTest`.
 

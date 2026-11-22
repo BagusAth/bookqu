@@ -29,7 +29,7 @@ class CheckoutPricingTest extends TestCase
         config(['modules.promos' => 'released', 'modules.add-ons' => 'released']);
         $tenant = Tenant::factory()->create();
         app(CreateTrialSubscription::class)->execute($tenant);
-        $service = Service::factory()->create(['idtenant' => $tenant->id, 'harga' => 100000, 'is_active' => true, 'durasi' => 60]);
+        $service = Service::factory()->create(['idtenant' => $tenant->id, 'harga' => 100000, 'is_active' => true, 'durasi' => 60, 'kapasitas' => 1]);
         $voucher = Voucher::create(['idtenant' => $tenant->id, 'code' => 'HEMAT', 'discount_type' => 'fixed',
             'discount_value' => 25000, 'max_discount' => 20000, 'usage_limit' => 1, 'is_active' => true]);
         $item = AdditionalItem::create(['idtenant' => $tenant->id, 'name' => 'Handuk', 'price' => 5000, 'stock' => 1, 'is_unlimited' => false, 'is_active' => true]);
@@ -48,11 +48,17 @@ class CheckoutPricingTest extends TestCase
             'jam' => ['10:00'], 'schedule_ids' => [$slot->id],
         ]]);
         $base = '/'.$tenant->slug.'/booking';
+        $this->get($base.'/checkout')->assertOk()
+            ->assertSeeText('Handuk')->assertSeeText('Rp5.000 per item')
+            ->assertDontSee('id="checkout-participants"', false)
+            ->assertDontSeeText('Perbarui ringkasan harga');
         $extras = ['voucher_code' => 'HEMAT', 'selected_addons' => [['id' => $item->id, 'quantity' => 1]]];
         $foreign = AdditionalItem::create(['idtenant' => Tenant::factory()->create()->id, 'name' => 'Asing', 'price' => 1, 'stock' => 10, 'is_active' => true]);
         $this->postJson($base.'/validate-voucher', ['selected_addons' => [['id' => $foreign->id, 'quantity' => 1]]])
             ->assertUnprocessable()->assertJsonValidationErrors('selected_addons');
-        $quote = $this->postJson($base.'/validate-voucher', $extras)->assertOk()->assertJsonPath('quote.total', 85000);
+        $quote = $this->postJson($base.'/validate-voucher', $extras)->assertOk()
+            ->assertJsonPath('quote.total', 85000)->assertJsonPath('display.total', 'Rp85.000')
+            ->assertJsonPath('display.addOns.0.amount', 'Rp5.000')->assertJsonPath('display.promo', '−Rp20.000');
         $customer = ['namapelanggan' => 'Pelanggan Uji', 'email' => 'uji@example.test', 'nomorhp' => '08123456789',
             'checkout_fingerprint' => $quote->json('checkout_fingerprint')];
         $this->post($base.'/checkout', $extras + $customer)->assertRedirect()->assertSessionHasNoErrors();

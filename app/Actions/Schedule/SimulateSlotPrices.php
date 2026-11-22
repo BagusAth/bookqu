@@ -31,8 +31,7 @@ class SimulateSlotPrices
         $day = Carbon::parse($date)->toDateString();
         $rules = PriceRules::forTenant($tenant, $day, $day);
 
-        // scope-bypass: filtered by the authenticated tenant
-        $intervals = OpeningHour::withoutGlobalScopes()->where('idtenant', $tenant->id)
+        $intervals = OpeningHour::query()->where('idtenant', $tenant->id)
             ->where('day_of_week', Carbon::parse($day)->dayOfWeekIso)->orderBy('opens_at')->get(['opens_at', 'closes_at']);
 
         $hours = [];

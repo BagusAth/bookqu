@@ -10,7 +10,7 @@ The central domain: creating, changing and ending reservations, including multi-
 | Combined schedule page / AJAX / selection | GET `booking/schedule`, GET `booking/schedule/slots`, POST `booking/select-schedule` in both slug and custom-domain no-store groups; AJAX is throttled to 60/minute |
 | Legacy navigation | GET `booking/date` and `booking/time` redirect to schedule and preserve flash feedback; legacy POST `select-date`/`select-time` remain supported |
 | Create booking | `process-checkout` → `Actions/Booking/CreateBooking` |
-| Owner list / status / walk-in / reschedule | `owner.bookings`, `owner.bookings.status`, `owner.bookings.walkin`, `owner.bookings.reschedule` → `Owner/OwnerBookingController` |
+| Owner list / status / walk-in / reschedule / bulk completion | `owner.bookings`, `owner.bookings.status`, `owner.bookings.walkin`, `owner.bookings.reschedule`, `owner.bookings.complete-many` (ability `bookings.complete`, every role) → `Owner/OwnerBookingController` |
 | Customer cancel / reschedule | `booking.manage.cancel`, `booking.manage.reschedule.*` → `Customer/BookingManageController` (see `customer-access.md`) |
 
 ## Operations
@@ -20,8 +20,9 @@ The central domain: creating, changing and ending reservations, including multi-
 | `GetScheduleSelection` | Builds 31 Indonesian date entries and morning/afternoon/evening slots through `GetAvailableSchedules`; shared by page and AJAX. AJAX service comes only from the tenant-scoped session; closed dates expose no slots. |
 | `ValidateBookingDate` | Shared POST date-window, monthly-quota, owner-closed and availability checks before session mutation. The controller's shared `storeSelectedTime` path validates both new and legacy slot submissions; legacy POST time ignores request-supplied dates. |
 | `CreateBooking` | One transaction: lock subscription/tenant row and check monthly quota (`EntitlementRules::canCreateBooking`), lock schedules, evict stale pending, validate tenant/service/date/status/past/occupancy, check contiguity, quote through `BookingPricing::quote` (ADR-0019 decision 1) inside the lock and store it as `payments.price_breakdown`, create one payment + N bookings (`pending`, or `paid` when free). After commit: initialize the gateway payment; on failure mark payment `gagal` and bookings `cancelled`; clear availability cache. |
-| `CreateWalkInBooking` | Owner booking: lock schedule, evict stale pending, check room for the participants and unit conflicts, create `paid` booking with a `cash` payment `sukses`. |
+| `CreateWalkInBooking` | Owner booking: lock tenant and subscription, check the booking quota for the selected slot's month, then lock the slot, evict stale pending and check capacity and unit conflicts before recording a `paid` booking and a successful manual payment. An exhausted quota returns a field error (`quota`) for JSON and form requests before any booking or payment is written. |
 | `MarkBookingNoShow` | Under the tenant lock: a `paid` payment group whose session has ended (`BookingRules::sessionHasEnded`) becomes `no_show`; payment, balance and refunds stay untouched (ADR-0018). Every role may do it. |
+| `CompleteBookings` | Bulk and automatic completion (FR-BOOKING-024/025, BQ-162): only `paid` bookings whose session has ended (`BookingRules::sessionHasEnded`), without an open refund request or a pending cancellation request; each goes through `UpdateBookingStatus` without the per-booking owner mail and returns `{completed, skipped}`. The hourly `bookings:complete-ended` command runs it per tenant context for tenants with `auto_complete_bookings` (default on), 6 hours after the session ended (`AUTO_COMPLETE_AFTER_HOURS`); log actor `system`. |
 | `UpdateBookingStatus` | Owner status change through `BookingState::canTransition`; completion also requires `BookingRules::sessionHasStarted`, the same check used on Beranda and in the booking panel. `cancelled` delegates to `CancelBooking`, `no_show` to `MarkBookingNoShow`. |
 | `CancelBooking` | Actor `customer` or `owner`. Customers cannot cancel multi-slot bookings and must pass `BookingRules::canCancel` (paid, before `cancel_before_hours`). Owners cancel the whole payment group. Creates a `Refund` only for customer cancellation of a successful payment (one per payment). |
 | `RescheduleBooking` | Moves a single-slot booking to another available schedule; multi-slot is rejected. |
@@ -34,6 +35,10 @@ Unexpected checkout/reschedule failures return generic Indonesian messages to cu
 `App\Domain\Booking\BookingState` (states, transitions, labels) · `App\Domain\Booking\BookingRules` (pending hold from the payment deadline, occupancy condition, room for participants against the service capacity, unit conflicts, contiguity, cancel/reschedule policy, no-show time condition) · `App\Domain\Booking\BookingSeats` (seat rows that follow each booking).
 
 ## Data
+
+`tenants.auto_completion_started_at` bounds automatic completion under D-027. Existing enabled tenants start at migration time; new tenants start at creation; enabling the setting again records a new boundary. `CompleteBookings::completeEnded` processes at most 200 candidate IDs per batch, while `endedCount` counts in SQL through the shared `BookingTimeRange` end expression. Manual "all ended" processes at most 500 candidates per submission and tells the user to review the remaining list when the limit is reached. The scheduler reports tenant failures and continues (BQ-163).
+
+`BookingLog` writes `created_at` from the application clock and has no `updated_at`. Existing timestamps retain their stored representation because their source time zone is unknown.
 
 `bookings`: `idtenant`, `idlayanan`, `idschedule`, `namapelanggan`, `nomorhp`, `email`, `tanggalbooking`, `jam`, `status`, `idpayment`, `catatan`, `booking_code` (unique), `cancellation_token`, `reschedule_token`, `rescheduled_from_*`, `peserta` (participants, default 1). `booking_seats`: one row per participant (`idbooking`, `idschedule`, `seat_no` below the service capacity, `status` copied from the booking) with virtual `active_idschedule` (pending/paid/completed/no_show) and the unique seat index (`active_idschedule`, `seat_no`) that replaced `unique_active_booking_slot` (BQ-151). `services.kapasitas` is the capacity per slot (default 1). `units` and `service_unit` link services to shared units (BQ-152). `booking_logs` keeps an event trail.
 
@@ -52,6 +57,8 @@ Unexpected checkout/reschedule failures return generic Indonesian messages to cu
 
 `tests/Feature/Customer/SafeOperationErrorsTest.php` verifies generic checkout/session and reschedule/JSON errors, Exception/Error cleanup, preserved slot-refusal messages and redacted diagnostics with fake providers.
 
+BQ-162: `Owner/BookingCompletionTest` covers bulk completion with skipped refund and cancellation requests, the scheduler with the 6-hour cutoff and tenant switch, tenant isolation and the role mapping.
+
 BQ-084: `ThreeStepBookingFlowTest` covers the combined flow, AJAX validation/isolation, date refusals without session mutation, session-date authority, old GET redirects, unsafe characters and pinned Alpine. `BookingFlowHardeningTest` retains BQ-083 fingerprints, stale-CSRF feedback, pending banners and payment guards. Legacy date/time views and JS are removed after reference checks; routes keep their names for compatibility. Client JS lives in `public/js/booking-schedule.js`, rejects gaps inline and ignores stale/aborted AJAX responses.
 
 ## Status
@@ -64,11 +71,7 @@ Functional: Implemented · Verification: Verified (whole suite on SQLite, MySQL 
 |---|---|
 
 
-| Owner bookings list shows the service's current price instead of the charged amount, and maps payment states that do not exist | BQ-135 |
-| The reschedule UI still needs to render the owner quote difference and the customer contact hint from the slot API | BQ-140 |
-| Unit page, capacity and unit fields in Layanan, participants input in checkout and walk-in, Kalender unit filter and the no-show panel action have backend only; the UI follows | BQ-151, BQ-152, BQ-153 |
 | The customer reschedule calendar counts capacity but not unit conflicts (advisory; the time list and the claim do) | BQ-152 |
-| The hidden staff-resources module keeps its own `resources` tables until BQ-157 removes it; units were copied from it once | BQ-157 |
 
 Implemented decisions: [ADR-0005](../adr/ADR-0005-slot-bookability-module.md) (slot claims, BQ-012) and [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) (pending hold derived from the payment deadline, BQ-071). BQ-029 uses a typed checkout draft and separates catalog, schedule, checkout and payment routes. The session adapter retains the legacy shape, and placement retains the BQ-083 quote fingerprint and transactional slot claim.
 

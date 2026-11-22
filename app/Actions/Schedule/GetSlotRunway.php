@@ -21,7 +21,7 @@ class GetSlotRunway
     public function __construct(private GetAvailableSchedules $availability) {}
 
     /**
-     * @return list<array{service_id: int, service: string, open_until: ?string, warning: bool}>
+     * @return list<array{service_id: int, service: string, open_until: ?string, warning: bool, auto_open: bool}>
      */
     public function execute(Tenant $tenant): array
     {
@@ -30,8 +30,7 @@ class GetSlotRunway
         $warningDate = $today->copy()->addDays(self::WARNING_DAYS)->toDateString();
         $result = [];
 
-        // scope-bypass: filtered by the authenticated tenant
-        $services = Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->where('is_active', true)->orderBy('namalayanan')->get();
+        $services = Service::query()->where('idtenant', $tenant->id)->where('is_active', true)->orderBy('namalayanan')->get();
 
         foreach ($services as $service) {
             $openDates = collect($this->availability->getDateAvailability($tenant, $service))
@@ -46,6 +45,7 @@ class GetSlotRunway
                 'service' => (string) $service->namalayanan,
                 'open_until' => $openUntil,
                 'warning' => ! $hasSlotThisWeek || $openUntil === null || $openUntil < $warningDate,
+                'auto_open' => (bool) $service->auto_open_slots,
             ];
         }
 

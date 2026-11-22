@@ -88,13 +88,53 @@ final readonly class ReportPeriod
         return $this->start->diffInDays($this->end) < 62;
     }
 
+    /**
+     * The part of the period up to today. "Bulan ini" and the last n months end on the last day of
+     * the current month, so a comparison uses this part against an equal stretch of the previous
+     * period (T-10). A period that already ended is returned unchanged.
+     */
+    public function toDate(): self
+    {
+        $today = CarbonImmutable::now()->endOfDay();
+
+        return $this->end->gt($today) && $this->start->lte($today) ? new self($this->key, $this->start, $today) : $this;
+    }
+
+    /**
+     * The period before this one. Presets go back by whole months; when this period is only the
+     * first part of its months (see toDate), the previous one covers the same number of days from
+     * the start of the earlier months, e.g. 1–20 Nov against 1–20 Okt.
+     */
+    public function previous(): self
+    {
+        if ($this->key === 'kustom') {
+            $days = (int) $this->start->diffInDays($this->end->startOfDay()) + 1;
+
+            return new self($this->key, $this->start->subDays($days), $this->start->subDay()->endOfDay());
+        }
+
+        $months = match ($this->key) {
+            '3-bulan' => 3,
+            '6-bulan' => 6,
+            '12-bulan' => 12,
+            default => 1,
+        };
+        $start = $this->start->subMonthsNoOverflow($months);
+        $end = $this->start->subDay()->endOfDay();
+        if ($this->end->lt($this->start->addMonthsNoOverflow($months)->subDay()->startOfDay())) {
+            $end = $end->min($start->addDays((int) $this->start->diffInDays($this->end->startOfDay()))->endOfDay());
+        }
+
+        return new self($this->key, $start, $end);
+    }
+
     public function label(): string
     {
         if ($this->key !== 'kustom') {
             return self::PRESETS[$this->key];
         }
 
-        return $this->start->translatedFormat('j M Y').' – '.$this->end->translatedFormat('j M Y');
+        return $this->start->locale('id')->translatedFormat('j M Y').' – '.$this->end->locale('id')->translatedFormat('j M Y');
     }
 
     /**

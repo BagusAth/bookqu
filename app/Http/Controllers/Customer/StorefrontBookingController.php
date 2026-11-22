@@ -35,8 +35,7 @@ abstract class StorefrontBookingController extends Controller
     protected function resolveService(int $tenantId, int $serviceId): ?Service
     {
         $serviceData = Cache::remember($this->getServiceCacheKey($tenantId, $serviceId), now()->addSeconds(3600), function () use ($tenantId, $serviceId) {
-            // scope-bypass: filtered by the resolved storefront tenant
-            return Service::withoutGlobalScopes()
+            return Service::query()
                 ->where('id', $serviceId)
                 ->where('idtenant', $tenantId)
                 ->where('is_active', true)

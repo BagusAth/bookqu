@@ -298,6 +298,13 @@ class CapacityUnitsAndNoShowTest extends TestCase
         $this->actingAs($this->owner)->getJson(route('owner.units'))
             ->assertOk()
             ->assertJsonPath('conflicts.0.booking_ids', [min($a->id, $b->id), max($a->id, $b->id)]);
+        $this->get(route('owner.units'))->assertOk()
+            ->assertSeeInOrder(['Konflik mendatang', $a->namapelanggan, $b->namapelanggan])
+            ->assertDontSee('konflik lampau');
+
+        $this->travelTo(Carbon::parse(self::DATE.' 12:00:00', 'Asia/Jakarta'));
+        $this->get(route('owner.units'))->assertOk()
+            ->assertSeeInOrder(['Tidak ada konflik mendatang.', '1 konflik lampau', $a->namapelanggan, $b->namapelanggan]);
         $this->assertSame('paid', $a->fresh()->status);
     }
 
@@ -333,6 +340,20 @@ class CapacityUnitsAndNoShowTest extends TestCase
         $this->assertDatabaseHas('units', ['id' => $unit->id, 'image_path' => 'media/lapangan.png']);
     }
 
+    public function test_unit_rejects_unavailable_services_with_a_validation_error(): void
+    {
+        $this->asPro();
+        $service = $this->service();
+        $unit = $this->shareUnit($service);
+        $foreignService = Service::factory()->create(['idtenant' => Tenant::factory()->create()->id]);
+        $form = ['name' => $unit->name, 'type' => $unit->type, 'kapasitas' => $unit->kapasitas];
+
+        $this->actingAs($this->owner)->put(route('owner.units.update', $unit), $form + ['service_ids' => [$foreignService->id]])
+            ->assertSessionHasErrors('service_ids');
+        $this->assertDatabaseHas('service_unit', ['idunit' => $unit->id, 'idservice' => $service->id]);
+        $this->assertDatabaseMissing('service_unit', ['idunit' => $unit->id, 'idservice' => $foreignService->id]);
+    }
+
     public function test_failed_unit_edit_reopens_the_same_unit_with_old_input(): void
     {
         $this->asPro();
@@ -352,9 +373,10 @@ class CapacityUnitsAndNoShowTest extends TestCase
         $html = (string) $response->getContent();
         $this->assertTrue(str_contains($html, 'value="Nama dari form"'), 'The submitted name should be restored.');
         $this->assertTrue(str_contains($html, 'id="unit-edit-'.$unit->id.'-kapasitas-error"'));
-        preg_match('/<details [^>]*id="unit-edit-'.$unit->id.'"[^>]*>/', $html, $edit);
-        $this->assertStringContainsString(' open', $edit[0] ?? 'Unit editor missing');
-        $this->assertSame(0, preg_match('/<details [^>]*id="unit-create"[^>]*\bopen\b/', $html));
+        // BQ-162: unit forms open in side panels; only the failed edit panel reopens after the redirect.
+        $reopen = '/x-init="\$nextTick\(\(\) => \$dispatch\(\'open-dialog\', \{ id: \'([a-z0-9-]+)\' \}\)\)"/';
+        preg_match_all($reopen, html_entity_decode($html, ENT_QUOTES), $reopened);
+        $this->assertSame(['unit-edit-'.$unit->id], $reopened[1]);
     }
 
     public function test_unit_routes_are_refused_below_pro(): void

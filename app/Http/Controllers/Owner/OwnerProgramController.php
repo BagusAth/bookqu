@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Owner;
 use App\Actions\Service\CreateService;
 use App\Actions\Service\DeleteService;
 use App\Actions\Service\GetLayananPage;
+use App\Actions\Service\GetLayananTabCounts;
 use App\Actions\Service\ToggleServiceStatus;
 use App\Actions\Service\UpdateService;
 use App\Domain\Modules\ModuleRelease;
@@ -34,7 +35,7 @@ class OwnerProgramController extends Controller
         if ($request->query('tab') === 'add-ons') {
             abort_unless(ModuleRelease::state('add-ons') === 'released', 404);
             if (! $showAddOns) {
-                return redirect()->route('owner.subscription')->with('error', 'Add-on tersedia mulai paket Medium.');
+                return redirect()->route('owner.subscription')->with('error', 'Tambahan tersedia mulai paket Medium.');
             }
 
             return $addOns->index($request);
@@ -44,12 +45,12 @@ class OwnerProgramController extends Controller
 
         return view('owner.services', array_merge(
             $getLayananPage->execute($tenant, $request->only(['katakunci', 'category', 'search', 'status', 'sort'])),
-            ['tenant' => $tenant, 'activeTab' => $tab, 'showAddOns' => $showAddOns],
+            ['tenant' => $tenant, 'activeTab' => $tab, 'showAddOns' => $showAddOns, 'tabCounts' => app(GetLayananTabCounts::class)->execute($tenant)],
         ));
     }
 
     /**
-     * The former programs page moved to Layanan (owner-portal.md §8.6: `owner.programs.*` redirects to `owner.services.*`).
+     * The former programs page moved to Layanan (owner-portal.md §8.6).
      */
     public function legacyIndex(Request $request): RedirectResponse
     {

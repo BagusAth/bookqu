@@ -40,6 +40,8 @@
                     </div>
                 @endif
 
+                @include('auth.partials.google-button', ['label' => 'Masuk dengan Google'])
+
                 <form method="POST" action="{{ route('login.store') }}" class="space-y-4" x-data="{ loading: false, showPassword: false }" @submit="loading = true">
                     @csrf
 

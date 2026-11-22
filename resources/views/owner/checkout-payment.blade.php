@@ -5,25 +5,7 @@
 @section('content')
 <div class="mx-auto max-w-5xl space-y-6" x-data="paymentPage()">
 
-    {{-- Stepper --}}
-    <div class="flex items-center justify-center gap-0 py-2">
-        <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-bq-primary/30">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pesanan</span>
-        </div>
-        <div class="mx-3 h-0.5 w-8 rounded bg-bq-primary sm:w-16"></div>
-        <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-bq-primary/30 animate-pulse">2</div>
-            <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pembayaran</span>
-        </div>
-        <div class="mx-3 h-0.5 w-8 rounded bg-bq-border sm:w-16"></div>
-        <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-border text-sm font-semibold text-bq-text-muted">3</div>
-            <span class="hidden text-sm font-medium text-bq-text-muted sm:inline">Invoice</span>
-        </div>
-    </div>
+    @include('owner.partials.checkout-steps', ['step' => 2])
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
 
@@ -31,7 +13,7 @@
         <div class="lg:col-span-3 space-y-5">
 
             <div>
-                <h1 class="text-xl font-bold text-bq-text">Selesaikan Pembayaran</h1>
+                <h1 class="text-bq-title font-semibold text-bq-ink">Selesaikan Pembayaran</h1>
                 <p class="mt-1 text-sm text-bq-text-muted">Klik tombol di bawah untuk membuka metode pembayaran.</p>
             </div>
 

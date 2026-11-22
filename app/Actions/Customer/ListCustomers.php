@@ -7,6 +7,8 @@ namespace App\Actions\Customer;
 use App\Domain\Booking\BookingState;
 use App\Domain\Customer\CustomerIdentity;
 use App\Models\Tenant;
+use App\Support\CustomerBookingRoutes;
+use App\Support\Rupiah;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -24,7 +26,7 @@ class ListCustomers
     /** A regular customer has at least this many bookings. */
     public const REGULAR_MIN_BOOKINGS = 3;
 
-    /** A customer is dormant after this many days without a booking. */
+    /** A customer is dormant after this many days without a visit and with nothing booked ahead. */
     public const DORMANT_AFTER_DAYS = 60;
 
     public function __construct(private SumCustomerPayments $sumCustomerPayments) {}
@@ -33,6 +35,7 @@ class ListCustomers
      * @return array{
      *     customers: LengthAwarePaginator<int, object>,
      *     summary: array{total: int, new: int, returning: int},
+     *     counts: array<string, int>,
      *     search: string,
      *     filter: string|null,
      *     sort: string,
@@ -59,7 +62,7 @@ class ListCustomers
             ->select('customers.*')
             ->when($filter === 'new', fn (Builder $query) => $query->where('first_seen', '>=', $monthStart))
             ->when($filter === 'regular', fn (Builder $query) => $query->where('total_bookings', '>=', self::REGULAR_MIN_BOOKINGS))
-            ->when($filter === 'dormant', fn (Builder $query) => $query->where('last_booking_date', '<', $dormantBefore))
+            ->when($filter === 'dormant', fn (Builder $query) => $query->where('last_visit_date', '<', $dormantBefore)->where('has_upcoming', 0))
             ->when($sort === 'bookings', fn (Builder $query) => $query->orderByDesc('total_bookings'))
             ->when($sort === 'spent', fn (Builder $query) => $query
                 ->leftJoinSub($this->sumCustomerPayments->query((int) $tenant->id), 'spending', 'spending.identifier', '=', 'customers.identifier')
@@ -73,14 +76,25 @@ class ListCustomers
         $spent = $canViewRevenue ? $this->sumCustomerPayments->execute((int) $tenant->id, $identifiers) : [];
         $upcoming = $this->upcoming((int) $tenant->id, $identifiers);
 
-        $customers->getCollection()->transform(function (object $customer) use ($spent, $upcoming, $canViewRevenue): object {
+        $storefront = $tenant->slug ? CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) : null;
+        $customers->getCollection()->transform(function (object $customer) use ($spent, $upcoming, $canViewRevenue, $monthStart, $dormantBefore, $tenant, $storefront): object {
             $identifier = (string) $customer->identifier;
             $customer->total_bookings = (int) $customer->total_bookings;
             $customer->total_spent = $canViewRevenue ? ($spent[$identifier] ?? 0.0) : null;
-            $customer->formatted_spent = $canViewRevenue ? 'Rp '.number_format($spent[$identifier] ?? 0, 0, ',', '.') : null;
-            $customer->last_booking = $customer->last_booking_date ? Carbon::parse((string) $customer->last_booking_date)->format('d M Y') : '-';
+            $customer->formatted_spent = $canViewRevenue ? Rupiah::format($spent[$identifier] ?? 0) : null;
+            $customer->last_booking = $customer->last_visit_date ? self::shortDate((string) $customer->last_visit_date) : '—';
             $customer->upcoming_booking = $upcoming[$identifier] ?? null;
             $customer->panel_url = route('owner.customers.panel', ['identifier' => $identifier]);
+            $customer->whatsapp_url = GetCustomerPanel::whatsAppUrl((string) $customer->phone);
+            $customer->segment = match (true) {
+                $customer->last_visit_date && $customer->last_visit_date < $dormantBefore && ! (int) $customer->has_upcoming => 'Lama tidak datang',
+                $customer->first_seen >= $monthStart => 'Baru',
+                default => null,
+            };
+            $firstName = explode(' ', trim((string) $customer->name), 2)[0];
+            $customer->greeting = $customer->whatsapp_url === null ? null
+                : 'Halo Kak '.$firstName.', sudah lama tidak mampir ke '.$tenant->namabisnis.'. Mau kami bantu pilih jadwal?'
+                    .($storefront ? ' Booking di '.$storefront : '');
 
             return $customer;
         });
@@ -90,6 +104,8 @@ class ListCustomers
             ->selectRaw('COUNT(*) AS total')
             ->selectRaw('SUM(CASE WHEN first_seen >= ? THEN 1 ELSE 0 END) AS new_customers', [$monthStart])
             ->selectRaw('SUM(CASE WHEN total_bookings >= 2 THEN 1 ELSE 0 END) AS returning_customers')
+            ->selectRaw('SUM(CASE WHEN total_bookings >= ? THEN 1 ELSE 0 END) AS regular_customers', [self::REGULAR_MIN_BOOKINGS])
+            ->selectRaw('SUM(CASE WHEN last_visit_date < ? AND has_upcoming = 0 THEN 1 ELSE 0 END) AS dormant_customers', [$dormantBefore])
             ->first();
 
         return [
@@ -98,6 +114,12 @@ class ListCustomers
                 'total' => (int) ($summary->total ?? 0),
                 'new' => (int) ($summary->new_customers ?? 0),
                 'returning' => (int) ($summary->returning_customers ?? 0),
+            ],
+            'counts' => [
+                '' => (int) ($summary->total ?? 0),
+                'new' => (int) ($summary->new_customers ?? 0),
+                'regular' => (int) ($summary->regular_customers ?? 0),
+                'dormant' => (int) ($summary->dormant_customers ?? 0),
             ],
             'search' => $search,
             'filter' => $filter,
@@ -109,11 +131,18 @@ class ListCustomers
     /**
      * One row per customer identity. The identity is computed in a derived table because MariaDB's
      * ONLY_FULL_GROUP_BY rejects selecting an expression that is only repeated in GROUP BY.
+     *
+     * `last_booking_date` is the latest booking of any status (sort "Booking terakhir");
+     * `last_visit_date` is the latest session that took place: completed, or paid with a past date
+     * ("Terakhir datang" and the dormant segment). `has_upcoming` flags a pending or paid booking
+     * from today on, so a customer who already booked again is not dormant.
      */
     private function grouped(int $tenantId, string $search): Builder
     {
+        $today = Carbon::today()->toDateString();
+
         $bookings = DB::table('bookings')
-            ->select(['namapelanggan', 'email', 'nomorhp', 'tanggalbooking', 'created_at'])
+            ->select(['namapelanggan', 'email', 'nomorhp', 'tanggalbooking', 'created_at', 'status'])
             ->selectRaw(CustomerIdentity::sql().' AS identifier')
             ->where('idtenant', $tenantId)
             ->when($search !== '', function (Builder $query) use ($search): void {
@@ -136,6 +165,14 @@ class ListCustomers
                 DB::raw('MAX(tanggalbooking) AS last_booking_date'),
                 DB::raw('MIN(created_at) AS first_seen'),
             ])
+            ->selectRaw(
+                'MAX(CASE WHEN status = ? OR (status = ? AND tanggalbooking < ?) THEN tanggalbooking END) AS last_visit_date',
+                [BookingState::STATUS_COMPLETED, BookingState::STATUS_PAID, $today],
+            )
+            ->selectRaw(
+                'MAX(CASE WHEN status IN (?, ?) AND tanggalbooking >= ? THEN 1 ELSE 0 END) AS has_upcoming',
+                [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, $today],
+            )
             ->groupBy('identifier');
     }
 
@@ -164,9 +201,17 @@ class ListCustomers
 
         $upcoming = [];
         foreach ($rows as $row) {
-            $upcoming[(string) $row->identifier] ??= Carbon::parse((string) $row->tanggalbooking)->format('d M Y').' '.substr((string) $row->jam, 0, 5);
+            $upcoming[(string) $row->identifier] ??= self::shortDate((string) $row->tanggalbooking).' · '.str_replace(':', '.', substr((string) $row->jam, 0, 5));
         }
 
         return $upcoming;
+    }
+
+    /** "16 Nov" this year, "16 Nov 2025" otherwise (BQ-162, prototype dates). */
+    private static function shortDate(string $date): string
+    {
+        $day = Carbon::parse($date)->locale('id');
+
+        return $day->translatedFormat($day->year === now('Asia/Jakarta')->year ? 'j M' : 'j M Y');
     }
 }

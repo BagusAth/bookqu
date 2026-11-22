@@ -1,24 +1,28 @@
-<div class="space-y-5">
-    <div>
-        <h2 class="text-lg font-semibold">Tim</h2>
-        <p class="text-sm text-bq-text-muted">{{ $seatUsage }} dari {{ $seatLimit }} kursi digunakan, termasuk undangan menunggu.</p>
-    </div>
-    @if ($seatLimit > 0)
-        <form method="POST" action="{{ route('owner.team.invite') }}" class="flex flex-wrap items-end gap-3 bq-panel p-4">
-            @csrf
-            <label>Email <input name="email" type="email" value="{{ old('email') }}" required class="bq-input block"></label>
-            <label>Peran <select name="role" class="bq-input block"><option value="kasir">Kasir</option><option value="manajer">Manajer</option></select></label>
-            <button class="bq-btn bq-btn-primary">Kirim undangan</button>
-        </form>
-    @endif
-    <section class="space-y-3 bq-panel p-4">
-        <h2 class="text-lg font-semibold">Anggota aktif</h2>
+<x-ui.form-row title="Kelola tim" :description="$seatUsage.' dari '.$seatLimit.' kursi digunakan, termasuk undangan menunggu.'">
+    <div><x-ui.button :href="route('owner.team.index')">Kelola tim</x-ui.button></div>
+</x-ui.form-row>
+@if ($seatLimit > 0)
+    <form method="POST" action="{{ route('owner.team.invite') }}">
+        @csrf
+        <x-ui.form-row title="Undang anggota">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <label class="grid gap-1 text-sm">Email <x-ui.input name="email" type="email" :value="old('email')" required /></label>
+                <label class="grid gap-1 text-sm">Peran <x-ui.select name="role"><option value="kasir">Kasir</option><option value="manajer">Manajer</option></x-ui.select></label>
+            </div>
+        </x-ui.form-row>
+        <x-ui.savebar class="!static flex-wrap">
+        <x-ui.button variant="ghost" :href="route('owner.settings', ['tab' => 'tim'])">Batal</x-ui.button>
+        <x-ui.button type="submit" variant="primary">Kirim undangan</x-ui.button>
+    </x-ui.savebar>
+    </form>
+@endif
+    <x-ui.form-row title="Anggota aktif">
         @foreach ($members as $member)
             <div class="flex flex-wrap items-center gap-3">
                 <span>{{ $member->user?->namalengkap }} · {{ ucfirst($member->role) }}</span>
                 <x-owner.status-badge type="availability" status="active" />
                 @unless (\App\Domain\Team\TenantPermission::isOwnerRole($member->role))
-                    <form method="POST" action="{{ route('owner.team.change', $member->id) }}" class="flex items-center gap-2">
+                    <form method="POST" action="{{ route('owner.team.change', $member->id) }}" class="flex flex-wrap items-center gap-2">
                         @csrf @method('PATCH')
                         <select name="role" aria-label="Peran {{ $member->user?->namalengkap }}" class="bq-input">
                             <option value="kasir" @selected($member->role === 'kasir')>Kasir</option>
@@ -33,9 +37,8 @@
                 @endunless
             </div>
         @endforeach
-    </section>
-    <section class="space-y-3 bq-panel p-4">
-        <h2 class="text-lg font-semibold">Undangan menunggu</h2>
+    </x-ui.form-row>
+    <x-ui.form-row title="Undangan menunggu">
         @forelse ($invitations as $invitation)
             <form method="POST" action="{{ route('owner.team.invitation-revoke', $invitation->id) }}" id="team-invite-revoke-{{ $invitation->id }}" x-data class="flex flex-wrap items-center gap-3">
                 @csrf @method('DELETE')
@@ -45,14 +48,12 @@
         @empty
             <p>Belum ada undangan yang menunggu.</p>
         @endforelse
-    </section>
-    <section class="space-y-3 bq-panel p-4">
-        <h2 class="text-lg font-semibold">Riwayat aktivitas</h2>
+    </x-ui.form-row>
+    <x-ui.form-row title="Riwayat aktivitas">
         @forelse ($activity as $entry)
             <p>{{ $entry->local_time }} · {{ $entry->actor_name ?? 'Akun tidak tersedia' }} ({{ ucfirst($entry->role) }}) · {{ $entry->label }}</p>
         @empty
             <p>Belum ada aktivitas yang tercatat.</p>
         @endforelse
         {{ $activity->links() }}
-    </section>
-</div>
+    </x-ui.form-row>

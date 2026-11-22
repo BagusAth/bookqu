@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -39,8 +38,7 @@ class Refund extends Model
     /** @return BelongsTo<RefundRequest, $this> */
     public function refundRequest(): BelongsTo
     {
-        // scope-bypass: admin reads the request of this refund by its stored foreign key.
-        return $this->belongsTo(RefundRequest::class)->withoutGlobalScope(TenantScope::class);
+        return $this->belongsTo(RefundRequest::class);
     }
 
     public function getJumlahFormattedAttribute(): string

@@ -6,12 +6,13 @@ use App\Domain\Modules\ModuleRelease;
 use App\Domain\Subscription\EntitlementRules;
 use App\Models\AdditionalItem;
 use App\Models\Tenant;
+use App\Support\Rupiah;
 
 final class GetBookingAddOnOptions
 {
     /**
      * @param  list<int>  $serviceIds
-     * @return array<int, list<array{id: int, name: string}>>
+     * @return array<int, list<array{id: int, name: string, price_label: string}>>
      */
     public function execute(Tenant $tenant, array $serviceIds): array
     {
@@ -28,7 +29,7 @@ final class GetBookingAddOnOptions
         $options = [];
         foreach ($items as $item) {
             foreach ($item->services as $service) {
-                $options[(int) $service->getKey()][] = ['id' => $item->id, 'name' => $item->name];
+                $options[(int) $service->getKey()][] = ['id' => $item->id, 'name' => $item->name, 'price_label' => Rupiah::format($item->price)];
             }
         }
 

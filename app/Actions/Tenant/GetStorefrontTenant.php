@@ -2,8 +2,13 @@
 
 namespace App\Actions\Tenant;
 
+use App\Domain\Subscription\EntitlementRules;
+use App\Domain\Subscription\PlanCapability;
+use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\Cache;
+use PDOException;
 
 final class GetStorefrontTenant
 {
@@ -26,6 +31,26 @@ final class GetStorefrontTenant
     public function forget(int $tenantId): void
     {
         Cache::forget($this->key($tenantId));
+    }
+
+    public function knownSlug(string $candidate): ?string
+    {
+        return Tenant::query()->where('slug', $candidate)->value('slug');
+    }
+
+    public function canBrandError(Tenant $tenant, bool $customDomain): bool
+    {
+        try {
+            // Errors may render after TenantContext clears; the middleware-resolved tenant is explicit.
+            $subscription = app(TenantContext::class)->run((int) $tenant->id, fn (): ?Subscription => Subscription::query()
+                ->where('idtenant', $tenant->id)->with('plan')->latest('id')->first());
+        } catch (PDOException) {
+            return false;
+        }
+
+        return $customDomain
+            ? EntitlementRules::canAccessFeature($subscription, PlanCapability::FEATURE_LANDING_PAGE)['allowed']
+            : EntitlementRules::hasEffectivePlan($subscription);
     }
 
     private function key(int $tenantId): string

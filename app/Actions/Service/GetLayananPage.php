@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Service;
 
+use App\Actions\Schedule\GetSlotRunway;
 use App\Domain\Booking\BookingState;
 use App\Domain\Modules\ModuleRelease;
 use App\Domain\Subscription\EntitlementRules;
@@ -30,11 +31,15 @@ class GetLayananPage
 
     public const TAB_CATEGORIES = 'kategori';
 
+    public function __construct(private GetSlotRunway $slotRunway) {}
+
     /**
      * @param  array{katakunci?: string, category?: int|string|null, search?: string, status?: string, sort?: string}  $filters
      * @return array{
      *     services: LengthAwarePaginator<int, Service>,
      *     serviceCards: list<array<string, mixed>>,
+     *     slotRunway: array<int, string|null>,
+     *     commonSlotDate: string|null,
      *     unitOptions: list<array{id: string, name: string}>|null,
      *     pickerImages: list<array{id: int, url: string, alt: string}>,
      *     galleryUrl: string|null,
@@ -59,7 +64,7 @@ class GetLayananPage
             && EntitlementRules::canAccessFeature($tenant->subscription, 'add-ons')['allowed'];
 
         $services = Service::where('idtenant', $tenant->id)
-            ->with(['category', 'units:units.id'])
+            ->with(['category', 'units:units.id,units.name'])
             ->when($showAddOns, fn ($query) => $query->with('additionalItems:additional_items.id'))
             ->withCount(['bookings', 'bookings as future_booking_count' => fn ($query) => $query
                 ->whereIn('status', [BookingState::STATUS_PAID, BookingState::STATUS_PENDING])
@@ -100,7 +105,12 @@ class GetLayananPage
                 ->map(fn (Unit $unit): array => ['id' => (string) $unit->id, 'name' => $unit->name])->all();
         }
 
+        $slotRunway = collect($this->slotRunway->execute($tenant))->pluck('open_until', 'service_id');
+        $commonSlotDate = $slotRunway->filter()->countBy()->sortKeysDesc()->sortDesc()->keys()->first();
+
         return [
+            'slotRunway' => $slotRunway->all(),
+            'commonSlotDate' => $commonSlotDate,
             'unitOptions' => $unitOptions,
             'addOnOptions' => $showAddOns ? AdditionalItem::where('idtenant', $tenant->id)->orderBy('name')->get(['id', 'name']) : null,
             'services' => $services,
@@ -137,11 +147,13 @@ class GetLayananPage
             'imageUrl' => $service->cover_image_url,
             'isActive' => (bool) $service->is_active,
             'isPopular' => (bool) $service->is_popular,
+            'autoOpenSlots' => (bool) $service->auto_open_slots,
             'bookingCount' => (int) $service->bookings_count,
             'futureBookingCount' => (int) $service->getAttribute('future_booking_count'),
             'addOnIds' => $service->relationLoaded('additionalItems') ? $service->additionalItems->pluck('id')->map(fn ($id): string => (string) $id)->all() : [],
             'capacity' => (int) $service->kapasitas,
             'unitIds' => $service->units->pluck('id')->map(fn ($id): string => (string) $id)->all(),
+            'unitNames' => $service->units->pluck('name')->all(),
             // AC-LYN-02: a service with any booking can only be deactivated.
             'canDelete' => ! $hasHistory,
         ];

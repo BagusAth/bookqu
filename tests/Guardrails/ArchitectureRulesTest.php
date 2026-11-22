@@ -76,6 +76,45 @@ class ArchitectureRulesTest extends TestCase
         }));
     }
 
+    public function test_scope_bypasses_stay_in_the_four_adr_0010_boundaries(): void
+    {
+        $allowed = [
+            // Platform-admin read models.
+            'app/Http/Controllers/Admin/AdminDashboardController.php' => 8,
+            'app/Http/Controllers/Admin/AdminPayoutController.php' => 2,
+            'app/Http/Controllers/Admin/AdminRefundController.php' => 1,
+            // Tenant discovery before scoped work can start.
+            'app/Actions/Payment/PaymentOutcomeIntake.php' => 1,
+            'app/Actions/Payment/ProcessPaymentWebhook.php' => 1,
+            'app/Actions/Team/ResolveTenantMembership.php' => 3,
+            'app/Http/Middleware/AuthenticateOwnerApiKey.php' => 1,
+            'app/Support/TenantDiscovery.php' => 4,
+            // Cross-tenant candidate scans before the runner.
+            'app/Actions/Payment/RemindOpenRefundRequests.php' => 1,
+            'app/Actions/Subscription/SendSubscriptionReminders.php' => 1,
+            'app/Console/Commands/CheckExpiredSubscriptions.php' => 1,
+            'app/Console/Commands/ExpireBookingPayments.php' => 1,
+            // Customer access grant, subject and delivery resolution.
+            'app/Actions/CustomerAccess/DeliverManagementAccess.php' => 1,
+            'app/Actions/CustomerAccess/LoadAccessSubject.php' => 3,
+            'app/Actions/CustomerAccess/ResolveCustomerAccess.php' => 2,
+        ];
+
+        $actual = $this->countCallback(['app', 'routes'], static function (string $source): int {
+            $methods = [
+                'withoutglobalscope', 'withoutglobalscopes', 'withoutglobalscopesexcept',
+                'newquerywithoutscope', 'newquerywithoutscopes',
+            ];
+
+            return count(array_filter(token_get_all($source), static fn ($token): bool => is_array($token)
+                && $token[0] === T_STRING && in_array(strtolower($token[1]), $methods, true)));
+        });
+
+        ksort($allowed);
+        ksort($actual);
+        $this->assertSame($allowed, $actual, 'Keep tenant scope bypasses inside the reviewed ADR-0010 boundaries.');
+    }
+
     public function test_payment_success_and_failure_are_written_only_by_the_payment_lifecycle(): void
     {
         $this->assertRule('payment-status-writers', $this->countMatches(

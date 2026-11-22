@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Domain\CustomerAccess\AccessProfile;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -85,15 +86,20 @@ class CustomerFrontendSpecificationTest extends TestCase
 
     public function test_program_selection_contains_prescribed_copy_and_affordance(): void
     {
+        app(CreateTrialSubscription::class)->execute($this->tenant);
+
         $response = $this->get('/'.$this->tenant->slug);
 
         $response->assertStatus(200);
-        $response->assertSee('Pilih Layanan');
-        $response->assertSee('Pilih salah satu layanan untuk memulai pemesanan.');
-        $response->assertSee('placeholder="Cari layanan..."', false);
-        $response->assertSee('Pilih Layanan Ini');
+        // Design A §7.1: hero titled "Reservasi di {bisnis}", search, and each service is a submit button.
+        $response->assertSee('Reservasi di '.$this->tenant->namabisnis);
+        $response->assertSee('placeholder="Cari layanan"', false);
+        $response->assertSee('Semua layanan');
+        $response->assertSee('aria-label="Pilih Foto Wisuda Personal"', false);
+        $response->assertSee('name="service_id"', false);
+        $response->assertDontSee('cdn.jsdelivr.net/npm/alpinejs');
         $response->assertSee('Foto Wisuda Personal');
-        $response->assertSee('Rp 150.000');
+        $response->assertSee('Rp150.000');
     }
 
     public function test_date_selection_view_renders_canonical_copy(): void
@@ -108,9 +114,11 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->get('/'.$this->tenant->slug.'/booking/schedule');
 
         $response->assertStatus(200);
-        $response->assertSee('Pilih Tanggal');
-        $response->assertSee('Pilih tanggal yang tersedia untuk reservasi Anda.');
-        $response->assertSee('Kembali ke Pilih Layanan');
+        // Design A §7.2: step header, date strip and calendar sheet.
+        $response->assertSee('Langkah 2 dari 3');
+        $response->assertSee('Pilih tanggal');
+        $response->assertSee('Kalender');
+        $response->assertSee('Kembali ke pilih layanan');
     }
 
     public function test_time_selection_provides_range_labels_and_prices(): void
@@ -126,12 +134,12 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->get('/'.$this->tenant->slug.'/booking/schedule');
 
         $response->assertStatus(200);
-        $response->assertSee('Pilih Waktu');
-        $response->assertSee('10:00 – 11:00');
-        $response->assertSee('11:00 – 12:00');
-        $response->assertSee('Rp 150.000');
+        $response->assertSee('Pilih waktu');
+        $response->assertSee('10.00 – 11.00');
+        $response->assertSee('11.00 – 12.00');
+        $response->assertSee('Rp150.000');
         $response->assertSee('Lanjutkan');
-        $response->assertSee('Kembali ke Pilih Layanan');
+        $response->assertSee('Kembali ke pilih layanan');
     }
 
     public function test_checkout_view_renders_mobile_reservation_review_card_and_canonical_copy(): void
@@ -149,12 +157,12 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->get('/'.$this->tenant->slug.'/booking/checkout');
 
         $response->assertStatus(200);
-        $response->assertSee('Data Pemesan');
-        $response->assertSee('Pastikan nama, email, dan nomor WhatsApp Anda sudah benar.');
-        $response->assertSee('Detail Reservasi');
-        $response->assertSee('Simpan data kontak di perangkat ini untuk pemesanan berikutnya.');
-        $response->assertSee('Lanjut ke Pembayaran');
-        $response->assertSee('Kembali ke Jadwal');
+        $response->assertSee('Data pemesan');
+        $response->assertSee('Bukti reservasi dan tautan kelola dikirim ke email ini.'); // Design A §7.3
+        $response->assertSee('Ringkasan reservasi');
+        $response->assertSee('Simpan nama, email dan nomor di perangkat ini untuk Studio Foto Bagus');
+        $response->assertSee('Lanjut ke pembayaran');
+        $response->assertSee('Kembali ke jadwal');
         $response->assertSee('2 sesi (120 menit)');
         // Ensure obsolete voucher input is removed
         $response->assertDontSee('voucher_code_input');
@@ -192,14 +200,15 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/'.$this->tenant->slug.'/booking/payment/'.$orderId);
 
         $response->assertStatus(200);
-        $response->assertSee('Bayar Sekarang');
+        $response->assertSee('Bayar sekarang');
+        $response->assertSee('id="state-pending-card" class="block relative space-y-4"', false);
         $response->assertSee('Bayar sebelum');
-        $response->assertSee('Rp 300.000');
+        $response->assertSee('Rp300.000');
         // Auto-click script must NOT exist
         $response->assertDontSee('payButton.click()');
 
         // Expiration time must be formatted in WIB (Asia/Jakarta)
-        $expectedWib = now('Asia/Jakarta')->addMinutes(15)->format('H:i');
+        $expectedWib = now('Asia/Jakarta')->addMinutes(15)->format('H.i');
         $response->assertSee($expectedWib.' WIB');
 
         // Cancel action must point to the slug route, not http://{slug}
@@ -251,6 +260,36 @@ class CustomerFrontendSpecificationTest extends TestCase
         $this->assertEquals('cancelled', $booking->fresh()->status);
     }
 
+    public function test_failed_and_expired_payments_show_their_recovery_state_without_contacting_a_gateway(): void
+    {
+        foreach ([
+            // Design A §7.8 copy.
+            ['status' => 'gagal', 'seconds' => 600, 'card' => 'failed', 'title' => 'Pembayaran gagal', 'action' => 'Coba bayar lagi'],
+            ['status' => 'pending', 'seconds' => -60, 'card' => 'expired', 'title' => 'Waktu pembayaran habis', 'action' => 'Pilih jadwal lagi'],
+        ] as $state) {
+            $payment = Payment::factory()->create([
+                'idtenant' => $this->tenant->id,
+                'status' => $state['status'],
+                'provider' => 'singapay',
+                'expired_at' => now()->addSeconds($state['seconds']),
+            ]);
+            Booking::factory()->create([
+                'idtenant' => $this->tenant->id,
+                'idlayanan' => $this->service->id,
+                'idschedule' => $this->schedule1->id,
+                'idpayment' => $payment->id,
+                'status' => $state['card'] === 'failed' ? 'cancelled' : 'pending',
+            ]);
+
+            $this->grantCustomerAccess($payment, AccessProfile::Checkout)
+                ->get('/'.$this->tenant->slug.'/booking/payment/'.$payment->order_id)
+                ->assertOk()
+                ->assertSee('id="state-'.$state['card'].'-card" class="block"', false)
+                ->assertSeeText($state['title'])->assertSeeText($state['action'])
+                ->assertSee('href="https://wa.me/6281299998888?', false);
+        }
+    }
+
     public function test_invoice_and_management_share_links_do_not_leak_manage_tokens(): void
     {
         $orderId = 'ORD-'.strtoupper(Str::random(10));
@@ -285,7 +324,7 @@ class CustomerFrontendSpecificationTest extends TestCase
         // 1. Check Invoice View
         $responseInvoice = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/'.$this->tenant->slug.'/booking/payment/'.$orderId.'/invoice');
         $responseInvoice->assertStatus(200);
-        $responseInvoice->assertSee('Bukti Reservasi & Pembayaran');
+        $responseInvoice->assertSee('Bukti pembayaran reservasi');
         $responseInvoice->assertSee('Tambahkan ke Google Calendar');
         $responseInvoice->assertSee('Bagikan ke WhatsApp');
 
@@ -370,8 +409,8 @@ class CustomerFrontendSpecificationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Reservasi ini terdiri dari beberapa sesi yang berurutan. Perubahan atau pembatalan per sesi tidak tersedia.');
-        $response->assertDontSee('Ubah Jadwal');
-        $response->assertDontSee('Batalkan Reservasi');
+        $response->assertDontSee('Ubah jadwal');
+        $response->assertDontSee('Batalkan reservasi');
     }
 
     public function test_single_slot_management_displays_reschedule_and_hides_direct_cancellation(): void
@@ -408,8 +447,8 @@ class CustomerFrontendSpecificationTest extends TestCase
         $response = $this->grantCustomerAccess($payment)->get('/manage/payment/'.$orderId.'?token='.$manageToken);
 
         $response->assertStatus(200);
-        $response->assertSee('Ubah Jadwal');
-        $response->assertDontSee('Batalkan Reservasi');
-        $response->assertDontSee('Ya, Batalkan Reservasi');
+        $response->assertSee('Ubah jadwal');
+        $response->assertDontSee('Batalkan reservasi');
+        $response->assertDontSee('Ya, batalkan reservasi');
     }
 }

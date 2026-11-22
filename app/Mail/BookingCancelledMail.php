@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Actions\Customer\GetCustomerEmailData;
 use App\Models\Booking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -14,18 +15,15 @@ class BookingCancelledMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public string $priceLabel;
-
     public function __construct(public Booking $booking)
     {
-        $this->priceLabel = $booking->priceLabel;
         $this->afterCommit();
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '❌ Booking Dibatalkan — '.$this->booking->booking_code,
+            subject: 'Reservasi dibatalkan — '.$this->booking->booking_code,
         );
     }
 
@@ -33,6 +31,7 @@ class BookingCancelledMail extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'emails.booking-cancelled',
+            with: app(GetCustomerEmailData::class)->execute([$this->booking]),
         );
     }
 }

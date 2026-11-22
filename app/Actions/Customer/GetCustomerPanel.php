@@ -70,7 +70,7 @@ class GetCustomerPanel
     /**
      * A wa.me link for an Indonesian phone number, or null when the number is too short.
      */
-    public static function whatsAppUrl(string $phone): ?string
+    public static function whatsAppUrl(string $phone, ?string $message = null): ?string
     {
         $digits = preg_replace('/\D+/', '', $phone) ?? '';
         if (str_starts_with($digits, '0')) {
@@ -79,6 +79,10 @@ class GetCustomerPanel
             $digits = '62'.$digits;
         }
 
-        return strlen($digits) >= 9 ? 'https://wa.me/'.$digits : null;
+        if (strlen($digits) < 9) {
+            return null;
+        }
+
+        return 'https://wa.me/'.$digits.($message === null ? '' : '?text='.rawurlencode($message));
     }
 }

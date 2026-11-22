@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Owner;
 
 use App\Actions\Booking\BookingPricingReservations;
 use App\Actions\Booking\GetPromoFigures;
+use App\Actions\Report\GetReport;
 use App\Actions\Schedule\ClaimSlots;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\Voucher;
+use App\Support\ReportPeriod;
+use App\Support\Rupiah;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -36,16 +39,19 @@ class OwnerVoucherController extends Controller
         $today = Carbon::today()->toDateString();
         $promoTabs = ['active' => 'Aktif', 'scheduled' => 'Terjadwal', 'expired' => 'Berakhir', 'all' => 'Semua'];
         $requestedTab = $request->string('tab')->toString();
-        $tab = isset($promoTabs[$requestedTab]) ? $requestedTab : 'all';
+        $tab = isset($promoTabs[$requestedTab]) ? $requestedTab : 'active';
         $allVouchers = Voucher::where('idtenant', $tenant->id);
         $active = (clone $allVouchers)->where('is_active', true)
             ->where(fn ($query) => $query->whereNull('start_date')->orWhereDate('start_date', '<=', $today))
             ->where(fn ($query) => $query->whereNull('end_date')->orWhereDate('end_date', '>=', $today));
         $promoFigures = app(GetPromoFigures::class)->execute($tenant) + ['active' => $active->count()];
+        $scheduled = (clone $allVouchers)->where('is_active', true)->whereDate('start_date', '>', $today);
+        $expired = (clone $allVouchers)->whereDate('end_date', '<', $today);
+        $tabCounts = ['active' => (clone $active)->count(), 'scheduled' => (clone $scheduled)->count(), 'expired' => (clone $expired)->count(), 'all' => (clone $allVouchers)->count()];
         $vouchers = match ($tab) {
             'active' => $active,
-            'scheduled' => $allVouchers->where('is_active', true)->whereDate('start_date', '>', $today),
-            'expired' => $allVouchers->whereDate('end_date', '<', $today),
+            'scheduled' => $scheduled,
+            'expired' => $expired,
             default => $allVouchers,
         };
         $vouchers = $vouchers
@@ -73,10 +79,30 @@ class OwnerVoucherController extends Controller
                 },
                 'services' => ! $services || $services === 'all' ? 'Semua layanan' : collect(explode(',', $services))
                     ->map(fn (string $id): string => $serviceNames->get((int) $id, 'Layanan dihapus'))->implode(', '),
+                'value' => $promo->discount_type === 'percentage'
+                    ? rtrim(rtrim(number_format((float) $promo->discount_value, 2, ',', '.'), '0'), ',').'%'
+                    : Rupiah::format($promo->discount_value),
+                'period' => match (true) {
+                    $promo->start_date !== null && $promo->end_date !== null => Carbon::parse($promo->start_date)->locale('id')->translatedFormat('j M').' – '.Carbon::parse($promo->end_date)->locale('id')->translatedFormat('j M Y'),
+                    $promo->end_date !== null => 'Sampai '.Carbon::parse($promo->end_date)->locale('id')->translatedFormat('j M Y'),
+                    default => 'Tanpa batas waktu',
+                },
+                'almostOut' => $promo->usage_limit > 0 && $promo->used_count >= $promo->usage_limit * 0.9,
+                'limits' => $promo->quietHoursLabel(),
             ]];
         });
 
-        return view('owner.vouchers', compact('vouchers', 'services', 'search', 'promoRoute', 'promoTabs', 'tab', 'promoFigures', 'cards'));
+        // Quiet-hour suggestion (D-026, prototype "Promo untuk jam sepi"): the quietest day and hour of the last 30 days.
+        $quiet = null;
+        if ($tab === 'active') {
+            $period = ReportPeriod::fromQuery(['periode' => 'kustom', 'dari' => Carbon::today()->subDays(29)->toDateString(), 'sampai' => $today]);
+            $occupancy = app(GetReport::class)->execute($tenant, $period, 'okupansi')['occupancy'] ?? null;
+            if (($occupancy['quietestDay'] ?? null) !== null) {
+                $quiet = ['day' => $occupancy['quietestDay'], 'hour' => $occupancy['quietestHour']];
+            }
+        }
+
+        return view('owner.vouchers', compact('vouchers', 'services', 'search', 'promoRoute', 'promoTabs', 'tab', 'tabCounts', 'promoFigures', 'cards', 'quiet'));
     }
 
     public function store(Request $request)
@@ -98,13 +124,14 @@ class OwnerVoucherController extends Controller
             'is_active' => 'nullable|boolean',
             'applicable_services' => 'nullable|array',
             'applicable_services.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            ...self::quietHourRules(),
         ]);
 
         $applicableServices = ! empty($validated['applicable_services'])
             ? implode(',', $validated['applicable_services'])
             : 'all';
 
-        $voucher = Voucher::create([
+        $voucher = Voucher::create(self::quietHours($validated) + [
             'idtenant' => $tenant->id,
             'code' => strtoupper($validated['code']),
             'discount_type' => $validated['discount_type'],
@@ -144,6 +171,7 @@ class OwnerVoucherController extends Controller
             'is_active' => 'required|boolean',
             'applicable_services' => 'nullable|array',
             'applicable_services.*' => ['integer', Rule::exists('services', 'id')->where('idtenant', $tenant->id)],
+            ...self::quietHourRules(),
         ]);
 
         $applicableServices = ! empty($validated['applicable_services'])
@@ -157,7 +185,9 @@ class OwnerVoucherController extends Controller
             if (isset($validated['usage_limit']) && (int) $validated['usage_limit'] < $voucher->used_count + $held) {
                 throw ValidationException::withMessages(['usage_limit' => 'Kuota lebih kecil dari pemakaian dan pesanan aktif.']);
             }
-            $voucher->update([
+            $quietHours = array_key_exists('valid_days', $validated) || array_key_exists('valid_from_time', $validated)
+                ? self::quietHours($validated) : [];
+            $voucher->update($quietHours + [
                 'code' => strtoupper($validated['code']),
                 'discount_type' => $validated['discount_type'],
                 'discount_value' => $validated['discount_value'],
@@ -178,6 +208,37 @@ class OwnerVoucherController extends Controller
 
         return redirect()->route('owner.promos')
             ->with('sukses', 'Voucher "'.$voucher->code.'" berhasil diperbarui!');
+    }
+
+    /**
+     * Optional day and time limits of a quiet-hour promo (FR-VOUCHER-006).
+     *
+     * @return array<string, mixed>
+     */
+    private static function quietHourRules(): array
+    {
+        return [
+            'valid_days' => 'nullable|array',
+            'valid_days.*' => 'integer|between:1,7',
+            'valid_from_time' => 'nullable|date_format:H:i|required_with:valid_until_time',
+            'valid_until_time' => 'nullable|date_format:H:i|required_with:valid_from_time|after:valid_from_time',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array{valid_days: ?string, valid_from_time: ?string, valid_until_time: ?string}
+     */
+    private static function quietHours(array $validated): array
+    {
+        $days = array_values(array_unique(array_map('intval', $validated['valid_days'] ?? [])));
+        sort($days);
+
+        return [
+            'valid_days' => $days === [] ? null : implode(',', $days),
+            'valid_from_time' => $validated['valid_from_time'] ?? null,
+            'valid_until_time' => $validated['valid_until_time'] ?? null,
+        ];
     }
 
     public function destroy(int $id)

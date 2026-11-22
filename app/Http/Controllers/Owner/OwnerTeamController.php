@@ -14,7 +14,7 @@ final class OwnerTeamController extends Controller
 {
     public function index(): RedirectResponse
     {
-        return redirect()->route('owner.settings.business', ['tab' => 'tim'], 301);
+        return redirect()->route('owner.settings', ['tab' => 'tim'], 301);
     }
 
     public function invite(Request $request, TenantContext $context, ManageTeam $team): RedirectResponse

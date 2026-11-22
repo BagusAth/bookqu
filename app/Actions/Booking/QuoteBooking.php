@@ -31,8 +31,7 @@ final class QuoteBooking
             $subscription = $tenant->subscription()->with('plan')->first();
             if (filled($code)) {
                 $this->requireFeature($subscription, 'promos', 'voucher_code');
-                // scope-bypass: a checkout quote only looks up codes within the resolved tenant.
-                $voucher = Voucher::withoutGlobalScopes()->where('idtenant', $tenant->id)
+                $voucher = Voucher::where('idtenant', $tenant->id)
                     ->where('code', strtoupper(trim((string) $code)))->first();
                 if ($voucher === null || ($voucher->usage_limit !== null
                     && $voucher->used_count + $this->reservations->held('voucher_id', $voucher->id) >= $voucher->usage_limit)) {
@@ -41,8 +40,7 @@ final class QuoteBooking
             }
             if ($selection !== []) {
                 $this->requireFeature($subscription, 'add-ons', 'selected_addons');
-                // scope-bypass: selected items must belong to the tenant and be linked to this service.
-                $linked = AdditionalItem::withoutGlobalScopes()->where('additional_items.idtenant', $tenant->id)
+                $linked = AdditionalItem::where('additional_items.idtenant', $tenant->id)
                     ->where('is_active', true)->whereIn('id', array_column($selection, 'id'))
                     ->whereExists(fn ($link) => $link->selectRaw('1')->from('additional_item_service')
                         ->whereColumn('idadditional_item', 'additional_items.id')->where('idservice', $service->id))

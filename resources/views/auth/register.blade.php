@@ -16,8 +16,12 @@
                     <a href="/" class="flex items-center justify-center">
                         <img src="{{ asset('images/logo.png') }}" alt="BookQu Logo" class="h-10 w-auto" />
                     </a>
-                    <h1 class="mt-4 text-2xl font-bold text-slate-900">Daftar Akun Baru</h1>
-                    <p class="mt-2 text-sm text-slate-600">Mulai gratis dan kelola booking bisnis Anda sekarang.</p>
+                    @php
+                        // BQ-172: the same form completes a Google registration (no email or password fields).
+                        $googleProfile = $googleProfile ?? null;
+                    @endphp
+                    <h1 class="mt-4 text-2xl font-bold text-slate-900">{{ $googleProfile ? 'Lengkapi Data Bisnis' : 'Daftar Akun Baru' }}</h1>
+                    <p class="mt-2 text-sm text-slate-600">{{ $googleProfile ? 'Satu langkah lagi untuk mulai memakai BookQu dengan akun Google Anda.' : 'Mulai gratis dan kelola booking bisnis Anda sekarang.' }}</p>
                 </div>
 
                 @php
@@ -66,7 +70,11 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('register.store') }}" class="space-y-4" x-data="{ loading: false, showPass: false, showConfirm: false }" @submit="loading = true">
+                @unless ($googleProfile)
+                    @include('auth.partials.google-button', ['label' => 'Daftar dengan Google'])
+                @endunless
+
+                <form method="POST" action="{{ $googleProfile ? route('auth.google.complete.store') : route('register.store') }}" class="space-y-4" x-data="{ loading: false, showPass: false, showConfirm: false }" @submit="loading = true">
                     @csrf
                     @if (filled($planParam))
                         <input type="hidden" name="plan" value="{{ $planParam }}">
@@ -79,7 +87,7 @@
                             type="text" 
                             name="name" 
                             placeholder="Nama Anda"
-                            value="{{ old('name') }}"
+                            value="{{ old('name', $googleProfile['name'] ?? '') }}"
                             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('name') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                             required
                         />
@@ -93,9 +101,10 @@
                         <input 
                             id="email" 
                             type="email" 
-                            name="email" 
+                            @unless ($googleProfile) name="email" @endunless
                             placeholder="nama@email.com"
-                            value="{{ old('email') }}"
+                            value="{{ $googleProfile['email'] ?? old('email') }}"
+                            @readonly($googleProfile)
                             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent {{ $errors->has('email') ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-[#4F46E5]' }}"
                             required
                         />
@@ -168,6 +177,7 @@
                         @enderror
                     </div>
 
+                    @unless ($googleProfile)
                     <div>
                         <label for="password" class="block text-sm font-medium text-slate-700 mb-2">Password</label>
                         <div class="relative">
@@ -229,6 +239,7 @@
                             <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
                         @enderror
                     </div>
+                    @endunless
 
                     <label class="flex items-center">
                         <input type="checkbox" name="terms" class="rounded border-slate-300 text-[#4F46E5] focus:ring-[#4F46E5]" @checked(old('terms')) required />

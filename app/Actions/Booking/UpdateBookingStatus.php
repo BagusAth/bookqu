@@ -13,6 +13,7 @@ use App\Models\Booking;
 use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Notifications\BookingStatusChangedOwnerNotification;
+use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -34,9 +35,10 @@ class UpdateBookingStatus
      *
      * @param  string  $newStatus  'paid'|'completed'|'cancelled'|'no_show'
      * @param  string  $actor  'owner'
+     * @param  bool  $notify  false for bulk and automatic completion (FR-BOOKING-024/025), which report one result instead of one mail per booking
      * @return array{success: bool, error?: string, booking?: Booking}
      */
-    public function execute(Booking $booking, string $newStatus, string $actor = 'owner', ?string $reason = null): array
+    public function execute(Booking $booking, string $newStatus, string $actor = 'owner', ?string $reason = null, bool $notify = true): array
     {
         if ($newStatus === BookingState::STATUS_CANCELLED) {
             return $this->cancelBooking->execute($booking, $actor, $reason);
@@ -45,21 +47,24 @@ class UpdateBookingStatus
             return $this->markBookingNoShow->execute($booking);
         }
 
-        return DB::transaction(function () use ($booking, $newStatus, $actor): array {
+        return app(TenantContext::class)->run((int) $booking->idtenant, fn (): array => DB::transaction(function () use ($booking, $newStatus, $actor, $notify): array {
             ClaimSlots::lockTenant((int) $booking->idtenant);
             $booking->refresh();
 
-            return $this->updateLocked($booking, $newStatus, $actor);
-        });
+            return $this->updateLocked($booking, $newStatus, $actor, $notify);
+        }));
     }
 
     /** @return array{success: bool, error?: string, booking?: Booking} */
-    private function updateLocked(Booking $booking, string $newStatus, string $actor): array
+    private function updateLocked(Booking $booking, string $newStatus, string $actor, bool $notify = true): array
     {
         if (! BookingState::canTransition($booking->status, $newStatus)) {
             return ['success' => false, 'error' => "Status tidak dapat diubah dari '{$booking->status}' ke '{$newStatus}'."];
         }
         $payment = $booking->payment;
+        if ($booking->idpayment !== null && ! $payment instanceof Payment) {
+            return ['success' => false, 'error' => 'Pembayaran booking tidak tersedia.'];
+        }
         if ($payment instanceof Payment) {
             if ((int) $payment->idtenant !== (int) $booking->idtenant) {
                 return ['success' => false, 'error' => 'Pembayaran booking tidak tersedia.'];
@@ -108,7 +113,7 @@ class UpdateBookingStatus
             $booking->assignBookingCode();
         }
 
-        DB::afterCommit(function () use ($booking, $newStatus, $actor): void {
+        DB::afterCommit(function () use ($booking, $newStatus, $actor, $notify): void {
             // Invalidate availability cache when a completion frees/affects a slot
             if ($newStatus === BookingState::STATUS_COMPLETED && $booking->idlayanan && $booking->tanggalbooking) {
                 $tanggal = $booking->tanggalbooking instanceof Carbon
@@ -120,6 +125,10 @@ class UpdateBookingStatus
                     (int) $booking->idlayanan,
                     $tanggal
                 );
+            }
+
+            if (! $notify) {
+                return;
             }
 
             // Notifikasi perubahan status

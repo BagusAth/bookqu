@@ -8,7 +8,10 @@ use App\Actions\Booking\CreateBooking;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Actions\Subscription\CreateTrialSubscription;
 use App\Domain\CustomerAccess\AccessProfile;
+use App\Mail\BookingCancelledMail;
+use App\Mail\BookingConfirmedMail;
 use App\Mail\BookingGroupInvoiceMail;
+use App\Mail\BookingRescheduledMail;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
@@ -56,19 +59,26 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
     {
         [$payment, $bookings] = $this->paidGroup([['14:00:00', '14:59:00']]);
         $booking = $bookings[0];
+        $booking->update(['jam' => '17:32:00']);
         $this->service->update(['durasi' => 90]);
 
         $show = $this->grantCustomerAccess($booking)->get('/manage/'.$booking->booking_code.'?token='.$booking->cancellation_token)->assertOk();
-        $show->assertSee('14:00 – 15:00', false)
+        $show->assertSee('14.00 – 15.00', false)
             ->assertSee(str_replace('-', '', $this->date).'T140000/'.str_replace('-', '', $this->date).'T150000', false)
             ->assertSee('60 menit')
+            ->assertSee('03 Nov 2026, 14.00')
+            ->assertDontSee('17:32')
             ->assertDontSee('15:30')
             ->assertDontSee('90 menit');
 
         $this->grantCustomerAccess($booking)->get('/manage/'.$booking->booking_code.'/invoice?token='.$booking->cancellation_token)
             ->assertOk()
+            ->assertSee('14.00 – 15.00', false)
             ->assertSee('60 menit')
             ->assertDontSee('90 menit');
+
+        $this->get(route('booking.manage.reschedule.show', $booking->booking_code))->assertOk()
+            ->assertSee('Pukul 14.00 – 15.00 WIB', false)->assertDontSee('17:32');
 
         $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice')
             ->assertOk()
@@ -76,32 +86,70 @@ class BookingTimeRangeAfterDurationChangeTest extends TestCase
             ->assertSee(str_replace('-', '', $this->date).'T140000/'.str_replace('-', '', $this->date).'T150000', false)
             ->assertSee('60 menit')
             ->assertDontSee('15:30');
+
+        $this->travelTo(Carbon::parse('2026-11-03 15:00:00', 'Asia/Jakarta'));
+        $this->grantCustomerAccess($booking)->get(route('booking.manage.reschedule.show', $booking->booking_code))
+            ->assertRedirect(route('booking.manage', $booking->booking_code))->assertSessionHasErrors('reschedule');
+
+        $manageUrl = 'https://example.test/manage';
+        $this->tenant->update(['theme_color' => '#FDE047', 'logo_path' => 'fixtures/business-logo.png']);
+        $former = $this->slot('08:00:00', '08:59:00');
+        $booking->update([
+            'rescheduled_from_date' => $this->date,
+            'rescheduled_from_time' => '07:32',
+            'rescheduled_from_schedule' => $former->id,
+        ]);
+        $booking->unsetRelation('tenant');
+        foreach ([new BookingConfirmedMail($booking, $manageUrl), new BookingRescheduledMail($booking, $manageUrl), new BookingCancelledMail($booking)] as $mail) {
+            $html = $mail->render();
+            $this->assertStringContainsString(e($this->tenant->namabisnis), $html);
+            $this->assertStringContainsString('14.00 – 15.00 WIB', $html);
+            $this->assertStringContainsString('Rabu, 04 Nov 2026', $html);
+            $this->assertStringContainsString('Rp150.000', $html);
+            $this->assertStringContainsString('bgcolor="#FDE047"', $html);
+            $this->assertStringContainsString('color:#17151F', $html); // Design A §2.1 dark text on a light brand.
+            $this->assertMatchesRegularExpression('/src="https?:\/\/[^"]+business-logo\.png"/', $html);
+            $action = $mail instanceof BookingCancelledMail
+                ? rtrim(config('app.url'), '/').'/'.$this->tenant->slug : $manageUrl;
+            $this->assertStringContainsString('href="'.$action.'"', $html);
+            $this->assertStringNotContainsString('17:32', $html);
+            if ($mail instanceof BookingRescheduledMail) {
+                $this->assertStringContainsString('08.00 – 09.00 WIB', $html);
+                $this->assertStringNotContainsString('07.32', $html);
+            }
+        }
     }
 
     public function test_group_pages_and_mail_list_each_session_from_its_slot(): void
     {
         [$payment, $bookings] = $this->paidGroup([['14:00:00', '14:59:00'], ['15:00:00', '15:59:00']]);
+        $bookings[1]->update(['jam' => '17:32:00']);
         $this->service->update(['durasi' => 90]);
         $day = str_replace('-', '', $this->date);
 
         $this->grantCustomerAccess($payment)->get('/manage/payment/'.$payment->order_id)
             ->assertOk()
-            ->assertSee('14:00 – 15:00 WIB', false)
-            ->assertSee('15:00 – 16:00 WIB', false)
+            ->assertSee('14.00 – 15.00 WIB', false)
+            ->assertSee('15.00 – 16.00 WIB', false)
             ->assertSee($day.'T140000/'.$day.'T160000', false)
             ->assertDontSee('16:30');
 
         $this->grantCustomerAccess($payment)->get('/manage/payment/'.$payment->order_id.'/invoice')
             ->assertOk()
-            ->assertSee('14:00 – 15:00 WIB', false)
-            ->assertSee('15:00 – 16:00 WIB', false)
+            ->assertSee('14.00 – 15.00 WIB', false)
+            ->assertSee('15.00 – 16.00 WIB', false)
             ->assertDontSee('16:30');
 
         app(TenantContext::class)->clear();
         $html = (new BookingGroupInvoiceMail($payment->fresh(), collect($bookings)->map->fresh(), 'https://example.test/manage'))->render();
-        $this->assertStringContainsString('14:00 – 15:00 WIB', $html);
-        $this->assertStringContainsString('15:00 – 16:00 WIB', $html);
-        $this->assertStringNotContainsString('16:30', $html);
+        $this->assertStringContainsString(e($this->tenant->namabisnis), $html);
+        $this->assertStringContainsString('14.00 – 15.00 WIB', $html);
+        $this->assertStringContainsString('15.00 – 16.00 WIB', $html);
+        $this->assertStringContainsString('Rp300.000', $html);
+        $this->assertStringContainsString('href="https://example.test/manage"', $html);
+        $this->assertStringNotContainsString('16.30', $html);
+        $this->assertStringNotContainsString('linear-gradient', $html);
+        $this->assertStringNotContainsString('display:flex', $html);
     }
 
     public function test_slot_picker_shows_the_slot_end_not_the_current_duration(): void

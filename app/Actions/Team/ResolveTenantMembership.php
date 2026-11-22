@@ -28,4 +28,11 @@ final class ResolveTenantMembership
         // scope-bypass: authentication checks only memberships belonging to this signed-in user.
         return TenantMember::withoutGlobalScopes()->where('iduser', $user->id)->exists();
     }
+
+    public function hasActiveMembershipForUpdate(User $user): bool
+    {
+        // scope-bypass: invitation acceptance checks the verified user before creating a tenant membership.
+        return TenantMember::withoutGlobalScopes()->where('iduser', $user->id)
+            ->whereNotNull('accepted_at')->whereNull('revoked_at')->lockForUpdate()->first(['id']) !== null;
+    }
 }

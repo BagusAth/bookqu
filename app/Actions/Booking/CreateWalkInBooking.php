@@ -8,12 +8,14 @@ use App\Actions\Schedule\ClaimSlots;
 use App\Actions\Schedule\SlotClaimRefused;
 use App\Domain\Booking\BookingState;
 use App\Domain\Subscription\EntitlementRules;
+use App\Domain\Subscription\SubscriptionUsage;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -40,28 +42,32 @@ class CreateWalkInBooking
      */
     public function execute(Tenant $tenant, array $data): ?Booking
     {
-        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
-        if (! EntitlementRules::hasEffectivePlan($subscription)) {
-            throw ValidationException::withMessages([
-                'error' => 'Langganan Anda telah habis, mohon perpanjang untuk menambah booking walk-in.',
-            ]);
-        }
-
         $participants = max(1, (int) ($data['peserta'] ?? 1));
 
         try {
             $booking = DB::transaction(function () use ($tenant, $data, $participants) {
                 ClaimSlots::lockTenant((int) $tenant->id);
-                // scope-bypass: only to read the schedule's service; ClaimSlots verifies tenant ownership under lock.
-                $serviceId = Schedule::withoutGlobalScopes()->whereKey($data['idschedule'])->value('idlayanan');
+                $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->lockForUpdate()->first();
+                if (! EntitlementRules::hasEffectivePlan($subscription)) {
+                    throw ValidationException::withMessages(['error' => 'Perpanjang paket untuk mencatat booking baru.']);
+                }
 
-                if ($serviceId === null) {
+                $selected = app(TenantContext::class)->run((int) $tenant->id, fn () => Schedule::query()->where('idtenant', $tenant->id)->find($data['idschedule']));
+                if (! $selected) {
                     return null;
+                }
+
+                $date = Carbon::parse($selected->tanggal, 'Asia/Jakarta');
+                if (! EntitlementRules::isUnlimitedBooking($subscription)) {
+                    $used = SubscriptionUsage::countMonthlyBookings((int) $tenant->id, $date);
+                    if (! EntitlementRules::canCreateBooking($subscription, $used)['allowed']) {
+                        throw ValidationException::withMessages(['quota' => 'Kuota booking bulan ini habis. Booking yang ada tetap bisa diurus.']);
+                    }
                 }
 
                 // Owner walk-ins use the same claim as customer bookings (ADR-0005 decision 2)
                 $schedule = app(ClaimSlots::class)
-                    ->execute($tenant, (int) $serviceId, [(int) $data['idschedule']], participants: $participants)
+                    ->execute($tenant, (int) $selected->idlayanan, [(int) $data['idschedule']], participants: $participants)
                     ->first();
 
                 // Walk-ins use the same pricing rule as the storefront (ADR-0019 decision 6)

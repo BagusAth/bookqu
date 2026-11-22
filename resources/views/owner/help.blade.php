@@ -9,34 +9,31 @@
 
 @section('content')
 <div class="mx-auto max-w-4xl space-y-6">
-    <x-owner.page-header title="Bantuan" purpose="Jawaban cepat untuk pertanyaan umum, dan cara menghubungi tim BookQu." />
+    <x-owner.page-header title="Bantuan" purpose="Jawaban cepat, dan cara menghubungi kami." />
 
-    <section aria-labelledby="contact-title" class="rounded-xl bg-bq-primary p-5 text-white sm:p-6">
-        <h2 id="contact-title" class="text-lg font-bold text-white">Hubungi BookQu</h2>
-        <p class="mt-1 text-sm text-white/80">Tim kami membantu lewat WhatsApp atau email.</p>
+    <x-ui.panel title="Hubungi BookQu" :description="$contacts['hours'] !== '' ? $contacts['hours'] : null">
         @if ($contacts['whatsappUrl'] || $contacts['email'])
-            <div class="mt-3 flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2">
                 @if ($contacts['whatsappUrl'])
-                    <a href="{{ $contacts['whatsappUrl'] }}" target="_blank" rel="noopener" class="bq-btn bq-btn-accent"><x-owner.icon name="whatsapp" class="h-4 w-4" />WhatsApp {{ $contacts['whatsapp'] }}</a>
+                    <x-ui.button variant="primary" icon="whatsapp" :href="$contacts['whatsappUrl']" target="_blank" rel="noopener">
+                        WhatsApp {{ $contacts['whatsapp'] }}
+                    </x-ui.button>
                 @endif
                 @if ($contacts['email'])
-                    <a href="mailto:{{ $contacts['email'] }}" class="bq-btn border border-white/40 text-white hover:bg-white/10">{{ $contacts['email'] }}</a>
+                    <x-ui.button icon="external" :href="'mailto:'.$contacts['email']" class="max-w-full break-all">
+                        {{ $contacts['email'] }}
+                    </x-ui.button>
                 @endif
             </div>
-            @if ($contacts['hours'] !== '')
-                <p class="mt-2 text-xs text-white/80">{{ $contacts['hours'] }}</p>
-            @endif
         @else
-            <p class="mt-1 text-sm text-white/80">Kontak bantuan belum diatur.</p>
+            <p class="text-sm text-bq-text-muted">Tim kami membantu lewat WhatsApp atau email. Kontak bantuan belum diatur.</p>
         @endif
-        <p class="mt-4 text-sm text-white/80"><a href="{{ $guideUrl }}" class="font-semibold text-white underline underline-offset-2">Buka Beranda</a> untuk melihat langkah penyiapan atau jadwal hari ini.</p>
-    </section>
+    </x-ui.panel>
 
     <section aria-labelledby="faq-title" class="space-y-4">
-        <h2 id="faq-title" class="text-base font-semibold text-bq-text">Pertanyaan umum</h2>
+        <h2 id="faq-title" class="sr-only">Pertanyaan umum</h2>
         @foreach ($faq as $page => $questions)
-            <div class="bq-panel">
-                <h3 class="border-b border-bq-border px-4 py-3 text-sm font-semibold text-bq-text">{{ $page }}</h3>
+            <x-ui.panel :title="$page" flush>
                 <div class="divide-y divide-bq-border">
                     @foreach ($questions as $item)
                         <details class="group px-4 py-3">
@@ -50,8 +47,16 @@
                         </details>
                     @endforeach
                 </div>
-            </div>
+            </x-ui.panel>
         @endforeach
     </section>
+    <x-ui.panel aria-labelledby="help-guide" flush>
+        <x-ui.list-row class="flex-wrap">
+            <x-slot:leading><x-owner.icon name="check" class="size-5 text-bq-primary" /></x-slot:leading>
+            <h2 id="help-guide" class="font-semibold">Panduan awal</h2>
+            <p class="text-bq-small text-bq-text-muted">Langkah menyiapkan bisnis di BookQu.</p>
+            <x-slot:trailing><x-ui.button :href="$guideUrl" size="sm">Buka panduan</x-ui.button></x-slot:trailing>
+        </x-ui.list-row>
+    </x-ui.panel>
 </div>
 @endsection

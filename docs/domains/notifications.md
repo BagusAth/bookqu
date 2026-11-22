@@ -24,10 +24,15 @@ Owns owner in-app notifications, dashboard polling, and e-mails to customers and
 | `OwnerPayoutStatusChangedNotification` | database + mail (on success/failed/rejected) | `ProcessOwnerPayout` (admin payout review, BQ-015, BQ-125) |
 | `NewPayoutRequestNotification` | database | `RequestOwnerPayout` (BQ-125) |
 | `PayoutAccountChangedNotification` | mail | `SaveTenantPayoutAccount`, `DeleteTenantPayoutAccount` (BQ-123) |
+| `WeeklySummaryNotification` | queued mail | `SendWeeklySummary` from `owners:weekly-summary`, Mondays 07:00, to the business owner account only, with an effective plan and unless its `weekly_summary` preference is off (FR-NOTIFICATION-008, BQ-162, BQ-163). Figures for last Monday–Sunday come from `GetReport`, `GetSlotRunway`, `CompleteBookings::endedCount` and open refund requests. A tenant failure is reported and the command continues. |
 
 Sends happen after the main transaction and dispatch failures are wrapped in `try/catch`, so mail failure does not undo the booking or payment. The owner/trial mail notifications and `OwnerPayoutStatusChangedNotification` implement `ShouldQueue` with `afterCommit()` (database channels on those notifications are queued too); database-only notifications like `NewPayoutRequestNotification` stay synchronous. `BookingCancelledMail` is queued after commit.
 
 Customer confirmation/invoice/reschedule flows persist delivery intent, then queue `SendManagementAccess` with only the delivery ID after commit. The worker validates the family, mints a fresh link and sends `BookingConfirmedMail`, `BookingGroupInvoiceMail` or `BookingRescheduledMail` synchronously inside the job; these credential-bearing mailables must not implement `ShouldQueue`. SMTP delivery therefore runs outside checkout and webhook requests when `QUEUE_CONNECTION=database` (§4 of operations).
+
+## Customer email layout (BQ-164)
+
+The four customer booking mails share a responsive table layout with inline styling. The mail presenter supplies the business identity, absolute logo when present, contrast-safe button text, booked session ranges, an Indonesian date, total and address with directions when present. Mail views use those prepared fields. The confirmation, payment receipt and reschedule emails receive the existing send-time management link. The cancellation email links to the business service list.
 
 ## Evidence
 
@@ -51,3 +56,7 @@ Implemented decision: [ADR-0013](../adr/ADR-0013-background-work-on-shared-hosti
 BQ-144: users store their own email preferences by event. Mail dispatch checks the preference after role filtering. In-app delivery still follows role eligibility and is independent of email preferences.
 
 BQ-135: opening a booking notification marks it read and opens the shared booking panel from the Booking page. The target is resolved within the active tenant. Evidence: Owner/PaketNotifikasiBantuanTest.
+
+BQ-162: `Owner/WeeklySummaryTest` covers the summary period, the switched-off preference and that only the owner account sees the preference.
+
+BQ-162: the full notification list groups the current page by calendar day in WIB, with today's and yesterday's labels and the time on each item.

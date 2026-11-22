@@ -17,10 +17,12 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class ThreeStepBookingFlowTest extends TestCase
@@ -125,7 +127,7 @@ class ThreeStepBookingFlowTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Badminton Court Rental');
         $response->assertSee('Creative Hub Studio');
-        $response->assertSee('Layanan');
+        $response->assertSee('Semua layanan'); // Design A §7.1: the storefront has no step bar.
 
         $responseSelect = $this->post('/creative-hub-studio/booking/select-program', [
             'service_id' => $this->service->id,
@@ -149,16 +151,39 @@ class ThreeStepBookingFlowTest extends TestCase
         ])->get('/creative-hub-studio/booking/schedule');
 
         $response->assertStatus(200);
-        $response->assertSee('Jadwal');
-        $response->assertSee('Layanan');
-        $response->assertSee('Data &amp; Pembayaran', false);
-        $response->assertSee('Sesi Pagi');
-        $response->assertSee('Sesi Siang &amp; Sore', false);
-        $response->assertSee('10:00 – 11:00');
+        // Design A §7.2: "Langkah n dari 3" header and time groups by part of day.
+        $response->assertSee('Pilih jadwal');
+        $response->assertSee('Langkah 2 dari 3');
+        $response->assertSee('Pagi');
+        $response->assertSee('Siang dan sore');
+        $response->assertSee('10.00 – 11.00');
         $response->assertSee('Badminton Court Rental');
         $response->assertSee('Creative Hub Studio');
         $response->assertSee('Lanjutkan');
-        $response->assertSee('Pembayaran aman melalui BookQu');
+        $response->assertDontSee('Pembayaran aman melalui BookQu');
+        $dates = collect($response->viewData('dates'))->keyBy('date');
+        $this->assertSame(3, $dates[$this->tomorrow]['session_count']);
+        $this->assertSame(0, $dates['2026-11-03']['session_count']);
+        $this->assertArrayNotHasKey('weekend_price_label', $response->viewData('servicePayload'));
+    }
+
+    #[TestWith(['fixed', 35000, null])]
+    #[TestWith(['fixed', 40000, 'Rp40.000'])]
+    #[TestWith(['multiplier', 1.1, 'Rp38.500'])]
+    public function test_schedule_payload_includes_the_weekend_price_only_when_it_changes_the_price(string $type, float $value, ?string $label): void
+    {
+        $this->tenant->update(['weekend_price_type' => $type, 'weekend_price_value' => $value]);
+
+        $response = $this->withSession([
+            'booking' => ['tenant_id' => $this->tenant->id, 'service_id' => $this->service->id],
+        ])->get('/creative-hub-studio/booking/schedule')->assertOk();
+
+        $payload = $response->viewData('servicePayload');
+        if ($label === null) {
+            $this->assertArrayNotHasKey('weekend_price_label', $payload);
+        } else {
+            $this->assertSame($label, $payload['weekend_price_label']);
+        }
     }
 
     /**
@@ -226,8 +251,8 @@ class ThreeStepBookingFlowTest extends TestCase
         ])->get('/creative-hub-studio/booking/checkout');
 
         $response->assertStatus(200);
-        $response->assertSee('Data Pemesan');
-        $response->assertSee('Data Pemesan');
+        $response->assertSee('Data pemesan');
+        $response->assertSee('Data pemesan');
         $response->assertSee('Badminton Court Rental');
 
         preg_match('/name="checkout_fingerprint" value="([a-f0-9]{64})"/', $response->getContent(), $fingerprint);
@@ -496,7 +521,7 @@ class ThreeStepBookingFlowTest extends TestCase
         $this->get('/creative-hub-studio/booking/time')->assertRedirect('/creative-hub-studio/booking/schedule');
     }
 
-    public function test_schedule_safely_serializes_alpine_configuration_and_pins_runtime(): void
+    public function test_schedule_safely_serializes_alpine_configuration_and_loads_the_local_bundle(): void
     {
         $this->tenant->update(['slug' => "studio-quote'", 'namabisnis' => 'Studio "Uji"']);
         $this->service->update(['namalayanan' => "Layanan '\" </script><script>window.injected=true</script>"]);
@@ -508,6 +533,7 @@ class ThreeStepBookingFlowTest extends TestCase
         $this->assertStringContainsString('schedulePicker(', $root->getAttribute('x-data'));
         $this->assertStringNotContainsString('</script>', $root->getAttribute('x-data'));
         $response->assertDontSee('<script>window.injected=true</script>', false)
-            ->assertSee('alpinejs@3.15.12/dist/cdn.min.js', false)->assertDontSee('alpinejs@3.x.x', false);
+            ->assertSee(app(Vite::class)->asset('resources/js/customer.js'))
+            ->assertDontSee('cdn.jsdelivr.net/npm/alpinejs', false);
     }
 }

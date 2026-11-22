@@ -1,0 +1,285 @@
+---
+id: BQ-165
+title: Rebuild the customer pages on design A and follow the owner's appearance settings
+type: improvement
+status: done
+priority: P1
+phase: 4
+domain: public-site
+requirements: [FR-PUBLIC-001, FR-PUBLIC-002, FR-PUBLIC-003, FR-PUBLIC-004, FR-BOOKING-001, FR-BOOKING-002, FR-BOOKING-003, FR-BOOKING-004, FR-BOOKING-008]
+invariants: [INV-TEN-01, INV-TOK-01, INV-BOOK-03, INV-SCH-01]
+lane: heavy
+approval: tech-lead
+decision: D-028 (session 7 only, approved 21 Nov 2026)
+launch-blocker: true
+depends-on: [BQ-164]
+---
+
+## Problem
+
+BQ-164 brought every customer page onto one layout and fixed broken paths. The result is correct but visually plain, and the Tech Lead judged it too close to the owner portal. Three things are wrong:
+
+1. **Look.** The pages copy the owner dashboard (owner tokens, BookQu aubergine and ink) instead of looking like the business's own shop.
+2. **Owner settings ignored.** Owners choose a button style (pill, rounded, square) and a card style (elevated, outline, soft) in Halaman Booking → Tampilan (owner-portal.md §8.9, FR-PUBLIC-003, D-009). `StorefrontBranding` already returns `buttonRadius`, `cardShadow` and `cardBorder`, but the customer pages apply them only to a few classes.
+3. **Screen sizes.** Phone, tablet and desktop share one stretched layout. On a tablet the reschedule summary drops below the content.
+
+The approved design is [`docs/design/booking-pelanggan/desain-a-sampul-imersif.md`](../../design/booking-pelanggan/desain-a-sampul-imersif.md) ("the spec"). It is self-contained; section numbers below (§n) point into it.
+
+**Approval.** The Tech Lead approved this work item on 21 Nov 2026. These Tech Lead decisions are part of that approval:
+
+- Design A "Sampul Imersif", revision 3, is the reference for every customer page.
+- Customer pages use colours derived from the business colour plus neutrals (spec §2). BookQu ink `#1D1638` and marigold are not used on customer pages.
+- Every customer page follows the owner's theme colour, font, button style and card style (spec §3). Card corners follow the button style.
+- Title copy becomes "Reservasi di {bisnis}".
+- A business banner, when present, becomes the hero background (spec §5).
+- The Pro landing page is out of scope.
+- Three ready-made templates for the Tampilan menu (spec §3.4) are a product change and wait for [D-028](../../product-decisions.md). Only session 7 depends on it.
+
+**Out of scope:**
+- the Pro landing page (BQ-154 templates);
+- the BookQu marketing site and the owner portal outside Halaman Booking → Tampilan;
+- any change to prices, availability, payment, cancellation, refund or access rules;
+- new database columns (templates are detected from the three saved values).
+
+## Branch rule
+
+All sessions work on `agathan-bq-165-tampilan-pelanggan`, created on 21 Nov 2026 from `agathan-bq-164-alur-pelanggan` at `af12d1d`.
+
+- Each session is one commit series, done in order.
+- Nothing goes to `integration` until the Tech Lead decides.
+- Never push to `integration`, `main`, `agathan-bq-162-papan-jadwal` or `agathan-bq-164-alur-pelanggan`. Push only with `git push origin agathan-bq-165-tampilan-pelanggan`, and only when the Tech Lead asks.
+- If `agathan-bq-164-alur-pelanggan` gets new commits, merge it into this branch at the start of the next session. Never rebase a pushed branch.
+
+## Batches and gates
+
+The Tech Lead reviews at the end of each batch, in the browser at 390, 834 and 1440 px, before the next batch starts.
+
+| Batch | Sessions | Why grouped |
+|---|---|---|
+| 1 | 1 | Foundation: derived colours, shape and surface tokens, shared components. Every screen depends on it |
+| 2 | 2, 3 | Storefront and schedule, the first two booking steps |
+| 3 | 4, 5 | Checkout, payment, success and invoice, status and error pages |
+| 4 | 6 | After booking: manage and reschedule |
+| 5 | 7 | Owner templates; starts only after D-028 is approved |
+| 6 | 8 | Verification and docs |
+
+## Rules for every session
+
+1. Presentation only, except `StorefrontBranding` (session 1) and the Tampilan form (session 7). Controllers, Actions and Domain classes do not change. If a screen needs data that the controller does not pass, stop and record it under "Open findings".
+2. Read `.ai/rules/frontend.md`, `.ai/rules/tests.md` and `docs/domains/public-site.md` first.
+3. Colours, radii and shadows come only from the customer tokens (session 1). No raw hex values, Tailwind palette colours or `!important` in customer views.
+4. Every screen is built three times on purpose: phone (< 768 px), tablet (768–1023 px) and desktop (≥ 1024 px), following spec §5 and §7. Use Tailwind `md:` and `lg:` breakpoints; structure may differ per breakpoint.
+5. Copy is final in spec §7. Use customer words (BQ-164 copy rules still apply).
+6. A failing test is evidence. When a test asserts old copy that this work item changes on purpose, update the assertion and name the spec section in the commit message. Never weaken a security, tenancy or access assertion.
+7. Run after each session: `vendor/bin/pint --dirty --format agent`, `npm run build`, related tests, then the full suite once. Run PHPStan with PHP 8.4.25 and `-d opcache.enable_cli=0`.
+8. Browser check each touched screen at 390, 834 and 1440 px with three colours: `#382186`, `#0F766E` and a light colour `#F59E0B`, and with all three button styles and card styles at least once. No horizontal scroll, no console errors.
+
+## How to run and test locally
+
+- App: `http://bookqu.test`, storefront `http://bookqu.test/brama-digital` (tenant 7).
+- Change appearance in `/owner/booking-page` → Tampilan, or in the `tenants` row (`theme_color`, `button_style`, `card_style`, `font_family`, `banner_path`).
+- Management pages need an access link: `php artisan booking:test-token --booking-id=<id> --tenant-id=7`. Do not paste the link into commits or docs.
+- Mark a local SingaPay payment as paid: `php artisan singapay:simulate-webhook <order_id>` (`--status=failed` / `expired`). The local SingaPay sandbox refused tokens on 20 Nov 2026, so payment pages may need a seeded pending payment.
+
+## Plan
+
+### Session 1: foundation (spec §2, §3, §4, §6)
+
+1. `app/Support/StorefrontBranding.php`: extend `for()` with
+   - `onPrimary` threshold aligned to spec §2.1 (dark text when luminance > 0.18), plus `onPrimarySoft`, `onPrimaryFaint`, `onPrimaryLine`;
+   - `primaryText` (brand, or brand mixed 42% with black when the brand is light) and `tint`, `tintStrong`;
+   - a `shape` block from `button_style`: control, tile, area, chip, card and small-card radii (spec §3.1);
+   - a `surface` block from `card_style`: card and raised shadows/borders (spec §3.2).
+   Keep the existing keys so the owner preview keeps working until session 7.
+2. `resources/views/customer/layouts/booking-shell.blade.php`: write every value as a CSS variable (`--sf-*` namespace) on `.customer-shell`. Load only the business font, weights 400–700.
+3. `resources/css/app.css`: a customer layer that reads the `--sf-*` variables: `.sf-btn`, `.sf-btn-secondary`, `.sf-chip`, `.sf-field`, `.sf-area`, `.sf-tile`, `.sf-card`, `.sf-card-raised`, `.sf-card-small`, hero ornament and banner scrim, bottom bar, sheet. Remove the owner-token overrides in the customer layer that BQ-164 added for the old look.
+4. Components in `resources/views/components/customer/` (reuse and rename where one already exists): `hero`, `step-header`, `bottom-bar`, `service-card`, `service-row`, `category-chips`, `date-strip` (scrollable with snap), `month-calendar`, `time-grid`, `sheet`, `summary-panel`, `ticket`, `status-note`, `empty-state`. Document props in `components/customer/README.md`.
+5. Tests: `tests/Unit/StorefrontBrandingTest.php` covers the dark/light text switch, `primaryText` for a light brand, the radius table for each button style, the shadow table for each card style, and that unknown values fall back. A feature test asserts the storefront writes the `--sf-*` variables for a tenant with `pill` + `outline`.
+
+### Session 2: storefront (spec §7.1)
+
+- `customer/booking/program-selection.blade.php` and `partials/landing.blade.php` (keep the Pro landing include as it is).
+- Phone: compact hero, sticky search and scrollable category chips, favourite carousel (`is_popular`), service list.
+- Tablet: two-column hero with location card, wrapped chips, favourites in three columns, two-column service grid.
+- Desktop: hero with raised location card, sticky category navigation, favourites in three columns, two-column grid with descriptions.
+- States: pending payment bar (`pendingCheckout`), empty search, bookings closed (`acceptsOnlineBookings`), banner, service photos (`cover_image_url`).
+- Title "Reservasi di {bisnis}"; phone `h1` is the business name.
+
+### Session 3: schedule (spec §7.2)
+
+- `customer/booking/schedule-selection.blade.php`, `components/customer/date-strip`, `booking-calendar`, `time-grid`, `time-slot-card`, `summary`, `public/js/booking-schedule.js` (presentation only).
+- Phone: step header, service card over the hero, scrollable date strip with a "Kalender" button that opens the month sheet, three-column times, bottom bar.
+- Tablet: month calendar beside times, bottom bar.
+- Desktop: calendar, times and sticky summary in three columns.
+- One price line per day from the existing price data; times no longer repeat the price.
+- States: several consecutive sessions, loading skeleton, empty day with the nearest day that has sessions (only if the data is already available; otherwise record it), capacity ("Sisa n tempat" and participants).
+
+### Session 4: checkout and waiting for payment (spec §7.3, §7.4)
+
+- `customer/booking/checkout.blade.php`, `partials/booking/checkout-form.blade.php`, `partials/booking/checkout-summary-desktop.blade.php`, `public/js/booking-checkout.js`.
+- `customer/booking/payment.blade.php` and `partials/payment/*` (pending card, action buttons, cancel modal).
+- Phone: collapsible order summary, one-column form, add-ons with 44 px steppers, bottom pay bar. Tablet: summary in the header, two-column form, bottom pay bar. Desktop: form and sticky summary.
+- Errors: summary box at the top, red field border and message, input kept (BQ-164 PL-02 stays).
+- Waiting: remaining-time progress bar with a label, one "Cara bayar" box, checking state with `aria-busy`, collapsible reservation details on phone.
+
+### Session 5: success, invoice, status and error pages (spec §7.5, §7.8, §7.9)
+
+- `customer/booking/invoice.blade.php` (success and invoice modes), print styles, `partials/payment/expired-state.blade.php`, `failed-state.blade.php`, `customer/access.blade.php`, `errors/*.blade.php` and `errors/customer.blade.php`.
+- Customer emails in `resources/views/emails/` follow the derived colours where the email layout allows inline colour; no new email content.
+
+### Session 6: manage and reschedule (spec §7.6, §7.7)
+
+- `customer/manage/details.blade.php`, `partials/manage/*` (timeline, review section, refund form), `customer/manage/reschedule.blade.php`, `public/js/booking-reschedule.js`.
+- Manage uses grid areas per breakpoint and every state in spec §7.6, including the group payment state. The review form shows only for completed bookings, as today.
+- Reschedule on tablet shows From → To in the header and a bottom bar with "Batal" and "Simpan jadwal baru". The refused state keeps the current booking unchanged and marks the taken time as full.
+
+### Session 7: owner templates (spec §3.4) — waits for D-028
+
+- `app/Support/StorefrontBranding.php`: `TEMPLATES` constant (Modern, Rapi, Tegas) and `templateFor(Tenant)` that returns the matching template or `custom`.
+- `resources/views/owner/booking-page.blade.php`, section Tampilan: three template cards above the existing fields. Choosing one fills button style, card style and font in the form; the owner still saves. The live phone preview uses the new customer components so it matches the storefront.
+- No change to `UpdateAppearanceRequest` validation or the database.
+- Tests: `templateFor` for each template and for a custom mix; the Tampilan page renders the three templates and marks the current one.
+
+### Session 8: verification and docs
+
+- Browser pass of every screen and state at 390, 834 and 1440 px, with the three templates and the light colour. Record screenshots or notes in Evidence.
+- Contrast check for the light colour on every brand surface.
+- Full suite, PHPStan, `npm run build`.
+- Docs: `.ai/rules/frontend.md` (customer rules from spec §10), `docs/domains/public-site.md` (appearance now covers every customer page), `docs/owner-portal.md` §8.9 (templates, after D-028), mark BQ-164 superseded for the look.
+
+## Invariants at risk
+
+- **INV-TEN-01, INV-TOK-01:** views only read data the controllers already pass; no new queries in Blade; access-link pages keep `CustomerAccessHeaders` and the private 404.
+- **INV-BOOK-03, INV-SCH-01:** slot labels ("Penuh", "Sisa n tempat") and reschedule availability still come from `GetAvailableSchedules`, `AvailabilityRules` and `BookingRules`. The UI only displays them.
+- Stored appearance values reach a `<style>` block; `StorefrontBranding` keeps normalising every value and falls back on anything unknown.
+
+## Tests
+
+- Unit: `StorefrontBrandingTest` for derived colours, shape and surface tables, fallbacks and (session 7) `templateFor`.
+- Feature: storefront CSS variables per setting; copy assertions updated where spec §7 changes text; existing access, tenancy, payment and reschedule tests stay green unchanged.
+- Manual: browser matrix in rule 8 and session 8.
+
+## Docs to update
+
+`.ai/rules/frontend.md`, `docs/domains/public-site.md`, `docs/owner-portal.md` §8.9 (after D-028), `docs/work/ROADMAP.md`, this file's Evidence.
+
+## Evidence
+
+### Session 1: foundation (21 Nov 2026)
+
+- `StorefrontBranding::for()` adds `onPrimarySoft`, `onPrimaryFaint`, `onPrimaryLine`, `primaryText`, `tint`, `tintStrong`, `isLight`, `shape` (`SHAPES`, spec §3.1) and `surface` (`SURFACES`, spec §3.2). `onPrimary` follows spec §2.1: `#17151F` above luminance 0.18, else white. Existing keys stay for the owner preview and emails.
+- `booking-shell` writes every value as `--sf-*` on `.customer-shell`, loads only the business font at 400–700, and uses the neutral page colours. The `--bq-*` values stay as a bridge for pages not yet rebuilt (see Open findings).
+- `resources/css/app.css`: `:root` fallbacks and neutrals, `@theme inline` utilities (`bg-sf-*`, `text-sf-*`, `rounded-sf-*`, `shadow-sf-*`, `font-sf`), and the classes `sf-btn`, `sf-btn-secondary`, `sf-btn-on-primary`, `sf-chip`, `sf-nav-item`, `sf-field`, `sf-area`, `sf-tile`, `sf-card`, `sf-card-raised`, `sf-card-small`, hero ornament and banner scrim, `sf-progress`, `sf-bottom-bar`, `sf-sheet`, `sf-note`, `sf-skeleton`, `sf-scroll-row`, `sf-ticket-tear`. The focus ring no longer uses BookQu ink.
+- Components (`components/customer/README.md`): new `hero`, `hero-ornament`, `step-header`, `bottom-bar`, `service-card`, `service-row`, `category-chips`, `month-calendar`, `sheet` (reuses `ownerDialog`), `summary-panel`, `ticket`, `status-note`, `empty-state`, `icon`; `date-strip` and `time-grid` rebuilt on `sf-tile` with their Alpine contract unchanged; unused `booking-calendar` and `time-slot-card` (raw hex) removed. Markup follows the canvas boards Layanan, Jadwal, Berhasil and Matriks; where the canvas uses uppercase labels, the spec's sentence case is used (§4).
+- Tests: `Unit/StorefrontBrandingTest` (dark/light text, amber contrast, `primaryText` 42% with black, tints, radius table per button style, shadow table per card style, fallbacks); `Owner/HalamanBookingPageTest::test_storefront_writes_customer_tokens_for_the_saved_button_and_card_style` (amber + `pill` + `outline` + Inter); `Components/CustomerComponentsTest` (new components render prepared data without hex colours; sheet is a labelled modal dialog). `Customer/BookingTimeRangeAfterDurationChangeTest` now expects email text `#17151F` on a light brand (spec §2.1).
+- Commands (PHP 8.4.25, `-d opcache.enable_cli=0`): `pint --dirty` passed; `npm run build` passed; related tests 28 passed; full suite 1040 passed (6919 assertions); PHPStan no errors.
+- Browser (Laragon, `bookqu.test`): a temporary preview page in the customer shell (removed before commit) rendered every component with four settings: `#382186` rounded elevated Plus Jakarta Sans; `#0F766E` pill outline Inter; `#F59E0B` square soft Outfit; `#382186` with a banner and Lora. At 390, 834 and 1440 px: no horizontal scroll, no console errors; radii, shadows, fonts and on-primary colours measured as specified (amber: text `#17151F`, brand text `#674205`); phone h1 is the business name, tablet/desktop "Reservasi di …"; bottom bar hidden from 1024 px; banner shows the scrim with white text and hides the ornament. The real storefront `/brama-digital` still renders on the new shell at 390 px without overflow or errors. Sheet: opening moves focus to "Tutup" and Esc closes it (`open` false); the slide transition itself could not be watched because the browser pane was hidden.
+
+### Session 2: storefront (21 Nov 2026)
+
+- `program-selection` rebuilt on design A (spec §7.1): `x-customer.hero` (phone h1 = business name, tablet/desktop "Reservasi di {bisnis}", location card), sticky search and scrolling chips on phone, wrapped chips on tablet, side category navigation with "Ragu memilih? Tanya lewat WhatsApp" and a result count on desktop, Favorit (`is_popular`, carousel / 3 columns), Semua layanan (list / 2-column grid). States: empty search ("Tidak ada layanan “{kata}”", "Lihat semua layanan", "Tanya via WhatsApp"), bookings closed, no services, pending payment bar ("Pembayaran belum selesai · {layanan} · bayar sebelum {jam}" + "Lanjutkan"), banner, service photos. Choosing a service is still a POST `service_id` submit button and works without JavaScript.
+- Shell: `@section('immersive')` hides the old header, banner/description block and step bar for design A pages and gives a full-width main and the design A footer; `@section('bottom_bar')` keeps room for a bottom bar. Flash messages use `x-customer.status-note`.
+- `AppServiceProvider`: the shell's display composer (logo, banner, WhatsApp link, storefront URL) also runs for `customer.booking.program-selection` and `customer.booking.schedule-selection`, because Blade renders the page before the layout. Display wiring only.
+- `booking-program.js`: `visibleCount()`, `isFiltering()`, `clearFilters()` (display only).
+- Tests updated for spec §7.1 copy: `CustomerFrontendSpecificationTest` (title, placeholder, per-service button), `BookingFlowHardeningTest` ("Pembayaran belum selesai"), `EndedSubscriptionTest` ("Reservasi online sedang ditutup"), `ThreeStepBookingFlowTest` step 1 ("Semua layanan"). Related suites: 238 passed.
+- Browser `/brama-digital`: 390 (purple, rounded, elevated, Plus Jakarta Sans), 834 (same), 1440 (amber `#F59E0B`, square, soft, Outfit; set temporarily and restored): no horizontal scroll, no console errors once the cached old `booking-program.js` was refreshed; amber hero text `#17151F`; empty search shows "0 hasil" and the empty box; choosing a service opens `/booking/schedule`.
+
+### Session 3: schedule (21 Nov 2026)
+
+- `schedule-selection` rebuilt on design A (spec §7.2): `x-customer.step-header` ("Langkah 2 dari 3", progress, chosen service with "Ganti" from tablet up). Phone: service card on the header, month title with "Kalender" (opens `x-customer.sheet` with the month calendar; picking a date closes it), snap date strip, times in 3 columns, bottom bar. Tablet: month calendar beside times, bottom bar. Desktop: calendar, times (4 columns) and sticky `summary-panel` with "Lanjut ke data diri".
+- Times show the start time only with the server's note ("Penuh", "Sisa n tempat"); one price line per day ("{harga} per {satuan}") instead of a price on each time. Groups: Pagi, Siang dan sore, Malam (the server's three groups). Loading skeleton with `aria-busy`; empty day shows "Tidak ada sesi di tanggal ini" and a button to the nearest date that has sessions (from the dates the page already has). Server validation errors and the no-JavaScript time list are kept.
+- `booking-schedule.js` (display only): month view (`calendarDays`, `monthLabel`, `prevMonth`/`nextMonth` within the bookable range), `nearestAvailableDay`, `selectedTimeLabel`, `subtotalLabel` (sum of the server prices of the chosen sessions; checkout still quotes), `startLabel`, `pickFromCalendar`. `month-calendar` takes a `select` method name.
+- Tests updated for spec §7.2 copy: `CustomerFrontendSpecificationTest` (step header, "Kalender"), `ThreeStepBookingFlowTest` step 2 (group labels, "Langkah 2 dari 3").
+- Browser `/brama-digital/booking/schedule`: 1440 (amber, square, soft, Outfit; tenant restored afterwards), 834 and 390 (purple, rounded, elevated): no horizontal scroll, no console errors; two consecutive sessions give "16.00 – 18.00" and the subtotal; selected tiles and the button are amber with `#17151F` text; the calendar sheet opens. Fixed during the check: the hidden inputs of chosen sessions took grid cells, now wrapped in a hidden container.
+- Batch 2 verification (PHP 8.4.25): pint passed; `npm run build` passed; full suite 1040 passed (6919 assertions); PHPStan no errors.
+
+### Session 4: checkout and waiting for payment (21 Nov 2026)
+
+- `checkout` (spec §7.3): step header "Langkah 3 dari 3 · Data & pembayaran"; tablet header shows layanan, jadwal and the reschedule limit. Phone: collapsible order summary on the header, one-column form, bottom bar "Total · Lanjut ke pembayaran". Tablet: two-column form and add-ons, "Rincian harga" card, bottom bar. Desktop: form and sticky `summary-panel` ("Ringkasan reservasi", price lines, total, button, three short rules). Errors: "Periksa n isian." box on top, red field border with the message under the field (`aria-invalid`, `aria-describedby`), input kept. Add-ons and participants use the restyled `x-customer.stepper` (44 px − / +). The button keeps "Lanjut ke pembayaran" instead of the spec's "Bayar {total}", because paying happens on the next page.
+- `payment` + `partials/payment/pending-card`, `action-buttons`, new `brand-header` (spec §7.4): status pill, order number, total, `mm:ss` countdown with a `progressbar` (value and bar turn red in the last 3 minutes), "Bayar sebelum … Setelah itu jadwal dilepas.", one "Cara bayar" box, monitoring line, "Batalkan pesanan" (existing confirm dialog). Phone: "Periksa status" full width, collapsible "Rincian reservasi", bottom bar "Bayar sekarang · {total}". Tablet: one centred card (max 680 px) with details below. Desktop: card | details.
+- `partials/payment/scripts`: presentation only — checking state ("Memeriksa…", `aria-busy`, blue "Memeriksa pembayaran…" pill) on every `[data-check-status]` button, pay on every `[data-pay-button]`, countdown progress, notes in `sf-note` tones, success overlay without emoji. Payment logic, polling and URLs unchanged.
+- Shell composer also runs for `customer.booking.checkout`, `payment` and `invoice` (display wiring). Immersive footer links the business name to the storefront (keeps a home link on every page; `CustomDomainBookingTest`).
+- Tests updated for spec §7.3/§7.4 copy: `CustomerFrontendSpecificationTest` (checkout subtitle), `BookingFlowTest` ("Status dipantau otomatis.").
+- Browser: checkout at 1440/834/390 (purple) and the payment page at 1440/834/390 after a local test checkout (`Uji Desain`, `uji.desain@example.test`, local SingaPay sandbox accepted it): no horizontal scroll, no console errors; "Periksa status" shows the checking state and returns.
+
+### Session 5: success, invoice, status and error pages (21 Nov 2026)
+
+- `invoice` (spec §7.5) has two modes from the route: success (storefront route after paying) shows the check badge, "Pembayaran berhasil" and the email it was sent to; invoice mode (opened from Kelola) shows "Invoice pembayaran", the order number and a Cetak button. Both: ticket (`x-customer.ticket`, date block, time, location, code + Salin), actions (Google Calendar, WhatsApp, Petunjuk arah, Cetak/Unduh invoice), invoice card (status pill, Pemesan, Bisnis, sessions, extras, note, total, method). Phone one column with 2×2 actions; tablet ticket | stacked actions; desktop ticket + actions (420 px) | invoice. Print hides the hero and actions and outlines cards.
+- `partials/payment/expired-state` and `failed-state` (spec §7.8): centred card with icon. Expired: "Waktu pembayaran habis", "Pilih jadwal lagi", note "Sudah terlanjur membayar? Simpan bukti pembayaran dan hubungi bisnis." Failed: "Pembayaran gagal", "Coba bayar lagi" (opens the storefront to book again) and "Hubungi bisnis". Phone buttons in a bottom bar that lives inside each state section, so it shows only with its state, also when the script switches state.
+- `customer/access` (spec §7.9): BookQu text mark (no image, the page loads no resources while it holds the credential), spinner hidden under reduced motion, recovery text and button. `errors/customer` + 403/404/419/500/503: icon, small "Kode n", title, explanation, "Kembali" and "Muat ulang" (419/5xx) or "Halaman sebelumnya".
+- Customer email layout: BookQu ink/lilac neutrals replaced by the design A neutrals; the map link uses the text colour instead of BookQu purple. No content change.
+- Fixed from session 4: the payment script's feedback icon now assigns two fixed `innerHTML` literals (ADR-0012 guardrail).
+- Tests updated for spec §7.8 copy: `CustomerFrontendSpecificationTest` (expired title "Waktu pembayaran habis", failed action "Coba bayar lagi").
+- Browser: the local test booking from session 4 was marked paid with `singapay:simulate-webhook` (local sandbox only); the success page at 1440/834/390, a 404 under `/brama-digital/…` and `/access` without a credential at 390: no horizontal scroll, no console errors.
+- Batch 3 verification (PHP 8.4.25): pint passed; `npm run build` passed; full suite 1039 passed with one failure, the ADR-0012 guardrail above, fixed and `tests/Guardrails` re-run green (13 passed); PHPStan no errors.
+
+### Session 6: manage and reschedule (21 Nov 2026)
+
+- `manage/details` (spec §7.6): brand header "Kelola reservasi"; schedule card with status pill, date block, service, time, sessions list for several sessions, actions and a note per state — confirmed (Ubah jadwal + "Batas ubah jadwal …"), deadline passed ("Hubungi bisnis" instead of Ubah jadwal, yellow note), pending payment (yellow note), completed ("Pesan lagi"; review form only in this state), cancelled (date and time struck through, "Pesan lagi", red note), several sessions / group payment (session list, "per sesi tidak tersedia", "Hubungi bisnis"). Cards: Pembayaran, Data pemesan, Lokasi dan kontak, Bantuan (refund request collapsible, or contact help, following `refunds_enabled` and the existing form), Riwayat as a timeline. Layout `sf-manage-grid`: one column on phone; schedule and review full width with info cards in two columns on tablet; on desktop two real columns (schedule, review, history | payment, customer, location, help) via `display: contents` column wrappers.
+- `partials/manage/review-section`: 44 px star radios (`aria-label="n bintang"`), comment, "Kirim ulasan"; the saved review shows stars and the business reply.
+- `manage/reschedule` (spec §7.7): step header "Ubah jadwal" with From → To in the header on tablet. Phone: Saat ini / Baru card, collapsible "Aturan harga", month title + "Kalender" sheet, date strip (current date marked "Jadwal saat ini"), times, bottom bar "Simpan". Tablet: calendar | times, bottom bar "Batal" + rule + "Simpan jadwal baru". Desktop: calendar | times | summary Dari → Ke with "Simpan jadwal baru". Refused: red "Jadwal belum berubah" note with the server message; reloaded slots show the taken time as Penuh; saving sets `aria-busy`. `booking-reschedule.js` gains the month-calendar display helpers (as the schedule page).
+- BQ-164 bridge removed: `.bq-btn-primary`, `.customer-primary` and `.booking-card` overrides are gone; the `--bq-*` business colours now feed only the Pro landing section (`[data-landing-template]`, BQ-154, out of scope). Unused `page-header`, `summary`, `status`, `progress-header` and `pending-checkout-banner` components deleted (their render test removed with them); the plain shell header (access and error pages) and `help-link` use `sf-*`. No hex colours remain in customer views except the out-of-scope landing partial.
+- Shell composer also runs for `customer.manage.details` and `customer.manage.reschedule` (display wiring).
+- Tests: no copy assertion changed; the multi-session sentence was kept verbatim.
+- Browser: `/manage/payment/{order}` for the local test booking (deadline-passed state) at 1440/834/390: no horizontal scroll, no console errors. The reschedule page was not opened in the browser: the only local booking is past its change deadline and no later sessions exist; its markup is covered by `BookingManageTest`.
+- Batch 4 verification (PHP 8.4.25): pint passed; `npm run build` passed; full suite 1039 passed (6914 assertions); PHPStan no errors.
+
+### Session 7: owner templates (21 Nov 2026, D-028 approved)
+
+- D-028 recorded as approved in `docs/product-decisions.md` (Product Lead's answer confirmed through the Tech Lead on 21 Nov 2026).
+- `StorefrontBranding::TEMPLATES` (Modern = pil + terangkat + Plus Jakarta Sans, Rapi = membulat + garis tepi + Inter, Tegas = kotak + lembut + Outfit), `templateFor(Tenant)` (normalises legacy and unknown values first) and `templateKey()`; anything else is `custom`. No database change, no change to `UpdateAppearanceRequest`.
+- `owner/booking-page` Tampilan: three template cards above the fields (shape swatches, "Pil · Terangkat · Plus Jakarta Sans" etc., `aria-pressed`), "Dipakai: {template | Kustom}" (polite live region), note that the colour stays the owner's. Choosing a template fills button style, card style and font in the form; the owner still saves (the existing unsaved-changes guard reacts). The live phone preview is rebuilt on the customer layer — brand hero with ornament or banner scrim, chips, service rows in the phone layout and the button — with the `--sf-*` tokens derived in the browser the same way as `StorefrontBranding` (preview only; the stored values still go through the server normaliser).
+- Tests: `Unit/StorefrontBrandingTest` (each template recognised; mixed and legacy looks), `Owner/HalamanBookingPageTest::test_tampilan_offers_three_templates_and_marks_the_one_matching_the_saved_look` (Rapi marked; a changed font gives "Kustom").
+- Browser `/owner/booking-page?section=tampilan` as the local seeded owner of tenant 7 (seed password from `BramaStudioSeeder`): saved look shows "Kustom"; choosing Tegas marks it, sets Kotak/Lembut/Outfit and the preview turns to 4 px corners without card shadow; changing the card style afterwards shows "Kustom". Nothing was saved. 1440 and 390 px without horizontal scroll. The 403s in the console are seeded gallery files missing on disk (pre-existing).
+- Batch 5 verification (PHP 8.4.25): pint passed; `npm run build` passed; full suite 1042 passed (6932 assertions); PHPStan no errors.
+
+### Session 8: verification and docs (21 Nov 2026)
+
+- Browser pass on the real pages of tenant 7 (`/brama-digital`, `/booking/schedule`, `/booking/checkout`, the success/invoice page and `/manage/payment/{order}` of the local test booking), each template set on the tenant in turn and restored afterwards: Modern (`#382186`, pil, terangkat, Plus Jakarta Sans), Rapi (`#0F766E`, membulat, garis tepi, Inter) and Tegas with the light colour (`#F59E0B`, kotak, lembut, Outfit), at 390, 834 and 1440 px: 45 page checks, 0 px horizontal overflow everywhere, no script errors; measured radii, shadows and fonts match each template; the light colour gives `#17151F` text on the brand and `#674205` brand text. Fixed during the pass: the reservation code on the ticket wrapped awkwardly on phone (smaller letter spacing below 768 px).
+- Contrast check from `StorefrontBranding`'s own values for 11 colours (the owner palette, the three test colours, `#FDE047`, `#22C55E`, `#FFFFFF`). `#F59E0B` passed every pair. Mid-tone brands failed three pairs (worst: `#B45309` description on the hero 4.14, text on the hero chip 3.93, brand text on the strong tint 4.01). Fixed in `StorefrontBranding`: brand text is darkened step by step until it reaches 4.5:1 on the strong tint; description text on the brand is full strength when the soft version is under 4.5:1; the hero chip layer shades the other way when it would wash the text out. After the fix the minimum of every pair is ≥ 4.5 (on-primary 5.02, soft text 4.50, chip 4.74, brand text on white 5.33, on tint 5.22, on strong tint 4.68); neutrals: muted on page 6.20, disabled 4.63. `Unit/StorefrontBrandingTest::test_every_brand_text_pair_meets_wcag_aa` guards it for 12 colours (including `#808080`); the teal `primaryText` assertion from session 1 was updated because teal is now darkened slightly (`#0E6F67`) by design A §8.
+- Docs: `.ai/rules/frontend.md` (customer views follow design A, from spec §10), `docs/domains/public-site.md` (appearance covers every customer page, templates, BQ-165 section replaces the BQ-164 one), `docs/owner-portal.md` §8.9 (templates and the preview), `docs/work/ROADMAP.md`, and a "look superseded" note at the top of BQ-164.
+- Final verification (PHP 8.4.25): pint passed; `npm run build` passed; full suite 1043 passed (7101 assertions); PHPStan no errors.
+
+### Follow-up: calendar bug and UI audit (21 Nov 2026)
+
+- **Bug (reported by the Tech Lead):** on Pilih jadwal, dates without sessions could not be clicked (cursor "not allowed"). Cause: `date-strip` set `disabled` and `month-calendar`/`booking-schedule.js` treated every date without sessions as disabled, and `selectDate()` refused them, so the empty-day state of spec §7.2 could never show. The data was correct (only 21 Nov has sessions locally). Fix: dates inside the bookable range stay selectable and look muted (`data-empty`); only dates outside the range are disabled; the same on Ubah jadwal. Regression test: `Components/CustomerComponentsTest::test_a_date_without_sessions_stays_selectable_so_the_empty_day_state_can_show`.
+- **Audit of the rebuilt pages** (390 px, real interactions): storefront category chips filter and search with the empty state work; date strip, calendar sheet (picks and closes), nearest-date button, contiguous-session rule and its error note work; checkout add-on stepper refreshes the quote, server validation shows "Periksa n isian", the red field and message and keeps every input and add-on; Kelola actions and help render. Fixed: the ticket "Salin" did nothing without the Clipboard API (http) — it now falls back to selecting a hidden field; the date strip now scrolls to a date chosen in the calendar sheet or by the nearest-date button; the payment page title follows the state the script switches to (expired, failed); Ubah jadwal time buttons show the start time and the server note only (full range as the accessible name), like Pilih jadwal.
+- Verification: full suite 1043 passed before the new test, component tests 4 passed after; pint passed; `npm run build` passed. No PHP change, so PHPStan is unaffected.
+
+### Follow-up: date marks (22 Nov 2026)
+
+- **Reported by the Tech Lead:** every muted date still showed a grey dot, because a date without sessions was treated as "full". Decision (Tech Lead, as developer of the UI): drop the dots entirely; a date with sessions is bright, a date without is muted (`data-empty`).
+- Removed the dot from `date-strip` and `month-calendar`, the "Ada sesi / Penuh atau tutup" legend, and `isFull` from `booking-schedule.js` and `booking-reschedule.js`. Spec §6 rows "Kartu tanggal" and "Kalender bulan" updated. No server change.
+- Browser `/brama-digital/booking/schedule` at 1440 and 375 px with local dummy schedules (tenant 7, 22 Nov–13 Dec, every fourth day empty, 27 Nov closed): no dots; 25, 27 and 29 Nov muted. Customer and Components tests 225 passed.
+
+### Integration sync (21 Nov 2026)
+
+- `git fetch` succeeded. The local sync branch starts at `agathan-bq-165-tampilan-pelanggan` (`918962b`). Its name is `agathan-bq-165-sync` because Git reserves the `agathan/` prefix for the existing local `agathan` ref.
+- `git merge --ff-only agathan-bq-165-data` brought in `724f2b6`, `17170d6`, `15b9ba5` and `ee8c781`. `git merge origin/integration` reported “Already up to date” because the fetched tip (`9176fbf`) is already an ancestor. Both merges completed without conflicts.
+- `php artisan migrate --no-interaction` on the local `bookqu` database reported no pending migrations.
+- `vendor/bin/pint --dirty --format agent` passed on a clean working tree. The related customer booking, reschedule command and Midtrans tests passed (68 tests, 435 assertions). The first related-test invocation failed at argument parsing because the runner forwarded `--no-interaction` to PHPUnit. The successful invocation used `php artisan test --compact` with the test paths.
+- `php artisan test --compact` ran once on SQLite and passed (1,052 tests, 7,138 assertions). PHPStan passed on PHP 8.4.25 with `-d opcache.enable_cli=0` and a 1 GB memory limit.
+- `npm run build` passed. Vite reported that Tailwind CSS generation took 9.6 seconds of the 9.9-second build.
+- `vendor/bin/phpunit -c phpunit.mysql.xml` passed on the local `bookqu_testing` database (1,071 total, 7,206 assertions, 1 skipped). The skipped test covers a rollback specific to SQLite.
+- `git diff --check` passed. The sync and its verification evidence remain local.
+
+## Open findings
+
+- **Bridge (sessions 1–6).** Kept through session 5 so unconverted pages stayed in the business colour; removed in session 6 except for the Pro landing section, which still uses `bq-*` classes.
+- **Scroll rows in grids.** A grid or flex item holding a `sf-scroll-row` needs `min-w-0`, otherwise the row widens the page (found in the preview at 390 px; noted in the components README).
+- **Unversioned page scripts.** `public/js/booking-*.js` load through `asset()` without a version, so a browser can keep an old copy after deploy (seen locally with `booking-program.js`). Worth a cache-busting query or moving them into Vite; outside this work item.
+- **Weekend price note.** Spec §7.2 shows "akhir pekan +10%" on the price line, but the schedule page only receives the service price, not the price rules. The line shows "{harga} per {satuan}" until the controller passes a prepared rule label (heavy lane, Tech Lead).
+- **Session counts per date.** The nearest-date button cannot say "(5 sesi)" because `dates` carries only `is_available`; same fix as above if wanted.
+- **Test isolation (pre-existing).** `Owner/CheckoutMidtransTest` uses `Mockery::mock('alias:Midtrans\Snap')`; when another test in the same process has loaded the class first it fails with "class already exists". It passes alone and in the normal full-suite order. Not caused by BQ-165.
+- **No manage link on the success page.** The success page only has booking codes; whether the checkout access opens `booking.manage` is not clear from the view, so the "Kelola reservasi" box points to the email link and offers WhatsApp instead of linking. A prepared manage URL from the controller would complete spec §7.5.
+- **Business brand on 404.** A 404 under a business address shows the BookQu header, because the error composer only resolves a recovery URL, not the tenant's branding. Spec §7.9 asks for the business brand when known.
+- **Test booking in local data.** Session 4–5 browser checks left one paid booking (`Uji Desain`, order `BKG-7-1795250152-521`) on tenant 7 in the local database.
+- **No "Lanjutkan pembayaran" on Kelola.** Spec §7.6 asks for it in the pending state, but the manage page receives no payment URL; the note tells the customer to finish from the payment page. A prepared URL from `GetCustomerManagementPage` would complete it.
+- **Reschedule not seen in the browser.** Needs a local booking more than the reschedule window ahead with free sessions on other dates.
+- **Tampilan preview colours.** The live preview derives the tokens in the browser and does not repeat the session 8 contrast adjustments, so for mid-tone colours its brand text can be a shade lighter than the storefront. Preview only; saved values go through `StorefrontBranding`.
+- **Service icons.** Services have no icon or kind field; `service-card` and `service-row` take an `icon` name. Session 2 decides the mapping (for example by category) or keeps the default.
+
+### Closed (22 Nov 2026)
+
+- Sessions 1–8 and every follow-up (calendar selection, UI audit, date marks) are done; D-028 approved.
+- Open findings resolved since: manage link on the success page, "Lanjutkan pembayaran" on Kelola and business branding on storefront errors ([BQ-166](BQ-166-akses-lanjutan-pelanggan.md)); unversioned page scripts (every `public/js/booking-*.js` now loads with a `filemtime` version); session counts per date (`dates` carries `session_count`). The other findings are recorded above for the BQ-158 regression pass or later items.

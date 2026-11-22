@@ -133,6 +133,10 @@ An owner who forgot the password can request a reset link by e-mail and set a ne
 
 Login, registration, password-reset requests and other public state-changing endpoints are rate limited per account and per IP. Tracked in BQ-007.
 
+### FR-AUTH-009 — Sign in and register with Google (Accepted 2026-11-22, D-029)
+
+An owner or team member (Manajer, Kasir) can sign in with a Google account whose email Google reports as verified. A platform admin cannot. The first Google sign-in links an existing account with the same email. A new owner who registers through Google still completes the business data and terms of FR-AUTH-001, receives the normal trial, and is treated as email-verified. An account without a password must set one through FR-AUTH-007 before any action that requires the current password. Tracked in BQ-172.
+
 ## Tenant and Business Requirements
 
 ### FR-TENANT-001 — Tenant Association
@@ -385,6 +389,8 @@ Schedules that are no longer valid for a new booking must not be presented as no
 
 The owner can set weekly opening hours per day with breaks, and how many days ahead slots may be opened. Opening hours are the default range for bulk slot creation and are shown on the public page. They do not open slots by themselves (automatic slot opening is out of scope, D-021).
 
+Amended 2026-11-17 (D-025, D-026): opening hours can now also open slots automatically for the services that switch it on; see FR-SCHEDULE-015.
+
 ### FR-SCHEDULE-012 — Price Rules (Accepted 2026-11-04, D-007 Revisi 1)
 
 The price of a slot is the service's base price, changed by the tenant's price rules and an optional per-slot override:
@@ -402,6 +408,10 @@ Adding a closed date that has active bookings lists those bookings and is refuse
 ### FR-SCHEDULE-014 — Bulk Creation Preview (Accepted 2026-11-04, D-007 Revisi 1)
 
 Bulk creation (one date or a capped date range, start and end time, interval of 5 to 480 minutes defaulting to the service duration) shows how many slots will be created and how many already exist before saving, and never creates a duplicate slot.
+
+### FR-SCHEDULE-015 — Automatic Slot Opening (Accepted 2026-11-17, D-025, D-026)
+
+The owner can switch on automatic slot opening per service; it is off by default and available on every plan. Every night the system opens the missing slots of each such service from its opening hours and breaks (FR-SCHEDULE-011), at the service duration, from the next day up to 30 days ahead and never beyond the days-ahead limits of FR-SCHEDULE-011 and FR-BOOKING-022. It skips closed dates, times already in the past and slots that already exist, so running it twice creates nothing new (same rule as FR-SCHEDULE-014). Slot prices follow FR-SCHEDULE-012. The system never changes, reopens or deletes an existing slot: a slot the owner closed stays closed. Nothing is opened while the subscription has ended (FR-SUB-012).
 
 ## Customer Booking Requirements
 
@@ -535,6 +545,18 @@ The tenant can set a minimum number of hours before a session for a new booking,
 ### FR-BOOKING-023 — Frozen Booking Amount (Accepted 2026-11-04, D-015)
 
 The amount of a booking is fixed when it is created: base price per participant, price rules, add-ons and promo discount. Later changes to prices, add-ons or promos never change an existing booking, and every owner list, panel, invoice and report shows the amount that was paid.
+
+### FR-BOOKING-024 — Automatic Completion (Accepted 2026-11-17, D-025, D-026)
+
+A `paid` booking is marked `completed` by the system 6 hours after its session ends, through the same state transition as a manual completion (FR-BOOKING-009). The setting is in the booking policy, on by default, and the tenant can switch it off. A booking that was marked `no_show`, or that has an open refund or cancellation request, is never completed automatically. The booking history records the system as the actor.
+
+Amended 2026-11-19 (D-027): automatic completion includes only sessions ending at or after activation. Existing tenants start at deployment of this rule, new tenants at creation, and enabling the setting again starts a new activation period. Older sessions remain available for manual bulk completion.
+
+### FR-BOOKING-025 — Bulk Completion (Accepted 2026-11-17, D-025, D-026)
+
+A Pemilik, Manajer or Kasir can complete several bookings at once: selected rows, or every ended session that is still `paid`. Each booking passes the same rules as a single completion; bookings that cannot be completed (not ended, refund or cancellation request, other state) are skipped, and the result states how many were completed and how many were skipped. Only bookings of the current tenant are affected.
+
+Amended 2026-11-19 (T-13, Tech Lead approval confirmed through the developer): manual bulk submissions process at most 500 candidates. When the limit is reached the response directs the user to review the remaining list and continue as needed.
 
 ## Multi-Slot Booking Requirements
 
@@ -818,6 +840,12 @@ The system shall calculate the resulting booking price according to the accepted
 
 Amended 2026-11-04 (D-015): vouchers are offered to owners as **Promo**, for Medium and Pro. A promo has a code, a percentage or fixed discount, a minimum order, a maximum discount, a quota, a period and the services it applies to. The discount is computed on the server before payment and is part of the payment amount. The quota is never exceeded, also when customers pay at the same time. The owner sees how often each promo was used, the total discount and the revenue from bookings with a promo.
 
+Amended 2026-11-17 (D-026): a promo can also be limited to days and hours; see FR-VOUCHER-006.
+
+### FR-VOUCHER-006 — Quiet-Hour Promo (Accepted 2026-11-17, D-025, D-026)
+
+On Medium and Pro, a promo can be limited to chosen days of the week and a time range. It applies only when every slot in the booking starts inside that range; otherwise the code is refused with a clear reason. The discount is a percentage or a fixed amount, follows every other rule of FR-VOUCHER-005, and is frozen with the booking (FR-BOOKING-023). Laporan → Okupansi may suggest the quietest days and hours of the period, with a shortcut that opens a new promo prefilled with them; the system never creates or activates a promo by itself.
+
 ## Staff and Resource Requirements
 
 ### FR-STAFF-001 — Staff Management (Withdrawn 2026-11-04, D-011)
@@ -960,7 +988,7 @@ Dashboard aggregation must not become an independent source of truth.
 
 ### FR-DASH-008 — Today and Needs Action (Accepted 2026-11-04, D-007 Revisi 1)
 
-The dashboard (Beranda) shows today only: one status banner by priority, today's figures, items needing action (refund and cancellation requests, ended bookings without an outcome, low-rated reviews without a reply, payout changes), today's schedule, a summary of tomorrow, and a new-owner guide until its steps are done. Trends and charts belong to reports (FR-ANALYTICS).
+The dashboard (Beranda) shows today only: one status banner by priority, today's figures, items needing action (refund and cancellation requests, ended bookings without an outcome, low-rated reviews without a reply, payout changes), today's schedule, a summary of tomorrow, and a new-owner guide until its steps are done or the business has a booking. Trends and charts belong to reports (FR-ANALYTICS).
 
 ## Calendar Requirements
 
@@ -1107,6 +1135,12 @@ Each user chooses per event (new booking, payment success, cancellation, resched
 ### FR-NOTIFICATION-007 — Subscription Reminders (Accepted 2026-11-04, D-002)
 
 The Pemilik is reminded 3 days and 1 day before the trial or subscription ends, and on the day it ends, in-app and by email.
+
+### FR-NOTIFICATION-008 — Weekly Summary (Accepted 2026-11-17, D-025, D-026)
+
+Every Monday morning the Pemilik receives an email summarising the previous Monday-to-Sunday week: net revenue, number of bookings, share of slots filled, the date until which slots are open, and the items waiting for them (refund requests, ended sessions not yet closed). It is on by default and is switched off in the notification preferences (FR-NOTIFICATION-006). Other team roles do not receive it. Every figure comes from the same calculations as the owner portal.
+
+Amended 2026-11-19 (T-11, Tech Lead approval confirmed through the developer): the summary is sent only while the tenant has an effective plan under `EntitlementRules`.
 
 ## Subscription Requirements
 

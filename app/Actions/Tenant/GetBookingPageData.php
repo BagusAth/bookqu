@@ -10,6 +10,7 @@ use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Subscription\PlanCapability;
 use App\Domain\Tenant\CustomDomain;
 use App\Models\Asset;
+use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantLandingPage;
@@ -22,7 +23,7 @@ use App\Support\TenantContext;
  */
 class GetBookingPageData
 {
-    public const SECTIONS = ['link' => 'Link & QR', 'promosi' => 'Materi promosi', 'tampilan' => 'Tampilan', 'galeri' => 'Galeri media', 'landing' => 'Landing page', 'domain' => 'Domain sendiri'];
+    public const SECTIONS = ['link' => 'Bagikan', 'tampilan' => 'Tampilan', 'galeri' => 'Galeri', 'landing' => 'Halaman depan', 'domain' => 'Domain sendiri'];
 
     public function __construct(
         private BuildBookingQr $buildBookingQr,
@@ -37,6 +38,7 @@ class GetBookingPageData
     {
         app(TenantContext::class)->setTenantId($tenant->id);
 
+        $activeSection = array_key_exists((string) $section, self::SECTIONS) ? (string) $section : 'link';
         $link = $this->buildBookingQr->link($tenant);
         $name = (string) ($tenant->namabisnis ?: 'kami');
         $assets = Asset::where('idtenant', $tenant->id)->latest()->latest('id')->get();
@@ -45,7 +47,8 @@ class GetBookingPageData
         $isPro = EntitlementRules::canAccessFeature($subscription, PlanCapability::FEATURE_LANDING_PAGE)['allowed'];
 
         return [
-            'activeSection' => array_key_exists((string) $section, self::SECTIONS) ? (string) $section : 'link',
+            'activeSection' => $activeSection,
+            'previewServices' => $activeSection === 'tampilan' ? $this->previewServices($tenant) : [],
             'link' => $link,
             'whatsappShareUrl' => 'https://wa.me/?text='.rawurlencode('Booking '.$name.' online di sini: '.$link),
             'qrSvg' => $this->buildBookingQr->svg($tenant),
@@ -82,6 +85,25 @@ class GetBookingPageData
             'landing' => $this->landing($tenant),
             'domain' => $this->domain($tenant),
         ];
+    }
+
+    /** @return list<array{name: string, price: string, priceUnit: string, duration: int}> */
+    private function previewServices(Tenant $tenant): array
+    {
+        return Service::query()
+            ->where('idtenant', $tenant->id)
+            ->where('is_active', true)
+            ->orderByDesc('is_popular')
+            ->orderBy('namalayanan')
+            ->orderBy('id')
+            ->limit(3)
+            ->get()
+            ->map(fn (Service $service): array => [
+                'name' => (string) $service->namalayanan,
+                'price' => 'Rp '.number_format((float) $service->harga, 0, ',', '.'),
+                'priceUnit' => (string) ($service->satuan_harga ?: 'sesi'),
+                'duration' => (int) $service->durasi,
+            ])->all();
     }
 
     /**

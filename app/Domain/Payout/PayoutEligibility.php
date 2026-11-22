@@ -8,6 +8,7 @@ use App\Models\OwnerPayout;
 use App\Models\Tenant;
 use App\Models\TenantPayoutAccount;
 use App\Models\User;
+use App\Support\TenantContext;
 
 class PayoutEligibility
 {
@@ -39,7 +40,7 @@ class PayoutEligibility
 
         // 3. Payment mode
         if (($tenant->payment_mode ?? 'platform') !== 'platform') {
-            $reasons[] = 'Withdraw hanya tersedia untuk mode pembayaran platform.';
+            $reasons[] = 'Pencairan hanya tersedia untuk mode pembayaran platform.';
         }
 
         // 4. Available balance
@@ -50,22 +51,20 @@ class PayoutEligibility
         // 5. Open in-flight payouts (pending + approved) >= max_open
         $maxOpen = config('payouts.max_open');
         if ($maxOpen !== null && is_numeric($maxOpen)) {
-            // scope-bypass: eligibility evaluates counts for the explicitly provided tenant
-            $openCount = OwnerPayout::withoutGlobalScopes()
+            $openCount = app(TenantContext::class)->run((int) $tenant->id, fn (): int => OwnerPayout::query()
                 ->where('idtenant', $tenant->id)
                 ->whereIn('status', ['pending', 'approved'])
-                ->count();
+                ->count());
             if ($openCount >= (int) $maxOpen) {
-                $reasons[] = 'Masih ada pengajuan withdraw yang sedang diproses. Tunggu sampai selesai sebelum mengajukan lagi.';
+                $reasons[] = 'Masih ada pengajuan pencairan yang sedang diproses. Tunggu sampai selesai sebelum mengajukan lagi.';
             }
         }
 
         // 6. Saved payout accounts exist
-        // scope-bypass: eligibility evaluates accounts for the explicitly provided tenant
-        $accountCount = TenantPayoutAccount::withoutGlobalScopes()
+        $accountCount = app(TenantContext::class)->run((int) $tenant->id, fn (): int => TenantPayoutAccount::query()
             ->where('idtenant', $tenant->id)
             ->whereNull('deleted_at')
-            ->count();
+            ->count());
         if ($accountCount === 0) {
             $reasons[] = 'Tambahkan rekening penarikan terlebih dahulu.';
         }

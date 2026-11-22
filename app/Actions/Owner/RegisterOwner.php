@@ -22,7 +22,10 @@ class RegisterOwner
      * Create the owner, their tenant and the 7-day trial in one transaction (BQ-112), so a
      * failure at any step leaves no user without a tenant.
      *
-     * @param  array{name: string, email: string, password: string, nomorhp: string, nama_bisnis: string, jenis_bisnis: string, alamat: string}  $data
+     * Registration through Google (D-029) passes `google_id` instead of `password`: the account
+     * has no password and its email is already verified by Google.
+     *
+     * @param  array{name: string, email: string, password?: string, google_id?: string, nomorhp: string, nama_bisnis: string, jenis_bisnis: string, alamat: string}  $data
      * @return array{user: User, tenant: Tenant}
      */
     public function execute(array $data): array
@@ -31,10 +34,14 @@ class RegisterOwner
             $user = User::create([
                 'namalengkap' => $data['name'],
                 'email' => $data['email'],
-                'password' => Hash::make($data['password']),
+                'password' => isset($data['password']) ? Hash::make($data['password']) : null,
                 'nomorhp' => $data['nomorhp'],
                 'role' => 'owner',
             ]);
+
+            if (isset($data['google_id'])) {
+                $user->forceFill(['google_id' => $data['google_id'], 'email_verified_at' => now()])->save();
+            }
 
             // FS-002 & FS-003: tenant slug generated from the business name
             $slug = Str::slug($data['nama_bisnis']) ?: 'bisnis';

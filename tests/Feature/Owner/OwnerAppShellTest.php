@@ -156,7 +156,7 @@ class OwnerAppShellTest extends TestCase
         $this->assertStringContainsString('id="owner-bottom-nav"', $html);
         $bar = substr($html, (int) strpos($html, 'id="owner-bottom-nav"'));
         $bar = substr($bar, 0, (int) strpos($bar, '</nav>'));
-        $this->assertMatchesRegularExpression('/Beranda.*Kalender.*Walk-in.*Booking.*Lainnya/s', strip_tags($bar));
+        $this->assertMatchesRegularExpression('/Beranda.*Kalender.*Catat.*Booking.*Lainnya/s', strip_tags($bar));
         $this->assertStringContainsString('id="owner-more-sheet"', $html);
         $sheet = substr($html, (int) strpos($html, 'id="owner-more-sheet"'));
         foreach (['Pelanggan', 'Layanan', 'Jam Buka &amp; Harga', 'Pengaturan'] as $menu) {
@@ -203,6 +203,35 @@ class OwnerAppShellTest extends TestCase
         $this->assertSame([$free->id], array_column($slots, 'id'));
         $this->assertSame('Foto Keluarga · 10:00 – 11:00', $slots[0]['label']);
         $this->getJson(route('owner.bookings.walkin-slots', ['date' => 'besok']))->assertUnprocessable();
+    }
+
+    public function test_a_walk_in_conflict_offers_the_nearest_free_times_without_creating_a_booking(): void
+    {
+        $service = Service::factory()->create(['idtenant' => $this->tenant->id, 'is_active' => true]);
+        $date = Carbon::tomorrow('Asia/Jakarta')->toDateString();
+        $slot = fn (string $start, string $end): Schedule => Schedule::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $service->id,
+            'tanggal' => $date, 'jam_mulai' => $start, 'jam_selesai' => $end, 'status' => 'tersedia',
+        ]);
+        $taken = $slot('13:00', '13:59');
+        $nearest = $slot('14:00', '14:59');
+        $second = $slot('11:00', '11:59');
+        $slot('17:00', '17:59');
+        Booking::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $service->id, 'idschedule' => $taken->id,
+            'tanggalbooking' => $date, 'jam' => '13:00', 'status' => 'paid',
+        ]);
+
+        $this->actingAs($this->owner)->postJson(route('owner.bookings.walkin'), [
+            'idschedule' => $taken->id, 'namapelanggan' => 'Rani', 'nomorhp' => '081234500012',
+        ])->assertConflict()
+            ->assertJsonPath('message', 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.')
+            ->assertJsonPath('alternatives.0.id', $nearest->id)
+            ->assertJsonPath('alternatives.1.id', $second->id)
+            ->assertJsonCount(2, 'alternatives');
+
+        $this->assertDatabaseCount('bookings', 1);
+        $this->assertDatabaseCount('payments', 0);
     }
 
     public function test_shell_does_no_hover_prefetch_and_loads_charts_only_where_drawn(): void

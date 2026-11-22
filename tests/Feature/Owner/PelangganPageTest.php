@@ -83,7 +83,7 @@ class PelangganPageTest extends TestCase
         return $kasir;
     }
 
-    public function test_page_shows_summary_quick_filters_and_the_customer_list(): void
+    public function test_page_shows_segment_counts_and_keeps_contact_details_in_the_panel(): void
     {
         $this->booking(['created_at' => now()->subMonths(3), 'tanggalbooking' => '2026-08-01']);
         $this->booking(['tanggalbooking' => '2026-11-12']);
@@ -91,14 +91,12 @@ class PelangganPageTest extends TestCase
 
         $this->actingAs($this->owner)->get(route('owner.customers'))
             ->assertOk()
-            ->assertSee('Total pelanggan')
-            ->assertSee('Baru bulan ini')
-            ->assertSee('Kembali lagi')
+            ->assertViewHas('counts', ['' => 2, 'new' => 1, 'regular' => 0, 'dormant' => 0])
             ->assertSee(route('owner.customers', ['filter' => 'new']))
             ->assertSee(route('owner.customers', ['filter' => 'regular']))
             ->assertSee(route('owner.customers', ['filter' => 'dormant']))
             ->assertSee('Rani Putri')
-            ->assertSee('rani@example.com')
+            ->assertDontSee('rani@example.com')
             ->assertSee('Dewi')
             ->assertViewHas('summary', ['total' => 2, 'new' => 1, 'returning' => 1]);
     }
@@ -142,8 +140,40 @@ class PelangganPageTest extends TestCase
             ->assertSee('Pelanggan Baru')->assertDontSee('Pelanggan Tetap')->assertDontSee('Lama Hilang');
         $this->get(route('owner.customers', ['filter' => 'regular']))
             ->assertSee('Pelanggan Tetap')->assertDontSee('Pelanggan Baru')->assertDontSee('Lama Hilang');
-        $this->get(route('owner.customers', ['filter' => 'dormant']))
-            ->assertSee('Lama Hilang')->assertDontSee('Pelanggan Baru')->assertDontSee('Pelanggan Tetap');
+        $dormant = $this->get(route('owner.customers', ['filter' => 'dormant']))->assertOk()
+            ->assertSee('Lama Hilang')->assertDontSee('Pelanggan Baru')->assertDontSee('Pelanggan Tetap')
+            ->assertSee('Buka WhatsApp')->assertSee('Halo Kak Lama');
+        $this->assertSame('https://wa.me/6281234567890', $dormant->viewData('customers')->items()[0]->whatsapp_url);
+    }
+
+    public function test_last_visit_shows_the_latest_session_that_took_place(): void
+    {
+        $this->booking(['tanggalbooking' => '2026-11-05', 'status' => 'completed']);
+        $this->booking(['tanggalbooking' => '2026-11-15', 'status' => 'cancelled']);
+        $this->booking(['tanggalbooking' => '2026-11-25', 'status' => 'paid']);
+
+        $response = $this->actingAs($this->owner)->get(route('owner.customers'));
+
+        $response->assertOk();
+        $customer = $response->viewData('customers')->items()[0];
+        $this->assertSame('5 Nov', $customer->last_booking);
+        $this->assertSame('25 Nov · 10.00', $customer->upcoming_booking);
+    }
+
+    public function test_dormant_segment_skips_customers_who_booked_again_or_never_came(): void
+    {
+        $this->booking(['namapelanggan' => 'Sudah Pesan Lagi', 'email' => 'lagi@example.com', 'tanggalbooking' => '2026-08-01', 'status' => 'completed']);
+        $this->booking(['namapelanggan' => 'Sudah Pesan Lagi', 'email' => 'lagi@example.com', 'tanggalbooking' => '2026-11-25', 'status' => 'paid']);
+        $this->booking(['namapelanggan' => 'Lama Hilang', 'email' => 'hilang@example.com', 'tanggalbooking' => '2026-08-01', 'status' => 'completed']);
+        $this->booking(['namapelanggan' => 'Tidak Jadi', 'email' => 'batal@example.com', 'tanggalbooking' => '2026-08-01', 'status' => 'cancelled']);
+
+        $response = $this->actingAs($this->owner)->get(route('owner.customers', ['filter' => 'dormant']));
+
+        $response->assertOk()
+            ->assertSee('Lama Hilang')
+            ->assertDontSee('Sudah Pesan Lagi')
+            ->assertDontSee('Tidak Jadi');
+        $this->assertSame(1, $response->viewData('counts')['dormant']);
     }
 
     public function test_ac_plg_02_totals_use_the_paid_amounts(): void
@@ -155,7 +185,7 @@ class PelangganPageTest extends TestCase
         $cancelled = $this->booking(['status' => 'cancelled']);
         $this->pay($cancelled, 120000);
 
-        $response = $this->actingAs($this->owner)->get(route('owner.customers'))->assertOk()->assertSee('Rp 85.000');
+        $response = $this->actingAs($this->owner)->get(route('owner.customers'))->assertOk()->assertSee('Rp85.000');
         $this->assertSame(85000.0, (float) collect($response->viewData('customers')->items())->first()->total_spent);
 
         $this->getJson(route('owner.customers.panel', ['identifier' => 'rani@example.com']))
@@ -221,7 +251,7 @@ class PelangganPageTest extends TestCase
         $this->actingAs($this->owner)->get(route('owner.customers'))
             ->assertOk()
             ->assertSee('x-on:walkin-prefill.window', false)
-            ->assertSee('Buat booking');
+            ->assertSee('Catat booking');
     }
 
     public function test_the_panel_never_shows_another_business_customer(): void

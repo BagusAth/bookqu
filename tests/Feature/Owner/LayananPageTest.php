@@ -96,7 +96,7 @@ class LayananPageTest extends TestCase
             ->assertOk()
             ->assertSee('role="tablist"', false)
             ->assertSee('tab=kategori', false)
-            ->assertSee('1 dari 5 layanan')
+            ->assertSee('1 dari 5')
             ->assertSee('Pas Foto')
             ->assertSee('id="service-form-dialog"', false);
     }
@@ -127,7 +127,7 @@ class LayananPageTest extends TestCase
 
         $this->get(route('owner.services'))
             ->assertOk()
-            ->assertSee('2 dari 2 layanan')
+            ->assertSee('2 dari 2')
             ->assertSee('Lihat paket')
             ->assertDontSee('id="service-create-button"', false);
     }

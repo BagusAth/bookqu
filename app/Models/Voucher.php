@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\WeekdayRange;
 use App\Traits\BelongsToTenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,6 +26,9 @@ class Voucher extends Model
         'end_date',
         'applicable_services',
         'is_active',
+        'valid_days',
+        'valid_from_time',
+        'valid_until_time',
     ];
 
     protected function casts(): array
@@ -76,6 +80,52 @@ class Voucher extends Model
         }
 
         return true;
+    }
+
+    /** Whether the promo has a day or time limit (FR-VOUCHER-006). */
+    public function hasQuietHours(): bool
+    {
+        return ! empty($this->valid_days) || $this->valid_from_time !== null || $this->valid_until_time !== null;
+    }
+
+    /**
+     * The promo's days and start-time range as owners and customers read it, e.g.
+     * "Sen, Sel · 10.00–12.00" (FR-VOUCHER-006); null when it applies to every day and hour.
+     */
+    public function quietHoursLabel(): ?string
+    {
+        $days = $this->valid_days ? WeekdayRange::label(explode(',', (string) $this->valid_days)) : null;
+        $hour = fn (mixed $time): string => str_replace(':', '.', substr((string) $time, 0, 5));
+        $hours = match (true) {
+            $this->valid_from_time !== null && $this->valid_until_time !== null => $hour($this->valid_from_time).'–'.$hour($this->valid_until_time),
+            $this->valid_from_time !== null => 'mulai '.$hour($this->valid_from_time),
+            $this->valid_until_time !== null => 'sebelum '.$hour($this->valid_until_time),
+            default => null,
+        };
+        $label = implode(' · ', array_filter([$days, $hours]));
+
+        return $label === '' ? null : $label;
+    }
+
+    /**
+     * Whether a slot starting at `$start` on `$date` falls inside the promo's days and hours
+     * (FR-VOUCHER-006). A promo without limits covers every slot.
+     */
+    public function coversSlot(string $date, string $start): bool
+    {
+        if (! empty($this->valid_days)) {
+            $days = array_map('intval', explode(',', (string) $this->valid_days));
+            if (! in_array(Carbon::parse($date)->dayOfWeekIso, $days, true)) {
+                return false;
+            }
+        }
+
+        $time = substr($start, 0, 5);
+        if ($this->valid_from_time !== null && $time < substr((string) $this->valid_from_time, 0, 5)) {
+            return false;
+        }
+
+        return $this->valid_until_time === null || $time < substr((string) $this->valid_until_time, 0, 5);
     }
 
     public function calculateDiscount(float $amount): float

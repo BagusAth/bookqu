@@ -25,8 +25,8 @@ class OwnerPortalWorkflowTest extends TestCase
         app(CreateTrialSubscription::class)->execute($tenant);
         $this->actingAs($tenant->user);
 
-        $team = route('owner.settings.business', ['tab' => 'tim']);
-        $integrations = route('owner.settings.business', ['tab' => 'integrasi']);
+        $team = route('owner.settings', ['tab' => 'tim']);
+        $integrations = route('owner.settings', ['tab' => 'integrasi']);
         $this->get(route('owner.team.index'))->assertRedirect($team);
         $this->get(route('owner.settings.integrations'))->assertRedirect($integrations);
         $this->get(route('owner.api.index'))->assertRedirect($integrations.'#api');
@@ -41,8 +41,8 @@ class OwnerPortalWorkflowTest extends TestCase
         Service::factory()->create(['idtenant' => $tenant->id, 'is_active' => true]);
 
         $this->actingAs($tenant->user)->get(route('owner.schedule', ['tab' => 'slots', 'buat' => 1]))
-            ->assertOk()->assertSeeText('Periksa ketersediaan slot 7 hari ke depan.')
-            ->assertSee(route('owner.schedule.bulk-preview'))->assertSeeText('Pratinjau slot');
+            ->assertOk()->assertSeeText('belum ada slot terbuka')->assertSeeText('Cakupan slot belum memenuhi batas 7 hari.')
+            ->assertSee(route('owner.schedule.bulk-preview'))->assertSeeText('Buka slot sekaligus')->assertSeeText('Pratinjau');
         $this->get(route('owner.schedule', ['tab' => 'prices']))
             ->assertOk()->assertSee(route('owner.schedule.price-simulator'))->assertSee(route('owner.schedule.apply-base-price'));
     }
@@ -69,19 +69,21 @@ class OwnerPortalWorkflowTest extends TestCase
         BookingLog::record($booking->id, 'paid', 'Pembayaran tercatat.');
 
         $this->actingAs($tenant->user)->get(route('owner.bookings', ['tab' => 'action', 'katakunci' => 'panel@example.test']))
-            ->assertOk()->assertSeeText('Perlu tindakan (1)')->assertSeeText('Rp 75.001')->assertDontSeeText('999.000')
-            ->assertSeeText('Permintaan refund menunggu keputusan');
+            ->assertOk()->assertViewHas('tabCounts', fn (array $counts): bool => $counts['action'] === 1)
+            ->assertSeeText('Permintaan refund menunggu keputusan')->assertSeeText('Putuskan refund');
+        $this->get(route('owner.bookings', ['tab' => 'all', 'katakunci' => 'panel@example.test']))
+            ->assertOk()->assertSeeText('Rp75.001')->assertDontSeeText('999.000');
         $panel = route('owner.bookings.panel', $booking->id);
         $response = $this->getJson($panel)->assertOk()
-            ->assertJsonPath('payment.amount', 'Rp 75.001')
+            ->assertJsonPath('payment.amount', 'Rp75.001')
             ->assertJsonPath('history.0.actor', 'Sistem')
             ->assertDontSee('1234567890');
         $actions = collect($response->json('actions'))->keyBy('label');
         $this->assertSame('reason', $actions['Batalkan booking']['reason']['name']);
-        $this->assertSame('Pelanggan mendapat refund penuh Rp 75.001.', $actions['Batalkan booking']['confirm']['message']);
+        $this->assertSame('Pelanggan mendapat refund penuh Rp75.001.', $actions['Batalkan booking']['confirm']['message']);
         $this->assertSame('accepted_half', $actions['Terima 50%']['fields']['decision']);
         $this->assertSame(route('owner.refunds.decide', $refund->id), $actions['Terima 50%']['url']);
-        $this->assertStringContainsString('Rp 37.500', $actions['Terima 50%']['confirm']['message']);
+        $this->assertStringContainsString('Rp37.500', $actions['Terima 50%']['confirm']['message']);
         $this->actingAs(Tenant::factory()->create()->user)->getJson($panel)->assertNotFound();
     }
 

@@ -29,7 +29,7 @@ class SharedBuildingBlocksTest extends TestCase
         $this->assertSame(['Tidak datang', 'danger'], StatusBadge::for('booking', 'no_show'));
         $this->assertSame(['Berhasil', 'success'], StatusBadge::for('payment', 'sukses'));
         $this->assertSame(['Gagal / Dibatalkan', 'danger'], StatusBadge::for('payment', 'gagal'));
-        $this->assertSame(['Pending', 'warning'], StatusBadge::for('payout', 'approved'));
+        $this->assertSame(['Diproses', 'warning'], StatusBadge::for('payout', 'approved'));
         $this->assertSame(['Menunggu keputusan', 'warning'], StatusBadge::for('refund_request', 'open'));
         $this->assertSame(['Diterima 50%', 'success'], StatusBadge::for('refund_request', 'accepted_half'));
         $this->assertSame(['Sudah ditransfer', 'success'], StatusBadge::for('refund', 'processed'));

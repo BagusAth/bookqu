@@ -1,20 +1,25 @@
 document.addEventListener('alpine:init', () => {
+    const visibleSlots = slots => slots.filter(slot => !slot.is_past);
+    // Display helpers only (BQ-165 design A): availability and prices come from the server.
+    const monthOf = date => date.slice(0, 7);
+    const isoDate = day => [day.getFullYear(), String(day.getMonth() + 1).padStart(2, '0'), String(day.getDate()).padStart(2, '0')].join('-');
+    const rupiah = amount => 'Rp' + new Intl.NumberFormat('id-ID').format(Math.round(amount));
+
     Alpine.data('schedulePicker', (config) => ({
         ...config,
         selectedDate: config.initialDate,
         selectedDateFormatted: config.initialDateLabel,
-        morningSlots: config.initialMorningSlots,
-        afternoonSlots: config.initialAfternoonSlots,
-        eveningSlots: config.initialEveningSlots,
+        morningSlots: visibleSlots(config.initialMorningSlots),
+        afternoonSlots: visibleSlots(config.initialAfternoonSlots),
+        eveningSlots: visibleSlots(config.initialEveningSlots),
         selectedSlots: [],
         loadingSlots: false,
         isSubmitting: false,
-        mounted: false,
         errorMessage: '',
-        serviceFee: 0,
         requestController: null,
         requestNumber: 0,
         resetSubmitting: null,
+        viewMonth: monthOf(config.initialDate),
 
         init() {
             this.selectedSlots = this.allCurrentSlots.filter(slot => slot.is_available
@@ -25,7 +30,6 @@ document.addEventListener('alpine:init', () => {
             ['pageshow', 'pagehide', 'popstate', 'booking-reset-submitting'].forEach(event => {
                 window.addEventListener(event, this.resetSubmitting);
             });
-            this.mounted = true;
         },
 
         destroy() {
@@ -44,15 +48,100 @@ document.addEventListener('alpine:init', () => {
             return [...this.selectedSlots].sort((a, b) => a.time.localeCompare(b.time));
         },
 
+        get monthLabel() {
+            const [year, month] = this.viewMonth.split('-').map(Number);
+            return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1));
+        },
+
+        get stripMonthLabel() {
+            const [year, month] = monthOf(this.selectedDate).split('-').map(Number);
+            return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1));
+        },
+
+        get canGoPrev() {
+            return this.dates.length > 0 && this.viewMonth > monthOf(this.dates[0].date);
+        },
+
+        get canGoNext() {
+            return this.dates.length > 0 && this.viewMonth < monthOf(this.dates[this.dates.length - 1].date);
+        },
+
+        shiftMonth(step) {
+            const [year, month] = this.viewMonth.split('-').map(Number);
+            this.viewMonth = isoDate(new Date(year, month - 1 + step, 1)).slice(0, 7);
+        },
+
+        prevMonth() {
+            if (this.canGoPrev) this.shiftMonth(-1);
+        },
+
+        nextMonth() {
+            if (this.canGoNext) this.shiftMonth(1);
+        },
+
+        get calendarDays() {
+            const [year, month] = this.viewMonth.split('-').map(Number);
+            const first = new Date(year, month - 1, 1);
+            const start = new Date(year, month - 1, 1 - ((first.getDay() + 6) % 7));
+            const today = this.dates[0]?.date;
+            const days = [];
+            for (let index = 0; index < 42; index++) {
+                const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+                if (index >= 35 && day.getMonth() !== month - 1) break;
+                const date = isoDate(day);
+                const entry = this.dates.find(item => item.date === date);
+                days.push({
+                    key: date,
+                    date,
+                    label: day.getDate(),
+                    inMonth: day.getMonth() === month - 1,
+                    isToday: date === today,
+                    isSelected: date === this.selectedDate,
+                    isDisabled: !entry,
+                    hasSessions: Boolean(entry?.is_available),
+                    ariaLabel: (entry?.label || date) + (entry?.is_available ? '' : ', tidak ada sesi'),
+                });
+            }
+            return days;
+        },
+
+        get selectedDayShort() {
+            return this.dates.find(day => day.date === this.selectedDate)?.label || '';
+        },
+
+        get nearestAvailableDay() {
+            const later = this.dates.find(day => day.is_available && day.date > this.selectedDate);
+            return later || [...this.dates].reverse().find(day => day.is_available && day.date < this.selectedDate) || null;
+        },
+
+        get selectedTimeLabel() {
+            const sorted = this.sortedSelectedSlots;
+            if (!sorted.length) return 'Belum dipilih';
+            return this.startLabel(sorted[0]) + ' – ' + sorted[sorted.length - 1].end_time.replace(':', '.');
+        },
+
+        get subtotalLabel() {
+            return rupiah(this.selectedSlots.reduce((sum, slot) => sum + Number(slot.price || 0), 0));
+        },
+
+        startLabel(slot) {
+            return (slot.time || '').replace(':', '.');
+        },
+
+        pickFromCalendar(date) {
+            this.selectDate(date);
+            this.$dispatch('close-dialog', { id: 'kalender-jadwal' });
+        },
+
         async selectDate(date) {
-            if (this.isSubmitting || !this.dates.some(day => day.date === date && day.is_available)) return;
+            if (this.isSubmitting || !this.dates.some(day => day.date === date)) return;
+            this.viewMonth = monthOf(date);
             this.requestController?.abort();
             this.requestController = new AbortController();
             const requestNumber = ++this.requestNumber;
             this.selectedDate = date;
-            this.selectedDateFormatted = new Intl.DateTimeFormat('id-ID', {
-                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta',
-            }).format(new Date(`${date}T00:00:00+07:00`));
+            this.$nextTick(() => this.$refs.dateStrip?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' }));
+            this.selectedDateFormatted = this.dates.find(day => day.date === date).label;
             this.selectedSlots = [];
             this.morningSlots = [];
             this.afternoonSlots = [];
@@ -73,9 +162,9 @@ document.addEventListener('alpine:init', () => {
                     this.errorMessage = data.error || data.message || 'Jadwal belum dapat dimuat. Silakan coba lagi.';
                     return;
                 }
-                this.morningSlots = data.morning;
-                this.afternoonSlots = data.afternoon;
-                this.eveningSlots = data.evening;
+                this.morningSlots = visibleSlots(data.morning);
+                this.afternoonSlots = visibleSlots(data.afternoon);
+                this.eveningSlots = visibleSlots(data.evening);
                 this.selectedDateFormatted = data.date_label;
             } catch (error) {
                 if (error.name !== 'AbortError' && requestNumber === this.requestNumber) {
@@ -91,7 +180,7 @@ document.addEventListener('alpine:init', () => {
             return sorted.every((slot, index) => index === 0 || sorted[index - 1].end_time === slot.time);
         },
 
-        toggleSlot(slot) {
+        selectSlot(slot) {
             if (this.isSubmitting || this.loadingSlots || !slot.is_available) return;
             this.errorMessage = '';
             const sorted = this.sortedSelectedSlots;
@@ -101,7 +190,7 @@ document.addEventListener('alpine:init', () => {
             } else {
                 const candidate = [...sorted, slot];
                 if (!this.isContiguous(candidate)) {
-                    this.errorMessage = 'Slot harus berurutan. Pilih sesi yang berdekatan terlebih dahulu.';
+                    this.errorMessage = 'Pilih sesi yang berdekatan agar jadwal berurutan.';
                     return;
                 }
                 this.selectedSlots = candidate;
@@ -110,14 +199,6 @@ document.addEventListener('alpine:init', () => {
 
         isSlotSelected(slot) {
             return this.selectedSlots.some(item => item.id === slot.id);
-        },
-
-        getSlotOrder(slot) {
-            return this.sortedSelectedSlots.findIndex(item => item.id === slot.id) + 1;
-        },
-
-        scrollDates(direction) {
-            this.$refs.dateStrip?.scrollBy({ left: direction === 'left' ? -220 : 220, behavior: 'smooth' });
         },
 
         submit(event) {
@@ -129,28 +210,5 @@ document.addEventListener('alpine:init', () => {
             this.isSubmitting = true;
         },
 
-        get selectedTimeFormatted() {
-            const slots = this.sortedSelectedSlots;
-            if (slots.length === 0) return 'Belum pilih waktu';
-            return `${slots[0].time} – ${slots[slots.length - 1].end_time} WIB`;
-        },
-
-        get selectedDurationFormatted() {
-            // BQ-114: each slot's own length, falling back to the service duration for old payloads
-            const minutes = this.selectedSlots.reduce((sum, slot) => sum + Number(slot.duration_minutes ?? this.service.duration), 0);
-            return `${minutes} menit`;
-        },
-
-        get subtotal() {
-            return this.selectedSlots.reduce((sum, slot) => sum + Number(slot.price ?? this.service.price), 0);
-        },
-
-        get total() {
-            return this.subtotal + this.serviceFee;
-        },
-
-        formatRupiah(amount) {
-            return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
-        },
     }));
 });

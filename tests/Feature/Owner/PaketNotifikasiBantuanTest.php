@@ -87,7 +87,7 @@ class PaketNotifikasiBantuanTest extends TestCase
             ->assertSee('Paket &amp; Tagihan', false)
             ->assertSee('Medium')
             ->assertSee('Aktif')
-            ->assertSee('10 Des 2026')
+            ->assertSee('10 Des')
             ->assertSee('2 dari 10 layanan')
             ->assertSee('data-plan-features="small"', false)
             ->assertSee(route('owner.checkout.invoice', 'SUB-PAID-1'))
@@ -172,6 +172,18 @@ class PaketNotifikasiBantuanTest extends TestCase
             ->assertSee('Paket hampir habis')->assertDontSee('Booking baru Rani');
         $this->get(route('owner.notifications', ['type' => 'booking']))
             ->assertSee('Booking baru Rani')->assertDontSee('Paket hampir habis');
+    }
+
+    public function test_notifications_are_grouped_by_local_day_newest_first(): void
+    {
+        $today = now();
+        $this->travelTo($today->copy()->subDay());
+        $this->notify($this->owner, NewBookingOwnerNotification::class, ['title' => 'Booking Kemarin']);
+        $this->travelTo($today);
+        $this->notify($this->owner, NewBookingOwnerNotification::class, ['title' => 'Booking Terbaru']);
+
+        $this->actingAs($this->owner)->get(route('owner.notifications'))
+            ->assertOk()->assertSeeInOrder(['Hari ini</h2>', 'Booking Terbaru', 'Kemarin</h2>', 'Booking Kemarin'], false);
     }
 
     public function test_ac_ntf_01_opening_an_item_marks_it_read_and_lands_on_its_target(): void

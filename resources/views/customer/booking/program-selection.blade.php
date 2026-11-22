@@ -1,292 +1,169 @@
 @extends('customer.layouts.booking-shell')
 
-@section('title', 'Pilih Layanan')
-@section('current_step', 1)
+@section('title', 'Reservasi online')
+@section('immersive', true)
+@if ($pendingCheckout)
+    @section('bottom_bar', 'always')
+@endif
+
+@php
+    // Display data only: counts per category for the chips, favourites from `is_popular` (design A §7.1).
+    $categoryChips = collect([['key' => 'all', 'label' => 'Semua layanan', 'short' => 'Semua', 'count' => $services->count()]])
+        ->concat($categories->map(fn ($category) => [
+            'key' => $category->id,
+            'label' => $category->name,
+            'count' => $services->where('idcategory', $category->id)->count(),
+        ]))->all();
+    $favorites = $services->filter(fn ($service) => (bool) $service->is_popular)->take(3);
+    $durationLabel = fn ($service) => ($service->durasi ?? 60).' '.($service->satuan_durasi ?: 'menit');
+@endphp
 
 @section('content')
-<div id="booking-program-root" data-tenant-slug="{{ $tenant->slug }}" x-data="bookingProgram()" @pageshow.window="isSubmitting = false" @pagehide.window="isSubmitting = false" @popstate.window="isSubmitting = false">
+    <x-customer.hero :name="$tenant->namabisnis" :description="$tenant->deskripsi" :logo="$businessLogo ?? null" :initials="$businessInitials ?? null"
+        :banner="$businessBanner ?? null" :badges="['Bayar online', 'Invoice otomatis']" :address="$tenant->alamat" :maps-url="$tenant->map_url"
+        :phone-label="$tenant->nomorhp" :phone-url="$merchantWaUrl ?? null" :wa-url="$merchantWaUrl ?? null" :home-url="$storefrontUrl ?? null" />
+
     @if ($landing)
-        @include('customer.booking.partials.landing', ['landing' => $landing])
+        <div class="px-4 pt-6 md:px-8">
+            @include('customer.booking.partials.landing')
+        </div>
     @endif
 
-    {{-- Form Confirmation (Submitted explicitly by user clicking Continue) --}}
-    @if ($acceptsOnlineBookings)
-    <form
-        id="booking-program-form"
-        class="max-w-5xl mx-auto w-full"
-        method="POST"
-        action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.select-program', $tenant->slug) }}"
-        x-ref="confirmForm"
-        @submit="guardSubmit($event)"
-    >
-    @else
-    <div class="max-w-5xl mx-auto w-full">
-        <p role="status" class="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4">Bisnis ini belum menerima booking online saat ini.</p>
-    @endif
-        @csrf
-        <input type="hidden" name="service_id" :value="selectedServiceId" />
+    <div id="booking-program-root" data-tenant-slug="{{ $tenant->slug }}" x-data="bookingProgram()" @booking-reset-submitting.window="isSubmitting = false"
+        class="mx-auto max-w-[1240px] md:px-8 lg:px-14">
+        @if ($errors->any())
+            <x-customer.status-note tone="danger" role="alert" class="mx-4 mt-4 md:mx-0">{{ $errors->first() }}</x-customer.status-note>
+        @endif
 
-        {{-- Left Column: Service Cards --}}
-        <section>
-            <div class="mb-6">
-                <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Pilih Layanan</h1>
-                <p class="mt-1 text-sm text-[#64748B]">
-                    Pilih salah satu layanan untuk memulai pemesanan.
-                </p>
+        @if (! $acceptsOnlineBookings)
+            <x-customer.empty-state class="mx-4 mt-6 md:mx-0" tone="warning" icon="closed" title="Reservasi online sedang ditutup"
+                description="{{ $tenant->namabisnis }} belum menerima pemesanan lewat halaman ini. Hubungi bisnis untuk mengatur jadwal.">
+                @if ($merchantWaUrl ?? null)
+                    <x-slot:actions>
+                        <a href="{{ $merchantWaUrl }}" target="_blank" rel="noopener noreferrer" class="sf-btn sf-btn-lg">Hubungi via WhatsApp</a>
+                    </x-slot:actions>
+                @endif
+            </x-customer.empty-state>
+        @elseif ($services->isEmpty())
+            <x-customer.empty-state class="mx-4 mt-6 md:mx-0" icon="calendar" title="Belum ada layanan"
+                description="Hubungi bisnis untuk menanyakan layanan yang bisa dipesan.">
+                @if ($merchantWaUrl ?? null)
+                    <x-slot:actions>
+                        <a href="{{ $merchantWaUrl }}" target="_blank" rel="noopener noreferrer" class="sf-btn-secondary">Tanya via WhatsApp</a>
+                    </x-slot:actions>
+                @endif
+            </x-customer.empty-state>
+        @else
+            <form id="booking-program-form" x-ref="confirmForm" method="POST"
+                action="{{ \App\Support\CustomerBookingRoutes::url('customer.booking.select-program', $tenant->slug) }}"
+                @submit="guardSubmit($event)" class="lg:grid lg:grid-cols-[250px_minmax(0,1fr)] lg:items-start lg:gap-9 lg:pt-8">
+                @csrf
+                <input type="hidden" name="service_id" :value="selectedServiceId">
 
-                {{-- Search & Filter Controls --}}
-                <div class="mt-6 space-y-3.5">
-                    {{-- Precision Search Input --}}
-                    <div class="relative flex items-center">
-                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-                            <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <input
-                            type="text"
-                            x-model="searchQuery"
-                            @keydown.enter="keepSearchEnterLocal($event)"
-                            enterkeyhint="search"
-                            aria-label="Cari layanan"
-                            placeholder="Cari layanan..."
-                            class="h-11 sm:h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-[#0F172A] placeholder:text-slate-400 shadow-xs transition-all focus:border-[#4F46E5] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#EEF2FF] hover:border-slate-300"
-                        />
-                        <button
-                            type="button"
-                            x-show="searchQuery"
-                            x-cloak
-                            @click="searchQuery = ''"
-                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-                            title="Hapus pencarian"
-                        >
-                            <span class="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors">
-                                <svg class="h-3.5 w-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </span>
-                        </button>
-                    </div>
-
-                    {{-- Category Filter Pills --}}
-                    @if(isset($categories) && count($categories) > 0)
-                        <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
-                            <button
-                                type="button"
-                                @click="setCategory('all')"
-                                :class="activeCategory === 'all'
-                                    ? 'bg-[#4F46E5] text-white shadow-xs font-bold border-[#4F46E5]'
-                                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200 font-medium'"
-                                class="inline-flex h-8.5 items-center gap-1.5 rounded-full border px-3.5 py-1 shrink-0 transition-all cursor-pointer"
-                            >
-                                <span>Semua Layanan</span>
-                                <span
-                                    :class="activeCategory === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'"
-                                    class="rounded-full px-1.5 py-0.5 text-[10px] font-bold"
-                                >{{ count($services) }}</span>
-                            </button>
-                            @foreach($categories as $cat)
-                                <button
-                                    type="button"
-                                    @click="setCategory('{{ $cat->id }}')"
-                                    :class="activeCategory === '{{ $cat->id }}'
-                                        ? 'bg-[#4F46E5] text-white shadow-xs font-bold border-[#4F46E5]'
-                                        : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200 font-medium'"
-                                    class="inline-flex h-8.5 items-center gap-1.5 rounded-full border px-3.5 py-1 shrink-0 transition-all cursor-pointer"
-                                >
-                                    @if ($cat->image_src)
-                                        <img src="{{ $cat->image_src }}" alt="" class="h-5 w-5 rounded-full object-cover" loading="lazy">
-                                    @else
-                                        <span class="h-2 w-2 rounded-full" style="background-color: {{ \App\Support\CategoryColor::hex($cat->color) }}" aria-hidden="true"></span>
-                                    @endif
-                                    <span>{{ $cat->name }}</span>
-                                </button>
-                            @endforeach
-                        </div>
-                    @endif
-                </div>
-            </div>
-
-            @if (! empty($pendingCheckout))
-                <x-customer.pending-checkout-banner :pending="$pendingCheckout" class="mb-6" />
-            @endif
-
-            @if ($errors->any())
-                <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-700">
-                    {{ $errors->first() }}
-                </div>
-            @endif
-
-            {{-- Skeleton Cards (shown until Alpine mounts) --}}
-            <div x-show="!mounted" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                @for ($i = 0; $i < min(3, max(1, count($services))); $i++)
-                    <div class="animate-pulse rounded-2xl border border-[#E2E8F0] bg-white overflow-hidden shadow-xs">
-                        <div class="h-44 sm:h-48 bg-gradient-to-br from-[#F1F5F9] to-[#E2E8F0]"></div>
-                        <div class="p-4 sm:p-5 space-y-3">
-                            <div class="h-3 w-20 rounded-full bg-[#E2E8F0]"></div>
-                            <div class="flex justify-between items-center">
-                                <div class="h-4 w-32 rounded-full bg-[#E2E8F0]"></div>
-                                <div class="h-4 w-20 rounded-full bg-[#E2E8F0]"></div>
-                            </div>
-                            <div class="h-3 w-full rounded-full bg-[#F1F5F9]"></div>
-                            <div class="h-8 w-full rounded-xl bg-[#F1F5F9] mt-3"></div>
-                        </div>
-                    </div>
-                @endfor
-            </div>
-
-            <div x-show="mounted" x-cloak class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                @forelse ($services as $service)
-                    @php
-                        $priceUnit = $service->satuan_harga ?: 'sesi';
-                        $durationUnit = $service->satuan_durasi ?: 'menit';
-                        $priceLabel = number_format($service->harga, 0, ',', '.');
-                        $imageUrl = null;
-
-                        if (!empty($service->image_url)) {
-                            $imageUrl = \Illuminate\Support\Str::startsWith($service->image_url, ['http://', 'https://', '/'])
-                                ? $service->image_url
-                                : \Illuminate\Support\Facades\Storage::url($service->image_url);
-                        }
-                    @endphp
-                    <article
-                        class="booking-card group relative flex flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white transition-all select-none {{ $acceptsOnlineBookings ? 'cursor-pointer hover:border-[#4F46E5] hover:shadow-md' : 'cursor-default' }}"
-                        :class="isSubmitting && selectedServiceId === {{ $service->id }} ? 'booking-card--submitting' : ''"
-                        x-show="isCardVisible({{ $service->id }}, '{{ $service->category?->id ?? '' }}', '{{ addslashes($service->namalayanan) }}')"
-                        @if ($acceptsOnlineBookings)
-                        @click="selectServiceById({{ $service->id }})"
-                        tabindex="0"
-                        role="button"
-                        @keydown.enter="selectServiceById({{ $service->id }})"
-                        @keydown.space.prevent="selectServiceById({{ $service->id }})"
-                        @else
-                        aria-disabled="true"
+                @if ($categories->isNotEmpty())
+                    <div class="hidden lg:sticky lg:top-6 lg:block">
+                        <x-customer.category-chips variant="nav" model="activeCategory" active="all" label="Kategori" :categories="$categoryChips" />
+                        @if ($merchantWaUrl ?? null)
+                            <p class="sf-card-small mt-5 p-4 text-[13px] leading-[19px] text-sf-muted">
+                                Ragu memilih? <a href="{{ $merchantWaUrl }}" target="_blank" rel="noopener noreferrer" class="font-bold text-sf-primary-text underline">Tanya lewat WhatsApp</a>
+                            </p>
                         @endif
-                    >
-                        {{-- Service Image Media --}}
-                        <div class="booking-card__media relative h-44 sm:h-48 w-full overflow-hidden bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF] flex items-center justify-center">
-                            @if ($imageUrl)
-                                <img
-                                    src="{{ $imageUrl }}"
-                                    alt="{{ $service->namalayanan }}"
-                                    class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                                    loading="lazy"
-                                />
-                            @else
-                                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#EEF2FF] via-white to-[#E0E7FF]">
-                                    <svg class="h-10 w-10 text-[#818CF8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                    </svg>
-                                </div>
-                            @endif
+                    </div>
+                @endif
 
-                            @if ($service->is_popular)
-                                <span class="absolute left-3 top-3 z-20 rounded-full bg-[#4F46E5] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-                                    Favorit
-                                </span>
-                            @endif
+                <div class="min-w-0 lg:col-start-2">
+                    {{-- Search and chips: sticky on phone, in flow from tablet up. --}}
+                    <div class="sticky top-0 z-20 bg-sf-page pb-1 pt-3 shadow-[0_1px_0_var(--sf-divider)] md:static md:pt-5 md:shadow-none lg:pt-0">
+                        <div class="flex items-center gap-4 px-4 md:px-0">
+                            <label class="sf-field sf-field-group grow md:min-h-[52px]">
+                                <x-customer.icon name="search" />
+                                <span class="sr-only">Cari layanan</span>
+                                <input id="service-search" type="search" x-model="searchQuery" @keydown.enter="keepSearchEnterLocal($event)" placeholder="Cari layanan">
+                            </label>
+                            <span class="sf-num hidden whitespace-nowrap text-sm text-sf-muted lg:inline" aria-live="polite"
+                                x-text="visibleCount() + (isFiltering() ? ' hasil' : ' layanan')">{{ $services->count() }} layanan</span>
                         </div>
+                        @if ($categories->isNotEmpty())
+                            <x-customer.category-chips class="mt-1 md:mt-3 lg:hidden" model="activeCategory" active="all" label="Kategori" :categories="$categoryChips" />
+                        @endif
+                    </div>
 
-                        {{-- Service Details --}}
-                        <div class="flex flex-1 flex-col p-4 sm:p-5 justify-between">
-                            @if($service->category)
-                                <span class="inline-block rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 mb-1.5 w-fit">
-                                    {{ $service->category->name }}
-                                </span>
-                            @endif
-                            <div class="flex items-start justify-between gap-3">
-                                <h3 class="text-base font-bold text-[#0F172A] group-hover:text-[#4F46E5] transition-colors leading-snug">
-                                    {{ $service->namalayanan }}
-                                </h3>
-                                <div class="text-right shrink-0">
-                                    <p class="text-sm sm:text-base font-extrabold text-[#4F46E5]">Rp {{ $priceLabel }}</p>
-                                    <p class="text-[11px] text-[#64748B]">/ {{ $priceUnit }}</p>
+                    <div x-show="visibleCount() > 0">
+                        @if ($favorites->isNotEmpty())
+                            <section x-show="!isFiltering()" aria-labelledby="judul-favorit">
+                                <div class="flex items-baseline justify-between gap-3 px-4 pb-2.5 pt-[18px] md:px-0 md:pt-[26px] lg:pt-7">
+                                    <h2 id="judul-favorit" class="text-lg font-bold md:text-xl lg:text-[22px]">Favorit</h2>
+                                    @if ($favorites->count() > 1)
+                                        <span class="text-[13px] text-sf-muted md:hidden">Geser untuk lihat {{ $favorites->count() }} layanan</span>
+                                    @endif
                                 </div>
+                                <div class="sf-scroll-row gap-3 px-4 pb-1.5 md:grid md:grid-cols-3 md:gap-3.5 md:overflow-visible md:px-0 lg:gap-4">
+                                    @foreach ($favorites as $service)
+                                        <x-customer.service-card class="w-[290px] shrink-0 md:w-auto" :value="$service->id" :name="$service->namalayanan"
+                                            :price="$servicePrices[$service->id]" :duration="$durationLabel($service)" :category="$service->category?->name"
+                                            :description="$service->deskripsi" :image="$serviceImages[$service->id] ?? null" :tone="$loop->index" x-on:click.prevent="selectServiceById({{ Js::from($service->id) }})" />
+                                    @endforeach
+                                </div>
+                            </section>
+                        @endif
+
+                        <section aria-labelledby="judul-semua">
+                            <div class="flex items-baseline justify-between gap-3 px-4 pb-2.5 pt-6 md:px-0 md:pt-7 lg:pt-[34px]">
+                                <h2 id="judul-semua" class="text-lg font-bold md:text-xl lg:text-[22px]">Semua layanan</h2>
+                                <span class="sf-num text-[13px] text-sf-muted lg:hidden" x-text="visibleCount() + ' layanan'">{{ $services->count() }} layanan</span>
                             </div>
+                            <div class="grid gap-2.5 px-4 md:grid-cols-2 md:gap-3 md:px-0">
+                                @foreach ($services as $service)
+                                    <x-customer.service-row x-show="isCardVisible({{ Js::from($service->category?->id ?? '') }}, {{ Js::from($service->namalayanan) }})"
+                                        :value="$service->id" :name="$service->namalayanan" :price="$servicePrices[$service->id]"
+                                        :duration="$durationLabel($service)" :category="$service->category?->name" :description="$service->deskripsi"
+                                        :image="$serviceImages[$service->id] ?? null" :tone="$loop->index"
+                                        x-on:click.prevent="selectServiceById({{ Js::from($service->id) }})" />
+                                @endforeach
+                            </div>
+                        </section>
+                    </div>
 
-                            @if($service->deskripsi)
-                                <p class="mt-2 text-xs text-[#64748B] line-clamp-2 leading-relaxed">
-                                    {{ $service->deskripsi }}
-                                </p>
-                            @endif
-
-                            <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-[#64748B]">
-                                <span class="inline-flex items-center gap-1.5 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1 text-[11px] font-medium">
-                                    <svg class="h-3.5 w-3.5 text-[#4F46E5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="9" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3" />
-                                    </svg>
-                                    {{ $service->durasi }} {{ $durationUnit }}
-                                </span>
-
-                                @if ($service->kapasitas > 1)
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1 text-[11px] font-medium">
-                                        <svg class="h-3.5 w-3.5 text-[#4F46E5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                        </svg>
-                                        Maks {{ $service->kapasitas }} orang
-                                    </span>
+                    <div x-show="visibleCount() === 0" x-cloak class="px-4 pt-6 md:px-0">
+                        <section role="status" class="sf-card px-6 py-8 text-center">
+                            <span class="mx-auto grid size-14 place-items-center rounded-sf-card-small bg-sf-tint text-sf-primary-text">
+                                <x-customer.icon name="search-off" :size="26" />
+                            </span>
+                            <h2 class="mt-3.5 text-lg font-bold">
+                                <span x-show="searchQuery.trim() !== ''">Tidak ada layanan “<span x-text="searchQuery.trim()"></span>”</span>
+                                <span x-show="searchQuery.trim() === ''">Tidak ada layanan di kategori ini</span>
+                            </h2>
+                            <p class="mx-auto mt-1.5 max-w-[320px] text-sm leading-[21px] text-sf-muted">Coba kata lain atau lihat semua layanan. Bisnis juga bisa ditanya langsung.</p>
+                            <div class="mt-4 flex flex-wrap justify-center gap-2">
+                                <button type="button" class="sf-btn" x-on:click="clearFilters()">Lihat semua layanan</button>
+                                @if ($merchantWaUrl ?? null)
+                                    <a href="{{ $merchantWaUrl }}" target="_blank" rel="noopener noreferrer" class="sf-btn-secondary">Tanya via WhatsApp</a>
                                 @endif
                             </div>
-
-                            {{-- Card Action Button --}}
-                            <div class="mt-5 pt-3 border-t border-[#F1F5F9]">
-                                <span
-                                    class="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition-all bg-[#F1F5F9] text-[#475569] group-hover:bg-[#4F46E5] group-hover:text-white"
-                                >
-                                    <span x-text="isSubmitting && selectedServiceId === {{ $service->id }} ? 'Memproses...' : 'Pilih Layanan Ini'"></span>
-                                    <svg class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </span>
-                            </div>
-                        </div>
-                    </article>
-                @empty
-                    <div class="col-span-full rounded-2xl border border-dashed border-[#CBD5E1] bg-white p-12 text-center">
-                        <div class="mx-auto w-20 h-20 mb-4 relative flex items-center justify-center">
-                            <div class="absolute inset-0 rounded-full bg-[#EEF2FF] animate-ping opacity-25"></div>
-                            <div class="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#4F46E5] shadow-xs">
-                                <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                </svg>
-                            </div>
-                        </div>
-                        <h4 class="text-base font-bold text-[#0F172A]">Belum Ada Layanan Tersedia</h4>
-                        <p class="text-xs sm:text-sm text-[#64748B] mt-1.5 max-w-sm mx-auto leading-relaxed">
-                            Layanan sedang dipersiapkan oleh pemilik usaha. Silakan periksa kembali nanti atau hubungi kami melalui tombol bantuan.
-                        </p>
+                        </section>
                     </div>
-                @endforelse
-
-                {{-- Empty Search State --}}
-                <div
-                    x-cloak
-                    x-show="searchQuery && !services.some(s => isCardVisible(s.id, s.category_id || '', s.name))"
-                    class="col-span-full rounded-2xl border border-dashed border-[#CBD5E1] bg-white p-8 text-center"
-                >
-                    <p class="text-sm font-bold text-[#0F172A]">Tidak ada layanan yang sesuai dengan pencarian</p>
-                    <p class="text-xs text-[#64748B] mt-1">Coba kata kunci lain atau pilih kategori yang berbeda.</p>
-                    <button type="button" @click="searchQuery = ''; setCategory('all')" class="mt-3 inline-flex items-center gap-1 rounded-xl bg-slate-100 hover:bg-slate-200 px-3 py-1.5 text-xs font-semibold text-[#0F172A] transition">
-                        Reset Filter
-                    </button>
                 </div>
-            </div>
-        </section>
+            </form>
+        @endif
+    </div>
 
-        {{-- Remove sidebar, auto-submit on click --}}
-    @if ($acceptsOnlineBookings)</form>@else</div>@endif
-</div>
+    @if ($pendingCheckout)
+        <div role="status" class="no-print sf-card-raised fixed inset-x-3 bottom-4 z-40 mx-auto flex max-w-[720px] items-center gap-3 py-3 pl-4 pr-3 md:inset-x-8">
+            <span class="size-2.5 shrink-0 rounded-full bg-sf-warning-dot shadow-[0_0_0_5px_var(--sf-warning-bg)]" aria-hidden="true"></span>
+            <span class="min-w-0 grow">
+                <span class="block text-sm font-bold">Pembayaran belum selesai</span>
+                <span class="block truncate text-[13px] text-sf-muted">{{ $pendingCheckout['service'] }} · bayar sebelum <span class="sf-num">{{ $pendingCheckout['deadline'] }}</span></span>
+            </span>
+            <a href="{{ $pendingCheckout['url'] }}" class="sf-btn shrink-0 text-sm">Lanjutkan</a>
+        </div>
+    @endif
 
-{{-- Data Contract: Render both IDs to guarantee 100% compatibility --}}
-<script type="application/json" id="booking-services-data">@json($servicesPayload ?? [])</script>
-<script type="application/json" id="booking-service-data">@json($servicesPayload ?? [])</script>
+    <script type="application/json" id="booking-services-data">@json($servicesPayload)</script>
 @endsection
 
 @section('scripts')
     @if ($tracking ?? null)
         @include('customer.booking.partials.tracking')
     @endif
-<script defer src="{{ asset('js/booking-program.js') }}"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
+    <script defer src="{{ asset('js/booking-program.js') }}?v={{ filemtime(public_path('js/booking-program.js')) }}"></script>
 @endsection

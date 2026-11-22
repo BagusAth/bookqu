@@ -6,7 +6,7 @@ Customers authorize private booking/payment operations through the opaque grants
 
 | Route | Authorization |
 |---|---|
-| GET /access | Minimal canonical first-party fragment bootstrap; no customer data |
+| GET /access | First-party fragment bootstrap with loading and generic recovery states |
 | POST /access | CSRF-protected credential exchange; stores only grant ID and timeout metadata |
 | Storefront payment, status, callback, pending-payment cancel, invoice | Exact payment Checkout or Management grant |
 | /manage/payment/{order_id} and its invoice | Management grant for the exact payment and member snapshot |
@@ -24,6 +24,12 @@ Application operations live in `app/Actions/CustomerAccess`; profiles, operation
 - Confirmation/reschedule flows persist delivery intent with recipient, members, generation and any source grant. After commit, an ID-only job is queued and mints immediately before sending; no mail transport runs under the tenant lock and no raw credential is queued. Attempts are bounded at three, stale/revoked sources fail closed, and retries do not revoke earlier links. BQ-013 implements background delivery; BQ-020 still requires production worker verification.
 - Legacy getters/issuers are removed. Retained legacy columns are hidden from serialization and never authorize access. Diagnostic issuance is restricted to local/testing.
 - Invalid private access is generic 404 with rate limits. Private responses use no-store, no-referrer and noindex. HTML, invoice, Calendar/WhatsApp and provider return URLs contain no customer credentials or broader grants.
+
+## Customer screens (BQ-164)
+
+The access page shows its loading and recovery states without business or reservation data. An invalid link directs the customer to the original confirmation email or the BookQu home page. The script reads the credential from the fragment, removes the fragment and posts only to the canonical exchange endpoint before navigating.
+
+Single and payment-group management pages use the same layout. Customer history displays reservation and payment changes. The `viewed` events stay in the audit log and remain visible in the owner slip.
 
 ## Invariants
 

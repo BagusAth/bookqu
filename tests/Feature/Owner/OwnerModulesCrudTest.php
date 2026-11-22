@@ -160,9 +160,12 @@ class OwnerModulesCrudTest extends TestCase
     {
         $this->actingAs($this->userA)->get('/owner/resources')->assertNotFound();
         $this->delete('/owner/resources/1')->assertNotFound();
-        $this->get('/owner/staff-resources')->assertRedirect('/owner/settings/business?tab=tim');
-        $this->get('/owner/settings/payments')->assertRedirect('/owner/payments');
-        $this->get('/owner/settings/payment-setting')->assertRedirect('/owner/payments');
+        $this->get('/owner/staff-resources')->assertRedirect(route('owner.settings', ['tab' => 'tim']));
+        foreach (['payments', 'payment-setting'] as $oldPage) {
+            $this->get('/owner/settings/'.$oldPage)->assertStatus(301)->assertRedirect(route('owner.payments'));
+            $this->get('/owner/settings/'.$oldPage.'?tab=saldo')
+                ->assertStatus(301)->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
+        }
         $this->post('/owner/staff', ['name' => 'Nama lama'])->assertNotFound();
         $this->delete('/owner/staff/1')->assertNotFound();
     }
@@ -223,6 +226,27 @@ class OwnerModulesCrudTest extends TestCase
     // ──────────────────────────────────────────
     // 4. VOUCHERS TEST
     // ──────────────────────────────────────────
+    public function test_every_promo_form_control_has_a_label(): void
+    {
+        config(['modules.vouchers' => 'released']);
+
+        $html = (string) $this->actingAs($this->userA)->get(route('owner.promos'))->assertOk()->getContent();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML('<?xml encoding="utf-8"?>'.$html);
+        $xpath = new \DOMXPath($dom);
+        $names = ['code', 'discount_type', 'discount_value', 'min_order_amount', 'usage_limit', 'start_date', 'end_date'];
+        foreach (['form-add-voucher', 'form-edit-voucher'] as $formId) {
+            foreach ($names as $name) {
+                $control = $xpath->query("//form[@id='{$formId}']//*[@name='{$name}']")->item(0);
+                $this->assertInstanceOf(\DOMElement::class, $control, "{$formId} has no {$name}");
+                $id = $control->getAttribute('id');
+                $this->assertNotSame('', $id, "{$formId} {$name} has no id");
+                $this->assertSame(1, $xpath->query("//label[@for='{$id}']")->length, "{$formId} {$name} has no label");
+            }
+        }
+    }
+
     public function test_owner_can_crud_vouchers(): void
     {
         // Staged module under test is released explicitly (ADR-0011)

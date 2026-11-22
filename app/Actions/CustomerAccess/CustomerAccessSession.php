@@ -39,6 +39,12 @@ final class CustomerAccessSession
      */
     public function resolve(Request $request, ?callable $accepts = null): AccessContext
     {
+        return $this->find($request, $accepts) ?? abort(404);
+    }
+
+    /** @param  (callable(AccessContext): bool)|null  $accepts */
+    public function find(Request $request, ?callable $accepts = null): ?AccessContext
+    {
         abort_if(config('session.driver') === 'cookie', 503);
         $candidates = [$request->session()->get('customer_access'), ...(array) $request->session()->get(self::PREVIOUS, [])];
         foreach ($candidates as $index => $state) {
@@ -57,7 +63,8 @@ final class CustomerAccessSession
 
             return $context;
         }
-        abort(404);
+
+        return null;
     }
 
     private function live(mixed $state): bool

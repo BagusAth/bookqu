@@ -4,7 +4,9 @@ namespace App\Actions\Booking;
 
 use App\Models\Booking;
 use App\Models\Service;
+use App\Models\Tenant;
 use App\Support\CsvCell;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -14,9 +16,9 @@ final class ExportOwnerBookings
     public function __construct(private ListOwnerBookings $bookings) {}
 
     /** @param Builder<Booking> $query */
-    public function execute(Builder $query): StreamedResponse
+    public function execute(Tenant $tenant, Builder $query): StreamedResponse
     {
-        return response()->streamDownload(function () use ($query): void {
+        return response()->streamDownload(fn () => app(TenantContext::class)->run((int) $tenant->id, function () use ($query): void {
             $file = fopen('php://output', 'w');
             if ($file === false) {
                 return;
@@ -31,6 +33,6 @@ final class ExportOwnerBookings
                 ]), escape: '');
             }
             fclose($file);
-        }, 'bookings.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }), 'bookings.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 }

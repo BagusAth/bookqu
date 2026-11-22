@@ -17,7 +17,7 @@ depends-on: [BQ-130, BQ-144]
 
 # BQ-155: Pengaturan → Integrasi: Google Calendar, Google Analytics, Meta Pixel
 
-Epic **E6 · Pro value and core rules** of the owner portal redesign, planned in [BQ-126](../BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
+Epic **E6 · Pro value and core rules** of the owner portal redesign, planned in [BQ-126](BQ-126-owner-portal-redesign-specification.md). Specification: [`owner-portal.md`](../../owner-portal.md). Release policy D-018 makes every redesign item a launch blocker.
 
 ## Problem
 

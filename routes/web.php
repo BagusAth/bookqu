@@ -1,10 +1,12 @@
 <?php
 
+use App\Domain\Tenant\CustomDomain;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminPayoutController;
 use App\Http\Controllers\Admin\AdminRefundController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\Owner\OwnerDashboardController;
 use App\Http\Controllers\Owner\OwnerHelpController;
 use App\Http\Controllers\Owner\OwnerIntegrationController;
 use App\Http\Controllers\Owner\OwnerNotificationController;
+use App\Http\Controllers\Owner\OwnerPasswordSetupController;
 use App\Http\Controllers\Owner\OwnerPayoutAccountController;
 use App\Http\Controllers\Owner\OwnerPriceRuleController;
 use App\Http\Controllers\Owner\OwnerProgramController;
@@ -71,6 +74,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:10,1,auth-login:')->name('login.store');
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store'])->middleware('throttle:5,1,auth-register:')->name('register.store');
+    // BQ-172 (FR-AUTH-009): sign in and register with Google.
+    Route::prefix('auth/google')->middleware('throttle:10,1,auth-google:')->group(function () {
+        Route::get('/redirect', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
+        Route::get('/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+        Route::get('/lengkapi', [GoogleAuthController::class, 'complete'])->name('auth.google.complete');
+        Route::post('/lengkapi', [GoogleAuthController::class, 'store'])->middleware('throttle:5,1,auth-register:')->name('auth.google.complete.store');
+    });
 
     Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->middleware('throttle:5,1,auth-password:')->name('password.email');
@@ -128,8 +138,11 @@ Route::prefix('owner')
         });
         Route::post('/profile/complete', [OwnerSettingController::class, 'storeProfile'])->name('owner.profile.complete');
         Route::post('/settings/profile', [OwnerSettingController::class, 'updateBusinessProfile'])->name('owner.settings.profile');
-        Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
-        Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');
+        Route::post('/settings/account/password-link', [OwnerPasswordSetupController::class, 'store'])->middleware('throttle:5,1,auth-password:')->name('owner.settings.account.password-link');
+        Route::middleware('throttle:current-password')->group(function () {
+            Route::post('/settings/account', [OwnerSettingController::class, 'updateAccount'])->name('owner.settings.account');
+            Route::delete('/settings/account', [OwnerSettingController::class, 'deleteAccount'])->name('owner.settings.account.delete');
+        });
         Route::post('/payouts', [OwnerBalanceController::class, 'store'])->middleware('module:balance')->name('owner.payouts.request');
 
         // ── Checkout Routes (tanpa owner.profile middleware, karena ini billing) ──
@@ -141,7 +154,7 @@ Route::prefix('owner')
         Route::get('/checkout/{payment:order_id}/invoice', [OwnerCheckoutController::class, 'showInvoice'])->name('owner.checkout.invoice');
 
         Route::middleware('owner.profile')->group(function () {
-            Route::get('/programs', [OwnerProgramController::class, 'legacyIndex'])->name('owner.programs');
+            Route::get('/programs', [OwnerProgramController::class, 'legacyIndex'])->name('owner.services.legacy-programs');
             Route::get('/schedule', [OwnerScheduleController::class, 'index'])->name('owner.schedule');
             Route::post('/schedule/bulk-slots', [OwnerScheduleController::class, 'bulkStore'])->name('owner.schedule.bulk-store');
             Route::post('/schedule/selected-slots', [OwnerScheduleController::class, 'changeSelectedSlots'])->name('owner.schedule.slots.bulk');
@@ -167,6 +180,7 @@ Route::prefix('owner')
             Route::patch('/bookings/cancellation-requests/{cancellationId}', [BookingCancellationController::class, 'decide'])->whereNumber('cancellationId')->name('owner.bookings.cancellation-requests.decide');
             Route::patch('/refunds/requests/{refundRequestId}', [OwnerRefundController::class, 'decide'])->whereNumber('refundRequestId')->name('owner.refunds.decide');
             Route::patch('/bookings/{booking}/status', [OwnerBookingController::class, 'updateStatus'])->name('owner.bookings.status');
+            Route::post('/bookings/complete', [OwnerBookingController::class, 'completeMany'])->name('owner.bookings.complete-many');
             Route::post('/bookings/walkin', [OwnerBookingController::class, 'walkinStore'])->name('owner.bookings.walkin');
             Route::get('/bookings/walkin-slots', [OwnerShellController::class, 'walkInSlots'])->name('owner.bookings.walkin-slots');
             Route::get('/bookings/{booking}/available-slots', [OwnerBookingController::class, 'getAvailableSlots'])->name('owner.bookings.available-slots');
@@ -231,7 +245,7 @@ Route::prefix('owner')
             Route::post('/customers/note', [OwnerCustomerController::class, 'saveNote'])->name('owner.customers.note');
 
             // Settings & Configurations
-            Route::get('/settings/business', [OwnerSettingController::class, 'index'])->name('owner.settings.business');
+            Route::get('/settings/business', [OwnerSettingController::class, 'legacyBusiness'])->name('owner.settings.legacy-business');
             // BQ-142 (owner-portal.md §8.9): Halaman Booking for every plan (D-009, D-010), behind its module until released (ADR-0021).
             Route::middleware('module:booking-page')->group(function () {
                 Route::get('/booking-page', [OwnerBookingPageController::class, 'index'])->name('owner.booking-page');
@@ -256,13 +270,13 @@ Route::prefix('owner')
             Route::get('/payments', [OwnerBalanceController::class, 'index'])->middleware('module:balance')->name('owner.payments');
             Route::get('/settings/balance', [OwnerBalanceController::class, 'legacyBalance'])->middleware('module:balance')->name('owner.settings.balance');
             // BQ-157 (owner-portal.md §10.2): removed gateway settings (D-016) and the withdrawn staff page.
-            Route::permanentRedirect('/settings/payments', '/owner/payments')->name('owner.payments.legacy-settings');
-            Route::permanentRedirect('/settings/payment-setting', '/owner/payments')->name('owner.payments.legacy-setting');
-            Route::permanentRedirect('/staff-resources', '/owner/settings/business?tab=tim')->name('owner.settings.staff-resources');
+            Route::get('/settings/payments', [OwnerBalanceController::class, 'legacyPaymentSettings'])->name('owner.payments.legacy-settings');
+            Route::get('/settings/payment-setting', [OwnerBalanceController::class, 'legacyPaymentSettings'])->name('owner.payments.legacy-setting');
+            Route::permanentRedirect('/staff-resources', '/owner/settings?tab=tim')->name('owner.settings.staff-resources');
             Route::get('/payouts/{payout}/proof', [OwnerBalanceController::class, 'proof'])->whereNumber('payout')->middleware('module:balance')->name('owner.payouts.proof');
             Route::prefix('payout-accounts')->middleware('module:balance')->group(function () {
                 // BQ-127: the strict limit guards account changes only; switching the primary account has its own.
-                Route::middleware('throttle:3,10,payout-account-changes')->group(function () {
+                Route::middleware(['throttle:3,10,payout-account-changes', 'throttle:current-password'])->group(function () {
                     Route::post('/', [OwnerPayoutAccountController::class, 'store'])->name('owner.payout-accounts.store');
                     Route::put('/{account}', [OwnerPayoutAccountController::class, 'update'])->whereNumber('account')->name('owner.payout-accounts.update');
                     Route::delete('/{account}', [OwnerPayoutAccountController::class, 'destroy'])->whereNumber('account')->name('owner.payout-accounts.destroy');
@@ -273,7 +287,8 @@ Route::prefix('owner')
                 Route::get('/', [OwnerIntegrationController::class, 'index']);
                 Route::put('/tracking', [OwnerIntegrationController::class, 'saveTracking'])->name('.tracking');
                 Route::post('/calendar/connect', [OwnerIntegrationController::class, 'beginCalendar'])->name('.calendar.connect');
-                Route::get('/calendar/callback', [OwnerIntegrationController::class, 'connectCalendar'])->name('.calendar.callback');
+                Route::get('/calendar/callback', [OwnerIntegrationController::class, 'connectCalendar'])
+                    ->middleware('throttle:10,1,owner-calendar-callback:')->name('.calendar.callback');
                 Route::post('/calendar/test', [OwnerIntegrationController::class, 'testCalendar'])->name('.calendar.test');
                 Route::delete('/calendar', [OwnerIntegrationController::class, 'disconnectCalendar'])->name('.calendar.disconnect');
             });
@@ -392,16 +407,11 @@ $bookingSubRoutes = function (string $namePrefix) {
 };
 
 // Custom domain routing:
-// Route::domain('{custom_domain}') acts as a wildcard that matches any hostname that
-// is NOT the main bookqu.my.id domain (excluded via the 'custom_domain' where constraint).
+// Only non-platform hosts match the wildcard custom domain.
 // TenantMiddleware resolves the tenant from $request->getHost() and injects slug_usaha
 // into route parameters, so the controller still receives $slug_usaha correctly.
-$mainDomain = explode(':', parse_url(config('app.url'), PHP_URL_HOST) ?? 'bookqu.my.id')[0];
-$excludedDomains = array_unique(array_filter([$mainDomain, 'localhost', '127.0.0.1', 'bookqu.my.id', 'bookqu.test']));
-$customDomainPattern = '^(?!('.implode('|', array_map(fn ($d) => preg_quote($d, '/'), $excludedDomains)).')$).*';
-
 Route::domain('{custom_domain}')
-    ->where(['custom_domain' => $customDomainPattern])
+    ->where(['custom_domain' => CustomDomain::tenantHostPattern()])
     ->middleware(['tenant', 'no-store'])
     ->group(function () use ($bookingSubRoutes) {
         Route::get('/', [BookingController::class, 'showProgramSelection'])

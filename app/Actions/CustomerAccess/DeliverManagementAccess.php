@@ -10,6 +10,7 @@ use App\Mail\BookingGroupInvoiceMail;
 use App\Mail\BookingRescheduledMail;
 use App\Models\CustomerAccessDelivery;
 use App\Models\CustomerAccessGrant;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
@@ -19,7 +20,7 @@ final class DeliverManagementAccess
     {
         // scope-bypass: trusted queue carries only a delivery id; validate its tenant/family under lock before minting.
         $delivery = CustomerAccessDelivery::withoutGlobalScopes()->findOrFail($deliveryId);
-        $mail = DB::transaction(function () use ($delivery): ?array {
+        $mail = app(TenantContext::class)->run((int) $delivery->idtenant, fn (): ?array => DB::transaction(function () use ($delivery): ?array {
             ClaimSlots::lockTenant((int) $delivery->idtenant);
             $delivery->refresh();
             if ($delivery->sent_at !== null || $delivery->attempts >= 3) {
@@ -45,7 +46,7 @@ final class DeliverManagementAccess
                 : ($context->payment === null ? new BookingConfirmedMail($context->bookings->first()->load(['tenant.user', 'layanan']), $url) : new BookingGroupInvoiceMail($context->payment, $context->bookings->load(['tenant.user', 'layanan']), $url));
 
             return [$delivery->recipient, $message];
-        });
+        }));
         if ($mail === null) {
             return;
         }

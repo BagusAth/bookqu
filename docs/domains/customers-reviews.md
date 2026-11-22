@@ -40,4 +40,4 @@ Functional: Implemented · Verification: Verified · Architecture: Target
 
 | Gap | Item |
 |---|---|
-| Audit P1: `$dispatch` error when saving a CRM note; fetch errors close the drawer silently; no review module in the payment-group portal | BQ-066, BQ-065 |
+| The payment-group portal has no review action | BQ-065 |

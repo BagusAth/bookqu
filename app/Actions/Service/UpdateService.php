@@ -33,8 +33,7 @@ class UpdateService
         app(TenantContext::class)->setTenantId($tenant->id);
 
         $targetId = $service instanceof Service ? $service->id : (int) $service;
-        // scope-bypass: filtered by the authenticated tenant
-        $layanan = Service::withoutGlobalScopes()
+        $layanan = Service::query()
             ->where('idtenant', $tenant->id)
             ->findOrFail($targetId);
 
@@ -63,6 +62,7 @@ class UpdateService
                 'satuan_harga' => ($data['satuan_harga'] ?? null) ?: $layanan->satuan_harga,
                 'satuan_durasi' => ($data['satuan_durasi'] ?? null) ?: $layanan->satuan_durasi,
                 'is_popular' => array_key_exists('is_popular', $data) ? (bool) $data['is_popular'] : $layanan->is_popular,
+                'auto_open_slots' => array_key_exists('auto_open_slots', $data) ? (bool) $data['auto_open_slots'] : $layanan->auto_open_slots,
                 'is_active' => (bool) ($data['is_active'] ?? true),
                 'image_url' => $imageUrl,
                 'kapasitas' => array_key_exists('kapasitas', $data) && $data['kapasitas'] !== null ? (int) $data['kapasitas'] : $layanan->kapasitas,

@@ -677,8 +677,8 @@ class ProductionLogicSpecificationTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('BK-SLOT10-001');
         $response->assertSee('BK-SLOT11-002');
-        $response->assertSee('10:00 WIB');
-        $response->assertSee('11:00 WIB');
+        $response->assertSee('10.00 – 11.00 WIB');
+        $response->assertSee('11.00 – 12.00 WIB');
     }
 
     /**

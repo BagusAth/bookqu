@@ -29,10 +29,12 @@ class OwnerShellController extends Controller
 
     public function walkInSlots(Request $request, ListWalkInSlots $listWalkInSlots): JsonResponse
     {
-        $validated = $request->validate(['date' => ['required', 'date_format:Y-m-d']]);
+        $validated = $request->validate(['date' => ['required', 'date_format:Y-m-d'], 'picker' => ['sometimes', 'boolean']]);
         $tenant = $this->resolveTenant();
         abort_unless($tenant !== null, 404);
 
-        return response()->json(['slots' => $listWalkInSlots->execute($tenant, $validated['date'])]);
+        return response()->json($request->boolean('picker')
+            ? $listWalkInSlots->picker($tenant, $validated['date'])
+            : ['slots' => $listWalkInSlots->execute($tenant, $validated['date'])]);
     }
 }

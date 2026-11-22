@@ -6,6 +6,7 @@ namespace App\Actions\Dashboard;
 
 use App\Actions\Booking\GetBookingTimeRanges;
 use App\Actions\Owner\GetOwnerNavigation;
+use App\Actions\Owner\ListWalkInSlots;
 use App\Actions\Schedule\GetSlotRunway;
 use App\Actions\Team\ResolveTenantMembership;
 use App\Domain\Booking\BookingRules;
@@ -28,6 +29,7 @@ use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use App\Notifications\OwnerPayoutStatusChangedNotification;
 use App\Support\CustomerBookingRoutes;
+use App\Support\Rupiah;
 use App\Support\StatusBadge;
 use App\Support\TenantContext;
 use Carbon\Carbon;
@@ -56,7 +58,7 @@ class GetBeranda
      *     banner: array<string, mixed>|null,
      *     guide: array<string, mixed>|null,
      *     live: array<string, mixed>,
-     *     link: array{url: string, share_text: string}|null,
+     *     link: array{url: string, share_text: string, qr_url: string|null}|null,
      *     quickActions: list<array<string, string>>,
      * }
      */
@@ -67,6 +69,7 @@ class GetBeranda
         $role = $this->role($user);
         $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
         $guide = $this->guide($tenant);
+        $navigation = collect($this->getOwnerNavigation->execute($user));
         $storefront = $tenant->slug ? CustomerBookingRoutes::url('customer.booking.program', $tenant->slug) : null;
 
         return [
@@ -76,15 +79,16 @@ class GetBeranda
             'link' => $storefront === null ? null : [
                 'url' => $storefront,
                 'share_text' => 'Booking '.($tenant->namabisnis ?: 'kami').' secara online: '.$storefront,
+                'qr_url' => $navigation->firstWhere('id', 'booking-page')['url'] ?? null,
             ],
-            'quickActions' => $this->quickActions($user, $role, $subscription),
+            'quickActions' => $this->quickActions($navigation, $role, $subscription),
         ];
     }
 
     /**
      * Sections 2–4, also served by the live refresh: figures, needs action, today and tomorrow.
      *
-     * @return array{figures: list<array<string, string>>, actions: list<array<string, mixed>>, today: list<array<string, mixed>>, tomorrow: array<string, mixed>, next: array<string, string>|null}
+     * @return array{empty_slots: list<array<string, mixed>>, figures: list<array<string, string>>, actions: list<array<string, mixed>>, today: list<array<string, mixed>>, tomorrow: array<string, mixed>, next: array<string, string>|null}
      */
     public function live(Tenant $tenant, User $user): array
     {
@@ -105,7 +109,19 @@ class GetBeranda
             ->map(fn (Collection $group): array => $group->values()->all())->all();
         $ranges = $todayBookings->isEmpty() ? [] : $this->getBookingTimeRanges->execute($todayBookings)['sessionRanges'];
 
+        $empty = [];
+        if (TenantPermission::allowsRole($role, 'bookings.walkin') && EntitlementRules::hasEffectivePlan($tenant->subscription()->with('plan')->first())) {
+            $picker = app(ListWalkInSlots::class)->picker($tenant, $today->toDateString());
+            $occupiedSchedules = $todayBookings->pluck('idschedule')->all();
+            $empty = collect($picker['slots'])->where('available', true)->whereNotIn('id', $occupiedSchedules)
+                ->map(fn (array $slot): array => [
+                    'id' => $slot['id'], 'service_id' => $slot['service'],
+                    'date' => $today->toDateString(), 'start' => $slot['start'], 'label' => self::dotted($slot['label']),
+                ])->values()->all();
+        }
+
         return [
+            'empty_slots' => $empty,
             'figures' => $this->figures($tenant, $todayBookings->count(), $canViewRevenue),
             'actions' => $this->actions($tenant, $user, $role, $todayBookings, $ranges, $now),
             'today' => $this->todayRows($todayBookings, $ranges, $paymentGroups, $role, $now),
@@ -155,14 +171,17 @@ class GetBeranda
             ];
         }
 
-        $withoutSlots = collect($this->getSlotRunway->execute($tenant))->where('warning', true);
+        // T-39: only a member who can open slots gets this banner; for a Kasir it had no action.
+        $withoutSlots = TenantPermission::allowsRole($role, 'schedule.manage')
+            ? collect($this->getSlotRunway->execute($tenant))->where('warning', true)
+            : collect();
         if ($withoutSlots->isNotEmpty()) {
             return [
                 'kind' => 'slot-runway', 'tone' => 'warning',
                 'message' => $withoutSlots->count() === 1
                     ? 'Layanan "'.$withoutSlots->first()['service'].'" belum punya slot terbuka untuk 7 hari ke depan.'
                     : $withoutSlots->count().' layanan belum punya slot terbuka untuk 7 hari ke depan.',
-                'action' => TenantPermission::allowsRole($role, 'schedule.manage') ? ['label' => 'Buka slot', 'url' => route('owner.schedule')] : null,
+                'action' => ['label' => 'Buka slot', 'url' => route('owner.schedule')],
                 'note' => null,
             ];
         }
@@ -200,6 +219,15 @@ class GetBeranda
     private function guide(Tenant $tenant): ?array
     {
         if ($tenant->owner_guide_completed_at !== null) {
+            return null;
+        }
+
+        // The guide is for a new owner. A business that already has a booking would otherwise lose its
+        // daily view to it, e.g. a tenant from before opening hours existed (T-04, approved by the Tech
+        // Lead on 21 Nov 2026), so its guide counts as done.
+        if (Booking::where('idtenant', $tenant->id)->exists()) {
+            $tenant->forceFill(['owner_guide_completed_at' => Carbon::now()])->save();
+
             return null;
         }
 
@@ -243,7 +271,7 @@ class GetBeranda
         })->count();
 
         $figures = [
-            ['key' => 'bookings', 'label' => 'Booking hari ini', 'value' => (string) $bookingsToday, 'hint' => 'Online dan walk-in'],
+            ['key' => 'bookings', 'label' => 'Booking hari ini', 'value' => (string) $bookingsToday, 'hint' => 'Online dan dicatat kasir'],
             ['key' => 'waiting', 'label' => 'Menunggu pembayaran', 'value' => (string) $waiting, 'hint' => 'Booking yang slotnya masih ditahan'],
         ];
 
@@ -254,7 +282,7 @@ class GetBeranda
                 ->where('status', 'sukses')
                 ->whereBetween('created_at', [Carbon::today(), Carbon::today()->endOfDay()])
                 ->sum('jumlah');
-            $figures[] = ['key' => 'revenue', 'label' => 'Pendapatan hari ini', 'value' => 'Rp '.number_format($revenue, 0, ',', '.'), 'hint' => 'Dari pembayaran berhasil'];
+            $figures[] = ['key' => 'revenue', 'label' => 'Pendapatan hari ini', 'value' => Rupiah::format($revenue), 'hint' => 'Dari pembayaran berhasil'];
         }
 
         $figures[] = [
@@ -333,7 +361,7 @@ class GetBeranda
             return [
                 'id' => (int) $booking->id,
                 'code' => (string) ($booking->booking_code ?: 'BKQ-'.$booking->id),
-                'time' => $range?->label() ?? $start,
+                'time' => self::dotted($range?->label() ?? $start),
                 'start' => $start,
                 'customer' => (string) $booking->namapelanggan,
                 'service' => (string) ($booking->layanan->namalayanan ?? '-'),
@@ -362,21 +390,29 @@ class GetBeranda
     }
 
     /**
-     * @return array{count: int, first_time: string|null, first_customer: string|null}
+     * @return array{count: int, first_time: string|null, first_customer: string|null, date: string, bookings: list<array<string, mixed>>}
      */
     private function tomorrow(Tenant $tenant): array
     {
+        $date = Carbon::tomorrow('Asia/Jakarta');
         $bookings = Booking::where('idtenant', $tenant->id)
-            ->whereDate('tanggalbooking', Carbon::tomorrow())
+            ->whereDate('tanggalbooking', $date)
             ->where('status', '!=', BookingState::STATUS_CANCELLED)
             ->orderBy('jam')
-            ->get(['id', 'jam', 'namapelanggan']);
+            ->get(['id', 'jam', 'namapelanggan', 'status']);
         $first = $bookings->first();
 
         return [
             'count' => $bookings->count(),
-            'first_time' => $first ? substr((string) $first->jam, 0, 5) : null,
+            'first_time' => $first ? self::dotted(substr((string) $first->jam, 0, 5)) : null,
             'first_customer' => $first ? (string) $first->namapelanggan : null,
+            'date' => $date->locale('id')->translatedFormat('l, j M'),
+            'bookings' => $bookings->take(5)->map(fn (Booking $booking): array => [
+                'customer' => $booking->namapelanggan,
+                'time' => self::dotted(substr((string) $booking->jam, 0, 5)),
+                'status' => BookingState::formatLabel($booking->status),
+                'url' => route('owner.bookings.panel', $booking->id),
+            ])->values()->all(),
         ];
     }
 
@@ -395,8 +431,8 @@ class GetBeranda
             ->first(['id', 'tanggalbooking', 'jam', 'namapelanggan']);
 
         return $next === null ? null : [
-            'date' => Carbon::parse((string) $next->tanggalbooking)->translatedFormat('l, j M'),
-            'time' => substr((string) $next->jam, 0, 5),
+            'date' => Carbon::parse((string) $next->tanggalbooking)->locale('id')->translatedFormat('l, j M'),
+            'time' => self::dotted(substr((string) $next->jam, 0, 5)),
             'customer' => (string) $next->namapelanggan,
         ];
     }
@@ -404,25 +440,35 @@ class GetBeranda
     /**
      * Quick actions of §8.1 point 6, shown only where the member's role and plan allow them.
      *
+     * @param  Collection<int, array<string, mixed>>  $navigation
      * @return list<array<string, string>>
      */
-    private function quickActions(User $user, string $role, ?Subscription $subscription): array
+    private function quickActions(Collection $navigation, string $role, ?Subscription $subscription): array
     {
         $actions = [];
         if (TenantPermission::allowsRole($role, 'bookings.walkin') && EntitlementRules::hasEffectivePlan($subscription)) {
-            $actions[] = ['key' => 'walkin', 'label' => 'Booking', 'event' => 'owner-walkin-dialog', 'url' => ''];
+            $actions[] = ['key' => 'walkin', 'label' => 'Catat booking', 'event' => 'owner-walkin-dialog', 'url' => ''];
         }
         if (TenantPermission::allowsRole($role, 'services.manage')) {
             $actions[] = ['key' => 'service', 'label' => 'Layanan', 'event' => '', 'url' => route('owner.services', ['buat' => 1])];
         }
-        $promos = collect($this->getOwnerNavigation->execute($user))->firstWhere('id', 'promos');
+        $promos = $navigation->firstWhere('id', 'promos');
         if ($promos !== null && ! $promos['locked']) {
             $actions[] = ['key' => 'promo', 'label' => 'Promo', 'event' => '', 'url' => route('owner.promos', ['buat' => 1])];
         }
         if (TenantPermission::allowsRole($role, 'team.manage') && EntitlementRules::teamLimit($subscription) > 0 && Route::has('owner.team.index')) {
-            $actions[] = ['key' => 'team', 'label' => 'Anggota tim', 'event' => '', 'url' => route('owner.settings.business', ['tab' => 'tim'])];
+            $actions[] = ['key' => 'team', 'label' => 'Anggota tim', 'event' => '', 'url' => route('owner.settings', ['tab' => 'tim'])];
         }
 
         return $actions;
+    }
+
+    /**
+     * Clock times as the owner portal shows them, "08.00 – 09.00" (Papan Jadwal prototype, T-20).
+     * Only display strings go through here; `start` keeps "H:i" for the rail's own arithmetic.
+     */
+    private static function dotted(string $text): string
+    {
+        return (string) preg_replace('/\b(\d{2}):(\d{2})\b/', '$1.$2', $text);
     }
 }

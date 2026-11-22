@@ -4,7 +4,7 @@ Dokumen ini berisi keputusan yang perlu divalidasi Product Lead, dan catatan kep
 
 **Cara menjawab:** balas dengan nomor entri dan poinnya, misalnya "D-001 setuju semua" atau "D-001 setuju kecuali poin 3: …". Setelah disetujui, Tech Lead membuat pekerjaannya. Keputusan yang sudah diambil bisa dibuka lagi kapan saja dengan menyebut nomornya.
 
-Terakhir diperbarui: 16 November 2026
+Terakhir diperbarui: 22 November 2026
 
 ---
 
@@ -25,6 +25,21 @@ Halaman admin saat ini hanya menampilkan ringkasan dan memproses permintaan penc
 
 *Jawaban Product Lead:* —
 
+### D-028 · Template tampilan siap pakai di menu Tampilan
+
+*Status:* Disetujui · *Diajukan:* 21 Nov 2026 · *Diputuskan:* 21 Nov 2026 · *Menahan rilis:* tidak (hanya sesi 7 BQ-165)
+
+*Masalah*
+Owner sudah bisa memilih bentuk tombol (pil, membulat, kotak), gaya kartu (terangkat, garis tepi, lembut), dan huruf di Halaman Booking → Tampilan. Ada 9 kombinasi bentuk dan kartu, ditambah 6 huruf. Owner baru sering tidak tahu kombinasi mana yang cocok, padahal halaman pelanggan yang baru (BQ-165) berubah total mengikuti pilihan itu.
+
+*Usulan keputusan*
+1. Menu Tampilan menyediakan 3 template siap pakai: **Modern** (pil + terangkat + Plus Jakarta Sans), **Rapi** (membulat + garis tepi + Inter), dan **Tegas** (kotak + lembut + Outfit).
+2. Memilih template hanya mengisi ketiga pengaturan itu di formulir. Warna merek, logo, banner, dan deskripsi tidak berubah. Owner tetap menekan Simpan.
+3. Setelah memilih template, owner tetap bebas mengubah tiap pengaturan. Bila kombinasinya tidak sama dengan template mana pun, label menjadi "Kustom".
+4. Berlaku untuk semua paket, sama seperti pengaturan Tampilan saat ini (D-009). Tidak ada data baru yang disimpan.
+
+*Jawaban Product Lead:* Disetujui sesuai usulan (dikonfirmasi lewat Tech Lead, 21 Nov 2026).
+
 ---
 
 ## Untuk diketahui (tidak perlu keputusan)
@@ -38,10 +53,14 @@ Perubahan teknis yang terlihat oleh owner atau pelanggan, diputuskan Tech Lead:
 - *4 Nov 2026:* satu akun hanya untuk satu bisnis. Owner yang ingin membuka bisnis lain mendaftar dengan akun terpisah.
 - *16 Nov 2026:* di Beranda, "Tandai selesai" muncul begitu sesi dimulai, sama seperti di panel booking. "Tidak datang" bisa ditandai langsung dari Beranda setelah sesi berakhir. (BQ-160)
 - *16 Nov 2026:* tampilan portal owner memakai warna BookQu (ungu dan oranye) dan huruf Plus Jakarta Sans. Jadwal hari ini di Beranda tampil sebagai garis waktu dengan penanda jam sekarang. Tombol tengah di HP bernama "Walk-in". Fitur dan alurnya tidak berubah. (BQ-161)
+- *21 Nov 2026:* semua halaman pelanggan (toko, jadwal, pembayaran, kelola reservasi, ubah jadwal, invoice, dan halaman error) mendapat tampilan baru yang sepenuhnya mengikuti warna merek, huruf, bentuk tombol, dan gaya kartu pilihan owner. Banner bisnis menjadi latar sampul toko. Judul toko menjadi "Reservasi di {nama bisnis}". Aturan harga, jadwal, pembayaran, dan refund tidak berubah. (BQ-165)
 
 ---
 
 ## Sudah diputuskan
+
+- D-027 · Sesi lama saat fitur selesai otomatis pertama kali berjalan · Disetujui Product Lead dan Tech Lead pada 19 Nov 2026, dikonfirmasi melalui developer. Usulan utama diterapkan, mulai dari sesi yang berakhir sejak fitur diaktifkan, termasuk saat diaktifkan kembali. Sesi lama bisa ditutup manual → BQ-163
+- D-029 · Masuk dan daftar dengan akun Google · Disetujui Product Lead dan Tech Lead pada 22 Nov 2026, dikonfirmasi melalui developer: tombol "Masuk dengan Google" di halaman masuk dan daftar; bisa dipakai pemilik dan anggota tim (Manajer, Kasir), admin platform tetap memakai email dan password; daftar baru lewat Google mengambil nama dan email dari Google, lalu pemilik tetap mengisi nomor HP, nama, jenis, dan alamat bisnis serta menyetujui ketentuan, mendapat trial 7 hari seperti biasa, dan emailnya langsung terverifikasi; akun lama dengan email yang sama otomatis terhubung saat pertama kali masuk dengan Google, hanya bila Google menyatakan email itu terverifikasi; akun yang dibuat lewat Google belum punya password, jadi untuk mengubah email, menghapus akun, dan mengubah rekening penarikan (D-004) pemilik membuat password dulu lewat link email; pelanggan tetap tidak perlu login → BQ-172
 
 ### Keputusan sebelum dokumen ini dibuat
 
@@ -82,3 +101,5 @@ Diambil Tech Lead sebelum peran Product Lead ditetapkan. Product Lead bisa membu
 - D-022 · Tiga fitur yang sudah ada tetapi belum diterima resmi · Disetujui 4 Nov 2026: reset password lewat link email sekali pakai yang punya masa berlaku; pembatasan percobaan login, pendaftaran, reset password, dan formulir publik per akun dan per alamat internet; halaman utama BookQu dengan paket dan harga mengikuti D-017 → sudah ada di kode (FR-AUTH-007, FR-AUTH-008, FR-PUBLIC-005)
 - D-023 · Durasi layanan dan interval slot kelipatan 5 menit · Disetujui 5 Nov 2026: owner hanya bisa menyimpan durasi layanan dan interval jadwal massal dalam kelipatan 5 menit; layanan lama yang tidak sesuai harus diubah saat diedit → BQ-114
 - D-024 · Empat tombol bantu baru di portal owner · Disetujui 16 Nov 2026: tautan ke booking setelah walk-in; tombol "Isi dari jam buka" di form buat slot sekaligus (owner tetap menyimpan sendiri, berbeda dengan slot otomatis D-021); simulasi harga menampilkan aturan yang menentukan harga; uji dan kirim ulang webhook untuk paket Pro → BQ-160
+- D-025 · Tampilan portal owner "Papan Jadwal" beserta perubahan isi dan fitur barunya · Disetujui 17 Nov 2026: semua perubahan isi halaman dan fitur baru di prototipe dibangun, termasuk slot otomatis dan kalimat kesimpulan di Laporan yang dibuka kembali dari D-021; dikerjakan dulu di branch tersendiri dan baru masuk ke versi utama setelah Tech Lead memutuskan; daftar lengkapnya di `docs/design/papan-jadwal/KEPUTUSAN.md` → BQ-162
+- D-026 · Aturan rinci fitur baru portal owner (lanjutan D-025) · Disetujui 17 Nov 2026 kecuali sumber booking: slot otomatis dinyalakan per layanan sampai 30 hari ke depan di semua paket; selesai otomatis 6 jam setelah sesi, aktif dan bisa dimatikan, tidak berlaku untuk tidak datang atau minta refund; tutup banyak sekaligus untuk pemilik, manajer dan kasir; ringkasan mingguan email Senin pagi untuk Pemilik, aktif dan bisa dimatikan; promo jam sepi persen atau nominal di hari dan jam pilihan pemilik untuk Medium ke atas, dengan saran jam sepi di Laporan; tabel isi paket di `docs/product.md` diperbarui; rilis v1.0.0 menunggu BQ-162. Sumber booking per kanal disembunyikan dulu karena penanda link belum ada; sumber online dan walk-in tetap seperti sekarang → BQ-162

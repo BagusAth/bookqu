@@ -142,7 +142,7 @@ class RescheduleBooking
 
                 // Record BookingLog
                 $logMessage = $actor === 'owner'
-                    ? 'Jadwal diubah oleh Owner (Walk-in / On-site): '.($reason ?? 'Permintaan langsung customer walk-in di studio')
+                    ? 'Jadwal diubah. Alasan: '.($reason ?? '—')
                     : 'Jadwal booking diubah oleh customer.';
 
                 BookingLog::record(
@@ -160,6 +160,7 @@ class RescheduleBooking
                         'price_difference' => $price['price_difference'],
                         'actor' => $actor === 'owner' ? (auth()->user()->namalengkap ?? 'Owner') : 'customer',
                         'role' => $actor,
+                        ...($actor === 'owner' ? ['reason' => $reason] : []),
                     ]
                 );
 

@@ -16,6 +16,7 @@ use App\Models\Tenant;
 use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use App\Support\PaymentMethodLabel;
+use App\Support\Rupiah;
 use App\Support\StatusBadge;
 use App\Support\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -33,9 +34,9 @@ class GetPaymentsPage
     public const TABS = [
         'ringkasan' => 'Ringkasan',
         'transaksi' => 'Transaksi',
-        'saldo' => 'Saldo & Pencairan',
+        'saldo' => 'Saldo & pencairan',
         'rekening' => 'Rekening',
-        'pengaturan' => 'Pengaturan',
+        'cara' => 'Cara kerja',
     ];
 
     public function __construct(private GetBalanceLedger $getBalanceLedger) {}
@@ -48,6 +49,7 @@ class GetPaymentsPage
     {
         app(TenantContext::class)->setTenantId($tenant->id);
 
+        $tab = $tab === 'pengaturan' ? 'cara' : $tab;
         $activeTab = array_key_exists((string) $tab, self::TABS) ? (string) $tab : 'ringkasan';
         $accounts = TenantPayoutAccount::where('idtenant', $tenant->id)->orderByDesc('is_default')->latest()->get();
         $eligibilityReasons = PayoutEligibility::reasons($tenant, $user);
@@ -87,7 +89,7 @@ class GetPaymentsPage
                     ->latest('requested_at')->latest('id')->paginate(15, ['*'], 'pencairan')->withQueryString()
                     ->through(fn (OwnerPayout $payout): array => $this->payoutRow($payout)),
             ],
-            'pengaturan' => ['explanation' => $this->explanation($tenant)],
+            'cara' => ['explanation' => $this->explanation($tenant)],
             default => [],
         };
     }
@@ -165,16 +167,16 @@ class GetPaymentsPage
 
             return [
                 'orderId' => (string) ($payment->order_id ?: 'PAY-'.$payment->id),
-                'time' => $payment->created_at?->timezone('Asia/Jakarta')->translatedFormat('j M Y, H:i'),
+                'time' => $payment->created_at ? str_replace(':', '.', $payment->created_at->timezone('Asia/Jakarta')->locale('id')->translatedFormat($payment->created_at->year === now()->year ? 'j M · H:i' : 'j M Y · H:i')) : '—',
                 'customer' => (string) ($first->namapelanggan ?? '-'),
                 'service' => $bookings->map(fn ($booking): string => (string) ($booking->layanan->namalayanan ?? ''))->filter()->unique()->implode(', ') ?: '-',
                 'bookingCode' => (string) ($first->booking_code ?? ''),
                 'bookingPanel' => $first instanceof Booking && filled($first->booking_code) ? route('owner.bookings.panel', $first->id) : null,
                 'bookingHref' => $first instanceof Booking ? route('owner.bookings', ['panel' => $first->id]) : null,
-                'amount' => 'Rp '.number_format((float) $payment->jumlah, 0, ',', '.'),
+                'amount' => Rupiah::format($payment->jumlah),
                 'method' => PaymentMethodLabel::for($payment->metode) ?? '-',
                 'status' => array_combine(['label', 'tone'], StatusBadge::for('payment', (string) $payment->status)),
-                'refund' => $refund > 0 ? 'Refund Rp '.number_format($refund, 0, ',', '.') : null,
+                'refund' => $refund > 0 ? 'Refund '.Rupiah::format($refund) : null,
             ];
         });
     }
@@ -189,8 +191,8 @@ class GetPaymentsPage
 
         return [
             'id' => (int) $payout->id,
-            'requestedAt' => ($payout->requested_at ?? $payout->created_at)?->timezone('Asia/Jakarta')->translatedFormat('j M Y, H:i'),
-            'amount' => 'Rp '.number_format((float) $payout->jumlah, 0, ',', '.'),
+            'requestedAt' => ($payout->requested_at ?? $payout->created_at)?->timezone('Asia/Jakarta')->locale('id')->translatedFormat('j M Y, H:i'),
+            'amount' => Rupiah::format($payout->jumlah),
             'account' => trim(($payout->bank_nama ?? '-').' '.($account instanceof TenantPayoutAccount ? $account->masked_number : '••••'.substr((string) $payout->nomor_rekening, -4))),
             'label' => PayoutState::ownerLabel($status),
             'tone' => PayoutState::ownerTone($status),

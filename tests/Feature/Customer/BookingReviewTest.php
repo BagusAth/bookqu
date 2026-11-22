@@ -84,8 +84,8 @@ class BookingReviewTest extends TestCase
         $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'?token='.$this->booking->cancellation_token);
 
         $response->assertStatus(200);
-        $response->assertSee('Berikan Ulasan Layanan');
-        $response->assertSee('Penilaian Bintang');
+        $response->assertSee('Berikan ulasan layanan');
+        $response->assertSee('aria-label="1 bintang"', false);
     }
 
     public function test_customer_does_not_see_review_form_when_booking_is_not_completed(): void
@@ -95,7 +95,7 @@ class BookingReviewTest extends TestCase
         $response = $this->grantCustomerAccess($this->booking)->get('/manage/'.$this->booking->booking_code.'?token='.$this->booking->cancellation_token);
 
         $response->assertStatus(200);
-        $response->assertDontSee('Berikan Ulasan Layanan');
+        $response->assertDontSee('Berikan ulasan layanan');
     }
 
     public function test_customer_can_submit_review_for_completed_booking(): void
@@ -207,6 +207,6 @@ class BookingReviewTest extends TestCase
         $response->assertSee('Pengalaman luar biasa!');
         $response->assertSee('Tanggapan dari '.$this->tenant->namabisnis);
         $response->assertSee('Terima kasih banyak kak atas kepercayaannya!');
-        $response->assertDontSee('Berikan Ulasan Layanan');
+        $response->assertDontSee('Berikan ulasan layanan');
     }
 }

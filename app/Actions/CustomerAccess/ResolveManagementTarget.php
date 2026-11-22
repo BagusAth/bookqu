@@ -15,7 +15,7 @@ final class ResolveManagementTarget
         abort_unless($context->allows(AccessOperation::Manage, $context->payment), 404);
         abort_unless($context->payment->order_id === $orderId, 404);
         $payment = $context->payment;
-        $payment->setRelation('bookings', $context->bookings->load(['layanan', 'schedule', 'tenant.user', 'review']));
+        $payment->setRelation('bookings', $context->bookings->load(['layanan', 'schedule', 'tenant.user', 'review', 'logs']));
         $payment->load('tenant');
 
         return $payment;

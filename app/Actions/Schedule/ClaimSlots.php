@@ -10,6 +10,8 @@ use App\Domain\Schedule\AvailabilityRules;
 use App\Domain\Schedule\SlotRefusal;
 use App\Models\Schedule;
 use App\Models\Tenant;
+use App\Support\TenantContext;
+use App\Support\TenantDiscovery;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +49,16 @@ class ClaimSlots
         ?int $excludeBookingId = null,
         int $participants = 1,
     ): Collection {
+        return app(TenantContext::class)->run((int) $tenant->id,
+            fn (): Collection => $this->claim($tenant, $serviceId, $scheduleIds, $date, $excludeBookingId, $participants));
+    }
+
+    /**
+     * @param  list<int|string>  $scheduleIds
+     * @return Collection<int, Schedule>
+     */
+    private function claim(Tenant $tenant, int $serviceId, array $scheduleIds, ?string $date, ?int $excludeBookingId, int $participants): Collection
+    {
         if (DB::transactionLevel() === 0) {
             throw new LogicException('ClaimSlots must run inside the booking operation\'s transaction.');
         }
@@ -55,9 +67,7 @@ class ClaimSlots
 
         $tenant->refreshForUpdate();
 
-        // scope-bypass: ownership of every requested schedule is verified below, before any cleanup.
-        $schedules = Schedule::withoutGlobalScopes()
-            ->with('layanan')
+        $schedules = Schedule::with('layanan')
             ->whereIn('id', $scheduleIds)
             ->orderBy('id')
             ->lockForUpdate()
@@ -65,14 +75,12 @@ class ClaimSlots
             ->keyBy('id');
 
         if ($schedules->count() !== count($scheduleIds) || $scheduleIds === []) {
-            throw new SlotClaimRefused(SlotRefusal::NotFound);
+            $reason = app(TenantDiscovery::class)->hasForeignSchedule($scheduleIds, (int) $tenant->id)
+                ? SlotRefusal::ForeignTenant : SlotRefusal::NotFound;
+            throw new SlotClaimRefused($reason);
         }
 
         foreach ($schedules as $schedule) {
-            if ((int) $schedule->idtenant !== (int) $tenant->id) {
-                throw new SlotClaimRefused(SlotRefusal::ForeignTenant, (int) $schedule->id, substr((string) $schedule->jam_mulai, 0, 5));
-            }
-
             if ((int) $schedule->idlayanan !== $serviceId) {
                 throw new SlotClaimRefused(SlotRefusal::ForeignService, (int) $schedule->id, substr((string) $schedule->jam_mulai, 0, 5));
             }
@@ -117,7 +125,6 @@ class ClaimSlots
      */
     public static function lockTenant(int $tenantId): void
     {
-        // scope-bypass: the tenant row itself is the lock; the caller resolved the tenant server-side.
-        Tenant::withoutGlobalScopes()->whereKey($tenantId)->lockForUpdate()->first();
+        Tenant::whereKey($tenantId)->lockForUpdate()->first();
     }
 }

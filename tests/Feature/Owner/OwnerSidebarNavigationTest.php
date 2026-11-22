@@ -58,7 +58,7 @@ class OwnerSidebarNavigationTest extends TestCase
             '/owner/services',
             '/owner/reviews',
             '/owner/customers',
-            '/owner/settings/business',
+            '/owner/settings',
             '/owner/subscription',
         ];
 
@@ -100,6 +100,13 @@ class OwnerSidebarNavigationTest extends TestCase
         $response->assertSee('id="input-nomorhp"', false);
     }
 
+    public function test_the_old_business_settings_bookmark_redirects_permanently_with_its_tab(): void
+    {
+        $this->actingAs($this->user)->get('/owner/settings/business?tab=account')
+            ->assertStatus(301)->assertRedirect(route('owner.settings', ['tab' => 'account']));
+        $this->get(route('owner.settings', ['tab' => 'account']))->assertOk();
+    }
+
     public function test_owner_dashboard_hides_payment_verification_prompt_and_links_to_locked_analytics(): void
     {
         $response = $this->actingAs($this->user)->get('/owner/dashboard');
@@ -113,8 +120,8 @@ class OwnerSidebarNavigationTest extends TestCase
         $response->assertDontSee('id="link-full-report"', false);
         // ADR-0023: Laporan and Integrasi are released.
         $this->get('/owner/analytics')->assertOk();
-        $this->get('/owner/settings/integrations')->assertRedirect(route('owner.settings.business', ['tab' => 'integrasi']));
-        $this->get(route('owner.settings.business', ['tab' => 'integrasi']))->assertOk()->assertSeeText('Google Calendar');
+        $this->get('/owner/settings/integrations')->assertRedirect(route('owner.settings', ['tab' => 'integrasi']));
+        $this->get(route('owner.settings', ['tab' => 'integrasi']))->assertOk()->assertSeeText('Google Calendar');
     }
 
     public function test_owner_topbar_dropdown_hides_appearance_and_payment_links(): void

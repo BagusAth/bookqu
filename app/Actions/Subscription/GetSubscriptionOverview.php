@@ -14,7 +14,9 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantMember;
+use App\Support\Rupiah;
 use App\Support\StatusBadge;
+use App\Support\TenantContext;
 use Illuminate\Support\Collection;
 
 class GetSubscriptionOverview
@@ -57,16 +59,22 @@ class GetSubscriptionOverview
                 'riwayatpembayaran' => collect(),
                 'statusLabel' => 'Berakhir',
                 'endDate' => null,
+                'daysRemaining' => 0,
                 'usage' => ['services' => ['used' => 0, 'limit' => 0], 'bookings' => ['used' => 0, 'limit' => 0], 'team' => ['used' => 0, 'limit' => 0]],
                 'history' => [],
             ];
         }
 
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): array => $this->forTenant($tenant));
+    }
+
+    /** @return array<string, mixed> */
+    private function forTenant(Tenant $tenant): array
+    {
         $idtenant = $tenant->id;
 
         /** @var Subscription|null $langgananaktif */
-        // scope-bypass: filtered by the authenticated tenant
-        $langgananaktif = Subscription::withoutGlobalScopes()
+        $langgananaktif = Subscription::query()
             ->where('idtenant', $idtenant)
             ->with('plan')
             ->latest('id')
@@ -93,8 +101,7 @@ class GetSubscriptionOverview
         $sisahari = SubscriptionState::getRemainingTrialDays($langgananaktif);
         $statustrial = $isTrial && $langgananaktif?->trial_berakhir !== null;
 
-        // scope-bypass: filtered by the authenticated tenant
-        $riwayatpembayaran = Payment::withoutGlobalScopes()
+        $riwayatpembayaran = Payment::query()
             ->where('idtenant', $idtenant)
             ->where('tipe', 'subscription')
             ->orderByDesc('created_at')
@@ -102,13 +109,16 @@ class GetSubscriptionOverview
             ->get();
 
         // BQ-145 (owner-portal.md §8.15): status, end date, the three usage figures and billing rows.
-        // scope-bypass: members of the authenticated tenant
-        $teamUsed = TenantMember::withoutGlobalScopes()->where('idtenant', $idtenant)->whereNotNull('accepted_at')->count();
+        $teamUsed = TenantMember::query()->where('idtenant', $idtenant)->whereNotNull('accepted_at')->count();
+        $periodEnd = $langgananaktif !== null ? SubscriptionState::periodEnd($langgananaktif)?->timezone('Asia/Jakarta') : null;
 
         return [
             'langgananaktif' => $langgananaktif,
             'statusLabel' => $this->statusLabel($langgananaktif),
-            'endDate' => $langgananaktif !== null ? SubscriptionState::periodEnd($langgananaktif)?->timezone('Asia/Jakarta')->translatedFormat('j M Y') : null,
+            'endDate' => $periodEnd?->locale('id')->translatedFormat($periodEnd->isCurrentYear() ? 'j M' : 'j M Y'),
+            'daysRemaining' => $periodEnd !== null && EntitlementRules::hasEffectivePlan($langgananaktif)
+                ? (int) max(0, ceil(now()->diffInDays($periodEnd, false)))
+                : 0,
             'usage' => [
                 'services' => ['used' => $jumlahlayanan, 'limit' => $serviceQuota['isUnlimited'] ? null : $maxlayanan],
                 'bookings' => ['used' => $jumlahbookingbulanini, 'limit' => $bookingQuota['isUnlimited'] ? null : $maxbooking],
@@ -148,10 +158,12 @@ class GetSubscriptionOverview
     {
         $orderId = (string) $payment->order_id;
 
+        $date = $payment->created_at?->timezone('Asia/Jakarta')->locale('id');
+
         return [
             'orderId' => $orderId,
-            'date' => $payment->created_at?->timezone('Asia/Jakarta')->translatedFormat('j M Y'),
-            'amount' => 'Rp '.number_format((float) $payment->jumlah, 0, ',', '.'),
+            'date' => $date?->locale('id')->translatedFormat($date->isCurrentYear() ? 'j M' : 'j M Y'),
+            'amount' => Rupiah::format($payment->jumlah),
             'status' => array_combine(['label', 'tone'], StatusBadge::for('payment', (string) $payment->status)),
             'invoiceUrl' => $payment->status === PaymentState::STATUS_SUKSES && $orderId !== '' ? route('owner.checkout.invoice', $orderId) : null,
             'payUrl' => $payment->status === PaymentState::STATUS_PENDING && $orderId !== '' ? route('owner.checkout.payment', $orderId) : null,

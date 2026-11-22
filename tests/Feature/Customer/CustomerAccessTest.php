@@ -126,6 +126,87 @@ class CustomerAccessTest extends TestCase
         ];
     }
 
+    public function test_success_page_only_offers_management_to_a_session_with_the_matching_management_grant(): void
+    {
+        [$payment] = $this->reservation();
+        $invoice = route('customer.booking.slug.invoice', ['slug_usaha' => $payment->tenant->slug, 'payment' => $payment->order_id]);
+        $destination = route('booking.manage.payment', ['order_id' => $payment->order_id]);
+
+        $this->get($invoice)->assertNotFound();
+
+        [$foreign] = $this->reservation();
+        $this->enter($foreign);
+        $this->get($invoice)->assertNotFound();
+
+        [$sibling] = $this->reservation(tenant: $payment->tenant);
+        $this->enter($sibling);
+        $this->enter($payment, AccessProfile::Checkout);
+        $response = $this->get($invoice)->assertOk()->assertViewHas('manageUrl');
+        $this->assertNull($response->viewData('manageUrl'));
+        $response->assertDontSee('href="'.e($destination).'"', false);
+        $this->get($destination)->assertNotFound();
+
+        $this->enter($payment);
+        $this->enter($payment, AccessProfile::Checkout);
+        $this->get($invoice)->assertOk()->assertViewHas('manageUrl', $destination)
+            ->assertSee('href="'.e($destination).'"', false);
+        $this->get($destination)->assertOk();
+    }
+
+    public function test_success_page_has_no_management_destination_after_booking_cancellation(): void
+    {
+        [$payment, $booking] = $this->reservation();
+        $this->enter($payment);
+        $booking->update(['status' => 'cancelled']);
+
+        $response = $this->get(route('customer.booking.slug.invoice', [
+            'slug_usaha' => $payment->tenant->slug, 'payment' => $payment->order_id,
+        ]))->assertOk()->assertViewHas('manageUrl');
+        $this->assertNull($response->viewData('manageUrl'));
+    }
+
+    public function test_management_pages_offer_the_exact_pending_payment_until_the_deadline(): void
+    {
+        [$payment, $booking] = $this->reservation('pending');
+        $pages = [
+            route('booking.manage', ['booking_code' => $booking->booking_code]),
+            route('booking.manage.payment', ['order_id' => $payment->order_id]),
+        ];
+        $destination = route('customer.booking.slug.payment', [
+            'slug_usaha' => $payment->tenant->slug, 'payment' => $payment->order_id,
+        ]);
+
+        $this->get($pages[0])->assertNotFound();
+        [$foreign] = $this->reservation('pending');
+        $this->enter($foreign);
+        $this->get($pages[1])->assertNotFound();
+        $this->enter($payment);
+
+        foreach ($pages as $page) {
+            $this->get($page)->assertOk()->assertViewHas('continuePaymentUrl', $destination)
+                ->assertSee('href="'.e($destination).'"', false)->assertSee('Lanjutkan pembayaran');
+        }
+        $this->get($destination)->assertOk()->assertViewHas('paymentState', 'pending');
+
+        $payment->update(['expired_at' => now()]);
+        foreach ($pages as $page) {
+            $response = $this->get($page)->assertOk()->assertViewHas('continuePaymentUrl');
+            $this->assertNull($response->viewData('continuePaymentUrl'));
+            $response->assertDontSee('Lanjutkan pembayaran');
+        }
+    }
+
+    public function test_management_page_cannot_continue_payment_after_its_booking_is_cancelled(): void
+    {
+        [$payment, $booking] = $this->reservation('pending');
+        $this->enter($payment);
+        $booking->update(['status' => 'cancelled']);
+
+        $response = $this->get(route('booking.manage', ['booking_code' => $booking->booking_code]))
+            ->assertOk()->assertViewHas('continuePaymentUrl');
+        $this->assertNull($response->viewData('continuePaymentUrl'));
+    }
+
     #[DataProvider('managementRoutes')]
     public function test_management_routes_reject_identifiers_checkout_and_foreign_grants(string $method, string $suffix): void
     {
@@ -172,6 +253,9 @@ class CustomerAccessTest extends TestCase
             preg_match_all('/href="([^"<>]*(?:calendar.google.com|api.whatsapp.com)[^"<>]*)"/', $html, $urls);
             foreach ($urls[1] as $url) {
                 $this->assertStringNotContainsString('/manage/', urldecode(html_entity_decode($url)));
+                if (str_contains($url, 'calendar.google.com')) {
+                    $this->assertStringContainsString('ctz=Asia/Jakarta', urldecode(html_entity_decode($url)), 'Calendar times are WIB.');
+                }
             }
         }
     }
@@ -280,11 +364,27 @@ class CustomerAccessTest extends TestCase
     public function test_bootstrap_has_no_external_resources_and_rejects_invalid_attempts_with_rate_limit(): void
     {
         $this->get('/access')->assertOk()->assertSee('history.replaceState', false)
+            ->assertSee('Membuka reservasi Anda…')->assertSee('Tautan tidak berlaku atau sudah kedaluwarsa.')
             ->assertDontSee('src=', false)->assertHeader('X-Robots-Tag', 'noindex, nofollow');
         for ($attempt = 0; $attempt < 15; $attempt++) {
             $this->postJson('/access', ['credential' => 'invalid'])->assertNotFound();
         }
         $this->postJson('/access', ['credential' => 'invalid'])->assertTooManyRequests();
+    }
+
+    public function test_missing_storefront_and_private_management_pages_use_the_indonesian_error_layout(): void
+    {
+        [, $booking] = $this->reservation();
+        $existingCode = $booking->booking_code;
+
+        $this->get('/bq164-unknown-storefront')->assertNotFound()->assertSeeText('Halaman tidak tersedia.');
+        $unknown = $this->get('/manage/BQ164-UNKNOWN')->assertNotFound()
+            ->assertSeeText('Halaman tidak tersedia.')->assertDontSee('BQ164-UNKNOWN');
+        $known = $this->get('/manage/'.$existingCode)->assertNotFound()->assertDontSee($existingCode);
+
+        $this->assertSame($unknown->getContent(), $known->getContent());
+        $this->get('/'.$booking->tenant->slug.'/missing-page')->assertNotFound()
+            ->assertSee('href="'.config('app.url').'/'.$booking->tenant->slug.'"', false);
     }
 
     public function test_custom_domain_cannot_host_private_credentials_or_resume_a_canonical_session(): void

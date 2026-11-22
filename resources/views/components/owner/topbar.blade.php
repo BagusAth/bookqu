@@ -1,22 +1,22 @@
 {{--
-    Owner top bar (BQ-128, owner-portal.md §4.2): search, + Booking, the public booking page link,
+    Owner top bar (BQ-128, owner-portal.md §4.2): search, Catat booking, the public booking page link,
     the notification bell and the account menu. Data comes from GetOwnerShell; behaviour from
     public/js/owner-ui.js (ownerSearch, ownerBell).
 --}}
-<header class="sticky top-0 z-40 flex h-16 items-center gap-2 border-b border-bq-border bg-bq-surface/95 px-3 backdrop-blur-sm sm:gap-3 sm:px-6">
+<header class="sticky top-0 z-40 flex h-bq-topbar items-center gap-2 border-b border-bq-border bg-bq-surface px-3 md:gap-3 md:px-5 owner-wide:px-bq-edge">
     <a href="{{ route('owner.dashboard') }}" class="flex items-center gap-2 md:hidden" aria-label="Beranda {{ $shell['business'] }}">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-bq-primary-light"><img src="{{ asset('logo_icon.png') }}" alt="" class="h-7 w-7" width="28" height="28"></span>
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-bq-primary-light"><img src="{{ asset('logo_icon.png') }}" alt="" class="h-7 w-7" width="28" height="28"></span>
     </a>
 
     @if ($shell['canSearch'])
         <div
-            class="relative min-w-0 flex-1 sm:max-w-lg"
+            class="relative min-w-0 flex-1 max-w-120"
             x-data="ownerSearch(@js(route('owner.search')))"
             x-on:keydown.escape="close()"
             x-on:click.outside="close()"
         >
             <label for="owner-search" class="sr-only">Cari booking atau pelanggan</label>
-            <div class="flex items-center gap-2 rounded-lg border border-transparent bg-bq-surface-2 px-3 transition-colors hover:border-bq-border focus-within:border-bq-primary focus-within:bg-bq-surface focus-within:ring-2 focus-within:ring-bq-primary/20">
+            <div class="flex items-center gap-2 rounded-bq-control border border-transparent bg-bq-background px-3 transition-colors hover:border-bq-border focus-within:border-bq-primary focus-within:bg-bq-surface focus-within:ring-2 focus-within:ring-bq-primary/20">
                 <x-owner.icon name="search" class="h-4 w-4 text-bq-text-muted" />
                 <input
                     id="owner-search"
@@ -36,7 +36,7 @@
                     x-on:keydown.up.prevent="move(-1)"
                     x-on:keydown.enter.prevent="openSelection()"
                     x-on:keydown.tab="close()"
-                    class="h-10 w-full min-w-0 border-0 bg-transparent p-0 text-sm text-bq-text placeholder:text-bq-text-subtle focus:outline-none focus:ring-0 max-md:text-base"
+                    class="h-9 w-full min-w-0 border-0 bg-transparent p-0 text-sm text-bq-text placeholder:text-bq-text-subtle focus:outline-none focus:ring-0 max-md:text-base"
                 >
             </div>
 
@@ -53,25 +53,25 @@
                 <p x-show="!loading && !failed && results.bookings.length === 0 && results.customers.length === 0" class="px-3 py-2 text-sm text-bq-text-muted">Tidak ada yang cocok.</p>
 
                 <template x-if="results.bookings.length">
-                    <div>
-                        <p class="px-3 pb-1 pt-2 text-xs font-medium text-bq-text-muted">Booking</p>
+                    <div role="group" aria-label="Booking">
+                        <p class="px-3 pb-1 pt-2 text-bq-small font-medium text-bq-text-muted">Booking</p>
                         <template x-for="(booking, index) in results.bookings" x-bind:key="booking.code">
                             <button type="button" role="option" tabindex="-1" :id="'owner-search-option-' + index"
                                 :aria-selected="activeIndex === index" :class="{ 'bg-bq-primary-light': activeIndex === index }"
                                 x-on:click="choose(booking, 'booking')" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-bq-surface-2">
                                 <span class="min-w-0">
-                                    <span class="block font-medium text-bq-text" x-text="booking.code"></span>
-                                    <span class="block truncate text-bq-text-muted"><span x-text="booking.customer"></span> · <span x-text="booking.date"></span> <span x-text="booking.time"></span></span>
+                                    <span class="block font-medium text-bq-text" x-text="booking.customer"></span>
+                                    <span class="block truncate text-bq-text-muted" :title="booking.code + ' · ' + booking.date"><span x-text="booking.code"></span> · <span x-text="booking.date"></span> <span x-text="booking.time"></span></span>
                                 </span>
-                                <span class="shrink-0 text-xs text-bq-text-muted" x-text="booking.status.label"></span>
+                                <span class="shrink-0 text-bq-small text-bq-text-muted" x-text="booking.status.label"></span>
                             </button>
                         </template>
                     </div>
                 </template>
 
                 <template x-if="results.customers.length">
-                    <div>
-                        <p class="px-3 pb-1 pt-2 text-xs font-medium text-bq-text-muted">Pelanggan</p>
+                    <div role="group" aria-label="Pelanggan">
+                        <p class="px-3 pb-1 pt-2 text-bq-small font-medium text-bq-text-muted">Pelanggan</p>
                         <template x-for="(customer, index) in results.customers" x-bind:key="customer.name + customer.phone">
                             <button type="button" role="option" tabindex="-1" :id="'owner-search-option-' + (results.bookings.length + index)"
                                 :aria-selected="activeIndex === results.bookings.length + index" :class="{ 'bg-bq-primary-light': activeIndex === results.bookings.length + index }"
@@ -88,22 +88,24 @@
         <div class="flex-1"></div>
     @endif
 
-    <div class="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+    <div class="ml-auto flex shrink-0 items-center gap-1">
         @if ($shell['canWalkIn'])
             <button
                 type="button"
                 id="owner-new-booking"
                 x-data
                 x-on:click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', trigger: $el })"
-                class="bq-btn bq-btn-primary hidden md:inline-flex"
+                class="bq-btn bq-btn-sm hidden md:inline-flex {{ request()->routeIs('owner.dashboard', 'owner.calendar', 'owner.bookings', 'owner.customers') ? 'bq-btn-primary' : 'bq-btn-secondary' }}"
+                aria-label="Catat booking"
+                title="Catat booking"
             >
                 <x-owner.icon name="plus" class="h-4 w-4" />
-                Walk-in
+                <span class="md:max-lg:hidden">Catat booking</span>
             </button>
         @endif
 
         @if ($shell['storefrontUrl'])
-            <a href="{{ $shell['storefrontUrl'] }}" target="_blank" rel="noopener" class="hidden rounded-lg p-2 text-bq-text-muted hover:bg-bq-surface-2 hover:text-bq-text lg:inline-flex" title="Buka halaman booking">
+            <a href="{{ $shell['storefrontUrl'] }}" target="_blank" rel="noopener" class="hidden rounded-lg p-2 text-bq-text-muted hover:bg-bq-surface-2 hover:text-bq-text md:inline-flex" title="Buka halaman booking">
                 <x-owner.icon name="external" />
                 <span class="sr-only">Buka halaman booking (tab baru)</span>
             </a>
@@ -119,14 +121,14 @@
             <button type="button" x-on:click="toggle()" x-bind:aria-expanded="open ? 'true' : 'false'" aria-controls="owner-notification-list" class="relative rounded-lg p-2 text-bq-text-muted hover:bg-bq-surface-2 hover:text-bq-text">
                 <x-owner.icon name="bell" />
                 <span class="sr-only">Notifikasi</span>
-                <span x-show="unread > 0" x-cloak class="absolute right-1 top-1 min-w-4 rounded-full bg-bq-accent px-1 text-center text-[11px] font-bold leading-4 text-bq-ink bq-num" x-text="unread > 99 ? '99+' : unread"></span>
+                <span x-show="unread > 0" x-cloak class="absolute right-1.5 top-1.5 size-3 rounded-full border-2 border-bq-surface bg-bq-accent" aria-hidden="true"></span>
                 <span class="sr-only" x-text="unread + ' belum dibaca'"></span>
             </button>
 
             <div id="owner-notification-list" x-show="open" x-cloak class="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-1.5rem)] bq-panel shadow-bq">
                 <div class="flex items-center justify-between border-b border-bq-border px-4 py-3">
                     <p class="text-sm font-semibold text-bq-text">Notifikasi</p>
-                    <button type="button" x-show="unread > 0" x-on:click="markAllRead()" class="text-xs font-medium bq-link">Tandai semua dibaca</button>
+                    <button type="button" x-show="unread > 0" x-on:click="markAllRead()" class="text-bq-small font-medium bq-link">Tandai semua dibaca</button>
                 </div>
                 <p x-show="loading" class="px-4 py-6 text-center text-sm text-bq-text-muted" role="status">Memuat…</p>
                 <p x-show="!loading && items.length === 0" class="px-4 py-6 text-center text-sm text-bq-text-muted">Belum ada notifikasi.</p>
@@ -148,16 +150,16 @@
         <div class="relative" x-data="{ open: false }" x-on:keydown.escape="open = false" x-on:click.outside="open = false">
             <button type="button" x-on:click="open = !open" x-bind:aria-expanded="open ? 'true' : 'false'" aria-controls="owner-account-menu" class="flex items-center gap-2 rounded-lg p-1 hover:bg-bq-surface-2">
                 <span class="flex h-8 w-8 items-center justify-center rounded-full bg-bq-primary-light text-sm font-semibold text-bq-primary" aria-hidden="true">{{ $shell['user']['initial'] }}</span>
-                <span class="hidden text-left lg:block">
-                    <span class="block max-w-[10rem] truncate text-sm font-medium text-bq-text">{{ $shell['user']['name'] }}</span>
-                    <span class="block text-xs text-bq-text-muted">{{ $shell['user']['role'] }}</span>
+                <span class="hidden text-left md:block">
+                    <span class="block max-w-40 truncate text-bq-label text-bq-text" title="{{ $shell['user']['name'] }}">{{ $shell['user']['name'] }}</span>
+                    <span class="block text-bq-small text-bq-text-muted">{{ $shell['user']['role'] }}</span>
                 </span>
                 <span class="sr-only">Menu akun</span>
             </button>
             <div id="owner-account-menu" x-show="open" x-cloak class="absolute right-0 top-full z-50 mt-2 w-60 bq-panel p-2 shadow-bq">
                 <div class="border-b border-bq-border px-3 pb-2 pt-1">
-                    <p class="truncate text-sm font-medium text-bq-text">{{ $shell['user']['name'] }}</p>
-                    <p class="text-xs text-bq-text-muted">{{ $shell['user']['role'] }} · {{ $shell['business'] }}</p>
+                    <p class="truncate text-sm font-medium text-bq-text" title="{{ $shell['user']['name'] }}">{{ $shell['user']['name'] }}</p>
+                    <p class="text-bq-small text-bq-text-muted">{{ $shell['user']['role'] }} · {{ $shell['business'] }}</p>
                 </div>
                 @if ($shell['canManageAccount'])
                     <a href="{{ route('owner.settings', ['tab' => 'account']) }}" class="mt-1 block rounded-lg px-3 py-2 text-sm text-bq-text hover:bg-bq-surface-2">Pengaturan akun</a>

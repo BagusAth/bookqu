@@ -47,7 +47,7 @@ class OwnerUiAuditTest extends TestCase
             $view->getData()['tenant']->setRelation('user', null);
         });
 
-        $this->actingAs($tenant->user)->get(route('owner.bookings'))->assertOk()
+        $this->actingAs($tenant->user)->get(route('owner.bookings', ['tab' => 'all']))->assertOk()
             ->assertSee($booking->namapelanggan)->assertSeeText('Layanan dihapus');
         $this->get(route('owner.settings'))->assertOk()->assertSee($tenant->user->email);
     }

@@ -21,8 +21,7 @@ class TenantBalanceLedger
             return;
         }
 
-        // scope-bypass: the payment is already resolved and locked by the lifecycle
-        $marked = Payment::withoutGlobalScopes()
+        $marked = Payment::query()
             ->whereKey($payment->id)
             ->whereNull('balance_credited_at')
             ->update(['balance_credited_at' => now()]);

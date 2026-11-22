@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Carbon\Carbon;
+use Illuminate\Console\Scheduling\CallbackEvent;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -21,6 +22,16 @@ class OperationsReadinessTest extends TestCase
         Artisan::shouldReceive('call')->once()->with('refunds:remind-open')->andReturn(0);
         // BQ-154: every custom domain is re-checked hourly.
         Artisan::shouldReceive('call')->once()->with('domains:check')->andReturn(0);
+        // BQ-162 (D-026): automatic completion, automatic slots and the weekly summary.
+        Artisan::shouldReceive('call')->once()->with('bookings:complete-ended')->andReturn(0);
+        Artisan::shouldReceive('call')->once()->with('slots:open-automatic')->andReturn(0);
+        Artisan::shouldReceive('call')->once()->with('owners:weekly-summary')->andReturn(0);
+        Artisan::shouldReceive('call')->once()->with('webhooks:prune')->andReturn(0);
+
+        // HostData disables proc_open, so no event may spawn a child `php artisan` process.
+        foreach ($events as $event) {
+            $this->assertInstanceOf(CallbackEvent::class, $event, "Scheduled event [{$event->getSummaryForDisplay()}] must run in-process.");
+        }
 
         foreach ($events as $event) {
             $event->run($this->app);

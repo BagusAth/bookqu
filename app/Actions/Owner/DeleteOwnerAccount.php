@@ -9,6 +9,7 @@ use App\Models\Asset;
 use App\Models\OwnerPayout;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -46,15 +47,14 @@ class DeleteOwnerAccount
                 ]);
             }
 
-            // scope-bypass: verify in-flight payouts for explicit tenant before account deletion
-            $hasInFlightPayout = OwnerPayout::withoutGlobalScopes()
+            $hasInFlightPayout = app(TenantContext::class)->run((int) $tenant->id, fn (): bool => OwnerPayout::query()
                 ->where('idtenant', $tenant->id)
                 ->whereIn('status', [PayoutState::PENDING, PayoutState::APPROVED])
-                ->exists();
+                ->exists());
 
             if ($hasInFlightPayout) {
                 throw ValidationException::withMessages([
-                    'confirm_account' => 'Masih ada pengajuan withdraw yang sedang diproses.',
+                    'confirm_account' => 'Masih ada pengajuan pencairan yang sedang diproses.',
                 ]);
             }
         }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Report\GetReport;
 use App\Models\Booking;
+use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Refund;
@@ -16,6 +18,8 @@ use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Models\Unit;
 use App\Models\User;
+use App\Support\ReportPeriod;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -202,7 +206,7 @@ class LaporanPageTest extends TestCase
     {
         $response = $this->actingAs($this->owner)->get(route('owner.analytics'))->assertOk()
             ->assertSee('role="tablist"', false)
-            ->assertSee('name="periode"', false);
+            ->assertSee('periode=bulan-lalu', false);
         foreach (['Ringkasan', 'Pendapatan', 'Okupansi', 'Layanan', 'Pelanggan'] as $label) {
             $response->assertSee($label);
         }
@@ -263,7 +267,7 @@ class LaporanPageTest extends TestCase
 
         $response = $this->actingAs($this->owner)->get(route('owner.analytics'))->assertOk()
             ->assertSee('Laporan tersedia di paket Medium')
-            ->assertDontSee('Rp 360.000');
+            ->assertDontSee('Rp360.000');
         $this->assertTrue($response->viewData('report')['locked']);
         $this->assertNull($response->viewData('report')['summary']);
 
@@ -275,7 +279,7 @@ class LaporanPageTest extends TestCase
         $kasir = $this->member('kasir');
         $this->actingAs($kasir)->get(route('owner.analytics'))->assertForbidden();
         $this->actingAs($kasir)->get(route('owner.analytics.export'))->assertForbidden();
-        $this->actingAs($this->member('manajer'))->get(route('owner.analytics', ['tab' => 'pendapatan']))->assertOk()->assertSee('Rp 360.000');
+        $this->actingAs($this->member('manajer'))->get(route('owner.analytics', ['tab' => 'pendapatan']))->assertOk()->assertSee('Rp360.000');
 
         config(['modules.reports' => 'hidden']);
         $this->actingAs($this->owner)->get(route('owner.analytics'))->assertNotFound();
@@ -338,6 +342,97 @@ class LaporanPageTest extends TestCase
         $this->assertSame(4, $customers['active']);
         $this->assertSame(3, $customers['new']);
         $this->assertSame(1, $customers['returning']);
+    }
+
+    public function test_system_closed_payments_are_follow_up_candidates_for_this_tenant_only(): void
+    {
+        $makeUnpaid = function (Service $service, string $date, string $name, string $email, ?Tenant $tenant = null): Booking {
+            $booking = $this->booking($service, $date, status: 'cancelled', payment: ['status' => 'gagal'], booking: [
+                'namapelanggan' => $name, 'email' => $email, 'nomorhp' => '081234567890',
+            ], tenant: $tenant)['bookings'][0];
+            BookingLog::record($booking->id, 'cancelled', 'Pembayaran ditutup.');
+
+            return $booking;
+        };
+
+        $makeUnpaid($this->photo, '2026-11-02', 'Perlu Dihubungi', 'followup@example.test');
+        $makeUnpaid($this->photo, '2026-11-03', 'Sudah Booking Lagi', 'repeat@example.test');
+        $ownerCancelled = $makeUnpaid($this->photo, '2026-11-04', 'Dibatalkan Pemilik', 'cancelled@example.test');
+        BookingLog::record($ownerCancelled->id, 'cancelled', 'Dibatalkan oleh bisnis.', ['actor' => 'owner']);
+        $makeUnpaid($this->photo, '2026-11-05', 'Calon Terbaru', 'newest@example.test');
+        $this->booking($this->photo, '2026-12-01', status: 'completed', booking: ['email' => ' REPEAT@example.test ']);
+
+        $otherTenant = Tenant::factory()->create();
+        $otherService = Service::factory()->create(['idtenant' => $otherTenant->id]);
+        $makeUnpaid($otherService, '2026-11-06', 'Pelanggan Asing', 'foreign@example.test', $otherTenant);
+        $this->booking($otherService, '2026-11-07', status: 'paid', booking: ['email' => 'followup@example.test'], tenant: $otherTenant);
+        $makeUnpaid($this->photo, '2026-10-30', 'Di Luar Periode', 'lastmonth@example.test');
+        $this->booking($this->photo, '2026-11-08', status: 'cancelled', payment: ['status' => 'gagal'], booking: ['namapelanggan' => 'Tanpa Log Sistem']);
+
+        $response = $this->actingAs($this->owner)->get(route('owner.analytics', ['tab' => 'pelanggan']))->assertOk()
+            ->assertSee('Pembayaran tidak selesai')->assertSee('https://wa.me/6281234567890');
+        $this->assertSame(['Calon Terbaru', 'Perlu Dihubungi'], array_column($response->viewData('report')['customers']['unpaid'], 'name'));
+
+        $this->actingAs($this->member('kasir'))->get(route('owner.analytics', ['tab' => 'pelanggan']))->assertForbidden();
+    }
+
+    public function test_report_action_compares_an_equal_custom_period_and_counts_lead_time_once_per_booking(): void
+    {
+        $this->booking($this->photo, '2026-11-09', 2, 'paid', ['jumlah' => 60000], ['created_at' => '2026-11-05 08:00:00']);
+        $this->booking($this->photo, '2026-11-10', booking: ['created_at' => '2026-11-10 08:00:00']);
+        $this->booking($this->photo, '2026-11-06', payment: ['jumlah' => 25000]);
+
+        $period = ReportPeriod::fromQuery(['periode' => 'kustom', 'dari' => '2026-11-08', 'sampai' => '2026-11-10']);
+        app(TenantContext::class)->setTenantId((int) $this->tenant->id);
+        $action = app(GetReport::class);
+        $customers = $action->execute($this->tenant, $period, 'pelanggan');
+        $summary = $action->execute($this->tenant, $period, 'ringkasan');
+
+        $this->assertSame(2.0, $customers['customers']['advanceDays']);
+        $this->assertSame('5 Nov 2026 – 7 Nov 2026', $summary['comparison']['label']);
+        $this->assertSame(25000.0, $summary['comparison']['net']);
+        $this->assertSame(1, $summary['comparison']['bookings']);
+        $this->assertSame('Pendapatan naik dan jumlah booking naik dibanding periode sebelumnya.', $summary['conclusion']);
+    }
+
+    public function test_the_quiet_hour_hint_names_a_day_and_hour_that_had_open_slots_already(): void
+    {
+        $this->photo->update(['kapasitas' => 1]);
+        $this->booking($this->photo, '2026-11-16');
+        $this->booking($this->photo, '2026-11-17');
+        $slot = fn (string $date, string $start, string $status = 'tersedia') => Schedule::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->photo->id, 'tanggal' => $date,
+            'jam_mulai' => $start, 'jam_selesai' => substr($start, 0, 2).':59:00', 'status' => $status,
+        ]);
+        $slot('2026-11-16', '12:00:00');
+        $slot('2026-11-18', '14:00:00');
+        $slot('2026-11-17', '07:00:00', 'tidak_tersedia');
+        $slot('2026-11-21', '10:00:00');
+
+        app(TenantContext::class)->setTenantId((int) $this->tenant->id);
+        $period = ReportPeriod::fromQuery(['periode' => 'kustom', 'dari' => '2026-11-16', 'sampai' => '2026-11-22']);
+        $occupancy = app(GetReport::class)->execute($this->tenant, $period, 'okupansi')['occupancy'];
+
+        $this->assertSame('Sen', $occupancy['quietestDay']);
+        $this->assertSame('12.00', $occupancy['quietestHour']);
+    }
+
+    public function test_this_month_trends_compare_up_to_today_with_the_same_days_last_month(): void
+    {
+        $this->booking($this->photo, '2026-11-10', payment: ['jumlah' => 50000]);
+        $this->booking($this->photo, '2026-11-27');
+        $this->booking($this->photo, '2026-10-12', payment: ['jumlah' => 100000]);
+        $this->booking($this->photo, '2026-10-25', payment: ['jumlah' => 400000]);
+
+        app(TenantContext::class)->setTenantId((int) $this->tenant->id);
+        $summary = app(GetReport::class)->execute($this->tenant, ReportPeriod::fromQuery(['periode' => 'bulan-ini']), 'ringkasan');
+
+        $this->assertSame(2, $summary['summary']['bookings']);
+        $this->assertSame('1 Okt 2026 – 20 Okt 2026', $summary['comparison']['label']);
+        $this->assertSame(1, $summary['comparison']['current']['bookings']);
+        $this->assertSame(1, $summary['comparison']['bookings']);
+        $this->assertSame(100000.0, $summary['comparison']['net']);
+        $this->assertSame('Pendapatan turun dan jumlah booking tetap dibanding periode sebelumnya.', $summary['conclusion']);
     }
 
     public function test_each_tab_exports_formula_safe_rows_of_the_own_business_only(): void

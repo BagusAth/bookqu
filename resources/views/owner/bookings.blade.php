@@ -8,66 +8,9 @@
         x-init="$nextTick(() => $dispatch('open-booking-panel', { url: @js($initialPanelUrl) }))"
     @endif
 >
-    <x-owner.page-header title="Booking" purpose="Temukan booking dan tangani permintaan pelanggan.">
-        @if ($canWalkIn)
-            <x-slot:action>
-                <button type="button" class="bq-btn bq-btn-primary" @click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', trigger: $el })">+ Booking</button>
-            </x-slot:action>
-        @endif
-    </x-owner.page-header>
-    <x-owner.tabs :tabs="$tabs" :active="$tab" />
+    <x-owner.page-header title="Booking" purpose="Semua booking, dikelompokkan menurut yang perlu Anda kerjakan." />
+    <x-owner.tabs :tabs="$tabs" :active="$tab" :counts="$tabCounts" label="Bagian halaman Booking" />
 
-    @php
-        $activeFilters = collect(['from', 'to', 'service', 'source'])->filter(fn ($key) => filled($filters[$key] ?? null))->count()
-            + (($filters['sort'] ?? null) === 'asc' ? 1 : 0);
-    @endphp
-    <form method="GET" action="{{ route('owner.bookings') }}">
-        <input type="hidden" name="tab" value="{{ $tab }}">
-        <x-ui.filter-bar :active="$activeFilters">
-            <x-slot:search>
-                <label class="grid gap-1.5"><span class="bq-label">Cari booking</span>
-                    <span class="relative block">
-                        <x-owner.icon name="search" class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-bq-text-subtle" />
-                        <input name="katakunci" value="{{ $filters['katakunci'] ?? '' }}" placeholder="Kode, nama, telepon, atau email" class="bq-input w-full pl-9">
-                    </span>
-                </label>
-            </x-slot:search>
-            @foreach (['from' => 'Dari', 'to' => 'Sampai'] as $field => $label)
-                <label class="grid gap-1.5 max-md:w-[calc(50%-0.375rem)]"><span class="bq-label">{{ $label }}</span>
-                    <input type="date" name="{{ $field }}" value="{{ $filters[$field] ?? '' }}" @change="$el.form.requestSubmit()" class="bq-input">
-                </label>
-            @endforeach
-            <label class="grid gap-1.5 max-md:w-full"><span class="bq-label">Layanan</span>
-                <select name="service" @change="$el.form.requestSubmit()" class="bq-input">
-                    <option value="">Semua layanan</option>
-                    @foreach ($services as $service)
-                        <option value="{{ $service->id }}" @selected($service->id == ($filters['service'] ?? null))>{{ $service->namalayanan }}</option>
-                    @endforeach
-                </select>
-            </label>
-            <label class="grid gap-1.5 max-md:w-[calc(50%-0.375rem)]"><span class="bq-label">Sumber</span>
-                <select name="source" @change="$el.form.requestSubmit()" class="bq-input">
-                    <option value="">Semua sumber</option>
-                    @foreach (['online' => 'Online', 'walkin' => 'Walk-in'] as $key => $label)
-                        <option value="{{ $key }}" @selected($key === ($filters['source'] ?? null))>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </label>
-            <label class="grid gap-1.5 max-md:w-[calc(50%-0.375rem)]"><span class="bq-label">Urutan sesi</span>
-                <select name="sort" @change="$el.form.requestSubmit()" class="bq-input">
-                    <option value="desc">Terbaru</option>
-                    <option value="asc" @selected(($filters['sort'] ?? null) === 'asc')>Terlama</option>
-                </select>
-            </label>
-            <button class="bq-btn bq-btn-secondary">Cari</button>
-            <x-slot:actions>
-                <a href="{{ route('owner.bookings', ['tab' => $tab]) }}" class="bq-link">Reset filter</a>
-                @if ($exportUrl)
-                    <a class="bq-link inline-flex items-center gap-1" href="{{ $exportUrl }}"><x-owner.icon name="download" class="h-4 w-4" />Ekspor CSV</a>
-                @endif
-            </x-slot:actions>
-        </x-ui.filter-bar>
-    </form>
 
     @if ($cancellationRequests?->isNotEmpty())
         <section id="permintaan-pembatalan" class="space-y-3 rounded-xl border border-bq-warning/30 bg-bq-warning-bg/50 p-4 sm:p-5">
@@ -79,91 +22,168 @@
                         {{ $item->booking_code ?? 'BKQ-'.$item->booking_id }}
                     </button>
                     <p>{{ $item->namapelanggan }} · {{ $item->session }}</p>
-                    <p>Diajukan oleh {{ $item->requester ?? 'Akun tidak tersedia' }} · {{ $item->reason }}</p>
-                    <div class="flex flex-wrap gap-3">
-                        @foreach (['approve' => 'Setujui pembatalan', 'reject' => 'Tolak permintaan'] as $decision => $label)
-                            <form id="cancellation-{{ $item->id }}-{{ $decision }}" method="POST" action="{{ route('owner.bookings.cancellation-requests.decide', $item->id) }}">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="decision" value="{{ $decision }}">
-                                <button type="button" class="bq-btn bq-btn-sm {{ $decision === 'approve' ? 'bq-btn-danger' : 'bq-btn-secondary' }}"
-                                    @click="$dispatch('open-confirm', { title: @js($label.'?'), message: @js($decision === 'approve' ? 'Booking akan dibatalkan.' : 'Booking tetap berlaku.'), formId: $el.form.id, confirmText: @js($label) })">{{ $label }}</button>
-                            </form>
-                        @endforeach
-                    </div>
+                    @include('owner.partials.bookings.cancellation-review', ['item' => $item])
                 </article>
             @endforeach
             {{ $cancellationRequests->links() }}
         </section>
     @endif
 
-    <section role="tabpanel" aria-label="Daftar booking">
+    <section @if ($tab === 'action') id="permintaan-pembatalan" @endif role="tabpanel" aria-label="Daftar booking" class="bq-panel min-w-0">
+        @php
+            $pastTab = in_array($tab, ['completed', 'cancelled', 'all'], true);
+            $activeFilters = collect(['range', 'service'])->filter(fn ($key) => filled($filters[$key] ?? null))->count();
+        @endphp
+        {{-- BQ-162: one compact filter row inside the list panel, as in the prototype (#/booking). --}}
+        <form method="GET" action="{{ route('owner.bookings') }}" class="bq-filter" x-data="{ more: false }">
+            <input type="hidden" name="tab" value="{{ $tab }}">
+            <x-ui.search name="katakunci" :value="$filters['katakunci'] ?? ''" label="Cari nama, kode atau layanan" />
+            <div class="contents" :class="more ? '' : 'max-md:hidden'">
+                <select name="range" aria-label="Tanggal" @change="$el.form.requestSubmit()" class="bq-input max-md:w-full">
+                    @foreach (['' => 'Semua tanggal', 'today' => 'Hari ini', 'next7' => '7 hari ke depan', 'month' => 'Bulan ini'] as $key => $label)
+                        <option value="{{ $key }}" @selected($key === ($filters['range'] ?? ''))>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <select name="service" aria-label="Layanan" @change="$el.form.requestSubmit()" class="bq-input max-w-56 max-md:w-full max-md:max-w-none">
+                    <option value="">Semua layanan</option>
+                    @foreach ($services as $service)
+                        <option value="{{ $service->id }}" @selected($service->id == ($filters['service'] ?? null))>{{ $service->namalayanan }}</option>
+                    @endforeach
+                </select>
+                @if (filled($filters['source'] ?? null))<input type="hidden" name="source" value="{{ $filters['source'] }}">@endif
+                <select name="sort" aria-label="Urutkan" @change="$el.form.requestSubmit()" class="bq-input max-md:w-full">
+                    <option value="desc" @selected(($filters['sort'] ?? null) === 'desc')>{{ $pastTab ? 'Terbaru dulu' : 'Sesi terjauh' }}</option>
+                    <option value="asc" @selected(($filters['sort'] ?? null) === 'asc')>{{ $pastTab ? 'Terlama dulu' : 'Sesi terdekat' }}</option>
+                </select>
+            </div>
+            <button type="button" class="bq-btn bq-btn-secondary bq-btn-sm md:hidden" @click="more = !more" :aria-expanded="more">
+                <x-owner.icon name="filter" class="h-4 w-4" />Filter{{ $activeFilters ? ' ('.$activeFilters.')' : '' }}
+            </button>
+            <noscript><button class="bq-btn bq-btn-secondary bq-btn-sm">Cari</button></noscript>
+            @if ($exportUrl)
+                <a class="bq-btn bq-btn-secondary bq-btn-sm ml-auto max-md:hidden" href="{{ $exportUrl }}"><x-owner.icon name="download" class="h-4 w-4" />Ekspor CSV</a>
+            @endif
+        </form>
         @if ($daftarbooking->isEmpty())
             @if ($storefrontUrl)
-                <x-owner.empty-state title="Belum ada booking" description="Bagikan halaman booking agar pelanggan bisa memesan." action-label="Lihat halaman booking" :action-href="$storefrontUrl" />
+                <x-ui.empty title="Belum ada booking" description="Booking masuk dari halaman booking Anda. Bagikan linknya ke pelanggan." icon="bookings">
+                    <x-slot:action><x-ui.button variant="primary" :href="$storefrontUrl">Bagikan link booking</x-ui.button></x-slot:action>
+                </x-ui.empty>
             @else
-                <x-owner.empty-state :title="$emptyTitle" description="Coba tab lain atau ubah filter." />
+                <x-ui.empty :title="$emptyTitle" description="Coba tab lain atau ubah filter." icon="bookings" />
             @endif
         @else
-            <div class="bq-panel hidden overflow-x-auto sm:block">
-                <table class="w-full text-left text-sm">
-                    <thead class="border-b border-bq-border bg-bq-surface-2/70 text-xs text-bq-text-muted">
-                        <tr>
-                            @foreach (['Booking', 'Pelanggan', 'Layanan', 'Sesi (WIB)', 'Status booking', 'Pembayaran'] as $heading)
-                                <th scope="col" class="px-4 py-3 font-semibold">{{ $heading }}</th>
-                            @endforeach
-                            @if ($canViewRevenue)<th scope="col" class="px-4 py-3 text-right font-semibold">Dibayar</th>@endif
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-bq-border">
-                        @foreach ($daftarbooking as $booking)
-                            <tr class="cursor-pointer align-top transition-colors hover:bg-bq-primary-light/50" @click="$el.querySelector('button').click()">
-                                <td class="px-4 py-3">
-                                    @include('owner.partials.bookings.panel-link')
-                                    @foreach ($rows[$booking->id]['reasons'] as $reason)
-                                        <span class="bq-badge mt-1.5 bg-bq-accent-bg text-bq-ink">{{ $reason }}</span>
-                                    @endforeach
-                                </td>
-                                <td class="px-4 py-3 font-medium text-bq-ink">{{ $booking->namapelanggan }}</td>
-                                <td class="px-4 py-3">
-                                    {{ $booking->layanan?->namalayanan ?? 'Layanan dihapus' }}
-                                    @include('owner.partials.bookings.participants')
-                                </td>
-                                <td class="bq-num px-4 py-3 whitespace-nowrap">{{ $booking->tanggalbooking?->translatedFormat('j M Y') }}<span class="block text-xs text-bq-text-muted">{{ $rows[$booking->id]['time'] }}</span></td>
-
-                                <td class="px-4 py-3"><x-owner.status-badge type="booking" :status="$booking->status" /></td>
-                                <td class="px-4 py-3"><x-owner.status-badge type="payment" :status="$rows[$booking->id]['payment_status']" />
-                                    @if ($rows[$booking->id]['waiting'])
-                                        <p class="mt-1 text-xs">{{ $rows[$booking->id]['waiting'] }}</p>
+            @php
+                $actionTab = $tab === 'action';
+                $columns = [$actionTab ? 'Sesi' : 'Jam', 'Pelanggan', 'Layanan', $actionTab ? 'Yang perlu dilakukan' : 'Status'];
+                if ($canViewRevenue && ! $actionTab) {
+                    $columns[] = 'Dibayar';
+                }
+            @endphp
+            @php $bulk = $actionTab && $canComplete && $endedCount > 0; @endphp
+            @if ($bulk)
+                <form id="bulk-complete" method="POST" action="{{ route('owner.bookings.complete-many') }}" class="hidden">@csrf</form>
+                <form id="bulk-complete-all" method="POST" action="{{ route('owner.bookings.complete-many') }}" class="hidden">@csrf<input type="hidden" name="all_ended" value="1"></form>
+            @endif
+            <x-ui.table class="rounded-none border-0" :columns="$columns" :widths="'auto minmax(160px, 1fr) minmax(0, 2fr) auto'.($canViewRevenue && ! $actionTab ? ' auto' : '')" label="Daftar booking" :actions="$actionTab" :selectable="$bulk"
+                x-data="{ picked: 0 }" x-on:change="picked = $el.querySelectorAll('input[form=bulk-complete]:checked').length">
+                @if ($bulk)
+                    <x-slot:note>
+                        <x-ui.table-note>
+                            <span>{{ $endedCount }} sesi sudah lewat dan belum ditutup.</span>
+                            <x-slot:action>
+                                <span class="inline-flex flex-wrap gap-2">
+                                    <x-ui.button size="sm" x-show="picked > 0" x-cloak
+                                        x-on:click="$dispatch('open-confirm', { title: 'Tandai booking terpilih selesai?', message: 'Booking yang sedang minta refund atau pembatalan dilewati.', formId: 'bulk-complete', confirmText: 'Tandai selesai', tone: 'primary' })">
+                                        <span x-text="'Tandai selesai (' + picked + ')'">Tandai selesai</span>
+                                    </x-ui.button>
+                                    <x-ui.button size="sm"
+                                        x-on:click="$dispatch('open-confirm', { title: 'Tandai {{ $endedCount }} booking selesai?', message: 'Semua sesi yang sudah lewat dan belum ditutup ditandai selesai, kecuali yang sedang minta refund atau pembatalan. Pelanggan yang tidak datang ubah satu per satu dari slip.', formId: 'bulk-complete-all', confirmText: 'Tandai {{ $endedCount }} selesai', tone: 'primary' })">
+                                        Tandai selesai semua ({{ $endedCount }})
+                                    </x-ui.button>
+                                </span>
+                            </x-slot:action>
+                        </x-ui.table-note>
+                    </x-slot:note>
+                    <x-slot:selection><span class="sr-only">Pilih</span></x-slot:selection>
+                @endif
+                @foreach ($daftarbooking->getCollection()->groupBy(fn ($booking) => $actionTab ? 'all' : $booking->tanggalbooking?->toDateString()) as $bookingsOnDate)
+                    @unless ($actionTab)
+                        @php $groupDate = $bookingsOnDate->first()->tanggalbooking; @endphp
+                        <x-ui.table.row group>{{ $groupDate?->isToday() ? 'Hari ini · ' : ($groupDate?->isTomorrow() ? 'Besok · ' : '') }}{{ $groupDate?->locale('id')->translatedFormat('l, j M') }} <span class="font-normal text-bq-text-muted">· {{ $bookingsOnDate->count() }} booking</span></x-ui.table.row>
+                    @endunless
+                    @foreach ($bookingsOnDate as $booking)
+                        @php
+                            $row = $rows[$booking->id];
+                            $service = $booking->layanan?->namalayanan ?? 'Layanan dihapus';
+                            [$statusLabel, $statusTone] = \App\Support\StatusBadge::for('booking', $booking->status);
+                            $statusText = $actionTab ? ($row['reasons'][0] ?? $statusLabel) : $statusLabel;
+                            $context = $row['time'].' · '.$service.($actionTab ? ' · '.$statusText : '');
+                            $panel = route('owner.bookings.panel', $booking);
+                        @endphp
+                        <x-ui.table.row :two-lines="true" :muted="$booking->status === 'cancelled'">
+                            @if ($bulk)
+                                <x-slot:selection>
+                                    @if ($row['task'] === 'complete')
+                                        <x-ui.checkbox name="ids[]" :value="$booking->id" form="bulk-complete" :label="'Pilih '.$booking->namapelanggan" hide-label />
                                     @endif
-                                </td>
-                                @if ($canViewRevenue)<td class="bq-num px-4 py-3 text-right font-semibold whitespace-nowrap text-bq-ink">{{ $rows[$booking->id]['amount'] }}</td>@endif
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-            <div class="space-y-3 sm:hidden">
-                @foreach ($daftarbooking as $booking)
-                    <article class="bq-panel cursor-pointer space-y-2 p-4 text-sm" @click="$el.querySelector('button').click()">
-                        <div class="flex justify-between gap-2">
-                            @include('owner.partials.bookings.panel-link')
-                            <x-owner.status-badge type="booking" :status="$booking->status" />
-                        </div>
-                        <p><span class="font-semibold text-bq-ink">{{ $booking->namapelanggan }}</span> · {{ $booking->layanan?->namalayanan ?? 'Layanan dihapus' }}</p>
-                        @include('owner.partials.bookings.participants')
-                        @foreach ($rows[$booking->id]['reasons'] as $reason)
-                            <span class="bq-badge bg-bq-accent-bg text-bq-ink">{{ $reason }}</span>
-                        @endforeach
-                        <p class="bq-num text-bq-text-muted">{{ $booking->tanggalbooking?->translatedFormat('j M Y') }} · {{ $rows[$booking->id]['time'] }} WIB</p>
-                        <div class="flex items-center justify-between gap-2 border-t border-bq-border pt-2"><x-owner.status-badge type="payment" :status="$rows[$booking->id]['payment_status']" />@if ($canViewRevenue)<span class="bq-num font-semibold text-bq-ink">{{ $rows[$booking->id]['amount'] }}</span>@endif</div>
-                        @if ($rows[$booking->id]['waiting'])
-                            <p class="text-xs">{{ $rows[$booking->id]['waiting'] }}</p>
-                        @endif
-                    </article>
+                                </x-slot:selection>
+                            @endif
+                            <x-ui.table.cell>
+                                <span class="bq-num font-bq-display text-bq-clock font-semibold whitespace-nowrap">{{ str_replace(':', '.', $row['time']) }}</span>
+                                @if ($actionTab)<span class="text-bq-small text-bq-text-muted max-md:hidden">{{ $booking->tanggalbooking?->locale('id')->translatedFormat('j M') }}</span>@endif
+                            </x-ui.table.cell>
+                            <x-ui.table.cell phone="main" :title="$booking->namapelanggan">
+                                <button type="button" class="max-w-full truncate text-left font-semibold text-bq-ink hover:text-bq-primary" title="{{ $booking->namapelanggan }}"
+                                    data-booking-panel-url="{{ $panel }}" x-on:click="$dispatch('open-booking-panel', { url: $el.dataset.bookingPanelUrl, trigger: $el })">
+                                    {{ $booking->namapelanggan }}
+                                </button>
+                                <x-slot:subtitle :title="$context"><span class="block truncate md:hidden">{{ $context }}</span></x-slot:subtitle>
+                            </x-ui.table.cell>
+                            <x-ui.table.cell :title="$service">
+                                {{ $service }}
+                                @include('owner.partials.bookings.participants')
+                            </x-ui.table.cell>
+                            <x-ui.table.cell :phone="$actionTab ? null : 'end'" :title="$statusText" wrap>
+                                @if ($row['waiting'] && ! $actionTab)
+                                    <span class="bq-badge bg-bq-warning-bg text-bq-warning">{{ $statusText }}</span>
+                                    <p class="hidden text-bq-small text-bq-text-muted md:block">{{ $row['waiting'] }}</p>
+                                @else
+                                    <x-ui.status-dot :tone="$actionTab ? 'warning' : ($statusTone === 'info' ? 'brand' : $statusTone)">{{ $statusText }}</x-ui.status-dot>
+                                @endif
+                            </x-ui.table.cell>
+                            @if ($canViewRevenue && ! $actionTab)
+                                <x-ui.table.cell align="end"><span class="bq-num font-semibold">{{ $row['amount'] }}</span></x-ui.table.cell>
+                            @endif
+                            @if ($actionTab)
+                                <x-slot:action>
+                                    @if ($row['task'] === 'complete')
+                                        <form id="complete-booking-{{ $booking->id }}" method="POST" action="{{ route('owner.bookings.status', $booking) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="status" value="completed">
+                                            <x-ui.button size="sm"
+                                                x-on:click="$dispatch('open-confirm', { title: 'Tandai booking selesai?', message: 'Pastikan sesi pelanggan sudah selesai.', formId: $el.form.id, confirmText: 'Tandai selesai', tone: 'primary' })">Tandai selesai</x-ui.button>
+                                        </form>
+                                    @elseif ($row['task'] !== 'cancellation')
+                                        <x-ui.button size="sm" :data-booking-panel-url="$panel"
+                                            x-on:click="$dispatch('open-booking-panel', { url: $el.dataset.bookingPanelUrl, trigger: $el })">{{ $row['task'] === 'refund' ? 'Putuskan refund' : 'Tinjau' }}</x-ui.button>
+                                    @endif
+                                    @if ($item = $cancellationsByBooking->get($booking->id))
+                                        <details>
+                                            <summary class="cursor-pointer text-bq-small font-semibold text-bq-primary">Tinjau pembatalan</summary>
+                                            <div class="mt-2 space-y-2 whitespace-normal">
+                                                @include('owner.partials.bookings.cancellation-review', ['item' => $item])
+                                            </div>
+                                        </details>
+                                    @endif
+                                </x-slot:action>
+                            @endif
+                        </x-ui.table.row>
+                    @endforeach
                 @endforeach
-            </div>
-            <div class="mt-4">{{ $daftarbooking->links() }}</div>
+            </x-ui.table>
+            <x-ui.pager :paginator="$daftarbooking" noun="booking" />
         @endif
     </section>
 </div>

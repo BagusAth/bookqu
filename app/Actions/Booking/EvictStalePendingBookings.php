@@ -40,8 +40,7 @@ class EvictStalePendingBookings
 
         // Lock and retrieve pending bookings on these schedules that no longer hold their
         // slot: the single occupancy rule decides (payment deadline + margin, ADR-0009).
-        // scope-bypass: schedule ids come from the caller's tenant-locked schedules
-        $staleBookings = Booking::withoutGlobalScopes()
+        $staleBookings = Booking::query()
             ->whereIn('idschedule', $ids)
             ->where('status', BookingState::STATUS_PENDING)
             ->whereNot(fn ($query) => BookingRules::applyOccupiesSlotCondition($query, 'bookings.'))
@@ -53,8 +52,7 @@ class EvictStalePendingBookings
 
         foreach ($staleBookings as $booking) {
             if ($booking->idpayment && ! in_array($booking->idpayment, $handledPaymentIds, true)) {
-                // scope-bypass: the payment of a booking already verified to belong to the claimed schedules.
-                $payment = Payment::withoutGlobalScopes()->find($booking->idpayment);
+                $payment = Payment::find($booking->idpayment);
 
                 // A pending booking on a successful payment is an anomaly: refuse the claim
                 // instead of cancelling a paid reservation (ADR-0005 decision 6).

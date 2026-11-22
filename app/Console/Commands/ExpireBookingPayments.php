@@ -47,56 +47,51 @@ class ExpireBookingPayments extends Command
         $this->info("Found {$expiredPayments->count()} expired payment(s).");
 
         $processed = 0;
-        $cacheCleared = [];
 
         foreach ($expiredPayments as $payment) {
-            app(TenantContext::class)->setTenantId($payment->idtenant);
+            app(TenantContext::class)->run((int) $payment->idtenant, function () use ($payment, $isDryRun, $intake, &$processed): void {
+                // Load all pending bookings linked to this payment
+                $bookings = Booking::query()
+                    ->where('idpayment', $payment->id)
+                    ->where('status', 'pending')
+                    ->get();
 
-            // Load all pending bookings linked to this payment
-            // scope-bypass: bookings of one payment; tenant context set from that payment
-            $bookings = Booking::withoutGlobalScopes()
-                ->where('idpayment', $payment->id)
-                ->where('status', 'pending')
-                ->get();
+                if ($isDryRun) {
+                    $this->line(" [DRY] Would cancel Payment #{$payment->id} (order: {$payment->order_id}) and {$bookings->count()} booking(s)");
 
-            if ($isDryRun) {
-                $this->line(" [DRY] Would cancel Payment #{$payment->id} (order: {$payment->order_id}) and {$bookings->count()} booking(s)");
-
-                continue;
-            }
-
-            try {
-                // Ask the payment's own provider first, then expire it if it is still pending (ADR-0007)
-                $result = $intake->check($payment);
-
-                if ($result->status() === 'sukses') {
-                    $this->line("  Payment #{$payment->id} verified as successful by its provider. Skipped cancellation.");
-
-                    continue;
+                    return;
                 }
 
-                $this->line("  Cancelled Payment #{$payment->id} and {$bookings->count()} Booking(s)");
-                $processed++;
+                try {
+                    // Ask the payment's own provider first, then expire it if it is still pending (ADR-0007)
+                    $result = $intake->check($payment);
 
-            } catch (\Throwable $e) {
-                // BQ-077: the exception message can carry SQL, credentials or provider payloads; log only its type and location.
-                Log::error('ExpireBookingPayments: Failed to expire payment', [
-                    'payment_id' => $payment->id,
-                    'tenant_id' => $payment->idtenant,
-                    'exception_type' => $e::class,
-                    'exception_file' => $e->getFile(),
-                    'exception_line' => $e->getLine(),
-                ]);
-                $this->error("  Failed to expire Payment #{$payment->id} (".class_basename($e).'). See the application log.');
-            }
+                    if ($result->status() === 'sukses') {
+                        $this->line("  Payment #{$payment->id} verified as successful by its provider. Skipped cancellation.");
+
+                        return;
+                    }
+
+                    $this->line("  Cancelled Payment #{$payment->id} and {$bookings->count()} Booking(s)");
+                    $processed++;
+
+                } catch (\Throwable $e) {
+                    // BQ-077: the exception message can carry SQL, credentials or provider payloads; log only its type and location.
+                    Log::error('ExpireBookingPayments: Failed to expire payment', [
+                        'payment_id' => $payment->id,
+                        'tenant_id' => $payment->idtenant,
+                        'exception_type' => $e::class,
+                        'exception_file' => $e->getFile(),
+                        'exception_line' => $e->getLine(),
+                    ]);
+                    $this->error("  Failed to expire Payment #{$payment->id} (".class_basename($e).'). See the application log.');
+                }
+            });
         }
 
         if (! $isDryRun) {
             $this->info("Done. Cancelled {$processed} expired booking payment(s).");
-            $this->info('Cache cleared for '.count($cacheCleared).' slot(s).');
         }
-
-        app(TenantContext::class)->clear();
 
         return Command::SUCCESS;
     }

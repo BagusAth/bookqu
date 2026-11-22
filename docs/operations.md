@@ -52,6 +52,8 @@ The values below describe what to fill in; they are not secrets. Verify on the s
 | `PAYMENT_SETTLEMENT_MARGIN_MINUTES` | `2` |
 | `SINGAPAY_BASE_URL` | `https://payment-b2b.singapay.id` (the sandbox is `https://sandbox-payment-b2b.singapay.id`) |
 | `SINGAPAY_CLIENT_ID`, `SINGAPAY_CLIENT_SECRET`, `SINGAPAY_API_KEY`, `SINGAPAY_ACCOUNT_ID` | The platform's live credentials |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | OAuth web client of Google sign-in (BQ-172), from the Google Cloud project `bookqu`; separate from `GOOGLE_CALENDAR_*` |
+| `GOOGLE_REDIRECT_URI` | `https://bookqu.my.id/auth/google/callback`, registered exactly in the OAuth client. Locally `http://127.0.0.1:8000/auth/google/callback`, so local Google sign-in works only when the app is opened at that origin (Google does not accept `.test` hosts) |
 | `TRUSTED_PROXIES` | Empty by default; set comma-separated verified IP/CIDR of the hosting proxy only if customer links answer 404 because HTTPS ends at a proxy |
 
 Remove the obsolete `SINGAPAY_PAYMENT_EXPIRY_MINUTES`. Never set `TRUSTED_PROXIES=*` unless the origin is reachable only through trusted proxies; the setting lets Laravel read HTTPS from forwarded headers, and an empty value keeps ignoring headers from untrusted senders.
@@ -205,5 +207,7 @@ All must be checked before the first real customer (gate G5 in `docs/work/ROADMA
 - [ ] Legal pages reviewed
 
 ## 9. After every deployment
+
+For BQ-163, migrate before restarting scheduler workers. The migration sets the automatic-completion boundary to deployment time for enabled tenants, so older paid sessions remain for manual review (D-027). Each of the three owner automation commands reports tenant errors and continues. Weekly summaries require an effective plan. Booking logs use the application clock for new rows. Before interpreting older MySQL logs, inspect `@@session.time_zone` and `@@system_time_zone` through a read-only database query; older SQLite defaults were UTC. Do not apply a blanket offset to historical logs.
 
 Application responds · owner login works · a public storefront loads with availability · a booking can start payment · scheduler and queue are alive · `laravel.log` shows no new critical errors.

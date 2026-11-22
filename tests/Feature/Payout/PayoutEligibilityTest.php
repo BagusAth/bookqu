@@ -109,7 +109,7 @@ class PayoutEligibilityTest extends TestCase
         $this->tenant->update(['payment_mode' => 'owner']);
 
         $reasons = PayoutEligibility::reasons($this->tenant, $this->owner);
-        $this->assertContains('Withdraw hanya tersedia untuk mode pembayaran platform.', $reasons);
+        $this->assertContains('Pencairan hanya tersedia untuk mode pembayaran platform.', $reasons);
 
         $response = $this->actingAs($this->owner)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
@@ -117,7 +117,7 @@ class PayoutEligibilityTest extends TestCase
             'payout_account_id' => $this->account->id,
         ]);
 
-        $response->assertSessionHasErrors(['jumlah' => 'Withdraw hanya tersedia untuk mode pembayaran platform.']);
+        $response->assertSessionHasErrors(['jumlah' => 'Pencairan hanya tersedia untuk mode pembayaran platform.']);
     }
 
     public function test_zero_or_negative_balance_is_rejection_reason(): void
@@ -154,7 +154,7 @@ class PayoutEligibilityTest extends TestCase
         ]);
 
         $reasons = PayoutEligibility::reasons($this->tenant, $this->owner);
-        $this->assertContains('Masih ada pengajuan withdraw yang sedang diproses. Tunggu sampai selesai sebelum mengajukan lagi.', $reasons);
+        $this->assertContains('Masih ada pengajuan pencairan yang sedang diproses. Tunggu sampai selesai sebelum mengajukan lagi.', $reasons);
 
         $response = $this->actingAs($this->owner)->post('/owner/payouts', [
             'request_key' => (string) Str::uuid(),
@@ -162,7 +162,7 @@ class PayoutEligibilityTest extends TestCase
             'payout_account_id' => $this->account->id,
         ]);
 
-        $response->assertSessionHasErrors(['jumlah' => 'Masih ada pengajuan withdraw yang sedang diproses. Tunggu sampai selesai sebelum mengajukan lagi.']);
+        $response->assertSessionHasErrors(['jumlah' => 'Masih ada pengajuan pencairan yang sedang diproses. Tunggu sampai selesai sebelum mengajukan lagi.']);
     }
 
     public function test_no_saved_payout_accounts_blocks_request(): void
@@ -187,7 +187,7 @@ class PayoutEligibilityTest extends TestCase
             'payout_account_id' => $this->account->id,
         ]);
 
-        $response->assertSessionHasErrors(['jumlah' => 'Nominal withdraw harus berupa angka bulat.']);
+        $response->assertSessionHasErrors(['jumlah' => 'Jumlah pencairan harus berupa angka bulat.']);
     }
 
     public function test_request_payout_validates_minimum_amount(): void
@@ -198,7 +198,7 @@ class PayoutEligibilityTest extends TestCase
             'payout_account_id' => $this->account->id,
         ]);
 
-        $response->assertSessionHasErrors(['jumlah' => 'Nominal withdraw minimal Rp 10.000.']);
+        $response->assertSessionHasErrors(['jumlah' => 'Jumlah pencairan minimal Rp10.000.']);
     }
 
     public function test_max_amount_per_request_limit_enforced(): void
@@ -264,7 +264,7 @@ class PayoutEligibilityTest extends TestCase
             'payout_account_id' => $this->account->id,
         ]);
 
-        $response->assertSessionHasErrors(['jumlah' => 'Batas 2 pengajuan withdraw per hari sudah tercapai.']);
+        $response->assertSessionHasErrors(['jumlah' => 'Batas 2 pengajuan pencairan per hari sudah tercapai.']);
     }
 
     public function test_balance_view_displays_eligibility_rejection_notice(): void

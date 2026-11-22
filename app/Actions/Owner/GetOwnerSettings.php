@@ -29,8 +29,8 @@ final class GetOwnerSettings
         $canManageTeam = $tenant->exists && $user !== null && $policy->ability($user, 'team.manage');
         $canManageIntegrations = $tenant->exists && $user !== null && $policy->ability($user, 'integrations.manage');
         $accountUser = $user;
-        $tabs = $canManageBusiness ? ['profile' => 'Profil Bisnis', 'policy' => 'Kebijakan Booking'] : [];
-        $tabs += ['notifications' => 'Notifikasi', 'account' => 'Akun'];
+        $tabs = $canManageBusiness ? ['profile' => 'Profil bisnis', 'policy' => 'Kebijakan booking'] : [];
+        $tabs['notifications'] = 'Notifikasi';
         $subscription = $tenant->exists ? $tenant->subscription : null;
         $requestedTab = $requestedTab === 'integrations' ? 'integrasi' : $requestedTab;
         $showIntegrations = $canManageIntegrations && ModuleRelease::state('integrations') === 'released'
@@ -38,11 +38,12 @@ final class GetOwnerSettings
         $showApi = $canManageIntegrations && ModuleRelease::state('api') === 'released'
             && EntitlementRules::canAccessFeature($subscription, 'api')['allowed'];
 
-        if ($canManageTeam && ModuleRelease::state('team') === 'released') {
-            $tabs['tim'] = 'Tim';
-        }
         if ($showIntegrations || $showApi) {
             $tabs['integrasi'] = 'Integrasi';
+        }
+        $tabs['account'] = 'Akun';
+        if ($canManageTeam && ModuleRelease::state('team') === 'released') {
+            $tabs['tim'] = 'Tim';
         }
         if ($requestedTab === 'tim') {
             abort_unless($canManageTeam, 403);
@@ -62,13 +63,18 @@ final class GetOwnerSettings
             'booking_min_lead_hours' => $tenant->booking_min_lead_hours ?? 0,
             'booking_max_days_ahead' => BookingRules::maximumAdvanceDays($tenant),
             'booking_buffer_minutes' => $tenant->booking_buffer_minutes ?? 0,
+            'auto_complete_bookings' => (bool) ($tenant->auto_complete_bookings ?? true),
         ];
         $notificationEvents = [
             'new_booking' => 'Booking baru', 'payment_success' => 'Pembayaran berhasil',
             'cancellation' => 'Pembatalan', 'reschedule' => 'Pindah jadwal',
             'refund_request' => 'Pengajuan refund', 'new_review' => 'Ulasan baru',
-            'payout_status' => 'Status pencairan', 'plan_status' => 'Status paket',
+            'payout_status' => 'Status pencairan', 'plan_status' => 'Status paket', 'weekly_summary' => 'Ringkasan mingguan (Senin pagi)',
         ];
+        // Only the business owner account receives the weekly summary (FR-NOTIFICATION-008).
+        if ($user === null || (int) $tenant->iduser !== (int) $user->id) {
+            unset($notificationEvents['weekly_summary']);
+        }
         $notificationPreferences = $user?->getAttribute('notification_preferences') ?? [];
 
         $data = compact(

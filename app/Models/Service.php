@@ -27,6 +27,7 @@ class Service extends Model
         'satuan_harga',
         'satuan_durasi',
         'idcategory',
+        'auto_open_slots',
     ];
 
     protected function casts(): array
@@ -35,6 +36,7 @@ class Service extends Model
             'harga' => 'decimal:2',
             'is_active' => 'boolean',
             'is_popular' => 'boolean',
+            'auto_open_slots' => 'boolean',
             'kapasitas' => 'integer',
         ];
     }

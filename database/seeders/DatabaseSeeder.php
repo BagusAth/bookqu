@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Plan;
+use App\Actions\Team\CreateOwnerMembership;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
@@ -74,6 +74,11 @@ class DatabaseSeeder extends Seeder
                 'nomorhp' => '081234567892',
             ]
         );
+
+        // WithoutModelEvents mutes Tenant::created, which normally creates the owner membership.
+        $createOwnerMembership = app(CreateOwnerMembership::class);
+        $createOwnerMembership->execute($tenantBadminton);
+        $createOwnerMembership->execute($tenantStudio);
 
         $badmintonServices = [
             [
@@ -181,5 +186,8 @@ class DatabaseSeeder extends Seeder
 
         // Call Brama Digital comprehensive seeder
         $this->call(BramaStudioSeeder::class);
+
+        // Every seeded owner needs an active Pemilik membership, or TenantMiddleware refuses /owner.
+        Tenant::query()->each(fn (Tenant $tenant) => app(CreateOwnerMembership::class)->execute($tenant));
     }
 }

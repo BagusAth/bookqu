@@ -7,6 +7,7 @@ namespace App\Actions\Booking;
 use App\Domain\Booking\BookingTimeRange;
 use App\Models\Booking;
 use App\Models\Schedule;
+use App\Support\TenantContext;
 use Illuminate\Support\Carbon;
 
 /**
@@ -23,11 +24,10 @@ final class GetBookingTimeRanges
     {
         $bookings = collect($bookings)->filter()->values();
 
-        // scope-bypass: the slots of bookings the caller already authorized, filtered to each booking's tenant.
-        $slots = Schedule::withoutGlobalScopes()
-            ->whereIn('id', $bookings->pluck('idschedule')->filter()->unique()->all())
-            ->get(['id', 'idtenant', 'jam_mulai', 'jam_selesai'])
-            ->keyBy('id');
+        $context = app(TenantContext::class);
+        $slotsByTenant = $bookings->groupBy('idtenant')->map(fn ($group, $tenantId) => $context->run((int) $tenantId,
+            fn () => Schedule::whereIn('id', $group->pluck('idschedule')->filter()->unique()->all())
+                ->get(['id', 'idtenant', 'jam_mulai', 'jam_selesai'])->keyBy('id')));
 
         $sessionRanges = [];
         $groupSlots = [];
@@ -39,14 +39,9 @@ final class GetBookingTimeRanges
             $date ??= $bookingDate;
             $fallbackStart ??= (string) $booking->jam;
 
-            $slot = $slots->get((int) $booking->idschedule);
-            if ($slot !== null && (int) $slot->idtenant !== (int) $booking->idtenant) {
-                $slot = null;
-            }
+            $slot = $slotsByTenant->get($booking->idtenant)?->get((int) $booking->idschedule);
 
-            $sessionRanges[(int) $booking->id] = $slot !== null
-                ? BookingTimeRange::forSlot($bookingDate, (string) $slot->jam_mulai, (string) $slot->jam_selesai)
-                : BookingTimeRange::withoutSlot($bookingDate, (string) $booking->jam);
+            $sessionRanges[(int) $booking->id] = BookingTimeRange::forBooking($booking, $slot);
             $groupSlots[] = $slot;
         }
 

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Domain\Payment\PaymentRules;
-use App\Models\Scopes\TenantScope;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -96,18 +95,5 @@ class Payment extends Model
     public function isPending(): bool
     {
         return PaymentRules::canProcess($this);
-    }
-
-    /**
-     * Override route model binding to bypass TenantScope.
-     * Binding runs before TenantMiddleware populates the TenantContext,
-     * so we must query globally here. Controllers will verify idtenant.
-     */
-    public function resolveRouteBinding($value, $field = null)
-    {
-        // scope-bypass: route binding resolves a public reference; customer middleware and controllers verify grant and tenant ownership.
-        return static::withoutGlobalScope(TenantScope::class)
-            ->where($field ?? $this->getRouteKeyName(), $value)
-            ->first();
     }
 }

@@ -16,6 +16,6 @@
             @if ($errors->any() && in_array(old('_form'), ['calendar-state-'.$slot['id'], 'calendar-price-'.$slot['id']], true))
                 x-init="$nextTick(() => $el.click())"
             @endif
-            @click="slot = JSON.parse($el.dataset.calendarSlot); slotErrors = {}; feedback = ''; $dispatch('open-dialog', { id: 'calendar-slot', trigger: $el })">Kelola slot</button>
+            @click="calendarTrigger = $el; slot = JSON.parse($el.dataset.calendarSlot); slotErrors = {}; feedback = ''; $dispatch('open-dialog', { id: 'calendar-slot', trigger: $el })">{{ $slot['walkIn'] && $slot['bookings'] === [] ? '+ Catat' : 'Kelola slot' }}</button>
     @endif
 </article>

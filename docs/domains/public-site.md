@@ -21,7 +21,9 @@ The owner sets the look of the storefront in Halaman Booking (`owner.booking-pag
 - logo and cover from the media gallery;
 - theme colour, button style (pill, rounded, square), card style (elevated, outline, soft), font and description.
 
-`App\Support\StorefrontBranding` holds the allowed values and normalises stored ones for `customer/layouts/booking-shell` and the payment page. Unknown values fall back to the defaults, so nothing reaches the style block unvalidated. Older values map to the new names.
+`App\Support\StorefrontBranding` holds the allowed values and normalises stored ones for `customer/layouts/booking-shell`, which writes them as `--sf-*` variables for every customer page (BQ-165). Unknown values fall back to the defaults, so nothing reaches the style block unvalidated. Older values map to the new names. It also derives the text colours on the brand colour, the brand text colour and tints (every text pair at 4.5:1 or more), the corner radii per button style and the shadows per card style.
+
+Templates (D-028): Modern, Rapi and Tegas fill button style, card style and font in Tampilan; the brand colour stays the business's. `StorefrontBranding::templateFor()` recognises the current template from the three saved values, otherwise `custom` ("Kustom"); nothing new is stored.
 
 Sharing (FR-PUBLIC-006, D-010):
 
@@ -46,6 +48,20 @@ Two Halaman Booking sections for Pro (owner-portal.md §8.9, FR-PUBLIC-007, D-00
 
 Evidence: `Owner/LandingPageAndDomainTest`, `Customer/CustomDomainBookingTest`.
 
+## Customer pages design (BQ-165)
+
+Every customer page — storefront, schedule, checkout, waiting for payment, success and invoice, payment status, manage, reschedule, access link and errors — uses design A "Sampul Imersif" ([spec](../design/booking-pelanggan/desain-a-sampul-imersif.md)) and follows the owner's appearance: colour, font, button style and card style. Phone, tablet and desktop have their own layouts. Views only display server data; availability, prices, payment status and access stay with the existing Actions. The service list is server-rendered and services can be chosen without JavaScript; the customer Vite bundle and the page scripts add search, filters, the calendar and the time picker. The checkout refreshes the server quote after changes. Saved contact details are scoped to the business on the device. BQ-164 brought the pages onto one shell first; BQ-165 replaced its look.
+
+Evidence: `Unit/StorefrontBrandingTest`, `Components/CustomerComponentsTest`, `Owner/HalamanBookingPageTest`, `Customer/CustomerFrontendSpecificationTest`, `Customer/ThreeStepBookingFlowTest`, `Customer/BookingManageTest`.
+
+## Customer navigation and error view data (BQ-166)
+
+- The storefront payment success view shows a "Kelola" link to `manageUrl`, which it receives only when the browser session has a live [Management grant](../adr/ADR-0006-management-link-module.md) covering the payment and its exact booking group. Checkout-only access and cancelled bookings receive a null value.
+- Single-booking and payment-group management views receive `continuePaymentUrl` while the grant covers that payment, the bookings are pending and the stored payment deadline has not passed. The view shows it as the primary "Lanjutkan pembayaran" action. The destination is the existing payment page. Both destinations use the canonical platform origin and carry no credentials.
+- Customer error views receive `branding`, `businessName` and `storefrontUrl` for a storefront tenant established by the tenant middleware with an effective subscription. A connected custom domain also needs the existing Pro entitlement. Errors without eligible storefront context and private access refusals use BookQu branding. Existing storefront CSRF recovery continues to redirect back to the form.
+
+Evidence: `Customer/CustomerAccessTest`, `Customer/StorefrontErrorBrandingTest`.
+
 ## Evidence
 
 `tests/Feature/LandingPagePricingTest.php`, `PrivacyPolicyTest.php`, `TermsConditionsTest.php`, `SitemapTest.php`.
@@ -53,13 +69,5 @@ Evidence: `Owner/LandingPageAndDomainTest`, `Customer/CustomDomainBookingTest`.
 ## Status
 
 Functional: Implemented · Verification: Verified · Architecture: Target
-
-## Known gaps
-
-| Gap | Item |
-|---|---|
-
-| Requirement FR-PUBLIC-005 (landing & pricing) is `Proposed` | — |
-| Audit P0/P1: redirect loop on "Masuk ke Dashboard"; no mobile navigation; reverse tabnabbing on external links | BQ-041, BQ-061 |
 
 BQ-130: landing pricing is prepared by `GetPublicPlanCards`; the Blade contains no model queries or tenant selection from session input. Prices match the plans table used at checkout, and feature labels share the owner comparison with unreleased capabilities omitted. Google Calendar sync and down-payment claims were removed until supported. Ambiguous memberships fail closed rather than choosing a session tenant.

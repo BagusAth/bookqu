@@ -6,6 +6,7 @@ use App\Domain\CustomerAccess\AccessContext;
 use App\Models\Booking;
 use App\Models\CustomerAccessGrant;
 use App\Models\Payment;
+use Illuminate\Database\Eloquent\Collection;
 
 final class LoadAccessSubject
 {
@@ -18,8 +19,7 @@ final class LoadAccessSubject
             // scope-bypass: opaque grant lookup precedes tenant middleware; constrain by the stored grant tenant.
             $payment = Payment::withoutGlobalScopes()->where('idtenant', $tenantId)->find($grant->payment_id);
             abort_unless($payment !== null && $payment->tipe === 'booking', 404);
-            // scope-bypass: inspect the entire bound group, including corrupt foreign members, before authorizing it.
-            $bookings = Booking::withoutGlobalScopes()->where('idpayment', $payment->id)->orderBy('id')->get();
+            $bookings = $this->paymentBookings($payment);
             $version = (int) $payment->customer_access_version;
         } else {
             // scope-bypass: standalone subject is constrained to the immutable grant tenant and booking id.
@@ -35,5 +35,15 @@ final class LoadAccessSubject
             || $bookings->contains(fn (Booking $booking) => (int) $booking->idtenant !== $tenantId), 404);
 
         return new AccessContext($grant, $payment, $bookings);
+    }
+
+    /** @return Collection<int, Booking> */
+    public function paymentBookings(Payment $payment): Collection
+    {
+        // scope-bypass: the exact payment group must be rejected if a corrupt foreign member was attached.
+        $bookings = Booking::withoutGlobalScopes()->where('idpayment', $payment->id)->orderBy('id')->get();
+        abort_if($bookings->contains(fn (Booking $booking): bool => (int) $booking->idtenant !== (int) $payment->idtenant), 404);
+
+        return $bookings;
     }
 }

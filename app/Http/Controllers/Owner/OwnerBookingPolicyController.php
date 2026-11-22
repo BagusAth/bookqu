@@ -22,6 +22,7 @@ final class OwnerBookingPolicyController extends Controller
             'booking_min_lead_hours' => ['required', 'integer', 'between:0,8760'],
             'booking_max_days_ahead' => ['required', 'integer', 'between:1,365'],
             'booking_buffer_minutes' => ['required', 'integer', 'between:0,1440'],
+            'auto_complete_bookings' => ['sometimes', 'boolean'],
         ]);
         $tenant = $context->tenant();
         abort_if($tenant === null, 403);

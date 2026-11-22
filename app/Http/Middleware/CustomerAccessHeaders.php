@@ -26,7 +26,9 @@ class CustomerAccessHeaders
             $response = response($exception->getStatusCode() === 404 ? self::NOT_FOUND : 'Terlalu banyak permintaan.', $exception->getStatusCode(), $exception->getHeaders());
         }
         if ($response->getStatusCode() === 404) {
-            $response = response(self::NOT_FOUND, 404);
+            $response = $request->expectsJson()
+                ? response(self::NOT_FOUND, 404)
+                : response()->view('errors.404', ['private' => true], 404);
         }
         $response->headers->set('Cache-Control', 'no-store, private');
         $response->headers->set('Referrer-Policy', 'no-referrer');

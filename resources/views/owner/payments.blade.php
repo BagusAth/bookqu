@@ -9,7 +9,7 @@
 --}}
 
 @php
-    $rupiah = fn (float|int $value): string => 'Rp '.number_format((float) $value, 0, ',', '.');
+    $rupiah = fn (float|int $value): string => \App\Support\Rupiah::format($value);
     $card = 'bq-panel';
     $buttonSecondary = 'bq-btn bq-btn-secondary bq-btn-sm';
     $buttonPrimary = 'bq-btn bq-btn-primary';
@@ -44,6 +44,7 @@
 <div
     class="mx-auto max-w-7xl space-y-6"
     x-data="{
+        ...ownerPayoutSubmission(),
         accounts: @js($accountPayload),
         account: { id: null, bank_kode: '', nomor_rekening: '', nama_pemilik_rekening: '' },
         deleteId: @js(old('delete_id')),
@@ -62,12 +63,21 @@
             $dispatch('open-dialog', { id: 'payout-account-delete-dialog', trigger });
         },
         openWithdraw(trigger) {
-            this.step = 1;
+            this.step = this.payoutUnconfirmed || this.payoutSubmitting ? 3 : 1;
             $dispatch('open-dialog', { id: 'withdraw-dialog', trigger });
         },
         amountValid() {
+            return this.amountProblem() === '';
+        },
+        {{-- Why "Lanjut" is off (T-32); empty when the amount can be requested. --}}
+        amountProblem() {
+            if (String(this.amount).trim() === '') return 'Isi jumlah yang ingin dicairkan.';
             const n = Number(this.amount);
-            return Number.isInteger(n) && n >= this.min && n <= this.max;
+            if (!Number.isInteger(n)) return 'Isi jumlah tanpa sen.';
+            if (this.max < this.min) return 'Saldo belum mencapai minimal pencairan Rp' + this.formatted(this.min) + '.';
+            if (n < this.min) return 'Minimal pencairan Rp' + this.formatted(this.min) + '.';
+            if (n > this.max) return 'Paling banyak Rp' + this.formatted(this.max) + ' untuk pengajuan ini.';
+            return '';
         },
         selectedAccount() { return this.accounts.find(a => String(a.id) === String(this.accountId)) || null; },
         formatted(n) { return new Intl.NumberFormat('id-ID').format(Number(n) || 0); },
@@ -81,41 +91,44 @@
                     this.openDelete(this.deleteId, null);
                 } else {
                     this.openWithdraw(null);
+                    this.step = @js($errors->has('jumlah') ? 1 : ($errors->has('payout_account_id') ? 2 : 3));
                 }
             });
         },
     }"
 >
-    <x-owner.page-header title="Pembayaran" purpose="Cara Anda menerima uang, berapa saldo Anda, dan kapan bisa dicairkan." />
+    <x-owner.page-header title="Pembayaran" purpose="Uang yang masuk, saldo Anda, dan kapan bisa dicairkan.">
+        {{-- BQ-162: one primary action in the header, as in the prototype (#/pembayaran). --}}
+        <x-slot:action>
+            @if ($activeTab === 'rekening')
+                @if ($canAddAccount)
+                    <x-ui.button variant="primary" icon="plus" id="payout-account-create" x-on:click="openAccount(null, $el)">Tambah rekening</x-ui.button>
+                @endif
+            @elseif ($activeTab === 'saldo')
+                <button type="button" class="bq-btn bq-btn-primary" @disabled(count($eligibilityReasons) > 0) x-on:click="openWithdraw($el)">Cairkan saldo</button>
+            @else
+                <a href="{{ route('owner.payments', ['tab' => 'saldo']) }}" class="bq-btn bq-btn-primary">Cairkan saldo</a>
+            @endif
+        </x-slot:action>
+    </x-owner.page-header>
 
-    <x-owner.tabs :tabs="\App\Actions\Owner\GetPaymentsPage::TABS" :active="$activeTab" label="Bagian halaman Pembayaran" />
+    <x-owner.tabs :tabs="\App\Actions\Owner\GetPaymentsPage::TABS" :active="$activeTab" :counts="['transaksi' => $summary['counts']['sukses'] + $summary['counts']['pending'] + $summary['counts']['gagal'], 'rekening' => $accounts->count()]" label="Bagian halaman Pembayaran" />
 
     {{-- ── Ringkasan ── --}}
     @if ($activeTab === 'ringkasan')
-        <section aria-label="Saldo" class="grid gap-4 sm:grid-cols-3">
-            @foreach ([['Saldo tersedia', $summary['available'], 'Bisa dicairkan ke rekening Anda'], ['Sedang diproses', $summary['inProcess'], 'Pencairan menunggu review atau transfer'], ['Total dicairkan', $summary['withdrawn'], 'Sudah ditransfer ke rekening Anda']] as [$title, $value, $hint])
-                {{-- BQ-161 (audit PY-01): the available balance is the page's hero figure --}}
-                <div @class(['rounded-xl p-5', 'bg-bq-primary text-white' => $loop->first, $card => ! $loop->first])>
-                    <p @class(['text-sm', 'text-white/80' => $loop->first, 'text-bq-text-muted' => ! $loop->first])>{{ $title }}</p>
-                    <p @class(['bq-num mt-1 font-bold', 'text-3xl text-white' => $loop->first, 'text-2xl text-bq-ink' => ! $loop->first])>{{ $rupiah($value) }}</p>
-                    <p @class(['mt-1 text-xs', 'text-white/80' => $loop->first, 'text-bq-text-muted' => ! $loop->first])>{{ $hint }}</p>
-                </div>
-            @endforeach
-        </section>
-
-        <section aria-label="Pembayaran pelanggan" class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            @foreach ([['Berhasil', 'sukses'], ['Menunggu', 'pending'], ['Gagal', 'gagal'], ['Direfund', 'refund']] as [$title, $key])
-                <div class="{{ $card }} p-4">
-                    <p class="text-sm text-bq-text-muted">Pembayaran {{ mb_strtolower($title) }}</p>
-                    <p class="mt-1 text-xl font-semibold bq-num text-bq-text">{{ $summary['counts'][$key] }}</p>
-                </div>
-            @endforeach
-        </section>
+        <x-ui.panel>
+            <x-ui.figures :value="$rupiah($summary['available'])" label="saldo tersedia" context="Bisa dicairkan sekarang"
+                :more="[['value' => $rupiah($summary['inProcess']), 'label' => 'sedang diproses'], ['value' => $rupiah($summary['withdrawn']), 'label' => 'sudah dicairkan']]" />
+            <p class="mt-3 text-bq-small text-bq-text-muted">
+                {{ $summary['counts']['sukses'] }} pembayaran berhasil · {{ $summary['counts']['pending'] }} menunggu ·
+                {{ $summary['counts']['gagal'] }} gagal · {{ $summary['counts']['refund'] }} direfund
+            </p>
+        </x-ui.panel>
 
         <section aria-labelledby="latest-title" class="{{ $card }}">
-            <div class="flex items-center justify-between border-b border-bq-border px-4 py-3">
-                <h2 id="latest-title" class="text-base font-semibold text-bq-text">Transaksi terbaru</h2>
-                <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="text-sm bq-link">Semua transaksi</a>
+            <div class="flex items-center justify-between px-5 pt-4 pb-2">
+                <h2 id="latest-title" class="text-bq-section">Transaksi terbaru</h2>
+                <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="bq-btn bq-btn-ghost bq-btn-sm">Lihat semua</a>
             </div>
             @include('owner.partials.payments.transactions', ['rows' => $latest, 'toneClass' => $toneClass, 'emptyText' => 'Belum ada pembayaran pelanggan.'])
         </section>
@@ -123,31 +136,27 @@
 
     {{-- ── Transaksi ── --}}
     @if ($activeTab === 'transaksi')
-        <form method="GET" action="{{ route('owner.payments') }}" class="{{ $card }} flex flex-wrap items-end gap-3 p-4">
-            <input type="hidden" name="tab" value="transaksi">
-            <label class="grid gap-1 text-sm">Cari transaksi
-                <input type="search" name="search" maxlength="100" value="{{ $transactionFilters['search'] }}" placeholder="Nomor pesanan, booking, pelanggan" class="{{ $field }}">
-            </label>
-            <label class="grid gap-1 text-sm">Status pembayaran
-                <select name="status" class="{{ $field }}">
+        <section aria-label="Semua transaksi" class="{{ $card }}">
+            <form method="GET" action="{{ route('owner.payments') }}" class="bq-filter">
+                <input type="hidden" name="tab" value="transaksi">
+                <x-ui.search name="search" maxlength="100" :value="$transactionFilters['search']" label="Cari nama atau nomor order" />
+                <select name="status" aria-label="Status pembayaran" class="bq-input" @change="$el.form.requestSubmit()">
                     <option value="">Semua status</option>
                     @foreach ($transactionStatuses as $value => $label)
                         <option value="{{ $value }}" @selected($transactionFilters['status'] === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
-            </label>
-            @foreach (['from' => 'Dari tanggal', 'to' => 'Sampai tanggal'] as $key => $label)
-                <label class="grid gap-1 text-sm">{{ $label }}
-                    <input type="date" name="{{ $key }}" value="{{ $transactionFilters[$key] }}" class="{{ $field }}">
-                </label>
-            @endforeach
-            <button class="{{ $buttonSecondary }}">Cari</button>
-            <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="px-2 py-2 text-sm bq-link">Reset filter</a>
-        </form>
-        <section aria-label="Semua transaksi" class="{{ $card }}">
+                @foreach (['from' => 'Dari tanggal', 'to' => 'Sampai tanggal'] as $key => $label)
+                    <input type="date" name="{{ $key }}" aria-label="{{ $label }}" value="{{ $transactionFilters[$key] }}" class="bq-input" @change="$el.form.requestSubmit()">
+                @endforeach
+                <noscript><button class="bq-btn bq-btn-secondary bq-btn-sm">Cari</button></noscript>
+                @if (array_filter($transactionFilters))
+                    <a href="{{ route('owner.payments', ['tab' => 'transaksi']) }}" class="bq-btn bq-btn-ghost bq-btn-sm">Hapus filter</a>
+                @endif
+            </form>
             @include('owner.partials.payments.transactions', ['rows' => $transactions, 'toneClass' => $toneClass, 'emptyText' => array_filter($transactionFilters) ? 'Tidak ada transaksi yang cocok.' : 'Belum ada pembayaran pelanggan.'])
+            @if ($transactions->total() > 0)<x-ui.pager :paginator="$transactions" noun="transaksi" />@endif
         </section>
-        <div>{{ $transactions->links() }}</div>
     @endif
 
     {{-- ── Saldo & Pencairan ── --}}
@@ -159,9 +168,6 @@
                 <p class="mt-0.5 text-xs text-bq-text-muted">
                     Minimal {{ $rupiah($payoutRules['min']) }}@if ($payoutRules['cap'] !== null) · maksimal {{ $rupiah($payoutRules['cap']) }} per pengajuan @endif
                 </p>
-            </div>
-            <div class="sm:text-right">
-                <button type="button" class="{{ $buttonPrimary }}" @disabled(count($eligibilityReasons) > 0) x-on:click="openWithdraw($el)">Cairkan saldo</button>
             </div>
         </section>
 
@@ -253,7 +259,9 @@
                     </div>
                     <input id="withdraw-amount" type="number" inputmode="numeric" step="1" x-model="amount" min="{{ $payoutRules['min'] }}" max="{{ $maxAmount }}" class="{{ $field }}">
                     <p class="mt-1 text-xs text-bq-text-muted">Saldo tersedia {{ $rupiah($summary['available']) }} · Minimal {{ $rupiah($payoutRules['min']) }}@if ($payoutRules['cap'] !== null) · maksimal {{ $rupiah($payoutRules['cap']) }} per pengajuan @endif</p>
-                    @error('jumlah')<p class="mt-1 text-xs text-bq-danger">{{ $message }}</p>@enderror
+                    <p x-show="String(amount).trim() !== '' && !payoutErrors.jumlah && amountProblem()" x-cloak x-text="amountProblem()" class="mt-1 text-bq-small text-bq-danger" aria-live="polite" data-payout-amount-problem></p>
+                    <p x-show="payoutErrors.jumlah" x-text="payoutErrors.jumlah?.[0]" class="mt-1 text-bq-small text-bq-danger" role="alert"></p>
+                    @error('jumlah')<p class="mt-1 text-bq-small text-bq-danger">{{ $message }}</p>@enderror
                 </div>
                 <div class="flex justify-end">
                     <button type="button" class="{{ $buttonPrimary }}" x-bind:disabled="!amountValid()" x-on:click="step = 2">Lanjut</button>
@@ -279,6 +287,7 @@
                         @endforeach
                     </fieldset>
                 @endif
+                <p x-show="payoutErrors.payout_account_id" x-text="payoutErrors.payout_account_id?.[0]" class="text-bq-small text-bq-danger" role="alert"></p>
                 @error('payout_account_id')<p class="text-xs text-bq-danger">{{ $message }}</p>@enderror
                 <div class="flex justify-between">
                     <button type="button" class="{{ $buttonSecondary }}" x-on:click="step = 1">Kembali</button>
@@ -287,22 +296,33 @@
             </div>
 
             <div x-show="step === 3" x-cloak class="space-y-3">
-                <p class="text-xs text-bq-text-muted">Langkah 3 dari 3: konfirmasi</p>
-                <dl class="space-y-1.5 rounded-lg bg-bq-background px-3 py-2 text-sm">
-                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Jumlah</dt><dd class="font-medium bq-num text-bq-text">Rp <span x-text="formatted(amount)"></span></dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Bank</dt><dd class="text-bq-text" x-text="selectedAccount()?.bank_nama"></dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Nomor rekening</dt><dd class="bq-num text-bq-text" x-text="selectedAccount()?.masked_number"></dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Atas nama</dt><dd class="text-bq-text" x-text="selectedAccount()?.nama_pemilik_rekening"></dd></div>
-                </dl>
-                <p class="text-xs text-bq-text-muted">Jumlah ini langsung ditahan dari saldo Anda. Admin BookQu meninjau lalu mentransfer secara manual pada jam kerja.</p>
-                <form id="withdraw-form" method="POST" action="{{ route('owner.payouts.request') }}" x-data="{ submitting: false }" x-on:submit="submitting = true" class="flex justify-between">
-                    @csrf
-                    <input type="hidden" name="request_key" value="{{ old('request_key', $requestKey) }}">
-                    <input type="hidden" name="jumlah" x-bind:value="amount">
-                    <input type="hidden" name="payout_account_id" x-bind:value="accountId">
-                    <button type="button" class="{{ $buttonSecondary }}" x-on:click="step = 2" :disabled="submitting">Kembali</button>
-                    <button type="submit" class="{{ $buttonPrimary }}" :disabled="submitting" x-text="submitting ? 'Memproses…' : 'Ajukan pencairan'">Ajukan pencairan</button>
-                </form>
+                <div x-show="!payoutUnconfirmed" class="space-y-3">
+                    <p class="text-xs text-bq-text-muted">Langkah 3 dari 3: konfirmasi</p>
+                    <dl class="space-y-1.5 rounded-lg bg-bq-background px-3 py-2 text-sm">
+                        <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Jumlah</dt><dd class="font-medium bq-num text-bq-text">Rp<span x-text="formatted(amount)"></span></dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Bank</dt><dd class="text-bq-text" x-text="selectedAccount()?.bank_nama"></dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Nomor rekening</dt><dd class="bq-num text-bq-text" x-text="selectedAccount()?.masked_number"></dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-bq-text-muted">Atas nama</dt><dd class="text-bq-text" x-text="selectedAccount()?.nama_pemilik_rekening"></dd></div>
+                    </dl>
+                    <p class="text-xs text-bq-text-muted">Jumlah ini langsung ditahan dari saldo Anda. Admin BookQu meninjau lalu mentransfer secara manual pada jam kerja.</p>
+                    <form id="withdraw-form" method="POST" action="{{ route('owner.payouts.request') }}" x-ref="payoutForm" x-on:submit.prevent="submitPayout($el)" class="flex justify-between">
+                        @csrf
+                        <input type="hidden" name="request_key" value="{{ old('request_key', $requestKey) }}">
+                        <input type="hidden" name="jumlah" x-bind:value="amount">
+                        <input type="hidden" name="payout_account_id" x-bind:value="accountId">
+                        <button type="button" class="{{ $buttonSecondary }}" x-on:click="step = 2" :disabled="payoutSubmitting">Kembali</button>
+                        <button type="submit" class="{{ $buttonPrimary }}" :disabled="payoutSubmitting" x-text="payoutSubmitting ? 'Memproses…' : 'Ajukan pencairan'">Ajukan pencairan</button>
+                    </form>
+                    <p x-show="payoutErrors.request_key" x-text="payoutErrors.request_key?.[0]" role="alert" class="text-bq-small text-bq-danger"></p>
+                    @error('request_key')<p class="text-bq-small text-bq-danger">{{ $message }}</p>@enderror
+                </div>
+                <div x-show="payoutUnconfirmed" x-cloak class="space-y-3">
+                    <x-ui.error-block title="Pengajuan pencairan belum terkonfirmasi" description="Koneksi terputus sebelum BookQu menjawab. Pengajuan mungkin sudah tercatat, mungkin belum. Tekan Coba lagi: permintaan yang sama tidak membuat pencairan ganda dan saldo hanya ditahan sekali. Transfer tetap diproses admin BookQu setelah pengajuan tercatat." />
+                    <div class="flex flex-wrap justify-end gap-2">
+                        <x-ui.button size="sm" x-on:click="hide()">Nanti saja</x-ui.button>
+                        <x-ui.button size="sm" variant="primary" x-ref="payoutRetry" x-on:click="submitPayout($refs.payoutForm)" x-bind:disabled="payoutSubmitting">Coba lagi</x-ui.button>
+                    </div>
+                </div>
             </div>
         </x-owner.dialog>
     @endif
@@ -315,9 +335,6 @@
                     <h2 id="accounts-title" class="text-base font-semibold text-bq-text">Rekening pencairan</h2>
                     <p class="text-sm text-bq-text-muted">{{ $accounts->count() }} dari {{ $maxAccounts }} rekening. Mengubah rekening memerlukan password dan mengirim email pemberitahuan.</p>
                 </div>
-                @if ($canAddAccount)
-                    <button type="button" id="payout-account-create" class="{{ $buttonPrimary }}" x-on:click="openAccount(null, $el)">Tambah rekening</button>
-                @endif
             </div>
             @if ($accounts->isEmpty())
                 <x-owner.empty-state title="Belum ada rekening" description="Tambahkan rekening bank untuk mencairkan saldo." class="m-4" />
@@ -405,29 +422,32 @@
     @endif
 
     {{-- ── Pengaturan: explanation only, nothing to configure (D-016) ── --}}
-    @if ($activeTab === 'pengaturan')
-        <section aria-labelledby="how-title" class="{{ $card }} space-y-4 p-4 text-sm text-bq-text">
-            <h2 id="how-title" class="text-base font-semibold">Cara pembayaran bekerja</h2>
-            <ul class="list-disc space-y-2 pl-5">
-                <li>Pembayaran pelanggan diproses oleh BookQu: QRIS, virtual account dan e-wallet. Anda tidak perlu mengatur payment gateway.</li>
-                <li>Biaya platform 0%. Seluruh pembayaran booking yang berhasil masuk ke saldo Anda.</li>
-                <li>Pelanggan punya waktu {{ $explanation['deadlineMinutes'] }} menit untuk membayar. Setelah itu booking batal otomatis dan slotnya kembali terbuka.</li>
-                <li>
+    @if ($activeTab === 'cara')
+        <section aria-labelledby="how-title" class="bq-panel space-y-4 p-4">
+            <div>
+                <h2 id="how-title" class="font-semibold">Cara pembayaran bekerja</h2>
+                <p class="mt-1 text-bq-small text-bq-text-muted">Tidak ada yang perlu diatur di sini.</p>
+            </div>
+            <x-ui.kv :items="[
+                'Diproses oleh' => 'BookQu: QRIS, virtual account dan e-wallet',
+                'Biaya platform' => '0%',
+                'Batas bayar' => 'Pelanggan punya '.$explanation['deadlineMinutes'].' menit untuk membayar; slot ditahan selama itu.',
+                'Uang masuk' => 'Ke saldo BookQu Anda, lalu dicairkan ke rekening melalui admin BookQu.',
+            ]">
+                <dt class="text-bq-text-muted">Refund</dt>
+                <dd class="min-w-0 break-words">
                     @if ($explanation['refundsEnabled'])
-                        Refund aktif:
                         @if ($explanation['cancelBeforeHours'] > 0)
-                            pelanggan bisa membatalkan dan meminta refund paling lambat {{ $explanation['cancelBeforeHours'] }} jam sebelum jadwal.
+                            Pelanggan bisa membatalkan dan meminta refund paling lambat {{ $explanation['cancelBeforeHours'] }} jam sebelum jadwal.
                         @else
-                            pelanggan bisa meminta refund sesuai Kebijakan Booking Anda.
+                            Pelanggan bisa meminta refund sesuai Kebijakan Booking Anda.
                         @endif
-                        Refund yang Anda setujui mengurangi saldo.
                     @else
-                        Refund tidak aktif: pelanggan tidak bisa meminta refund dari link akses mereka.
+                        Refund tidak aktif.
                     @endif
-                    Atur di Pengaturan → Kebijakan Booking.
-                </li>
-                <li>Saldo dicairkan ke rekening Anda lewat tab Saldo &amp; Pencairan, ditinjau dan ditransfer oleh admin BookQu.</li>
-            </ul>
+                    <a class="bq-link" href="{{ route('owner.settings', ['tab' => 'policy']) }}">Ubah kebijakan</a>
+                </dd>
+            </x-ui.kv>
         </section>
     @endif
 </div>

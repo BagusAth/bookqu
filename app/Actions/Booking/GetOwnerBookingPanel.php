@@ -20,6 +20,7 @@ use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Models\User;
 use App\Support\PaymentMethodLabel;
+use App\Support\Rupiah;
 use App\Support\StatusBadge;
 use Carbon\Carbon;
 
@@ -49,12 +50,12 @@ final class GetOwnerBookingPanel
 
         return [
             'code' => $booking->booking_code ?? 'BKQ-'.$booking->id,
-            'source' => $walkIn ? 'Walk-in' : 'Online',
+            'source' => $walkIn ? 'Dicatat kasir' : 'Online',
             'service' => $service instanceof Service ? $service->namalayanan : 'Layanan dihapus',
             'status' => self::badge('booking', $booking->status),
             'sessions' => $family->map(fn (Booking $row): array => [
-                'date' => Carbon::parse($row->tanggalbooking)->format('d/m/Y'),
-                'time' => $timeRanges[$row->id]->label(),
+                'date' => $timeRanges[$row->id]->start->locale('id')->translatedFormat('l, j M'),
+                'time' => str_replace(':', '.', $timeRanges[$row->id]->label()),
             ])->values()->all(),
             'participants' => $booking->peserta,
             'unit' => $service instanceof Service ? $service->units->pluck('name')->implode(', ') : null,
@@ -71,7 +72,7 @@ final class GetOwnerBookingPanel
                 ] : [],
                 'paid_at' => $payment?->balance_credited_at ? Carbon::parse($payment->balance_credited_at)->format('d/m/Y H:i') : null,
                 'deadline' => $payment?->status === PaymentState::STATUS_PENDING && $payment->expired_at ? Carbon::parse($payment->expired_at)->format('d/m/Y H:i') : null,
-                'refund' => $refund ? ['status' => self::badge('refund', $refund->status), 'amount' => $refund->jumlah_formatted]
+                'refund' => $refund ? ['status' => self::badge('refund', $refund->status), 'amount' => Rupiah::format($refund->jumlah)]
                     : ($request ? ['status' => self::badge('refund_request', $request->status->value), 'amount' => null] : null),
             ],
             'refund_reason' => TenantPermission::allowsRole($member->role, 'refunds.decide') ? $request?->reason : null,
@@ -95,8 +96,13 @@ final class GetOwnerBookingPanel
      */
     private function actions(Booking $booking, ?Payment $payment, ?RefundRequest $request, TenantMember $member, BookingTimeRange $range, iterable $family): array
     {
-        if ($booking->idpayment && $payment === null || $payment && BookingRules::onlinePaymentHoldEnd($booking, $payment) !== null) {
+        if ($booking->idpayment && $payment === null) {
             return [];
+        }
+        if ($payment && BookingRules::onlinePaymentHoldEnd($booking, $payment) !== null) {
+            return filled($booking->email) && filled($payment->email_pembayar)
+                ? [['label' => 'Kirim ulang link', 'url' => route('owner.bookings.resend-link', $booking->id)]]
+                : [];
         }
 
         $allowed = fn (string $ability): bool => TenantPermission::allowsRole($member->role, $ability);
@@ -198,12 +204,15 @@ final class GetOwnerBookingPanel
             };
 
             $description = $log->description ?? $log->event_label;
+            if ($log->event === 'rescheduled' && ($metadata['role'] ?? null) === 'owner' && array_key_exists('reason', $metadata)) {
+                $description = 'Jadwal diubah oleh '.$actor.'. Alasan: '.($metadata['reason'] ?? '—');
+            }
             if (isset($metadata['price_difference'])) {
                 $difference = (int) $metadata['price_difference'];
                 $description .= ' Selisih harga: '.($difference < 0 ? '−' : ($difference > 0 ? '+' : '')).self::rupiah(abs($difference)).'.';
             }
 
-            return ['at' => $log->created_at ? Carbon::parse($log->created_at)->format('d/m/Y H:i') : null, 'text' => $description, 'actor' => $actor];
+            return ['at' => $log->created_at->timezone('Asia/Jakarta')->format('d/m/Y H:i'), 'text' => $description, 'actor' => $actor];
         })->values()->all();
     }
 
@@ -217,6 +226,6 @@ final class GetOwnerBookingPanel
 
     private static function rupiah(float $amount): string
     {
-        return 'Rp '.number_format($amount, 0, ',', '.');
+        return Rupiah::format($amount);
     }
 }

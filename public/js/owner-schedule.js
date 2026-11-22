@@ -12,6 +12,13 @@ document.addEventListener('alpine:init', () => {
         return data;
     }
 
+    // Times show as 08.00 (Indonesian style, BQ-162) and are sent as 08:00.
+    const shownTime = (time) => String(time ?? '').replace(':', '.');
+    const sentTime = (time) => {
+        const match = String(time ?? '').trim().match(/^(\d{1,2})[.:]?(\d{2})$/);
+        return match ? `${match[1].padStart(2, '0')}:${match[2]}` : String(time ?? '').trim();
+    };
+
     Alpine.data('scheduleOpeningHours', (openingHours) => ({
         nextKey: 0,
         days: {},
@@ -20,7 +27,7 @@ document.addEventListener('alpine:init', () => {
         busy: false,
         init() {
             for (let day = 1; day <= 7; day++) {
-                this.days[day] = (openingHours[day] ?? []).map(interval => ({ ...interval, key: ++this.nextKey }));
+                this.days[day] = (openingHours[day] ?? []).map(interval => ({ opens_at: shownTime(interval.opens_at), closes_at: shownTime(interval.closes_at), key: ++this.nextKey }));
                 this.closed[day] = this.days[day].length === 0;
             }
         },
@@ -42,8 +49,13 @@ document.addEventListener('alpine:init', () => {
             this.errors = [];
             const fields = new FormData(form);
             const days = Object.fromEntries(Object.entries(this.days).map(([day, intervals]) => [
-                day, this.closed[day] ? [] : intervals.map(({ opens_at, closes_at }) => ({ opens_at, closes_at })),
+                day, this.closed[day] ? [] : intervals.map(({ opens_at, closes_at }) => ({ opens_at: sentTime(opens_at), closes_at: sentTime(closes_at) })),
             ]));
+            const payload = { days, slot_open_days_ahead: fields.get('slot_open_days_ahead') || null };
+            const autoOpenSlots = fields.get('auto_open_slots');
+            if (autoOpenSlots === '1' || autoOpenSlots === '0') {
+                payload.auto_open_slots = autoOpenSlots === '1';
+            }
             try {
                 const response = await fetch(form.action, {
                     method: 'PUT',
@@ -52,14 +64,15 @@ document.addEventListener('alpine:init', () => {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': fields.get('_token'),
                     },
-                    body: JSON.stringify({ days, slot_open_days_ahead: fields.get('slot_open_days_ahead') || null }),
+                    body: JSON.stringify(payload),
                 });
-                if (response.redirected && response.ok) {
-                    window.location.assign(response.url);
-                    return;
-                }
                 if (response.headers.get('content-type')?.includes('application/json')) {
-                    this.errors = Object.values((await response.json()).errors ?? {}).flat();
+                    const data = await response.json();
+                    if (response.ok && data.success === true) {
+                        window.location.reload();
+                        return;
+                    }
+                    this.errors = Object.values(data.errors ?? {}).flat();
                 }
                 if (!this.errors.length) this.errors = ['Jam buka gagal disimpan.'];
             } catch {
@@ -103,9 +116,13 @@ document.addEventListener('alpine:init', () => {
             return !this.busy && this.preview?.to_create > 0 && this.checkedFields === this.fingerprint(form);
         },
         async check(form) {
-            if (this.busy || !form.reportValidity()) return;
+            if (this.busy) return;
             this.preview = null;
             this.error = '';
+            if (!form.reportValidity()) {
+                this.error = 'Isi atau perbaiki kolom yang ditandai, lalu tekan Pratinjau lagi.';
+                return;
+            }
             this.busy = true;
             const fields = this.fingerprint(form);
             try {
@@ -122,11 +139,12 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    Alpine.data('schedulePriceSimulator', () => ({
+    Alpine.data('schedulePriceSimulator', (serviceId = '') => ({
+        serviceId,
         hours: [],
         error: '',
         busy: false,
-        rupiah: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }),
+        rupiah: (amount) => 'Rp' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Math.round(Number(amount) || 0)),
         async simulate(form) {
             if (this.busy) return;
             this.busy = true;

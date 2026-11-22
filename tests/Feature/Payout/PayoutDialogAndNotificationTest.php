@@ -70,8 +70,8 @@ class PayoutDialogAndNotificationTest extends TestCase
 
     public function test_payout_state_owner_labels_and_tones(): void
     {
-        $this->assertSame('Pending', PayoutState::ownerLabel(PayoutState::PENDING));
-        $this->assertSame('Pending', PayoutState::ownerLabel(PayoutState::APPROVED));
+        $this->assertSame('Diproses', PayoutState::ownerLabel(PayoutState::PENDING));
+        $this->assertSame('Diproses', PayoutState::ownerLabel(PayoutState::APPROVED));
         $this->assertSame('Berhasil', PayoutState::ownerLabel(PayoutState::SUCCESS));
         $this->assertSame('Gagal', PayoutState::ownerLabel(PayoutState::REJECTED));
         $this->assertSame('Gagal', PayoutState::ownerLabel(PayoutState::FAILED));
@@ -277,7 +277,7 @@ class PayoutDialogAndNotificationTest extends TestCase
 
         // Check header and the Saldo & Pencairan tab in Indonesian (BQ-141, owner-portal.md §8.12)
         $response->assertSee('Pembayaran');
-        $response->assertSee('Cara Anda menerima uang, berapa saldo Anda, dan kapan bisa dicairkan.');
+        $response->assertSee('Uang yang masuk, saldo Anda, dan kapan bisa dicairkan.');
         $response->assertSee('Saldo tersedia');
         $response->assertSee('Mutasi saldo');
 

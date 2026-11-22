@@ -91,7 +91,7 @@ class AnalyticsExportAndAggregationTest extends TestCase
         config(['modules.reports' => 'released']);
         $this->paidPayment(150000, '2026-11-02 09:00:00');
 
-        $this->actingAs($this->owner)->get('/owner/analytics?tab=pendapatan')->assertOk()->assertSee('Laporan')->assertSee('Rp 150.000');
+        $this->actingAs($this->owner)->get('/owner/analytics?tab=pendapatan')->assertOk()->assertSee('Laporan')->assertSee('Rp150.000');
     }
 
     public function test_analytics_export_neutralises_spreadsheet_formulas(): void

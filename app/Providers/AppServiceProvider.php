@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Actions\Customer\GetCustomerPanel;
+use App\Actions\CustomerAccess\CustomerAccessLinks;
 use App\Actions\Owner\GetOwnerShell;
 use App\Actions\Subscription\GetPublicPlanCards;
 use App\Actions\Team\TeamNotificationAccess;
+use App\Actions\Tenant\GetStorefrontTenant;
 use App\Contracts\Payments\PaymentGatewayInterface;
 use App\Domain\Integrations\BookingIntegrationEvent;
 use App\Domain\Modules\ModuleRelease;
@@ -33,14 +36,20 @@ use App\Models\User;
 use App\Models\Voucher;
 use App\Observers\BookingIntegrationObserver;
 use App\Policies\TenantResourcePolicy;
+use App\Support\CustomerBookingRoutes;
+use App\Support\StorefrontBranding;
 use App\Support\TenantActor;
 use App\Support\TenantContext;
 use Carbon\Carbon;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Events\DiagnosingHealth;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -71,6 +80,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('current-password', fn (Request $request): Limit => Limit::perMinute(5)
+            ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip())));
+
         Event::listen(DiagnosingHealth::class, function (DiagnosingHealth $event): void {
             $heartbeat = Cache::get('ops:scheduler-heartbeat');
 
@@ -98,8 +110,8 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
-            // scope-bypass: an after-commit event contains the tenant of the saved booking.
-            if (OwnerIntegration::withoutGlobalScopes()->where('idtenant', $event->tenantId)->whereNotNull('google_refresh_token')->exists()) {
+            if (app(TenantContext::class)->run($event->tenantId,
+                fn (): bool => OwnerIntegration::whereNotNull('google_refresh_token')->exists())) {
                 DeliverGoogleCalendarEvent::dispatch($event);
             }
         });
@@ -119,6 +131,58 @@ class AppServiceProvider extends ServiceProvider
         }
 
         View::composer('components.landing.pricing', fn ($view) => $view->with(app(GetPublicPlanCards::class)->execute(auth()->user())));
+
+        // Design A pages (BQ-165) draw the business hero themselves, so they get the same display data as the shell.
+        View::composer(['customer.layouts.booking-shell', 'customer.booking.program-selection', 'customer.booking.schedule-selection', 'customer.booking.checkout', 'customer.booking.payment', 'customer.booking.invoice', 'customer.manage.details', 'customer.manage.reschedule'], function (\Illuminate\View\View $view): void {
+            $data = $view->getData();
+            $tenant = $data['tenant'] ?? null;
+            if ($tenant instanceof Tenant) {
+                $view->with([
+                    'branding' => StorefrontBranding::for($tenant),
+                    'businessInitials' => mb_strtoupper(mb_substr($tenant->namabisnis, 0, 2)),
+                    'businessLogo' => $tenant->logo_path ? Storage::url($tenant->logo_path) : null,
+                    'businessBanner' => $tenant->banner_path ? Storage::url($tenant->banner_path) : null,
+                    'storefrontUrl' => CustomerBookingRoutes::url('customer.booking.program', $tenant->slug),
+                    'merchantWaUrl' => $data['merchantWaUrl'] ?? GetCustomerPanel::whatsAppUrl(
+                        (string) $tenant->nomorhp,
+                        "Halo {$tenant->namabisnis}, saya butuh bantuan mengenai reservasi.",
+                    ),
+                ]);
+            }
+        });
+
+        View::composer('errors.customer', function (\Illuminate\View\View $view): void {
+            $data = $view->getData();
+            $storefrontTenants = app(GetStorefrontTenant::class);
+            $tenant = ($data['private'] ?? false) ? null : request()->attributes->get('storefront_tenant');
+            $candidate = request()->segment(1);
+            $slug = ($data['publicNotFound'] ?? false) && ! $tenant instanceof Tenant && is_string($candidate)
+                && ! request()->is('manage', 'manage/*', 'access', 'access/*')
+                ? $storefrontTenants->knownSlug($candidate)
+                : null;
+            $slugRoute = request()->routeIs('customer.booking.slug.*');
+            $storefrontUrl = match (true) {
+                ! $tenant instanceof Tenant => null,
+                $slugRoute => CustomerBookingRoutes::canonical('customer.booking.program', ['slug_usaha' => $tenant->slug]),
+                default => CustomerBookingRoutes::url('customer.booking.program', $tenant->slug),
+            };
+            $brandedTenant = $tenant instanceof Tenant && request()->routeIs('customer.booking.*')
+                && $storefrontTenants->canBrandError($tenant, customDomain: ! $slugRoute)
+                ? $tenant : null;
+
+            $view->with([
+                'branding' => $brandedTenant === null ? null : StorefrontBranding::for($brandedTenant),
+                'businessName' => $brandedTenant === null ? 'BookQu' : $brandedTenant->namabisnis,
+                'storefrontUrl' => ($brandedTenant !== null ? $storefrontUrl : null) ?? app(CustomerAccessLinks::class)->canonical('/'),
+            ]);
+
+            $view->with('recoveryUrl', match (true) {
+                ($data['owner'] ?? false) && auth()->check() => url('/owner/dashboard'),
+                $storefrontUrl !== null => $storefrontUrl,
+                $slug !== null => CustomerBookingRoutes::canonical('customer.booking.program', ['slug_usaha' => $slug]),
+                default => url('/'),
+            });
+        });
 
         Carbon::setLocale(config('app.locale', 'id'));
 

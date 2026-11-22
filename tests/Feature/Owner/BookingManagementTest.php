@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Owner\ListWalkInSlots;
 use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
@@ -12,8 +13,10 @@ use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class BookingManagementTest extends TestCase
@@ -52,6 +55,15 @@ class BookingManagementTest extends TestCase
         ]);
     }
 
+    public function test_the_booking_list_opens_on_perlu_tindakan_unless_searching(): void
+    {
+        $this->actingAs($this->user)->get('/owner/bookings')->assertOk()->assertSee('aria-current="page"', false)
+            ->assertViewHas('tab', 'action');
+        $this->get('/owner/bookings?katakunci=abc')->assertOk()->assertViewHas('tab', 'all');
+        $this->get('/owner/bookings?range=today&tab=all')->assertOk()
+            ->assertViewHas('filters', fn (array $filters): bool => $filters['from'] === now('Asia/Jakarta')->toDateString() && $filters['to'] === $filters['from']);
+    }
+
     public function test_owner_can_view_bookings_list(): void
     {
         Booking::factory()->create([
@@ -62,9 +74,35 @@ class BookingManagementTest extends TestCase
             'status' => 'paid',
         ]);
 
-        $response = $this->actingAs($this->user)->get('/owner/bookings');
+        $response = $this->actingAs($this->user)->get('/owner/bookings?tab=all');
         $response->assertStatus(200);
         $response->assertSee('Alice Customer');
+    }
+
+    public function test_walk_in_picker_query_count_does_not_grow_per_slot(): void
+    {
+        app(TenantContext::class)->setTenantId((int) $this->tenant->id);
+        $this->service->update(['kapasitas' => 3]);
+        $this->schedule->update(['tanggal' => '2026-11-05', 'jam_mulai' => '09:00:00', 'jam_selesai' => '09:59:00']);
+        Booking::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $this->schedule->id,
+            'tanggalbooking' => '2026-11-05', 'jam' => '09:00:00', 'status' => 'paid', 'peserta' => 2,
+        ]);
+        $picker = app(ListWalkInSlots::class);
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $first = $picker->picker($this->tenant, '2026-11-05');
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+        $this->assertSame(1, $first['slots'][0]['seats_left']);
+        Schedule::factory()->count(3)->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'tanggal' => '2026-11-05',
+        ]);
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $picker->picker($this->tenant, '2026-11-05');
+        $this->assertSame($queries, count(DB::getQueryLog()));
+        DB::disableQueryLog();
     }
 
     public function test_owner_can_filter_bookings_by_status(): void
@@ -94,6 +132,25 @@ class BookingManagementTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Paid Charlie');
         $response->assertDontSee('Pending Bob');
+    }
+
+    public function test_waiting_for_payment_lists_only_bookings_whose_slot_is_still_held(): void
+    {
+        $held = Payment::factory()->create(['idtenant' => $this->tenant->id, 'tipe' => 'booking', 'status' => 'pending', 'expired_at' => now()->addMinutes(30)]);
+        $lapsed = Payment::factory()->create(['idtenant' => $this->tenant->id, 'tipe' => 'booking', 'status' => 'pending', 'expired_at' => now()->subDay()]);
+        foreach (['Masih Bisa Bayar' => $held, 'Sudah Lewat Batas' => $lapsed] as $name => $payment) {
+            Booking::factory()->create([
+                'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'status' => 'pending', 'namapelanggan' => $name,
+                'idschedule' => Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id])->id,
+                'idpayment' => $payment->id, 'created_at' => now()->subDays(2),
+            ]);
+        }
+
+        $response = $this->actingAs($this->user)->get('/owner/bookings?tab=pending');
+
+        $response->assertOk()->assertSee('Masih Bisa Bayar')->assertDontSee('Sudah Lewat Batas');
+        $this->assertSame(1, $response->viewData('tabCounts')['pending']);
+        $this->get('/owner/bookings?tab=all')->assertSee('Sudah Lewat Batas');
     }
 
     public function test_owner_can_update_booking_status(): void
@@ -135,7 +192,7 @@ class BookingManagementTest extends TestCase
         ]));
         $booking = $bookings->first();
         $url = "/owner/bookings/{$booking->id}/status";
-        $this->actingAs($this->user)->get('/owner/bookings')->assertOk()
+        $this->actingAs($this->user)->get('/owner/bookings?tab=all')->assertOk()
             ->assertSee('Menunggu pembayaran online')->assertSee('08:01 WIB')
             ->assertDontSee('id="cancel-booking-'.$booking->id.'"', false);
         foreach (['paid', 'completed', 'cancelled'] as $status) {
@@ -273,12 +330,60 @@ class BookingManagementTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('sukses');
 
-        $booking = Booking::withoutGlobalScopes()->where('namapelanggan', 'Walkin Guest')->first();
+        $booking = app(TenantContext::class)->run((int) $this->tenant->id,
+            fn (): ?Booking => Booking::with('payment')->where('namapelanggan', 'Walkin Guest')->first());
         $this->assertNotNull($booking);
         $this->assertNotNull($booking->payment);
         $this->assertNull($booking->payment->manage_token);
         $this->assertSame('manual', $booking->payment->provider);
         $this->assertDatabaseHas('customer_access_deliveries', ['payment_id' => $booking->idpayment]);
+    }
+
+    public function test_walk_in_rejects_a_full_small_plan_in_both_response_formats_and_allows_pro(): void
+    {
+        $small = Plan::updateOrCreate(['namapaket' => 'small'], [
+            'hargabulanan' => 50000, 'maxlayanan' => 5, 'maxbooking' => 1, 'isunlimited' => false,
+        ]);
+        $subscription = Subscription::create([
+            'idtenant' => $this->tenant->id,
+            'idplan' => $small->id,
+            'status' => 'active',
+            'langganan_mulai' => now()->subDay(),
+            'langganan_berakhir' => now()->addMonth(),
+        ]);
+        $date = now()->addDays(3)->toDateString();
+        $usedSchedule = Schedule::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+            'tanggal' => $date, 'jam_mulai' => '10:00:00', 'jam_selesai' => '11:00:00',
+        ]);
+        Booking::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+            'idschedule' => $usedSchedule->id, 'tanggalbooking' => $date, 'status' => 'paid',
+        ]);
+        $openSchedule = Schedule::factory()->create([
+            'idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id,
+            'tanggal' => $date, 'jam_mulai' => '16:00:00', 'jam_selesai' => '17:00:00', 'status' => 'tersedia',
+        ]);
+        $input = [
+            'idschedule' => $openSchedule->id, 'namapelanggan' => 'Pelanggan Walk-in',
+            'nomorhp' => '089988776600', 'metode' => 'cash',
+        ];
+        $message = 'Kuota booking bulan ini habis. Booking yang ada tetap bisa diurus.';
+
+        $this->actingAs($this->user)->postJson(route('owner.bookings.walkin'), $input)
+            ->assertUnprocessable()->assertJsonPath('errors.quota.0', $message);
+        $this->from(route('owner.bookings'))->post(route('owner.bookings.walkin'), $input)
+            ->assertRedirect(route('owner.bookings'))->assertSessionHasErrors(['quota' => $message]);
+        $this->assertDatabaseCount('bookings', 1);
+        $this->assertDatabaseCount('payments', 0);
+
+        $pro = Plan::updateOrCreate(['namapaket' => 'pro'], [
+            'hargabulanan' => 200000, 'maxlayanan' => 0, 'maxbooking' => 1, 'isunlimited' => true,
+        ]);
+        $subscription->update(['idplan' => $pro->id]);
+        $this->postJson(route('owner.bookings.walkin'), $input)->assertCreated();
+        $this->assertDatabaseHas('bookings', ['idschedule' => $openSchedule->id, 'status' => 'paid']);
+        $this->assertDatabaseCount('payments', 1);
     }
 
     public function test_owner_bookings_page_does_not_expose_customer_credentials(): void

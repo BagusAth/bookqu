@@ -57,15 +57,15 @@
                                     $dispatch('open-dialog', { id: 'owner-walkin-dialog' });
                                 });
                             "
-                        >Buat booking</button>
+                        >Catat booking</button>
                     @endif
                 </div>
             </section>
 
-            <dl x-show="data.stats && data.stats.length" class="grid grid-cols-2 gap-3">
+            <dl x-show="data.stats && data.stats.length" class="grid grid-cols-2 gap-2">
                 <template x-for="(stat, index) in data.stats" x-bind:key="index">
                     <div class="rounded-lg border border-bq-border px-3 py-2">
-                        <dt class="text-xs text-bq-text-muted" x-text="stat.label"></dt>
+                        <dt class="text-bq-small text-bq-text-muted" x-text="stat.label"></dt>
                         <dd class="text-sm font-semibold bq-num text-bq-text" x-text="stat.value"></dd>
                     </div>
                 </template>
@@ -74,7 +74,7 @@
             <section aria-labelledby="customer-panel-note" x-data="ownerCustomerNote(data)"
                 x-effect="$dispatch('customer-note-dirty', text !== (data.note || ''))">
                 <h3 id="customer-panel-note" class="mb-1 text-sm font-semibold text-bq-text">Catatan internal</h3>
-                <p class="mb-2 text-xs text-bq-text-muted">Hanya terlihat oleh tim Anda.</p>
+                <p class="mb-2 text-bq-small text-bq-text-muted">Hanya terlihat oleh tim Anda.</p>
                 <form x-on:submit.prevent="save()" class="space-y-2">
                     <label for="customer-panel-note-text" class="sr-only">Catatan internal</label>
                     <textarea id="customer-panel-note-text" x-model="text" rows="3" maxlength="2000" placeholder="Misalnya: suka sesi pagi, alergi parfum." class="bq-input w-full"></textarea>
@@ -98,7 +98,7 @@
                             >
                                 <span class="min-w-0 text-sm">
                                     <span class="block text-bq-text" x-text="item.code"></span>
-                                    <span class="block truncate text-bq-text-muted" x-text="item.service"></span>
+                                    <span class="block truncate text-bq-text-muted" x-text="item.service" x-bind:title="item.service"></span>
                                     <span class="block bq-num text-bq-text-muted"><span x-text="item.date"></span>, <span x-text="item.time"></span></span>
                                 </span>
                                 <span class="bq-badge" x-bind:class="{{ $tones }}" x-text="item.status.label"></span>
@@ -114,7 +114,7 @@
                     <template x-for="item in (data.payments || [])" x-bind:key="item.order_id">
                         <li class="flex items-center justify-between gap-3 py-2 text-sm">
                             <span class="min-w-0">
-                                <span class="block truncate text-bq-text" x-text="item.order_id"></span>
+                                <span class="block truncate text-bq-text" x-text="item.order_id" x-bind:title="item.order_id"></span>
                                 <span class="block bq-num text-bq-text-muted" x-text="item.date"></span>
                             </span>
                             <span class="shrink-0 text-right">

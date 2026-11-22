@@ -131,7 +131,7 @@ class BookingFlowTest extends TestCase
 
         $responseCheckout = $this->get('/my-business/booking/checkout');
         $responseCheckout->assertStatus(200);
-        $responseCheckout->assertSee('Isi Data Diri');
+        $responseCheckout->assertSee('Data pemesan');
     }
 
     public function test_customer_can_process_checkout(): void
@@ -183,11 +183,12 @@ class BookingFlowTest extends TestCase
 
         $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id);
         $response->assertStatus(200);
-        $response->assertSee('Sistem memantau pembayaran Anda secara otomatis');
+        $response->assertSee('Status dipantau otomatis.'); // Design A §7.4
         $response->assertSee('BQ-TEST-12345');
         // Ensure the generated route contains the order_id, not a raw numerical id
-        $response->assertSee('/my-business/booking/payment/BQ-TEST-12345/callback');
-        $response->assertSee('/my-business/booking/payment/BQ-TEST-12345/check-status');
+        $script = str_replace('\\/', '/', (string) $response->getContent());
+        $this->assertStringContainsString('/my-business/booking/payment/BQ-TEST-12345/callback', $script);
+        $this->assertStringContainsString('/my-business/booking/payment/BQ-TEST-12345/check-status', $script);
     }
 
     public function test_customer_check_payment_status_fast_path_when_already_paid(): void
@@ -350,12 +351,12 @@ class BookingFlowTest extends TestCase
 
         $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertStatus(200);
-        $response->assertSee('Booking Berhasil Dikonfirmasi!');
+        $response->assertSee('Invoice pembayaran');
         $response->assertSee('Google Calendar');
         $response->assertDontSee('Apple / Outlook (.ics)');
         $response->assertSee('Bagikan ke WhatsApp');
-        $response->assertSee('Petunjuk Arah');
-        $response->assertSee('Kembali ke Beranda');
+        $response->assertSee('Petunjuk arah');
+        $response->assertSee('aria-label="Kembali"', false);
         // Check header back button
         $response->assertSee('/my-business');
     }
@@ -390,7 +391,7 @@ class BookingFlowTest extends TestCase
 
         $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertStatus(200);
-        $response->assertSee('Booking Berhasil Dikonfirmasi!');
+        $response->assertSee('Invoice pembayaran');
 
         $booking->refresh();
         $this->assertNull($booking->booking_code);

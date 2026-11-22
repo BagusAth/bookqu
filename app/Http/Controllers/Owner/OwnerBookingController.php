@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Booking\CompleteBookings;
 use App\Actions\Booking\CreateWalkInBooking;
 use App\Actions\Booking\ExportOwnerBookings;
 use App\Actions\Booking\GetBookingTimeRanges;
@@ -11,8 +12,10 @@ use App\Actions\Booking\QuoteReschedule;
 use App\Actions\Booking\RescheduleBooking;
 use App\Actions\Booking\UpdateBookingStatus;
 use App\Actions\CustomerAccess\RequestManagementDelivery;
+use App\Actions\Owner\ListWalkInSlots;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Domain\Booking\BookingRules;
+use App\Domain\Booking\BookingTimeRange;
 use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Team\TenantPermission;
 use App\Http\Controllers\Controller;
@@ -24,6 +27,7 @@ use App\Models\Payment;
 use App\Models\Service;
 use App\Models\TenantMember;
 use App\Support\CustomerBookingRoutes;
+use App\Support\Rupiah;
 use App\Traits\ClearsBookingCache;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
@@ -48,29 +52,36 @@ class OwnerBookingController extends Controller
         $tenant = $this->resolveTenant();
         $filters = $this->listFilters($request);
         $tab = $this->selectedTab($filters);
+        $filters['sort'] ??= $tab === 'upcoming' ? 'asc' : 'desc';
         $member = $request->attributes->get('tenant_member');
         $can = fn (string $ability): bool => $member instanceof TenantMember && TenantPermission::allowsRole($member->role, $ability);
         $canViewRevenue = $can('revenue.view');
         $canReview = $can('bookings.cancel');
+        $canComplete = $can('bookings.complete');
         $canWalkIn = $can('bookings.walkin') && EntitlementRules::hasEffectivePlan($tenant?->subscription);
         $base = $list->query($tenant, $filters);
         $tabs = $this->taskTabs();
-        foreach ($tabs as $key => $label) {
-            $tabs[$key] = $label.' ('.$list->tab(clone $base, $key, $canReview)->count().')';
+        $tabCounts = [];
+        foreach (array_keys($tabs) as $key) {
+            $tabCounts[$key] = $list->tab(clone $base, $key, $canReview)->count();
         }
         $selection = $list->tab(clone $base, $tab, $canReview);
         if ($tab === 'action') {
             $list->withActionReasons($selection, $canReview);
         }
+        // FR-BOOKING-025: ended sessions the team may close at once from "Perlu tindakan".
+        $endedCount = $tab === 'action' && $canComplete && $tenant !== null
+            ? app(CompleteBookings::class)->endedCount($tenant, Carbon::now('Asia/Jakarta'))
+            : 0;
         $showUnits = EntitlementRules::canAccessFeature($tenant?->subscription, 'units')['allowed'] && config('modules.units') === 'released';
         if ($showUnits) {
             $selection->with('layanan.units');
         }
         $daftarbooking = $selection
-            ->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')->orderBy('jam', $filters['sort'] ?? 'desc')
-            ->orderBy('bookings.id')->paginate(15)->withQueryString();
+            ->orderBy('tanggalbooking', $filters['sort'])->orderBy('jam', $filters['sort'])
+            ->orderBy('bookings.id')->paginate(25)->withQueryString();
         $timeRanges = $ranges->execute($daftarbooking->items())['sessionRanges'];
-        $rows = $daftarbooking->getCollection()->mapWithKeys(function (Booking $booking) use ($list, $timeRanges, $showUnits, $tab): array {
+        $rows = $daftarbooking->getCollection()->mapWithKeys(function (Booking $booking) use ($list, $timeRanges, $showUnits, $tab, $canComplete): array {
             $payment = $booking->payment;
             $hold = $payment instanceof Payment ? BookingRules::onlinePaymentHoldEnd($booking, $payment) : null;
             $amount = $list->paidAmount($booking);
@@ -79,17 +90,27 @@ class OwnerBookingController extends Controller
             return [$booking->id => [
                 'time' => $timeRanges[$booking->id]->label(),
                 'participants' => $booking->peserta,
+                'capacity' => $service instanceof Service ? max(1, (int) $service->kapasitas) : 1,
                 'units' => $showUnits && $service instanceof Service ? $service->units->pluck('name')->implode(', ') : null,
                 'reasons' => $tab === 'action' ? $list->reasons($booking) : [],
-                'amount' => $amount === null ? '—' : 'Rp '.number_format($amount, 0, ',', '.'),
+                'task' => $tab !== 'action' ? null : match (true) {
+                    (bool) $booking->getAttribute('needs_refund') => 'refund',
+                    (bool) $booking->getAttribute('needs_cancellation') => 'cancellation',
+                    (bool) $booking->getAttribute('needs_outcome') && $canComplete => 'complete',
+                    default => null,
+                },
+                'amount' => $amount === null ? '—' : Rupiah::format($amount),
                 'payment_status' => $payment instanceof Payment ? $payment->status : 'Belum tercatat',
                 'waiting' => $hold ? 'Menunggu pembayaran online, berakhir '.$hold->setTimezone('Asia/Jakarta')->format('H:i').' WIB' : null,
             ]];
         });
         $services = $tenant ? Service::where('idtenant', $tenant->id)->orderBy('namalayanan')->get() : collect();
-        $cancellationRequests = $canReview && $tenant !== null && in_array($tab, ['all', 'action'], true)
+        $cancellationRequests = $canReview && $tenant !== null && $tab === 'all'
             ? $list->cancellationRequests($tenant)
             : null;
+        $cancellationsByBooking = $canReview && $tenant !== null && $tab === 'action'
+            ? $list->cancellationRequestsForBookings($tenant, $daftarbooking->getCollection()->modelKeys())
+            : collect();
         $exportUrl = $can('revenue.view') && EntitlementRules::canAccessFeature($tenant?->subscription, 'analytics.export')['allowed']
             ? route('owner.bookings.export', ['tab' => $tab] + $filters)
             : null;
@@ -111,8 +132,9 @@ class OwnerBookingController extends Controller
             : null;
 
         return view('owner.bookings', compact(
-            'tenant', 'daftarbooking', 'filters', 'tab', 'tabs', 'rows', 'services', 'canWalkIn',
-            'cancellationRequests', 'exportUrl', 'storefrontUrl', 'emptyTitle', 'canViewRevenue', 'initialPanelUrl',
+            'tenant', 'daftarbooking', 'filters', 'tab', 'tabs', 'tabCounts', 'rows', 'services', 'canWalkIn',
+            'cancellationRequests', 'cancellationsByBooking', 'exportUrl', 'storefrontUrl', 'emptyTitle', 'canViewRevenue', 'initialPanelUrl',
+            'endedCount', 'canComplete',
         ));
     }
 
@@ -132,16 +154,19 @@ class OwnerBookingController extends Controller
         abort_unless($member instanceof TenantMember && TenantPermission::allowsRole($member->role, 'revenue.view'), 403);
         abort_unless(EntitlementRules::canAccessFeature($tenant->subscription, 'analytics.export')['allowed'], 403);
         $filters = $this->listFilters($request);
-        $query = $list->tab($list->query($tenant, $filters, streaming: true), $this->selectedTab($filters), TenantPermission::allowsRole($member->role, 'bookings.cancel'));
+        // An export without a tab keeps exporting every booking; only the page opens on Perlu tindakan.
+        $filters['tab'] ??= $filters['status'] ?? 'all';
+        $tab = $this->selectedTab($filters);
+        $query = $list->tab($list->query($tenant, $filters), $tab, TenantPermission::allowsRole($member->role, 'bookings.cancel'));
 
-        return $export->execute($query->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')
+        return $export->execute($tenant, $query->orderBy('tanggalbooking', $filters['sort'] ?? 'desc')
             ->orderBy('jam', $filters['sort'] ?? 'desc')->orderBy('bookings.id'));
     }
 
     /** @return array<string, mixed> */
     private function listFilters(Request $request): array
     {
-        return Validator::make($request->query(), [
+        $filters = Validator::make($request->query(), [
             'katakunci' => ['nullable', 'string', 'max:150'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d'],
@@ -150,13 +175,31 @@ class OwnerBookingController extends Controller
             'sort' => ['nullable', 'in:asc,desc'],
             'tab' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
+            'range' => ['nullable', 'in:today,next7,month'],
         ])->validate();
+
+        // Date presets of the prototype filter row (BQ-162) become the existing from/to filter.
+        $today = Carbon::today('Asia/Jakarta');
+        [$from, $to] = match ($filters['range'] ?? null) {
+            'today' => [$today, $today],
+            'next7' => [$today, $today->copy()->addDays(6)],
+            'month' => [$today->copy()->startOfMonth(), $today->copy()->endOfMonth()],
+            default => [null, null],
+        };
+        if ($from !== null) {
+            $filters['from'] = $from->toDateString();
+            $filters['to'] = $to->toDateString();
+        }
+
+        return $filters;
     }
 
     /** @param array<string, mixed> $filters */
     private function selectedTab(array $filters): string
     {
-        $tab = $filters['tab'] ?? $filters['status'] ?? 'all';
+        // Perlu tindakan opens first (BQ-162, prototype); a search or a filter without a tab looks in Semua.
+        $searching = collect(['katakunci', 'from', 'to', 'service', 'source'])->contains(fn (string $key): bool => filled($filters[$key] ?? null));
+        $tab = $filters['tab'] ?? $filters['status'] ?? ($searching ? 'all' : 'action');
 
         return isset($this->taskTabs()[$tab]) || in_array($tab, ['paid', 'today'], true) ? $tab : 'all';
     }
@@ -225,7 +268,37 @@ class OwnerBookingController extends Controller
         return back()->with('sukses', 'Tautan booking dijadwalkan untuk dikirim ulang.');
     }
 
-    public function walkinStore(Request $request, CreateWalkInBooking $createWalkInBooking)
+    /**
+     * Bulk completion (FR-BOOKING-025): selected rows, or every ended session still paid.
+     */
+    public function completeMany(Request $request, CompleteBookings $completeBookings): RedirectResponse
+    {
+        $tenant = $this->resolveTenant() ?? abort(404, 'Tenant tidak ditemukan.');
+        $data = $request->validate([
+            'all_ended' => ['sometimes', 'boolean'],
+            'ids' => ['required_without:all_ended', 'array', 'max:500'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $result = ($data['all_ended'] ?? false)
+            ? $completeBookings->completeEnded($tenant, 'owner', limit: CompleteBookings::REQUEST_LIMIT)
+            : $completeBookings->execute($tenant, array_map('intval', $data['ids'] ?? []), 'owner');
+        if ($result['completed'] === 0 && $result['skipped'] === 0) {
+            return back()->with('sukses', 'Tidak ada sesi lewat yang perlu ditutup.');
+        }
+
+        $message = "{$result['completed']} booking ditandai selesai.";
+        if ($result['skipped'] > 0) {
+            $message .= " {$result['skipped']} dilewati karena belum selesai sesinya, sedang minta refund atau pembatalan, atau statusnya sudah berubah.";
+        }
+        if (($data['all_ended'] ?? false) && $result['completed'] + $result['skipped'] === CompleteBookings::REQUEST_LIMIT) {
+            $message .= ' Maksimal 500 sesi diproses per pengiriman. Periksa daftar untuk booking yang masih perlu ditutup.';
+        }
+
+        return back()->with('sukses', $message);
+    }
+
+    public function walkinStore(Request $request, CreateWalkInBooking $createWalkInBooking, ListWalkInSlots $walkInSlots): JsonResponse|RedirectResponse
     {
         $tenant = $this->resolveTenant();
         if (! $tenant) {
@@ -253,16 +326,30 @@ class OwnerBookingController extends Controller
         $booking = $createWalkInBooking->execute($tenant, $validated);
 
         if (! $booking) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.',
+                    'alternatives' => $walkInSlots->alternatives($tenant, (int) $validated['idschedule'], (int) ($validated['peserta'] ?? 1)),
+                ], 409);
+            }
+
             return back()->withInput()->withErrors(['idschedule' => 'Slot waktu yang dipilih tidak tersedia atau sudah terisi.']);
         }
 
-        return back()
-            ->with('sukses', "Walk-in booking atas nama {$booking->namapelanggan} berhasil dibuat!")
-            ->with('walkin_booking', [
-                'code' => $booking->booking_code,
-                'panelUrl' => route('owner.bookings.panel', $booking->id),
-                'href' => route('owner.bookings', ['panel' => $booking->id]),
-            ]);
+        $notice = [
+            'code' => $booking->booking_code,
+            'panelUrl' => route('owner.bookings.panel', $booking->id),
+            'href' => route('owner.bookings', ['panel' => $booking->id]),
+        ];
+        $message = "Booking atas nama {$booking->namapelanggan} berhasil dicatat.";
+        if ($request->expectsJson()) {
+            $request->session()->flash('sukses', $message);
+            $request->session()->flash('walkin_booking', $notice);
+
+            return response()->json($notice, 201);
+        }
+
+        return back()->with('sukses', $message)->with('walkin_booking', $notice);
     }
 
     /**
@@ -288,12 +375,12 @@ class OwnerBookingController extends Controller
 
         $service = $booking->layanan;
         $slots = app(GetAvailableSchedules::class)
-            ->getSlotsForReschedule($tenant, (int) $booking->idlayanan, $tanggal, (int) $booking->id);
+            ->getSlotsForReschedule($tenant, (int) $booking->idlayanan, $tanggal, (int) $booking->id, (int) $booking->peserta);
 
         $slotPrices = $service instanceof Service
             ? app(QuoteReschedule::class)->execute($booking, $tenant, $service, $tanggal, $slots->pluck('schedule')) : [];
 
-        $mappedSlots = $slots->map(function ($item) use ($slotPrices) {
+        $mappedSlots = $slots->map(function ($item) use ($slotPrices, $tanggal) {
             $slot = $item['schedule'];
             $price = $slotPrices[(int) $slot->id]['price'] ?? null;
 
@@ -301,9 +388,9 @@ class OwnerBookingController extends Controller
                 'id' => $slot->id,
                 'jam_mulai' => $item['jam_mulai'],
                 'jam_selesai' => $item['jam_selesai'],
-                'formatted_time' => $item['jam_mulai'].' - '.$item['jam_selesai'],
+                'formatted_time' => str_replace(':', '.', BookingTimeRange::forSlot($tanggal, $item['jam_mulai'], $item['jam_selesai'])->label()),
                 'price' => $price,
-                'formatted_price' => $price === null ? '—' : 'Rp '.number_format($price, 0, ',', '.'),
+                'formatted_price' => $price === null ? '—' : Rupiah::format($price),
                 'price_difference' => $slotPrices[(int) $slot->id]['price_difference'] ?? null,
                 'is_available' => $item['is_available'],
                 'is_current' => $item['is_current'],
@@ -336,19 +423,19 @@ class OwnerBookingController extends Controller
 
         $validated = $request->validated();
         $newScheduleId = (int) $validated['schedule_id'];
-        $alasan = $validated['alasan'] ?? 'Permintaan langsung customer walk-in di studio';
+        $alasan = $validated['alasan'] ?? null;
 
         $result = $rescheduleBooking->execute($booking, $newScheduleId, 'owner', $alasan, $validated['tanggal'] ?? null);
 
         if (! $result['success']) {
             if ($request->wantsJson() || $request->ajax()) {
-                return response()->json(['success' => false, 'message' => $result['error']], 422);
+                return response()->json(['success' => false, 'message' => $result['error'], 'code' => $result['error_code'] ?? null], 422);
             }
 
             return back()->withInput()->withErrors(['error' => $result['error']]);
         }
 
-        $tglFormatted = Carbon::parse($booking->tanggalbooking)->translatedFormat('l, d F Y');
+        $tglFormatted = Carbon::parse($booking->tanggalbooking)->locale('id')->translatedFormat('l, d F Y');
         $jamFormatted = substr($booking->jam, 0, 5).' WIB';
         $successMsg = "Jadwal booking #{$booking->booking_code} ({$booking->namapelanggan}) berhasil diubah ke {$tglFormatted} pukul {$jamFormatted}!";
 

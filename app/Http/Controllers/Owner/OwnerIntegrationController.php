@@ -21,7 +21,7 @@ final class OwnerIntegrationController extends Controller
 
     public function index(): RedirectResponse
     {
-        return redirect()->route('owner.settings.business', ['tab' => 'integrasi'], 301);
+        return redirect()->route('owner.settings', ['tab' => 'integrasi'], 301);
     }
 
     public function saveTracking(SaveTrackingSettingsRequest $request, SaveStorefrontTracking $action): RedirectResponse
@@ -47,7 +47,7 @@ final class OwnerIntegrationController extends Controller
             return $this->connectionError();
         }
 
-        return redirect()->route('owner.settings.business', ['tab' => 'integrasi'])->with('sukses', 'Google Calendar terhubung.')
+        return redirect()->route('owner.settings', ['tab' => 'integrasi'])->with('sukses', 'Google Calendar terhubung.')
             ->header('Referrer-Policy', 'no-referrer');
     }
 
@@ -59,7 +59,7 @@ final class OwnerIntegrationController extends Controller
             return $this->connectionError();
         }
 
-        return redirect()->route('owner.settings.business', ['tab' => 'integrasi'])->with('sukses', 'Koneksi Google Calendar berfungsi.');
+        return redirect()->route('owner.settings', ['tab' => 'integrasi'])->with('sukses', 'Koneksi Google Calendar berfungsi.');
     }
 
     public function disconnectCalendar(ManageGoogleCalendar $action): RedirectResponse
@@ -70,12 +70,12 @@ final class OwnerIntegrationController extends Controller
             return $this->connectionError();
         }
 
-        return redirect()->route('owner.settings.business', ['tab' => 'integrasi'])->with('sukses', 'Google Calendar diputus.');
+        return redirect()->route('owner.settings', ['tab' => 'integrasi'])->with('sukses', 'Google Calendar diputus.');
     }
 
     private function connectionError(): RedirectResponse
     {
-        return redirect()->route('owner.settings.business', ['tab' => 'integrasi'])->withErrors(['calendar' => 'Google Calendar belum dapat dihubungi. Coba lagi.'])
+        return redirect()->route('owner.settings', ['tab' => 'integrasi'])->withErrors(['calendar' => 'Google Calendar belum dapat dihubungi. Coba lagi.'])
             ->header('Referrer-Policy', 'no-referrer');
     }
 

@@ -34,12 +34,20 @@ class OwnerPriceRuleController extends Controller
 {
     use ResolvesOwnerTenant;
 
-    public function saveOpeningHours(SaveOpeningHoursRequest $request, SaveOpeningHours $action): RedirectResponse
+    public function saveOpeningHours(SaveOpeningHoursRequest $request, SaveOpeningHours $action): JsonResponse|RedirectResponse
     {
         $slotOpenDaysAhead = $request->validated('slot_open_days_ahead');
-        $action->execute($this->tenant(), $request->days(), $slotOpenDaysAhead !== null ? (int) $slotOpenDaysAhead : null);
+        $autoOpenSlots = $request->validated('auto_open_slots');
+        $action->execute(
+            $this->tenant(),
+            $request->days(),
+            $slotOpenDaysAhead !== null ? (int) $slotOpenDaysAhead : null,
+            $autoOpenSlots !== null ? (bool) $autoOpenSlots : null,
+        );
 
-        return back()->with('sukses', 'Jam buka berhasil disimpan.');
+        $request->session()->flash('sukses', 'Jam buka berhasil disimpan.');
+
+        return $request->expectsJson() ? response()->json(['success' => true]) : back(303);
     }
 
     public function storePeakRule(SavePeakHourRuleRequest $request, SavePriceRules $action): RedirectResponse
@@ -115,7 +123,6 @@ class OwnerPriceRuleController extends Controller
 
     private function service(Tenant $tenant, int $serviceId): Service
     {
-        // scope-bypass: filtered by the authenticated tenant
-        return Service::withoutGlobalScopes()->where('idtenant', $tenant->id)->findOrFail($serviceId);
+        return Service::query()->where('idtenant', $tenant->id)->findOrFail($serviceId);
     }
 }

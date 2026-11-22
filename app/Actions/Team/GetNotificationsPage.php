@@ -13,6 +13,7 @@ use App\Notifications\PaymentRefundOwedOwnerNotification;
 use App\Notifications\RefundTeamNotification;
 use App\Notifications\SubscriptionReminderNotification;
 use App\Notifications\TrialExpiringNotification;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Notifications\DatabaseNotification;
 
@@ -77,13 +78,30 @@ final class GetNotificationsPage
         /** @var array<string, mixed> $data */
         $data = (array) $notification->data;
         $category = collect(self::CATEGORIES)->search(fn (array $item): bool => in_array($notification->type, $item['types'], true));
+        $createdAt = $notification->created_at?->copy()->timezone('Asia/Jakarta')->locale('id');
+        $day = match (true) {
+            $createdAt === null => 'Tanpa tanggal',
+            $createdAt->isToday() => 'Hari ini',
+            $createdAt->isYesterday() => 'Kemarin',
+            $createdAt->gte(now('Asia/Jakarta')->startOfWeek(CarbonInterface::MONDAY)) => 'Minggu ini',
+            default => 'Lebih lama',
+        };
 
         return [
             'id' => (string) $notification->id,
             'title' => (string) ($data['title'] ?? 'Pemberitahuan'),
             'message' => (string) ($data['message'] ?? ''),
-            'time' => $notification->created_at?->diffForHumans(),
-            'category' => $category !== false ? self::CATEGORIES[$category]['label'] : 'Lainnya',
+            'day' => $day,
+            'time' => $createdAt?->locale('id')->diffForHumans(),
+            'dateTime' => $createdAt?->toIso8601String(),
+            'timeLabel' => $createdAt?->locale('id')->translatedFormat($createdAt->isCurrentYear() ? 'j M, H.i' : 'j M Y, H.i'),
+            'icon' => match ($category) {
+                'booking' => 'calendar',
+                'refund' => 'card',
+                'pencairan' => 'wallet',
+                'paket' => 'tag',
+                default => 'bell',
+            },
             'unread' => $notification->read_at === null,
             'readUrl' => route('owner.notifications.read', $notification->id),
             'destroyUrl' => route('owner.notifications.destroy', $notification->id),

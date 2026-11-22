@@ -4,20 +4,25 @@ namespace App\Actions\Booking;
 
 use App\Domain\Booking\BookingPricing;
 use App\Models\Payment;
+use App\Support\Rupiah;
 
 final class GetInvoiceAmounts
 {
     /** @return array{invoiceAmount: string, invoiceSlotAmount: string, invoiceAmountNote: string, invoiceSlotAmounts: array<int, string>} */
     public function execute(Payment $payment): array
     {
-        $total = 'Rp '.number_format((float) $payment->jumlah, 0, ',', '.');
+        $total = Rupiah::format($payment->jumlah);
         $bookings = $payment->bookings()->where('bookings.idtenant', $payment->idtenant)->get(['id', 'idschedule']);
         $group = $bookings->count() > 1;
+        $lines = $payment->price_breakdown['lines'] ?? [];
         $slotAmounts = [];
         foreach ($bookings as $booking) {
-            $amount = BookingPricing::frozenSlotAmount($payment, (int) $booking->idschedule);
+            $slotId = ! $group && is_array($lines) && count($lines) === 1 && isset($lines[0]['schedule_id'])
+                ? (int) $lines[0]['schedule_id']
+                : (int) $booking->idschedule;
+            $amount = BookingPricing::frozenSlotAmount($payment, $slotId);
             if ($amount !== null) {
-                $slotAmounts[$booking->id] = 'Rp '.number_format($amount, 0, ',', '.');
+                $slotAmounts[$booking->id] = Rupiah::format($amount);
             }
         }
 

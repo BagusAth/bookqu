@@ -33,7 +33,7 @@ class TeamInvitationTest extends TestCase
             ]);
         }
 
-        $this->actingAs($tenant->user)->get(route('owner.settings.business', ['tab' => 'tim']))->assertOk()
+        $this->actingAs($tenant->user)->get(route('owner.settings', ['tab' => 'tim']))->assertOk()
             ->assertSee('Layanan diperbarui')->assertSee('Aktivitas tercatat')->assertSee('16 Nov 2026 10.12')
             ->assertDontSee('services.updated')->assertDontSee('internal.unknown');
     }
@@ -60,7 +60,7 @@ class TeamInvitationTest extends TestCase
         $tenant = Tenant::factory()->create();
         app(CreateTrialSubscription::class)->execute($tenant);
         $email = 'cashier@example.com';
-        $this->actingAs($tenant->user)->get(route('owner.settings.business', ['tab' => 'tim']))->assertOk();
+        $this->actingAs($tenant->user)->get(route('owner.settings', ['tab' => 'tim']))->assertOk();
         $this->post('/owner/settings/team/invitations', ['email' => $email, 'role' => 'kasir'])->assertRedirect();
         $credential = $this->credential();
         $this->actingAs(User::factory()->create())->post('/auth/undangan-tim/buka', ['credential' => $credential])->assertStatus(303);
@@ -123,7 +123,9 @@ class TeamInvitationTest extends TestCase
         $decisionUrl = '/owner/bookings/cancellation-requests/'.$id;
         $this->patch($decisionUrl, ['decision' => 'approve'])->assertForbidden();
         $this->actingAs(Tenant::factory()->create()->user)->patch($decisionUrl, ['decision' => 'approve'])->assertNotFound();
-        $this->actingAs($manager)->get('/owner/bookings')->assertOk()->assertSee('Lokasi ditutup');
+        $page = $this->actingAs($manager)->get('/owner/bookings')->assertOk()
+            ->assertSee('Tinjau pembatalan')->assertSee($decisionUrl);
+        $this->assertSame(1, substr_count($page->getContent(), 'Lokasi ditutup'));
         $this->patch($decisionUrl, ['decision' => 'approve'])->assertRedirect();
         $this->patch($decisionUrl, ['decision' => 'approve'])->assertConflict();
         $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'cancelled']);
@@ -158,7 +160,7 @@ class TeamInvitationTest extends TestCase
             'idtenant' => $tenant->id, 'iduser' => $manager->id, 'role' => 'manajer', 'event' => 'categories.created',
         ]);
         $this->get('/owner/settings/team')->assertForbidden();
-        $this->actingAs($tenant->user)->get(route('owner.settings.business', ['tab' => 'tim']))->assertOk()->assertSee($manager->namalengkap);
+        $this->actingAs($tenant->user)->get(route('owner.settings', ['tab' => 'tim']))->assertOk()->assertSee($manager->namalengkap);
     }
 
     public function test_existing_account_accepts_with_its_invited_email_without_creating_another_user(): void

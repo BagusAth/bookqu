@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Booking\GetBookingTimeRanges;
-use App\Actions\Booking\GetInvoiceAmounts;
-use App\Actions\Booking\QuoteReschedule;
 use App\Actions\Booking\RescheduleBooking;
+use App\Actions\Customer\GetCustomerInvoice;
+use App\Actions\Customer\GetCustomerManagementPage;
+use App\Actions\Customer\GetCustomerPanel;
 use App\Actions\CustomerAccess\ResolveManagementTarget;
 use App\Actions\CustomerAccess\ReviewBooking;
-use App\Actions\Payment\GetCustomerRefundForm;
 use App\Actions\Payment\RequestBookingRefund;
 use App\Actions\Schedule\GetAvailableSchedules;
 use App\Domain\Booking\BookingRules;
@@ -19,7 +19,6 @@ use App\Models\Booking;
 use App\Models\BookingLog;
 use App\Models\Payment;
 use App\Models\Review;
-use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use Carbon\Carbon;
@@ -43,11 +42,12 @@ class BookingManageController extends Controller
     /**
      * Show payment-level group management page.
      */
-    public function showPaymentGroup(Request $request, string $orderId, GetCustomerRefundForm $refundForm)
+    public function showPaymentGroup(Request $request, string $orderId, GetCustomerManagementPage $page)
     {
         $payment = $this->targets->payment($this->access($request), $orderId);
         $bookings = $payment->bookings;
         $tenant = $payment->tenant;
+        abort_unless($tenant instanceof Tenant, 404);
 
         // Log view event for the payment group (throttled)
         $viewKey = "manage:payment_viewed:{$payment->id}:".session()->getId();
@@ -58,15 +58,7 @@ class BookingManageController extends Controller
             Cache::put($viewKey, true, now()->addMinutes(30));
         }
 
-        $isMultiSlot = $bookings->count() > 1;
-
-        return view('customer.manage.payment-show', app(GetBookingTimeRanges::class)->execute($bookings)
-            + $refundForm->execute($this->access($request), $bookings->first()) + [
-                'payment' => $payment,
-                'bookings' => $bookings,
-                'tenant' => $tenant,
-                'isMultiSlot' => $isMultiSlot,
-            ]);
+        return view('customer.manage.details', $page->execute($this->access($request), $tenant, $bookings, $payment, group: true));
     }
 
     /**
@@ -82,19 +74,15 @@ class BookingManageController extends Controller
 
         $bookings = $payment->bookings;
         $tenant = $payment->tenant;
-        $booking = $bookings->first();
+        abort_unless($tenant instanceof Tenant, 404);
 
-        return view('customer.manage.payment-invoice', app(GetInvoiceAmounts::class)->execute($payment) + app(GetBookingTimeRanges::class)->execute($bookings) + [
-            'payment' => $payment,
-            'bookings' => $bookings,
-            'booking' => $booking,
-            'tenant' => $tenant,
-        ]);
+        return view('customer.booking.invoice', app(GetCustomerInvoice::class)->execute($tenant, $payment, $bookings,
+            route('booking.manage.payment', ['order_id' => $orderId])));
     }
 
     // ── Shared token validation (Scoped) ───────────────────────────────────────
 
-    public function show(Request $request, string $bookingCode, GetCustomerRefundForm $refundForm)
+    public function show(Request $request, string $bookingCode, GetCustomerManagementPage $page)
     {
         $booking = $this->targets->booking($this->access($request), $bookingCode, AccessOperation::Manage);
 
@@ -105,26 +93,11 @@ class BookingManageController extends Controller
             Cache::put($viewKey, true, now()->addMinutes(30));
         }
 
-        $isMultiSlot = $booking->isMultiSlot();
-        $canReschedule = ! $isMultiSlot && $booking->canBeRescheduled();
+        $tenant = $booking->tenant;
+        abort_unless($tenant instanceof Tenant, 404);
+        $payment = $booking->payment;
 
-        // Build cancel deadline message
-        $rescheduleDeadline = null;
-        if ($booking->status === 'paid') {
-            $tenant = $booking->tenant;
-            $bookingDateTime = Carbon::parse($booking->tanggalbooking->toDateString().' '.$booking->jam);
-            $rescheduleHours = $tenant->reschedule_before_hours ?? 24;
-
-            $rescheduleDeadline = $bookingDateTime->copy()->subHours($rescheduleHours);
-        }
-
-        return view('customer.manage.show', app(GetBookingTimeRanges::class)->execute([$booking])
-            + $refundForm->execute($this->access($request), $booking) + [
-                'booking' => $booking,
-                'isMultiSlot' => $isMultiSlot,
-                'canReschedule' => $canReschedule,
-                'rescheduleDeadline' => $rescheduleDeadline,
-            ]);
+        return view('customer.manage.details', $page->execute($this->access($request), $tenant, [$booking], $payment instanceof Payment ? $payment : null, group: false));
     }
 
     // ── Cancel booking ─────────────────────────────────────────────────────────
@@ -158,13 +131,13 @@ class BookingManageController extends Controller
         if ($booking->isMultiSlot()) {
             return redirect()
                 ->route('booking.manage', ['booking_code' => $bookingCode])
-                ->withErrors(['reschedule' => 'Booking multi-slot tidak dapat dibatalkan atau dijadwalkan ulang per slot secara individual. Silakan hubungi pengelola bisnis.']);
+                ->withErrors(['reschedule' => 'Perubahan jadwal per sesi tidak tersedia untuk reservasi beberapa sesi. Hubungi bisnis jika Anda perlu bantuan.']);
         }
 
         if ($booking->status !== 'paid') {
             return redirect()
                 ->route('booking.manage', ['booking_code' => $bookingCode])
-                ->withErrors(['reschedule' => 'Hanya booking berstatus "paid" yang dapat dijadwalkan ulang.']);
+                ->withErrors(['reschedule' => 'Hanya reservasi yang sudah terkonfirmasi yang dapat dijadwalkan ulang.']);
         }
 
         if (! $booking->canBeRescheduled()) {
@@ -172,12 +145,18 @@ class BookingManageController extends Controller
 
             return redirect()
                 ->route('booking.manage', ['booking_code' => $bookingCode])
-                ->withErrors(['reschedule' => "Reschedule hanya diizinkan minimal {$rescheduleHours} jam sebelum jadwal."]);
+                ->withErrors(['reschedule' => "Ubah jadwal paling lambat {$rescheduleHours} jam sebelum sesi."]);
         }
 
+        $tenant = $booking->tenant;
+        abort_unless($tenant instanceof Tenant, 404);
         $calendar = app(GetAvailableSchedules::class)->getCustomerRescheduleCalendar($booking);
 
-        return view('customer.manage.reschedule', app(GetBookingTimeRanges::class)->execute([$booking]) + ['booking' => $booking] + $calendar);
+        return view('customer.manage.reschedule', app(GetBookingTimeRanges::class)->execute([$booking]) + [
+            'booking' => $booking,
+            'tenant' => $tenant,
+            'merchantWaUrl' => GetCustomerPanel::whatsAppUrl((string) $tenant->nomorhp),
+        ] + $calendar);
     }
 
     // ── Process reschedule ─────────────────────────────────────────────────────
@@ -197,12 +176,12 @@ class BookingManageController extends Controller
         $result = $rescheduleBooking->execute($booking, $newScheduleId, 'customer', null, $newDate, $request->attributes->get('customer_access'));
 
         if (! $result['success']) {
-            return back()->withErrors(['reschedule' => $result['error']]);
+            return back()->withErrors(['reschedule' => $result['error']])->withInput($validated);
         }
 
         return redirect()
             ->route('booking.manage', ['booking_code' => $bookingCode])
-            ->with('success', 'Jadwal booking berhasil diubah. Email konfirmasi telah dikirim.');
+            ->with('success', 'Jadwal reservasi sudah diubah.');
     }
 
     // ── Get available time slots for reschedule (AJAX) ─────────────────────────
@@ -216,24 +195,16 @@ class BookingManageController extends Controller
             return response()->json(['error' => 'Tanggal diperlukan.'], 422);
         }
 
-        $selectedDate = Carbon::parse($tanggal)->toDateString();
+        $selectedDate = $request->validate(
+            ['tanggal' => ['required', 'date_format:Y-m-d']],
+            ['tanggal.date_format' => 'Tanggal tidak valid.'],
+        )['tanggal'];
         $tenant = $booking->tenant;
         $service = $booking->layanan;
 
         abort_unless($tenant instanceof Tenant && $service instanceof Service, 404);
-        $slots = app(GetAvailableSchedules::class)
-            ->getCustomerRescheduleSlots($tenant, $service, $selectedDate, (int) $booking->id);
 
-        $schedules = Schedule::where('idtenant', $tenant->id)->where('idlayanan', $service->id)
-            ->whereDate('tanggal', $selectedDate)->whereIn('id', array_column($slots, 'id'))->get();
-        $prices = app(QuoteReschedule::class)->execute($booking, $tenant, $service, $selectedDate, $schedules);
-        $eligible = array_values(array_filter($slots, fn (array $slot): bool => isset($prices[$slot['id']])
-            && ($prices[$slot['id']]['price_difference'] ?? 0) <= 0));
-
-        return response()->json([
-            'slots' => $eligible,
-            'message' => count($eligible) < count($slots) ? 'Ada slot dengan harga lebih tinggi. Hubungi pemilik.' : null,
-        ]);
+        return response()->json(app(GetAvailableSchedules::class)->getCustomerRescheduleSlots($booking, $tenant, $service, $selectedDate));
     }
 
     // ── Invoice ────────────────────────────────────────────────────────────────
@@ -246,10 +217,11 @@ class BookingManageController extends Controller
             abort(404, 'Invoice hanya tersedia untuk pembayaran yang berhasil.');
         }
 
-        return view('customer.manage.invoice', app(GetInvoiceAmounts::class)->execute($booking->payment) + app(GetBookingTimeRanges::class)->execute([$booking]) + [
-            'booking' => $booking,
-            'invoiceDate' => $booking->payment?->updated_at ?? $booking->created_at,
-        ]);
+        $tenant = $booking->tenant;
+        abort_unless($tenant instanceof Tenant, 404);
+
+        return view('customer.booking.invoice', app(GetCustomerInvoice::class)->execute($tenant, $booking->payment, [$booking],
+            route('booking.manage', ['booking_code' => $bookingCode])));
     }
 
     // ── Customer Review ───────────────────────────────────────────────────────

@@ -14,7 +14,7 @@ Canonical BookQu terms and the legacy names that still appear in the code.
 | **Platform Admin** | BookQu staff with platform-wide oversight. | `users.role = 'admin'` | — |
 | **Team member** | A user invited by the owner to work in one tenant with a role (D-011, FR-TEAM). Not a service provider. | not implemented yet (BQ-126); the old `staff` table means something else and is archived | Staff (for a person who signs in), Employee, Agent |
 | **Role** (Pemilik, Manajer, Kasir) | What a user may do inside one tenant: Pemilik = the owner; Manajer = operations and configuration without money, plan or team; Kasir = the counter, without revenue figures (FR-TEAM-002). | not implemented yet | custom role names |
-| **Service** | Something a customer can book (what). | `services` table; `idlayanan` FK; `namalayanan`, `harga`, `durasi`, `kapasitas`, `satuan_harga`, `satuan_durasi`; `Booking::layanan()`; routes/controller `OwnerProgramController`, `/owner/programs`, `select-program`, `program-selection` | Program, Layanan (as a concept), Bookable Program |
+| **Service** | Something a customer can book (what). | `services` table; `idlayanan` FK; `namalayanan`, `harga`, `durasi`, `kapasitas`, `satuan_harga`, `satuan_durasi`; `Booking::layanan()`; routes/controller `OwnerProgramController`, `/owner/services`, `select-program`, `program-selection` | Program, Layanan (as a concept), Bookable Program |
 | **Category** | Grouping of services. | `categories`, `services.idcategory` | — |
 | **Schedule** | One bookable time slot of a service (when). | `schedules` table; `idschedule`; `tanggal`, `jam_mulai`, `jam_selesai`, `harga_override`; "slot" in UI and routes | Program slot |
 | **Availability** | Whether a schedule can be booked now. Derived, never stored. | `AvailabilityRules` statuses `AVAILABLE`, `BOOKED`, `BLOCKED`, `UNAVAILABLE` | a stored "availability" entity |
@@ -70,7 +70,7 @@ Canonical BookQu terms and the legacy names that still appear in the code.
 | `payments.status` | `pending`, `sukses` (success), `gagal` (failed) | Expiry is not a status; an expired payment becomes `gagal`. Constants in `PaymentState`. |
 | `refunds.status` | `pending`, `processed`, `failed` | |
 | `subscriptions.status` | `trial`, `active`, `expired`, `cancelled` | Constants in `SubscriptionState`. |
-| `schedules.status` | `tersedia` (open), `tidak_tersedia` (closed) | DB enum. `AvailabilityRules` also checks `diblokir`, which the enum cannot store. |
+| `schedules.status` | `tersedia` (open), `tidak_tersedia` (closed) | DB enum. Date blocks are stored in `owner_blocked_dates`. |
 | `owner_payouts.status` | `pending`, `approved`, `success`, `failed`, `rejected` | Transitions in `App\Domain\Payout\PayoutState`: pending → approved/rejected, approved → success/failed. |
 | `users.role` | `owner`, `admin` | Migrations also allow `superadmin`/`customer`; neither is used. Team roles (Manajer, Kasir) are added by D-011; their storage is decided in ADR-0016. |
 | `tenants.payment_mode` | `platform` (default), `owner` | `owner` = tenant's own Midtrans keys; withdrawn by D-016 together with the stored `midtrans_*` credentials. |

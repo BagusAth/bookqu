@@ -55,7 +55,7 @@ class EndedSubscriptionTest extends TestCase
         $this->travelTo(Carbon::parse('2026-11-04 10:00:00', 'Asia/Jakarta'));
         $tenant = Tenant::factory()->create();
         app(CreateTrialSubscription::class)->execute($tenant)->update(['trial_berakhir' => now()->subDay()]);
-        $this->get('/'.$tenant->slug)->assertOk()->assertSee('Bisnis ini belum menerima booking online saat ini.')->assertDontSee('id="booking-program-form"', false);
+        $this->get('/'.$tenant->slug)->assertOk()->assertSee('Reservasi online sedang ditutup')->assertDontSee('id="booking-program-form"', false); // Design A §7.1 closed state.
     }
 
     public function test_an_owner_receives_only_one_trial_even_after_recreating_the_business(): void

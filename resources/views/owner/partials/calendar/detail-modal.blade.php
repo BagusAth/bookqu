@@ -4,12 +4,14 @@
     <template x-for="selected in slot ? [slot] : []" :key="selected.id">
         <div class="space-y-4">
             <p class="text-sm font-semibold" x-text="selected.walkInLabel"></p>
+            <ul x-show="selected.bookings.length" class="divide-y divide-bq-border">
+                <template x-for="booking in selected.bookings" :key="booking.url">
+                    <li><button type="button" class="bq-link py-2" x-text="booking.customer"
+                        x-on:click="hide(); $dispatch('open-booking-panel', { url: booking.url, trigger: calendarTrigger })"></button></li>
+                </template>
+            </ul>
             <template x-if="selected.walkIn">
-                <section x-on:submit.prevent="saveWalkIn($event.target)" aria-label="Catat walk-in">
-                    <h3 class="mb-2 text-sm font-semibold">Catat walk-in</h3>
-                    <p x-show="feedback" x-text="feedback" class="mb-2 text-sm text-bq-danger" role="alert"></p>
-                    <x-owner.walkin-form fixed-slot-model="selected" id-prefix="calendar-walkin" />
-                </section>
+                <x-ui.button variant="primary" icon="plus" x-on:click="hide(); $dispatch('open-dialog', { id: 'owner-walkin-dialog', slot: selected, trigger: calendarTrigger })">Catat booking</x-ui.button>
             </template>
             <template x-if="selected.edit">
                 <div class="space-y-3 border-t border-bq-border pt-3">
@@ -18,8 +20,8 @@
                         @method('PATCH')
                         <input type="hidden" name="_form" :value="'calendar-state-' + selected.id">
                         @if (is_string(old('_form')) && str_starts_with(old('_form'), 'calendar-state-'))
-                            <x-owner.field-error name="operation" x-cloak x-show="@js(old('_form')) === 'calendar-state-' + selected.id" />
-                            <x-owner.field-error name="slot" x-cloak x-show="@js(old('_form')) === 'calendar-state-' + selected.id" />
+                            <x-owner.field-error name="operation" x-cloak x-show="{{ \Illuminate\Support\Js::from(old('_form')) }} === 'calendar-state-' + selected.id" />
+                            <x-owner.field-error name="slot" x-cloak x-show="{{ \Illuminate\Support\Js::from(old('_form')) }} === 'calendar-state-' + selected.id" />
                         @endif
                         <button name="operation" :disabled="busy" :value="selected.closed ? 'open' : 'close'" class="bq-btn bq-btn-secondary"
                             x-text="selected.closed ? 'Buka lagi' : 'Tutup slot ini'"></button>
@@ -36,7 +38,7 @@
                             <span class="text-xs text-bq-text-muted">Kosongkan untuk mengikuti aturan harga.</span>
                             <span x-show="slotErrors.harga_override" x-text="slotErrors.harga_override?.[0]" class="text-bq-danger" role="alert"></span>
                             @if (is_string(old('_form')) && str_starts_with(old('_form'), 'calendar-price-'))
-                                <x-owner.field-error name="harga_override" x-cloak x-show="@js(old('_form')) === 'calendar-price-' + selected.id" />
+                                <x-owner.field-error name="harga_override" x-cloak x-show="{{ \Illuminate\Support\Js::from(old('_form')) }} === 'calendar-price-' + selected.id" />
                             @endif
                         </label>
                         <button :disabled="busy" class="bq-btn bq-btn-secondary">Ubah harga slot ini</button>

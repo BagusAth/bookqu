@@ -20,8 +20,6 @@ final class CustomDomain
 
     public const STATUS_NOT_CONNECTED = 'not_connected';
 
-    private const PLATFORM_DOMAINS = ['bookqu.my.id', 'bookqu.test', 'localhost'];
-
     /** The TXT record that proves ownership lives at `_bookqu.<domain>`. */
     public const VERIFICATION_LABEL = '_bookqu';
 
@@ -53,13 +51,17 @@ final class CustomDomain
             return false;
         }
 
-        foreach (self::platformDomains() as $platform) {
-            if ($host === $platform || str_ends_with($host, '.'.$platform)) {
-                return false;
-            }
-        }
+        return ! self::isPlatformHost($host);
+    }
 
-        return true;
+    public static function isPlatformHost(string $host): bool
+    {
+        return preg_match('~^'.self::platformHostPattern().'$~iD', $host) === 1;
+    }
+
+    public static function tenantHostPattern(): string
+    {
+        return '(?!'.self::platformHostPattern().'$).+';
     }
 
     /**
@@ -111,13 +113,12 @@ final class CustomDomain
         return false;
     }
 
-    /**
-     * @return list<string>
-     */
-    private static function platformDomains(): array
+    private static function platformHostPattern(): string
     {
         $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $hosts = array_filter([...config('custom-domains.platform_hosts'), $appHost]);
+        $escapedHosts = array_map(fn (string $host): string => preg_quote($host, '~'), $hosts);
 
-        return array_values(array_unique(array_filter([...self::PLATFORM_DOMAINS, is_string($appHost) ? mb_strtolower($appHost) : null])));
+        return '(?:[^.]+\.)*(?:'.implode('|', $escapedHosts).')\.?';
     }
 }

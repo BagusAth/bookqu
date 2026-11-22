@@ -8,6 +8,7 @@ use App\Actions\Schedule\BulkCreateSchedules;
 use App\Actions\Schedule\ChangeSelectedSlots;
 use App\Actions\Schedule\DeleteBlockedDate;
 use App\Actions\Schedule\DeleteSchedule;
+use App\Actions\Schedule\GetScheduleOverview;
 use App\Actions\Schedule\GetSlotRunway;
 use App\Actions\Schedule\PriceSlots;
 use App\Actions\Schedule\UpdateScheduleAvailability;
@@ -27,6 +28,8 @@ use App\Models\Service;
 use App\Models\SpecialDatePrice;
 use App\Models\Tenant;
 use App\Services\Schedule\ScheduleAvailabilityCache;
+use App\Support\Rupiah;
+use App\Support\WeekdayRange;
 use App\Traits\ResolvesOwnerTenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,10 +46,10 @@ class OwnerScheduleController extends Controller
     /**
      * Halaman manajemen jadwal.
      */
-    public function index(Request $request, GetSlotRunway $getSlotRunway, PriceSlots $priceSlots): View
+    public function index(Request $request, GetSlotRunway $getSlotRunway, GetScheduleOverview $getScheduleOverview, PriceSlots $priceSlots): View
     {
         $tenant = $this->resolveTenant() ?? abort(404);
-        $tabs = ['hours' => 'Jam Buka', 'prices' => 'Harga', 'closed' => 'Libur & Tutup', 'slots' => 'Slot'];
+        $tabs = ['hours' => 'Jam buka', 'prices' => 'Harga', 'closed' => 'Libur & tutup', 'slots' => 'Slot'];
         $requestedTab = $request->string('tab')->toString();
         $tab = isset($tabs[$requestedTab]) ? $requestedTab : 'hours';
         if ($request->session()->has('blocked_date_conflicts')) {
@@ -55,16 +58,29 @@ class OwnerScheduleController extends Controller
 
         $weekdays = [1 => 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
         $runway = $getSlotRunway->execute($tenant);
+        $overview = $getScheduleOverview->execute($tenant, $runway);
         $daftarlayanan = Service::where('idtenant', $tenant->id)->orderBy('namalayanan')->get();
-        $data = compact('tenant', 'tabs', 'tab', 'weekdays', 'runway', 'daftarlayanan');
+        $maxDaysAhead = BookingRules::maximumAdvanceDays($tenant);
+        $data = compact('tenant', 'tabs', 'tab', 'weekdays', 'runway', 'overview', 'daftarlayanan', 'maxDaysAhead');
 
         if ($tab === 'hours') {
             $data['openingHours'] = $this->openingHours($tenant);
         } elseif ($tab === 'prices') {
             $data['peakRules'] = PeakHourRule::where('idtenant', $tenant->id)->with('services')->orderBy('name')->get();
             $data['specialDates'] = SpecialDatePrice::where('idtenant', $tenant->id)->with('service')->orderBy('tanggal')->get();
+            $data['peakRows'] = $data['peakRules']->map(fn (PeakHourRule $rule): array => [
+                'rule' => $rule,
+                'days' => WeekdayRange::label((array) $rule->days),
+                'time' => str_replace(':', '.', substr((string) $rule->starts_at, 0, 5)).'–'.str_replace(':', '.', substr((string) $rule->ends_at, 0, 5)),
+                'extra' => '+'.Rupiah::format($rule->extra_amount),
+                'services' => $rule->services->isEmpty() ? 'Semua layanan' : ($rule->services->count() === 1 ? (string) $rule->services->value('namalayanan') : $rule->services->count().' layanan'),
+                'services_title' => $rule->services->pluck('namalayanan')->join(', '),
+            ])->all();
         } elseif ($tab === 'closed') {
             $data['blockedDates'] = $tenant->blockedDates()->orderByDesc('tanggal')->get();
+            // Weekly days off come from the opening hours (prototype: "Minggu, setiap minggu").
+            $openDays = array_keys($this->openingHours($tenant));
+            $data['weeklyClosed'] = $openDays === [] ? [] : array_values(array_diff_key($weekdays, array_flip($openDays)));
         } else {
             $data += $this->slotPage($request, $tenant, $priceSlots);
             $data['openingHours'] = $this->openingHours($tenant);
@@ -95,9 +111,31 @@ class OwnerScheduleController extends Controller
             ->when($selectedService > 0, fn (Builder $query) => $query->where('idlayanan', $selectedService))
             ->with('layanan')
             ->withExists(['bookings as occupied' => fn (Builder $query) => BookingRules::applyOccupiesSlotCondition($query)])
-            ->with(['bookings' => fn ($query) => BookingRules::applyOccupiesSlotCondition($query->getQuery())->select(['id', 'idschedule', 'booking_code'])])
+            ->with(['bookings' => fn ($query) => BookingRules::applyOccupiesSlotCondition($query->getQuery())->select(['id', 'idschedule', 'booking_code', 'namapelanggan'])])
             ->orderBy('tanggal')->orderBy('jam_mulai')->get();
-        $slotPrices = $prices->execute($tenant, $slots);
+        $slotPriceNotes = $prices->explain($tenant, $slots);
+        $slotPrices = array_map(fn (array $price): int => $price['price'], $slotPriceNotes);
+        $now = Carbon::now('Asia/Jakarta');
+        $slotStates = $slots->mapWithKeys(function (Schedule $slot) use ($now): array {
+            $date = Carbon::parse($slot->tanggal)->toDateString();
+            $ended = Carbon::parse($date.' '.$slot->jam_selesai, 'Asia/Jakarta')->lt($now);
+            $names = $slot->bookings->pluck('namapelanggan')->filter()->unique()->join(', ');
+
+            return [$slot->id => match (true) {
+                (bool) $slot->getAttribute('occupied') => ['label' => 'Terisi'.($names !== '' ? ' · '.$names : ''), 'tone' => 'brand', 'state' => 'booked'],
+                $ended => ['label' => 'Lewat', 'tone' => null, 'state' => 'past'],
+                $slot->status !== 'tersedia' => ['label' => 'Ditutup', 'tone' => 'danger', 'state' => 'closed'],
+                default => ['label' => 'Kosong', 'tone' => null, 'state' => 'open'],
+            }];
+        });
+        $today = $now->toDateString();
+        $tomorrow = $now->copy()->addDay()->toDateString();
+        $dayHeadings = $slots->map(fn (Schedule $slot): string => Carbon::parse($slot->tanggal)->toDateString())->unique()
+            ->mapWithKeys(fn (string $date): array => [$date => ($date === $today ? 'Hari ini · ' : ($date === $tomorrow ? 'Besok · ' : ''))
+                .Carbon::parse($date)->locale('id')->translatedFormat('l, j M')])->all();
+        $weekLabel = $awalminggu->month === $akhirminggu->month
+            ? $awalminggu->format('j').'–'.$akhirminggu->locale('id')->translatedFormat('j M')
+            : $awalminggu->locale('id')->translatedFormat('j M').' – '.$akhirminggu->locale('id')->translatedFormat('j M');
         $slotTimes = $slots->mapWithKeys(fn (Schedule $slot): array => [
             $slot->id => BookingTimeRange::forSlot(Carbon::parse($slot->tanggal)->toDateString(), (string) $slot->jam_mulai, (string) $slot->jam_selesai)->label(),
         ]);
@@ -105,7 +143,7 @@ class OwnerScheduleController extends Controller
             $slot->id => $slot->getAttribute('occupied') ? 'Terisi' : ($slot->status === 'tersedia' ? 'Terbuka' : 'Tutup'),
         ]);
 
-        return compact('slots', 'slotPrices', 'slotTimes', 'slotLabels', 'selectedService', 'offsetminggu', 'awalminggu', 'akhirminggu');
+        return compact('slots', 'slotPrices', 'slotPriceNotes', 'slotTimes', 'slotLabels', 'slotStates', 'dayHeadings', 'weekLabel', 'selectedService', 'offsetminggu', 'awalminggu', 'akhirminggu');
     }
 
     /**

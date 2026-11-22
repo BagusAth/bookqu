@@ -2,145 +2,105 @@
 
 @section('title', 'Pelanggan')
 
-{{--
-    Pelanggan (BQ-137, owner-portal.md §8.5): summary, quick filters, search and the directory.
-    Data comes from App\Actions\Customer\ListCustomers; a row opens the shared customer panel.
-    Spending is hidden when the viewer may not see revenue (AC-PLG-03).
---}}
-
 @php
-    $filters = [
-        null => 'Semua',
-        'new' => 'Baru',
-        'regular' => 'Pelanggan tetap',
-        'dormant' => 'Lama tidak datang',
-    ];
-    $filterHints = [
-        'new' => 'Booking pertama bulan ini',
-        'regular' => '3 booking atau lebih',
-        'dormant' => 'Tidak booking 60 hari terakhir',
-    ];
-    $openButton = 'bq-btn bq-btn-secondary bq-btn-sm';
+    $tabs = ['' => 'Semua', 'new' => 'Baru', 'regular' => 'Tetap', 'dormant' => 'Lama tidak datang'];
+    $dormant = $filter === 'dormant';
+    $columns = ['Pelanggan', 'Booking'];
+    if ($canViewRevenue) {
+        $columns[] = 'Total dibayar';
+    }
+    $columns[] = 'Terakhir datang';
+    if (! $dormant) {
+        $columns[] = 'Berikutnya';
+    }
 @endphp
 
 @section('content')
-<div class="mx-auto max-w-7xl space-y-6">
-    <x-owner.page-header title="Pelanggan" purpose="Siapa pelanggan Anda dan bagaimana menghubungi mereka." />
+<div class="mx-auto max-w-7xl space-y-5" x-data="{ greeting: null, message: '' }">
+    <x-owner.page-header title="Pelanggan" purpose="Siapa pelanggan Anda, dan bagaimana menghubungi mereka." />
+    <x-owner.tabs :tabs="$tabs" :counts="$counts" param="filter" :active="$filter ?? ''" label="Segmen pelanggan" />
 
-    <section aria-label="Ringkasan pelanggan" class="bq-panel grid grid-cols-3 divide-x divide-bq-border">
-        @foreach ([['Total pelanggan', $summary['total']], ['Baru bulan ini', $summary['new']], ['Kembali lagi', $summary['returning']]] as [$label, $value])
-            <div class="min-w-0 p-3 sm:p-5">
-                <p class="text-xs text-bq-text-muted sm:text-sm">{{ $label }}</p>
-                <p class="bq-num mt-1 text-xl font-bold text-bq-ink sm:text-3xl">{{ number_format($value, 0, ',', '.') }}</p>
-            </div>
-        @endforeach
-    </section>
+    @if ($dormant)
+        <p class="text-bq-text-muted">{{ $counts['dormant'] }} pelanggan belum booking lagi lebih dari 60 hari. Sapa membuka WhatsApp dengan pesan siap kirim, satu per satu.</p>
+    @endif
 
-    <div class="space-y-3">
-        <nav aria-label="Filter cepat" class="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            @foreach ($filters as $key => $label)
-                @php $isActive = ($filter ?? null) === ($key === '' ? null : $key); @endphp
-                <a
-                    href="{{ route('owner.customers', array_filter(['filter' => $key ?: null, 'search' => $search !== '' ? $search : null, 'sort' => $sort === 'recent' ? null : $sort])) }}"
-                    @if ($isActive) aria-current="page" @endif
-                    class="shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors {{ $isActive ? 'border-bq-primary bg-bq-primary text-white' : 'border-bq-border bg-bq-surface text-bq-ink hover:border-bq-primary' }}"
-                >{{ $label }}
-                    @isset($filterHints[$key])<span class="block text-xs font-normal {{ $isActive ? 'text-white/80' : 'text-bq-text-muted' }}">{{ $filterHints[$key] }}</span>@endisset
-                </a>
+    {{-- BQ-162: search, table and pager in one panel, as in the prototype (#/pelanggan). --}}
+    <section class="bq-panel min-w-0">
+    <form method="GET" action="{{ route('owner.customers') }}" role="search" class="bq-filter">
+        @if ($filter)
+            <input type="hidden" name="filter" value="{{ $filter }}">
+        @endif
+        <x-ui.search id="customer-search" name="search" :value="$search" label="Cari nama, telepon atau email" />
+        <label class="sr-only" for="customer-sort">Urutkan pelanggan</label>
+        <select id="customer-sort" name="sort" x-on:change="$el.form.requestSubmit()" class="bq-input ml-auto max-md:hidden">
+            @foreach ($sortOptions as $key => $option)
+                <option value="{{ $key }}" @selected($sort === $key)>{{ $option }}</option>
             @endforeach
-        </nav>
-
-        <form method="GET" action="{{ route('owner.customers') }}" role="search" class="flex flex-wrap gap-2" x-data>
-            @if ($filter)
-                <input type="hidden" name="filter" value="{{ $filter }}">
-            @endif
-            <label for="customer-search" class="sr-only">Cari pelanggan</label>
-            <input id="customer-search" type="search" name="search" value="{{ $search }}" placeholder="Cari nama, email atau nomor HP" class="bq-input min-w-48 flex-1">
-            <label class="sr-only" for="customer-sort">Urutkan pelanggan</label>
-            <select id="customer-sort" name="sort" @change="$el.form.requestSubmit()" class="bq-input">
-                @foreach ($sortOptions as $key => $option)
-                    <option value="{{ $key }}" @selected($sort === $key)>{{ $option }}</option>
-                @endforeach
-            </select>
-            <button type="submit" class="{{ $openButton }} py-2">Cari</button>
-        </form>
-    </div>
+        </select>
+    </form>
 
     @if ($customers->total() === 0)
-        @if ($search !== '' || $filter)
-            <x-owner.empty-state title="Tidak ada pelanggan yang cocok" description="Ubah pencarian atau filter untuk melihat pelanggan lain." action-label="Tampilkan semua" :action-href="route('owner.customers')" />
-        @else
-            <x-owner.empty-state title="Belum ada pelanggan" description="Pelanggan muncul otomatis setelah booking pertama." />
-        @endif
+        <x-ui.empty icon="customers" :title="$search !== '' || $filter ? 'Tidak ada pelanggan yang cocok' : 'Belum ada pelanggan'"
+            :description="$search !== '' || $filter ? 'Ubah pencarian atau filter untuk melihat pelanggan lain.' : 'Pelanggan muncul otomatis setelah booking pertama.'" />
     @else
-        {{-- Desktop table --}}
-        <div class="bq-panel hidden overflow-hidden md:block">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-bq-border bg-bq-surface-2/70 text-xs text-bq-text-muted">
-                    <tr>
-                        <th scope="col" class="px-4 py-3 font-medium">Pelanggan</th>
-                        <th scope="col" class="px-4 py-3 font-medium">Kontak</th>
-                        <th scope="col" class="px-4 py-3 text-right font-medium">Booking</th>
-                        @if ($canViewRevenue)
-                            <th scope="col" class="px-4 py-3 text-right font-medium">Total dibayar</th>
-                        @endif
-                        <th scope="col" class="px-4 py-3 font-medium">Terakhir</th>
-                        <th scope="col" class="px-4 py-3 font-medium">Berikutnya</th>
-                        <th scope="col" class="px-4 py-3"><span class="sr-only">Aksi</span></th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-bq-border">
-                    @foreach ($customers as $customer)
-                        <tr>
-                            <td class="px-4 py-3"><span class="flex items-center gap-3"><x-ui.avatar :name="$customer->name" /><span class="font-semibold text-bq-ink">{{ $customer->name ?: 'Tanpa nama' }}</span></span></td>
-                            <td class="px-4 py-3 text-bq-text-muted">
-                                <span class="block bq-num">{{ $customer->phone ?: '-' }}</span>
-                                @if ($customer->email)
-                                    <span class="block break-all text-xs">{{ $customer->email }}</span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 text-right bq-num">{{ $customer->total_bookings }}</td>
-                            @if ($canViewRevenue)
-                                <td class="bq-num whitespace-nowrap px-4 py-3 text-right font-semibold text-bq-ink">{{ $customer->formatted_spent }}</td>
-                            @endif
-                            <td class="whitespace-nowrap px-4 py-3 bq-num text-bq-text-muted">{{ $customer->last_booking }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 bq-num text-bq-text-muted">{{ $customer->upcoming_booking ?? '-' }}</td>
-                            <td class="px-4 py-3 text-right">
-                                <button type="button" class="{{ $openButton }}" x-data x-on:click="$dispatch('open-customer-panel', { url: @js($customer->panel_url), trigger: $el })">Detail</button>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        {{-- Phone cards (BQ-100 finding 2) --}}
-        <ul class="space-y-3 md:hidden" aria-label="Daftar pelanggan">
+        <x-ui.table class="rounded-none border-0" :columns="$columns" :widths="'minmax(220px, 2fr) auto'.($canViewRevenue ? ' auto' : '').' auto'.($dormant ? '' : ' auto')" actions label="Daftar pelanggan">
             @foreach ($customers as $customer)
-                <li class="bq-panel p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex min-w-0 gap-3"><x-ui.avatar :name="$customer->name" /><div class="min-w-0">
-                            <p class="break-words font-semibold text-bq-ink">{{ $customer->name ?: 'Tanpa nama' }}</p>
-                            <p class="text-sm bq-num text-bq-text-muted">{{ $customer->phone ?: '-' }}</p>
-                            @if ($customer->email)
-                                <p class="break-all text-xs text-bq-text-muted">{{ $customer->email }}</p>
+                @php
+                    $name = $customer->name ?: 'Tanpa nama';
+                    $context = $customer->total_bookings.' booking · terakhir '.$customer->last_booking;
+                    $greeting = ['name' => $name, 'last' => $customer->last_booking, 'url' => $customer->whatsapp_url, 'message' => $customer->greeting];
+                @endphp
+                <x-ui.table.row>
+                    <x-ui.table.cell phone="main">
+                        <span class="flex min-w-0 items-center gap-2">
+                            <button type="button" class="flex min-w-0 items-center gap-2 text-left font-semibold text-bq-ink hover:text-bq-primary"
+                                data-customer-panel-url="{{ $customer->panel_url }}"
+                                x-on:click="$dispatch('open-customer-panel', { url: $el.dataset.customerPanelUrl, trigger: $el })">
+                                <x-ui.avatar :name="$name" class="shrink-0 max-md:hidden" />
+                                <span class="min-w-0 truncate" title="{{ $name }}">{{ $name }}</span>
+                            </button>
+                            @if ($customer->segment && $customer->segment !== 'Tetap' && ! $dormant)
+                                <x-ui.badge :tone="$customer->segment === 'Baru' ? 'brand' : 'warning'" class="shrink-0 max-md:hidden">{{ $customer->segment }}</x-ui.badge>
                             @endif
-                        </div></div>
-                        <button type="button" class="{{ $openButton }} shrink-0" x-data x-on:click="$dispatch('open-customer-panel', { url: @js($customer->panel_url), trigger: $el })">Detail</button>
-                    </div>
-                    <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-bq-border pt-3 text-xs">
-                        <dt class="text-bq-text-muted">Booking</dt><dd class="text-right bq-num text-bq-text">{{ $customer->total_bookings }}</dd>
-                        @if ($canViewRevenue)
-                            <dt class="text-bq-text-muted">Total dibayar</dt><dd class="text-right bq-num text-bq-text">{{ $customer->formatted_spent }}</dd>
+                        </span>
+                        <x-slot:subtitle :title="$context"><span class="block truncate md:hidden">{{ $context }}</span></x-slot:subtitle>
+                    </x-ui.table.cell>
+                    <x-ui.table.cell align="end"><span class="bq-num">{{ $customer->total_bookings }}</span></x-ui.table.cell>
+                    @if ($canViewRevenue)
+                        <x-ui.table.cell :phone="$dormant ? null : 'end'" align="end"><span class="bq-num">{{ $customer->formatted_spent }}</span></x-ui.table.cell>
+                    @endif
+                    <x-ui.table.cell><span class="bq-num">{{ $customer->last_booking }}</span></x-ui.table.cell>
+                    @unless ($dormant)
+                        <x-ui.table.cell><span class="bq-num">{{ $customer->upcoming_booking ?? '—' }}</span></x-ui.table.cell>
+                    @endunless
+                    <x-slot:action>
+                        @if ($dormant && $customer->whatsapp_url)
+                            <x-ui.button size="sm" icon="whatsapp" data-greeting="{{ \Illuminate\Support\Js::encode($greeting) }}"
+                                x-on:click="greeting = JSON.parse($el.dataset.greeting); message = greeting.message; $dispatch('open-dialog', { id: 'customer-greeting', trigger: $el })">Sapa</x-ui.button>
+                        @elseif ($customer->whatsapp_url)
+                            <x-ui.button variant="ghost" icon="whatsapp" icon-only :href="$customer->whatsapp_url" target="_blank" rel="noopener"
+                                :aria-label="'WhatsApp '.$name" :title="'WhatsApp '.$name" />
                         @endif
-                        <dt class="text-bq-text-muted">Terakhir</dt><dd class="text-right bq-num text-bq-text">{{ $customer->last_booking }}</dd>
-                        <dt class="text-bq-text-muted">Berikutnya</dt><dd class="text-right bq-num text-bq-text">{{ $customer->upcoming_booking ?? '-' }}</dd>
-                    </dl>
-                </li>
+                    </x-slot:action>
+                </x-ui.table.row>
             @endforeach
-        </ul>
+        </x-ui.table>
+        <x-ui.pager :paginator="$customers" noun="pelanggan" />
+    @endif
+    </section>
 
-        <div>{{ $customers->links() }}</div>
+    @if ($dormant)
+        <x-owner.dialog id="customer-greeting" title="Sapa pelanggan">
+            <p class="mb-4 text-bq-text-muted">Booking terakhir <span x-text="greeting?.last"></span>. Pesan dibuka di WhatsApp Anda; tidak ada yang terkirim otomatis.</p>
+            <label for="greeting-text" class="bq-label">Pesan untuk <span x-text="greeting?.name"></span></label>
+            <x-ui.textarea id="greeting-text" rows="4" x-model="message" class="mt-1" />
+            <p class="mt-1 text-bq-small text-bq-text-muted">Ubah sesuai gaya Anda.</p>
+            <x-slot:footer>
+                <x-ui.button x-on:click="hide()">Batal</x-ui.button>
+                <x-ui.button variant="primary" href="#" target="_blank" rel="noopener" icon="whatsapp"
+                    x-bind:href="greeting ? greeting.url + '?text=' + encodeURIComponent(message) : '#'">Buka WhatsApp</x-ui.button>
+            </x-slot:footer>
+        </x-owner.dialog>
     @endif
 </div>
 @endsection

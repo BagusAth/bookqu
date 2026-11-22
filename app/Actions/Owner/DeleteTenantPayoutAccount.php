@@ -41,7 +41,7 @@ class DeleteTenantPayoutAccount
 
             if ($inFlight) {
                 throw ValidationException::withMessages([
-                    'rekening' => 'Rekening sedang dipakai pengajuan withdraw yang berjalan.',
+                    'rekening' => 'Rekening sedang dipakai pengajuan pencairan yang berjalan.',
                 ]);
             }
 

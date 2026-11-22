@@ -86,6 +86,28 @@ class AvailabilityRulesTest extends TestCase
         $this->assertFalse(AvailabilityRules::isSlotAvailable($schedule));
     }
 
+    public function test_blocked_dates_are_tenant_specific_and_can_be_removed_without_changing_slot_status(): void
+    {
+        $date = Carbon::tomorrow()->toDateString();
+        $schedule = Schedule::factory()->create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $this->service->id,
+            'tanggal' => $date,
+        ]);
+        $otherTenant = Tenant::factory()->create();
+        OwnerBlockedDate::create(['idtenant' => $otherTenant->id, 'tanggal' => $date, 'alasan' => 'Libur']);
+
+        $this->assertSame(AvailabilityRules::STATUS_AVAILABLE, AvailabilityRules::getSlotAvailabilityStatus($schedule));
+
+        $block = OwnerBlockedDate::create(['idtenant' => $this->tenant->id, 'tanggal' => $date, 'alasan' => 'Libur']);
+        $this->assertSame(AvailabilityRules::STATUS_BLOCKED, AvailabilityRules::getSlotAvailabilityStatus($schedule));
+        $this->assertDatabaseHas('schedules', ['id' => $schedule->id, 'status' => 'tersedia']);
+
+        $block->delete();
+
+        $this->assertSame(AvailabilityRules::STATUS_AVAILABLE, AvailabilityRules::getSlotAvailabilityStatus($schedule));
+    }
+
     public function test_slot_status_booked_when_active_booking_exists(): void
     {
         $date = Carbon::tomorrow()->toDateString();
@@ -119,5 +141,16 @@ class AvailabilityRulesTest extends TestCase
             AvailabilityRules::getSlotAvailabilityStatus($schedule, null, $booking->id)
         );
         $this->assertTrue(AvailabilityRules::isSlotAvailable($schedule, null, $booking->id));
+    }
+
+    public function test_a_slot_cannot_use_a_service_owned_by_another_tenant(): void
+    {
+        $schedule = Schedule::factory()->create([
+            'idtenant' => Tenant::factory()->create()->id,
+            'idlayanan' => $this->service->id,
+        ]);
+
+        $this->assertSame(AvailabilityRules::STATUS_UNAVAILABLE, AvailabilityRules::getSlotAvailabilityStatus($schedule));
+        $this->assertFalse(AvailabilityRules::isSlotAvailable($schedule));
     }
 }

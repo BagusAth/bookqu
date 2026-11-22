@@ -156,7 +156,7 @@
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-bold text-gray-900 tracking-tight">Pro</h3>
                         <span class="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
-                            Enterprise
+                            Tanpa batas
                         </span>
                     </div>
 
@@ -174,7 +174,7 @@
 
                     <!-- Target Cocok untuk -->
                     <div class="mt-4 rounded-xl p-3 text-xs leading-relaxed bg-purple-50 border border-purple-100 text-purple-950">
-                        <span class="font-bold text-purple-900">Cocok untuk:</span> bisnis multi-cabang atau bisnis dengan volume booking tinggi.
+                        <span class="font-bold text-purple-900">Cocok untuk:</span> bisnis dengan booking tinggi, beberapa lapangan atau ruangan, dan tim yang lebih besar.
                     </div>
 
                     <!-- Features -->

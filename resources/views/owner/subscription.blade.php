@@ -27,76 +27,87 @@
         ['Akun tim', 'akun', $usage['team']],
     ];
     $currentPlanId = $langgananaktif?->plan?->id;
+    $currentLevel = $currentPlanId ? \App\Domain\Subscription\PlanCapability::getPlanLevel($langgananaktif->plan->namapaket) : null;
+    $comparisonPlans = $semuapaket->sortBy(fn ($plan) => \App\Domain\Subscription\PlanCapability::getPlanLevel($plan->namapaket))->values();
 @endphp
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-6">
-    <x-owner.page-header title="Paket & Tagihan" purpose="Paket Anda, apa yang didapat, dan apa yang sudah dibayar." />
+    <x-owner.page-header title="Paket & Tagihan" purpose="Paket Anda, apa yang didapat, dan riwayat pembayaran." />
 
-    <section aria-labelledby="plan-title" class="{{ $card }} p-4 sm:p-5">
-        <div class="flex flex-wrap items-center gap-2">
-            <h2 id="plan-title" class="text-lg font-semibold text-bq-text">{{ $langgananaktif?->plan ? ucfirst($langgananaktif->plan->namapaket) : 'Belum ada paket' }}</h2>
-            <span class="bq-badge {{ $toneClass($statusTone) }}">{{ $statusLabel }}</span>
-        </div>
-        <p class="mt-1 text-sm text-bq-text-muted">
-            @if ($endDate)
-                {{ $statusLabel === 'Berakhir' ? 'Berakhir' : 'Berlaku sampai' }} {{ $endDate }}
-                @if ($statustrial) · sisa {{ $sisahari }} hari uji coba @endif
-            @else
-                Pilih paket di bawah untuk mulai menerima booking online.
-            @endif
-        </p>
-
-        <dl class="mt-4 grid gap-4 sm:grid-cols-3">
-            @foreach ($usageRows as [$title, $unit, $figure])
-                @php
-                    $limit = $figure['limit'];
-                    $percent = $limit !== null && $limit > 0 ? min(100, (int) round($figure['used'] / $limit * 100)) : 0;
-                @endphp
-                <div>
-                    <dt class="text-sm text-bq-text-muted">{{ $title }}</dt>
-                    <dd class="mt-0.5 text-sm font-medium bq-num text-bq-text">
-                        @if ($limit === null)
-                            {{ $figure['used'] }} {{ $unit }} · tanpa batas
-                        @else
-                            {{ $figure['used'] }} dari {{ $limit }} {{ $unit }}
-                        @endif
-                    </dd>
-                    @if ($limit !== null && $limit > 0)
-                        <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-bq-background" aria-hidden="true">
-                            <div class="h-full rounded-full {{ $percent >= 100 ? 'bg-bq-warning' : 'bg-bq-primary' }}" style="width: {{ $percent }}%"></div>
+    <div class="grid gap-4 lg:grid-cols-[2fr_1fr] lg:items-start">
+        <x-ui.panel :title="$langgananaktif?->plan ? 'Paket '.ucfirst($langgananaktif->plan->namapaket) : 'Belum ada paket'">
+            <x-ui.figures :value="$daysRemaining.' hari'"
+                :label="$endDate ? ($statusLabel === 'Berakhir' ? 'Berakhir '.$endDate : 'tersisa, sampai '.$endDate) : 'Pilih paket untuk mulai menerima booking online.'"
+                :context="$endDate && $statusLabel !== 'Berakhir' ? 'Perpanjangan menambah masa aktif dari tanggal berakhir.' : null"
+                class="!grid-cols-1" />
+            <x-ui.status-dot :tone="$statusTone" class="mt-3">{{ $statusLabel }}</x-ui.status-dot>
+        </x-ui.panel>
+        <x-ui.panel title="Pemakaian">
+            <dl class="grid gap-4">
+                @foreach ($usageRows as [$title, $unit, $figure])
+                    @php
+                        $limit = $figure['limit'];
+                        $percent = $limit !== null && $limit > 0 ? min(100, (int) round($figure['used'] / $limit * 100)) : 0;
+                    @endphp
+                    <div>
+                        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                            <dt class="text-sm text-bq-text-muted">{{ $title }}</dt>
+                            <dd class="mt-0.5 text-sm font-medium bq-num text-bq-text">
+                                @if ($limit === null)
+                                    {{ $figure['used'] }} {{ $unit }} · tanpa batas
+                                @else
+                                    {{ $figure['used'] }} dari {{ $limit }} {{ $unit }}
+                                @endif
+                            </dd>
                         </div>
-                    @endif
-                </div>
-            @endforeach
-        </dl>
-    </section>
-
-    {{-- Comparison generated from the plan list (§6, D-017) --}}
-    <section aria-labelledby="plans-title" class="space-y-3">
-        <div>
-            <h2 id="plans-title" class="text-base font-semibold text-bq-text">Bandingkan paket</h2>
-            <p class="text-sm text-bq-text-muted">Memperpanjang paket yang sama menambah masa aktif dari tanggal berakhir. Ganti paket berlaku sejak tanggal bayar.</p>
-        </div>
-        <ul class="grid gap-4 md:grid-cols-3">
-            @foreach ($semuapaket as $paket)
-                @php $isCurrent = $currentPlanId === $paket->id; @endphp
-                <li class="{{ $card }} flex flex-col p-4 {{ $isCurrent ? 'ring-2 ring-bq-primary' : '' }}">
-                    <div class="flex items-center justify-between gap-2">
-                        <h3 class="text-base font-semibold text-bq-text">{{ ucfirst($paket->namapaket) }}</h3>
-                        @if ($isCurrent)
-                            <span class="rounded-full bg-bq-primary-light px-2 py-0.5 text-xs font-medium text-bq-primary">Paket Anda</span>
+                        @if ($limit !== null && $limit > 0)
+                            <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-bq-background" aria-hidden="true">
+                                <div class="h-full rounded-full {{ $percent >= 100 ? 'bg-bq-warning' : 'bg-bq-primary' }}" style="width: {{ $percent }}%"></div>
+                            </div>
                         @endif
                     </div>
-                    <p class="mt-1 text-xl font-semibold bq-num text-bq-text">Rp {{ number_format($paket->hargabulanan, 0, ',', '.') }}<span class="text-sm font-normal text-bq-text-muted"> / bulan</span></p>
-                    <x-plan-features :plan="$paket" class="mt-3 flex-1 text-bq-text-muted" />
-                    <a href="{{ route('owner.checkout', $paket->id) }}" class="mt-4 bq-btn {{ $isCurrent ? 'bq-btn-secondary' : 'bq-btn-primary' }}">
-                        {{ $isCurrent ? 'Perpanjang paket' : 'Pilih paket' }}
-                    </a>
-                </li>
-            @endforeach
-        </ul>
-    </section>
+                @endforeach
+            </dl>
+        </x-ui.panel>
+    </div>
+
+    {{-- Comparison generated from the plan list (§6, D-017) --}}
+    <x-ui.panel title="Bandingkan paket" description="Harga per bulan. Ganti paket berlaku sejak tanggal bayar.">
+        <div class="grid gap-3" x-data="{ plan: @js($currentPlanId ?? $comparisonPlans->first()?->id) }">
+            <div class="inline-flex flex-wrap gap-1 rounded-bq-control bg-bq-surface-2 p-1 md:hidden" role="group" aria-label="Pilih paket untuk dibandingkan">
+                @foreach ($comparisonPlans as $paket)
+                    <button type="button" class="rounded-bq-control px-3 py-1.5 text-bq-label"
+                        :class="plan === @js($paket->id) && 'bg-bq-surface text-bq-primary'"
+                        :aria-pressed="plan === @js($paket->id)" @click="plan = @js($paket->id)">{{ ucfirst($paket->namapaket) }}</button>
+                @endforeach
+            </div>
+            <ul class="grid gap-4 md:grid-cols-3">
+                @foreach ($comparisonPlans as $paket)
+                    @php
+                        $isCurrent = $currentPlanId === $paket->id;
+                        $previous = $loop->first ? null : $comparisonPlans[$loop->index - 1];
+                        $level = \App\Domain\Subscription\PlanCapability::getPlanLevel($paket->namapaket);
+                    @endphp
+                    <li class="{{ $card }} flex-col p-4 {{ $isCurrent ? 'ring-2 ring-bq-primary' : '' }}"
+                        :class="plan === @js($paket->id) ? 'flex' : 'hidden md:flex'">
+                        <div class="flex items-center justify-between gap-2">
+                            <h3 class="text-base font-semibold text-bq-text">{{ ucfirst($paket->namapaket) }}</h3>
+                            @if ($isCurrent)
+                                <span class="rounded-full bg-bq-primary-light px-2 py-0.5 text-xs font-medium text-bq-primary">Paket Anda</span>
+                            @endif
+                        </div>
+                        <p class="mt-1 text-xl font-semibold bq-num text-bq-text">{{ \App\Support\Rupiah::format($paket->hargabulanan) }}<span class="text-sm font-normal text-bq-text-muted">/bulan</span></p>
+                        <p class="mt-3 text-bq-small text-bq-text-muted">{{ $previous ? 'Semua di '.ucfirst($previous->namapaket).', ditambah:' : 'Termasuk:' }}</p>
+                        <x-plan-features :plan="$paket" :previous="$previous" class="mt-2 flex-1 text-bq-text-muted" />
+                        <a href="{{ route('owner.checkout', $paket->id) }}" class="mt-4 bq-btn {{ $isCurrent ? 'bq-btn-secondary' : 'bq-btn-primary' }}">
+                            {{ $isCurrent ? 'Perpanjang' : ($currentLevel !== null && $level < $currentLevel ? 'Turun ke '.ucfirst($paket->namapaket) : 'Pilih paket') }}
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    </x-ui.panel>
 
     <section aria-labelledby="billing-title" class="{{ $card }}">
         <h2 id="billing-title" class="border-b border-bq-border px-4 py-3 text-base font-semibold text-bq-text">Riwayat tagihan</h2>

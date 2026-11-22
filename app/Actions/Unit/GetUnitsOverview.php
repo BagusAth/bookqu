@@ -26,8 +26,7 @@ class GetUnitsOverview
      */
     public function execute(Tenant $tenant): array
     {
-        // scope-bypass: filtered by the authenticated tenant
-        $units = Unit::withoutGlobalScopes()->where('idtenant', $tenant->id)
+        $units = Unit::query()->where('idtenant', $tenant->id)
             ->with(['services' => fn ($query) => $query->where('services.idtenant', $tenant->id)->select('services.id', 'namalayanan')])
             ->orderBy('name')->get();
         [$seats, $bindings] = BookingRules::seatsTakenSql();
@@ -59,7 +58,7 @@ class GetUnitsOverview
             ];
             if ($unit->is_active) {
                 foreach (BookingRules::unitOverlaps((int) $tenant->id, $serviceIds) as $pair) {
-                    $conflicts[] = ['unit_id' => (int) $unit->id, 'booking_ids' => $pair];
+                    $conflicts[] = ['unit_id' => (int) $unit->id, 'booking_ids' => $pair, 'unit_name' => $unit->name];
                 }
             }
         }
@@ -73,12 +72,33 @@ class GetUnitsOverview
                 'code' => $booking->booking_code ?: 'BKQ-'.$booking->id,
                 'customer' => $booking->namapelanggan,
                 'session' => Carbon::parse($booking->tanggalbooking)->format('d/m/Y').' · '.$timeRanges[$booking->id]->label().' WIB',
+                'date_label' => Carbon::parse($booking->tanggalbooking)->locale('id')->translatedFormat('j M'),
+                'time' => str_replace(':', '.', $timeRanges[$booking->id]->label()),
             ];
+        }
+
+        $now = Carbon::now('Asia/Jakarta');
+        $upcomingConflicts = [];
+        $pastConflicts = [];
+        foreach ($conflicts as $conflict) {
+            [$first, $second] = $conflict['booking_ids'];
+            $firstEnd = $timeRanges[$first]->end ?? null;
+            $secondEnd = $timeRanges[$second]->end ?? null;
+            if (($firstEnd && $firstEnd->lte($now)) || ($secondEnd && $secondEnd->lte($now))) {
+                $pastConflicts[] = $conflict;
+            } else {
+                $upcomingConflicts[] = $conflict;
+            }
         }
 
         return [
             'units' => $list,
-            'conflicts' => $conflicts,
+            'conflicts' => array_map(fn (array $conflict): array => [
+                'unit_id' => $conflict['unit_id'],
+                'booking_ids' => $conflict['booking_ids'],
+            ], $conflicts),
+            'upcomingConflicts' => $upcomingConflicts,
+            'pastConflicts' => $pastConflicts,
             'bookingDetails' => $bookingDetails,
             'images' => $assets->map(fn (Asset $asset): array => [
                 'id' => (int) $asset->id, 'url' => $asset->url, 'alt' => (string) $asset->title,

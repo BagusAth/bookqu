@@ -14,7 +14,7 @@
     {{-- Plus Jakarta Sans, only the weights the owner UI uses (BQ-090, BQ-161) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     {{-- Shared owner blocks register their Alpine behaviour before Alpine starts (BQ-129) --}}
     <script defer src="{{ asset('js/owner-ui.js') }}"></script>
@@ -32,7 +32,7 @@
             @include('components.owner.sidebar')
         @endif
 
-        <main class="flex min-w-0 flex-1 flex-col {{ $shell['ready'] ? 'md:ml-64' : '' }}">
+        <main class="flex min-w-0 flex-1 flex-col {{ $shell['ready'] ? 'md:ml-bq-rail owner-wide:ml-bq-sidebar' : '' }}">
             @if ($shell['ready'])
                 @include('components.owner.topbar')
             @else
@@ -45,8 +45,8 @@
                 </header>
             @endif
 
-            {{-- Bottom padding keeps content above the phone navigation bar (owner-portal.md §4.3) --}}
-            <div class="flex-1 p-3.5 pb-24 sm:p-5 sm:pb-24 md:p-6 lg:p-8">
+            {{-- Bottom padding keeps content above the phone navigation bar (owner-portal.md Â§4.3) --}}
+            <div class="min-w-0 flex-1 px-3 pt-4 pb-24 md:px-5 md:pt-6 md:pb-10 owner-wide:px-bq-edge">
                 @unless (request()->routeIs('owner.calendar'))
                     <x-owner.walkin-success />
                 @endunless
@@ -60,12 +60,12 @@
         @include('components.owner.bottom-nav')
 
         @if ($shell['canWalkIn'])
-            <x-owner.dialog id="owner-walkin-dialog" title="Booking walk-in" description="Catat pelanggan yang datang langsung." size="lg" reopen-for="shell-walkin">
-                <x-owner.walkin-form :slots-url="route('owner.bookings.walkin-slots')" id-prefix="shell-walkin" />
+            <x-owner.dialog id="owner-walkin-dialog" title="Catat booking" description="Catat pelanggan yang datang langsung." size="lg" reopen-for="shell-walkin">
+                <x-owner.walkin-form :slots-url="route('owner.bookings.walkin-slots')" :search-url="route('owner.search')" id-prefix="shell-walkin" />
             </x-owner.dialog>
         @endif
 
-        {{-- The shared upgrade prompt a locked menu opens (owner-portal.md §3 rule 6) --}}
+        {{-- The shared upgrade prompt a locked menu opens (owner-portal.md Â§3 rule 6) --}}
         <x-owner.dialog id="owner-upgrade-dialog" title="Fitur paket lebih tinggi" size="sm">
             <div x-data="{ feature: '' }" x-on:open-upgrade.window="feature = $event.detail.feature">
                 <p class="text-sm text-bq-text"><span class="font-semibold" x-text="feature"></span> belum termasuk paket Anda.</p>

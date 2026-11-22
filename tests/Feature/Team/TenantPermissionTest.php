@@ -125,6 +125,9 @@ class TenantPermissionTest extends TestCase
         $user = User::factory()->create(['role' => 'owner', 'email_verified_at' => now(), 'email' => 'cashier@example.test']);
         TenantMember::create(['idtenant' => $tenant->id, 'iduser' => $user->id, 'role' => 'kasir', 'accepted_at' => now()]);
         $this->actingAs($user)->get('/owner/settings')->assertOk()->assertSee('cashier@example.test')->assertDontSee($ownerEmail)->assertDontSee('id="business-profile"', false)->assertDontSee('id="danger-zone"', false);
+        $this->get('/owner/settings/business')->assertForbidden();
+        $this->get('/owner/settings/payments')->assertForbidden();
+        $this->get('/owner/programs')->assertForbidden();
     }
 
     public function test_delivery_refuses_owner_only_notifications_and_omits_cashier_amounts(): void

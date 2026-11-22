@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Hidden(['password', 'trial_used_at'])]
+#[Hidden(['password', 'google_id', 'trial_used_at'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -43,6 +43,14 @@ class User extends Authenticatable implements MustVerifyEmail
             'notification_preferences' => 'array',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * False for an account created through Google that has not set a password yet (D-029).
+     */
+    public function hasPassword(): bool
+    {
+        return filled($this->getAuthPassword());
     }
 
     public function isAdmin(): bool

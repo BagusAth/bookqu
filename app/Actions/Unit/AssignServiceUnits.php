@@ -49,8 +49,7 @@ class AssignServiceUnits
             throw ValidationException::withMessages(['unit_ids' => 'Unit bersama tersedia di paket Pro.']);
         }
 
-        // scope-bypass: filtered by the authenticated tenant
-        $units = Unit::withoutGlobalScopes()->where('idtenant', $tenant->id)->whereIn('id', $unitIds)->with('services:id')->get();
+        $units = Unit::query()->where('idtenant', $tenant->id)->whereIn('id', $unitIds)->with('services:id')->get();
         if ($units->count() !== count($unitIds)) {
             abort(404);
         }

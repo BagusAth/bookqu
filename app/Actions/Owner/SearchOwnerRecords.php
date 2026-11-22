@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
  */
 final class SearchOwnerRecords
 {
-    private const LIMIT = 6;
+    private const LIMIT = 5;
 
     public const MIN_LENGTH = 2;
 
@@ -35,8 +35,7 @@ final class SearchOwnerRecords
         $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query).'%';
         $digits = preg_replace('/\D+/', '', $query) ?? '';
 
-        // scope-bypass: filtered by the server-resolved tenant of the signed-in member
-        $matches = Booking::withoutGlobalScopes()
+        $matches = Booking::query()
             ->with(['layanan:id,namalayanan'])
             ->where('idtenant', $tenant->id)
             ->where(function ($builder) use ($like, $digits): void {
@@ -55,7 +54,7 @@ final class SearchOwnerRecords
             'code' => (string) $booking->booking_code,
             'customer' => (string) $booking->namapelanggan,
             'service' => (string) ($booking->layanan->namalayanan ?? ''),
-            'date' => Carbon::parse((string) $booking->tanggalbooking)->translatedFormat('j M Y'),
+            'date' => Carbon::parse((string) $booking->tanggalbooking)->locale('id')->translatedFormat('j M Y'),
             'time' => substr((string) $booking->jam, 0, 5),
             'status' => array_combine(['label', 'tone'], StatusBadge::for('booking', (string) $booking->status)),
             'panel_url' => Route::has('owner.bookings.panel') ? route('owner.bookings.panel', $booking->id) : null,
@@ -70,6 +69,7 @@ final class SearchOwnerRecords
             ->map(fn (Booking $booking): array => [
                 'name' => (string) $booking->namapelanggan,
                 'phone' => (string) $booking->nomorhp,
+                'email' => $booking->email,
                 'panel_url' => route('owner.customers.panel', ['identifier' => CustomerIdentity::forBooking($booking)]),
                 'href' => route('owner.customers', ['search' => $booking->namapelanggan]),
             ])->values()->all();
