@@ -256,6 +256,10 @@ A Pro tenant can publish a landing page built from a template (Modern Business, 
 
 When the tenant's trial or subscription has ended, the public page stays visible but accepts no new booking and shows: "Bisnis ini belum menerima booking online saat ini." Paid bookings keep their customer access.
 
+### FR-PUBLIC-009 — Early Access Sign-up (Accepted 2026-11-23, D-030)
+
+BookQu's page `/early-access` invites businesses to early access and is indexable (one heading, description, canonical URL, structured FAQ). Its form requires full name, business name, business type (free text), email and WhatsApp number. Every field is validated on the server: an email can sign up once, and the WhatsApp number must be an Indonesian mobile number, stored as `08…`. Submissions are rate-limited and a hidden honeypot field rejects bots. The data is used only to contact the person about early access.
+
 ## Service Requirements
 
 ### FR-SERVICE-001 — Create Service
@@ -1236,6 +1240,10 @@ Platform administration must remain separate from ordinary owner permissions.
 ### FR-ADMIN-005 — Refund Processing (Accepted 2026-11-04, D-001)
 
 The platform admin sees refunds to transfer (amount, customer bank account, booking, tenant), records each as processed with a transfer reference or as failed with a reason, and the customer and the owner are notified. The admin dashboard shows how many refunds are waiting.
+
+### FR-ADMIN-006 — Early Access Sign-ups (Accepted 2026-11-23, D-030)
+
+The platform admin sees early access sign-ups (FR-PUBLIC-009), newest first, can search them by name, business or email, and opens a WhatsApp chat from each row. The admin dashboard shows the total and the sign-ups of the last 7 days.
 
 ## Integration and API Requirements
 

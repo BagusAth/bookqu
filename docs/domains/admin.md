@@ -6,13 +6,14 @@ Platform-level oversight for BookQu staff. Separate from owner permissions (FR-A
 
 | Route | Code |
 |---|---|
-| `admin.dashboard` (`auth`, `role:admin`) | `Admin/AdminDashboardController::index` — global counts (tenants, owners, subscriptions by status), subscription revenue, latest tenants |
+| `admin.dashboard` (`auth`, `role:admin`) | `Admin/AdminDashboardController::index` — global counts (tenants, owners, subscriptions by status), subscription revenue, latest tenants, waiting payouts and refunds, early access sign-ups |
+| `admin.early-access` (`auth`, `role:admin`) | `Admin/AdminEarlyAccessController::index` — early access sign-ups, newest first, search by name, business or email (BQ-175, FR-ADMIN-006) |
 
 The controller reads across tenants with `withoutGlobalScopes()` (7 calls); this is intended for an admin-only route.
 
 ## Evidence
 
-`tests/Feature/Admin/AdminDashboardTest.php`.
+`tests/Feature/Admin/AdminDashboardTest.php`, `AdminEarlyAccessTest.php`.
 
 ## Status
 

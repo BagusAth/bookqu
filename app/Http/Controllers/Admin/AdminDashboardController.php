@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\EarlyAccessSignup;
 use App\Models\OwnerPayout;
 use App\Models\Payment;
+use App\Models\Refund;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -25,6 +27,13 @@ class AdminDashboardController extends Controller
 
         // scope-bypass: platform admin aggregates pending payouts count
         $pendingPayoutCount = OwnerPayout::withoutGlobalScopes()->where('status', 'pending')->count();
+
+        // Refunds waiting for the admin's transfer (FR-ADMIN-005); refunds carry no tenant scope.
+        $pendingRefundCount = Refund::where('status', 'pending')->count();
+
+        // Early access sign-ups (FR-ADMIN-006); platform data without a tenant.
+        $earlyAccessTotal = EarlyAccessSignup::count();
+        $earlyAccessLastWeek = EarlyAccessSignup::where('created_at', '>=', now()->subDays(7))->count();
 
         // ── Revenue platform dari langganan ──
         // scope-bypass: platform admin aggregates (role:admin route)
@@ -69,6 +78,9 @@ class AdminDashboardController extends Controller
             'tenantAktif',
             'tenantExpired',
             'pendingPayoutCount',
+            'pendingRefundCount',
+            'earlyAccessTotal',
+            'earlyAccessLastWeek',
             'totalRevenuePlatform',
             'revenuebulanini',
             'tenantTerbaru',

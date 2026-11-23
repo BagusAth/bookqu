@@ -1,4 +1,10 @@
-@props(['title' => 'BookQu - Kelola Booking Bisnis Anda'])
+@props([
+    'title' => 'BookQu - Kelola Booking Bisnis Anda',
+    // Optional SEO metadata; pages that pass nothing render exactly as before.
+    'description' => null,
+    'canonical' => null,
+    'ogImage' => null,
+])
 <!DOCTYPE html>
 <html lang="id" class="scroll-smooth scroll-pt-20">
 <head>
@@ -6,6 +12,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#4F46E5">
     <title>{{ $title }}</title>
+    @if ($description)
+        <meta name="description" content="{{ $description }}">
+    @endif
+    @if ($canonical)
+        <link rel="canonical" href="{{ $canonical }}">
+        <meta name="robots" content="index, follow">
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="BookQu">
+        <meta property="og:locale" content="id_ID">
+        <meta property="og:url" content="{{ $canonical }}">
+        <meta property="og:title" content="{{ $title }}">
+        @if ($description)
+            <meta property="og:description" content="{{ $description }}">
+        @endif
+        <meta name="twitter:card" content="{{ $ogImage ? 'summary_large_image' : 'summary' }}">
+        <meta name="twitter:title" content="{{ $title }}">
+        @if ($description)
+            <meta name="twitter:description" content="{{ $description }}">
+        @endif
+        @if ($ogImage)
+            <meta property="og:image" content="{{ $ogImage }}">
+            <meta name="twitter:image" content="{{ $ogImage }}">
+        @endif
+    @endif
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('logo_icon.png') }}">
@@ -15,6 +45,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    {{ $head ?? '' }}
 
     <style>
         @keyframes float-slow {

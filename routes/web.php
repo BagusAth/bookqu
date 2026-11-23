@@ -2,6 +2,7 @@
 
 use App\Domain\Tenant\CustomDomain;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminEarlyAccessController;
 use App\Http\Controllers\Admin\AdminPayoutController;
 use App\Http\Controllers\Admin\AdminRefundController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Customer\BookingManageController;
 use App\Http\Controllers\Customer\BookingPaymentController;
 use App\Http\Controllers\Customer\BookingScheduleController;
 use App\Http\Controllers\Customer\CustomerAccessController;
+use App\Http\Controllers\EarlyAccessController;
 use App\Http\Controllers\Owner\BookingCancellationController;
 use App\Http\Controllers\Owner\OwnerAdditionalItemController;
 use App\Http\Controllers\Owner\OwnerAnalyticsController;
@@ -67,6 +69,10 @@ Route::get('/syarat-ketentuan', function () {
 Route::permanentRedirect('/terms-conditions', '/syarat-ketentuan');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+
+// Early access sign-up page (BQ-175, FR-PUBLIC-009); declared before the `/{slug_usaha}` storefront.
+Route::get('/early-access', [EarlyAccessController::class, 'show'])->name('early-access');
+Route::post('/early-access', [EarlyAccessController::class, 'store'])->middleware('throttle:5,1,early-access:')->name('early-access.store');
 
 // ── Authentication Routes ──
 Route::middleware('guest')->group(function () {
@@ -337,6 +343,7 @@ Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+        Route::get('/early-access', [AdminEarlyAccessController::class, 'index'])->name('admin.early-access');
         Route::get('/refunds', [AdminRefundController::class, 'index'])->name('admin.refunds');
         Route::post('/refunds/{refund}/transfer', [AdminRefundController::class, 'transferDetails'])->name('admin.refunds.transfer');
         Route::patch('/refunds/{refund}', [AdminRefundController::class, 'update'])->name('admin.refunds.update');
@@ -424,7 +431,7 @@ Route::domain('{custom_domain}')
 // All /{slug_usaha}/booking/... routes follow.
 // bookqu.my.id/ is NOT included here — it stays as the welcome page (defined above at line 33).
 Route::prefix('{slug_usaha}')
-    ->where(['slug_usaha' => '^(?!(sitemap\.xml|kebijakan-privasi|privacy-policy|syarat-ketentuan|terms-conditions)$)[^/]+$'])
+    ->where(['slug_usaha' => '^(?!(sitemap\.xml|early-access|kebijakan-privasi|privacy-policy|syarat-ketentuan|terms-conditions)$)[^/]+$'])
     ->middleware(['tenant', 'no-store'])
     ->group(function () use ($bookingSubRoutes) {
         Route::get('/', [BookingController::class, 'showProgramSelection'])
