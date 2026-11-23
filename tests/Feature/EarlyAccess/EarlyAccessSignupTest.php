@@ -65,7 +65,23 @@ class EarlyAccessSignupTest extends TestCase
             'whatsapp_number' => '081234567890',
         ]);
 
-        $this->get('/early-access')->assertSee('Pendaftaran early access kamu sudah kami terima');
+        $this->get('/early-access')
+            ->assertSee('<dialog data-early-access-dialog', false)
+            ->assertSee('Pendaftaran early access kamu sudah kami terima')
+            ->assertSee('action="'.route('early-access.store').'"', false);
+    }
+
+    public function test_success_popup_is_not_rendered_without_a_sign_up(): void
+    {
+        $this->get('/early-access')->assertOk()->assertDontSee('data-early-access-dialog', false);
+    }
+
+    public function test_sections_carry_scroll_reveal_hooks(): void
+    {
+        $content = $this->get('/early-access')->assertOk()->getContent();
+
+        $this->assertStringContainsString("document.documentElement.classList.add('js-reveal')", $content);
+        $this->assertGreaterThanOrEqual(20, substr_count($content, 'data-reveal'));
     }
 
     public function test_every_field_is_required(): void

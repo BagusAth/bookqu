@@ -1,0 +1,112 @@
+/* =========================================
+   Scroll reveal (BQ-175): elements with `data-reveal` ease in once they enter the viewport.
+   Variants: fade-up (default), fade-left, fade-right, zoom. `data-reveal-delay` (ms) staggers siblings.
+   Content stays visible without JavaScript (the `js-reveal` class is set by the page) and for
+   visitors who prefer reduced motion.
+   ========================================= */
+
+:root {
+    --reveal-duration: 1100ms;
+    --reveal-ease: cubic-bezier(0.16, 1, 0.3, 1); /* ease-out-expo: fast start, long soft landing */
+    --reveal-distance: 36px;
+}
+
+.js-reveal [data-reveal] {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-distance), 0);
+    transition:
+        opacity var(--reveal-duration) var(--reveal-ease),
+        transform var(--reveal-duration) var(--reveal-ease);
+    transition-delay: var(--reveal-delay, 0ms);
+}
+
+.js-reveal [data-reveal]:not(.is-revealed) {
+    will-change: opacity, transform;
+}
+
+.js-reveal [data-reveal='fade-left'] {
+    transform: translate3d(calc(var(--reveal-distance) * -1), 0, 0);
+}
+
+.js-reveal [data-reveal='fade-right'] {
+    transform: translate3d(var(--reveal-distance), 0, 0);
+}
+
+.js-reveal [data-reveal='zoom'] {
+    transform: translate3d(0, 18px, 0) scale(0.96);
+}
+
+.js-reveal [data-reveal].is-revealed {
+    opacity: 1;
+    transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .js-reveal [data-reveal] {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}
+
+/* =========================================
+   Centered success popup of the early access form (native <dialog>).
+   ========================================= */
+
+.ea-dialog[open] {
+    animation: ea-dialog-in 520ms var(--reveal-ease) both;
+}
+
+.ea-dialog[open]::backdrop {
+    background: rgb(29 22 56 / 0.55);
+    backdrop-filter: blur(4px);
+    animation: ea-backdrop-in 400ms ease-out both;
+}
+
+.ea-dialog.is-closing {
+    animation: ea-dialog-out 260ms ease-in both;
+}
+
+.ea-dialog.is-closing::backdrop {
+    animation: ea-backdrop-out 260ms ease-in both;
+}
+
+@keyframes ea-dialog-in {
+    from { opacity: 0; transform: translate3d(0, 24px, 0) scale(0.94); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes ea-dialog-out {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.97); }
+}
+
+@keyframes ea-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes ea-backdrop-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes ea-check-pop {
+    0% { transform: scale(0.4); opacity: 0; }
+    60% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+.ea-dialog[open] .ea-dialog-icon {
+    animation: ea-check-pop 620ms var(--reveal-ease) 160ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ea-dialog[open],
+    .ea-dialog[open]::backdrop,
+    .ea-dialog.is-closing,
+    .ea-dialog.is-closing::backdrop,
+    .ea-dialog[open] .ea-dialog-icon {
+        animation: none;
+    }
+}
