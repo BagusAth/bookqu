@@ -1,18 +1,22 @@
-<!doctype html>
-<html lang="id">
-<head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Transfer refund BookQu</title>
-    @vite('resources/css/app.css')
-</head>
-<body class="bg-slate-50 p-6 text-slate-900">
-<main class="mx-auto max-w-md space-y-3 rounded border bg-white p-4">
-    <a href="{{ route('admin.refunds') }}" class="underline">Kembali ke refund</a>
-    <h1 class="text-xl font-bold">Transfer refund #{{ $refund->id }}</h1>
-    <p>{{ $refund->jumlah_formatted }}</p>
-    <p>Bank {{ $account->bank_nama }}</p>
-    <p>Nomor rekening {{ $account->nomor_rekening }}</p>
-    <p>Atas nama {{ $account->nama_pemilik_rekening }}</p>
-</main>
-</body>
-</html>
+@extends('layouts.admin-layout')
+
+@section('title', 'Transfer refund')
+
+@section('content')
+    <x-ui.button variant="ghost" size="sm" icon="chevron-left" :href="route('admin.refunds')">Kembali ke refund</x-ui.button>
+
+    <x-owner.page-header title="Transfer refund #{{ $refund->id }}"
+        purpose="Transfer jumlah ini ke rekening di bawah, lalu catat referensinya di halaman refund." />
+
+    <x-ui.panel class="max-w-lg">
+        <p class="bq-num font-bq-display text-bq-figure-small font-semibold text-bq-ink">{{ $refund->jumlah_formatted }}</p>
+        <dl class="mt-4 grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-4 gap-y-2 border-t border-bq-border pt-4 text-bq-body">
+            <dt class="text-bq-text-muted">Bank</dt>
+            <dd>{{ $account->bank_nama }}</dd>
+            <dt class="text-bq-text-muted">Nomor rekening</dt>
+            <dd class="bq-num font-semibold">{{ $account->nomor_rekening }}</dd>
+            <dt class="text-bq-text-muted">Atas nama</dt>
+            <dd>{{ $account->nama_pemilik_rekening }}</dd>
+        </dl>
+    </x-ui.panel>
+@endsection

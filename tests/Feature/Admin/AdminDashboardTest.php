@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Refund;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -60,6 +61,19 @@ class AdminDashboardTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Dashboard Superadmin');
         $response->assertSee($tenant->namabisnis);
+    }
+
+    public function test_admin_dashboard_shows_refunds_waiting_for_transfer(): void
+    {
+        $payment = Payment::factory()->create(['status' => 'sukses']);
+        foreach (['pending', 'pending', 'processed'] as $status) {
+            Refund::create(['payment_id' => $payment->id, 'jumlah' => 50000, 'status' => $status, 'cause' => 'customer_request']);
+        }
+
+        $this->actingAs($this->admin)->get('/admin/dashboard')
+            ->assertOk()
+            ->assertSee('2 refund menunggu transfer')
+            ->assertSee(route('admin.refunds'), false);
     }
 
     public function test_owner_is_forbidden_from_admin_dashboard(): void
