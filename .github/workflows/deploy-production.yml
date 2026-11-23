@@ -253,6 +253,20 @@ jobs:
             find "$BUILD_DIR/build/assets" -maxdepth 1 -type f -name '*.css' -print -quit | grep -q .
             find "$BUILD_DIR/build/assets" -maxdepth 1 -type f -name '*.js' -print -quit | grep -q .
 
+            # Uploaded images are served from public_html/storage, a symlink to the
+            # public disk (BQ-174). Stop before any change if a real directory sits there:
+            # it may hold uploads and must be merged by hand.
+            STORAGE_TARGET="$LARAVEL_DIR/storage/app/public"
+            mkdir -p "$STORAGE_TARGET"
+            if [ -e "$PUBLIC_DIR/storage" ] && [ ! -L "$PUBLIC_DIR/storage" ]; then
+              echo "$PUBLIC_DIR/storage is not a symlink; move its files into $STORAGE_TARGET and remove it." >&2
+              exit 1
+            fi
+            if [ "$(readlink -f "$PUBLIC_DIR/storage" || true)" != "$(readlink -f "$STORAGE_TARGET")" ]; then
+              ln -sfn "$STORAGE_TARGET" "$PUBLIC_DIR/storage"
+              echo "Storage link set: $PUBLIC_DIR/storage -> $STORAGE_TARGET"
+            fi
+
             mkdir -p "$BACKUP_DIR"
             for item in app bootstrap config database resources routes; do
               cp -a "$LARAVEL_DIR/$item" "$BACKUP_DIR/$item"
@@ -323,9 +337,14 @@ jobs:
             cp -a "$SOURCE_DIR/composer.json" "$LARAVEL_DIR/composer.json"
             cp -a "$SOURCE_DIR/composer.lock" "$LARAVEL_DIR/composer.lock"
 
-            find "$SOURCE_DIR/public" -mindepth 1 -maxdepth 1 \
-              ! -name index.php ! -name .htaccess ! -name .user.ini ! -name build \
-              -exec cp -a {} "$PUBLIC_DIR/" \;
+            # Static assets go to the web root and to Laravel's own public_path():
+            # views read them server-side, e.g. filemtime() cache busting (BQ-174).
+            mkdir -p "$LARAVEL_DIR/public"
+            for target in "$PUBLIC_DIR" "$LARAVEL_DIR/public"; do
+              find "$SOURCE_DIR/public" -mindepth 1 -maxdepth 1 \
+                ! -name index.php ! -name .htaccess ! -name .user.ini ! -name build ! -name storage ! -name hot \
+                -exec cp -a {} "$target/" \;
+            done
             rm -rf "$PUBLIC_DIR/build"
             cp -a "$BUILD_DIR/build" "$PUBLIC_DIR/build"
 
@@ -356,6 +375,12 @@ jobs:
             find "$LARAVEL_DIR/public/build/assets" -maxdepth 1 -type f -name '*.css' -print -quit | grep -q .
             find "$LARAVEL_DIR/public/build/assets" -maxdepth 1 -type f -name '*.js' -print -quit | grep -q .
             test -f "$LARAVEL_DIR/.env"
+            for asset in "$SOURCE_DIR"/public/js/*.js; do
+              test -f "$LARAVEL_DIR/public/js/$(basename "$asset")"
+              test -f "$PUBLIC_DIR/js/$(basename "$asset")"
+            done
+            test -L "$PUBLIC_DIR/storage"
+            test "$(readlink -f "$PUBLIC_DIR/storage")" = "$(readlink -f "$LARAVEL_DIR/storage/app/public")"
             php -r "require 'vendor/autoload.php'; echo 'Composer autoload OK';"
 
             echo "--- DEPLOYED COMMIT / ROUTE DIAGNOSTIC ---"
