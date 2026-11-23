@@ -1,5 +1,5 @@
 /* =========================================
-   Scroll reveal (BQ-175): elements with `data-reveal` ease in once they enter the viewport.
+   Scroll reveal (BQ-175): elements with `data-reveal` ease in each time they enter the viewport.
    Variants: fade-up (default), fade-left, fade-right, zoom. `data-reveal-delay` (ms) staggers siblings.
    Content stays visible without JavaScript (the `js-reveal` class is set by the page) and for
    visitors who prefer reduced motion.
