@@ -1,0 +1,77 @@
+/* =========================================
+   Early access page (BQ-175).
+   Scroll animations come from AOS (`data-aos`, initialised in resources/js/landing/aos.js; dependency
+   approved by the Tech Lead on 2026-11-23). AOS hides `[data-aos]` elements in CSS, so the page adds
+   `js-aos` to <html> before the first paint and everything stays visible without JavaScript.
+   ========================================= */
+
+:root {
+    --ea-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html:not(.js-aos) [data-aos] {
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* =========================================
+   Centered success popup of the early access form (native <dialog>).
+   ========================================= */
+
+.ea-dialog[open] {
+    animation: ea-dialog-in 520ms var(--ea-ease) both;
+}
+
+.ea-dialog[open]::backdrop {
+    background: rgb(29 22 56 / 0.55);
+    backdrop-filter: blur(4px);
+    animation: ea-backdrop-in 400ms ease-out both;
+}
+
+.ea-dialog.is-closing {
+    animation: ea-dialog-out 260ms ease-in both;
+}
+
+.ea-dialog.is-closing::backdrop {
+    animation: ea-backdrop-out 260ms ease-in both;
+}
+
+@keyframes ea-dialog-in {
+    from { opacity: 0; transform: translate3d(0, 24px, 0) scale(0.94); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes ea-dialog-out {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.97); }
+}
+
+@keyframes ea-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes ea-backdrop-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes ea-check-pop {
+    0% { transform: scale(0.4); opacity: 0; }
+    60% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+.ea-dialog[open] .ea-dialog-icon {
+    animation: ea-check-pop 620ms var(--ea-ease) 160ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ea-dialog[open],
+    .ea-dialog[open]::backdrop,
+    .ea-dialog.is-closing,
+    .ea-dialog.is-closing::backdrop,
+    .ea-dialog[open] .ea-dialog-icon {
+        animation: none;
+    }
+}

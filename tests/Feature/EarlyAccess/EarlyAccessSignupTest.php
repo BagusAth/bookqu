@@ -76,12 +76,21 @@ class EarlyAccessSignupTest extends TestCase
         $this->get('/early-access')->assertOk()->assertDontSee('data-early-access-dialog', false);
     }
 
-    public function test_sections_carry_scroll_reveal_hooks(): void
+    public function test_sections_and_each_form_field_carry_their_own_scroll_animation(): void
     {
         $content = $this->get('/early-access')->assertOk()->getContent();
 
-        $this->assertStringContainsString("document.documentElement.classList.add('js-reveal')", $content);
-        $this->assertGreaterThanOrEqual(20, substr_count($content, 'data-reveal'));
+        $this->assertStringContainsString("document.documentElement.classList.add('js-aos')", $content);
+        $this->assertGreaterThanOrEqual(25, substr_count($content, 'data-aos="'));
+
+        $fields = ['full_name', 'business_name', 'business_type', 'email', 'whatsapp_number'];
+        foreach ($fields as $index => $field) {
+            $this->assertMatchesRegularExpression(
+                '/<div class="grid gap-1\.5"\s+data-aos="fade-up" data-aos-delay="'.($index * 100).'"\s*>\s*<label for="early-access-'.str_replace('_', '-', $field).'"/',
+                $content,
+                "Field {$field} animates on its own",
+            );
+        }
     }
 
     public function test_every_field_is_required(): void

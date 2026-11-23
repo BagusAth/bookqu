@@ -53,8 +53,8 @@
 
 <x-landing.layout :title="$pageTitle" :description="$pageDescription" :canonical="$pageUrl" :og-image="asset('images/booking.png')">
     <x-slot:head>
-        {{-- Hide reveal targets before the first paint; without JavaScript everything stays visible --}}
-        <script>document.documentElement.classList.add('js-reveal');</script>
+        {{-- AOS may hide [data-aos] only when JavaScript runs; resources/css/landing/early-access.css --}}
+        <script>document.documentElement.classList.add('js-aos');</script>
         <script type="application/ld+json">{!! json_encode($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
     </x-slot:head>
 
@@ -64,18 +64,18 @@
         {{-- Hero --}}
         <section id="hero" aria-labelledby="hero-title" class="px-6 pt-28 pb-16 sm:pt-32 lg:pb-24">
             <div class="mx-auto max-w-3xl text-center">
-                <p data-reveal data-reveal-delay="0" class="inline-flex items-center gap-2 rounded-full bg-bq-primary-light px-3 py-1 text-xs font-semibold text-bq-primary">
+                <p data-aos="fade-up" data-aos-delay="0" class="inline-flex items-center gap-2 rounded-full bg-bq-primary-light px-3 py-1 text-xs font-semibold text-bq-primary">
                     <x-owner.icon name="sparkle" class="size-3.5" />
                     Daftar sekarang, coba BookQu gratis 1 bulan
                 </p>
-                <h1 id="hero-title" data-reveal data-reveal-delay="120" class="mt-5 text-4xl font-bold leading-tight tracking-tight text-bq-ink sm:text-5xl">
+                <h1 id="hero-title" data-aos="fade-up" data-aos-delay="100" class="mt-5 text-4xl font-bold leading-tight tracking-tight text-bq-ink sm:text-5xl">
                     Sistem booking yang kerjanya kayak punya Admin Sendiri
                 </h1>
-                <p data-reveal data-reveal-delay="240" class="mx-auto mt-5 max-w-xl text-base text-bq-text-muted sm:text-lg">
+                <p data-aos="fade-up" data-aos-delay="200" class="mx-auto mt-5 max-w-xl text-base text-bq-text-muted sm:text-lg">
                     Customer bisa booking sendiri lewat satu link, jadwal tercatat otomatis, dan pengingat terkirim
                     sebelum mereka datang. Nggak perlu lagi bales "Kak, kosong?" satu-satu.
                 </p>
-                <div data-reveal data-reveal-delay="360" class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <div data-aos="fade-up" data-aos-delay="300" class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                     <a href="#daftar" class="inline-flex items-center justify-center rounded-xl bg-bq-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-bq-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bq-primary focus-visible:ring-offset-2">
                         Coba Gratis 1 Bulan
                     </a>
@@ -86,12 +86,12 @@
                         </a>
                     @endif
                 </div>
-                <p data-reveal data-reveal-delay="460" class="mt-5 text-sm text-bq-text-muted">Gratis 1 bulan · Tanpa kartu kredit · Kami bantu setup</p>
+                <p data-aos="fade-up" data-aos-delay="400" class="mt-5 text-sm text-bq-text-muted">Gratis 1 bulan · Tanpa kartu kredit · Kami bantu setup</p>
             </div>
 
             <h2 class="sr-only">Kenapa BookQu</h2>
             <ul class="mx-auto mt-16 grid max-w-5xl gap-6 md:grid-cols-3 lg:mt-24 lg:gap-8">
-                <x-early-access.feature-card eyebrow="Kami bikin gampang" tilt="left" data-reveal data-reveal-delay="0">
+                <x-early-access.feature-card eyebrow="Kami bikin gampang" tilt="left" data-aos="fade-up" data-aos-delay="0">
                     <x-slot:illustration>
                         <p class="text-xs text-bq-text-muted">Pilih jam</p>
                         <div class="mt-2 flex gap-2 text-xs font-semibold">
@@ -104,7 +104,7 @@
                     <strong>Bagikan link.</strong> Customer pilih jam. <strong>Booking langsung masuk.</strong>
                 </x-early-access.feature-card>
 
-                <x-early-access.feature-card eyebrow="Kami dengerin kamu" data-reveal data-reveal-delay="150">
+                <x-early-access.feature-card eyebrow="Kami dengerin kamu" data-aos="fade-up" data-aos-delay="150">
                     <x-slot:illustration>
                         <div class="ml-auto w-4/5 rounded-xl bg-white p-2.5 text-xs shadow-sm">
                             <p class="text-bq-text-muted">Booking baru</p>
@@ -118,7 +118,7 @@
                     Dibangun dari obrolan langsung dengan <strong>owner bisnis di Semarang</strong>
                 </x-early-access.feature-card>
 
-                <x-early-access.feature-card eyebrow="Kami kasih datanya" tilt="right" data-reveal data-reveal-delay="300">
+                <x-early-access.feature-card eyebrow="Kami kasih datanya" tilt="right" data-aos="fade-up" data-aos-delay="300">
                     <x-slot:illustration>
                         <p class="text-xs text-bq-text-muted">Jam paling ramai</p>
                         <div class="mt-2 flex h-16 items-end gap-1.5">
@@ -135,12 +135,12 @@
         {{-- Steps --}}
         <section id="langkah" aria-labelledby="langkah-title" class="px-6 py-16 lg:py-24">
             <div class="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2">
-                <x-early-access.section-heading id="langkah-title" align="left" data-reveal="fade-left" title="Mulai dalam tiga langkah"
+                <x-early-access.section-heading id="langkah-title" align="left" data-aos="fade-right" title="Mulai dalam tiga langkah"
                     lead="Gabung bersama BookQu dengan 3 langkah mudah, cepat, dan simpel." />
                 <ol class="grid gap-5">
-                    <x-early-access.step-card :number="1" title="Daftar early access" data-reveal="fade-right" data-reveal-delay="0">Isi form di bawah, cuma 1 menit.</x-early-access.step-card>
-                    <x-early-access.step-card :number="2" title="Kami bantu setup" data-reveal="fade-right" data-reveal-delay="140">Layanan, jam buka, dan staff kamu kami masukkan bareng-bareng.</x-early-access.step-card>
-                    <x-early-access.step-card :number="3" title="Bagikan link-nya" accent data-reveal="fade-right" data-reveal-delay="280">Pasang di bio Instagram atau status WhatsApp, booking langsung masuk.</x-early-access.step-card>
+                    <x-early-access.step-card :number="1" title="Daftar early access" data-aos="fade-left" data-aos-delay="0">Isi form di bawah, cuma 1 menit.</x-early-access.step-card>
+                    <x-early-access.step-card :number="2" title="Kami bantu setup" data-aos="fade-left" data-aos-delay="150">Layanan, jam buka, dan staff kamu kami masukkan bareng-bareng.</x-early-access.step-card>
+                    <x-early-access.step-card :number="3" title="Bagikan link-nya" accent data-aos="fade-left" data-aos-delay="300">Pasang di bio Instagram atau status WhatsApp, booking langsung masuk.</x-early-access.step-card>
                 </ol>
             </div>
         </section>
@@ -148,24 +148,24 @@
         {{-- Benefits --}}
         <section id="benefit" aria-labelledby="benefit-title" class="px-6 py-16 lg:py-24">
             <div class="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2">
-                <x-early-access.section-heading id="benefit-title" align="left" data-reveal="fade-left" title="Yang kamu dapatkan sebagai Early Access" />
+                <x-early-access.section-heading id="benefit-title" align="left" data-aos="fade-right" title="Yang kamu dapatkan sebagai Early Access" />
                 <ul class="grid gap-4">
-                    <x-early-access.benefit-card :number="1" data-reveal="fade-right" data-reveal-delay="0" title="Gratis 1 bulan penuh">Coba semua fitur tanpa bayar.</x-early-access.benefit-card>
-                    <x-early-access.benefit-card :number="2" data-reveal="fade-right" data-reveal-delay="110" title="Setup dibantu langsung">Kami bantu bikin halaman booking kamu sampai siap pakai.</x-early-access.benefit-card>
-                    <x-early-access.benefit-card :number="3" data-reveal="fade-right" data-reveal-delay="220" title="Suaramu didengar">Masukan kamu langsung jadi bahan perbaikan fitur.</x-early-access.benefit-card>
-                    <x-early-access.benefit-card :number="4" data-reveal="fade-right" data-reveal-delay="330" title="Harga spesial setelah uji coba">Khusus untuk pendaftar early access.</x-early-access.benefit-card>
+                    <x-early-access.benefit-card :number="1" data-aos="fade-left" data-aos-delay="0" title="Gratis 1 bulan penuh">Coba semua fitur tanpa bayar.</x-early-access.benefit-card>
+                    <x-early-access.benefit-card :number="2" data-aos="fade-left" data-aos-delay="100" title="Setup dibantu langsung">Kami bantu bikin halaman booking kamu sampai siap pakai.</x-early-access.benefit-card>
+                    <x-early-access.benefit-card :number="3" data-aos="fade-left" data-aos-delay="200" title="Suaramu didengar">Masukan kamu langsung jadi bahan perbaikan fitur.</x-early-access.benefit-card>
+                    <x-early-access.benefit-card :number="4" data-aos="fade-left" data-aos-delay="300" title="Harga spesial setelah uji coba">Khusus untuk pendaftar early access.</x-early-access.benefit-card>
                 </ul>
             </div>
         </section>
 
         {{-- Sign-up form --}}
         <section id="daftar" aria-labelledby="daftar-title" class="scroll-mt-24 px-6 py-16 lg:py-24">
-            <x-early-access.section-heading id="daftar-title" data-reveal title="Jadi yang Pertama Coba BookQu"
+            <x-early-access.section-heading id="daftar-title" data-aos="fade-up" title="Jadi yang Pertama Coba BookQu"
                 lead="Isi data di bawah. Tim BookQu akan menghubungi kamu lewat WhatsApp untuk mulai setup." />
 
-            <div data-reveal="zoom" data-reveal-delay="120" class="mx-auto mt-10 max-w-2xl">
+            <div class="mx-auto mt-10 max-w-2xl">
                     @if ($errors->any())
-                        <div role="alert" class="mb-6 rounded-2xl border border-bq-danger/30 bg-bq-danger-bg px-5 py-4 text-sm text-bq-ink">
+                        <div role="alert" data-aos="fade-up" class="mb-6 rounded-2xl border border-bq-danger/30 bg-bq-danger-bg px-5 py-4 text-sm text-bq-ink">
                             <p class="font-semibold">Ada {{ $errors->count() }} data yang perlu diperbaiki.</p>
                             <p class="mt-0.5 text-bq-text-muted">Periksa pesan di bawah tiap kolom, lalu kirim lagi.</p>
                         </div>
@@ -173,15 +173,15 @@
 
                     <form method="POST" action="{{ route('early-access.store') }}" class="relative grid gap-5">
                         @csrf
-                        <x-early-access.form-field name="full_name" label="Nama Lengkap" placeholder="Contoh: Bowo"
+                        <x-early-access.form-field name="full_name" animation="fade-up" :animation-delay="0" label="Nama Lengkap" placeholder="Contoh: Bowo"
                             autocomplete="name" minlength="3" maxlength="100" />
-                        <x-early-access.form-field name="business_name" label="Nama Bisnis" placeholder="Contoh: Bowo Barbershop"
+                        <x-early-access.form-field name="business_name" animation="fade-up" :animation-delay="100" label="Nama Bisnis" placeholder="Contoh: Bowo Barbershop"
                             autocomplete="organization" minlength="2" maxlength="150" />
-                        <x-early-access.form-field name="business_type" label="Jenis Bisnis" placeholder="Contoh: Barbershop"
+                        <x-early-access.form-field name="business_type" animation="fade-up" :animation-delay="200" label="Jenis Bisnis" placeholder="Contoh: Barbershop"
                             minlength="2" maxlength="100" />
-                        <x-early-access.form-field name="email" type="email" label="Email" placeholder="nama@email.com"
+                        <x-early-access.form-field name="email" animation="fade-up" :animation-delay="300" type="email" label="Email" placeholder="nama@email.com"
                             autocomplete="email" maxlength="150" />
-                        <x-early-access.form-field name="whatsapp_number" type="tel" label="Nomor WhatsApp" placeholder="0812 3456 7890"
+                        <x-early-access.form-field name="whatsapp_number" animation="fade-up" :animation-delay="400" type="tel" label="Nomor WhatsApp" placeholder="0812 3456 7890"
                             autocomplete="tel" inputmode="tel" maxlength="20" hint="Nomor HP Indonesia yang aktif di WhatsApp." />
 
                         {{-- Honeypot: hidden from people and assistive technology, filled only by bots --}}
@@ -190,7 +190,7 @@
                             <input id="early-access-website" type="text" name="{{ \App\Http\Requests\EarlyAccess\StoreEarlyAccessSignupRequest::HONEYPOT }}" tabindex="-1" autocomplete="off">
                         </div>
 
-                        <div class="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div data-aos="fade-up" data-aos-delay="500" class="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <p class="text-sm text-bq-text-muted">
                                 Data kamu hanya dipakai untuk menghubungi soal early access.
                                 <a href="{{ route('privacy-policy') }}" class="font-medium text-bq-primary underline">Kebijakan Privasi</a>
@@ -205,17 +205,17 @@
 
         {{-- FAQ --}}
         <section id="faq" aria-labelledby="faq-title" class="px-6 py-16 lg:py-24">
-            <x-early-access.section-heading id="faq-title" title="Yang Sering Ditanyakan" data-reveal />
+            <x-early-access.section-heading id="faq-title" title="Yang Sering Ditanyakan" data-aos="fade-up" />
             <div class="mx-auto mt-10 grid max-w-2xl gap-4">
                 @foreach ($faqs as $faq)
-                    <x-early-access.faq-item :question="$faq['question']" data-reveal :data-reveal-delay="$loop->index * 90">{{ $faq['answer'] }}</x-early-access.faq-item>
+                    <x-early-access.faq-item :question="$faq['question']" data-aos="fade-up" :data-aos-delay="$loop->index * 100">{{ $faq['answer'] }}</x-early-access.faq-item>
                 @endforeach
             </div>
         </section>
 
         {{-- Closing call --}}
         <section id="cta" aria-labelledby="cta-title" class="px-6 pb-20">
-            <div data-reveal="zoom" class="mx-auto max-w-5xl rounded-3xl bg-bq-primary px-6 py-14 text-center text-white shadow-lg">
+            <div data-aos="zoom-in-up" class="mx-auto max-w-5xl rounded-3xl bg-bq-primary px-6 py-14 text-center text-white shadow-lg">
                 <h2 id="cta-title" class="text-3xl font-bold tracking-tight sm:text-4xl">Udah saatnya Bookingmu Rapi</h2>
                 <p class="mx-auto mt-3 max-w-xl text-white/80">Gabung bersama BookQu dengan 3 langkah mudah, cepat, dan simpel.</p>
                 <a href="#daftar" class="mt-8 inline-flex items-center justify-center rounded-xl bg-bq-accent px-6 py-3 text-sm font-semibold text-bq-ink transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-bq-primary">

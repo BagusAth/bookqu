@@ -1,6 +1,7 @@
 {{--
     Text field of the early access form (BQ-175): label, input, server error and the visitor's old input.
-    Extra attributes (autocomplete, inputmode, maxlength, pattern) go to the <input>.
+    Extra attributes (autocomplete, inputmode, maxlength, pattern) go to the <input>; `animation` and
+    `animationDelay` (ms, steps of 50) give the whole field its own AOS scroll animation.
 --}}
 @props([
     'name',
@@ -8,6 +9,8 @@
     'type' => 'text',
     'placeholder' => null,
     'hint' => null,
+    'animation' => null,
+    'animationDelay' => 0,
 ])
 
 @php
@@ -16,7 +19,7 @@
     $describedBy = trim(($hint ? $inputId.'-hint ' : '').($error ? $inputId.'-error' : ''));
 @endphp
 
-<div class="grid gap-1.5">
+<div class="grid gap-1.5" @if ($animation) data-aos="{{ $animation }}" data-aos-delay="{{ $animationDelay }}" @endif>
     <label for="{{ $inputId }}" class="text-sm font-semibold text-bq-ink">
         {{ $label }}<span class="text-bq-danger" aria-hidden="true">*</span>
     </label>

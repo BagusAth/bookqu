@@ -29,6 +29,7 @@ BookQu wants businesses to sign up for early access from a dedicated, indexable 
 4. Routes `early-access` / `early-access.store` before `/{slug_usaha}`; the slug becomes reserved through `ReservedTenantSlugs`. URL added to `sitemap.xml`.
 5. Page built from `x-landing.layout` (new optional `description`, `canonical`, `ogImage` props and a `head` stack), semantic sections with `aria-labelledby`, one `h1`, Open Graph, JSON-LD `WebPage` and `FAQPage`. Reusable cards in `resources/views/components/early-access/`.
 6. Admin: `admin.early-access` list (search, 25 per page, WhatsApp link), navigation item, dashboard figure with the last 7 days.
+7. Scroll animations with `aos@2.3.4` (new npm dependency, approved by the Tech Lead on 2026-11-23, confirmed through the developer): `data-aos` on every section element and on each form field separately, `once: false` so animations replay; disabled for reduced motion and visible without JavaScript (`js-aos`). The sign-up confirmation is a centered modal `<dialog>`.
 
 ## Invariants at risk
 

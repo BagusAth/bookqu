@@ -3,11 +3,11 @@ import Alpine from 'alpinejs';
 import '../css/landing/features.css';
 import '../css/landing/pricing.css';
 import '../css/landing/navbar.css';
-import '../css/landing/reveal.css';
+import '../css/landing/early-access.css';
 import './landing/features.js';
 import './landing/pricing.js';
 import './landing/navbar.js';
-import './landing/reveal.js';
+import './landing/aos.js';
 import './landing/early-access.js';
 
 window.Alpine = Alpine;
