@@ -29,7 +29,7 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ], [
             'email.required' => 'Email wajib diisi.',
-            'email.email'    => 'Format email tidak valid.',
+            'email.email' => 'Format email tidak valid.',
         ]);
 
         $status = Password::sendResetLink(
