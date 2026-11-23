@@ -24,7 +24,7 @@ class StoreInitialProfileRequest extends FormRequest
             }
             $phone = ltrim($phone, '0');
             if ($phone !== '') {
-                $phone = '0' . $phone;
+                $phone = '0'.$phone;
             }
             $this->merge(['nomorhp' => $phone]);
         }
@@ -36,10 +36,10 @@ class StoreInitialProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'namabisnis'  => ['required', 'string', 'max:150'],
+            'namabisnis' => ['required', 'string', 'max:150'],
             'jenisbisnis' => ['required', 'string', 'max:150'],
-            'nomorhp'     => ['required', 'string', 'max:20'],
-            'alamat'      => ['required', 'string', 'max:255'],
+            'nomorhp' => ['required', 'string', 'max:20'],
+            'alamat' => ['required', 'string', 'max:255'],
         ];
     }
 }

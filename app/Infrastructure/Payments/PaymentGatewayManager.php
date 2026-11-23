@@ -43,7 +43,7 @@ class PaymentGatewayManager
     {
         $driver = $driver ?: $this->getDefaultDriver();
 
-        if (!isset($this->drivers[$driver])) {
+        if (! isset($this->drivers[$driver])) {
             $this->drivers[$driver] = $this->createDriver($driver);
         }
 
@@ -79,7 +79,7 @@ class PaymentGatewayManager
         return match ($driver) {
             'singapay' => app(SingaPayPaymentGateway::class),
             'midtrans' => app(MidtransPaymentGateway::class),
-            default    => throw new InvalidArgumentException("Unsupported payment driver [{$driver}]."),
+            default => throw new InvalidArgumentException("Unsupported payment driver [{$driver}]."),
         };
     }
 

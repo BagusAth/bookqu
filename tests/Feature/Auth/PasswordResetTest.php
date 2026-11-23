@@ -30,7 +30,7 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create([
             'email' => 'owner@example.com',
-            'role'  => 'owner',
+            'role' => 'owner',
         ]);
 
         $response = $this->post('/forgot-password', [
@@ -59,12 +59,12 @@ class PasswordResetTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'owner@example.com',
-            'role'  => 'owner',
+            'role' => 'owner',
         ]);
 
         $token = Password::createToken($user);
 
-        $response = $this->get('/reset-password/' . $token . '?email=' . urlencode($user->email));
+        $response = $this->get('/reset-password/'.$token.'?email='.urlencode($user->email));
 
         $response->assertStatus(200);
         $response->assertSee('Atur Ulang Password');
@@ -75,17 +75,17 @@ class PasswordResetTest extends TestCase
     public function test_password_can_be_reset_with_valid_token(): void
     {
         $user = User::factory()->create([
-            'email'    => 'owner@example.com',
+            'email' => 'owner@example.com',
             'password' => Hash::make('old-password123'),
-            'role'     => 'owner',
+            'role' => 'owner',
         ]);
 
         $token = Password::createToken($user);
 
         $response = $this->post('/reset-password', [
-            'token'                 => $token,
-            'email'                 => $user->email,
-            'password'              => 'new-password123',
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'new-password123',
             'password_confirmation' => 'new-password123',
         ]);
 
@@ -98,15 +98,15 @@ class PasswordResetTest extends TestCase
     public function test_password_cannot_be_reset_with_invalid_token(): void
     {
         $user = User::factory()->create([
-            'email'    => 'owner@example.com',
+            'email' => 'owner@example.com',
             'password' => Hash::make('old-password123'),
-            'role'     => 'owner',
+            'role' => 'owner',
         ]);
 
         $response = $this->from('/reset-password/invalid-token')->post('/reset-password', [
-            'token'                 => 'invalid-token',
-            'email'                 => $user->email,
-            'password'              => 'new-password123',
+            'token' => 'invalid-token',
+            'email' => $user->email,
+            'password' => 'new-password123',
             'password_confirmation' => 'new-password123',
         ]);
 
@@ -120,15 +120,15 @@ class PasswordResetTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'owner@example.com',
-            'role'  => 'owner',
+            'role' => 'owner',
         ]);
 
         $token = Password::createToken($user);
 
         $response = $this->post('/reset-password', [
-            'token'                 => $token,
-            'email'                 => $user->email,
-            'password'              => 'new-password123',
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'new-password123',
             'password_confirmation' => 'different-password',
         ]);
 
@@ -139,15 +139,15 @@ class PasswordResetTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'owner@example.com',
-            'role'  => 'owner',
+            'role' => 'owner',
         ]);
 
         $token = Password::createToken($user);
 
         $response = $this->post('/reset-password', [
-            'token'                 => $token,
-            'email'                 => $user->email,
-            'password'              => 'short',
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'short',
             'password_confirmation' => 'short',
         ]);
 
@@ -170,7 +170,7 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create([
             'email' => 'owner-throttle@example.com',
-            'role'  => 'owner',
+            'role' => 'owner',
         ]);
 
         // First attempt succeeds
@@ -190,17 +190,17 @@ class PasswordResetTest extends TestCase
     public function test_user_can_login_with_new_password_after_reset_and_old_password_fails(): void
     {
         $user = User::factory()->create([
-            'email'    => 'owner-login@example.com',
+            'email' => 'owner-login@example.com',
             'password' => Hash::make('old-password-123'),
-            'role'     => 'owner',
+            'role' => 'owner',
         ]);
 
         $token = Password::createToken($user);
 
         $resetResponse = $this->post('/reset-password', [
-            'token'                 => $token,
-            'email'                 => $user->email,
-            'password'              => 'brand-new-secret-456',
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'brand-new-secret-456',
             'password_confirmation' => 'brand-new-secret-456',
         ]);
 
@@ -208,14 +208,14 @@ class PasswordResetTest extends TestCase
 
         // Old password must fail
         $oldLogin = $this->post('/login', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'old-password-123',
         ]);
         $this->assertGuest();
 
         // New password must succeed
         $newLogin = $this->post('/login', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'brand-new-secret-456',
         ]);
         $this->assertAuthenticatedAs($user);
@@ -233,9 +233,9 @@ class PasswordResetTest extends TestCase
     public function test_password_cannot_be_reset_with_expired_token(): void
     {
         $user = User::factory()->create([
-            'email'    => 'owner-expired@example.com',
+            'email' => 'owner-expired@example.com',
             'password' => Hash::make('password123'),
-            'role'     => 'owner',
+            'role' => 'owner',
         ]);
 
         $token = Password::createToken($user);
@@ -243,14 +243,14 @@ class PasswordResetTest extends TestCase
         // Travel 61 minutes into the future (broker default expire is 60 mins)
         $this->travel(61)->minutes();
 
-        $response = $this->from('/reset-password/' . $token)->post('/reset-password', [
-            'token'                 => $token,
-            'email'                 => $user->email,
-            'password'              => 'new-password123',
+        $response = $this->from('/reset-password/'.$token)->post('/reset-password', [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'new-password123',
             'password_confirmation' => 'new-password123',
         ]);
 
-        $response->assertRedirect('/reset-password/' . $token);
+        $response->assertRedirect('/reset-password/'.$token);
         $response->assertSessionHasErrors('email');
 
         $this->assertTrue(Hash::check('password123', $user->fresh()->password));
