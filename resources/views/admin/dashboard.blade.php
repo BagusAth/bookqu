@@ -36,11 +36,13 @@
         <x-ui.stat label="Langganan berakhir" :value="number_format($tenantExpired, 0, ',', '.')" tone="danger" />
     </section>
 
-    <section aria-label="Pendapatan langganan" class="grid gap-3 md:grid-cols-2">
+    <section aria-label="Pendapatan langganan dan early access" class="grid gap-3 md:grid-cols-3">
         <x-ui.stat label="Pendapatan langganan bulan ini" :value="'Rp'.number_format($revenuebulanini, 0, ',', '.')" hero
             context="Pembayaran langganan yang sukses di bulan berjalan" />
         <x-ui.stat label="Pendapatan langganan total" :value="'Rp'.number_format($totalRevenuePlatform, 0, ',', '.')"
             context="Sejak platform berjalan" />
+        <x-ui.stat label="Pendaftar early access" :value="number_format($earlyAccessTotal, 0, ',', '.')"
+            :context="number_format($earlyAccessLastWeek, 0, ',', '.').' dalam 7 hari terakhir'" :href="route('admin.early-access')" />
     </section>
 
     <x-ui.panel title="Bisnis terbaru" description="10 bisnis yang terakhir mendaftar." flush>

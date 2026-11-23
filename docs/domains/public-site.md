@@ -9,6 +9,7 @@ BookQu's own marketing pages, separate from tenant storefronts.
 | `/` | closure → `welcome.blade.php` (components in `resources/views/components/landing/`: hero, features, pricing, cta, navbar, footer) |
 | `privacy-policy` `/kebijakan-privasi` (redirect from `/privacy-policy`) | closure → `privacy-policy.blade.php` |
 | `terms-conditions` `/syarat-ketentuan` (redirect from `/terms-conditions`) | closure → `terms-conditions.blade.php` |
+| `early-access` `/early-access` (GET), `early-access.store` (POST, `throttle:5,1`) | `EarlyAccessController` → `early-access.blade.php`, cards in `resources/views/components/early-access/`; `StoreEarlyAccessSignupRequest` → `CreateEarlyAccessSignup` (BQ-175, FR-PUBLIC-009) |
 | `sitemap` `/sitemap.xml` | `SitemapController` |
 | `/up` | Laravel health route |
 
@@ -64,7 +65,7 @@ Evidence: `Customer/CustomerAccessTest`, `Customer/StorefrontErrorBrandingTest`.
 
 ## Evidence
 
-`tests/Feature/LandingPagePricingTest.php`, `PrivacyPolicyTest.php`, `TermsConditionsTest.php`, `SitemapTest.php`.
+`tests/Feature/LandingPagePricingTest.php`, `PrivacyPolicyTest.php`, `TermsConditionsTest.php`, `SitemapTest.php`, `EarlyAccess/EarlyAccessSignupTest.php`.
 
 ## Status
 

@@ -7,6 +7,7 @@
         ['label' => 'Ringkasan', 'href' => route('admin.dashboard'), 'icon' => 'dashboard', 'active' => request()->routeIs('admin.dashboard')],
         ['label' => 'Withdraw', 'href' => route('admin.payouts'), 'icon' => 'wallet', 'active' => request()->routeIs('admin.payouts*')],
         ['label' => 'Refund', 'href' => route('admin.refunds'), 'icon' => 'card', 'active' => request()->routeIs('admin.refunds*')],
+        ['label' => 'Early access', 'href' => route('admin.early-access'), 'icon' => 'user', 'active' => request()->routeIs('admin.early-access')],
     ];
 @endphp
 <!DOCTYPE html>

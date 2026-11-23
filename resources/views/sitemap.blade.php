@@ -6,6 +6,11 @@
         <priority>1.0</priority>
     </url>
     <url>
+        <loc>{{ route('early-access') }}</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
         <loc>{{ url('/kebijakan-privasi') }}</loc>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
