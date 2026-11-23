@@ -9,14 +9,18 @@ use App\Models\Booking;
 use App\Models\OwnerBlockedDate;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use DateTimeInterface;
 
 class AvailabilityRules
 {
-    public const STATUS_AVAILABLE   = 'AVAILABLE';
-    public const STATUS_BOOKED      = 'BOOKED';
-    public const STATUS_BLOCKED     = 'BLOCKED';
+    public const STATUS_AVAILABLE = 'AVAILABLE';
+
+    public const STATUS_BOOKED = 'BOOKED';
+
+    public const STATUS_BLOCKED = 'BLOCKED';
+
     public const STATUS_UNAVAILABLE = 'UNAVAILABLE';
 
     /**
@@ -32,54 +36,86 @@ class AvailabilityRules
 
     /**
      * Determine slot availability status: AVAILABLE, BOOKED, BLOCKED, or UNAVAILABLE.
+     * Derived from refusal(), the one rule shared by listings and locked claims.
      */
     public static function getSlotAvailabilityStatus(
         Schedule $schedule,
         ?DateTimeInterface $now = null,
         ?int $excludeBookingId = null
     ): string {
+        return self::refusal($schedule, $now, $excludeBookingId)?->availabilityStatus() ?? self::STATUS_AVAILABLE;
+    }
+
+    /**
+     * Why a schedule slot cannot be booked now, or null when it can (ADR-0005 decision 1).
+     * Checks, in order: ownership and requested date (when given), slot status, closed
+     * date, past time, service and fulfillment eligibility, room for the participants
+     * (capacity, ADR-0017), unit conflicts (FR-UNIT-003).
+     *
+     * @param  ?array<string, list<array{0: Carbon, 1: Carbon, 2: int}>>  $unitBusy  Preloaded read-only listing data; locked claims use live queries.
+     */
+    public static function refusal(
+        Schedule $schedule,
+        ?DateTimeInterface $now = null,
+        ?int $excludeBookingId = null,
+        ?int $tenantId = null,
+        ?int $serviceId = null,
+        ?string $date = null,
+        int $participants = 1,
+        ?int $seatsTaken = null,
+        ?array $unitBusy = null,
+        ?bool $dateBlocked = null,
+    ): ?SlotRefusal {
         $now = $now ? Carbon::instance($now) : Carbon::now('Asia/Jakarta');
 
-        // 1. Slot is explicitly blocked
-        if ($schedule->status === 'diblokir') {
-            return self::STATUS_BLOCKED;
+        if ($tenantId !== null && (int) $schedule->idtenant !== $tenantId) {
+            return SlotRefusal::ForeignTenant;
         }
 
-        // 2. Slot is not marked 'tersedia'
+        if ($serviceId !== null && (int) $schedule->idlayanan !== $serviceId) {
+            return SlotRefusal::ForeignService;
+        }
+
+        $slotDate = Carbon::parse($schedule->tanggal, 'Asia/Jakarta')->toDateString();
+
+        if ($date !== null && $slotDate !== $date) {
+            return SlotRefusal::WrongDate;
+        }
+
         if ($schedule->status !== 'tersedia') {
-            return self::STATUS_UNAVAILABLE;
+            return SlotRefusal::NotOpen;
         }
 
-        $slotDate = $schedule->tanggal instanceof Carbon
-            ? $schedule->tanggal->toDateString()
-            : Carbon::parse($schedule->tanggal)->toDateString();
-
-        // 3. Date is blocked by owner
-        if (self::isDateBlocked((int) $schedule->idtenant, $slotDate)) {
-            return self::STATUS_BLOCKED;
+        if ($dateBlocked ?? self::isDateBlocked((int) $schedule->idtenant, $slotDate)) {
+            return SlotRefusal::DateClosed;
         }
 
-        // 4. Date/time has already passed
-        $slotDateTime = Carbon::parse($slotDate . ' ' . $schedule->jam_mulai, 'Asia/Jakarta');
-        if ($slotDateTime->lessThanOrEqualTo($now)) {
-            return self::STATUS_UNAVAILABLE;
+        if (Carbon::parse($slotDate.' '.$schedule->jam_mulai, 'Asia/Jakarta')->lessThanOrEqualTo($now)) {
+            return SlotRefusal::Past;
         }
 
-        // 5. Service is inactive or has inactive staff/resource fulfillment
-        $service = $schedule->relationLoaded('layanan') && $schedule->layanan
+        $service = $schedule->relationLoaded('layanan')
             ? $schedule->layanan
-            : Service::withoutGlobalScopes()->find($schedule->idlayanan);
+            : app(TenantContext::class)->run((int) $schedule->idtenant, fn (): ?Service => Service::find($schedule->idlayanan));
 
-        if ($service && (!$service->is_active || !$service->hasActiveFulfillment())) {
-            return self::STATUS_UNAVAILABLE;
+        if (! $service instanceof Service || (int) $service->idtenant !== (int) $schedule->idtenant
+            || ! $service->is_active || ! $service->hasActiveFulfillment()) {
+            return SlotRefusal::ServiceUnavailable;
         }
 
-        // 6. Slot is already booked by an active booking
-        if (BookingRules::isSlotOccupied((int) $schedule->id, $excludeBookingId)) {
-            return self::STATUS_BOOKED;
+        $capacity = $seatsTaken === null ? null : BookingRules::capacityFrom($service->kapasitas);
+        if (! BookingRules::hasRoomFor((int) $schedule->id, $participants, $excludeBookingId, $seatsTaken, $capacity)) {
+            return BookingRules::hasRoomFor((int) $schedule->id, 1, $excludeBookingId, $seatsTaken, $capacity)
+                ? SlotRefusal::NotEnoughRoom : SlotRefusal::Occupied;
         }
 
-        return self::STATUS_AVAILABLE;
+        $unitConflict = $unitBusy === null ? BookingRules::unitConflict($schedule, $excludeBookingId)
+            : BookingRules::slotHitsBusyUnit($unitBusy, (int) $schedule->id, $slotDate, (string) $schedule->jam_mulai, (string) $schedule->jam_selesai);
+        if ($unitConflict) {
+            return SlotRefusal::UnitBusy;
+        }
+
+        return null;
     }
 
     /**
@@ -87,22 +123,10 @@ class AvailabilityRules
      */
     public static function isDateBlocked(int $tenantId, string $date): bool
     {
-        return OwnerBlockedDate::withoutGlobalScopes()
+        return app(TenantContext::class)->run($tenantId, fn (): bool => OwnerBlockedDate::query()
             ->where('idtenant', $tenantId)
             ->whereDate('tanggal', $date)
-            ->exists();
-    }
-
-    /**
-     * Check if a pending booking is still holding the slot within the grace window.
-     */
-    public static function isPendingBookingHoldingSlot(?DateTimeInterface $createdAt, int $graceMinutes = BookingRules::PENDING_GRACE_MINUTES): bool
-    {
-        if ($createdAt === null) {
-            return false;
-        }
-
-        return Carbon::instance($createdAt)->greaterThanOrEqualTo(now()->subMinutes($graceMinutes));
+            ->exists());
     }
 
     /**
@@ -111,7 +135,7 @@ class AvailabilityRules
     public static function isSlotPast(string $date, string $time, string $timezone = 'Asia/Jakarta'): bool
     {
         $now = Carbon::now($timezone);
-        $slotDateTime = Carbon::parse($date . ' ' . $time, $timezone);
+        $slotDateTime = Carbon::parse($date.' '.$time, $timezone);
 
         return $slotDateTime->lessThanOrEqualTo($now);
     }

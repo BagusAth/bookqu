@@ -14,20 +14,37 @@ class RegisterRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('nomorhp') && $this->nomorhp !== null) {
+            $phone = preg_replace('/[^\d+]/', '', (string) $this->nomorhp);
+            if (str_starts_with($phone, '+62')) {
+                $phone = substr($phone, 3);
+            } elseif (str_starts_with($phone, '62')) {
+                $phone = substr($phone, 2);
+            }
+            $phone = ltrim($phone, '0');
+            if ($phone !== '') {
+                $phone = '0'.$phone;
+            }
+            $this->merge(['nomorhp' => $phone]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
-            'name'         => ['required', 'string', 'max:100'],
-            'email'        => ['required', 'email', 'max:100', 'unique:users,email'],
-            'nomorhp'      => ['required', 'string', 'max:20'],
-            'nama_bisnis'  => ['required', 'string', 'max:150'],
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:100', 'unique:users,email'],
+            'nomorhp' => ['required', 'string', 'max:20'],
+            'nama_bisnis' => ['required', 'string', 'max:150'],
             'jenis_bisnis' => ['required', 'string', 'max:150'],
-            'alamat'       => ['required', 'string', 'max:255'],
-            'password'     => ['required', 'confirmed', Password::min(8)],
-            'terms'        => ['accepted'],
+            'alamat' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'confirmed', Password::min(8)],
+            'terms' => ['accepted'],
         ];
     }
 }

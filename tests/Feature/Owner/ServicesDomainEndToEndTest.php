@@ -2,15 +2,15 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\AdditionalItem;
 use App\Models\Booking;
 use App\Models\Category;
-use App\Models\Resource;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\CustomerBookingRoutes;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,8 +22,11 @@ class ServicesDomainEndToEndTest extends TestCase
     use RefreshDatabase;
 
     protected User $ownerA;
+
     protected Tenant $tenantA;
+
     protected User $ownerB;
+
     protected Tenant $tenantB;
 
     protected function setUp(): void
@@ -43,6 +46,7 @@ class ServicesDomainEndToEndTest extends TestCase
             'alamat' => 'Jl. Senopati No. 12',
             'nomorhp' => '081234567890',
         ]);
+        app(CreateTrialSubscription::class)->execute($this->tenantA)->forceFill(['created_at' => now()->subMinute()])->save();
 
         // Owner B
         $this->ownerB = User::factory()->create([
@@ -64,6 +68,7 @@ class ServicesDomainEndToEndTest extends TestCase
      */
     public function test_category_crud_and_unique_validation_per_tenant(): void
     {
+        app(CreateTrialSubscription::class)->execute($this->tenantB);
         // 1. Create Category for Tenant A
         $res = $this->actingAs($this->ownerA)->post('/owner/categories', [
             'name' => 'Private Yoga',
@@ -109,7 +114,8 @@ class ServicesDomainEndToEndTest extends TestCase
             'name' => 'Vinyasa Flow',
         ]);
 
-        // 5. Safe unlinking when category is deleted
+        // 5. A category in use is never deleted and never touches its services
+        //    (BQ-132, owner-portal.md §8.6: "delete when empty").
         $service = Service::create([
             'idtenant' => $this->tenantA->id,
             'namalayanan' => 'Sunrise Yoga',
@@ -119,37 +125,22 @@ class ServicesDomainEndToEndTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->actingAs($this->ownerA)->delete("/owner/categories/{$catA->id}");
-        $this->assertDatabaseMissing('categories', ['id' => $catA->id]);
+        $this->actingAs($this->ownerA)->delete("/owner/categories/{$catA->id}")->assertSessionHasErrors('error');
+        $this->assertDatabaseHas('categories', ['id' => $catA->id]);
         $this->assertDatabaseHas('services', [
             'id' => $service->id,
-            'idcategory' => null, // Safely unlinked, NOT deleted
+            'idcategory' => $catA->id,
         ]);
     }
 
     /**
-     * Test Service CRUD with Category, Staff, Resource, and Additional Item assignment.
+     * Test Service CRUD with Category and Additional Item assignment.
      */
     public function test_service_crud_with_bidirectional_relationships(): void
     {
         $cat = Category::create([
             'idtenant' => $this->tenantA->id,
             'name' => 'Sound Healing',
-            'is_active' => true,
-        ]);
-
-        $staff = Staff::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Maya Pratama',
-            'role' => 'Lead Practitioner',
-            'is_active' => true,
-        ]);
-
-        $resource = Resource::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Studio Lotus',
-            'type' => 'Private Studio',
-            'capacity' => 4,
             'is_active' => true,
         ]);
 
@@ -161,30 +152,20 @@ class ServicesDomainEndToEndTest extends TestCase
         ]);
 
         // 1. Create Service with assignments
-        $res = $this->actingAs($this->ownerA)->post('/owner/programs', [
+        $res = $this->actingAs($this->ownerA)->post('/owner/services', [
             'namalayanan' => 'Tibetan Singing Bowl Therapy',
             'harga' => 250000,
             'durasi' => 60,
             'idcategory' => $cat->id,
             'deskripsi' => 'Deep vibrational relaxation session',
-            'staff_ids' => [$staff->id],
-            'resource_ids' => [$resource->id],
             'additional_item_ids' => [$addon->id],
         ]);
-        $res->assertRedirect(route('owner.programs'));
+        $res->assertRedirect(route('owner.services'));
 
         $service = DB::table('services')->where('idtenant', $this->tenantA->id)->where('namalayanan', 'Tibetan Singing Bowl Therapy')->first();
         $this->assertNotNull($service);
 
         // Verify pivot tables
-        $this->assertDatabaseHas('service_staff', [
-            'idservice' => $service->id,
-            'idstaff' => $staff->id,
-        ]);
-        $this->assertDatabaseHas('service_resource', [
-            'idservice' => $service->id,
-            'idresource' => $resource->id,
-        ]);
         $this->assertDatabaseHas('additional_item_service', [
             'idservice' => $service->id,
             'idadditional_item' => $addon->id,
@@ -194,23 +175,17 @@ class ServicesDomainEndToEndTest extends TestCase
         app(TenantContext::class)->setTenantId($this->tenantA->id);
         $serviceModel = Service::find($service->id);
         $this->assertEquals($cat->name, $serviceModel->category->name);
-        $this->assertEquals(1, $serviceModel->staff->count());
-        $this->assertEquals('Maya Pratama', $serviceModel->staff->first()->name);
-        $this->assertEquals(1, $serviceModel->resources->count());
-        $this->assertEquals('Studio Lotus', $serviceModel->resources->first()->name);
         $this->assertEquals(1, $serviceModel->additionalItems->count());
         $this->assertEquals('Essential Oil Aromatherapy', $serviceModel->additionalItems->first()->name);
         app(TenantContext::class)->clear();
 
         // 2. Update Service assignments
-        $this->actingAs($this->ownerA)->put("/owner/programs/{$service->id}", [
+        $this->actingAs($this->ownerA)->put("/owner/services/{$service->id}", [
             'namalayanan' => 'Tibetan Singing Bowl Therapy (Advanced)',
             'harga' => 300000,
             'durasi' => 90,
             'idcategory' => $cat->id,
             'is_active' => 1,
-            'staff_ids' => [$staff->id],
-            'resource_ids' => [], // Unassign resource
             'additional_item_ids' => [$addon->id],
         ]);
 
@@ -218,24 +193,19 @@ class ServicesDomainEndToEndTest extends TestCase
             'id' => $service->id,
             'durasi' => 90,
         ]);
-        $this->assertDatabaseMissing('service_resource', [
-            'idservice' => $service->id,
-            'idresource' => $resource->id,
-        ]);
 
         // 3. Delete Service - asserts pivot records are detached
-        $this->actingAs($this->ownerA)->delete("/owner/programs/{$service->id}");
+        $this->actingAs($this->ownerA)->delete("/owner/services/{$service->id}");
         $this->assertDatabaseMissing('services', ['id' => $service->id]);
-        $this->assertDatabaseMissing('service_staff', ['idservice' => $service->id]);
         $this->assertDatabaseMissing('additional_item_service', ['idservice' => $service->id]);
     }
 
     /**
-     * Test Schedule slot generation: interval strictly equals Service::durasi,
-     * slot duration is jam_mulai to jam_mulai + durasi - 1 min,
-     * and duplicate/conflicting slots are prevented.
+     * Test Schedule slot generation: the interval may differ from Service::durasi
+     * (FR-SCHEDULE-014, Tech Lead decision 2026-11-07), each slot runs from jam_mulai to
+     * jam_mulai + interval - 1 min, and duplicate/conflicting slots are prevented.
      */
-    public function test_schedule_generation_synchronizes_duration_strictly_with_service(): void
+    public function test_schedule_generation_uses_the_interval_and_prevents_duplicates(): void
     {
         $service = Service::create([
             'idtenant' => $this->tenantA->id,
@@ -247,16 +217,21 @@ class ServicesDomainEndToEndTest extends TestCase
 
         $testDate = Carbon::tomorrow()->format('Y-m-d');
 
-        // 1. Attempt with invalid intervalslot (e.g. 45 min instead of 60 min) must fail
-        $resInvalid = $this->actingAs($this->ownerA)->post('/owner/schedule/bulk-slots', [
+        // 1. An interval other than the service duration creates slots of that length
+        $otherDate = Carbon::tomorrow()->addDay()->format('Y-m-d');
+        $this->actingAs($this->ownerA)->post('/owner/schedule/bulk-slots', [
             'jenisslot' => 'harian',
             'idlayanan' => $service->id,
-            'tanggal' => $testDate,
+            'tanggal' => $otherDate,
             'jammulai' => '09:00',
             'jamselesai' => '12:00',
             'intervalslot' => 45,
-        ]);
-        $resInvalid->assertSessionHasErrors('intervalslot');
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(
+            [['09:00:00', '09:44:00'], ['09:45:00', '10:29:00'], ['10:30:00', '11:14:00'], ['11:15:00', '11:59:00']],
+            DB::table('schedules')->where('idlayanan', $service->id)->whereDate('tanggal', $otherDate)->orderBy('jam_mulai')
+                ->get(['jam_mulai', 'jam_selesai'])->map(fn ($slot) => [$slot->jam_mulai, $slot->jam_selesai])->all()
+        );
 
         // 2. Valid generation: intervalslot = 60
         $resValid = $this->actingAs($this->ownerA)->post('/owner/schedule/bulk-slots', [
@@ -312,7 +287,7 @@ class ServicesDomainEndToEndTest extends TestCase
 
     /**
      * Test Full End-to-End Pipeline:
-     * Category -> Service -> Staff & Resource -> Additional Item -> Schedule -> Customer Booking
+     * Category -> Service -> Additional Item -> Schedule -> Customer Booking
      */
     public function test_full_pipeline_from_owner_catalog_to_customer_booking(): void
     {
@@ -332,23 +307,6 @@ class ServicesDomainEndToEndTest extends TestCase
             'idcategory' => $cat->id,
             'is_active' => true,
         ]);
-
-        // 3. Owner creates & assigns Staff & Resource
-        $staff = Staff::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Dewi Sartika',
-            'role' => 'Senior Reflexologist',
-            'is_active' => true,
-        ]);
-        $service->staff()->attach($staff->id);
-
-        $resource = Resource::create([
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Reflexology Pod 1',
-            'type' => 'Pod',
-            'is_active' => true,
-        ]);
-        $service->resources()->attach($resource->id);
 
         // 4. Owner creates & assigns Additional Item
         $addon = AdditionalItem::create([
@@ -373,16 +331,16 @@ class ServicesDomainEndToEndTest extends TestCase
         // ── CUSTOMER FLOW ──
 
         // Step A: Customer visits public service catalog
-        $resCatalog = $this->get('/' . $this->tenantA->slug);
+        $resCatalog = $this->get('/'.$this->tenantA->slug);
         $resCatalog->assertStatus(200);
         $resCatalog->assertSee('Aromatherapy Reflexology');
         $resCatalog->assertSee('Holistic Wellness'); // Category badge rendered
 
         // Step B: Customer selects program
-        $resSelect = $this->post('/' . $this->tenantA->slug . '/booking/select-program', [
+        $resSelect = $this->post('/'.$this->tenantA->slug.'/booking/select-program', [
             'service_id' => $service->id,
         ]);
-        $resSelect->assertRedirect(route(\App\Support\CustomerBookingRoutes::name('customer.booking.date'), $this->tenantA->slug));
+        $resSelect->assertRedirect(route(CustomerBookingRoutes::name('customer.booking.schedule'), $this->tenantA->slug));
 
         // Step C: Customer selects date
         $resDate = $this->withSession([
@@ -390,10 +348,10 @@ class ServicesDomainEndToEndTest extends TestCase
                 'tenant_id' => $this->tenantA->id,
                 'service_id' => $service->id,
             ],
-        ])->post('/' . $this->tenantA->slug . '/booking/select-date', [
+        ])->post('/'.$this->tenantA->slug.'/booking/select-date', [
             'tanggal' => $bookingDate,
         ]);
-        $resDate->assertRedirect(route(\App\Support\CustomerBookingRoutes::name('customer.booking.time'), $this->tenantA->slug));
+        $resDate->assertRedirect(route(CustomerBookingRoutes::name('customer.booking.time'), $this->tenantA->slug));
 
         // Step D: Customer selects time slot
         $resTime = $this->withSession([
@@ -402,11 +360,11 @@ class ServicesDomainEndToEndTest extends TestCase
                 'service_id' => $service->id,
                 'tanggal' => $bookingDate,
             ],
-        ])->post('/' . $this->tenantA->slug . '/booking/select-time', [
+        ])->post('/'.$this->tenantA->slug.'/booking/select-time', [
             'jam' => '14:00',
             'schedule_id' => $schedule->id,
         ]);
-        $resTime->assertRedirect(route(\App\Support\CustomerBookingRoutes::name('customer.booking.checkout'), $this->tenantA->slug));
+        $resTime->assertRedirect(route(CustomerBookingRoutes::name('customer.booking.checkout'), $this->tenantA->slug));
 
         // Step E: Customer completes checkout
         $resCheckout = $this->withSession([
@@ -416,7 +374,7 @@ class ServicesDomainEndToEndTest extends TestCase
                 'tanggal' => $bookingDate,
                 'jam' => '14:00',
             ],
-        ])->post('/' . $this->tenantA->slug . '/booking/checkout', [
+        ])->post('/'.$this->tenantA->slug.'/booking/checkout', [
             'namapelanggan' => 'Adinda Permata',
             'email' => 'adinda@example.com',
             'nomorhp' => '08123456789',

@@ -1,77 +1,106 @@
 @extends('layouts.owner-layout')
 
-@section('title', 'Customers CRM')
+@section('title', 'Pelanggan')
+
+@php
+    $tabs = ['' => 'Semua', 'new' => 'Baru', 'regular' => 'Tetap', 'dormant' => 'Lama tidak datang'];
+    $dormant = $filter === 'dormant';
+    $columns = ['Pelanggan', 'Booking'];
+    if ($canViewRevenue) {
+        $columns[] = 'Total dibayar';
+    }
+    $columns[] = 'Terakhir datang';
+    if (! $dormant) {
+        $columns[] = 'Berikutnya';
+    }
+@endphp
 
 @section('content')
-<div class="mx-auto max-w-7xl space-y-6"
-     x-data="{
-         detailOpen: false,
-         loading: false,
-         activeCustomer: null,
-         activeTab: 'overview',
-         openCustomer(identifier) {
-             this.loading = true;
-             this.detailOpen = true;
-             this.activeTab = 'overview';
-             this.activeCustomer = null;
+<div class="mx-auto max-w-7xl space-y-5" x-data="{ greeting: null, message: '' }">
+    <x-owner.page-header title="Pelanggan" purpose="Siapa pelanggan Anda, dan bagaimana menghubungi mereka." />
+    <x-owner.tabs :tabs="$tabs" :counts="$counts" param="filter" :active="$filter ?? ''" label="Segmen pelanggan" />
 
-             fetch(`{{ route('owner.customers.detail') }}?identifier=${encodeURIComponent(identifier)}`, {
-                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
-             })
-             .then(r => r.json())
-             .then(data => {
-                 this.activeCustomer = data;
-                 this.loading = false;
-             })
-             .catch(() => {
-                 this.detailOpen = false;
-                 this.loading = false;
-             });
-         },
-         saveNote() {
-             if (!this.activeCustomer) return;
-             const form = document.getElementById('form-customer-note');
-             const fd = new FormData(form);
-             fetch('{{ route('owner.customers.note') }}', {
-                 method: 'POST',
-                 headers: {
-                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                     'X-Requested-With': 'XMLHttpRequest',
-                 },
-                 body: fd,
-             })
-             .then(r => r.json())
-             .then(() => {
-                 $dispatch('toast', { message: 'Catatan berhasil disimpan!', type: 'success' });
-             });
-         }
-     }">
-
-    {{-- ── Header ── --}}
-    @include('components.owner.page-header', [
-        'judul'    => 'Customers CRM',
-        'subjudul' => 'Direktori data pelanggan, riwayat pemesanan, nilai transaksi, dan catatan internal.',
-    ])
-
-    {{-- ── Flash Messages ── --}}
-    @if (session('sukses'))
-        <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 flex items-center gap-2">
-            <svg class="h-5 w-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            <span>{{ session('sukses') }}</span>
-        </div>
+    @if ($dormant)
+        <p class="text-bq-text-muted">{{ $counts['dormant'] }} pelanggan belum booking lagi lebih dari 60 hari. Sapa membuka WhatsApp dengan pesan siap kirim, satu per satu.</p>
     @endif
 
-    {{-- ── Summary Cards ── --}}
-    @include('owner.partials.customers.summary')
+    {{-- BQ-162: search, table and pager in one panel, as in the prototype (#/pelanggan). --}}
+    <section class="bq-panel min-w-0">
+    <form method="GET" action="{{ route('owner.customers') }}" role="search" class="bq-filter">
+        @if ($filter)
+            <input type="hidden" name="filter" value="{{ $filter }}">
+        @endif
+        <x-ui.search id="customer-search" name="search" :value="$search" label="Cari nama, telepon atau email" />
+        <label class="sr-only" for="customer-sort">Urutkan pelanggan</label>
+        <select id="customer-sort" name="sort" x-on:change="$el.form.requestSubmit()" class="bq-input ml-auto max-md:hidden">
+            @foreach ($sortOptions as $key => $option)
+                <option value="{{ $key }}" @selected($sort === $key)>{{ $option }}</option>
+            @endforeach
+        </select>
+    </form>
 
-    {{-- ── Search & Filters ── --}}
-    @include('owner.partials.customers.filters')
+    @if ($customers->total() === 0)
+        <x-ui.empty icon="customers" :title="$search !== '' || $filter ? 'Tidak ada pelanggan yang cocok' : 'Belum ada pelanggan'"
+            :description="$search !== '' || $filter ? 'Ubah pencarian atau filter untuk melihat pelanggan lain.' : 'Pelanggan muncul otomatis setelah booking pertama.'" />
+    @else
+        <x-ui.table class="rounded-none border-0" :columns="$columns" :widths="'minmax(220px, 2fr) auto'.($canViewRevenue ? ' auto' : '').' auto'.($dormant ? '' : ' auto')" actions label="Daftar pelanggan">
+            @foreach ($customers as $customer)
+                @php
+                    $name = $customer->name ?: 'Tanpa nama';
+                    $context = $customer->total_bookings.' booking · terakhir '.$customer->last_booking;
+                    $greeting = ['name' => $name, 'last' => $customer->last_booking, 'url' => $customer->whatsapp_url, 'message' => $customer->greeting];
+                @endphp
+                <x-ui.table.row>
+                    <x-ui.table.cell phone="main">
+                        <span class="flex min-w-0 items-center gap-2">
+                            <button type="button" class="flex min-w-0 items-center gap-2 text-left font-semibold text-bq-ink hover:text-bq-primary"
+                                data-customer-panel-url="{{ $customer->panel_url }}"
+                                x-on:click="$dispatch('open-customer-panel', { url: $el.dataset.customerPanelUrl, trigger: $el })">
+                                <x-ui.avatar :name="$name" class="shrink-0 max-md:hidden" />
+                                <span class="min-w-0 truncate" title="{{ $name }}">{{ $name }}</span>
+                            </button>
+                            @if ($customer->segment && $customer->segment !== 'Tetap' && ! $dormant)
+                                <x-ui.badge :tone="$customer->segment === 'Baru' ? 'brand' : 'warning'" class="shrink-0 max-md:hidden">{{ $customer->segment }}</x-ui.badge>
+                            @endif
+                        </span>
+                        <x-slot:subtitle :title="$context"><span class="block truncate md:hidden">{{ $context }}</span></x-slot:subtitle>
+                    </x-ui.table.cell>
+                    <x-ui.table.cell align="end"><span class="bq-num">{{ $customer->total_bookings }}</span></x-ui.table.cell>
+                    @if ($canViewRevenue)
+                        <x-ui.table.cell :phone="$dormant ? null : 'end'" align="end"><span class="bq-num">{{ $customer->formatted_spent }}</span></x-ui.table.cell>
+                    @endif
+                    <x-ui.table.cell><span class="bq-num">{{ $customer->last_booking }}</span></x-ui.table.cell>
+                    @unless ($dormant)
+                        <x-ui.table.cell><span class="bq-num">{{ $customer->upcoming_booking ?? '—' }}</span></x-ui.table.cell>
+                    @endunless
+                    <x-slot:action>
+                        @if ($dormant && $customer->whatsapp_url)
+                            <x-ui.button size="sm" icon="whatsapp" data-greeting="{{ \Illuminate\Support\Js::encode($greeting) }}"
+                                x-on:click="greeting = JSON.parse($el.dataset.greeting); message = greeting.message; $dispatch('open-dialog', { id: 'customer-greeting', trigger: $el })">Sapa</x-ui.button>
+                        @elseif ($customer->whatsapp_url)
+                            <x-ui.button variant="ghost" icon="whatsapp" icon-only :href="$customer->whatsapp_url" target="_blank" rel="noopener"
+                                :aria-label="'WhatsApp '.$name" :title="'WhatsApp '.$name" />
+                        @endif
+                    </x-slot:action>
+                </x-ui.table.row>
+            @endforeach
+        </x-ui.table>
+        <x-ui.pager :paginator="$customers" noun="pelanggan" />
+    @endif
+    </section>
 
-    {{-- ── Customer Table & Empty State ── --}}
-    @include('owner.partials.customers.table')
-
-    {{-- ── Slide-Over Detail Drawer ── --}}
-    @include('owner.partials.customers.detail-modal')
-
+    @if ($dormant)
+        <x-owner.dialog id="customer-greeting" title="Sapa pelanggan">
+            <p class="mb-4 text-bq-text-muted">Booking terakhir <span x-text="greeting?.last"></span>. Pesan dibuka di WhatsApp Anda; tidak ada yang terkirim otomatis.</p>
+            <label for="greeting-text" class="bq-label">Pesan untuk <span x-text="greeting?.name"></span></label>
+            <x-ui.textarea id="greeting-text" rows="4" x-model="message" class="mt-1" />
+            <p class="mt-1 text-bq-small text-bq-text-muted">Ubah sesuai gaya Anda.</p>
+            <x-slot:footer>
+                <x-ui.button x-on:click="hide()">Batal</x-ui.button>
+                <x-ui.button variant="primary" href="#" target="_blank" rel="noopener" icon="whatsapp"
+                    x-bind:href="greeting ? greeting.url + '?text=' + encodeURIComponent(message) : '#'">Buka WhatsApp</x-ui.button>
+            </x-slot:footer>
+        </x-owner.dialog>
+    @endif
 </div>
 @endsection

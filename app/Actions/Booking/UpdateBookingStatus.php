@@ -2,11 +2,21 @@
 
 namespace App\Actions\Booking;
 
+use App\Actions\Payment\PaymentLifecycle;
+use App\Actions\Schedule\ClaimSlots;
+use App\Domain\Booking\BookingRules;
 use App\Domain\Booking\BookingState;
+use App\Domain\Payment\PaymentRules;
+use App\Domain\Payment\PaymentState;
+use App\Domain\Payment\PaymentTransition;
 use App\Models\Booking;
+use App\Models\BookingLog;
+use App\Models\Payment;
 use App\Notifications\BookingStatusChangedOwnerNotification;
+use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class UpdateBookingStatus
@@ -14,74 +24,128 @@ class UpdateBookingStatus
     use ClearsBookingCache;
 
     public function __construct(
-        protected CancelBooking $cancelBooking
+        protected CancelBooking $cancelBooking,
+        protected PaymentLifecycle $paymentLifecycle,
+        protected MarkBookingNoShow $markBookingNoShow,
+        protected GetBookingTimeRanges $ranges,
     ) {}
 
     /**
      * Update booking status (used primarily by owner).
      *
-     * @param Booking $booking
-     * @param string $newStatus 'paid'|'completed'|'cancelled'
-     * @param string $actor 'owner'
+     * @param  string  $newStatus  'paid'|'completed'|'cancelled'|'no_show'
+     * @param  string  $actor  'owner'
+     * @param  bool  $notify  false for bulk and automatic completion (FR-BOOKING-024/025), which report one result instead of one mail per booking
      * @return array{success: bool, error?: string, booking?: Booking}
      */
-    public function execute(Booking $booking, string $newStatus, string $actor = 'owner'): array
+    public function execute(Booking $booking, string $newStatus, string $actor = 'owner', ?string $reason = null, bool $notify = true): array
     {
-        $statusLama = $booking->status;
-
-        // Check if transition is valid
-        if (!BookingState::canTransition($statusLama, $newStatus)) {
-            return [
-                'success' => false,
-                'error'   => "Status tidak dapat diubah dari '{$statusLama}' ke '{$newStatus}'.",
-            ];
-        }
-
-        // If cancelling, delegate to CancelBooking
         if ($newStatus === BookingState::STATUS_CANCELLED) {
-            return $this->cancelBooking->execute($booking, $actor);
+            return $this->cancelBooking->execute($booking, $actor, $reason);
+        }
+        if ($newStatus === BookingState::STATUS_NO_SHOW) {
+            return $this->markBookingNoShow->execute($booking);
         }
 
-        // Multi-slot check on completed if applicable
-        $booking->update(['status' => $newStatus]);
+        return app(TenantContext::class)->run((int) $booking->idtenant, fn (): array => DB::transaction(function () use ($booking, $newStatus, $actor, $notify): array {
+            ClaimSlots::lockTenant((int) $booking->idtenant);
+            $booking->refresh();
 
-        // If marked as paid or completed, ensure management tokens exist and payment status is updated
-        if (in_array($newStatus, [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED], true)) {
-            if (!$booking->booking_code) {
-                $booking->assignManagementTokens();
+            return $this->updateLocked($booking, $newStatus, $actor, $notify);
+        }));
+    }
+
+    /** @return array{success: bool, error?: string, booking?: Booking} */
+    private function updateLocked(Booking $booking, string $newStatus, string $actor, bool $notify = true): array
+    {
+        if (! BookingState::canTransition($booking->status, $newStatus)) {
+            return ['success' => false, 'error' => "Status tidak dapat diubah dari '{$booking->status}' ke '{$newStatus}'."];
+        }
+        $payment = $booking->payment;
+        if ($booking->idpayment !== null && ! $payment instanceof Payment) {
+            return ['success' => false, 'error' => 'Pembayaran booking tidak tersedia.'];
+        }
+        if ($payment instanceof Payment) {
+            if ((int) $payment->idtenant !== (int) $booking->idtenant) {
+                return ['success' => false, 'error' => 'Pembayaran booking tidak tersedia.'];
             }
-            if ($booking->payment && $booking->payment->status !== 'sukses') {
-                $booking->payment->update(['status' => 'sukses']);
+            $holdEnd = BookingRules::onlinePaymentHoldEnd($booking, $payment);
+            if ($holdEnd !== null) {
+                return ['success' => false, 'error' => 'Menunggu pembayaran online, berakhir '.$holdEnd->setTimezone('Asia/Jakarta')->format('H:i').' WIB.'];
+            }
+            if (PaymentRules::hasProviderLink($payment)
+                && ($booking->status === BookingState::STATUS_PENDING || $payment->status !== PaymentState::STATUS_SUKSES)) {
+                return ['success' => false, 'error' => 'Pembayaran online tidak dapat dicatat lunas secara manual.'];
             }
         }
 
-        // Invalidate availability cache when a completion frees/affects a slot
-        if ($newStatus === BookingState::STATUS_COMPLETED && $booking->idlayanan && $booking->tanggalbooking) {
-            $tanggal = $booking->tanggalbooking instanceof Carbon
-                ? $booking->tanggalbooking->toDateString()
-                : Carbon::parse($booking->tanggalbooking)->toDateString();
+        if ($newStatus === BookingState::STATUS_COMPLETED && $booking->status !== BookingState::STATUS_COMPLETED
+            && ! BookingRules::sessionHasStarted($this->ranges->execute([$booking])['timeRange'])) {
+            return ['success' => false, 'error' => 'Booking baru bisa ditandai selesai setelah sesinya dimulai.'];
+        }
 
-            $this->clearBookingAvailabilityCache(
-                (int) $booking->idtenant,
-                (int) $booking->idlayanan,
-                $tanggal
+        // Marking paid or completed records an open payment as settled by the owner for the
+        // whole payment group (ADR-0004 decision 6); a slot of a group is never settled alone.
+        if (in_array($newStatus, [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED], true)
+            && $payment instanceof Payment && $payment->status !== PaymentState::STATUS_SUKSES) {
+            $settlement = $this->paymentLifecycle->transition(
+                $payment,
+                PaymentTransition::SettledByOwner,
+                PaymentState::METODE_CASH
             );
+
+            if ($settlement->status() !== PaymentState::STATUS_SUKSES) {
+                return [
+                    'success' => false,
+                    'error' => 'Pembayaran untuk booking ini tidak dapat dicatat lunas.',
+                ];
+            }
+
+            $booking->refresh();
         }
 
-        // Notifikasi perubahan status
-        try {
-            $booking->load(['tenant.user', 'layanan']);
-            $owner = $booking->tenant?->user;
-            if ($owner) {
-                $owner->notify(new BookingStatusChangedOwnerNotification(
-                    $booking,
-                    $newStatus,
-                    ['updated_by' => $actor]
-                ));
-            }
-        } catch (\Throwable $e) {
-            Log::warning('UpdateBookingStatus: Notification failed: ' . $e->getMessage());
+        if ($booking->status !== $newStatus) {
+            $booking->update(['status' => $newStatus]);
+            BookingLog::record($booking->id, $newStatus, 'Status booking diperbarui.');
         }
+
+        if (in_array($newStatus, [BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED], true) && ! $booking->booking_code) {
+            $booking->assignBookingCode();
+        }
+
+        DB::afterCommit(function () use ($booking, $newStatus, $actor, $notify): void {
+            // Invalidate availability cache when a completion frees/affects a slot
+            if ($newStatus === BookingState::STATUS_COMPLETED && $booking->idlayanan && $booking->tanggalbooking) {
+                $tanggal = $booking->tanggalbooking instanceof Carbon
+                    ? $booking->tanggalbooking->toDateString()
+                    : Carbon::parse($booking->tanggalbooking)->toDateString();
+
+                $this->clearBookingAvailabilityCache(
+                    (int) $booking->idtenant,
+                    (int) $booking->idlayanan,
+                    $tanggal
+                );
+            }
+
+            if (! $notify) {
+                return;
+            }
+
+            // Notifikasi perubahan status
+            try {
+                $booking->load(['tenant.user', 'layanan']);
+                $owner = $booking->tenant?->user;
+                if ($owner) {
+                    $owner->notify(new BookingStatusChangedOwnerNotification(
+                        $booking,
+                        $newStatus,
+                        ['updated_by' => $actor]
+                    ));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('UpdateBookingStatus: Notification failed', ['exception_type' => $e::class, 'booking_id' => $booking->id]);
+            }
+        });
 
         return ['success' => true, 'booking' => $booking];
     }

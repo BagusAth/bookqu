@@ -1,0 +1,109 @@
+<?php
+
+namespace App\Actions\Booking;
+
+use App\Actions\CustomerAccess\CustomerAccessLinks;
+use App\Domain\Booking\BookingPricing;
+use App\Domain\Schedule\PriceRules;
+use App\Models\Booking;
+use App\Models\Payment;
+use App\Models\Schedule;
+use App\Models\Service;
+use App\Models\Tenant;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
+
+/**
+ * Storefront checkout state that lives in the customer's session: a fingerprint of what the
+ * checkout page showed, and the customer's own unfinished payment for the "resume" banner.
+ */
+final class StorefrontCheckoutState
+{
+    private const PENDING = 'booking_checkout';
+
+    /**
+     * Fingerprint of service, date, slots and slot prices shown on the checkout page. A
+     * different value at submit means another tab changed the selection or a price changed.
+     *
+     * @param  iterable<Schedule>  $schedules
+     */
+    public function fingerprint(Service $service, string $date, iterable $schedules): string
+    {
+        $schedules = collect($schedules)->sortBy('id')->values()->all();
+        $day = Carbon::parse($date)->toDateString();
+        $tenant = $service->tenant;
+        $rules = $tenant instanceof Tenant ? PriceRules::forTenant($tenant, $day, $day) : PriceRules::none();
+
+        return $this->fingerprintOfQuote($service, $day, BookingPricing::quote($service, $schedules, $rules));
+    }
+
+    /** @param array<string, mixed> $quote */
+    public function fingerprintOfQuote(Service $service, string $day, array $quote): string
+    {
+        $lines = $quote['lines'];
+        usort($lines, fn (array $a, array $b): int => $a['schedule_id'] <=> $b['schedule_id']);
+        $parts = [(int) $service->id, $day];
+        foreach ($lines as $line) {
+            $parts[] = $line['schedule_id'].'@'.number_format($line['amount'], 2, '.', '');
+        }
+        if ($quote['add_ons'] !== [] || $quote['promo'] !== null || ($lines[0]['participants'] ?? 1) > 1) {
+            $parts[] = json_encode([$lines[0]['participants'] ?? 1, $quote['add_ons'], $quote['promo']], JSON_THROW_ON_ERROR);
+        }
+
+        return hash_hmac('sha256', implode('|', $parts), (string) config('app.key'));
+    }
+
+    /**
+     * @param  list<int>  $scheduleIds
+     */
+    public function fingerprintFor(Tenant $tenant, Service $service, string $date, array $scheduleIds): ?string
+    {
+        $schedules = Schedule::query()
+            ->where('idtenant', $tenant->id)
+            ->where('idlayanan', $service->id)
+            ->whereDate('tanggal', $date)
+            ->whereIn('id', array_map('intval', $scheduleIds))
+            ->get();
+
+        return $schedules->count() === count(array_unique($scheduleIds)) ? $this->fingerprint($service, $date, $schedules) : null;
+    }
+
+    public function remember(Payment $payment, ?string $fingerprint = null): void
+    {
+        session()->put(self::PENDING, ['tenant_id' => (int) $payment->idtenant, 'payment_id' => (int) $payment->id, 'fingerprint' => $fingerprint]);
+    }
+
+    /**
+     * The customer's unpaid checkout at this tenant, if it can still be paid.
+     *
+     * @return array{payment: Payment, url: string, service: string, date: string, times: string, deadline: string}|null
+     */
+    public function pending(Tenant $tenant): ?array
+    {
+        $state = session(self::PENDING);
+        if (! is_array($state) || (int) ($state['tenant_id'] ?? 0) !== (int) $tenant->id) {
+            return null;
+        }
+
+        $payment = Payment::query()->where('idtenant', $tenant->id)->with(['bookings.layanan', 'tenant'])->find((int) ($state['payment_id'] ?? 0));
+        if (! $payment instanceof Payment || ! $payment->isPending() || $payment->isExpired() || $payment->bookings->isEmpty()) {
+            session()->forget(self::PENDING);
+
+            return null;
+        }
+
+        /** @var Collection<int, Booking> $bookings */
+        $bookings = $payment->bookings->sortBy('jam')->values();
+        $first = $bookings->first();
+        $ranges = app(GetBookingTimeRanges::class)->execute($bookings);
+
+        return [
+            'payment' => $payment,
+            'url' => app(CustomerAccessLinks::class)->payment($payment, 'payment'),
+            'service' => $first->layanan instanceof Service ? (string) $first->layanan->namalayanan : '',
+            'date' => $ranges['timeRange']->start->locale('id')->translatedFormat('l, d M Y'),
+            'times' => $ranges['timeRange']->displayLabel(),
+            'deadline' => $payment->expired_at ? Carbon::parse($payment->expired_at)->setTimezone('Asia/Jakarta')->format('H.i') : '',
+        ];
+    }
+}

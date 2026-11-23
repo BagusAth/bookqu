@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Domain\Team;
+
+use App\Notifications\BookingStatusChangedOwnerNotification;
+use App\Notifications\NewBookingOwnerNotification;
+use App\Notifications\OwnerPayoutStatusChangedNotification;
+use App\Notifications\OwnerWebhookFailed;
+use App\Notifications\PaymentRefundOwedOwnerNotification;
+use App\Notifications\RefundTeamNotification;
+use App\Notifications\SubscriptionReminderNotification;
+use App\Notifications\TrialExpiringNotification;
+
+final class TenantPermission
+{
+    private const COUNTER = ['dashboard.view', 'calendar.view', 'bookings.view', 'bookings.walkin', 'bookings.complete', 'bookings.no_show', 'bookings.reschedule', 'customers.view', 'customers.manage', 'account.manage', 'notifications.view', 'help.view'];
+
+    private const MANAGEMENT = ['bookings.cancel', 'refunds.decide', 'services.manage', 'schedule.manage', 'booking-page.manage', 'promos.manage', 'reviews.manage', 'reports.view', 'settings.manage', 'integrations.manage', 'revenue.view', 'units.manage'];
+
+    private const OWNER = ['payouts.manage', 'subscription.manage', 'team.manage', 'business.delete', 'bookings.settle'];
+
+    public static function isOwnerRole(string $role): bool
+    {
+        return $role === 'pemilik';
+    }
+
+    public static function allowsRole(string $role, string $ability): bool
+    {
+        $abilities = match ($role) {
+            'pemilik' => [...self::COUNTER, ...self::MANAGEMENT, ...self::OWNER],
+            'manajer' => [...self::COUNTER, ...self::MANAGEMENT],
+            'kasir' => [...self::COUNTER, 'bookings.request-cancel'],
+            default => [],
+        };
+
+        return in_array($ability, $abilities, true);
+    }
+
+    public static function routeAbility(string $name, string $method, mixed $status = null): ?string
+    {
+        $route = preg_replace('/^owner\./', '', $name);
+        if ($route === 'bookings.status') {
+            return match ($status) {
+                'cancelled' => 'bookings.cancel', 'paid' => 'bookings.settle', 'completed' => 'bookings.complete', 'no_show' => 'bookings.no_show', default => null
+            };
+        }
+        if ($route === 'settings.account.delete') {
+            return 'business.delete';
+        }
+        if (in_array($route, ['settings.account', 'settings.notification-preferences'], true)) {
+            return 'account.manage';
+        }
+        if ($route === 'settings' && $method === 'GET') {
+            return 'account.manage';
+        }
+        $prefix = explode('.', (string) $route)[0];
+
+        return match ($prefix) {
+            'dashboard' => 'dashboard.view', 'calendar' => 'calendar.view',
+            'bookings' => match ($route) {
+                'bookings.cancellation-requests.store' => 'bookings.request-cancel',
+                'bookings.cancellation-requests.decide' => 'bookings.cancel',
+                'bookings.walkin', 'bookings.walkin-slots' => 'bookings.walkin','bookings.reschedule' => 'bookings.reschedule',
+                'bookings.complete-many' => 'bookings.complete',default => 'bookings.view'
+            },
+            'customers' => $method === 'GET' ? 'customers.view' : 'customers.manage',
+            'services','categories','resources','additional-items' => 'services.manage',
+            'schedule' => 'schedule.manage','schedule-report','analytics' => 'reports.view',
+            'vouchers' => 'promos.manage','reviews' => 'reviews.manage','landing-page' => 'booking-page.manage',
+            'payouts','payout-accounts' => 'payouts.manage','checkout','subscription' => 'subscription.manage',
+            'notifications' => 'notifications.view','help' => 'help.view','team' => 'team.manage',
+            // BQ-128: the shell search finds bookings and customers, which every role may view
+            'search' => 'bookings.view',
+            'settings' => match ($route) {
+                'settings.balance' => 'payouts.manage',
+                default => str_starts_with((string) $route, 'settings.integrations.') || $route === 'settings.integrations' ? 'integrations.manage' : 'settings.manage',
+            },
+            'units' => 'units.manage', 'promos' => 'promos.manage', 'booking-page' => 'booking-page.manage',
+            'payments' => 'payouts.manage', 'reports' => 'reports.view', 'api' => 'integrations.manage',
+            'integrations' => 'integrations.manage', 'refunds' => 'refunds.decide',
+            'profile' => 'settings.manage',default => null,
+        };
+    }
+
+    public static function notificationAbility(string $event): ?string
+    {
+        return match ($event) {
+            'new_booking','cancelled','rescheduled','completed','status_updated','status_change' => 'bookings.view',
+            'refund_request', 'refund_reminder', 'refund_processed', 'refund_failed' => 'refunds.decide',
+            'payout_requested','payout_approved','payout_rejected','refund_owed' => 'payouts.manage',
+            'trial_expiring','subscription_expiring','subscription' => 'subscription.manage',
+            default => null,
+        };
+    }
+
+    /** @return array<string, string> */
+    public static function notificationMap(): array
+    {
+        return [
+            OwnerWebhookFailed::class => 'integrations.manage',
+            RefundTeamNotification::class => 'refunds.decide',
+            NewBookingOwnerNotification::class => 'bookings.view',
+            BookingStatusChangedOwnerNotification::class => 'bookings.view',
+            OwnerPayoutStatusChangedNotification::class => 'payouts.manage',
+            PaymentRefundOwedOwnerNotification::class => 'payouts.manage',
+            TrialExpiringNotification::class => 'subscription.manage',
+            SubscriptionReminderNotification::class => 'subscription.manage',
+        ];
+    }
+
+    /** @return list<string> */
+    public static function notificationTypes(string $role): array
+    {
+        return array_keys(array_filter(self::notificationMap(), fn (string $ability) => self::allowsRole($role, $ability)));
+    }
+}

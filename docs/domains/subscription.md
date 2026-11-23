@@ -1,0 +1,56 @@
+# Subscription & billing
+
+Owns plans, the tenant's subscription state, trials, feature entitlement, usage limits, and subscription checkout.
+
+## Entry points
+
+| Kind | Where |
+|---|---|
+| Overview | `owner.subscription` → `Owner/OwnerSubscriptionController` → `Actions/Subscription/GetSubscriptionOverview` |
+| Checkout | `owner.checkout`, `owner.checkout.process`, `owner.checkout.payment`, `owner.checkout.check-status`, `owner.checkout.callback`, `owner.checkout.invoice` → `Owner/OwnerCheckoutController` → `Actions/Payment/CreateSubscriptionPayment`; activation via `SynchronizePaymentStatus` → `ActivateSubscription` |
+| Trial | Registration → `Actions/Subscription/CreateTrialSubscription` (7 days, Pro-equivalent) |
+| Feature gate | middleware `subscription:<feature>` (`CheckSubscription`), used on `owner.analytics.export` (`analytics`, Medium) and the landing page and domain routes of Halaman Booking (`landing-page`, Pro) |
+| Expiry | `app:check-expired-subscriptions` daily (`Console/Commands/CheckExpiredSubscriptions`) |
+
+## Rules (authoritative)
+
+| Class | Owns |
+|---|---|
+| `App\Domain\Subscription\EntitlementRules` | `canAccessFeature`, `canCreateService`, `canCreateStaff`, `canCreateBooking`, unlimited checks |
+| `App\Domain\Subscription\PlanCapability` | Plan levels `small` < `medium` < `pro`; feature names; limits |
+| `App\Domain\Subscription\SubscriptionState` | States, expiry, trial days, transitions |
+| `App\Domain\Subscription\SubscriptionUsage` | Counting services, staff, monthly bookings |
+
+## Data
+
+`plans`: `namapaket`, `hargabulanan`, `maxlayanan`, `maxbooking`, `isunlimited`. `subscriptions`: `idtenant`, `idplan`, `status`, `trial_berakhir`, `langganan_mulai`, `langganan_berakhir`. The latest subscription row is the current one.
+
+## Invariants
+
+- **INV-SUB-01** — feature access and limits are decided by `EntitlementRules`.
+
+Monthly booking limits apply to owner walk-ins as well as storefront bookings. `CreateWalkInBooking` counts usage in the selected session's month and checks the quota within the tenant lock. An effective Pro plan has unlimited bookings.
+
+## Evidence
+
+`tests/Unit/Domain/EntitlementRulesTest.php`, `PlanCapabilityTest.php`, `SubscriptionStateTest.php`, `tests/Feature/Subscription/SubscriptionActionTest.php`, `SubscriptionRulesAndMechanismsTest.php`, `Owner/AnalyticsAndSubscriptionTest.php`, `Owner/CheckoutMidtransTest.php`.
+
+BQ-145: Paket & Tagihan (owner-portal.md §8.15) is prepared by `GetSubscriptionOverview`: plan, status label, end date (`SubscriptionState::periodEnd`), usage of services, bookings this month and team accounts (`EntitlementRules::teamLimit`), the comparison from the plan list (`x-plan-features`), and billing rows with an invoice for paid plans or "Bayar sekarang" for an open payment. The invoice shows only the paid amount, never the plan's current price (AC-PKT-04). On phones the checkout shows the order summary before the form, and the Snap token is passed with `@js`. Pemilik only (AC-PKT-03). Evidence: `Owner/PaketNotifikasiBantuanTest`.
+
+## Status
+
+Functional: Implemented · Verification: Verified (partial) · Architecture: Target, with gaps below.
+
+## Known gaps
+
+| Gap | Item |
+|---|---|
+| Quota also re-checked in `BookingController::selectDate` | BQ-029 |
+
+The [ADR-0011](../adr/ADR-0011-server-side-release-gating.md) entitlement gate requires verified tenant context and responds with 403 when the context is missing (BQ-006, BQ-170). Unscoped authentication, onboarding and subscription purchase entry points sit outside the feature gate. [ADR-0009](../adr/ADR-0009-pending-payment-lifetime.md) also applies to the subscription payment sweep.
+
+BQ-086: creation and unlimited checks fail closed without a date-active subscription and plan (`hasEffectivePlan`); Pro badge uses `isPro`. Storefront date validation and transactional creation refuse inactive tenants with neutral copy. Expired owners retain dashboard/subscription access with a renewal banner. Evidence: `ExpiredEntitlementTest` (four regressions), updated happy-path fixtures retain their original assertions.
+
+BQ-130: `config/plans.php` is the capability/text/team-limit map; `EntitlementRules` denies unregistered capabilities, including trials. Prices and numerical booking/service limits remain in plans per ADR-0021 decision 4. `advertisedFeatures` omits unbuilt modules from both comparisons. Overview limits and landing-page entitlement use the same rules. Remaining plan-name architecture allowances were removed.
+
+BQ-139: Renewals record their source payment once under the tenant lock. Renewing the same active paid plan extends the paid-through date. A plan change or trial conversion starts a new period at payment. The rule lives in `SubscriptionState::paidPeriodEnd()`, used by `ActivateSubscription` and by checkout to show the period before paying (BQ-160). Trial use is recorded per account. After expiry the storefront retains its catalog and existing payment links, while new bookings and owner creation are gated. H-3, H-1 and end-date reminders use durable per-period receipts.

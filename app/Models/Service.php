@@ -6,11 +6,14 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Service extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use BelongsToTenant, HasFactory;
+
     protected $fillable = [
         'idtenant',
         'namalayanan',
@@ -24,6 +27,7 @@ class Service extends Model
         'satuan_harga',
         'satuan_durasi',
         'idcategory',
+        'auto_open_slots',
     ];
 
     protected function casts(): array
@@ -32,6 +36,7 @@ class Service extends Model
             'harga' => 'decimal:2',
             'is_active' => 'boolean',
             'is_popular' => 'boolean',
+            'auto_open_slots' => 'boolean',
             'kapasitas' => 'integer',
         ];
     }
@@ -41,6 +46,7 @@ class Service extends Model
         return $this->belongsTo(Tenant::class, 'idtenant');
     }
 
+    /** @return BelongsTo<Category, $this> */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'idcategory');
@@ -56,38 +62,23 @@ class Service extends Model
         return $this->hasMany(Schedule::class, 'idlayanan');
     }
 
-    public function staff(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    /** Units this service uses (FR-UNIT-002). */
+    public function units(): BelongsToMany
     {
-        return $this->belongsToMany(Staff::class, 'service_staff', 'idservice', 'idstaff')->withTimestamps();
+        return $this->belongsToMany(Unit::class, 'service_unit', 'idservice', 'idunit');
     }
 
-    public function resources(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(Resource::class, 'service_resource', 'idservice', 'idresource')->withTimestamps();
-    }
-
-    public function additionalItems(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function additionalItems(): BelongsToMany
     {
         return $this->belongsToMany(AdditionalItem::class, 'additional_item_service', 'idservice', 'idadditional_item')->withTimestamps();
     }
 
     /**
-     * Checks if this service has active staff and resource fulfillment.
-     * If staff are assigned to this service, at least one must be active.
-     * If resources are assigned to this service, at least one must be active.
+     * Withdrawn staff resources no longer gate a service (BQ-157). An inactive unit only stops
+     * counting as a conflict (ADR-0017), so it does not make the service unbookable.
      */
     public function hasActiveFulfillment(): bool
     {
-        $staffQuery = $this->staff()->withoutGlobalScopes();
-        if ($staffQuery->exists() && !$this->staff()->withoutGlobalScopes()->where('staff.is_active', true)->exists()) {
-            return false;
-        }
-
-        $resourceQuery = $this->resources()->withoutGlobalScopes();
-        if ($resourceQuery->exists() && !$this->resources()->withoutGlobalScopes()->where('resources.is_active', true)->exists()) {
-            return false;
-        }
-
         return true;
     }
 
@@ -99,6 +90,7 @@ class Service extends Model
         if (str_starts_with($this->image_url, 'http://') || str_starts_with($this->image_url, 'https://') || str_starts_with($this->image_url, '/')) {
             return $this->image_url;
         }
-        return \Illuminate\Support\Facades\Storage::url($this->image_url);
+
+        return Storage::url($this->image_url);
     }
 }

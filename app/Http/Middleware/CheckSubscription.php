@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Domain\Subscription\EntitlementRules;
-use App\Domain\Subscription\SubscriptionState;
 use App\Models\Subscription;
 use App\Support\TenantContext;
 use Closure;
@@ -22,30 +21,24 @@ class CheckSubscription
     public function handle(Request $request, Closure $next, ...$features): Response
     {
         $tenantId = app(TenantContext::class)->getTenantId();
-        if (!$tenantId) {
-            $tenantId = auth()->user()?->tenant?->id;
-        }
-
-        if (!$tenantId) {
-            return $next($request);
-        }
+        abort_if($tenantId === null, 403);
 
         /** @var Subscription|null $subscription */
-        $subscription = Subscription::with('plan')->where('idtenant', $tenantId)->latest()->first();
+        $subscription = Subscription::with('plan')->where('idtenant', $tenantId)->latest('id')->first();
 
-        if (!$subscription) {
+        if (! $subscription) {
             return redirect()->route('owner.subscription')->with('error', 'Silakan berlangganan untuk mengakses fitur ini.');
         }
 
-        if (SubscriptionState::isExpired($subscription)) {
+        if (! EntitlementRules::hasEffectivePlan($subscription)) {
             return redirect()->route('owner.subscription')->with('error', 'Langganan Anda telah habis, mohon perpanjang.');
         }
 
         // Feature gating via centralized EntitlementRules
-        if (!empty($features)) {
+        if (! empty($features)) {
             foreach ($features as $feature) {
                 $decision = EntitlementRules::canAccessFeature($subscription, (string) $feature);
-                if (!$decision['allowed']) {
+                if (! $decision['allowed']) {
                     return redirect()->route('owner.subscription')->with('error', $decision['message']);
                 }
             }
@@ -54,4 +47,3 @@ class CheckSubscription
         return $next($request);
     }
 }
-

@@ -2,17 +2,18 @@
 
 namespace App\Domain\Booking;
 
-use Carbon\Carbon;
-use DateTimeInterface;
-
 class BookingState
 {
-    public const STATUS_PENDING   = 'pending';
-    public const STATUS_PAID      = 'paid';
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_PAID = 'paid';
+
     public const STATUS_CANCELLED = 'cancelled';
+
     public const STATUS_COMPLETED = 'completed';
 
-    public const PENDING_GRACE_MINUTES = BookingRules::PENDING_GRACE_MINUTES;
+    /** The customer did not come to a paid session (ADR-0018). Terminal. */
+    public const STATUS_NO_SHOW = 'no_show';
 
     /**
      * Allowed status transitions mapped from current status to target statuses.
@@ -26,9 +27,11 @@ class BookingState
         self::STATUS_PAID => [
             self::STATUS_COMPLETED,
             self::STATUS_CANCELLED,
+            self::STATUS_NO_SHOW,
         ],
         self::STATUS_CANCELLED => [],
         self::STATUS_COMPLETED => [],
+        self::STATUS_NO_SHOW => [],
     ];
 
     /**
@@ -62,37 +65,18 @@ class BookingState
     }
 
     /**
-     * Determine if a booking with the given status and creation time occupies a schedule slot.
-     */
-    public static function occupiesSlot(string $status, ?DateTimeInterface $createdAt = null, int $pendingGraceMinutes = self::PENDING_GRACE_MINUTES): bool
-    {
-        if (in_array($status, [self::STATUS_PAID, self::STATUS_COMPLETED], true)) {
-            return true;
-        }
-
-        if ($status === self::STATUS_PENDING) {
-            if ($createdAt === null) {
-                return true;
-            }
-
-            $created = Carbon::instance($createdAt);
-            return $created->greaterThanOrEqualTo(now()->subMinutes($pendingGraceMinutes));
-        }
-
-        return false;
-    }
-
-    /**
-     * Human-readable Indonesian label for booking status.
+     * Human-readable Indonesian label for booking status, as listed in the owner-portal
+     * contract (owner-portal.md §8).
      */
     public static function formatLabel(string $status): string
     {
         return match ($status) {
-            self::STATUS_PAID      => 'lunas / dikonfirmasi',
-            self::STATUS_COMPLETED => 'selesai',
-            self::STATUS_CANCELLED => 'dibatalkan',
-            self::STATUS_PENDING   => 'menunggu pembayaran',
-            default                => $status,
+            self::STATUS_PENDING => 'Menunggu bayar',
+            self::STATUS_PAID => 'Terkonfirmasi',
+            self::STATUS_COMPLETED => 'Selesai',
+            self::STATUS_CANCELLED => 'Dibatalkan',
+            self::STATUS_NO_SHOW => 'Tidak datang',
+            default => $status,
         };
     }
 }

@@ -1,597 +1,274 @@
 @extends('layouts.owner-layout')
 
-@section('title', 'Dashboard')
+@section('title', 'Beranda')
+
+{{--
+    Beranda (BQ-136, owner-portal.md §8.1): one banner, today in four figures, "Perlu tindakan",
+    today's schedule with tomorrow's summary, the booking link card, quick actions, and the new
+    owner guide in place of sections 2–4 until it is done. Data from App\Actions\Dashboard\GetBeranda;
+    sections 2–4 refresh while the page is visible and render as text only. No charts (AC-BRD-07).
+    BQ-161: today's schedule is the day rail with the marigold "now" line; the first figure is the hero.
+--}}
+
+@php
+    $card = 'bq-panel';
+    $secondaryButton = 'bq-btn bq-btn-secondary bq-btn-sm';
+    $localNow = now('Asia/Jakarta')->locale('id');
+    $todayLabel = $localNow->translatedFormat('l, j M');
+@endphp
 
 @section('content')
-<div class="mx-auto max-w-7xl space-y-4 sm:space-y-6">
+<div class="mx-auto max-w-7xl space-y-6">
+    <x-owner.page-header title="Beranda" :purpose="$todayLabel.' · pukul '.$localNow->format('H.i')" />
 
-    {{-- ── Welcome Header ── --}}
-    <div class="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-bq-text tracking-tight" id="welcome-heading">
-                Welcome back, {{ $tenant->user->namalengkap ?? 'Owner' }}
-            </h1>
-            <p class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-bq-text-muted">Here's what's happening with your business today.</p>
-        </div>
-        <div class="flex items-center gap-2 sm:gap-2.5">
-            {{-- Date Indicator Badge --}}
-            <div class="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl border border-bq-border bg-bq-surface px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-bq-text shadow-2xs">
-                <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#4F46E5] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <span class="sm:hidden">{{ \Carbon\Carbon::now()->translatedFormat('d M Y') }}</span>
-                <span class="hidden sm:inline">{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
-            </div>
-            {{-- Quick Calendar Link --}}
-            <a href="{{ route('owner.calendar') }}" class="inline-flex items-center gap-1.5 rounded-xl border border-[#4F46E5]/20 bg-[#4F46E5]/5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-bold text-[#4F46E5] hover:bg-[#4F46E5]/10 transition-colors shadow-2xs active:scale-95" id="btn-quick-calendar">
-                <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <span class="whitespace-nowrap">Kalender</span>
-            </a>
-        </div>
-    </div>
-
-    {{-- ── Profile Completion Prompt --}}
-    @if ($showProfilePrompt)
-        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:px-5 sm:py-4" id="profile-completion-banner">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm font-semibold text-amber-900">Lengkapi profil bisnis Anda</p>
-                    <p class="text-xs text-amber-800">Isi data bisnis agar akun Anda siap digunakan dan URL bisnis bisa dibuat.</p>
-                </div>
-                <button @click="$dispatch('open-complete-profile')" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-white transition-all hover:bg-amber-700 active:scale-95 cursor-pointer" id="btn-complete-profile">
-                    Lengkapi Profil
-                </button>
-            </div>
-        </div>
+    @if ($banner)
+        <x-ui.banner :title="$banner['message']" :description="$banner['note']" :tone="$banner['tone']"
+            :data-beranda-banner="$banner['kind']">
+            @if ($banner['action'])
+                <x-slot:action>
+                    <x-ui.button :href="$banner['action']['url']" size="sm">{{ $banner['action']['label'] }}</x-ui.button>
+                </x-slot:action>
+            @endif
+        </x-ui.banner>
     @endif
 
-
-
-    {{-- ── Trial Banner ── --}}
-    @if ($statustrial)
-        @include('components.owner.trial-banner', ['sisahari' => $sisahari])
-    @endif
-
-    {{-- ── Stat Cards (4 Overview Cards: 2x2 Grid on Mobile, 4 Cols on Desktop) ── --}}
-    <div class="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4" id="stats-grid">
-        @include('components.owner.stat-card', [
-            'ikon' => 'booking',
-            'label' => 'Total Bookings',
-            'nilai' => number_format($totalbooking),
-            'perubahan' => abs($persenperubahanboking),
-            'tipeperubahan' => $persenperubahanboking > 0 ? 'naik' : ($persenperubahanboking < 0 ? 'turun' : 'stabil'),
-            'idPrefix' => 'stat-booking',
-        ])
-
-        @include('components.owner.stat-card', [
-            'ikon' => 'revenue',
-            'label' => 'Total Revenue',
-            'nilai' => 'Rp ' . number_format($totalrevenue, 0, ',', '.'),
-            'perubahan' => abs($persenperubahanrevenue),
-            'tipeperubahan' => $persenperubahanrevenue > 0 ? 'naik' : ($persenperubahanrevenue < 0 ? 'turun' : 'stabil'),
-            'idPrefix' => 'stat-revenue',
-        ])
-
-        {{-- Customers Card --}}
-        <div class="group rounded-xl border border-bq-border bg-bq-surface p-3.5 sm:p-5 shadow-xs transition-all duration-300 hover:border-bq-border-strong hover:shadow-md" id="stat-customers">
-            <div class="flex items-start justify-between gap-1">
-                <div class="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
-                    <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                </div>
-                <div class="inline-flex items-center gap-1 font-semibold text-emerald-600 text-[10px] sm:text-xs shrink-0">
-                    <svg class="h-2.5 w-2.5 sm:h-3 sm:w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
-                    </svg>
-                    CRM
-                </div>
-            </div>
-            <div class="mt-2.5 sm:mt-4">
-                <p class="text-[10px] sm:text-xs font-semibold tracking-wide text-bq-text-muted uppercase truncate">Total Customers</p>
-                <p class="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-extrabold text-bq-text tracking-tight truncate" id="stat-customers-value">{{ number_format($totalpelanggan ?? 0) }}</p>
-            </div>
-        </div>
-
-        @include('components.owner.stat-card', [
-            'ikon' => 'program',
-            'label' => 'Active Services',
-            'nilai' => $programaktif,
-            'perubahan' => 0,
-            'tipeperubahan' => 'stabil',
-            'idPrefix' => 'stat-services',
-        ])
-    </div>
-
-    {{-- ── Revenue Chart & Daily Trends ── --}}
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        {{-- Revenue Growth Chart --}}
-        <div class="rounded-xl border border-bq-border bg-bq-surface p-4 sm:p-5 lg:col-span-3 flex flex-col justify-between" id="revenue-chart-card">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h2 class="text-sm sm:text-base font-semibold text-bq-text">Revenue Growth</h2>
-                    <p class="text-xs sm:text-sm text-bq-text-muted" id="revenue-chart-subtitle">Monthly earnings overview</p>
-                </div>
-                {{-- Period Toggle --}}
-                <div x-data="{ periodnya: 'monthly' }" class="flex rounded-lg border border-bq-border bg-bq-background p-0.5 self-start">
-                    <button
-                        @click="periodnya = 'weekly'; switchRevenuePeriod('weekly')"
-                        :class="periodnya === 'weekly' ? 'bg-bq-primary text-white shadow-sm' : 'text-bq-text-muted hover:text-bq-text'"
-                        class="rounded-md px-3 py-1.5 sm:px-3.5 text-xs font-medium transition-all duration-200 cursor-pointer"
-                        id="btn-period-weekly"
-                    >
-                        Weekly
-                    </button>
-                    <button
-                        @click="periodnya = 'monthly'; switchRevenuePeriod('monthly')"
-                        :class="periodnya === 'monthly' ? 'bg-bq-primary text-white shadow-sm' : 'text-bq-text-muted hover:text-bq-text'"
-                        class="rounded-md px-3 py-1.5 sm:px-3.5 text-xs font-medium transition-all duration-200 cursor-pointer"
-                        id="btn-period-monthly"
-                    >
-                        Monthly
-                    </button>
-                </div>
-            </div>
-            <div class="mt-4 relative h-52 sm:h-64 md:h-72 w-full">
-                <canvas id="revenue-chart"></canvas>
-            </div>
-        </div>
-
-        {{-- Daily Trends --}}
-        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 lg:col-span-2" id="daily-trends-card">
-            <h2 class="text-base font-semibold text-bq-text">Daily Trends</h2>
-            <div class="mt-4 space-y-4">
-                @forelse ($trendlayanan as $trend)
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg
-                            {{ $trend['trennya'] === 'naik' ? 'bg-emerald-50' : ($trend['trennya'] === 'turun' ? 'bg-rose-50' : 'bg-indigo-50') }}
-                        ">
-                            @if ($trend['trennya'] === 'naik')
-                                <svg class="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                                </svg>
-                            @elseif ($trend['trennya'] === 'turun')
-                                <svg class="h-5 w-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
-                                </svg>
-                            @else
-                                <svg class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 12h7m0 0l-3-3m3 3l-3 3"/>
-                                </svg>
-                            @endif
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-semibold text-bq-text">{{ $trend['namalayanan'] }}</p>
-                            <p class="text-xs text-bq-text-muted">
-                                @if ($trend['trennya'] === 'naik')
-                                    +{{ $trend['persenperubahan'] }}% vs yesterday
-                                @elseif ($trend['trennya'] === 'turun')
-                                    {{ $trend['persenperubahan'] }}% vs yesterday
-                                @else
-                                    Stable performance
-                                @endif
-                            </p>
-                        </div>
-                        <span class="text-sm font-bold text-bq-text">{{ $trend['jumlahbooking'] }}</span>
+    <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]"
+        @unless ($guide) x-data="ownerBeranda(@js($live), @js(route('owner.dashboard.polling')))" @endunless>
+        @if ($guide)
+            {{-- 7. New owner guide (AC-BRD-05), shown instead of sections 2–4 --}}
+            <section data-owner-guide aria-labelledby="owner-guide-title" class="{{ $card }} overflow-hidden lg:col-span-2">
+                <div class="flex items-center justify-between gap-3 border-b border-bq-border bg-bq-primary-light/60 px-5 py-4">
+                    <div>
+                        <h2 id="owner-guide-title" class="text-lg font-bold text-bq-ink">Siapkan bisnis Anda</h2>
+                        <p class="mt-0.5 text-sm text-bq-text-muted">Empat langkah sampai pelanggan pertama bisa booking.</p>
                     </div>
-                @empty
-                    <div class="py-8 text-center">
-                        <p class="text-sm text-bq-text-muted">No booking data for today yet.</p>
+                    <div class="text-right">
+                        <p class="bq-num text-sm font-semibold text-bq-primary">{{ $guide['done'] }} dari 4 langkah</p>
+                        <div class="mt-1.5 h-1.5 w-28 overflow-hidden rounded-full bg-white" aria-hidden="true">
+                            <div class="h-full rounded-full bg-bq-primary" style="width: {{ (int) round($guide['done'] / 4 * 100) }}%"></div>
+                        </div>
                     </div>
-                @endforelse
-            </div>
-            <div class="mt-5 border-t border-bq-border pt-4">
-                <a href="{{ route('owner.analytics') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-full-report">
-                    <span>View Full Report</span>
-                    <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 uppercase">🔒 Terkunci</span>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── Recent Activity & Upcoming Bookings Grid ── --}}
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        {{-- Recent Bookings --}}
-        <div class="rounded-xl border border-bq-border bg-bq-surface lg:col-span-3 flex flex-col" id="recent-activity-card">
-            <div class="flex items-center justify-between border-b border-bq-border px-4 py-3.5 sm:px-5 sm:py-4">
-                <div>
-                    <h2 class="text-sm sm:text-base font-semibold text-bq-text">Recent Bookings</h2>
-                    <p class="text-[11px] sm:text-xs text-bq-text-muted">Latest client reservations</p>
                 </div>
-                <a href="{{ route('owner.bookings') }}" class="text-xs sm:text-sm font-semibold text-bq-primary hover:text-bq-primary-hover transition-colors" id="link-all-activity">
-                    View All &rarr;
-                </a>
-            </div>
-
-            {{-- Mobile Card Feed View (< md screens) --}}
-            <div class="divide-y divide-bq-border md:hidden" id="activity-mobile-list">
-                @forelse ($aktivitasterbaru as $aktivitas)
-                    <div class="p-3.5 transition hover:bg-bq-background/40">
-                        <div class="flex items-start justify-between gap-2">
+                <ol class="divide-y divide-bq-border">
+                    @php $nextStep = collect($guide['steps'])->search(fn ($step) => ! $step['done']); @endphp
+                    @foreach ($guide['steps'] as $index => $step)
+                        <li @class(['flex items-start gap-3 px-5 py-4', 'bg-bq-accent-bg/50' => $index === $nextStep])>
+                            <span @class([
+                                'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold',
+                                'bg-bq-primary text-white' => $step['done'],
+                                'bg-bq-accent text-bq-ink' => ! $step['done'] && $index === $nextStep,
+                                'bg-bq-surface-2 text-bq-text-muted' => ! $step['done'] && $index !== $nextStep,
+                            ]) aria-hidden="true">@if ($step['done'])<x-owner.icon name="check" class="h-4 w-4" />@else{{ $index + 1 }}@endif</span>
                             <div class="min-w-0 flex-1">
-                                <p class="truncate text-xs font-bold text-bq-text">{{ $aktivitas->layanan->namalayanan ?? 'Layanan' }}</p>
-                                <p class="text-[11px] text-bq-text-muted mt-0.5 truncate">{{ $aktivitas->namapelanggan }}</p>
+                                <p class="text-sm font-semibold {{ $step['done'] ? 'text-bq-text-muted line-through' : 'text-bq-ink' }}">
+                                    {{ $step['label'] }}<span class="sr-only">{{ $step['done'] ? ' (selesai)' : ' (belum)' }}</span>
+                                </p>
+                                <p class="mt-0.5 text-sm text-bq-text-muted">{{ $step['hint'] }}</p>
                             </div>
-                            @php
-                                $warnastatus = match($aktivitas->status) {
-                                    'completed', 'paid' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-                                    'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
-                                    'cancelled' => 'bg-rose-50 text-rose-700 ring-rose-600/20',
-                                    default => 'bg-gray-50 text-gray-700 ring-gray-600/20',
-                                };
-                            @endphp
-                            <span class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ring-inset {{ $warnastatus }}">
-                                {{ $aktivitas->status === 'paid' ? 'confirmed' : $aktivitas->status }}
-                            </span>
-                        </div>
-                        <div class="mt-2 flex items-center justify-between text-[11px] text-bq-text-subtle">
-                            <span>{{ $aktivitas->tanggalbooking instanceof \Carbon\Carbon ? $aktivitas->tanggalbooking->format('d M Y') : \Carbon\Carbon::parse($aktivitas->tanggalbooking)->format('d M Y') }}</span>
-                            <span class="font-medium text-bq-text">{{ substr($aktivitas->jam ?? '', 0, 5) }} WIB</span>
-                        </div>
-                    </div>
-                @empty
-                    <div class="py-8 text-center text-xs text-bq-text-muted">
-                        No booking records found yet.
-                    </div>
-                @endforelse
-            </div>
-
-            {{-- Tablet & Desktop Table View (>= md screens) --}}
-            <div class="hidden md:block overflow-x-auto">
-                <table class="w-full" id="activity-table">
-                    <thead>
-                        <tr class="border-b border-bq-border">
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Program</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Customer</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Date</th>
-                            <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-bq-text-muted">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-bq-border" id="activity-tbody">
-                        @forelse ($aktivitasterbaru as $aktivitas)
-                            <tr class="transition-colors hover:bg-bq-background/50">
-                                <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">
-                                    {{ $aktivitas->layanan->namalayanan ?? '-' }}
-                                </td>
-                                <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">
-                                    {{ $aktivitas->namapelanggan }}
-                                </td>
-                                <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">
-                                    {{ $aktivitas->tanggalbooking instanceof \Carbon\Carbon ? $aktivitas->tanggalbooking->format('d M Y') : \Carbon\Carbon::parse($aktivitas->tanggalbooking)->format('d M Y') }}
-                                </td>
-                                <td class="whitespace-nowrap px-5 py-3.5 text-center">
-                                    @php
-                                        $warnastatus = match($aktivitas->status) {
-                                            'completed', 'paid' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-                                            'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
-                                            'cancelled' => 'bg-rose-50 text-rose-700 ring-rose-600/20',
-                                            default => 'bg-gray-50 text-gray-700 ring-gray-600/20',
-                                        };
-                                    @endphp
-                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset {{ $warnastatus }}">
-                                        {{ $aktivitas->status === 'paid' ? 'confirmed' : $aktivitas->status }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="py-8 text-center text-sm text-bq-text-muted">
-                                    No booking records found yet.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {{-- Upcoming Bookings Card --}}
-        <div class="rounded-xl border border-bq-border bg-bq-surface p-5 lg:col-span-2 flex flex-col shadow-2xs" id="upcoming-bookings-card">
-            <div class="flex items-center justify-between border-b border-bq-border pb-3">
-                <div>
-                    <h2 class="text-base font-semibold text-bq-text">Upcoming Schedule</h2>
-                    <p class="text-xs text-bq-text-muted">Next confirmed client sessions</p>
+                            @unless ($step['done'])
+                                @php $stepButton = $index === $nextStep ? 'bq-btn bq-btn-primary bq-btn-sm' : $secondaryButton; @endphp
+                                @if ($step['event'])
+                                    <button type="button" x-data x-on:click="$dispatch(@js($step['event']))" class="{{ $stepButton }} shrink-0">Mulai</button>
+                                @elseif ($step['url'])
+                                    <a href="{{ $step['url'] }}" class="{{ $stepButton }} shrink-0">Mulai</a>
+                                @endif
+                            @endunless
+                        </li>
+                    @endforeach
+                </ol>
+            </section>
+        @else
+            {{-- Sections 2–4, refreshed while visible (AC-BRD-06) --}}
+            {{-- 3. Perlu tindakan (AC-BRD-04) --}}
+            <section aria-labelledby="actions-title" class="{{ $card }} min-w-0 lg:col-start-2 lg:row-start-1">
+                <div class="flex items-center justify-between gap-3 border-b border-bq-border px-4 py-3 sm:px-5">
+                    <h2 id="actions-title" class="text-base font-semibold text-bq-ink">Perlu Anda</h2>
+                    <span x-show="live.actions.length > 0" class="sr-only" x-text="live.actions.reduce((sum, item) => sum + Number(item.count || 0), 0)"></span>
                 </div>
-                <a href="{{ route('owner.calendar') }}" class="text-xs font-bold text-[#4F46E5] hover:underline">Open Calendar &rarr;</a>
-            </div>
-
-            <div class="mt-4 space-y-3 flex-1">
-                @forelse ($upcomingbookings as $upcoming)
-                    <div class="flex items-center gap-3 rounded-xl border border-bq-border bg-[#F8FAFC] p-3 transition hover:bg-white hover:shadow-2xs">
-                        <div class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5] font-bold leading-none">
-                            <span class="text-[10px] uppercase font-semibold text-[#64748B]">{{ \Carbon\Carbon::parse($upcoming->tanggalbooking)->format('M') }}</span>
-                            <span class="text-sm font-extrabold text-[#4F46E5]">{{ \Carbon\Carbon::parse($upcoming->tanggalbooking)->format('d') }}</span>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-bold text-bq-text">{{ $upcoming->layanan->namalayanan ?? 'Layanan' }}</p>
-                            <p class="text-xs text-bq-text-muted truncate">{{ $upcoming->namapelanggan }} &bull; {{ substr($upcoming->jam, 0, 5) }} WIB</p>
-                        </div>
-                        @php
-                            $statusColor = match($upcoming->status) {
-                                'paid', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-                                'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
-                                default => 'bg-gray-50 text-gray-700 ring-gray-600/20',
-                            };
-                            $statusLabel = $upcoming->status === 'paid' ? 'Paid' : ucfirst($upcoming->status);
-                        @endphp
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset {{ $statusColor }}">
-                            {{ $statusLabel }}
-                        </span>
+                <div x-show="live.actions.length === 0" class="flex items-center gap-3 px-4 py-6 sm:px-5">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bq-success-bg text-bq-success"><x-owner.icon name="check" class="h-5 w-5" /></span>
+                    <p class="text-sm text-bq-text-muted">Tidak ada yang perlu ditindak. Semua beres.</p>
+                </div>
+                <ul x-show="live.actions.length > 0" class="divide-y divide-bq-border">
+                    <template x-for="item in live.actions" x-bind:key="item.key">
+                        <li>
+                            <a x-bind:href="item.url" class="flex items-center justify-between gap-3 px-4 py-3 text-sm text-bq-ink transition-colors hover:bg-bq-primary-light/60 sm:px-5">
+                                <span class="bq-count" x-text="item.count"></span>
+                                <span class="min-w-0 flex-1" x-text="item.label"></span>
+                                <x-owner.icon name="chevron-right" class="h-4 w-4" />
+                            </a>
+                        </li>
+                    </template>
+                </ul>
+            </section>
+            <x-ui.panel aria-label="Hari ini" class="lg:col-start-1 lg:row-start-1 lg:self-stretch">
+                <div class="bq-figures">
+                    <div class="bq-figures-main min-w-0">
+                        <b x-text="live.figures[0]?.value"></b>
+                        <span x-text="live.figures[0]?.label"></span>
+                        <small x-text="live.tomorrow.count
+                            ? 'Besok ' + live.tomorrow.count + ' booking, pertama ' + live.tomorrow.first_time
+                            : 'Besok belum ada booking'"></small>
                     </div>
-                @empty
-                    <div class="flex flex-col items-center justify-center py-8 text-center my-auto">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                        </div>
-                        <p class="text-xs font-semibold text-bq-text">No upcoming bookings</p>
-                        <p class="text-[11px] text-bq-text-muted mt-0.5">New reservations will appear here automatically.</p>
+                    <div class="bq-figures-more">
+                        <template x-for="figure in live.figures.slice(1)" :key="figure.key">
+                            <div>
+                                <b x-text="figure.value"></b>
+                                <span x-text="figure.label"></span>
+                            </div>
+                        </template>
                     </div>
-                @endforelse
-            </div>
-        </div>
-    </div>
+                </div>
+            </x-ui.panel>
+            {{-- 4. Today's schedule on the day rail, and tomorrow --}}
+            <section aria-labelledby="today-title" class="{{ $card }} min-w-0 lg:col-start-1"
+                x-data="ownerDayRail">
+                <div class="flex items-center justify-between gap-3 border-b border-bq-border px-4 py-3 sm:px-5">
+                    <div>
+                        <h2 id="today-title" class="text-bq-section text-bq-ink">Jadwal hari ini</h2>
+                        <p class="text-bq-small text-bq-text-muted">{{ $todayLabel }}</p>
+                    </div>
+                    <x-ui.button :href="route('owner.calendar')" size="sm" variant="ghost">Buka kalender</x-ui.button>
+                </div>
 
-</div>
+                <div x-show="railRows.length === 0" class="px-4 py-10 text-center">
+                    <span class="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-bq-primary-light text-bq-primary"><x-owner.icon name="calendar" /></span>
+                    <p class="text-base font-semibold text-bq-ink">Belum ada booking hari ini</p>
+                    <p x-show="live.next" class="mt-1 text-sm text-bq-text-muted">
+                        Booking berikutnya: <span x-text="live.next ? live.next.date + ', ' + live.next.time + ' · ' + live.next.customer : ''"></span>
+                    </p>
+                </div>
 
-{{-- Complete Profile Modal --}}
-@if ($showProfilePrompt)
-    @include('components.owner.modal-complete-profile')
-@endif
-
-{{-- ── Revenue Chart Script ── --}}
-<script>
-    window.revenueChartData = {
-        monthly: {
-            labels: @json($labelbulan),
-            data: @json($datarevenueperbulan),
-            subtitle: 'Monthly earnings overview'
-        },
-        weekly: {
-            labels: @json($labelminggu),
-            data: @json($datarevenueperminggu),
-            subtitle: 'Last 7 days daily earnings'
-        }
-    };
-
-    window.switchRevenuePeriod = function(period) {
-        if (!window.revenueChartInstance) return;
-        const cfg = window.revenueChartData[period] || window.revenueChartData.monthly;
-        window.revenueChartInstance.data.labels = cfg.labels;
-        window.revenueChartInstance.data.datasets[0].data = cfg.data;
-        window.revenueChartInstance.update();
-
-        const subtitleEl = document.getElementById('revenue-chart-subtitle');
-        if (subtitleEl) subtitleEl.textContent = cfg.subtitle;
-    };
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const canvas = document.getElementById('revenue-chart');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-
-        const gradient = ctx.createLinearGradient(0, 0, 0, 220);
-        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.15)');
-        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
-
-        window.revenueChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: window.revenueChartData.monthly.labels,
-                datasets: [{
-                    label: 'Revenue',
-                    data: window.revenueChartData.monthly.data,
-                    borderColor: 'rgb(99, 102, 241)',
-                    backgroundColor: gradient,
-                    borderWidth: 2.5,
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: 'rgb(99, 102, 241)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    pointHoverBackgroundColor: 'rgb(99, 102, 241)',
-                    pointHoverBorderColor: '#fff',
-                    pointHoverBorderWidth: 3,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1e1b4b',
-                        titleColor: '#e0e7ff',
-                        bodyColor: '#fff',
-                        bodyFont: { weight: '600' },
-                        padding: 12,
-                        cornerRadius: 10,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return 'Rp ' + context.parsed.y.toLocaleString('id-ID');
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            color: '#9ca3af',
-                            font: { size: window.innerWidth < 640 ? 10 : 12, weight: '500' },
-                            maxRotation: 0,
-                            autoSkip: true,
-                            maxTicksLimit: window.innerWidth < 640 ? 4 : 7,
-                        },
-                        border: { display: false }
-                    },
-                    y: {
-                        grid: {
-                            color: 'rgba(0,0,0,0.04)',
-                            drawBorder: false,
-                        },
-                        ticks: {
-                            color: '#9ca3af',
-                            font: { size: window.innerWidth < 640 ? 10 : 11 },
-                            callback: function(value) {
-                                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                                if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
-                                return value;
-                            }
-                        },
-                        border: { display: false }
-                    }
-                }
-            }
-        });
-    });
-</script>
-
-{{-- ── Dashboard Polling Script ── --}}
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        function fetchDashboardData() {
-            fetch('{{ route('owner.dashboard.polling') }}', {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
-            .then(data => {
-                if (data.success && data.data) {
-                    updateDashboardUI(data.data);
-                }
-            })
-            .catch(error => {
-                console.error('Dashboard Polling error:', error);
-            });
-        }
-
-        function updateDashboardUI(data) {
-            // Update Stat Cards
-            const bookingVal = document.getElementById('stat-booking-value');
-            if (bookingVal) bookingVal.textContent = new Intl.NumberFormat('id-ID').format(data.total_bookings);
-            
-            const bookingChange = document.getElementById('stat-booking-change');
-            if (bookingChange) {
-                bookingChange.textContent = (data.persen_perubahan_booking > 0 ? '+' : '') + data.persen_perubahan_booking + '%';
-                updateChangeColor(bookingChange, data.persen_perubahan_booking);
-            }
-
-            const revVal = document.getElementById('stat-revenue-value');
-            if (revVal) revVal.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.total_revenue);
-
-            const revChange = document.getElementById('stat-revenue-change');
-            if (revChange) {
-                revChange.textContent = (data.persen_perubahan_revenue > 0 ? '+' : '') + data.persen_perubahan_revenue + '%';
-                updateChangeColor(revChange, data.persen_perubahan_revenue);
-            }
-
-            // Update Customers & Active Services
-            const custVal = document.getElementById('stat-customers-value');
-            if (custVal && data.total_customers !== undefined) {
-                custVal.textContent = new Intl.NumberFormat('id-ID').format(data.total_customers);
-            }
-
-            const servVal = document.getElementById('stat-services-value');
-            if (servVal && data.active_services !== undefined) {
-                servVal.textContent = new Intl.NumberFormat('id-ID').format(data.active_services);
-            }
-
-            // Update Recent Activity (Both Table & Mobile Cards)
-            const tbody = document.getElementById('activity-tbody');
-            const mobileList = document.getElementById('activity-mobile-list');
-
-            if (data.recent_activities) {
-                if (tbody) {
-                    tbody.innerHTML = '';
-                    if (data.recent_activities.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-sm text-bq-text-muted">No booking records found yet.</td></tr>';
-                    } else {
-                        data.recent_activities.forEach(item => {
-                            const statusText = item.status === 'paid' ? 'confirmed' : item.status;
-                            let colorClass = 'bg-gray-50 text-gray-700 ring-gray-600/20';
-                            if (item.status === 'completed' || item.status === 'paid') colorClass = 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
-                            else if (item.status === 'pending') colorClass = 'bg-amber-50 text-amber-700 ring-amber-600/20';
-                            else if (item.status === 'cancelled') colorClass = 'bg-rose-50 text-rose-700 ring-rose-600/20';
-
-                            const row = `
-                                <tr class="transition-colors hover:bg-bq-background/50">
-                                    <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-bq-text">${item.program_name}</td>
-                                    <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.customer_name}</td>
-                                    <td class="whitespace-nowrap px-5 py-3.5 text-sm text-bq-text-muted">${item.date}</td>
-                                    <td class="whitespace-nowrap px-5 py-3.5 text-center">
-                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ring-1 ring-inset ${colorClass}">
-                                            ${statusText}
-                                        </span>
-                                    </td>
-                                </tr>
-                            `;
-                            tbody.innerHTML += row;
-                        });
-                    }
-                }
-
-                if (mobileList) {
-                    mobileList.innerHTML = '';
-                    if (data.recent_activities.length === 0) {
-                        mobileList.innerHTML = '<div class="py-8 text-center text-xs text-bq-text-muted">No booking records found yet.</div>';
-                    } else {
-                        data.recent_activities.forEach(item => {
-                            const statusText = item.status === 'paid' ? 'confirmed' : item.status;
-                            let colorClass = 'bg-gray-50 text-gray-700 ring-gray-600/20';
-                            if (item.status === 'completed' || item.status === 'paid') colorClass = 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
-                            else if (item.status === 'pending') colorClass = 'bg-amber-50 text-amber-700 ring-amber-600/20';
-                            else if (item.status === 'cancelled') colorClass = 'bg-rose-50 text-rose-700 ring-rose-600/20';
-
-                            const card = `
-                                <div class="p-3.5 transition hover:bg-bq-background/40">
-                                    <div class="flex items-start justify-between gap-2">
+                <x-ui.day-rail x-show="railRows.length > 0" label="Booking hari ini menurut jam">
+                    <template x-for="(row, index) in railRows" x-bind:key="(row.empty ? 'slot-' : 'booking-') + row.id">
+                        <li>
+                            <div x-show="index === nowIndex" class="relative my-1 flex items-center gap-2" aria-hidden="true">
+                                <span class="bq-num w-16 shrink-0 rounded-full bg-bq-accent px-2 py-0.5 text-center text-[11px] font-bold text-bq-ink" x-text="now.replace(':', '.')"></span>
+                                <span class="h-0.5 flex-1 rounded-full bg-bq-accent"></span>
+                            </div>
+                            <div x-show="row.empty" class="flex flex-wrap items-center justify-between gap-2 border-b border-bq-border py-2">
+                                <div class="min-w-0">
+                                    <p class="font-semibold">Kosong</p>
+                                    <p class="text-bq-small text-bq-text-muted" x-text="row.label"></p>
+                                </div>
+                                <x-ui.button size="sm" variant="ghost" icon="plus" x-on:click="$dispatch('open-dialog', { id: 'owner-walkin-dialog', slot: row, trigger: $el })">Catat booking</x-ui.button>
+                            </div>
+                            <template x-if="!row.empty">
+                            <div class="grid grid-cols-[4rem_minmax(0,1fr)] gap-3 py-2">
+                                <p class="bq-num pt-3 font-bq-display text-bq-clock font-semibold text-bq-ink" x-text="start(row).replace(':', '.')"></p>
+                                <div class="relative border-l-2 pl-4" x-bind:class="row.in_progress ? 'border-bq-primary' : 'border-bq-border'">
+                                    <span class="absolute top-4 -left-[5px] h-2 w-2 rounded-full" x-bind:class="row.in_progress ? 'bg-bq-primary' : 'bg-bq-border-strong'" aria-hidden="true"></span>
+                                    <div class="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-start" x-bind:class="row.in_progress ? 'border-bq-primary-border bg-bq-primary-light' : 'border-bq-border bg-bq-surface'">
                                         <div class="min-w-0 flex-1">
-                                            <p class="truncate text-xs font-bold text-bq-text">${item.program_name}</p>
-                                            <p class="text-[11px] text-bq-text-muted mt-0.5 truncate">${item.customer_name}</p>
+                                            <p class="break-words text-sm font-semibold text-bq-ink" x-text="row.customer"></p>
+                                            <p class="truncate text-sm text-bq-text-muted" x-bind:title="row.time + ' · ' + row.service"><span class="bq-num" x-text="row.time"></span> · <span x-text="row.service"></span></p>
+                                            <p x-show="row.in_progress" class="mt-0.5 text-xs font-semibold text-bq-primary">Sedang berlangsung</p>
+                                            <span x-show="!row.in_progress" class="mt-1 inline-flex items-center gap-2 text-bq-small text-bq-text-muted">
+                                                <span aria-hidden="true" class="size-2 rounded-full" :class="row.status.tone === 'success' ? 'bg-bq-success' : (row.status.tone === 'warning' ? 'bg-bq-warning-dot' : 'bg-bq-primary')"></span>
+                                                <span x-text="row.status.label"></span>
+                                            </span>
                                         </div>
-                                        <span class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ring-inset ${colorClass}">
-                                            ${statusText}
-                                        </span>
-                                    </div>
-                                    <div class="mt-2 flex items-center justify-between text-[11px] text-bq-text-subtle">
-                                        <span>${item.date}</span>
+                                        <div class="flex shrink-0 flex-wrap items-center gap-2">
+                                            <a x-bind:href="row.href" x-on:click="if (row.panel_url) { $event.preventDefault(); $dispatch('open-booking-panel', { url: row.panel_url, trigger: $el }); }" class="bq-btn bq-btn-ghost bq-btn-sm">Buka</a>
+                                            <template x-for="outcome in [
+                                                { url: row.complete_url, status: 'completed', label: 'Tandai selesai', message: 'Pastikan sesi pelanggan sudah selesai.' },
+                                                { url: row.no_show_url, status: 'no_show', label: 'Tidak datang', message: 'Pastikan pelanggan tidak datang pada sesi ini.' }
+                                            ].filter(outcome => outcome.url)" :key="outcome.status">
+                                                <form method="POST" :action="outcome.url" :id="'dashboard-' + row.id + '-' + outcome.status">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="status" :value="outcome.status">
+                                                    <button type="button" class="{{ $secondaryButton }}" x-text="outcome.label"
+                                                        @click="$dispatch('open-confirm', { title: outcome.label + '?', message: outcome.message, formId: $el.form.id, confirmText: outcome.label })"></button>
+                                                </form>
+                                            </template>
+                                        </div>
                                     </div>
                                 </div>
-                            `;
-                            mobileList.innerHTML += card;
-                        });
-                    }
-                }
-            }
-        }
+                            </div>
+                            </template>
+                        </li>
+                    </template>
+                    <li x-show="nowIndex === railRows.length" class="my-1 flex items-center gap-2" aria-hidden="true">
+                        <span class="bq-num w-16 shrink-0 rounded-full bg-bq-accent px-2 py-0.5 text-center text-[11px] font-bold text-bq-ink" x-text="now.replace(':', '.')"></span>
+                        <span class="h-0.5 flex-1 rounded-full bg-bq-accent"></span>
+                    </li>
+                </x-ui.day-rail>
 
-        function updateChangeColor(el, val) {
-            el.classList.remove('text-emerald-600', 'text-rose-500', 'text-bq-text-subtle');
-            if (val > 0) el.classList.add('text-emerald-600');
-            else if (val < 0) el.classList.add('text-rose-500');
-            else el.classList.add('text-bq-text-subtle');
-        }
+                <p class="border-t border-bq-border px-4 py-3 text-sm text-bq-text-muted sm:px-5 lg:hidden">
+                    <span class="font-semibold text-bq-ink">Besok:</span>
+                    <span x-text="live.tomorrow.count === 0 ? 'belum ada booking' : live.tomorrow.count + ' booking, pertama ' + live.tomorrow.first_time + ' · ' + live.tomorrow.first_customer"></span>
+                </p>
+            </section>
 
-        if (!window.dashboardPollingInitialized) {
-            window.dashboardPollingInitialized = true;
-            setInterval(fetchDashboardData, 30000);
-        }
-    });
-</script>
+        @endif
+
+        <div @class(['grid min-w-0 gap-5', 'lg:col-span-2 lg:grid-cols-3' => $guide, 'lg:col-start-2' => ! $guide])>
+            @unless ($guide)
+                <section aria-labelledby="tomorrow-title" class="{{ $card }} hidden min-w-0 self-start lg:block">
+                    <div class="border-b border-bq-border px-4 py-3">
+                        <h2 id="tomorrow-title" class="text-bq-section">Besok</h2>
+                        <p class="text-bq-small text-bq-text-muted" x-text="live.tomorrow.date"></p>
+                    </div>
+                    <p x-show="live.tomorrow.count === 0" class="p-4 text-bq-small text-bq-text-muted">Belum ada booking.</p>
+                    <ul class="divide-y divide-bq-border">
+                        <template x-for="item in live.tomorrow.bookings" :key="item.url">
+                            <li>
+                                <button type="button" class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-bq-background"
+                                    x-on:click="$dispatch('open-booking-panel', { url: item.url, trigger: $el })">
+                                    <span class="bq-num font-bq-display text-bq-clock font-semibold" x-text="item.time"></span>
+                                    <span class="min-w-0 flex-1 truncate" x-text="item.customer" :title="item.customer"></span>
+                                    <span class="shrink-0 text-bq-small text-bq-text-muted" x-text="item.status"></span>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+                </section>
+            @endunless
+
+            {{-- 5. Booking link card --}}
+            @if ($link)
+                <x-ui.panel title="Link booking" :class="$guide ? 'lg:col-span-2' : null">
+                    <div class="grid gap-3" x-data="ownerBookingLink(@js($link), @js(route('owner.dashboard.link-shared')))">
+                        <div class="flex flex-wrap items-center justify-between gap-2 rounded-bq-control border border-bq-border bg-bq-background px-3 py-2">
+                            <p class="min-w-0 flex-1 break-all text-bq-body">{{ $link['url'] }}</p>
+                            <x-ui.button size="sm" x-on:click="copy()" x-text="copied ? 'Tersalin' : 'Salin link'">Salin link</x-ui.button>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <x-ui.button size="sm" x-show="canShare" x-cloak x-on:click="share()">Bagikan</x-ui.button>
+                            <x-ui.button :href="'https://wa.me/?text='.rawurlencode($link['share_text'])" target="_blank" rel="noopener" size="sm" icon="whatsapp" x-on:click="mark()">WhatsApp</x-ui.button>
+                            @if ($link['qr_url'])
+                                <x-ui.button :href="$link['qr_url']" size="sm" icon="qr">Kode QR</x-ui.button>
+                            @endif
+                        </div>
+                    </div>
+                </x-ui.panel>
+            @endif
+
+            {{-- 6. Quick actions --}}
+            @if (count($quickActions) > 0)
+                <section aria-labelledby="quick-title" class="{{ $card }} p-4 sm:p-5">
+                    <h2 id="quick-title" class="text-base font-semibold text-bq-ink">Aksi cepat</h2>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @foreach ($quickActions as $action)
+                            @if ($action['event'] !== '')
+                                <button type="button" data-quick-action="{{ $action['key'] }}" x-data x-on:click="$dispatch('open-dialog', { id: @js($action['event']), trigger: $el })" class="bq-btn bq-btn-secondary bq-btn-sm justify-start">
+                                    <x-owner.icon name="plus" class="h-4 w-4 text-bq-primary" />{{ $action['label'] }}
+                                </button>
+                            @else
+                                <a href="{{ $action['url'] }}" data-quick-action="{{ $action['key'] }}" class="bq-btn bq-btn-secondary bq-btn-sm justify-start">
+                                    <x-owner.icon name="plus" class="h-4 w-4 text-bq-primary" />{{ $action['label'] }}
+                                </a>
+                            @endif
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+        </div>
+    </div>
+</div>
+
+@if ($profileIncomplete || $errors->any() && old('_form') === 'complete-profile')
+    @include('components.owner.modal-complete-profile', ['showProfilePrompt' => false])
+@endif
 @endsection

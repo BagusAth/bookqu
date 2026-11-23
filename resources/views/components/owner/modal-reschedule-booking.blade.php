@@ -1,271 +1,185 @@
-{{-- Owner Direct Reschedule Booking Modal Component --}}
-<div
-    id="modal-owner-reschedule"
-    x-data="{
-        buka: false,
-        sedangMemuat: false,
-        sedangKirim: false,
-        booking: null,
-        selectedDate: '',
-        selectedScheduleId: null,
-        alasan: '',
-        slots: [],
-        pesanError: '',
-        minDate: new Date().toISOString().split('T')[0],
-
-        bukaModal(data) {
-            this.booking = data.booking || data;
-            this.pesanError = '';
-            this.alasan = 'Permintaan langsung customer walk-in di tempat';
-            
-            // Inisialisasi tanggal dengan tanggal booking saat ini jika belum lewat, atau hari ini
-            const tglBooking = this.booking.tanggalbooking ? String(this.booking.tanggalbooking).split('T')[0].split(' ')[0] : '';
-            if (tglBooking && tglBooking >= this.minDate) {
-                this.selectedDate = tglBooking;
-            } else {
-                this.selectedDate = this.minDate;
-            }
-            
-            this.selectedScheduleId = this.booking.idschedule || null;
-            this.buka = true;
-            this.muatSlot();
-        },
-
-        async muatSlot() {
-            if (!this.booking || !this.selectedDate) return;
-            this.sedangMemuat = true;
-            this.pesanError = '';
-            this.slots = [];
-
-            try {
-                const res = await fetch(`/owner/bookings/${this.booking.id}/available-slots?tanggal=${this.selectedDate}`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.slots = data.slots || [];
-                    // Jika slot saat ini berada di tanggal ini, pastikan terpilih secara default
-                    const adaSlotTerpilih = this.slots.some(s => s.id === this.selectedScheduleId);
-                    if (!adaSlotTerpilih) {
-                        this.selectedScheduleId = null;
-                    }
-                } else {
-                    this.pesanError = data.message || 'Gagal memuat slot jadwal.';
-                }
-            } catch (err) {
-                this.pesanError = 'Terjadi kendala saat memuat slot jadwal.';
-            } finally {
-                this.sedangMemuat = false;
-            }
-        },
-
-        formatTanggal(tgl) {
-            if (!tgl) return '-';
-            try {
-                const d = new Date(tgl);
-                return d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-            } catch(e) {
-                return tgl;
-            }
+@php
+    $rescheduleForm = $errors->any() && is_string(old('_form')) ? old('_form') : '';
+    $reopenReschedule = preg_match('/^reschedule-([1-9][0-9]*)$/', $rescheduleForm, $match)
+        ? route('owner.bookings.panel', (int) $match[1])
+        : null;
+    $oldReschedule = $reopenReschedule ? \Illuminate\Support\Arr::only(old(), ['tanggal', 'schedule_id', 'alasan']) : [];
+@endphp
+<div x-data="{
+    booking: null,
+    date: '',
+    minDate: @js(today()->toDateString()),
+    slots: [],
+    selected: '',
+    reason: '',
+    conflict: null,
+    errors: {},
+    failed: '',
+    loading: false,
+    saving: false,
+    requestNumber: 0,
+    get selectedSlot() {
+        return this.slots.find(slot => String(slot.id) === String(this.selected) && slot.is_available);
+    },
+    endpoint(template) {
+        return template.replace('__ID__', encodeURIComponent(this.booking?.id ?? ''));
+    },
+    async restore(url) {
+        try {
+            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error();
+            const payload = await response.json();
+            const action = payload.actions.find(action => action.reschedule);
+            if (action) this.start(action.reschedule, null, @js($oldReschedule));
+        } catch {
+            $dispatch('toast', { type: 'error', message: 'Detail booking tidak dapat dimuat.' });
         }
-    }"
-    @open-owner-reschedule.window="bukaModal($event.detail)"
-    @keydown.escape.window="buka = false"
-    x-cloak
+    },
+    start(booking, trigger, old = {}) {
+        this.booking = booking;
+        this.date = old.tanggal || (booking.tanggalbooking >= this.minDate ? booking.tanggalbooking : this.minDate);
+        this.reason = old.alasan || '';
+        this.conflict = null;
+        this.errors = {};
+        this.saving = false;
+        $dispatch('open-dialog', { id: 'modal-owner-reschedule', trigger });
+        this.load(old.schedule_id);
+    },
+    async load(preferred = null) {
+        const sequence = ++this.requestNumber;
+        this.slots = [];
+        this.selected = '';
+        this.failed = '';
+        this.loading = false;
+        if (!this.booking || !this.date) return;
+        this.loading = true;
+        try {
+            const url = new URL(this.endpoint(@js(route('owner.bookings.available-slots', ['booking' => '__ID__']))));
+            url.searchParams.set('tanggal', this.date);
+            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+            const payload = await response.json();
+            if (sequence !== this.requestNumber) return;
+            if (!response.ok || !payload.success) {
+                this.failed = payload.message || 'Slot tidak dapat dimuat.';
+                return;
+            }
+            this.slots = payload.slots || [];
+            this.selected = this.slots.find(slot => slot.is_available && String(slot.id) === String(preferred))?.id ?? '';
+        } catch {
+            if (sequence === this.requestNumber) this.failed = 'Slot tidak dapat dimuat. Coba lagi.';
+        } finally {
+            if (sequence === this.requestNumber) this.loading = false;
+        }
+    },
+    async submit(form) {
+        if (this.saving) return;
+        const attempted = this.selectedSlot;
+        this.saving = true;
+        this.conflict = null;
+        this.errors = {};
+        try {
+            const response = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' } });
+            if (response.status === 419 || response.status === 401) return;
+            if (response.status >= 500) throw new Error();
+            const data = await response.json();
+            if (data.code === 'SLOT_TAKEN') {
+                await this.load();
+                const minutes = time => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+                const start = minutes(attempted.jam_mulai);
+                const alternatives = this.slots.filter(slot => slot.is_available && !slot.is_current && slot.id !== attempted.id)
+                    .sort((a, b) => Math.abs(minutes(a.jam_mulai) - start) - Math.abs(minutes(b.jam_mulai) - start)).slice(0, 2);
+                this.conflict = { start: attempted.jam_mulai, alternatives };
+                return;
+            }
+            if (!response.ok || !data.success) {
+                this.errors = data.errors || { error: [data.message || 'Jadwal tidak dapat disimpan.'] };
+                return;
+            }
+            $dispatch('close-dialog', { id: 'modal-owner-reschedule' });
+            $dispatch('toast', { type: 'success', message: data.message });
+            $dispatch('open-booking-panel', { url: this.endpoint(@js(route('owner.bookings.panel', ['booking' => '__ID__']))) });
+        } catch {
+            $dispatch('toast', { type: 'error', message: 'Status penyimpanan belum dapat diperiksa. Isian Anda masih ada.', action: () => this.$refs.rescheduleSubmit.focus() });
+        } finally {
+            this.saving = false;
+        }
+    },
+    formatDifference(value) {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency', currency: 'IDR', maximumFractionDigits: 0, signDisplay: 'exceptZero'
+        }).format(value);
+    }
+}"
+    @open-owner-reschedule.window="start($event.detail.booking, $event.detail.trigger)"
+    @dialog-closed="if ($event.detail.id === 'modal-owner-reschedule') requestNumber++"
+    @if ($reopenReschedule) x-init="restore(@js($reopenReschedule))" @endif
 >
-    {{-- Overlay --}}
-    <div
-        x-show="buka"
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm"
-        @click="buka = false"
-    ></div>
-
-    {{-- Modal Dialog --}}
-    <div
-        x-show="buka"
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-        x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-        x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-        class="fixed inset-0 z-[90] flex items-center justify-center p-3 sm:p-4"
-    >
-        <div class="w-full max-w-lg rounded-2xl border border-bq-border bg-bq-surface shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
-            
-            {{-- Header --}}
-            <div class="flex items-center justify-between border-b border-bq-border px-4 sm:px-6 py-4 bg-[#fbfaff]">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-base sm:text-lg font-black text-bq-text">Ubah Jadwal Reservasi</h2>
-                        <span class="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-bold text-indigo-800" x-text="'#' + (booking?.booking_code || booking?.id || '')"></span>
-                    </div>
-                    <p class="text-xs text-bq-text-muted mt-0.5">Penyesuaian jadwal langsung khusus Owner tanpa perlu token pelanggan.</p>
-                </div>
-                <button @click="buka = false" class="rounded-xl p-1.5 text-bq-text-subtle transition-colors hover:bg-slate-100 hover:text-bq-text cursor-pointer">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-
-            {{-- Body Scrollable --}}
-            <form :action="'/owner/bookings/' + (booking?.id || '') + '/reschedule'" method="POST" @submit="sedangKirim = true" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4.5">
-                @csrf
-
-                {{-- Alert Error --}}
-                <template x-if="pesanError">
-                    <div class="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-800 flex items-center gap-2">
-                        <svg class="h-4 w-4 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span x-text="pesanError"></span>
-                    </div>
-                </template>
-
-                {{-- Info Pelanggan & Jadwal Saat Ini --}}
-                <div class="rounded-xl border border-indigo-100 bg-[#f8f6ff] p-3.5 text-xs space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-bq-text-muted font-medium">Pelanggan:</span>
-                        <span class="font-bold text-bq-text" x-text="booking?.namapelanggan"></span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-bq-text-muted font-medium">Layanan:</span>
-                        <span class="font-bold text-bq-primary" x-text="booking?.layanan?.namalayanan || 'Layanan Utama'"></span>
-                    </div>
-                    <div class="flex items-center justify-between pt-1.5 border-t border-indigo-200/50">
-                        <span class="text-bq-text-muted font-medium">Jadwal Lama:</span>
-                        <span class="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
-                            <span x-text="formatTanggal(booking?.tanggalbooking)"></span> &bull; <span x-text="(booking?.jam || '').substring(0, 5) + ' WIB'"></span>
-                        </span>
-                    </div>
-                </div>
-
-                {{-- Input Tanggal Baru --}}
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-bold text-bq-text">
-                        Pilih Tanggal Baru <span class="text-rose-500">*</span>
-                    </label>
-                    <input
-                        type="date"
-                        x-model="selectedDate"
-                        :min="minDate"
-                        @change="muatSlot()"
-                        class="w-full rounded-xl border border-bq-border bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-bq-text shadow-2xs focus:border-bq-primary focus:ring-1 focus:ring-bq-primary"
-                        required
-                    />
-                </div>
-
-                {{-- Pemilih Slot Waktu --}}
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                        <label class="block text-xs font-bold text-bq-text">
-                            Pilih Slot Jam Baru <span class="text-rose-500">*</span>
-                        </label>
-                        <span class="text-[11px] text-bq-text-muted" x-show="!sedangMemuat && slots.length > 0">
-                            <span class="font-bold text-bq-primary" x-text="slots.filter(s => s.is_available).length"></span> slot tersedia
-                        </span>
-                    </div>
-
-                    {{-- Loading Indicator --}}
-                    <div x-show="sedangMemuat" class="py-8 text-center space-y-2">
-                        <svg class="h-6 w-6 animate-spin mx-auto text-bq-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                        </svg>
-                        <p class="text-xs text-bq-text-muted">Memuat slot jadwal tersedia...</p>
-                    </div>
-
-                    {{-- Empty State --}}
-                    <div x-show="!sedangMemuat && slots.length === 0" class="rounded-xl border border-dashed border-bq-border bg-slate-50/70 p-5 text-center space-y-1.5">
-                        <p class="text-xs font-semibold text-bq-text-muted">Tidak ada slot jadwal operasional pada tanggal ini.</p>
-                        <p class="text-[11px] text-[#6e6584]">Silakan pilih tanggal lain di atas atau buat slot baru di menu Schedule.</p>
-                    </div>
-
-                    {{-- Slots Grid --}}
-                    <div x-show="!sedangMemuat && slots.length > 0" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
-                        <template x-for="slot in slots" :key="slot.id">
-                            <label
-                                :class="{
-                                    'opacity-40 cursor-not-allowed bg-slate-100 border-slate-200 text-slate-400': !slot.is_available,
-                                    'border-bq-primary bg-[#f3effe] text-bq-primary ring-2 ring-bq-primary/20': selectedScheduleId === slot.id && slot.is_available,
-                                    'border-bq-border bg-white text-bq-text hover:border-indigo-200 hover:bg-slate-50': selectedScheduleId !== slot.id && slot.is_available
-                                }"
-                                class="rounded-xl border p-2.5 transition-all flex flex-col justify-between gap-1 relative cursor-pointer shadow-2xs"
-                            >
-                                <input
-                                    type="radio"
-                                    name="schedule_id"
-                                    :value="slot.id"
-                                    x-model="selectedScheduleId"
-                                    :disabled="!slot.is_available"
-                                    class="sr-only"
-                                />
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs font-black" x-text="slot.formatted_time"></span>
-                                    <template x-if="slot.is_current">
-                                        <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">Saat ini</span>
-                                    </template>
-                                    <template x-if="!slot.is_available && !slot.is_current">
-                                        <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-200 text-slate-600">Penuh</span>
-                                    </template>
-                                </div>
-                                <div class="flex items-center justify-between text-[11px] font-semibold text-bq-text-muted">
-                                    <span x-text="slot.formatted_price"></span>
-                                    <template x-if="slot.is_available">
-                                        <span class="text-emerald-600 text-[10px] font-bold">✓ Pilih</span>
-                                    </template>
-                                </div>
-                            </label>
+    <x-owner.dialog id="modal-owner-reschedule" title="Pindah jadwal" size="lg">
+        <form method="POST" class="space-y-4" @submit.prevent="submit($el)"
+            :action="endpoint(@js(route('owner.bookings.reschedule', ['booking' => '__ID__'])))">
+            @csrf
+            <input type="hidden" name="_form" :value="'reschedule-' + booking?.id">
+            <div x-show="conflict" x-cloak>
+                <x-ui.error-block>
+                    <x-slot:title><span x-text="conflict ? 'Jam ' + conflict.start.replace(':', '.') + ' baru saja terisi booking lain' : ''"></span></x-slot:title>
+                    <p class="mt-1">Jadwal belum berubah dan isian Anda tidak hilang.</p>
+                    <p x-show="conflict?.alternatives.length" class="mt-1">Pilih jam lain yang masih kosong:</p>
+                    <x-slot:action>
+                        <template x-for="alternative in conflict?.alternatives || []" :key="alternative.id">
+                            <x-ui.button size="sm" x-on:click="selected = alternative.id; conflict = null" x-text="alternative.jam_mulai.replace(':', '.')" />
                         </template>
-                    </div>
+                    </x-slot:action>
+                </x-ui.error-block>
+            </div>
+            <template x-for="[field, messages] in Object.entries(errors)" :key="field">
+                <p x-text="messages[0]" class="text-bq-danger" role="alert"></p>
+            </template>
+            <div class="rounded-lg bg-bq-background px-3 py-2">
+                <p class="font-semibold" x-text="booking?.booking_code"></p>
+                <p class="text-bq-text-muted" x-text="[booking?.namapelanggan, booking?.layanan?.namalayanan].filter(Boolean).join(' · ')"></p>
+            </div>
+            <x-owner.field-error name="error" x-cloak x-show="{{ \Illuminate\Support\Js::from($rescheduleForm) }} === 'reschedule-' + booking?.id" />
+            <div>
+                <label for="reschedule-date" class="font-medium">Tanggal baru</label>
+                <input id="reschedule-date" type="date" name="tanggal" x-model="date" :min="minDate" @change="conflict = null; load()" :disabled="saving" required
+                    class="bq-input mt-1 block w-full sm:w-auto">
+                <x-owner.field-error name="tanggal" x-cloak x-show="{{ \Illuminate\Support\Js::from($rescheduleForm) }} === 'reschedule-' + booking?.id" />
+            </div>
+            <fieldset class="space-y-2">
+                <legend class="font-medium">Slot baru</legend>
+                <p x-show="loading" class="text-bq-text-muted" role="status">Memuat slot…</p>
+                <p x-show="failed" x-text="failed" class="text-bq-danger" role="alert"></p>
+                <p x-show="!loading && !failed && slots.length === 0" class="text-bq-text-muted">Belum ada slot pada tanggal ini. Pilih tanggal lain.</p>
+                <div class="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto">
+                    <template x-for="slot in slots" :key="slot.id">
+                        <label class="flex items-start gap-2 rounded-lg border border-bq-border bg-bq-surface p-2 has-[:checked]:border-bq-primary has-[:checked]:bg-bq-primary-light has-[:disabled]:bg-bq-background">
+                            <input type="radio" name="schedule_id" x-model="selected" :value="slot.id" :disabled="!slot.is_available || saving">
+                            <span class="min-w-0">
+                                <span class="block font-bq-display text-bq-clock font-semibold" :class="{ 'line-through': !slot.is_available }" x-text="slot.formatted_time"></span>
+                                <span class="block text-xs text-bq-text-muted" x-text="slot.formatted_price"></span>
+                                <span class="block text-xs text-bq-text-muted" x-text="slot.is_current ? 'Slot saat ini' : (slot.is_available ? '' : 'Tidak tersedia')"></span>
+                                <span class="block text-xs text-bq-text-muted" x-show="slot.is_available && slot.price_difference != null"
+                                    x-text="'Selisih ' + formatDifference(slot.price_difference)"></span>
+                            </span>
+                        </label>
+                    </template>
                 </div>
-
-                {{-- Input Alasan Reschedule --}}
-                <div class="space-y-1.5 pt-1">
-                    <label class="block text-xs font-bold text-bq-text">
-                        Catatan / Alasan Perubahan <span class="text-bq-text-muted font-normal text-[11px]">(opsional)</span>
-                    </label>
-                    <input
-                        type="text"
-                        name="alasan"
-                        x-model="alasan"
-                        placeholder="Contoh: Permintaan langsung customer walk-in di kasir"
-                        class="w-full rounded-xl border border-bq-border bg-white px-3.5 py-2.5 text-xs sm:text-sm text-bq-text shadow-2xs focus:border-bq-primary focus:ring-1 focus:ring-bq-primary"
-                    />
-                </div>
-
-                {{-- Footer Aksi --}}
-                <div class="pt-3 border-t border-bq-border flex items-center justify-between gap-2">
-                    <button
-                        type="button"
-                        @click="buka = false"
-                        class="rounded-xl border border-bq-border bg-white px-4 py-2.5 text-xs font-bold text-bq-text hover:bg-slate-50 transition cursor-pointer shadow-2xs"
-                    >
-                        Batal
-                    </button>
-                    <button
-                        type="submit"
-                        :disabled="!selectedScheduleId || sedangKirim || sedangMemuat"
-                        :class="(!selectedScheduleId || sedangKirim || sedangMemuat) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-bq-primary-hover active:scale-95 cursor-pointer'"
-                        class="inline-flex items-center gap-2 rounded-xl bg-bq-primary px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-bq-primary/25 transition"
-                    >
-                        <svg x-show="sedangKirim" class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                        </svg>
-                        <span>Simpan Perubahan Jadwal</span>
-                    </button>
-                </div>
-            </form>
-
-        </div>
-    </div>
+                <x-owner.field-error name="schedule_id" x-cloak x-show="{{ \Illuminate\Support\Js::from($rescheduleForm) }} === 'reschedule-' + booking?.id" />
+            </fieldset>
+            <p x-show="selectedSlot?.price_difference != null" class="rounded-lg bg-bq-info-bg px-3 py-2 text-bq-info" aria-live="polite">
+                Selisih harga slot pilihan <strong x-text="selectedSlot ? formatDifference(selectedSlot.price_difference) : ''"></strong>
+            </p>
+            <div>
+                <label for="reschedule-reason" class="font-medium">Alasan pindah jadwal (opsional)</label>
+                <input id="reschedule-reason" name="alasan" x-model="reason" type="text" placeholder="Contoh: Permintaan pelanggan"
+                    class="bq-input mt-1 block w-full">
+                <x-owner.field-error name="alasan" x-cloak x-show="{{ \Illuminate\Support\Js::from($rescheduleForm) }} === 'reschedule-' + booking?.id" />
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" @click="hide()" class="bq-btn bq-btn-secondary">Batal</button>
+                <button type="submit" x-ref="rescheduleSubmit" :disabled="saving || !selectedSlot" class="bq-btn bq-btn-primary disabled:opacity-50"
+                    x-text="saving ? 'Menyimpan…' : 'Simpan jadwal baru'">Simpan jadwal baru</button>
+            </div>
+        </form>
+    </x-owner.dialog>
 </div>

@@ -3,7 +3,6 @@
 namespace Tests\Unit\Domain;
 
 use App\Domain\Booking\BookingState;
-use Carbon\Carbon;
 use Tests\TestCase;
 
 class BookingStateTest extends TestCase
@@ -32,25 +31,15 @@ class BookingStateTest extends TestCase
         $this->assertFalse(BookingState::canTransition(BookingState::STATUS_COMPLETED, BookingState::STATUS_PAID));
     }
 
-    public function test_occupies_slot_evaluates_correctly(): void
-    {
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PAID));
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_COMPLETED));
-        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_CANCELLED));
-
-        // Pending within 15 min grace window
-        $recent = Carbon::now()->subMinutes(5);
-        $this->assertTrue(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $recent, 15));
-
-        // Pending expired > 15 min
-        $expired = Carbon::now()->subMinutes(20);
-        $this->assertFalse(BookingState::occupiesSlot(BookingState::STATUS_PENDING, $expired, 15));
-    }
-
+    /**
+     * Labels from the approved owner-portal contract (owner-portal.md §8, BQ-129).
+     */
     public function test_format_label_provides_indonesian_description(): void
     {
-        $this->assertSame('lunas / dikonfirmasi', BookingState::formatLabel(BookingState::STATUS_PAID));
-        $this->assertSame('selesai', BookingState::formatLabel(BookingState::STATUS_COMPLETED));
-        $this->assertSame('dibatalkan', BookingState::formatLabel(BookingState::STATUS_CANCELLED));
+        $this->assertSame('Menunggu bayar', BookingState::formatLabel(BookingState::STATUS_PENDING));
+        $this->assertSame('Terkonfirmasi', BookingState::formatLabel(BookingState::STATUS_PAID));
+        $this->assertSame('Selesai', BookingState::formatLabel(BookingState::STATUS_COMPLETED));
+        $this->assertSame('Dibatalkan', BookingState::formatLabel(BookingState::STATUS_CANCELLED));
+        $this->assertSame('Tidak datang', BookingState::formatLabel('no_show'));
     }
 }

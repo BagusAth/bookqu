@@ -7,6 +7,7 @@ namespace App\Actions\Payment;
 use App\Domain\Payment\PaymentRules;
 use App\Domain\Payment\PaymentState;
 use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
+use App\Infrastructure\Payments\PaymentGatewayManager;
 use App\Infrastructure\Payments\SingaPay\SingaPayPaymentGateway;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -16,47 +17,42 @@ use App\Models\Tenant;
 class CreateBookingPayment
 {
     public function __construct(
-        protected SingaPayPaymentGateway $singapayGateway,
+        protected PaymentGatewayManager $gatewayManager,
+        protected ?SingaPayPaymentGateway $singapayGateway = null,
         protected ?MidtransPaymentGateway $midtransGateway = null
     ) {
+        $this->singapayGateway = $singapayGateway ?? app(SingaPayPaymentGateway::class);
         $this->midtransGateway = $midtransGateway ?? app(MidtransPaymentGateway::class);
     }
 
     /**
      * Create payment record for a free booking.
      *
-     * @param Tenant $tenant
-     * @param array<string, mixed> $customerData
-     * @param string|null $fullCatatan
-     * @return Payment
+     * @param  array<string, mixed>  $customerData
      */
     public function createFreePayment(Tenant $tenant, array $customerData, ?string $fullCatatan = null): Payment
     {
         $orderId = PaymentRules::generateOrderId('FREE', (int) $tenant->id);
 
-        return Payment::create([
-            'idtenant'       => $tenant->id,
-            'tipe'           => PaymentState::TIPE_BOOKING,
-            'jumlah'         => 0,
-            'status'         => PaymentState::STATUS_SUKSES,
-            'metode'         => PaymentState::METODE_GRATIS,
-            'order_id'       => $orderId,
-            'manage_token'   => Booking::generateSecureToken(),
-            'nama_pembayar'  => $customerData['namapelanggan'],
+        return app(PaymentLifecycle::class)->recordSettled([
+            'idtenant' => $tenant->id,
+            'tipe' => PaymentState::TIPE_BOOKING,
+            'jumlah' => 0,
+            'metode' => PaymentState::METODE_GRATIS,
+            'provider' => 'manual',
+            'order_id' => $orderId,
+
+            'nama_pembayar' => $customerData['namapelanggan'],
             'email_pembayar' => $customerData['email'],
-            'hp_pembayar'    => $customerData['nomorhp'],
-            'catatan'        => $fullCatatan ?: null,
+            'hp_pembayar' => $customerData['nomorhp'],
+            'catatan' => $fullCatatan ?: null,
         ]);
     }
 
     /**
-     * Create initial pending payment record for a paid booking.
+     * Create initial pending payment record for a paid booking according to active gateway driver.
      *
-     * @param Tenant $tenant
-     * @param float $hargaAkhir
-     * @param array<string, mixed> $customerData
-     * @param string|null $fullCatatan
-     * @return Payment
+     * @param  array<string, mixed>  $customerData
      */
     public function createPendingPayment(
         Tenant $tenant,
@@ -64,34 +60,58 @@ class CreateBookingPayment
         array $customerData,
         ?string $fullCatatan = null
     ): Payment {
-        $expiryMinutes = (int) config('services.singapay.expiry_minutes', 15);
+        $activeDriver = $this->gatewayManager->driver();
+        $providerName = $activeDriver->getDriverName();
+
         $orderId = PaymentRules::generateOrderId('BKG', (int) $tenant->id);
 
         return Payment::create([
-            'idtenant'       => $tenant->id,
-            'tipe'           => PaymentState::TIPE_BOOKING,
-            'jumlah'         => $hargaAkhir,
-            'status'         => PaymentState::STATUS_PENDING,
-            'metode'         => PaymentState::METODE_SINGAPAY,
-            'provider'       => 'singapay',
-            'order_id'       => $orderId,
-            'manage_token'   => Booking::generateSecureToken(),
-            'expired_at'     => now()->addMinutes($expiryMinutes),
-            'nama_pembayar'  => $customerData['namapelanggan'],
+            'idtenant' => $tenant->id,
+            'tipe' => PaymentState::TIPE_BOOKING,
+            'jumlah' => $hargaAkhir,
+            'status' => PaymentState::STATUS_PENDING,
+            'metode' => $providerName,
+            'provider' => $providerName,
+            'order_id' => $orderId,
+
+            'expired_at' => PaymentRules::deadlineFor(PaymentState::TIPE_BOOKING),
+            'nama_pembayar' => $customerData['namapelanggan'],
             'email_pembayar' => $customerData['email'],
-            'hp_pembayar'    => $customerData['nomorhp'],
-            'catatan'        => $fullCatatan ?: null,
+            'hp_pembayar' => $customerData['nomorhp'],
+            'catatan' => $fullCatatan ?: null,
         ]);
     }
 
     /**
-     * Request and associate SingaPay payment link for a paid booking payment.
+     * Initialize payment link or snap token via active or payment-specific gateway.
      *
-     * @param Payment $payment
-     * @param Service $service
-     * @param array<string, mixed> $customerData
-     * @param int $slotCount
-     * @return string
+     * @param  array<string, mixed>  $customerData
+     * @return array{payment_url?: ?string, snap_token?: ?string, external_id?: ?string}
+     */
+    public function initializePayment(
+        Payment $payment,
+        Service $service,
+        array $customerData,
+        int $slotCount = 1
+    ): array {
+        $gateway = $this->gatewayManager->forPayment($payment);
+
+        $result = $gateway->createBookingPayment($payment, $service, $customerData, $slotCount);
+
+        // Maintain snap_token in testing environment for Midtrans if null for legacy tests
+        if ($gateway->getDriverName() === 'midtrans' && app()->environment('testing') && empty($payment->snap_token) && empty($result['snap_token'])) {
+            $payment->update(['snap_token' => 'mocked-snap-token']);
+            $result['snap_token'] = 'mocked-snap-token';
+        }
+
+        return $result;
+    }
+
+    /**
+     * Request and associate SingaPay payment link for a paid booking payment (backward compatibility).
+     *
+     * @param  array<string, mixed>  $customerData
+     *
      * @throws \Exception
      */
     public function generatePaymentLink(
@@ -100,30 +120,17 @@ class CreateBookingPayment
         array $customerData,
         int $slotCount = 1
     ): string {
-        $itemName = 'Booking: ' . $service->namalayanan;
-        if ($slotCount > 1) {
-            $itemName .= ' (' . $slotCount . ' slot)';
-        }
-
-        $result = $this->singapayGateway->createPaymentLink($payment, $customerData, $itemName);
+        $result = $this->singapayGateway->createBookingPayment($payment, $service, $customerData, $slotCount);
         $paymentUrl = $result['payment_url'] ?? '';
 
-        // Maintain snap_token in testing environment if null for legacy tests
-        if (app()->environment('testing') && empty($payment->snap_token)) {
-            $payment->update(['snap_token' => 'mocked-snap-token']);
-        }
-
-        return $paymentUrl;
+        return (string) $paymentUrl;
     }
 
     /**
-     * Request and associate Snap token for a paid booking payment (Midtrans fallback).
+     * Request and associate Snap token for a paid booking payment (Midtrans backward compatibility).
      *
-     * @param Payment $payment
-     * @param Service $service
-     * @param array<string, mixed> $customerData
-     * @param int $slotCount
-     * @return string
+     * @param  array<string, mixed>  $customerData
+     *
      * @throws \Exception
      */
     public function generateSnapToken(
@@ -132,39 +139,8 @@ class CreateBookingPayment
         array $customerData,
         int $slotCount = 1
     ): string {
-        $itemName = 'Booking: ' . $service->namalayanan;
-        if ($slotCount > 1) {
-            $itemName .= ' (' . $slotCount . ' slot)';
-        }
+        $result = $this->midtransGateway->createBookingPayment($payment, $service, $customerData, $slotCount);
 
-        $params = [
-            'transaction_details' => [
-                'order_id'     => $payment->order_id,
-                'gross_amount' => (int) $payment->jumlah,
-            ],
-            'customer_details' => [
-                'first_name' => $customerData['namapelanggan'],
-                'email'      => $customerData['email'],
-                'phone'      => $customerData['nomorhp'],
-            ],
-            'item_details' => [
-                [
-                    'id'       => 'SRV-' . $service->id,
-                    'price'    => (int) $payment->jumlah,
-                    'quantity' => 1,
-                    'name'     => $itemName,
-                ],
-            ],
-            'expiry' => [
-                'start_time' => now()->format('Y-m-d H:i:s O'),
-                'unit'       => 'minute',
-                'duration'   => (int) config('services.singapay.expiry_minutes', 15),
-            ],
-        ];
-
-        $snapToken = $this->midtransGateway->createSnapToken($payment, $params);
-        $payment->update(['snap_token' => $snapToken]);
-
-        return $snapToken;
+        return (string) ($result['snap_token'] ?? $payment->snap_token);
     }
 }

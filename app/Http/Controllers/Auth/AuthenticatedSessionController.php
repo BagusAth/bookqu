@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\Concerns\FinishesSignIn;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +14,8 @@ use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
+    use FinishesSignIn;
+
     /**
      * Display the login view.
      */
@@ -29,30 +31,13 @@ class AuthenticatedSessionController extends Controller
     {
         $credentials = $request->validated();
 
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             return back()
                 ->withErrors(['email' => 'Email atau password salah.'])
-                ->onlyInput('email');
+                ->onlyInput('email', 'remember');
         }
 
-        $request->session()->regenerate();
-        $request->session()->forget('current_tenant_id');
-
-        $user = $request->user();
-
-        if ($user instanceof MustVerifyEmail && !$user->hasVerifiedEmail()) {
-            return redirect()->route('verification.notice');
-        }
-
-        if ($user?->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-
-        if ($user?->isOwner()) {
-            return redirect()->route('owner.dashboard');
-        }
-
-        return redirect('/');
+        return $this->finishSignIn($request);
     }
 
     /**

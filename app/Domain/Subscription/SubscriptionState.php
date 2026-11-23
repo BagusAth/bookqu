@@ -9,9 +9,12 @@ use Carbon\Carbon;
 
 final class SubscriptionState
 {
-    public const STATUS_TRIAL     = 'trial';
-    public const STATUS_ACTIVE    = 'active';
-    public const STATUS_EXPIRED   = 'expired';
+    public const STATUS_TRIAL = 'trial';
+
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_EXPIRED = 'expired';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     /**
@@ -31,13 +34,13 @@ final class SubscriptionState
         }
 
         if ($subscription->status === self::STATUS_TRIAL) {
-            if ($subscription->trial_berakhir !== null && $subscription->trial_berakhir->lessThan($now)) {
+            if ($subscription->trial_berakhir !== null && $subscription->trial_berakhir->lessThanOrEqualTo($now)) {
                 return true;
             }
         }
 
         if ($subscription->status === self::STATUS_ACTIVE) {
-            if ($subscription->langganan_berakhir !== null && $subscription->langganan_berakhir->lessThan($now)) {
+            if ($subscription->langganan_berakhir !== null && $subscription->langganan_berakhir->lessThanOrEqualTo($now)) {
                 return true;
             }
         }
@@ -71,7 +74,7 @@ final class SubscriptionState
         }
 
         $now = $now ?? Carbon::now();
-        if ($subscription->trial_berakhir->lessThan($now)) {
+        if ($subscription->trial_berakhir->lessThanOrEqualTo($now)) {
             return 0;
         }
 
@@ -88,11 +91,31 @@ final class SubscriptionState
         }
 
         return match ($fromStatus) {
-            self::STATUS_TRIAL     => in_array($toStatus, [self::STATUS_ACTIVE, self::STATUS_EXPIRED, self::STATUS_CANCELLED], true),
-            self::STATUS_ACTIVE    => in_array($toStatus, [self::STATUS_EXPIRED, self::STATUS_CANCELLED, self::STATUS_ACTIVE], true),
-            self::STATUS_EXPIRED   => in_array($toStatus, [self::STATUS_ACTIVE], true), // re-activation / renewal
+            self::STATUS_TRIAL => in_array($toStatus, [self::STATUS_ACTIVE, self::STATUS_EXPIRED, self::STATUS_CANCELLED], true),
+            self::STATUS_ACTIVE => in_array($toStatus, [self::STATUS_EXPIRED, self::STATUS_CANCELLED, self::STATUS_ACTIVE], true),
+            self::STATUS_EXPIRED => in_array($toStatus, [self::STATUS_ACTIVE], true), // re-activation / renewal
             self::STATUS_CANCELLED => in_array($toStatus, [self::STATUS_ACTIVE], true), // re-activation
-            default                => false,
+            default => false,
         };
+    }
+
+    public static function periodEnd(Subscription $subscription): ?Carbon
+    {
+        return $subscription->langganan_berakhir ?? $subscription->trial_berakhir;
+    }
+
+    /**
+     * End of the period a paid plan gets when its payment settles at $paidAt (D-002): renewing the
+     * same active plan extends from its current end date; a new or different plan starts at $paidAt.
+     */
+    public static function paidPeriodEnd(?Subscription $current, int $planId, Carbon $paidAt): Carbon
+    {
+        $start = $paidAt->copy();
+        if ($current && $current->status === self::STATUS_ACTIVE && (int) $current->idplan === $planId
+            && $current->langganan_berakhir !== null && $current->langganan_berakhir->greaterThan($paidAt)) {
+            $start = $current->langganan_berakhir->copy();
+        }
+
+        return $start->addMonthNoOverflow();
     }
 }

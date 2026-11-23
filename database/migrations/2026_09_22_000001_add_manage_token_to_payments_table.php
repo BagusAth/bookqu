@@ -27,6 +27,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('payments', function (Blueprint $table) {
+            $table->dropUnique(['manage_token']);
+        });
+
+        Schema::table('payments', function (Blueprint $table) {
             $table->dropColumn('manage_token');
         });
     }

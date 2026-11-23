@@ -1,10 +1,9 @@
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
-    const snapToken = @json($payment->snap_token ?? null);
-    const paymentUrl = @json($payment->payment_url ?? null);
-    const callbackUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.callback"), [$tenant->slug, $payment]) }}';
-    const checkStatusUrl = '{{ route(\App\Support\CustomerBookingRoutes::name("customer.booking.check-status"), [$tenant->slug, $payment]) }}';
-    const csrfToken = '{{ csrf_token() }}';
+    const snapToken = @js($payment->snap_token ?? null);
+    const paymentUrl = @js($payment->payment_url ?? null);
+    const callbackUrl = @js(\App\Support\CustomerBookingRoutes::url("customer.booking.callback", [$tenant->slug, $payment]));
+    const checkStatusUrl = @js(\App\Support\CustomerBookingRoutes::url("customer.booking.check-status", [$tenant->slug, $payment]));
+    const csrfToken = @js(csrf_token());
 
     function showInlineFeedback(message, type = 'error') {
         const banner = document.getElementById('inline-feedback-banner');
@@ -13,12 +12,13 @@
         if (!banner || !text) return;
 
         text.innerText = message;
+        // Design A §2.3: status colours via the customer note (BQ-165).
+        banner.className = 'sf-note mt-4 items-center';
+        banner.dataset.tone = type === 'error' ? 'danger' : 'info';
         if (type === 'error') {
-            banner.className = 'mt-4 rounded-xl p-3 text-xs border border-red-200 bg-red-50 text-red-700 flex items-center gap-2';
-            icon.innerHTML = '<svg class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+            icon.innerHTML = '<svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
         } else {
-            banner.className = 'mt-4 rounded-xl p-3 text-xs border border-blue-200 bg-blue-50 text-blue-700 flex items-center gap-2';
-            icon.innerHTML = '<svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+            icon.innerHTML = '<svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
         }
     }
 
@@ -27,7 +27,13 @@
         if (banner) banner.classList.add('hidden');
     }
 
+    function setPageTitle(text) {
+        const title = document.getElementById('page-title');
+        if (title) title.innerText = text;
+    }
+
     function showFailedState() {
+        setPageTitle('Pembayaran gagal');
         const pendingCard = document.getElementById('state-pending-card');
         const failedCard = document.getElementById('state-failed-card');
         const expiredCard = document.getElementById('state-expired-card');
@@ -43,6 +49,7 @@
     }
 
     function showExpiredState() {
+        setPageTitle('Waktu pembayaran habis');
         const pendingCard = document.getElementById('state-pending-card');
         const failedCard = document.getElementById('state-failed-card');
         const expiredCard = document.getElementById('state-expired-card');
@@ -94,6 +101,11 @@
     let isProcessingSuccess = false;
     let pollInterval = null;
     let isChecking = false;
+    // Polling stops after 5 minutes or 3 consecutive failures (BQ-051)
+    const MAX_POLL_ATTEMPTS = 120;
+    const MAX_POLL_FAILURES = 3;
+    let pollAttempts = 0;
+    let pollFailures = 0;
 
     async function sendPaymentCallback(result) {
         if (isProcessingSuccess) return;
@@ -166,14 +178,14 @@
         if (loadingSpinner) loadingSpinner.classList.add('hidden');
         if (successIcon) {
             successIcon.classList.remove('hidden');
-            successIcon.classList.add('flex', 'animate-bounce-in');
+            successIcon.classList.add('flex');
         }
         if (overlayTitle) {
-            overlayTitle.innerHTML = 'Pembayaran Berhasil Dikonfirmasi! 🎉';
-            overlayTitle.className = 'text-lg sm:text-xl font-black text-emerald-600';
+            overlayTitle.innerText = 'Pembayaran diterima';
+            overlayTitle.className = 'mt-2 text-lg font-bold text-sf-success';
         }
-        if (overlayDesc) overlayDesc.innerText = 'Mengalihkan Anda ke bukti reservasi...';
-        if (realtimeStatusText) realtimeStatusText.innerText = '✓ Pembayaran berhasil diterima!';
+        if (overlayDesc) overlayDesc.innerText = 'Membuka bukti reservasi…';
+        if (realtimeStatusText) realtimeStatusText.innerText = 'Pembayaran diterima.';
 
         setTimeout(() => {
             window.location.href = redirectUrl;
@@ -186,8 +198,7 @@
 
         const checkStatusBtn = document.getElementById('check-status-btn');
         if (!isSilent && checkStatusBtn) {
-            checkStatusBtn.innerText = 'Memverifikasi...';
-            checkStatusBtn.disabled = true;
+            setCheckingState(true);
         }
 
         try {
@@ -199,7 +210,21 @@
                 }
             });
 
+            // 419: this page's form token expired; 404: the access session ended. Retrying cannot help.
+            if (response.status === 419 || response.status === 404) {
+                stopAutoPolling();
+                showInlineFeedback(response.status === 419
+                    ? 'Sesi halaman ini telah berakhir. Muat ulang halaman untuk melihat status terbaru.'
+                    : 'Akses ke halaman pembayaran ini telah berakhir. Muat ulang halaman atau buka kembali tautan dari email konfirmasi.', 'error');
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+
             const data = await response.json();
+            pollFailures = 0;
 
             if (data.status === 'sukses' && data.redirect) {
                 showSuccessRedirect(data.redirect);
@@ -227,26 +252,46 @@
             }
         } catch (error) {
             console.error('Status check error:', error);
+            pollFailures++;
+            if (pollFailures >= MAX_POLL_FAILURES) {
+                stopAutoPolling();
+            }
             if (!isSilent) {
                 showInlineFeedback('Gagal memeriksa status pembayaran. Periksa koneksi internet Anda.', 'error');
             }
         } finally {
             isChecking = false;
             if (!isSilent && checkStatusBtn) {
-                checkStatusBtn.innerHTML = `
-                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span>Periksa Status Pembayaran</span>
-                `;
-                checkStatusBtn.disabled = false;
+                setCheckingState(false);
             }
         }
     }
 
+    // Design A §7.4: checking state on the button and the status pill (BQ-165).
+    function setCheckingState(checking) {
+        const pill = document.getElementById('payment-status-pill');
+        const pillText = document.getElementById('payment-status-text');
+        const monitor = document.getElementById('realtime-status-text');
+        document.querySelectorAll('[data-check-status]').forEach(button => {
+            button.innerText = checking ? 'Memeriksa…' : 'Periksa status';
+            button.disabled = checking;
+            button.setAttribute('aria-busy', checking ? 'true' : 'false');
+        });
+        if (pill) pill.dataset.tone = checking ? 'info' : 'warning';
+        if (pillText) pillText.innerText = checking ? 'Memeriksa pembayaran…' : 'Menunggu pembayaran';
+        if (monitor && checking) monitor.innerText = 'Menghubungi penyedia pembayaran, tunggu sebentar.';
+        if (monitor && !checking) monitor.innerText = 'Status dipantau otomatis.';
+    }
+
     function startAutoPolling() {
         if (pollInterval) clearInterval(pollInterval);
+        pollAttempts = 0;
+        pollFailures = 0;
         pollInterval = setInterval(() => {
+            if (++pollAttempts > MAX_POLL_ATTEMPTS) {
+                stopAutoPolling();
+                return;
+            }
             if (!document.hidden) {
                 checkPaymentStatus(true);
             }
@@ -261,31 +306,33 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        const payButton = document.getElementById('pay-button');
+        const payButtons = document.querySelectorAll('[data-pay-button]');
+        const countdownProgress = document.getElementById('countdown-progress');
+        const countdownTotal = Math.max(900, @js($paymentSeconds));
         const checkStatusBtn = document.getElementById('check-status-btn');
         const countdownCard = document.getElementById('countdown-card');
-        const countdownTitle = document.getElementById('countdown-title');
         const countdownTitleText = document.getElementById('countdown-title-text');
-        const countdownDot = document.getElementById('countdown-dot');
         const countdownMin = document.getElementById('countdown-min');
         const countdownSec = document.getElementById('countdown-sec');
-        const countdownColon = document.getElementById('countdown-colon');
 
         // Expiry countdown: synchronized with server remaining seconds
-        let remainingSeconds = {{ max(0, $payment->expired_at ? (int) now()->diffInSeconds($payment->expired_at, false) : 900) }};
+        let remainingSeconds = @js($paymentSeconds);
+        // Count against a fixed deadline: background tabs (e.g. while paying in an e-wallet app) throttle timers
+        const deadlineAt = Date.now() + remainingSeconds * 1000;
+
+        // Declared before updateCountdown() runs: an expired page must not hit the TDZ (BQ-048)
+        let timer = null;
 
         function updateCountdown() {
             if (remainingSeconds <= 0) {
                 if (timer) clearInterval(timer);
                 stopAutoPolling();
-                if (countdownCard) {
-                    countdownCard.className = "mt-4 mx-auto max-w-sm rounded-2xl border border-red-200 bg-red-50 p-3 sm:p-4 text-center";
-                }
-                if (countdownTitle) {
-                    countdownTitle.className = "text-[11px] font-bold uppercase tracking-wider text-red-700 flex items-center justify-center gap-1.5";
-                }
+                // Let the server reconcile at the deadline; a late success still redirects (BQ-064 T4-08)
+                checkPaymentStatus(true);
+                if (countdownCard) countdownCard.dataset.urgent = 'true';
+                if (countdownProgress) countdownProgress.setAttribute('aria-valuenow', '0');
                 if (countdownTitleText) {
-                    countdownTitleText.innerText = "Waktu Pembayaran Habis";
+                    countdownTitleText.innerText = "Waktu pembayaran habis";
                 }
                 if (countdownMin) countdownMin.innerText = "00";
                 if (countdownSec) countdownSec.innerText = "00";
@@ -301,33 +348,30 @@
 
             if (countdownMin) countdownMin.innerText = minStr;
             if (countdownSec) countdownSec.innerText = secStr;
+            if (countdownProgress) {
+                countdownProgress.setAttribute('aria-valuenow', String(remainingSeconds));
+                countdownProgress.setAttribute('aria-valuetext', minutes + ' menit ' + seconds + ' detik');
+                const bar = countdownProgress.firstElementChild;
+                if (bar) bar.style.width = Math.max(0, Math.min(100, remainingSeconds / countdownTotal * 100)) + '%';
+            }
 
             // S5.1: Urgency state change when <= 3 minutes (180 seconds)
-            if (remainingSeconds <= 180) {
-                if (countdownCard && !countdownCard.classList.contains('border-red-300')) {
-                    countdownCard.className = "mt-4 mx-auto max-w-sm rounded-2xl border border-red-300 bg-red-50/90 p-3 sm:p-4 transition-all duration-300";
-                    if (countdownTitle) countdownTitle.className = "text-[11px] font-bold uppercase tracking-wider text-red-700 flex items-center justify-center gap-1.5";
-                    if (countdownDot) countdownDot.className = "h-2 w-2 rounded-full bg-red-500 animate-ping";
-                    if (countdownMin) countdownMin.className = "inline-flex h-11 w-12 items-center justify-center rounded-xl bg-red-600 text-white font-mono text-xl sm:text-2xl font-black shadow-xs transition-colors";
-                    if (countdownColon) countdownColon.className = "text-2xl font-black text-red-600 -mt-4 transition-colors";
-                    if (countdownSec) countdownSec.className = "inline-flex h-11 w-12 items-center justify-center rounded-xl bg-red-600 text-white font-mono text-xl sm:text-2xl font-black shadow-xs transition-colors";
-                }
+            if (remainingSeconds <= 180 && countdownCard) {
+                countdownCard.dataset.urgent = 'true';
             }
         }
 
         updateCountdown();
-        const timer = setInterval(function() {
-            remainingSeconds--;
-            updateCountdown();
-        }, 1000);
-
-        if (payButton) {
-            payButton.addEventListener('click', openSnapPayment);
+        if (remainingSeconds > 0) {
+            timer = setInterval(function() {
+                remainingSeconds = Math.max(0, Math.round((deadlineAt - Date.now()) / 1000));
+                updateCountdown();
+            }, 1000);
         }
 
-        if (checkStatusBtn) {
-            checkStatusBtn.addEventListener('click', () => checkPaymentStatus(false));
-        }
+        payButtons.forEach(button => button.addEventListener('click', openSnapPayment));
+
+        document.querySelectorAll('[data-check-status]').forEach(button => button.addEventListener('click', () => checkPaymentStatus(false)));
 
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && !isProcessingSuccess) {

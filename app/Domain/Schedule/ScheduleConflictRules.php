@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Schedule;
 
+use App\Domain\Booking\BookingRules;
+use App\Models\Booking;
 use App\Models\Schedule;
 use App\Models\Service;
+use App\Support\TenantContext;
+use Illuminate\Database\Eloquent\Collection;
 
 class ScheduleConflictRules
 {
@@ -20,16 +24,16 @@ class ScheduleConflictRules
         string $jamSelesai,
         ?int $excludeScheduleId = null
     ): bool {
-        return Schedule::withoutGlobalScopes()
+        return app(TenantContext::class)->run($tenantId, fn (): bool => Schedule::query()
             ->where('idtenant', $tenantId)
             ->where('idlayanan', $serviceId)
             ->whereDate('tanggal', $date)
             ->where(function ($query) use ($jamMulai, $jamSelesai) {
                 $query->where('jam_mulai', '<=', $jamSelesai)
-                      ->where('jam_selesai', '>=', $jamMulai);
+                    ->where('jam_selesai', '>=', $jamMulai);
             })
-            ->when($excludeScheduleId !== null, fn($q) => $q->where('id', '!=', $excludeScheduleId))
-            ->exists();
+            ->when($excludeScheduleId !== null, fn ($q) => $q->where('id', '!=', $excludeScheduleId))
+            ->exists());
     }
 
     /**
@@ -41,32 +45,65 @@ class ScheduleConflictRules
     }
 
     /**
-     * Check if a schedule slot can safely be deleted (no active non-cancelled bookings).
+     * Start and end times of the service's existing slots on one date.
+     *
+     * @return list<array{jam_mulai: string, jam_selesai: string}>
      */
-    public static function canDeleteSchedule(Schedule $schedule): bool
+    public static function slotTimesOnDate(int $tenantId, int $serviceId, string $date): array
     {
-        return !\App\Models\Booking::withoutGlobalScopes()
-            ->where('idschedule', $schedule->id)
-            ->where('status', '!=', 'cancelled')
-            ->exists();
+        return app(TenantContext::class)->run($tenantId, fn (): array => Schedule::query()
+            ->where('idtenant', $tenantId)
+            ->where('idlayanan', $serviceId)
+            ->whereDate('tanggal', $date)
+            ->get(['jam_mulai', 'jam_selesai'])
+            ->map(fn (Schedule $slot): array => [
+                'jam_mulai' => (string) $slot->jam_mulai,
+                'jam_selesai' => (string) $slot->jam_selesai,
+            ])
+            ->values()
+            ->all());
     }
 
     /**
-     * Calculate weekend price override based on tenant configuration.
+     * Whether a time range overlaps any of the given slots, with the same bounds as hasScheduleConflict().
+     *
+     * @param  list<array{jam_mulai: string, jam_selesai: string}>  $slots
      */
-    public static function calculateWeekendPrice(
-        Service $service,
-        ?string $weekendPriceType,
-        ?float $weekendPriceValue
-    ): ?float {
-        if ($weekendPriceType === 'multiplier' && $weekendPriceValue) {
-            return (float) ($service->harga * $weekendPriceValue);
+    public static function overlapsAny(array $slots, string $jamMulai, string $jamSelesai): bool
+    {
+        foreach ($slots as $slot) {
+            if (self::hasTimeOverlap($slot['jam_mulai'], $slot['jam_selesai'], $jamMulai, $jamSelesai)) {
+                return true;
+            }
         }
 
-        if ($weekendPriceType === 'fixed' && $weekendPriceValue) {
-            return (float) $weekendPriceValue;
-        }
+        return false;
+    }
 
-        return null;
+    /**
+     * Bookings of the tenant on a date that still occupy their slot under the single
+     * occupancy rule (INV-BOOK-03). A date with any of them cannot be closed (BQ-108).
+     *
+     * @return Collection<int, Booking>
+     */
+    public static function activeBookingsOnDate(int $tenantId, string $date): Collection
+    {
+        return app(TenantContext::class)->run($tenantId, fn (): Collection => Booking::with('layanan')
+            ->where('bookings.idtenant', $tenantId)
+            ->whereDate('bookings.tanggalbooking', $date)
+            ->where(fn ($query) => BookingRules::applyOccupiesSlotCondition($query, 'bookings.'))
+            ->orderBy('bookings.jam')
+            ->orderBy('bookings.id')
+            ->get());
+    }
+
+    /**
+     * A slot can be deleted when no booking occupies it under the single occupancy rule
+     * (INV-BOOK-03): cancelled bookings and pending bookings past their payment deadline
+     * plus settlement margin do not block it.
+     */
+    public static function canDeleteSchedule(Schedule $schedule): bool
+    {
+        return ! BookingRules::isSlotOccupied((int) $schedule->id);
     }
 }

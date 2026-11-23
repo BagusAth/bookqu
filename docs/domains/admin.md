@@ -1,0 +1,27 @@
+# Platform admin
+
+Platform-level oversight for BookQu staff. Separate from owner permissions (FR-ADMIN-004).
+
+## Entry points
+
+| Route | Code |
+|---|---|
+| `admin.dashboard` (`auth`, `role:admin`) | `Admin/AdminDashboardController::index` — global counts (tenants, owners, subscriptions by status), subscription revenue, latest tenants |
+
+The controller reads across tenants with `withoutGlobalScopes()` (7 calls); this is intended for an admin-only route.
+
+## Evidence
+
+`tests/Feature/Admin/AdminDashboardTest.php`.
+
+## Status
+
+Functional: Partial (read-only dashboard; no tenant management, payout approval or refund processing screens) · Verification: Verified (partial) · Architecture: Not Evaluated
+
+## Known gaps
+
+| Gap | Item |
+|---|---|
+| Admin scope is not defined in requirements beyond FR-ADMIN-001…004 | D-003 |
+
+BQ-138: admin refunds list, masked accounts, pending transfer details, recorded transfer references, failure reasons and retry are available under the admin role.

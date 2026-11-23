@@ -8,26 +8,36 @@
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Owner portal typeface (BQ-161): Plus Jakarta Sans, applied by the owner layout with `font-owner`. */
+    --font-owner: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 
-    /* ── shadcn-style design tokens ── */
-    --color-bq-primary: #4F46E5;
-    --color-bq-primary-light: #EEF2FF;
-    --color-bq-primary-hover: #4338CA;
-    --color-bq-background: oklch(98.8% 0.002 247.839);
-    --color-bq-surface: oklch(100% 0 0);
-    --color-bq-border: oklch(92.9% 0.013 255.508);
-    --color-bq-border-strong: oklch(86.9% 0.022 252.894);
-    --color-bq-text: oklch(21% 0.034 264.665);
-    --color-bq-text-muted: oklch(55.1% 0.027 264.364);
-    --color-bq-text-subtle: oklch(70.7% 0.022 261.325);
-    --color-bq-success: oklch(62.7% 0.194 149.214);
-    --color-bq-success-bg: oklch(96.2% 0.044 156.743);
-    --color-bq-warning: oklch(76.9% 0.188 70.08);
-    --color-bq-warning-bg: oklch(96.2% 0.059 95.617);
-    --color-bq-danger: oklch(63.7% 0.237 25.331);
-    --color-bq-danger-bg: oklch(93.6% 0.032 17.717);
-    --color-bq-info: oklch(68.5% 0.169 237.323);
-    --color-bq-info-bg: oklch(95.1% 0.026 236.824);
+    /* ── Owner design tokens (BQ-162, "Papan Jadwal"): the brand palette below, applied to the portal.
+       Contrast is computed in docs/work/BQ-161-owner-portal-visual-redesign.md; every text/background pair
+       used for text meets WCAG AA. ── */
+    --color-bq-primary: #382186;          /* Aubergine: primary actions, active states, links */
+    --color-bq-primary-hover: #2A1869;    /* Aubergine deep */
+    --color-bq-primary-light: #ECE8FA;    /* Lilac mist: selected rows, active tab underlay */
+    --color-bq-primary-border: #D6CEF3;
+    --color-bq-on-primary: #FFFFFF;
+    --color-bq-accent: #FFB84D;           /* Marigold: "now" and "needs you" only; text on it is ink */
+    --color-bq-accent-bg: #FFF1D6;
+    --color-bq-ink: #1D1638;
+    --color-bq-background: #F5F4F9;       /* Paper */
+    --color-bq-surface: #FFFFFF;
+    --color-bq-surface-2: #EEEDF3;
+    --color-bq-border: #E3E0EE;
+    --color-bq-border-strong: #CBC6DC;
+    --color-bq-text: #1D1638;
+    --color-bq-text-muted: #625E75;
+    --color-bq-text-subtle: #625E75;
+    --color-bq-success: #1F7A4D;
+    --color-bq-success-bg: #E4F3EA;
+    --color-bq-warning: #8A5A00;
+    --color-bq-warning-bg: #FFF1D6;
+    --color-bq-danger: #B3261E;
+    --color-bq-danger-bg: #FBE9E7;
+    --color-bq-info: #285E9F;
+    --color-bq-info-bg: #EAF2FF;
 
     /* ── Official Brand Palette ── */
     --color-brand-purple: #382186;
@@ -41,44 +51,520 @@
     --color-brand-ink: #231a3d;
     --color-brand-mutedgray: #6e6584;
 
-    /* Sidebar */
-    --color-bq-sidebar: oklch(100% 0 0);
-    --color-bq-sidebar-active: #EEF2FF;
-    --color-bq-sidebar-text: oklch(44.6% 0.043 257.281);
-    --color-bq-sidebar-active-text: #4F46E5;
+    --color-bq-selected-border: #B8ABEA;
+    --color-bq-selected-hover: #E2DCF7;
+    --color-bq-warning-dot: #C77700;
+    --color-bq-warning-border: #F1D49B;
+    --color-bq-warning-copy: #5B4A2A;
+    --color-bq-success-border: #A8D5BC;
+    --color-bq-danger-border: #EDC4C0;
+    --color-bq-disabled: #8E8AA0;
+    --color-bq-heat-1: #DAD2F5;
+    --color-bq-heat-2: #A999E4;
+    --color-bq-heat-3: #6A52C0;
+
+    --font-bq-display: 'Barlow Semi Condensed', 'Plus Jakarta Sans', system-ui, sans-serif;
+    --text-bq-body: 14px;
+    --text-bq-body--line-height: 20px;
+    --text-bq-small: 13px;
+    --text-bq-small--line-height: 18px;
+    --text-bq-label: 13px;
+    --text-bq-label--line-height: 18px;
+    --text-bq-label--font-weight: 600;
+    --text-bq-form: 15px;
+    --text-bq-form--line-height: 22px;
+    --text-bq-section: 17px;
+    --text-bq-section--line-height: 24px;
+    --text-bq-section--font-weight: 600;
+    --text-bq-title: 24px;
+    --text-bq-title--line-height: 32px;
+    --text-bq-title--font-weight: 700;
+    --text-bq-title-phone: 22px;
+    --text-bq-title-phone--line-height: 28px;
+    --text-bq-title-phone--font-weight: 700;
+    --text-bq-clock: 15px;
+    --text-bq-clock--line-height: 20px;
+    --text-bq-figure: 40px;
+    --text-bq-figure--line-height: 44px;
+    --text-bq-figure-small: 26px;
+    --text-bq-figure-small--line-height: 30px;
+    --text-bq-figure-medium: 22px;
+    --text-bq-figure-medium--line-height: 26px;
+    --text-bq-phone-nav: 12px;
+    --text-bq-phone-nav--line-height: 14px;
+
+    --radius-bq-control: 6px;
+    --radius-bq-panel: 10px;
+    --radius-bq-overlay: 16px;
+    --breakpoint-owner-wide: 75rem;
+    --spacing-bq-rail: 72px;
+    --spacing-bq-sidebar: 232px;
+    --spacing-bq-edge: 32px;
+    --spacing-bq-topbar: 56px;
+    --spacing-bq-bottom-nav: 64px;
+    --spacing-bq-control: 40px;
+
+    /* Light owner sidebar */
+    --color-bq-sidebar: #FFFFFF;
+    --color-bq-sidebar-active: #ECE8FA;
+    --color-bq-sidebar-text: #1D1638;
+    --color-bq-sidebar-muted: #625E75;
+    --color-bq-sidebar-active-text: #382186;
+
+    /* One elevation, used only by overlays (dialog, drawer, sheet, popover, toast) */
+    --shadow-bq: 0 16px 40px rgb(29 22 56 / 0.18);
+    --shadow-overlay: 0 16px 40px rgb(29 22 56 / 0.18);
 }
 
-/* ── Motion & Craft Utilities (Emil Kowalski / Apple Design) ── */
+/* ── Motion ── */
 :root {
     --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-out-craft: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .craft-btn {
-    transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, box-shadow 160ms ease;
+    transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1), background-color 150ms ease, box-shadow 150ms ease;
 }
 .craft-btn:active {
     transform: scale(0.97);
 }
 
 .craft-card {
-    transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 200ms ease, border-color 200ms ease;
-}
-.craft-card:hover {
-    transform: translateY(-2px);
-}
-.craft-card:active {
-    transform: scale(0.985);
+    transition: box-shadow 150ms ease, border-color 150ms ease;
 }
 
 [x-cloak] {
     display: none !important;
 }
 
+/* Horizontal chip/filter rows scroll by swipe without showing a scrollbar */
+@utility no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* ── Owner portal base (BQ-161): scoped to the owner layout's body ── */
+@layer base {
+    .bq-owner {
+        font-family: var(--font-owner);
+        --bq-row: 52px;
+        --bq-row-double: 60px;
+        font-size: var(--text-bq-body);
+        line-height: var(--text-bq-body--line-height);
+        font-feature-settings: 'cv11';
+    }
+    .bq-owner[data-density="compact"] {
+        --bq-row: 44px;
+        --bq-row-double: 52px;
+    }
+    .bq-owner :focus-visible {
+        outline: 2px solid var(--color-bq-primary);
+        outline-offset: 2px;
+        border-radius: 0.375rem;
+    }
+    .bq-owner .bq-on-dark :focus-visible {
+        outline-color: var(--color-bq-accent);
+    }
+    .bq-owner ::selection {
+        background: var(--color-bq-primary-light);
+        color: var(--color-bq-ink);
+    }
+    .bq-owner h1,
+    .bq-owner h2,
+    .bq-owner h3 {
+        color: var(--color-bq-ink);
+        letter-spacing: -0.01em;
+    }
+    /* Form labels written as <label class="grid ...">Text <input></label> get the label style; controls keep theirs. */
+    .bq-owner label.grid {
+        font-weight: 500;
+        color: var(--color-bq-ink);
+    }
+    .bq-owner input[type='checkbox'],
+    .bq-owner input[type='radio'] {
+        accent-color: var(--color-bq-primary);
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .bq-owner *,
+        .bq-owner *::before,
+        .bq-owner *::after {
+            transition-duration: 0.01ms !important;
+            animation-duration: 0.01ms !important;
+        }
+    }
+}
+
+/* ── Owner components (BQ-161): the classes behind resources/views/components/ui. Utilities on the same
+   element still win, so markup keeps only layout utilities (width, margin, grid placement). ── */
+@layer components {
+    .bq-num {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .bq-btn {
+        @apply inline-flex min-h-bq-control items-center justify-center gap-2 rounded-bq-control px-4 text-bq-body font-semibold whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60 max-md:min-h-11;
+    }
+    .bq-btn-sm {
+        @apply min-h-8 px-3 text-bq-label max-md:min-h-10;
+    }
+    .bq-btn-icon {
+        @apply min-h-10 min-w-10 px-0;
+    }
+    .bq-btn-primary {
+        @apply bg-bq-primary text-white hover:bg-bq-primary-hover;
+    }
+    .bq-btn-secondary {
+        @apply border border-bq-border-strong bg-bq-surface text-bq-ink hover:border-bq-primary hover:bg-bq-primary-light;
+    }
+    .bq-btn-ghost {
+        @apply text-bq-primary hover:bg-bq-primary-light;
+    }
+    .bq-btn-danger {
+        @apply border border-bq-danger/50 bg-bq-surface text-bq-danger hover:border-bq-danger hover:bg-bq-danger-bg;
+    }
+    .bq-btn-danger-solid {
+        @apply bg-bq-danger text-white hover:bg-[#962536];
+    }
+    .bq-btn-accent {
+        @apply bg-bq-accent text-bq-ink hover:bg-[#F5A93A];
+    }
+
+    .bq-link {
+        @apply font-semibold text-bq-primary underline-offset-2 hover:underline;
+    }
+
+    .bq-label {
+        @apply text-sm font-medium text-bq-ink;
+    }
+    .bq-hint {
+        @apply text-bq-small text-bq-text-muted;
+    }
+    .bq-input {
+        @apply min-h-bq-control rounded-bq-control border border-bq-border-strong bg-bq-surface px-3 py-2 text-bq-form font-normal text-bq-ink transition-colors duration-150 placeholder:text-bq-text-subtle hover:border-bq-text-subtle focus:border-bq-primary focus:ring-2 focus:ring-bq-primary/20 focus:outline-none disabled:bg-bq-surface-2 disabled:text-bq-text-muted max-md:min-h-11 max-md:text-base;
+    }
+    textarea.bq-input {
+        @apply min-h-24 leading-relaxed;
+    }
+    .bq-input[aria-invalid='true'] {
+        @apply border-bq-danger focus:ring-bq-danger/20;
+    }
+
+    .bq-panel {
+        @apply rounded-bq-panel border border-bq-border bg-bq-surface;
+    }
+    .bq-panel-pad {
+        @apply p-4 sm:p-5;
+    }
+
+    .bq-day-grid {
+        --bq-calendar-minute: 0.8px;
+        display: grid;
+        grid-template-columns: 48px repeat(var(--bq-calendar-columns), minmax(120px, 1fr));
+        min-width: max-content;
+    }
+    .bq-day-grid-track {
+        height: calc(var(--bq-calendar-minutes) * var(--bq-calendar-minute));
+        background: repeating-linear-gradient(to bottom, var(--color-bq-border) 0 1px, transparent 1px calc(60 * var(--bq-calendar-minute)));
+    }
+    .bq-day-grid-slot {
+        position: absolute;
+        top: calc(var(--bq-slot-top) * var(--bq-calendar-minute));
+        left: calc(var(--bq-slot-lane) * 100% / var(--bq-slot-lanes));
+        height: max(30px, calc(var(--bq-slot-length) * var(--bq-calendar-minute)));
+        width: calc(100% / var(--bq-slot-lanes));
+        padding: 1px 2px;
+    }
+    .bq-day-grid-slot:focus-within {
+        z-index: 11;
+    }
+    /* Day-grid blocks (prototype .kh-blok) */
+    .bq-block {
+        @apply grid h-full w-full min-w-0 content-start overflow-hidden rounded-bq-control border border-bq-border border-l-[3px] border-l-bq-primary bg-bq-surface px-2 py-1 text-left text-bq-small;
+    }
+    .bq-block b {
+        @apply truncate text-bq-body font-semibold text-bq-ink;
+    }
+    .bq-block > span {
+        @apply truncate text-bq-text-muted;
+    }
+    .bq-block-top {
+        @apply flex min-w-0 items-baseline gap-1.5;
+    }
+    .bq-block-top time {
+        @apply shrink-0 font-bq-display text-sm font-semibold tabular-nums text-bq-ink;
+    }
+    button.bq-block:hover {
+        box-shadow: 0 0 0 1px var(--color-bq-primary);
+    }
+    .bq-block-now {
+        @apply border-bq-primary-border bg-bq-primary-light;
+    }
+    .bq-block-pending {
+        @apply border-bq-warning-border border-l-bq-accent bg-bq-accent-bg;
+    }
+    .bq-block-past {
+        @apply border-l-bq-border-strong bg-bq-background;
+    }
+    .bq-block-past b, .bq-block-past time {
+        @apply text-bq-text-muted;
+    }
+    .bq-block-free {
+        @apply border border-dashed border-bq-border-strong bg-transparent;
+    }
+    .bq-block-free b, .bq-block-free > span {
+        @apply text-bq-primary;
+    }
+    .bq-block-closed {
+        @apply border-0;
+        background: repeating-linear-gradient(135deg, var(--color-bq-surface-2) 0 6px, var(--color-bq-background) 6px 12px);
+    }
+
+    .bq-table {
+        --bq-choice-track: ;
+        --bq-action-track: ;
+        display: grid;
+        grid-template-columns: var(--bq-choice-track) var(--bq-cols, repeat(var(--bq-data-columns), minmax(0, 1fr))) var(--bq-action-track);
+    }
+    .bq-table-selectable {
+        --bq-choice-track: auto;
+    }
+    .bq-table-actions {
+        --bq-action-track: auto;
+    }
+    .bq-table-row {
+        @apply col-span-full grid grid-cols-subgrid items-center gap-x-3 border-t border-bq-border px-4 text-bq-body;
+        min-height: var(--bq-row);
+    }
+    .bq-table-double {
+        min-height: var(--bq-row-double);
+    }
+    .bq-table-header {
+        @apply min-h-bq-control border-t-0 text-bq-label text-bq-text-muted;
+    }
+    .bq-table-group {
+        @apply min-h-8 bg-bq-background py-2 text-bq-label;
+    }
+    .bq-table-action {
+        @apply justify-self-end;
+    }
+    .bq-table-caption {
+        @apply mt-0.5;
+    }
+
+    @media (width < 48rem) {
+        .bq-table {
+            grid-template-columns: var(--bq-choice-track) minmax(0, 1fr) minmax(0, auto) var(--bq-action-track);
+        }
+        .bq-table-header {
+            @apply sr-only;
+        }
+        .bq-table-selectable .bq-table-header {
+            @apply not-sr-only grid border-t-0;
+        }
+        .bq-table-header > :not(.bq-table-choice) {
+            @apply sr-only;
+        }
+        .bq-table-cell:not(.bq-table-main, .bq-table-sub, .bq-table-end) {
+            @apply hidden;
+        }
+        .bq-table-main, .bq-table-sub {
+            grid-column: 1;
+        }
+        .bq-table-end {
+            grid-column: 2;
+            @apply row-start-1 row-span-2;
+        }
+        .bq-table-selectable .bq-table-main, .bq-table-selectable .bq-table-sub {
+            grid-column: 2;
+        }
+        .bq-table-selectable .bq-table-end {
+            grid-column: 3;
+        }
+        .bq-table-choice {
+            @apply col-start-1 row-start-1 row-span-2;
+        }
+        .bq-table-action {
+            @apply col-start-[-2] row-start-1 row-span-2;
+        }
+        .bq-table-main {
+            @apply row-start-1 self-end;
+        }
+        .bq-table-main:last-child,
+        .bq-table-main:not(:has(.bq-table-caption)):not(:has(~ .bq-table-sub)) {
+            @apply self-center;
+        }
+        .bq-table-sub {
+            @apply row-start-2 self-start;
+        }
+    }
+
+    .bq-badge {
+        @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap;
+    }
+    .bq-badge::before {
+        content: '';
+        @apply h-1.5 w-1.5 rounded-full bg-current opacity-80;
+    }
+    .bq-count {
+        @apply inline-flex min-w-5 items-center justify-center rounded-full bg-bq-accent px-1.5 text-xs leading-5 font-bold text-bq-ink;
+    }
+
+    /* ── Papan Jadwal blocks (BQ-162): ported from docs/design/papan-jadwal/prototype/css/components.css ── */
+    /* Headline figure with supporting figures (prototype .angka) */
+    /* Flex, not a two-column grid: when the supporting figures do not fit beside the headline (long
+       rupiah amounts in a narrow panel), they wrap below it instead of overflowing (T-17b). */
+    .bq-figures {
+        @apply flex flex-wrap items-end gap-6;
+    }
+    .bq-figures-main {
+        flex: 0 1 auto;
+        min-width: min(200px, 100%);
+    }
+    .bq-figures-more {
+        flex: 1 1 auto;
+    }
+    .bq-figures-main > b {
+        @apply tabular-nums block font-bq-display text-bq-figure font-semibold text-bq-ink;
+        letter-spacing: -0.5px;
+    }
+    .bq-figures-main > span {
+        @apply block text-bq-body font-semibold text-bq-ink;
+    }
+    .bq-figures-main > small {
+        @apply mt-0.5 block text-bq-small text-bq-text-muted;
+    }
+    .bq-figures-more {
+        @apply flex flex-wrap gap-x-8 gap-y-4 pb-0.5;
+    }
+    .bq-figures-more b {
+        @apply tabular-nums block font-bq-display text-bq-figure-small font-semibold text-bq-ink;
+    }
+    .bq-figures-more span {
+        @apply block text-bq-small text-bq-text-muted;
+    }
+    .bq-delta {
+        @apply tabular-nums inline-flex items-center gap-0.5 text-bq-small font-semibold;
+    }
+    /* Form section: title column and fields column (prototype .form-bagian) */
+    .bq-form-row {
+        @apply grid gap-x-8 gap-y-5 border-t border-bq-border p-5 first:border-t-0;
+        grid-template-columns: 240px minmax(0, 1fr);
+    }
+    .bq-form-row-title h3 {
+        @apply text-bq-form font-semibold;
+    }
+    .bq-form-row-title p {
+        @apply mt-0.5 text-bq-small text-bq-text-muted;
+    }
+    .bq-form-fields {
+        @apply grid max-w-[640px] min-w-0 content-start gap-4;
+    }
+    .bq-savebar {
+        @apply sticky -bottom-10 z-10 flex items-center justify-end gap-3 rounded-b-bq-panel border-t border-bq-border bg-bq-surface px-5 py-3;
+    }
+    /* Toolbar above content, and the filter row inside a table panel (prototype .alat, .filter) */
+    .bq-toolbar {
+        @apply flex flex-wrap items-center gap-x-3 gap-y-2;
+    }
+    .bq-toolbar > * {
+        @apply max-w-full min-w-0;
+    }
+    .bq-filter {
+        @apply flex flex-wrap items-center gap-2 border-b border-bq-border px-5 py-3;
+    }
+    .bq-filter .bq-input {
+        @apply min-h-9 w-auto py-1 text-bq-body;
+    }
+    .bq-filter .bq-search > input {
+        @apply w-full;
+    }
+    .bq-search {
+        @apply relative block w-full max-w-80;
+    }
+    .bq-search > svg {
+        @apply pointer-events-none absolute top-1/2 left-3 size-[18px] -translate-y-1/2 text-bq-text-muted;
+    }
+    .bq-search > input {
+        @apply w-full pl-9;
+    }
+    .bq-date-nav {
+        @apply flex items-center gap-1;
+    }
+    .bq-date-nav > b {
+        @apply ml-2 text-bq-body font-semibold whitespace-nowrap;
+    }
+    .bq-pager {
+        @apply flex items-center gap-2 border-t border-bq-border px-5 py-3 text-bq-small text-bq-text-muted;
+    }
+    /* Two columns: content and a side panel (prototype .kisi-2) */
+    .bq-split {
+        @apply grid items-start gap-5;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    }
+    /* Weekly opening hours: one row per day (prototype .jam-buka) */
+    .bq-weekly-hours {
+        container-type: inline-size;
+    }
+    .bq-hours-row {
+        @apply grid items-center gap-3 border-t border-bq-border px-5 py-1.5 first:border-t-0;
+        grid-template-columns: 88px 64px minmax(0, 1fr) auto;
+        min-height: 52px;
+    }
+    .bq-hours-ranges {
+        @apply flex flex-wrap items-center gap-x-4 gap-y-2;
+    }
+    .bq-hours-range {
+        @apply inline-flex items-center gap-2 whitespace-nowrap;
+    }
+    .bq-hours-range .bq-input {
+        @apply tabular-nums min-h-9 w-[84px] px-1 py-1 text-center font-bq-display text-bq-clock font-semibold;
+    }
+    @media (width < 48rem) {
+        .bq-figures {
+            @apply gap-4;
+        }
+        .bq-form-row {
+            @apply grid-cols-1 gap-4 p-4;
+        }
+        .bq-split {
+            @apply grid-cols-1;
+        }
+        .bq-filter {
+            @apply px-4;
+        }
+    }
+    @container (width < 33rem) {
+        .bq-hours-row {
+            @apply px-4 py-2;
+            grid-template-columns: 64px minmax(0, 1fr) auto;
+            grid-template-areas: 'day switch action' 'ranges ranges ranges';
+        }
+        .bq-hours-day {
+            grid-area: day;
+        }
+        .bq-hours-switch {
+            grid-area: switch;
+        }
+        .bq-hours-action {
+            grid-area: action;
+        }
+        .bq-hours-ranges {
+            grid-area: ranges;
+        }
+        .bq-hours-range .bq-input {
+            @apply w-16;
+        }
+    }
+}
+
 /* ── Custom Slim Sidebar Scrollbar ── */
 .sidebar-scroll {
     scrollbar-width: thin;
-    scrollbar-color: #CBD5E1 transparent;
+    scrollbar-color: var(--color-bq-border-strong) transparent;
 }
 .sidebar-scroll::-webkit-scrollbar {
     width: 4px;
@@ -87,9 +573,768 @@
     background: transparent;
 }
 .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: #CBD5E1;
+    background: var(--color-bq-border-strong);
     border-radius: 9999px;
 }
-.sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: #94A3B8;
+
+/* ── Customer pages, design A "Sampul Imersif" (BQ-165, docs/design/booking-pelanggan/desain-a-sampul-imersif.md).
+   Colours come from the business colour plus neutrals; BookQu ink and marigold are not used here (§1, §2).
+   The booking shell writes the business values (`--sf-*`) on `.customer-shell`; `:root` holds fallbacks only.
+   Utilities: bg-sf-*, text-sf-*, rounded-sf-*, shadow-sf-*, font-sf. ── */
+:root {
+    --sf-primary: #4F46E5;
+    --sf-primary-hover: #443CC5;
+    --sf-on-primary: #FFFFFF;
+    --sf-on-primary-soft: rgba(255, 255, 255, 0.86);
+    --sf-on-primary-faint: rgba(255, 255, 255, 0.14);
+    --sf-on-primary-line: rgba(255, 255, 255, 0.24);
+    --sf-primary-text: #4F46E5;
+    --sf-tint: #F0F0FD;
+    --sf-tint-strong: #E4E3FB;
+    --sf-radius-control: 12px;
+    --sf-radius-tile: 14px;
+    --sf-radius-area: 12px;
+    --sf-radius-chip: 10px;
+    --sf-radius-card: 18px;
+    --sf-radius-card-small: 12px;
+    --sf-shadow-card: 0 1px 2px rgba(23, 21, 31, 0.05), 0 6px 18px rgba(23, 21, 31, 0.06);
+    --sf-shadow-raised: 0 16px 40px rgba(23, 21, 31, 0.14);
+    --sf-font: 'Plus Jakarta Sans';
+
+    /* Neutrals and status colours do not follow the brand (§2.2, §2.3). */
+    --sf-page: #F6F6F8;
+    --sf-surface: #FFFFFF;
+    --sf-text: #17151F;
+    --sf-muted: #5E5A68;
+    --sf-line: #D5D3DC;
+    --sf-divider: #E6E5EA;
+    --sf-disabled: #ECEBF0;
+    --sf-disabled-text: #6B6776;
+    --sf-scrim: rgba(23, 21, 31, 0.5);
+    --sf-success-bg: #DDF0E5;
+    --sf-success: #1A6B43;
+    --sf-warning-bg: #FFF4DE;
+    --sf-warning: #8A5A00;
+    --sf-warning-dot: #C77700;
+    --sf-danger-bg: #FCEBEA;
+    --sf-danger: #8C1D18;
+    --sf-error: #B3261E;
+    --sf-info-bg: #E8F0FB;
+    --sf-info: #285E9F;
+    --sf-bottom-bar-height: 84px;
+}
+
+@theme inline {
+    --color-sf-primary: var(--sf-primary);
+    --color-sf-primary-hover: var(--sf-primary-hover);
+    --color-sf-on-primary: var(--sf-on-primary);
+    --color-sf-on-primary-soft: var(--sf-on-primary-soft);
+    --color-sf-on-primary-faint: var(--sf-on-primary-faint);
+    --color-sf-on-primary-line: var(--sf-on-primary-line);
+    --color-sf-primary-text: var(--sf-primary-text);
+    --color-sf-tint: var(--sf-tint);
+    --color-sf-tint-strong: var(--sf-tint-strong);
+    --color-sf-page: var(--sf-page);
+    --color-sf-surface: var(--sf-surface);
+    --color-sf-text: var(--sf-text);
+    --color-sf-muted: var(--sf-muted);
+    --color-sf-line: var(--sf-line);
+    --color-sf-divider: var(--sf-divider);
+    --color-sf-disabled: var(--sf-disabled);
+    --color-sf-disabled-text: var(--sf-disabled-text);
+    --color-sf-success-bg: var(--sf-success-bg);
+    --color-sf-success: var(--sf-success);
+    --color-sf-warning-bg: var(--sf-warning-bg);
+    --color-sf-warning: var(--sf-warning);
+    --color-sf-warning-dot: var(--sf-warning-dot);
+    --color-sf-danger-bg: var(--sf-danger-bg);
+    --color-sf-danger: var(--sf-danger);
+    --color-sf-error: var(--sf-error);
+    --color-sf-info-bg: var(--sf-info-bg);
+    --color-sf-info: var(--sf-info);
+    --radius-sf-control: var(--sf-radius-control);
+    --radius-sf-tile: var(--sf-radius-tile);
+    --radius-sf-area: var(--sf-radius-area);
+    --radius-sf-chip: var(--sf-radius-chip);
+    --radius-sf-card: var(--sf-radius-card);
+    --radius-sf-card-small: var(--sf-radius-card-small);
+    --shadow-sf-card: var(--sf-shadow-card);
+    --shadow-sf-raised: var(--sf-shadow-raised);
+    --color-sf-hero-soft: var(--sf-hero-soft);
+    --color-sf-hero-faint: var(--sf-hero-faint);
+    --font-sf: var(--sf-font), system-ui, sans-serif;
+}
+
+.customer-shell {
+    font-family: var(--sf-font), system-ui, sans-serif;
+    background: var(--sf-page);
+    color: var(--sf-text);
+}
+
+/* The Pro landing section (BQ-154) keeps its bq-* classes; inside it they take the business colour. */
+.customer-shell[data-branded] [data-landing-template] {
+    --color-bq-primary: var(--bq-primary);
+    --color-bq-primary-hover: var(--bq-primary-hover);
+    --color-bq-primary-light: var(--bq-primary-light);
+    --color-bq-primary-border: var(--bq-primary-border);
+    --color-bq-on-primary: var(--bq-on-primary);
+}
+
+.customer-shell :focus-visible {
+    outline: 2px solid var(--sf-text);
+    outline-offset: 2px;
+}
+
+@layer components {
+    /* Controls follow the button style (§3.1); the 44 px touch size never changes (§3.3). */
+    .sf-btn,
+    .sf-btn-secondary,
+    .sf-btn-on-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: var(--sf-radius-control);
+        font: inherit;
+        font-size: 15px;
+        line-height: 20px;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 150ms ease, box-shadow 150ms ease, color 150ms ease;
+    }
+    .sf-btn {
+        background: var(--sf-primary);
+        color: var(--sf-on-primary);
+    }
+    .sf-btn:hover {
+        background: var(--sf-primary-hover);
+        color: var(--sf-on-primary);
+    }
+    .sf-btn-secondary {
+        background: var(--sf-surface);
+        color: var(--sf-text);
+        box-shadow: inset 0 0 0 1px var(--sf-line);
+        font-weight: 600;
+    }
+    .sf-btn-secondary:hover {
+        background: var(--sf-page);
+        color: var(--sf-text);
+    }
+    /* A button on the brand colour or a banner (hero, success header). */
+    .sf-btn-on-primary {
+        background: var(--sf-hero-faint, var(--sf-on-primary-faint));
+        color: inherit;
+        font-weight: 600;
+    }
+    .sf-btn-lg {
+        min-height: 52px;
+        padding: 0 22px;
+        font-size: 16px;
+    }
+    .sf-btn-sm {
+        min-height: 40px;
+        padding: 0 14px;
+        font-size: 14px;
+    }
+    .sf-btn-icon {
+        width: 44px;
+        padding: 0;
+    }
+    .sf-btn:disabled,
+    .sf-btn[aria-disabled='true'],
+    .sf-btn-secondary:disabled,
+    .sf-btn-secondary[aria-disabled='true'] {
+        background: var(--sf-disabled);
+        color: var(--sf-disabled-text);
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+    .sf-btn[aria-busy='true'],
+    .sf-btn-secondary[aria-busy='true'] {
+        cursor: progress;
+    }
+
+    .sf-chip {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: var(--sf-radius-chip);
+        background: var(--sf-surface);
+        color: var(--sf-text);
+        box-shadow: inset 0 0 0 1px var(--sf-line);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        white-space: nowrap;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 150ms ease, color 150ms ease;
+    }
+    .sf-chip-count {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--sf-muted);
+    }
+    .sf-chip[aria-pressed='true'],
+    .sf-chip[aria-current='true'] {
+        background: var(--sf-primary);
+        color: var(--sf-on-primary);
+        box-shadow: none;
+        font-weight: 700;
+    }
+    .sf-chip[aria-pressed='true'] .sf-chip-count,
+    .sf-chip[aria-current='true'] .sf-chip-count {
+        color: inherit;
+        opacity: 0.8;
+    }
+    /* Desktop side navigation item for categories. */
+    .sf-nav-item {
+        display: flex;
+        width: 100%;
+        min-height: 44px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: var(--sf-radius-card-small);
+        background: transparent;
+        color: var(--sf-text);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        text-align: left;
+        cursor: pointer;
+    }
+    .sf-nav-item:hover {
+        background: var(--sf-surface);
+    }
+    .sf-nav-item[aria-pressed='true'],
+    .sf-nav-item[aria-current='true'] {
+        background: var(--sf-tint-strong);
+        color: var(--sf-primary-text);
+        font-weight: 700;
+    }
+
+    .sf-field,
+    .sf-area {
+        display: block;
+        width: 100%;
+        min-height: 48px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: var(--sf-radius-control);
+        background: var(--sf-surface);
+        color: var(--sf-text);
+        box-shadow: inset 0 0 0 1px var(--sf-line);
+        font: inherit;
+        font-size: 16px;
+        line-height: 22px;
+        transition: box-shadow 150ms ease;
+    }
+    .sf-area {
+        min-height: 96px;
+        padding: 12px 14px;
+        border-radius: var(--sf-radius-area);
+        resize: vertical;
+    }
+    .sf-field::placeholder,
+    .sf-area::placeholder {
+        color: var(--sf-disabled-text);
+    }
+    .sf-field:focus,
+    .sf-area:focus,
+    .sf-field:focus-within {
+        outline: none;
+        box-shadow: inset 0 0 0 2px var(--sf-primary-text);
+    }
+    .sf-field[aria-invalid='true'],
+    .sf-area[aria-invalid='true'] {
+        box-shadow: inset 0 0 0 2px var(--sf-error);
+    }
+    /* A label that wraps an icon and a bare input, as in the search box. */
+    .sf-field-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--sf-muted);
+    }
+    .sf-field-group input {
+        min-width: 0;
+        flex-grow: 1;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: var(--sf-text);
+        font: inherit;
+        font-size: 16px;
+    }
+    .sf-field-error {
+        margin-top: 6px;
+        font-size: 13px;
+        line-height: 18px;
+        color: var(--sf-error);
+    }
+
+    /* Date cards, time buttons, calendar cells and −/+ buttons. */
+    .sf-tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 6px 8px;
+        border: 0;
+        border-radius: var(--sf-radius-tile);
+        background: var(--sf-surface);
+        color: var(--sf-text);
+        box-shadow: inset 0 0 0 1px var(--sf-line);
+        font: inherit;
+        font-size: 14px;
+        line-height: 18px;
+        font-weight: 700;
+        text-align: center;
+        cursor: pointer;
+        transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+    }
+    .sf-tile:hover:not(:disabled):not([aria-pressed='true']):not([aria-selected='true']) {
+        box-shadow: inset 0 0 0 1.5px var(--sf-primary-text);
+    }
+    .sf-tile[aria-pressed='true'],
+    .sf-tile[aria-selected='true'] {
+        background: var(--sf-primary);
+        color: var(--sf-on-primary);
+        box-shadow: none;
+    }
+    .sf-tile:disabled,
+    .sf-tile[aria-disabled='true'] {
+        background: var(--sf-disabled);
+        color: var(--sf-disabled-text);
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+    /* A date without sessions: still selectable (shows the empty-day state), visibly quieter. */
+    .sf-tile[data-empty]:not([aria-pressed='true']):not([aria-selected='true']) {
+        background: var(--sf-page);
+        color: var(--sf-disabled-text);
+        box-shadow: inset 0 0 0 1px var(--sf-divider);
+    }
+
+    /* Calendar cell for today: a ring in the brand text colour. */
+    .sf-tile[data-today]:not([aria-pressed='true']):not([aria-selected='true']) {
+        box-shadow: inset 0 0 0 2px var(--sf-primary-text);
+    }
+    .sf-tile-note {
+        font-size: 12px;
+        line-height: 16px;
+        font-weight: 600;
+        color: var(--sf-muted);
+    }
+    .sf-tile[aria-pressed='true'] .sf-tile-note,
+    .sf-tile[aria-selected='true'] .sf-tile-note,
+    .sf-tile:disabled .sf-tile-note,
+    .sf-tile[aria-pressed='true'] .sf-dot,
+    .sf-tile[aria-selected='true'] .sf-dot {
+        color: inherit;
+    }
+
+    /* Surfaces follow the card style (§3.2); corners follow the button style. */
+    .sf-card,
+    .sf-card-raised,
+    .sf-card-small {
+        background: var(--sf-surface);
+        border-radius: var(--sf-radius-card);
+        box-shadow: var(--sf-shadow-card);
+    }
+    .sf-card-raised {
+        box-shadow: var(--sf-shadow-raised);
+    }
+    .sf-card-small {
+        border-radius: var(--sf-radius-card-small);
+    }
+    a.sf-card,
+    a.sf-card-small,
+    button.sf-card,
+    button.sf-card-small {
+        color: var(--sf-text);
+        text-decoration: none;
+    }
+    button.sf-card,
+    button.sf-card-small {
+        border: 0;
+        padding: 0;
+        font: inherit;
+    }
+
+    /* Hero (§5): brand colour with three thin rings and one disc, or the business banner under a dark scrim. */
+    .sf-hero {
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+        background: var(--sf-primary);
+        color: var(--sf-on-primary);
+        --sf-hero-soft: var(--sf-on-primary-soft);
+        --sf-hero-faint: var(--sf-on-primary-faint);
+    }
+    .sf-hero-ornament {
+        position: absolute;
+        z-index: -1;
+        pointer-events: none;
+        color: var(--sf-on-primary-line);
+    }
+    .sf-hero-ornament .sf-hero-disc {
+        fill: var(--sf-on-primary-faint);
+    }
+    .sf-hero-banner,
+    .sf-hero-scrim {
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        width: 100%;
+        height: 100%;
+    }
+    .sf-hero-banner {
+        object-fit: cover;
+    }
+    .sf-hero-scrim {
+        z-index: -1;
+        background: linear-gradient(rgba(23, 21, 31, 0.55), rgba(23, 21, 31, 0.7));
+    }
+    .sf-hero[data-banner] {
+        background: var(--sf-text);
+        color: #FFFFFF;
+        --sf-hero-soft: rgba(255, 255, 255, 0.88);
+        --sf-hero-faint: rgba(255, 255, 255, 0.16);
+    }
+    .sf-hero[data-banner] .sf-hero-ornament {
+        display: none;
+    }
+    .sf-hero-soft {
+        color: var(--sf-hero-soft);
+    }
+    .sf-hero-faint {
+        background: var(--sf-hero-faint);
+    }
+
+    /* Step header progress in three parts (§6). */
+    .sf-progress {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+    .sf-progress > span {
+        height: 4px;
+        border-radius: 9999px;
+        background: var(--sf-hero-faint, var(--sf-on-primary-faint));
+    }
+    .sf-progress > span[data-done],
+    .sf-progress > span[data-current] {
+        background: currentColor;
+    }
+    .sf-progress > span[data-current] {
+        opacity: 0.6;
+    }
+
+    /* Bottom action bar on phone and tablet (§5); the page keeps room for it (§8). */
+    .sf-bottom-bar {
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 50;
+        background: var(--sf-surface);
+        box-shadow: 0 -1px 0 var(--sf-divider), 0 -8px 24px rgba(23, 21, 31, 0.08);
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    }
+    .sf-has-bottom-bar,
+    .sf-footer-bar {
+        padding-bottom: calc(var(--sf-bottom-bar-height) + 24px + env(safe-area-inset-bottom));
+    }
+    @media (min-width: 1024px) {
+        .sf-footer-bar:not(.sf-footer-bar-always) {
+            padding-bottom: 28px;
+        }
+        .sf-bottom-bar[data-phone-tablet] {
+            display: none;
+        }
+        .sf-has-bottom-bar {
+            padding-bottom: 0;
+        }
+    }
+
+    /* Bottom sheet (§6): handle, title, close, body, primary action. */
+    .sf-sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: var(--sf-scrim);
+    }
+    .sf-sheet {
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 110;
+        max-height: 90dvh;
+        overflow-y: auto;
+        background: var(--sf-surface);
+        border-radius: var(--sf-radius-card) var(--sf-radius-card) 0 0;
+        box-shadow: var(--sf-shadow-raised);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .sf-sheet:focus {
+        outline: none;
+    }
+    .sf-sheet-handle {
+        display: block;
+        width: 40px;
+        height: 4px;
+        margin: 8px auto 0;
+        border-radius: 9999px;
+        background: var(--sf-line);
+    }
+    @media (min-width: 768px) {
+        .sf-sheet {
+            left: 50%;
+            right: auto;
+            width: min(560px, calc(100vw - 32px));
+            transform: translateX(-50%);
+        }
+    }
+
+    /* Coloured notes use status colours, never the brand (§2.3), except the brand tint for help boxes. */
+    .sf-note {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 12px 14px;
+        border-radius: var(--sf-radius-card-small);
+        font-size: 14px;
+        line-height: 20px;
+        background: var(--sf-info-bg);
+        color: var(--sf-info);
+    }
+    .sf-note[data-tone='success'] {
+        background: var(--sf-success-bg);
+        color: var(--sf-success);
+    }
+    .sf-note[data-tone='warning'] {
+        background: var(--sf-warning-bg);
+        color: var(--sf-warning);
+    }
+    .sf-note[data-tone='danger'] {
+        background: var(--sf-danger-bg);
+        color: var(--sf-danger);
+    }
+    .sf-note[data-tone='brand'] {
+        background: var(--sf-tint);
+        color: var(--sf-text);
+    }
+
+    /* Status pill (payment and booking states); tones as `sf-note`. */
+    .sf-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: var(--sf-radius-chip);
+        font-size: 13px;
+        font-weight: 700;
+        background: var(--sf-info-bg);
+        color: var(--sf-info);
+    }
+    .sf-pill::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        background: currentColor;
+    }
+    .sf-pill[data-tone='warning'] {
+        background: var(--sf-warning-bg);
+        color: var(--sf-warning);
+    }
+    .sf-pill[data-tone='success'] {
+        background: var(--sf-success-bg);
+        color: var(--sf-success);
+    }
+    .sf-pill[data-tone='danger'] {
+        background: var(--sf-danger-bg);
+        color: var(--sf-danger);
+    }
+    .sf-pill[data-tone='neutral'] {
+        background: var(--sf-disabled);
+        color: var(--sf-disabled-text);
+    }
+
+    /* Payment countdown: value and progress turn red in the last three minutes. */
+    .sf-meter {
+        height: 6px;
+        overflow: hidden;
+        border-radius: 9999px;
+        background: var(--sf-disabled);
+    }
+    .sf-meter > span {
+        display: block;
+        height: 100%;
+        border-radius: 9999px;
+        background: var(--sf-primary);
+        transition: width 1s linear;
+    }
+    [data-urgent] .sf-meter > span {
+        background: var(--sf-error);
+    }
+    [data-urgent] .sf-countdown-value {
+        color: var(--sf-error);
+    }
+
+    /* Kelola reservasi (spec §7.6): one column on phone, schedule and review full width on tablet,
+       schedule + review + history | payment + customer + location + help on desktop. */
+    .sf-manage-grid {
+        display: grid;
+        gap: 14px;
+        align-items: start;
+        grid-template-areas: 'jadwal' 'ulasan' 'bayar' 'pemesan' 'lokasi' 'bantuan' 'riwayat';
+    }
+    @media (min-width: 768px) {
+        .sf-manage-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-areas: 'jadwal jadwal' 'ulasan ulasan' 'bayar pemesan' 'lokasi bantuan' 'riwayat riwayat';
+        }
+    }
+    /* Column wrappers vanish below desktop so their cards take the grid areas above. */
+    .sf-manage-col {
+        display: contents;
+    }
+    @media (min-width: 1024px) {
+        .sf-manage-grid {
+            grid-template-columns: minmax(0, 1fr) 360px;
+            grid-template-areas: none;
+            gap: 20px;
+        }
+        .sf-manage-col {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+        }
+    }
+
+    /* Dot under a date: has sessions or full. */
+    .sf-dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 9999px;
+        background: currentColor;
+    }
+
+    .sf-skeleton {
+        background: var(--sf-disabled);
+        border-radius: var(--sf-radius-tile);
+        animation: sf-pulse 1.2s ease-in-out infinite;
+    }
+
+    /* Scroll row with snap for the date strip, chips and the favourites carousel. */
+    .sf-scroll-row {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-padding-inline: 16px;
+        scrollbar-width: none;
+        overscroll-behavior-x: contain;
+    }
+    .sf-scroll-row::-webkit-scrollbar {
+        display: none;
+    }
+    .sf-scroll-row > * {
+        scroll-snap-align: start;
+    }
+    .sf-fade-end {
+        position: relative;
+    }
+    .sf-fade-end::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 44px;
+        pointer-events: none;
+        background: linear-gradient(to right, transparent, var(--sf-page));
+    }
+
+    /* Ticket tear line on the success page. */
+    .sf-ticket-tear {
+        position: relative;
+        height: 0;
+        margin-inline: 20px;
+        border-top: 2px dashed var(--sf-divider);
+    }
+    .sf-ticket-tear::before,
+    .sf-ticket-tear::after {
+        content: '';
+        position: absolute;
+        top: -11px;
+        width: 20px;
+        height: 20px;
+        border-radius: 9999px;
+        background: var(--sf-page);
+    }
+    .sf-ticket-tear::before {
+        left: -30px;
+    }
+    .sf-ticket-tear::after {
+        right: -30px;
+    }
+
+    .sf-num {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+@keyframes sf-pulse {
+    50% {
+        opacity: 0.55;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .customer-shell *,
+    .customer-shell *::before,
+    .customer-shell *::after {
+        animation-duration: 0s;
+        transition-duration: 0s;
+        scroll-behavior: auto;
+    }
+}
+
+@media print {
+    .customer-shell {
+        background: white;
+        font-family: system-ui, sans-serif;
+    }
+
+    .customer-shell .no-print {
+        display: none;
+    }
+
+    .customer-shell .sf-card,
+    .customer-shell .sf-card-raised,
+    .customer-shell .sf-card-small {
+        box-shadow: none;
+        border: 1px solid var(--sf-line);
+    }
+
+    .customer-shell main.booking-shell {
+        max-width: none;
+        padding: 0;
+    }
 }

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Owner;
 
+use App\Support\Rupiah;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RequestPayoutRequest extends FormRequest
 {
@@ -21,8 +23,39 @@ class RequestPayoutRequest extends FormRequest
      */
     public function rules(): array
     {
+        $tenantId = $this->resolveTenant()?->id;
+
         return [
-            'jumlah' => ['required', 'numeric', 'min:10000'],
+            'request_key' => ['required', 'uuid'],
+            'payout_account_id' => [
+                'required',
+                'integer',
+                Rule::exists('tenant_payout_accounts', 'id')
+                    ->where('idtenant', $tenantId)
+                    ->whereNull('deleted_at'),
+            ],
+            'jumlah' => ['required', 'integer', 'min:'.$this->minAmount()],
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'request_key.required' => 'Kunci pengajuan tidak valid.',
+            'request_key.uuid' => 'Kunci pengajuan harus berupa UUID.',
+            'payout_account_id.required' => 'Pilih rekening penarikan tujuan.',
+            'payout_account_id.exists' => 'Rekening penarikan yang dipilih tidak valid.',
+            'jumlah.required' => 'Jumlah pencairan wajib diisi.',
+            'jumlah.integer' => 'Jumlah pencairan harus berupa angka bulat.',
+            'jumlah.min' => 'Jumlah pencairan minimal '.Rupiah::format($this->minAmount()).'.',
+        ];
+    }
+
+    private function minAmount(): int
+    {
+        return (int) config('payouts.min_amount', 10000);
     }
 }

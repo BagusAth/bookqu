@@ -5,18 +5,16 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Owner;
 
 use App\Actions\Owner\DeleteOwnerAccount;
-use App\Actions\Owner\RequestOwnerPayout;
+use App\Actions\Owner\GetOwnerSettings;
 use App\Actions\Owner\UpdateOwnerAccount;
 use App\Actions\Tenant\CreateInitialProfile;
 use App\Actions\Tenant\UpdateBusinessProfile;
-use App\Actions\Tenant\UpdatePaymentSettings;
+use App\Domain\Subscription\EntitlementRules;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Owner\RequestPayoutRequest;
+use App\Http\Requests\Owner\DeleteOwnerAccountRequest;
 use App\Http\Requests\Owner\UpdateOwnerAccountRequest;
 use App\Http\Requests\Tenant\StoreInitialProfileRequest;
 use App\Http\Requests\Tenant\UpdateBusinessProfileRequest;
-use App\Http\Requests\Tenant\UpdatePaymentSettingsRequest;
-use App\Models\OwnerPayout;
 use App\Models\Tenant;
 use App\Traits\ResolvesOwnerTenant;
 use Illuminate\Http\RedirectResponse;
@@ -31,27 +29,18 @@ class OwnerSettingController extends Controller
     /**
      * Halaman pengaturan bisnis.
      */
-    public function index(): View
+    public function index(Request $request, GetOwnerSettings $settings): View
     {
-        $tenant = $this->resolveTenant();
-        $user = auth()->user();
+        return view('owner.settings', $settings->execute(
+            $this->resolveTenant() ?? new Tenant,
+            $request->user(),
+            $request->string('tab')->toString(),
+        ));
+    }
 
-        if (!$tenant) {
-            $tenant = new Tenant();
-            if ($user) {
-                $tenant->setRelation('user', $user);
-            }
-        }
-
-        $payouts = collect();
-        if ($tenant->id) {
-            $payouts = OwnerPayout::where('idtenant', $tenant->id)
-                ->orderByDesc('requested_at')
-                ->limit(10)
-                ->get();
-        }
-
-        return view('owner.settings', compact('tenant', 'payouts'));
+    public function legacyBusiness(Request $request): RedirectResponse
+    {
+        return redirect()->route('owner.settings', $request->query(), 301);
     }
 
     /**
@@ -60,7 +49,7 @@ class OwnerSettingController extends Controller
     public function storeProfile(StoreInitialProfileRequest $request, CreateInitialProfile $createInitialProfile): RedirectResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(403, 'User tidak ditemukan.');
         }
 
@@ -69,13 +58,15 @@ class OwnerSettingController extends Controller
 
         session()->put('current_tenant_id', $tenant->id);
 
-        return redirect()->route('owner.dashboard')->with('sukses', 'Profil bisnis berhasil dibuat. Anda mendapatkan Free Trial 7 Hari paket Pro!');
+        return redirect()->route('owner.dashboard')->with('sukses', EntitlementRules::hasEffectivePlan($tenant->subscription)
+            ? 'Profil bisnis berhasil dibuat. Anda mendapatkan Free Trial 7 Hari paket Pro!'
+            : 'Profil bisnis berhasil dibuat. Silakan pilih paket untuk menerima booking.');
     }
 
     public function updateBusinessProfile(UpdateBusinessProfileRequest $request, UpdateBusinessProfile $updateBusinessProfile): RedirectResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(403, 'User tidak ditemukan.');
         }
 
@@ -95,51 +86,29 @@ class OwnerSettingController extends Controller
     public function updateAccount(UpdateOwnerAccountRequest $request, UpdateOwnerAccount $updateOwnerAccount): RedirectResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(403, 'User tidak ditemukan.');
         }
 
-        $updateOwnerAccount->execute($user, $request->validated());
+        $emailChanged = strcasecmp(trim((string) $request->validated('email')), trim((string) $user->email)) !== 0;
+        $updateOwnerAccount->execute($user, $request->validated(), $request->session()->getId());
 
-        return redirect()->route('owner.settings')->with('sukses', 'Akun berhasil diperbarui.');
-    }
-
-    public function updatePaymentSettings(UpdatePaymentSettingsRequest $request, UpdatePaymentSettings $updatePaymentSettings): RedirectResponse
-    {
-        $user = $request->user();
-        if (!$user) {
-            abort(403, 'User tidak ditemukan.');
+        if ($request->filled('password')) {
+            $request->session()->regenerate();
         }
 
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
-
-        $updatePaymentSettings->execute($tenant, $request->validated());
-
-        return redirect()->route('owner.settings')->with('sukses', 'Pengaturan pembayaran berhasil diperbarui.');
-    }
-
-    public function requestPayout(RequestPayoutRequest $request, RequestOwnerPayout $requestOwnerPayout): RedirectResponse
-    {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
-        }
-
-        $requestOwnerPayout->execute($tenant, (float) $request->input('jumlah'));
-
-        return redirect()->route('owner.settings')->with('sukses', 'Permintaan withdraw berhasil dibuat.');
+        return redirect()->route('owner.settings')->with('sukses', $emailChanged
+            ? 'Akun berhasil diperbarui. Cek email baru Anda untuk verifikasi.'
+            : 'Akun berhasil diperbarui.');
     }
 
     /**
      * Hapus akun dan seluruh data bisnis owner secara permanen setelah konfirmasi.
      */
-    public function deleteAccount(Request $request, DeleteOwnerAccount $deleteOwnerAccount): RedirectResponse
+    public function deleteAccount(DeleteOwnerAccountRequest $request, DeleteOwnerAccount $deleteOwnerAccount): RedirectResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(403, 'User tidak ditemukan.');
         }
 

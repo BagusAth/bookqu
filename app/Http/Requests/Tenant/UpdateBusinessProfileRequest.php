@@ -16,18 +16,38 @@ class UpdateBusinessProfileRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('nomorhp') && $this->nomorhp !== null) {
+            $phone = preg_replace('/[^\d+]/', '', (string) $this->nomorhp);
+            if (str_starts_with($phone, '+62')) {
+                $phone = substr($phone, 3);
+            } elseif (str_starts_with($phone, '62')) {
+                $phone = substr($phone, 2);
+            }
+            $phone = ltrim($phone, '0');
+            if ($phone !== '') {
+                $phone = '0'.$phone;
+            }
+            $this->merge(['nomorhp' => $phone]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
-            'namabisnis'  => ['required', 'string', 'max:150'],
+            'namabisnis' => ['required', 'string', 'max:150'],
             'jenisbisnis' => ['required', 'string', 'max:150'],
-            'nomorhp'     => ['required', 'string', 'max:20'],
-            'alamat'      => ['required', 'string', 'max:255'],
-            'deskripsi'   => ['nullable', 'string', 'max:1000'],
-            'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:10240'],
+            'nomorhp' => ['required', 'string', 'max:20'],
+            'alamat' => ['required', 'string', 'max:255'],
+            'slug' => ['sometimes', 'required', 'string', 'max:150', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D'],
+            'business_email' => ['sometimes', 'nullable', 'email', 'max:150'],
+            'map_url' => ['sometimes', 'nullable', 'url:http,https', 'max:2048'],
+            'deskripsi' => ['nullable', 'string', 'max:1000'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
         ];
     }
 }

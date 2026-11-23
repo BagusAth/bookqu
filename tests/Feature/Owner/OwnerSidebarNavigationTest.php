@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,6 +14,7 @@ class OwnerSidebarNavigationTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $tenant;
 
     protected function setUp(): void
@@ -33,11 +36,11 @@ class OwnerSidebarNavigationTest extends TestCase
             'deskripsi' => 'Testing business',
         ]);
 
-        $plan = \App\Models\Plan::firstOrCreate(
+        $plan = Plan::firstOrCreate(
             ['namapaket' => 'pro'],
             ['hargabulanan' => 499000, 'maxlayanan' => 0, 'maxbooking' => 0, 'isunlimited' => true]
         );
-        \App\Models\Subscription::create([
+        Subscription::create([
             'idtenant' => $this->tenant->id,
             'idplan' => $plan->id,
             'status' => 'active',
@@ -51,13 +54,11 @@ class OwnerSidebarNavigationTest extends TestCase
             '/owner/calendar',
             '/owner/schedule',
             '/owner/bookings',
-            '/owner/schedule-report',
             '/owner/categories',
             '/owner/services',
             '/owner/reviews',
             '/owner/customers',
-            '/owner/settings/business',
-            '/owner/settings/integrations',
+            '/owner/settings',
             '/owner/subscription',
         ];
 
@@ -65,16 +66,10 @@ class OwnerSidebarNavigationTest extends TestCase
             $response = $this->actingAs($this->user)->get($route);
             $response->assertStatus(200);
             $response->assertSee('BookQu');
-            $response->assertSee('Admin Portal');
-            $response->assertSee('BOOKING');
-            $response->assertSee('BUSINESS');
-            $response->assertSee('CUSTOMERS');
-            $response->assertSee('MARKETING');
-            $response->assertSee('ANALYTICS');
-            $response->assertSee('SETTINGS');
-            $response->assertSee('Services');
-            $response->assertSee('Bookings');
-            $response->assertSee('Terkunci');
+            // BQ-128 (BQ-091): the owner app no longer calls itself "Admin Portal".
+            $response->assertDontSee('Admin Portal');
+            $response->assertSee('Beranda')->assertSee('Layanan')->assertSee('Jam Buka &amp; Harga', false);
+            $response->assertDontSee('id="nav-integrations"', false);
 
             // Hidden features must NOT be rendered in the sidebar
             $response->assertDontSee('id="nav-landing-page"', false);
@@ -105,6 +100,13 @@ class OwnerSidebarNavigationTest extends TestCase
         $response->assertSee('id="input-nomorhp"', false);
     }
 
+    public function test_the_old_business_settings_bookmark_redirects_permanently_with_its_tab(): void
+    {
+        $this->actingAs($this->user)->get('/owner/settings/business?tab=account')
+            ->assertStatus(301)->assertRedirect(route('owner.settings', ['tab' => 'account']));
+        $this->get(route('owner.settings', ['tab' => 'account']))->assertOk();
+    }
+
     public function test_owner_dashboard_hides_payment_verification_prompt_and_links_to_locked_analytics(): void
     {
         $response = $this->actingAs($this->user)->get('/owner/dashboard');
@@ -115,21 +117,11 @@ class OwnerSidebarNavigationTest extends TestCase
         $response->assertDontSee('Pengaturan pembayaran belum diverifikasi');
 
         // Full report link has locked indicator
-        $response->assertSee('id="link-full-report"', false);
-        $response->assertSee('Terkunci');
-    }
-
-    public function test_owner_analytics_and_schedule_report_render_locked_state(): void
-    {
-        $resAnalytics = $this->actingAs($this->user)->get('/owner/analytics');
-        $resAnalytics->assertStatus(200);
-        $resAnalytics->assertSee('Fitur Sedang Dikembangkan');
-        $resAnalytics->assertSee('Modul Analitik &amp; Laporan Bisnis', false);
-
-        $resSchedule = $this->actingAs($this->user)->get('/owner/schedule-report');
-        $resSchedule->assertStatus(200);
-        $resSchedule->assertSee('Fitur Sedang Dikembangkan');
-        $resSchedule->assertSee('Laporan Okupansi &amp; Utilisasi Jadwal', false);
+        $response->assertDontSee('id="link-full-report"', false);
+        // ADR-0023: Laporan and Integrasi are released.
+        $this->get('/owner/analytics')->assertOk();
+        $this->get('/owner/settings/integrations')->assertRedirect(route('owner.settings', ['tab' => 'integrasi']));
+        $this->get(route('owner.settings', ['tab' => 'integrasi']))->assertOk()->assertSeeText('Google Calendar');
     }
 
     public function test_owner_topbar_dropdown_hides_appearance_and_payment_links(): void
@@ -139,10 +131,10 @@ class OwnerSidebarNavigationTest extends TestCase
 
         // Must not contain links to hidden features in dropdown
         $response->assertDontSee(route('owner.settings.appearance'));
-        $response->assertDontSee(route('owner.settings.payment-setting'));
+        $response->assertDontSee('/owner/settings/payment-setting');
 
-        // Retains active links
-        $response->assertSee(route('owner.settings.business'));
+        // Retains active links: Pengaturan and Paket & Tagihan come from the navigation definition (BQ-128)
+        $response->assertSee(route('owner.settings'));
         $response->assertSee(route('owner.subscription'));
     }
 }

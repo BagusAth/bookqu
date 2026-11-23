@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\Log;
+use App\Models\Tenant;
+use Closure;
 
 class TenantContext
 {
@@ -30,12 +31,32 @@ class TenantContext
         $this->tenantId = null;
     }
 
-    public function tenant(): ?\App\Models\Tenant
+    /**
+     * Run work for a tenant already verified by the caller.
+     *
+     * @template TResult
+     *
+     * @param  Closure(): TResult  $operation
+     * @return TResult
+     */
+    public function run(int $tenantId, Closure $operation): mixed
+    {
+        $previous = $this->tenantId;
+        $this->tenantId = $tenantId;
+
+        try {
+            return $operation();
+        } finally {
+            $this->tenantId = $previous;
+        }
+    }
+
+    public function tenant(): ?Tenant
     {
         if ($this->tenantId === null) {
             return null;
         }
 
-        return \App\Models\Tenant::withoutGlobalScopes()->find($this->tenantId);
+        return Tenant::find($this->tenantId);
     }
 }

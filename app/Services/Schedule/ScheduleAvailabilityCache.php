@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Schedule;
 
 use App\Models\Service;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 
@@ -88,9 +89,7 @@ class ScheduleAvailabilityCache
      */
     public function clearAllServicesAvailability(int $tenantId): void
     {
-        $serviceIds = Service::withoutGlobalScopes()
-            ->where('idtenant', $tenantId)
-            ->pluck('id');
+        $serviceIds = app(TenantContext::class)->run($tenantId, fn () => Service::pluck('id'));
 
         foreach ($serviceIds as $sId) {
             Cache::forget($this->getAvailabilityCacheKey($tenantId, (int) $sId));

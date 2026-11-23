@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Actions\Team\ResolveTenantMembership;
+use App\Domain\CustomerAccess\AccessContext;
+use App\Domain\Tenant\CustomDomain;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,30 +19,46 @@ class TenantMiddleware
     {
         // First check if this is an owner route (prefix /owner or explicitly targeting owner)
         $isOwnerRoute = $request->is('owner/*') || $request->is('owner');
-        
+
         // P0-01: Customer context (based on slug or custom domain)
         $slug = $request->route('slug') ?? $request->route('slug_usaha');
         $host = $request->getHost();
-        $isCustomDomain = $host !== '127.0.0.1' && $host !== 'localhost' && !str_contains($host, 'bookqu.test');
-        
+
         $resolvedTenant = null;
 
         if (is_string($slug) && $slug !== '') {
             $resolvedTenant = Tenant::where('slug', $slug)->first();
-        } elseif ($isCustomDomain) {
-            $resolvedTenant = Tenant::where('custom_domain', $host)->first();
+        } elseif (! CustomDomain::isPlatformHost($host)) {
+            // BQ-154: a domain serves its business only while its last DNS check connected it.
+            $resolvedTenant = Tenant::where('custom_domain', mb_strtolower($host))
+                ->where('custom_domain_status', CustomDomain::STATUS_CONNECTED)
+                ->first();
             if ($resolvedTenant) {
                 $request->route()->setParameter('slug_usaha', $resolvedTenant->slug);
+                $request->route()->forgetParameter('custom_domain');
             }
         }
 
         try {
-            if ($resolvedTenant && !$isOwnerRoute) {
-                app(\App\Support\TenantContext::class)->setTenantId($resolvedTenant->id);
+            $access = $request->attributes->get('customer_access');
+            if ($access instanceof AccessContext) {
+                abort_if($resolvedTenant && (int) $resolvedTenant->id !== (int) $access->grant->idtenant, 404);
+                abort_if(is_string($slug) && $slug !== '' && ! $resolvedTenant, 404);
+                app(TenantContext::class)->setTenantId((int) $access->grant->idtenant);
+                if ($resolvedTenant !== null && $request->routeIs('customer.booking.*')) {
+                    $request->attributes->set('storefront_tenant', $resolvedTenant);
+                }
+
+                return $next($request);
+            }
+            if ($resolvedTenant && ! $isOwnerRoute) {
+                app(TenantContext::class)->setTenantId($resolvedTenant->id);
+                $request->attributes->set('storefront_tenant', $resolvedTenant);
+
                 return $next($request);
             }
 
-            if (is_string($slug) && $slug !== '' && !$resolvedTenant) {
+            if (is_string($slug) && $slug !== '' && ! $resolvedTenant) {
                 abort(404, 'Bisnis tidak ditemukan');
             }
 
@@ -46,16 +66,23 @@ class TenantMiddleware
             if ($isOwnerRoute) {
                 $user = auth()->user();
                 if ($user) {
-                    $ownerTenant = \App\Models\Tenant::where('iduser', $user->id)->first();
-                    if ($ownerTenant) {
-                        app(\App\Support\TenantContext::class)->setTenantId($ownerTenant->id);
+                    $member = app(ResolveTenantMembership::class)->execute($user);
+                    if ($member !== null) {
+                        app(TenantContext::class)->setTenantId((int) $member->idtenant);
+                        $request->attributes->set('tenant_member', $member);
+                    } elseif (Tenant::where('iduser', $user->id)->exists()
+                        || app(ResolveTenantMembership::class)->hasMembership($user)) {
+                        Auth::logout();
+                        $request->session()->invalidate();
+                        $request->session()->regenerateToken();
+                        abort(403);
                     }
                 }
             }
 
             return $next($request);
         } finally {
-            app(\App\Support\TenantContext::class)->clear();
+            app(TenantContext::class)->clear();
         }
     }
 }

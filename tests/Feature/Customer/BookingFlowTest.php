@@ -2,25 +2,39 @@
 
 namespace Tests\Feature\Customer;
 
+use App\Actions\Subscription\CreateTrialSubscription;
+use App\Domain\CustomerAccess\AccessProfile;
+use App\Domain\Payment\ProviderOutcome;
+use App\Infrastructure\Payments\Midtrans\MidtransPaymentGateway;
+use App\Models\Booking;
+use App\Models\Payment;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Voucher;
 use Carbon\Carbon;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\UsesCustomerAccess;
 use Tests\TestCase;
 
 class BookingFlowTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesCustomerAccess;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-11-01 08:00:00', 'Asia/Jakarta'));
         $this->withoutMiddleware([
-            \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
-            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            PreventRequestForgery::class,
+            ValidateCsrfToken::class,
         ]);
+
+        config(['payment.default' => 'midtrans']);
 
         // Create tenant
         $this->user = User::factory()->create(['role' => 'owner']);
@@ -32,6 +46,8 @@ class BookingFlowTest extends TestCase
             'alamat' => 'Jalan Test',
             'nomorhp' => '08123456789',
         ]);
+        // BQ-086: successful writes require a live subscription; assertions stay unchanged.
+        app(CreateTrialSubscription::class)->execute($this->tenant)->forceFill(['created_at' => now()->subMinute()])->save();
 
         // Create service
         $this->service = Service::create([
@@ -66,7 +82,7 @@ class BookingFlowTest extends TestCase
             'service_id' => $this->service->id,
         ]);
 
-        $responseSelect->assertRedirect('/my-business/booking/date');
+        $responseSelect->assertRedirect('/my-business/booking/schedule');
         $this->assertEquals($this->service->id, session('booking.service_id'));
     }
 
@@ -77,11 +93,11 @@ class BookingFlowTest extends TestCase
             'booking' => [
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
-            ]
+            ],
         ]);
 
         $response = $this->get('/my-business/booking/date');
-        $response->assertStatus(200);
+        $response->assertRedirect('/my-business/booking/schedule');
 
         $responseSelect = $this->post('/my-business/booking/select-date', [
             'tanggal' => $this->tomorrow,
@@ -99,11 +115,11 @@ class BookingFlowTest extends TestCase
                 'tenant_id' => $this->tenant->id,
                 'service_id' => $this->service->id,
                 'tanggal' => $this->tomorrow,
-            ]
+            ],
         ]);
 
         $response = $this->get('/my-business/booking/time');
-        $response->assertStatus(200);
+        $response->assertRedirect('/my-business/booking/schedule');
 
         $responseSelect = $this->post('/my-business/booking/select-time', [
             'jam' => ['10:00'],
@@ -112,10 +128,10 @@ class BookingFlowTest extends TestCase
 
         $responseSelect->assertRedirect('/my-business/booking/checkout');
         $this->assertEquals(['10:00'], session('booking.jam'));
-        
+
         $responseCheckout = $this->get('/my-business/booking/checkout');
         $responseCheckout->assertStatus(200);
-        $responseCheckout->assertSee('Isi Data Diri');
+        $responseCheckout->assertSee('Data pemesan');
     }
 
     public function test_customer_can_process_checkout(): void
@@ -127,7 +143,7 @@ class BookingFlowTest extends TestCase
                 'tanggal' => $this->tomorrow,
                 'jam' => ['10:00'],
                 'schedule_ids' => [$this->schedule->id],
-            ]
+            ],
         ]);
 
         $response = $this->post('/my-business/booking/checkout', [
@@ -137,21 +153,21 @@ class BookingFlowTest extends TestCase
             'catatan' => 'Tolong tepat waktu',
         ]);
 
-        $payment = \App\Models\Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->first();
+        $payment = Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->first();
         $this->assertNotNull($payment);
         $this->assertEquals('mocked-snap-token', $payment->snap_token);
 
-        $booking = \App\Models\Booking::withoutGlobalScopes()->where('idpayment', $payment->id)->first();
+        $booking = Booking::withoutGlobalScopes()->where('idpayment', $payment->id)->first();
         $this->assertNotNull($booking);
         $this->assertEquals('John Doe', $booking->namapelanggan);
         $this->assertEquals('pending', $booking->status);
 
-        $response->assertRedirect('/my-business/booking/payment/' . $payment->order_id);
+        $this->assertCheckoutHandoff($response, $payment);
     }
 
     public function test_customer_payment_page_renders_realtime_indicator_and_correct_routes(): void
     {
-        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+        $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'order_id' => 'BQ-TEST-12345',
             'tipe' => 'booking',
@@ -162,18 +178,22 @@ class BookingFlowTest extends TestCase
             'expired_at' => now()->addMinutes(15),
         ]);
 
-        $response = $this->get('/my-business/booking/payment/' . $payment->order_id);
+        $slot = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id]);
+        Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $slot->id, 'idpayment' => $payment->id]);
+
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id);
         $response->assertStatus(200);
-        $response->assertSee('Sistem memantau pembayaran Anda secara otomatis');
+        $response->assertSee('Status dipantau otomatis.'); // Design A §7.4
         $response->assertSee('BQ-TEST-12345');
         // Ensure the generated route contains the order_id, not a raw numerical id
-        $response->assertSee('/my-business/booking/payment/BQ-TEST-12345/callback');
-        $response->assertSee('/my-business/booking/payment/BQ-TEST-12345/check-status');
+        $script = str_replace('\\/', '/', (string) $response->getContent());
+        $this->assertStringContainsString('/my-business/booking/payment/BQ-TEST-12345/callback', $script);
+        $this->assertStringContainsString('/my-business/booking/payment/BQ-TEST-12345/check-status', $script);
     }
 
     public function test_customer_check_payment_status_fast_path_when_already_paid(): void
     {
-        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+        $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'order_id' => 'BQ-TEST-FASTPATH',
             'tipe' => 'booking',
@@ -184,18 +204,21 @@ class BookingFlowTest extends TestCase
             'expired_at' => now()->addMinutes(15),
         ]);
 
-        $response = $this->postJson('/my-business/booking/payment/' . $payment->order_id . '/check-status');
+        $slot = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id]);
+        Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $slot->id, 'idpayment' => $payment->id]);
+
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->postJson('/my-business/booking/payment/'.$payment->order_id.'/check-status');
         $response->assertStatus(200);
         $response->assertJson([
             'status' => 'sukses',
             'message' => 'Pembayaran berhasil dikonfirmasi!',
         ]);
-        $this->assertStringContainsString('/my-business/booking/payment/' . $payment->order_id . '/invoice', $response->json('redirect'));
+        $this->assertStringContainsString('/my-business/booking/payment/'.$payment->order_id.'/invoice', $response->json('redirect'));
     }
 
     public function test_customer_handle_callback_success(): void
     {
-        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+        $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'order_id' => 'BQ-TEST-CALLBACK',
             'tipe' => 'booking',
@@ -206,16 +229,22 @@ class BookingFlowTest extends TestCase
             'expired_at' => now()->addMinutes(15),
         ]);
 
-        // Mock MidtransPaymentService to return sukses on verifyAndSync
-        $mockService = \Mockery::mock(\App\Services\MidtransPaymentService::class);
-        $mockService->shouldReceive('verifyAndSync')->once()->andReturn([
-            'status' => 'sukses',
-            'message' => 'Pembayaran berhasil dikonfirmasi!',
-            'payment' => $payment,
-        ]);
-        $this->app->instance(\App\Services\MidtransPaymentService::class, $mockService);
+        // Midtrans reports the payment settled when asked server-side
+        $this->mock(MidtransPaymentGateway::class, function ($mock) use ($payment) {
+            $mock->shouldReceive('queryOutcome')->once()->andReturn(new ProviderOutcome(
+                provider: 'midtrans',
+                references: [$payment->order_id],
+                result: 'sukses',
+                amount: '100000',
+                currency: 'IDR',
+                method: 'gopay',
+            ));
+        });
 
-        $response = $this->postJson('/my-business/booking/payment/' . $payment->order_id . '/callback', [
+        $slot = Schedule::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id]);
+        Booking::factory()->create(['idtenant' => $this->tenant->id, 'idlayanan' => $this->service->id, 'idschedule' => $slot->id, 'idpayment' => $payment->id]);
+
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->postJson('/my-business/booking/payment/'.$payment->order_id.'/callback', [
             'result' => [
                 'status_code' => '200',
                 'transaction_status' => 'settlement',
@@ -227,12 +256,13 @@ class BookingFlowTest extends TestCase
             'status' => 'sukses',
             'message' => 'Pembayaran berhasil dikonfirmasi!',
         ]);
-        $this->assertStringContainsString('/my-business/booking/payment/' . $payment->order_id . '/invoice', $response->json('redirect'));
+        $this->assertStringContainsString('/my-business/booking/payment/'.$payment->order_id.'/invoice', $response->json('redirect'));
     }
 
     public function test_customer_cannot_validate_voucher_while_feature_disabled(): void
     {
-        $voucher = \App\Models\Voucher::withoutGlobalScopes()->create([
+        config(['modules.promos' => 'hidden', 'modules.add-ons' => 'hidden']);
+        $voucher = Voucher::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'code' => 'HEMAT20',
             'discount_type' => 'percentage',
@@ -250,16 +280,14 @@ class BookingFlowTest extends TestCase
             'service_id' => $this->service->id,
         ]);
 
-        $response->assertStatus(422);
-        $response->assertJson([
-            'valid' => false,
-            'message' => 'Fitur voucher saat ini belum aktif.',
-        ]);
+        // Vouchers are a hidden Tier 3 module: the route does not exist (ADR-0011)
+        $response->assertNotFound();
     }
 
     public function test_checkout_with_voucher_is_rejected_while_feature_disabled(): void
     {
-        $voucher = \App\Models\Voucher::withoutGlobalScopes()->create([
+        config(['modules.promos' => 'hidden']);
+        $voucher = Voucher::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'code' => 'POTONG50',
             'discount_type' => 'fixed',
@@ -277,7 +305,7 @@ class BookingFlowTest extends TestCase
                 'tanggal' => $this->tomorrow,
                 'jam' => ['10:00'],
                 'schedule_ids' => [$this->schedule->id],
-            ]
+            ],
         ]);
 
         $response = $this->post('/my-business/booking/checkout', [
@@ -288,14 +316,14 @@ class BookingFlowTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['voucher']);
-        $payment = \App\Models\Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->latest()->first();
+        $payment = Payment::withoutGlobalScopes()->where('idtenant', $this->tenant->id)->latest()->first();
         $this->assertNull($payment);
         $this->assertEquals(0, $voucher->fresh()->used_count);
     }
 
     public function test_invoice_renders_calendar_and_back_buttons(): void
     {
-        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+        $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'order_id' => 'BQ-TEST-INVOICE',
             'tipe' => 'booking',
@@ -306,7 +334,7 @@ class BookingFlowTest extends TestCase
             'expired_at' => now()->addMinutes(15),
         ]);
 
-        $booking = \App\Models\Booking::withoutGlobalScopes()->create([
+        $booking = Booking::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
             'idschedule' => $this->schedule->id,
@@ -321,21 +349,21 @@ class BookingFlowTest extends TestCase
             'cancellation_token' => 'token123',
         ]);
 
-        $response = $this->get('/my-business/booking/payment/' . $payment->order_id . '/invoice');
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertStatus(200);
-        $response->assertSee('Booking Berhasil Dikonfirmasi!');
+        $response->assertSee('Invoice pembayaran');
         $response->assertSee('Google Calendar');
         $response->assertDontSee('Apple / Outlook (.ics)');
         $response->assertSee('Bagikan ke WhatsApp');
-        $response->assertSee('Petunjuk Arah');
-        $response->assertSee('Kembali ke Beranda');
+        $response->assertSee('Petunjuk arah');
+        $response->assertSee('aria-label="Kembali"', false);
         // Check header back button
         $response->assertSee('/my-business');
     }
 
     public function test_invoice_renders_even_when_booking_code_is_initially_null(): void
     {
-        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+        $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'order_id' => 'BQ-TEST-NULL-CODE',
             'tipe' => 'booking',
@@ -346,7 +374,7 @@ class BookingFlowTest extends TestCase
             'expired_at' => now()->addMinutes(15),
         ]);
 
-        $booking = \App\Models\Booking::withoutGlobalScopes()->create([
+        $booking = Booking::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
             'idschedule' => $this->schedule->id,
@@ -361,18 +389,18 @@ class BookingFlowTest extends TestCase
             'cancellation_token' => null,
         ]);
 
-        $response = $this->get('/my-business/booking/payment/' . $payment->order_id . '/invoice');
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->get('/my-business/booking/payment/'.$payment->order_id.'/invoice');
         $response->assertStatus(200);
-        $response->assertSee('Booking Berhasil Dikonfirmasi!');
+        $response->assertSee('Invoice pembayaran');
 
         $booking->refresh();
-        $this->assertNotNull($booking->booking_code);
-        $this->assertNotNull($booking->cancellation_token);
+        $this->assertNull($booking->booking_code);
+        $this->assertNull($booking->cancellation_token);
     }
 
     public function test_customer_can_cancel_pending_payment_and_release_booking_slot(): void
     {
-        $payment = \App\Models\Payment::withoutGlobalScopes()->create([
+        $payment = Payment::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'order_id' => 'BQ-TEST-CANCEL',
             'tipe' => 'booking',
@@ -383,7 +411,7 @@ class BookingFlowTest extends TestCase
             'expired_at' => now()->addMinutes(15),
         ]);
 
-        $booking = \App\Models\Booking::withoutGlobalScopes()->create([
+        $booking = Booking::withoutGlobalScopes()->create([
             'idtenant' => $this->tenant->id,
             'idlayanan' => $this->service->id,
             'idschedule' => $this->schedule->id,
@@ -396,7 +424,7 @@ class BookingFlowTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->post('/my-business/booking/payment/' . $payment->order_id . '/cancel');
+        $response = $this->grantCustomerAccess($payment, AccessProfile::Checkout)->post('/my-business/booking/payment/'.$payment->order_id.'/cancel');
         $response->assertRedirect('/my-business');
         $response->assertSessionHas('info');
 
@@ -409,59 +437,60 @@ class BookingFlowTest extends TestCase
 
     public function test_customer_can_process_free_checkout_without_payment_gateway(): void
     {
-        $freeService = \App\Models\Service::withoutGlobalScopes()->create([
-            'idtenant'     => $this->tenant->id,
-            'namalayanan'  => 'Konsultasi Gratis',
-            'durasi'       => 60,
-            'harga'        => 0,
-            'is_active'    => true,
-            'category_id'  => $this->service->category_id,
+        $freeService = Service::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'namalayanan' => 'Konsultasi Gratis',
+            'durasi' => 60,
+            'harga' => 0,
+            'is_active' => true,
+            'category_id' => $this->service->category_id,
         ]);
 
-        $freeSchedule = \App\Models\Schedule::withoutGlobalScopes()->create([
-            'idtenant'       => $this->tenant->id,
-            'idlayanan'      => $freeService->id,
-            'tanggal'        => $this->tomorrow,
-            'jam_mulai'      => '14:00',
-            'jam_selesai'    => '15:00',
-            'status'         => 'tersedia',
+        $freeSchedule = Schedule::withoutGlobalScopes()->create([
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $freeService->id,
+            'tanggal' => $this->tomorrow,
+            'jam_mulai' => '14:00',
+            'jam_selesai' => '15:00',
+            'status' => 'tersedia',
             'harga_override' => null,
         ]);
 
         $response = $this->withSession([
             'booking' => [
-                'tenant_id'    => $this->tenant->id,
-                'service_id'   => $freeService->id,
-                'tanggal'      => $this->tomorrow,
-                'jam'          => '14:00',
-                'schedule_id'  => $freeSchedule->id,
+                'tenant_id' => $this->tenant->id,
+                'service_id' => $freeService->id,
+                'tanggal' => $this->tomorrow,
+                'jam' => '14:00',
+                'schedule_id' => $freeSchedule->id,
                 'schedule_ids' => [$freeSchedule->id],
-            ]
+            ],
         ])->post('/my-business/booking/checkout', [
             'namapelanggan' => 'Diana Free',
-            'email'         => 'diana@example.com',
-            'nomorhp'       => '081299998888',
-            'catatan'       => 'Sesi konsultasi gratis',
+            'email' => 'diana@example.com',
+            'nomorhp' => '081299998888',
+            'catatan' => 'Sesi konsultasi gratis',
         ]);
 
         $response->assertRedirect();
-        $response->assertSessionHas('success');
+        // scope-bypass: inspect trusted test fixtures without a request tenant; authorization is exercised through the real resolver.
+        $payment = Payment::withoutGlobalScopes()->where('email_pembayar', 'diana@example.com')->firstOrFail();
+        $this->assertCheckoutHandoff($response, $payment);
         $this->assertNull(session('booking'));
 
         $this->assertDatabaseHas('payments', [
             'idtenant' => $this->tenant->id,
-            'jumlah'   => 0,
-            'status'   => 'sukses',
-            'metode'   => 'gratis',
+            'jumlah' => 0,
+            'status' => 'sukses',
+            'metode' => 'gratis',
         ]);
 
         $this->assertDatabaseHas('bookings', [
-            'idtenant'       => $this->tenant->id,
-            'idlayanan'      => $freeService->id,
-            'idschedule'     => $freeSchedule->id,
-            'namapelanggan'  => 'Diana Free',
-            'status'         => 'paid',
+            'idtenant' => $this->tenant->id,
+            'idlayanan' => $freeService->id,
+            'idschedule' => $freeSchedule->id,
+            'namapelanggan' => 'Diana Free',
+            'status' => 'paid',
         ]);
     }
 }
-

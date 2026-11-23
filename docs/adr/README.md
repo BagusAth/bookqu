@@ -1,0 +1,34 @@
+# Architecture Decision Records (ADR)
+
+Why significant architectural decisions were made. Write one with `_TEMPLATE.md` when a decision affects several domains, changes an integration, tenancy, concurrency or payment strategy, introduces a new pattern, or would otherwise leave future contributors guessing (`docs/workflow.md` §9). ADRs are decided by the Tech Lead; accepted ADRs are not edited except to fix facts or mark them superseded.
+
+## Records
+
+| ID | Title | Status | Date |
+|---|---|---|---|
+| [ADR-0001](ADR-0001-unified-payment-gateway-architecture.md) | Unified Payment Gateway Architecture (SingaPay & Midtrans) | Accepted | 2026-10-18 |
+| [ADR-0002](ADR-0002-modular-release-staging-and-ui-gating.md) | Modular Release Staging and UI Gating Policy | Accepted | 2026-10-18 |
+| [ADR-0003](ADR-0003-documentation-and-work-system.md) | Layered documentation and in-repo work system | Accepted | 2026-10-30 |
+| [ADR-0004](ADR-0004-payment-lifecycle-module.md) | Payment lifecycle module | Accepted | 2026-10-30 |
+| [ADR-0005](ADR-0005-slot-bookability-module.md) | Slot bookability module | Accepted | 2026-10-30 |
+| [ADR-0006](ADR-0006-management-link-module.md) | Management link module | Accepted | 2026-10-30 |
+| [ADR-0007](ADR-0007-provider-outcome-intake.md) | Provider outcome intake | Accepted | 2026-10-30 |
+| [ADR-0008](ADR-0008-booking-checkout-draft.md) | Booking checkout draft module | Accepted | 2026-10-30 |
+| [ADR-0009](ADR-0009-pending-payment-lifetime.md) | Pending-payment lifetime | Accepted | 2026-10-30 |
+| [ADR-0010](ADR-0010-authorization-and-tenant-scoping.md) | Authorization and tenant scoping | Accepted | 2026-10-30 |
+| [ADR-0011](ADR-0011-server-side-release-gating.md) | Server-side release and entitlement gating | Accepted | 2026-10-30 |
+| [ADR-0012](ADR-0012-module-boundaries-and-naming.md) | Module boundaries, naming and architecture checks | Accepted | 2026-10-30 |
+| [ADR-0013](ADR-0013-background-work-on-shared-hosting.md) | Background work on shared hosting | Accepted | 2026-10-30 |
+| [ADR-0014](ADR-0014-testing-strategy.md) | Testing strategy | Accepted | 2026-10-30 |
+| [ADR-0015](ADR-0015-environments-and-release.md) | Environments, deployment and release | Accepted | 2026-10-30 |
+| [ADR-0016](ADR-0016-team-accounts-and-role-permissions.md) | Team accounts and role permissions | Accepted | 2026-11-04 |
+| [ADR-0017](ADR-0017-capacity-and-units-in-occupancy.md) | Capacity and units in slot occupancy | Accepted | 2026-11-04 |
+| [ADR-0018](ADR-0018-no-show-booking-state.md) | No-show booking state | Accepted | 2026-11-04 |
+| [ADR-0019](ADR-0019-checkout-pricing-promos-and-add-ons.md) | Checkout pricing with promos, add-ons and a frozen amount | Accepted | 2026-11-04 |
+| [ADR-0020](ADR-0020-refund-requests-and-processing.md) | Refund requests, owner decisions and admin processing | Accepted | 2026-11-04 |
+| [ADR-0021](ADR-0021-release-gating-after-the-owner-portal-redesign.md) | Release, plan and role gating after the owner portal redesign | Accepted | 2026-11-04 |
+| [ADR-0022](ADR-0022-owner-integrations-api-and-webhooks.md) | Owner integrations, public API and outbound webhooks | Accepted | 2026-11-04 |
+| [ADR-0023](ADR-0023-owner-settlement-limited-to-unlinked-payments.md) | Owner settlement is limited to payments without a provider link | Accepted | 2026-11-04 |
+| [ADR-0024](ADR-0024-all-modules-released.md) | Every owner portal module is released; legacy paths are removed | Accepted | 2026-11-16 |
+
+Phase 2 package (BQ-028) complete at ADR-0015. ADR-0016 to ADR-0022 come from the owner portal redesign (BQ-126 phase 6), accepted by the Tech Lead on 2026-11-04 (gate G3).

@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Hidden(['password'])]
+#[Hidden(['password', 'google_id', 'trial_used_at'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -37,8 +39,18 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'trial_used_at' => 'datetime',
+            'notification_preferences' => 'array',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * False for an account created through Google that has not set a password yet (D-029).
+     */
+    public function hasPassword(): bool
+    {
+        return filled($this->getAuthPassword());
     }
 
     public function isAdmin(): bool
@@ -56,12 +68,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === 'customer';
     }
 
-    public function tenant(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function tenant(): HasOne
     {
         return $this->hasOne(Tenant::class, 'iduser');
     }
 
-    public function tenants(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function tenants(): HasMany
     {
         return $this->hasMany(Tenant::class, 'iduser');
     }

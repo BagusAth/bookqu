@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use App\Actions\Customer\GetCustomerEmailData;
+use App\Models\Booking;
 use App\Models\Payment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -16,31 +18,23 @@ class BookingGroupInvoiceMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public string $paymentDate;
-    public string $paymentMethod;
     public string $orderId;
-    public string $totalAmountFormatted;
 
     /**
-     * @param Payment $payment
-     * @param Collection<\App\Models\Booking> $bookings
-     * @param string $manageUrl
+     * @param  Collection<Booking>  $bookings
      */
     public function __construct(
         public Payment $payment,
         public Collection $bookings,
         public string $manageUrl
     ) {
-        $this->orderId = $payment->order_id ?? ('PAY-' . $payment->id);
-        $this->paymentDate = ($payment->updated_at ?? $payment->created_at)->format('d M Y, H:i') . ' WIB';
-        $this->paymentMethod = strtoupper($payment->metode ?: 'Midtrans');
-        $this->totalAmountFormatted = 'Rp ' . number_format((float) $payment->jumlah, 0, ',', '.');
+        $this->orderId = $payment->order_id ?? ('PAY-'.$payment->id);
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '🧾 Konfirmasi Reservasi & Bukti Pembayaran — ' . $this->orderId,
+            subject: 'Konfirmasi reservasi dan bukti pembayaran — '.$this->orderId,
         );
     }
 
@@ -48,6 +42,7 @@ class BookingGroupInvoiceMail extends Mailable
     {
         return new Content(
             view: 'emails.booking-group-invoice',
+            with: app(GetCustomerEmailData::class)->execute($this->bookings, $this->manageUrl, $this->payment),
         );
     }
 }

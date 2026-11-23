@@ -23,7 +23,7 @@ class EntitlementRulesTest extends TestCase
     public function test_can_access_feature_expired_subscription(): void
     {
         $sub = new Subscription([
-            'status'         => SubscriptionState::STATUS_EXPIRED,
+            'status' => SubscriptionState::STATUS_EXPIRED,
             'trial_berakhir' => null,
         ]);
 
@@ -35,9 +35,11 @@ class EntitlementRulesTest extends TestCase
     public function test_can_access_feature_active_trial(): void
     {
         $sub = new Subscription([
-            'status'         => SubscriptionState::STATUS_TRIAL,
+            'status' => SubscriptionState::STATUS_TRIAL,
             'trial_berakhir' => Carbon::now()->addDays(5),
         ]);
+
+        $sub->setRelation('plan', new Plan(['namapaket' => 'pro']));
 
         $res = EntitlementRules::canAccessFeature($sub, 'landing-page');
         $this->assertTrue($res['allowed']);

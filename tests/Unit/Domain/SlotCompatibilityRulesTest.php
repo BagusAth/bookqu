@@ -18,6 +18,7 @@ class SlotCompatibilityRulesTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected Service $service;
 
     protected function setUp(): void
@@ -34,21 +35,20 @@ class SlotCompatibilityRulesTest extends TestCase
 
     public function test_validate_contiguous_slots(): void
     {
-        $date = '2026-10-01';
-
+        // BQ-114 decision 4: contiguity follows the stored slot boundaries.
         $contiguous = [
-            ['jam_mulai' => '09:00:00'],
-            ['jam_mulai' => '10:00:00'],
-            ['jam_mulai' => '11:00:00'],
+            ['jam_mulai' => '09:00:00', 'jam_selesai' => '09:59:00'],
+            ['jam_mulai' => '10:00:00', 'jam_selesai' => '10:59:00'],
+            ['jam_mulai' => '11:00:00', 'jam_selesai' => '11:59:00'],
         ];
 
         $withGap = [
-            ['jam_mulai' => '09:00:00'],
-            ['jam_mulai' => '11:00:00'],
+            ['jam_mulai' => '09:00:00', 'jam_selesai' => '09:59:00'],
+            ['jam_mulai' => '11:00:00', 'jam_selesai' => '11:59:00'],
         ];
 
-        $this->assertTrue(SlotCompatibilityRules::validateContiguousSlots($contiguous, 60, $date));
-        $this->assertFalse(SlotCompatibilityRules::validateContiguousSlots($withGap, 60, $date));
+        $this->assertTrue(SlotCompatibilityRules::validateContiguousSlots($contiguous));
+        $this->assertFalse(SlotCompatibilityRules::validateContiguousSlots($withGap));
     }
 
     public function test_are_slots_compatible(): void

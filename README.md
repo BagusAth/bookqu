@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Laravel-13.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 13">
   <img src="https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4">
   <img src="https://img.shields.io/badge/Alpine.js-3.x-8BC0D0?style=for-the-badge&logo=alpinedotjs&logoColor=white" alt="Alpine.js">
-  <img src="https://img.shields.io/badge/Payment-Midtrans_Snap-002855?style=for-the-badge" alt="Midtrans">
+  <img src="https://img.shields.io/badge/Payment-SingaPay_%7C_Midtrans-002855?style=for-the-badge" alt="SingaPay | Midtrans">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License MIT">
 </p>
 
@@ -23,7 +23,7 @@
 
 **BookQu** adalah platform SaaS *multi-tenant* yang dirancang untuk mempermudah operasional berbagai jenis bisnis berbasis reservasi dan persewaan waktu—seperti studio foto & musik, sewa lapangan olahraga, salon, klinik kecantikan, ruang kerja (*coworking space*), hingga jasa konsultasi profesional.
 
-Dengan BookQu, setiap pemilik bisnis (*Tenant/Owner*) memiliki halaman etalase publik tersendiri (`/{tenant-slug}`), sistem penentuan slot jadwal fleksibel, penerimaan pembayaran digital otomatis melalui **Midtrans Payment Gateway**, serta portal dasbor komprehensif untuk mengelola kasir *walk-in* dan jadwal di tempat secara *real-time*.
+Dengan BookQu, setiap pemilik bisnis (*Tenant/Owner*) memiliki halaman etalase publik tersendiri (`/{tenant-slug}`), sistem penentuan slot jadwal fleksibel, penerimaan pembayaran digital otomatis melalui gateway terpadu (**SingaPay** sebagai default, **Midtrans** sebagai alternatif), serta portal dasbor komprehensif untuk mengelola kasir *walk-in* dan jadwal di tempat secara *real-time*.
 
 ---
 
@@ -46,7 +46,8 @@ Dengan BookQu, setiap pemilik bisnis (*Tenant/Owner*) memiliki halaman etalase p
   - Pengaturan nama layanan, tarif, durasi menit, kapasitas, dan status aktif/nonaktif.
   - Tampilan cover gambar persegi proporsional (rasio 1:1) dengan upload media otomatis.
   - Proteksi hapus: mencegah penghapusan layanan jika masih ada reservasi aktif.
-* **Modul Bisnis Pendukung**:
+* **Saldo & Withdraw**: Pembayaran booking yang sukses masuk ke saldo owner (fee 0%); owner mengajukan withdraw ke rekening bank, admin mereview dan mentransfer manual dengan bukti.
+* **Modul Bisnis Pendukung** (dirilis bertahap dan dikunci di server lewat `config/modules.php` — Tier 2 terkunci / Tier 3 tersembunyi (404), lihat `docs/product.md` §8):
   - **Service Categories**: Pengelompokan jenis layanan.
   - **Staff & Resources**: Penugasan staf dan aset/ruangan khusus pada layanan tertentu.
   - **Additional Items (Add-ons)**: Upselling barang/jasa sewa tambahan pada booking.
@@ -59,13 +60,14 @@ Dengan BookQu, setiap pemilik bisnis (*Tenant/Owner*) memiliki halaman etalase p
 
 ### 2. 🛍️ Portal Pelanggan Publik (`/{tenant-slug}`)
 * **Etalase Layanan Responsif**: Tampilan responsif di ponsel, tablet, maupun desktop.
-* **Pemilih Tanggal & Slot Real-time**: Ketersediaan slot jam dicek secara dinamis langsung dari database.
-* **Checkout & Integrasi Pembayaran**: Terhubung dengan Midtrans Snap API (QRIS, GoPay, ShopeePay, Virtual Account BCA/Mandiri/BNI/BRI, Kartu Kredit).
+* **Alur Booking 3 Langkah**: Layanan → Jadwal (pilih tanggal lalu satu atau beberapa slot berurutan di satu halaman, slot dimuat langsung dari database) → Data & Pembayaran. Pelanggan yang meninggalkan pembayaran bisa melanjutkannya sebelum batas waktu.
+* **Checkout & Integrasi Pembayaran**: Gateway terpadu — SingaPay (payment link, QRIS, Virtual Account, e-wallet) atau Midtrans Snap, dipilih lewat `PAYMENT_GATEWAY_DRIVER`.
 * **Konfirmasi & Kode Booking Unik**: Generate kode booking terstruktur (contoh: `#BKQ-20260910-XYZ123`).
-* **Self-Service Customer Portal**: Halaman kelola reservasi mandiri dengan tautan aman ber-token untuk membatalkan atau menjadwalkan ulang sesuai kebijakan batas waktu bisnis.
+* **Self-Service Customer Portal**: Halaman kelola reservasi mandiri lewat tautan akses aman untuk membatalkan atau menjadwalkan ulang sesuai kebijakan batas waktu bisnis.
 
-### 3. 🛡️ Superadmin Panel (`/admin`)
-* Pengelolaan seluruh tenant, monitoring paket langganan (*Small*, *Medium*, *Pro*), dan manajemen akun sistem.
+### 3. 🛡️ Admin Panel (`/admin`)
+* Dasbor platform: jumlah tenant, status langganan (*Small*, *Medium*, *Pro*), dan pendapatan langganan.
+* Review withdraw owner (`/admin/payouts`): setujui, catat transfer dan bukti, atau tolak dengan alasan.
 
 ---
 
@@ -75,7 +77,7 @@ Dengan BookQu, setiap pemilik bisnis (*Tenant/Owner*) memiliki halaman etalase p
 * **Database**: MySQL 8.0+ / MariaDB 10.4+
 * **Frontend**: [Tailwind CSS v4](https://tailwindcss.com), [Alpine.js 3.x](https://alpinejs.dev), Blade Templating
 * **Asset Bundler**: [Vite 8](https://vitejs.dev)
-* **Payment Gateway**: [Midtrans PHP SDK](https://github.com/Midtrans/midtrans-php) (`midtrans/midtrans-php`)
+* **Payment Gateway**: SingaPay (HTTP API) dan [Midtrans PHP SDK](https://github.com/Midtrans/midtrans-php) di balik `PaymentGatewayInterface` (ADR-0001)
 * **Arsitektur Multi-Tenant**: Tenant Context Scoping & Dynamic Routing
 
 ---
@@ -142,6 +144,8 @@ DB_PASSWORD=
 ```
 > **Catatan**: Pastikan Anda telah membuat database kosong bernama `bookqu` di MySQL/phpMyAdmin lokal Anda sebelum melanjutkan.
 
+> **Penting — `APP_URL` harus sama persis dengan alamat yang Anda buka di browser.** Pakai `http://localhost:8000` untuk `php artisan serve`, atau `http://bookqu.test` untuk Laragon. Link akses pelanggan (halaman pembayaran, invoice, kelola booking) hanya berlaku di host `APP_URL`; kalau berbeda, halaman itu menjawab "Halaman tidak tersedia" dan redirect setelah bayar menuju alamat yang salah.
+
 #### Langkah 5: Generate Application Key
 ```bash
 php artisan key:generate
@@ -163,20 +167,37 @@ php artisan migrate:fresh --seed
 php artisan db:seed --class=BramaStudioSeeder
 ```
 
-#### Langkah 8: Konfigurasi Midtrans (Opsional / Sandbox)
-Untuk menguji transaksi pembayaran online, masukkan kunci API Midtrans Sandbox Anda ke file `.env`:
-```dotenv
-MIDTRANS_MERCHANT_ID=your_merchant_id
-MIDTRANS_CLIENT_KEY=your_client_key
-MIDTRANS_SERVER_KEY=your_server_key
-MIDTRANS_IS_PRODUCTION=false
+#### Langkah 8: Konfigurasi Payment Gateway (Opsional / Sandbox)
+Pilih driver dengan `PAYMENT_GATEWAY_DRIVER=singapay` (default) atau `midtrans`, lalu isi kredensial sandbox provider tersebut di `.env`. Daftar lengkap variabel ada di `docs/operations.md` §2. Kredensial sandbox dibagikan di luar repo (pesan langsung atau password manager) dan tidak pernah di-commit.
+
+Untuk SingaPay sandbox:
+* Gunakan `SINGAPAY_BASE_URL=https://sandbox-payment-b2b.singapay.id` beserta kredensial dari dashboard **sandbox** (kredensial sandbox tidak berlaku di URL produksi).
+* Daftarkan IP publik laptop Anda di dashboard SingaPay (Credential → IP Address Configuration). IP yang dilihat SingaPay bisa berbeda dari situs cek IP; pesan error SingaPay di `storage/logs/laravel.log` menyebutkan IP yang harus didaftarkan.
+* SingaPay tidak bisa mengirim webhook ke laptop. Untuk menandai pembayaran uji sebagai lunas, jalankan `php artisan singapay:simulate-webhook <order_id>` (lihat `docs/operations.md` §1).
+
+#### Langkah 9: Email di Lokal
+Email (konfirmasi, link akses pelanggan, notifikasi owner) dikirim lewat antrean. Dengan `MAIL_MAILER=log` isi email ditulis ke `storage/logs/laravel.log`. `composer run dev` sudah menjalankan antrean; kalau memakai Laragon tanpa perintah itu, jalankan `php artisan queue:work --stop-when-empty` untuk memproses email yang menunggu.
+
+#### Setiap Kali Menarik Kode Terbaru
+```bash
+git pull
+composer install
+npm install
+php artisan migrate
+php artisan optimize:clear
+npm run build
 ```
 
 ---
 
 ### 3. Menjalankan Aplikasi di Lokal
 
-Jalankan dua perintah berikut di terminal terpisah:
+Cara tercepat — satu perintah untuk server, queue, log, dan Vite:
+```bash
+composer run dev
+```
+
+Atau jalankan dua perintah berikut di terminal terpisah:
 
 **Terminal 1 — Server Laravel Backend:**
 ```bash
@@ -215,7 +236,13 @@ Setelah menjalankan seeder, Anda dapat langsung masuk (*login*) menggunakan kred
 
 ```text
 bookqu/
+├── AGENTS.md                      # Panduan kerja untuk agent AI & kontributor (wajib dibaca)
+├── .ai/rules/                     # Aturan per area kode untuk agent
+├── docs/                          # Dokumentasi produk, requirement, arsitektur, domain, operasional, backlog
 ├── app/
+│   ├── Actions/                   # Operasi aplikasi (CreateBooking, ExpirePayment, …)
+│   ├── Domain/                    # Aturan bisnis murni (BookingRules, PaymentState, EntitlementRules, …)
+│   ├── Infrastructure/Payments/   # Driver SingaPay & Midtrans
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── Admin/             # Controller khusus Superadmin
@@ -259,16 +286,39 @@ php artisan test
 
 ---
 
+## 📚 Dokumentasi
+
+Mulai dari [`AGENTS.md`](AGENTS.md) lalu [`docs/README.md`](docs/README.md). Ringkasnya:
+
+| Pertanyaan | Dokumen |
+| :--- | :--- |
+| Apa itu BookQu & fitur mana yang sudah rilis? | [`docs/product.md`](docs/product.md) |
+| Apa yang wajib dilakukan sistem? | [`docs/requirements.md`](docs/requirements.md) |
+| Bagaimana kode harus disusun? | [`docs/architecture.md`](docs/architecture.md) |
+| Bagaimana sebuah domain bekerja saat ini? | [`docs/domains/`](docs/domains/README.md) |
+| Arti istilah & nama kolom lama | [`docs/glossary.md`](docs/glossary.md) |
+| Cara kerja tim (rencana, persetujuan, PR) | [`docs/workflow.md`](docs/workflow.md) |
+| Deploy & operasional | [`docs/operations.md`](docs/operations.md) |
+| Rencana & backlog | [`docs/work/ROADMAP.md`](docs/work/ROADMAP.md) |
+
+---
+
 ## 🤝 Kontribusi
 
-1. Fork repositori ini
-2. Buat branch fitur baru (`git checkout -b feature/FiturBaru`)
-3. Lakukan commit perubahan Anda (`git commit -m 'Menambahkan FiturBaru'`)
-4. Push ke branch Anda (`git push origin feature/FiturBaru`)
-5. Buka **Pull Request**
+Peran dan siapa memutuskan apa ada di [`AGENTS.md`](AGENTS.md) → "Roles"; proses lengkap di [`docs/workflow.md`](docs/workflow.md).
+
+| Branch | Fungsi | Cara perubahan masuk |
+| :--- | :--- | :--- |
+| `main` | Produksi — setiap push langsung ter-deploy | Hanya PR rilis dari `integration` |
+| `integration` | Pusat penggabungan hasil kerja semua developer | PR + 4 cek CI hijau, diaudit dan di-merge Tech Lead |
+| `agathan`, `bagus` | Ruang eksplorasi masing-masing developer | Push bebas oleh pemiliknya |
+
+Aturan branch pribadi: tarik `integration` terbaru sebelum mulai tugas, ajukan satu tugas per PR, dan tarik `integration` lagi sebelum membuka PR. **Jangan push langsung ke `main` atau `integration`.**
+
+Agent AI (Claude Code, Codex, Antigravity, Cursor) membaca `AGENTS.md` otomatis. Memori, skill, atau plugin pribadi di komputer masing-masing tidak menggantikan aturan repo; kalau bertentangan, aturan repo yang berlaku.
 
 ---
 
 ## 📄 Lisensi
 
-Project ini dilisensikan di bawah [MIT License](LICENSE).
+Project ini dilisensikan di bawah MIT License.

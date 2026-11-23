@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Domain\Booking\BookingPricing;
+use App\Domain\Booking\BookingRules;
+use App\Domain\Booking\BookingSeats;
+use App\Support\TenantContext;
 use App\Traits\BelongsToTenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +17,9 @@ use Illuminate\Support\Str;
 
 class Booking extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use BelongsToTenant, HasFactory;
+
+    protected $hidden = ['cancellation_token', 'reschedule_token'];
 
     protected $fillable = [
         'idtenant',
@@ -24,6 +30,7 @@ class Booking extends Model
         'email',
         'tanggalbooking',
         'jam',
+        'peserta',
         'status',
         'idpayment',
         'catatan',
@@ -40,9 +47,18 @@ class Booking extends Model
     protected function casts(): array
     {
         return [
-            'tanggalbooking'        => 'date',
+            'tanggalbooking' => 'date',
+            'customer_access_version' => 'integer',
+            'peserta' => 'integer',
             'rescheduled_from_date' => 'date',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Seats follow the booking so the seat index guards every writer (ADR-0017 decision 2).
+        static::created(fn (Booking $booking) => BookingSeats::place($booking));
+        static::updated(fn (Booking $booking) => BookingSeats::sync($booking));
     }
 
     // ── Relationships ──────────────────────────────────────────────────────────
@@ -54,7 +70,7 @@ class Booking extends Model
 
     public function layanan(): BelongsTo
     {
-        return $this->belongsTo(Service::class, 'idlayanan')->withoutGlobalScope(\App\Models\Scopes\TenantScope::class);
+        return $this->belongsTo(Service::class, 'idlayanan');
     }
 
     public function schedule(): BelongsTo
@@ -64,7 +80,7 @@ class Booking extends Model
 
     public function payment(): BelongsTo
     {
-        return $this->belongsTo(Payment::class, 'idpayment')->withoutGlobalScope(\App\Models\Scopes\TenantScope::class);
+        return $this->belongsTo(Payment::class, 'idpayment');
     }
 
     public function logs(): HasMany
@@ -94,14 +110,14 @@ class Booking extends Model
      */
     public static function generateBookingCode(): string
     {
-        $date   = now()->format('Ymd');
+        $date = now()->format('Ymd');
         $suffix = strtoupper(Str::random(8));
-        $code   = "BKQ-{$date}-{$suffix}";
+        $code = "BKQ-{$date}-{$suffix}";
 
         // Ensure uniqueness (retry if collision)
         while (static::where('booking_code', $code)->exists()) {
             $suffix = strtoupper(Str::random(8));
-            $code   = "BKQ-{$date}-{$suffix}";
+            $code = "BKQ-{$date}-{$suffix}";
         }
 
         return $code;
@@ -115,32 +131,12 @@ class Booking extends Model
         return Str::random(64);
     }
 
-    /**
-     * Assign booking_code + both management tokens.
-     * Call this after payment is confirmed.
-     */
-    public function assignManagementTokens(): void
+    /** Assign only the public reference; credentials belong to CustomerAccess. */
+    public function assignBookingCode(): void
     {
-        $this->update([
-            'booking_code'       => static::generateBookingCode(),
-            'cancellation_token' => static::generateSecureToken(),
-            'reschedule_token'   => static::generateSecureToken(),
-        ]);
-    }
-
-    // ── Business Logic ────────────────────────────────────────────────────────
-
-    /**
-     * Get the management URL for the customer.
-     */
-    public function getManageUrl(): string
-    {
-        if (!$this->booking_code) {
-            return '#';
+        if (! $this->booking_code) {
+            $this->update(['booking_code' => static::generateBookingCode()]);
         }
-
-        return route('booking.manage', ['booking_code' => $this->booking_code])
-            . ($this->cancellation_token ? '?token=' . $this->cancellation_token : '');
     }
 
     /**
@@ -148,17 +144,16 @@ class Booking extends Model
      */
     public function isMultiSlot(): bool
     {
-        return !empty($this->idpayment) && static::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
-            ->where('idpayment', $this->idpayment)
-            ->count() > 1;
+        return ! empty($this->idpayment) && app(TenantContext::class)->run((int) $this->idtenant,
+            fn (): bool => static::where('idpayment', $this->idpayment)->count() > 1);
     }
 
     /**
-     * Check if this booking can still be cancelled based on tenant policy.
+     * Direct cancellation from the management page is retired.
      */
     public function canBeCancelled(): bool
     {
-        return \App\Domain\Booking\BookingRules::canCancel($this);
+        return false;
     }
 
     /**
@@ -166,7 +161,7 @@ class Booking extends Model
      */
     public function canBeRescheduled(): bool
     {
-        return \App\Domain\Booking\BookingRules::canReschedule($this);
+        return BookingRules::canReschedule($this);
     }
 
     /**
@@ -174,7 +169,8 @@ class Booking extends Model
      */
     public function hoursUntilBooking(): float
     {
-        $bookingDateTime = Carbon::parse($this->tanggalbooking->toDateString() . ' ' . $this->jam);
+        $bookingDateTime = Carbon::parse($this->tanggalbooking->toDateString().' '.$this->jam);
+
         return max(0, now()->diffInHours($bookingDateTime, false));
     }
 
@@ -183,8 +179,12 @@ class Booking extends Model
      */
     public function getPriceLabelAttribute(): string
     {
-        $amount = (float) ($this->schedule?->harga_override ?? $this->layanan?->harga ?? 0);
-        return 'Rp ' . number_format($amount, 0, ',', '.');
+        // FR-BOOKING-023: the frozen amount; bookings placed before the breakdown keep the old label
+        $amount = app(TenantContext::class)->run((int) $this->idtenant, fn (): float => BookingPricing::frozenSlotAmount(
+            $this->payment instanceof Payment ? $this->payment : null, (int) $this->idschedule,
+        ) ?? (float) ($this->schedule?->harga_override ?? $this->layanan?->harga ?? 0));
+
+        return 'Rp '.number_format($amount, 0, ',', '.');
     }
 
     /**
@@ -192,6 +192,6 @@ class Booking extends Model
      */
     public function scopeOccupiesSlot($query, string $prefix = '')
     {
-        return \App\Domain\Booking\BookingRules::applyOccupiesSlotCondition($query, $prefix);
+        return BookingRules::applyOccupiesSlotCondition($query, $prefix);
     }
 }

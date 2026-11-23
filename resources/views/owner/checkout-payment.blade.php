@@ -5,25 +5,7 @@
 @section('content')
 <div class="mx-auto max-w-5xl space-y-6" x-data="paymentPage()">
 
-    {{-- Stepper --}}
-    <div class="flex items-center justify-center gap-0 py-2">
-        <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-md shadow-bq-primary/30">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Review</span>
-        </div>
-        <div class="mx-3 h-0.5 w-8 rounded bg-bq-primary sm:w-16"></div>
-        <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-primary text-sm font-bold text-white shadow-md shadow-bq-primary/30 animate-pulse">2</div>
-            <span class="hidden text-sm font-semibold text-bq-primary sm:inline">Pembayaran</span>
-        </div>
-        <div class="mx-3 h-0.5 w-8 rounded bg-bq-border sm:w-16"></div>
-        <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-bq-border text-sm font-semibold text-bq-text-muted">3</div>
-            <span class="hidden text-sm font-medium text-bq-text-muted sm:inline">Invoice</span>
-        </div>
-    </div>
+    @include('owner.partials.checkout-steps', ['step' => 2])
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
 
@@ -31,28 +13,28 @@
         <div class="lg:col-span-3 space-y-5">
 
             <div>
-                <h1 class="text-xl font-bold text-bq-text">Selesaikan Pembayaran</h1>
+                <h1 class="text-bq-title font-semibold text-bq-ink">Selesaikan Pembayaran</h1>
                 <p class="mt-1 text-sm text-bq-text-muted">Klik tombol di bawah untuk membuka metode pembayaran.</p>
             </div>
 
             {{-- Payment Card --}}
-            <div class="rounded-xl border border-bq-border bg-bq-surface p-6 space-y-5">
+            <div class="bq-panel p-4 sm:p-6 space-y-5">
 
                 {{-- Status Indicator --}}
-                <div class="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/80 p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 shrink-0">
-                            <svg class="h-5 w-5 text-amber-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div class="flex items-center justify-between gap-3 rounded-xl border border-bq-warning bg-bq-warning-bg/80 p-4">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-bq-warning-bg shrink-0">
+                            <svg class="h-5 w-5 text-bq-warning animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
-                        <div>
-                            <p class="text-sm font-semibold text-amber-800">Menunggu Pembayaran</p>
-                            <p class="text-xs text-amber-700">Order ID: <span class="font-mono font-bold">{{ $payment->order_id }}</span></p>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-bq-warning">Menunggu Pembayaran</p>
+                            <p class="text-xs text-bq-warning break-all">Nomor pesanan: <span class="font-mono font-bold">{{ $payment->order_id }}</span></p>
                         </div>
                     </div>
-                    <div class="hidden sm:flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
+                    <div class="hidden sm:flex items-center gap-1.5 text-xs font-medium text-bq-success bg-bq-success-bg border border-bq-success px-3 py-1.5 rounded-full">
                         <span class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-bq-success opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-bq-success"></span>
                         </span>
                         Auto-detect aktif
                     </div>
@@ -60,27 +42,42 @@
 
                 {{-- Payment Actions --}}
                 <div class="space-y-3">
-                    {{-- Open Midtrans Snap --}}
-                    <button type="button" id="btn-pay-now"
-                        @click="openSnap()"
-                        class="w-full rounded-xl bg-bq-primary py-4 text-sm font-bold text-white shadow-lg shadow-bq-primary/30 transition-all hover:bg-bq-primary-hover hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                        Bayar Sekarang
-                    </button>
+                    @if(($provider ?? '') === 'singapay' || !empty($paymentUrl))
+                        {{-- Open SingaPay Payment URL --}}
+                        <a href="{{ $paymentUrl ?? $payment->payment_url }}" id="btn-pay-now" x-show="!paymentOpened" @click="paymentOpened = true" target="_blank" rel="noopener noreferrer"
+                            class="bq-btn bq-btn-primary w-full">
 
-                    {{-- Reopen Payment --}}
-                    <button type="button" id="btn-reopen-payment"
-                        @click="openSnap()"
-                        class="w-full rounded-xl border border-bq-border bg-bq-background py-3.5 text-sm font-semibold text-bq-text transition-all hover:bg-bq-surface hover:border-bq-primary hover:text-bq-primary flex items-center justify-center gap-2">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        Buka Ulang Pembayaran
-                    </button>
+                            Bayar Sekarang
+                        </a>
+
+                        {{-- Reopen Payment --}}
+                        <a href="{{ $paymentUrl ?? $payment->payment_url }}" id="btn-reopen-payment" x-show="paymentOpened" x-cloak target="_blank" rel="noopener noreferrer"
+                            class="w-full rounded-xl border border-bq-border bg-bq-background py-3.5 text-sm font-semibold text-bq-text transition-all hover:bg-bq-surface hover:border-bq-primary hover:text-bq-primary flex items-center justify-center gap-2">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            Buka Ulang Halaman Pembayaran SingaPay
+                        </a>
+                    @else
+                        {{-- Open Midtrans Snap --}}
+                        <button type="button" id="btn-pay-now" x-show="!paymentOpened"
+                            @click="openPayment()"
+                            class="bq-btn bq-btn-primary w-full">
+                            Bayar Sekarang
+                        </button>
+
+                        {{-- Reopen Payment --}}
+                        <button type="button" id="btn-reopen-payment" x-show="paymentOpened" x-cloak
+                            @click="openPayment()"
+                            class="w-full rounded-xl border border-bq-border bg-bq-background py-3.5 text-sm font-semibold text-bq-text transition-all hover:bg-bq-surface hover:border-bq-primary hover:text-bq-primary flex items-center justify-center gap-2">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            Buka Ulang Pembayaran
+                        </button>
+                    @endif
 
                     {{-- Check Status Manual --}}
                     <button type="button" id="btn-check-status"
                         @click="checkStatus(false)"
                         :disabled="isChecking"
-                        class="w-full rounded-xl border border-emerald-200 bg-emerald-50 py-3 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100 hover:border-emerald-300 flex items-center justify-center gap-2 disabled:opacity-50">
+                        class="w-full rounded-xl border border-bq-success bg-bq-success-bg py-3 text-sm font-semibold text-bq-success transition-all hover:bg-bq-success-bg hover:border-bq-success flex items-center justify-center gap-2 disabled:opacity-50">
                         <template x-if="!isChecking">
                             <span class="flex items-center gap-2">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -98,14 +95,10 @@
 
                 {{-- Status Message --}}
                 <div x-show="statusMessage" x-transition
-                    :class="{
-                        'bg-emerald-50 border-emerald-200 text-emerald-800': statusType === 'sukses',
-                        'bg-amber-50 border-amber-200 text-amber-800': statusType === 'pending',
-                        'bg-rose-50 border-rose-200 text-rose-800': statusType === 'gagal' || statusType === 'error'
-                    }"
+                    :class="{ 'bg-bq-success-bg border-bq-success text-bq-success': statusType === 'sukses', 'bg-bq-warning-bg border-bq-warning text-bq-warning': statusType === 'pending', 'bg-bq-danger-bg border-bq-danger text-bq-danger': statusType === 'gagal' || statusType === 'error' }"
                     class="rounded-lg border p-3.5 text-sm font-medium flex items-center gap-2">
                     <template x-if="statusType === 'sukses'">
-                        <svg class="h-5 w-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <svg class="h-5 w-5 text-bq-success shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </template>
                     <span x-text="statusMessage"></span>
                 </div>
@@ -116,22 +109,22 @@
                     <ul class="space-y-1.5 text-xs text-bq-text-muted">
                         <li class="flex items-start gap-2">
                             <span class="text-bq-primary font-bold mt-0.5">1.</span>
-                            Klik <strong>"Bayar Sekarang"</strong> untuk membuka jendela pembayaran Midtrans.
+                            <span>Klik <strong>"Bayar Sekarang"</strong> untuk {{ ($provider ?? '') === 'singapay' ? 'menuju halaman pembayaran SingaPay' : 'membuka jendela pembayaran Midtrans' }}.</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-bq-primary font-bold mt-0.5">2.</span>
-                            Pilih metode pembayaran (QRIS, GoPay, Transfer Bank, dll) dan selesaikan transaksi.
+                            <span>Pilih metode pembayaran (QRIS, VA Transfer, E-Wallet) dan selesaikan transaksi.</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-bq-primary font-bold mt-0.5">3.</span>
-                            Website akan <strong>otomatis mendeteksi</strong> pembayaran selesai dan mengarahkan ke halaman invoice.
+                            <span>Website akan <strong>otomatis mendeteksi</strong> pembayaran selesai dan mengarahkan ke halaman invoice.</span>
                         </li>
                     </ul>
                 </div>
 
                 {{-- Supported Payments --}}
                 <div class="pt-2 border-t border-bq-border">
-                    <p class="text-xs text-bq-text-subtle text-center">Didukung oleh Midtrans — QRIS, GoPay, ShopeePay, BCA VA, BNI VA, Mandiri, BRI, dan lainnya.</p>
+                    <p class="text-xs text-bq-text-subtle text-center">Didukung oleh {{ ($provider ?? '') === 'singapay' ? 'SingaPay' : 'Midtrans' }} — QRIS, Virtual Account BCA/BNI/Mandiri/BRI, E-Wallet, dan lainnya.</p>
                 </div>
             </div>
         </div>
@@ -140,29 +133,29 @@
         <div class="lg:col-span-2 space-y-4">
 
             {{-- Countdown Timer --}}
-            <div class="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4">
+            <div class="rounded-xl border border-bq-warning bg-gradient-to-r from-bq-warning-bg to-bq-warning-bg p-4">
                 <div class="flex items-center gap-2">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">
-                        <svg class="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-bq-warning/20">
+                        <svg class="h-4 w-4 text-bq-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                     <div>
-                        <p class="text-xs font-medium text-amber-700">Batas waktu pembayaran</p>
-                        <p class="text-lg font-bold tabular-nums" :class="countdown <= 300 ? 'text-red-600' : 'text-amber-800'" x-text="countdownDisplay">--:--</p>
+                        <p class="text-xs font-medium text-bq-warning">Batas waktu pembayaran</p>
+                        <p class="text-lg font-bold bq-num" :class="countdown <= 300 ? 'text-bq-danger' : 'text-bq-warning'" x-text="countdownDisplay">--:--</p>
                     </div>
                 </div>
-                <p x-show="countdown <= 300 && countdown > 0" class="mt-2 text-xs font-medium text-red-600 animate-pulse">⚠️ Waktu hampir habis! Segera selesaikan pembayaran.</p>
+                <p x-show="countdown <= 300 && countdown > 0" class="mt-2 text-xs font-medium text-bq-danger animate-pulse">⚠️ Waktu hampir habis! Segera selesaikan pembayaran.</p>
             </div>
 
             {{-- Order Summary --}}
-            <div class="rounded-xl border border-bq-border bg-bq-surface p-5 space-y-4">
+            <div class="bq-panel p-5 space-y-4">
                 <div class="border-b border-bq-border pb-3">
                     <h2 class="text-base font-semibold text-bq-text">Ringkasan Pesanan</h2>
                 </div>
 
                 <div class="space-y-3">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-bq-text-muted">Order ID</span>
-                        <span class="font-mono text-xs font-bold text-bq-text">{{ $payment->order_id }}</span>
+                    <div class="flex justify-between gap-3 text-sm">
+                        <span class="shrink-0 text-bq-text-muted">Order ID</span>
+                        <span class="min-w-0 break-all text-right font-mono text-xs font-bold text-bq-text">{{ $payment->order_id }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-bq-text-muted">Paket</span>
@@ -182,14 +175,16 @@
             {{-- Back Link --}}
             <a href="{{ route('owner.subscription') }}" class="flex items-center gap-1.5 text-sm font-medium text-bq-text-muted transition-colors hover:text-bq-primary" id="btn-back-subscription">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                Kembali ke Subscription
+                Kembali ke Paket &amp; Tagihan
             </a>
         </div>
     </div>
 </div>
 
 {{-- Midtrans Snap JS --}}
+@if(!empty($snapUrl) && !empty($clientKey))
 <script src="{{ $snapUrl }}" data-client-key="{{ $clientKey }}"></script>
+@endif
 
 <script>
 function paymentPage() {
@@ -197,7 +192,8 @@ function paymentPage() {
         isChecking: false,
         statusMessage: '',
         statusType: '',
-        countdown: {{ max(0, $payment->expired_at ? $payment->expired_at->diffInSeconds(now(), false) * -1 : 3600) }},
+        countdown: {{ $payment->expired_at ? (int) max(0, now()->diffInSeconds($payment->expired_at, false)) : 0 }},
+        paymentOpened: false,
         countdownDisplay: '--:--',
         timer: null,
         pollTimer: null,
@@ -217,10 +213,12 @@ function paymentPage() {
                 }
             });
 
-            // Auto-open Snap setelah halaman dimuat jika belum expired
+            // Auto-open Snap setelah halaman dimuat jika belum expired dan provider midtrans
+            @if(($provider ?? '') === 'midtrans' && !empty($snapToken))
             this.$nextTick(() => {
-                setTimeout(() => this.openSnap(), 800);
+                setTimeout(() => this.openPayment(), 800);
             });
+            @endif
         },
 
         startCountdown() {
@@ -264,8 +262,14 @@ function paymentPage() {
             }
         },
 
-        openSnap() {
+        openPayment() {
             if (this.countdown <= 0 || this.isSuccessRedirecting) return;
+
+            const paymentUrl = @json($paymentUrl ?? $payment->payment_url ?? null);
+            if (paymentUrl) {
+                window.location.href = paymentUrl;
+                return;
+            }
 
             if (typeof window.snap === 'undefined') {
                 console.warn('Midtrans Snap SDK not ready');
@@ -274,7 +278,8 @@ function paymentPage() {
 
             const self = this;
 
-            window.snap.pay('{{ $snapToken }}', {
+            this.paymentOpened = true;
+            window.snap.pay(@js($snapToken), {
                 onSuccess: function(result) {
                     self.statusMessage = 'Pembayaran berhasil! Mengarahkan ke halaman invoice...';
                     self.statusType = 'sukses';
@@ -294,6 +299,10 @@ function paymentPage() {
                     self.checkStatus(true);
                 }
             });
+        },
+
+        openSnap() {
+            this.openPayment();
         },
 
         async sendCallback(result) {

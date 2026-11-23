@@ -21,13 +21,15 @@ class UpdateBookingStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'reason' => ['nullable', 'string', 'max:500'],
             'status' => [
                 'required',
                 'string',
-                'in:' . implode(',', [
+                'in:'.implode(',', [
                     BookingState::STATUS_PAID,
                     BookingState::STATUS_COMPLETED,
                     BookingState::STATUS_CANCELLED,
+                    BookingState::STATUS_NO_SHOW,
                 ]),
             ],
         ];

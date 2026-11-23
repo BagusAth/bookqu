@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class ProgramManagementTest extends TestCase
@@ -32,25 +34,28 @@ class ProgramManagementTest extends TestCase
             'nomorhp' => '08123456789',
             'deskripsi' => 'Testing business',
         ]);
+        // BQ-086: successful writes require a live subscription; assertions stay unchanged.
+        app(CreateTrialSubscription::class)->execute($this->tenant)->forceFill(['created_at' => now()->subMinute()])->save();
+
     }
 
     public function test_owner_can_view_programs_page(): void
     {
-        $response = $this->actingAs($this->user)->get('/owner/programs');
-        
-        $response->assertStatus(200);
+        // BQ-132 (owner-portal.md §8.6): the programs page moved to Layanan.
+        $this->actingAs($this->user)->get('/owner/programs')->assertStatus(301)->assertRedirect(route('owner.services'));
+        $this->get(route('owner.services'))->assertStatus(200);
     }
 
     public function test_owner_can_create_a_program(): void
     {
-        $response = $this->actingAs($this->user)->post('/owner/programs', [
+        $response = $this->actingAs($this->user)->post('/owner/services', [
             'namalayanan' => 'Layanan Test 1',
             'harga' => 150000,
             'durasi' => 60,
             'deskripsi' => 'Deskripsi layanan test',
         ]);
 
-        $response->assertRedirect('/owner/programs');
+        $response->assertRedirect('/owner/services');
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('services', [
@@ -71,7 +76,7 @@ class ProgramManagementTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->actingAs($this->user)->put("/owner/programs/{$service->id}", [
+        $response = $this->actingAs($this->user)->put("/owner/services/{$service->id}", [
             'namalayanan' => 'Updated Service',
             'harga' => 200000,
             'durasi' => 45,
@@ -79,7 +84,7 @@ class ProgramManagementTest extends TestCase
             'is_active' => false, // Turning it off
         ]);
 
-        $response->assertRedirect('/owner/programs');
+        $response->assertRedirect('/owner/services');
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('services', [
@@ -101,13 +106,30 @@ class ProgramManagementTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->actingAs($this->user)->delete("/owner/programs/{$service->id}");
+        $response = $this->actingAs($this->user)->delete("/owner/services/{$service->id}");
 
-        $response->assertRedirect('/owner/programs');
+        $response->assertRedirect('/owner/services');
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseMissing('services', [
             'id' => $service->id,
+        ]);
+    }
+
+    public function test_owner_cannot_upload_svg_as_cover_image(): void
+    {
+        $fakeSvg = UploadedFile::fake()->create('malicious.svg', 10, 'image/svg+xml');
+
+        $response = $this->actingAs($this->user)->post('/owner/services', [
+            'namalayanan' => 'Layanan XSS SVG',
+            'harga' => 150000,
+            'durasi' => 60,
+            'cover_image' => $fakeSvg,
+        ]);
+
+        $response->assertSessionHasErrors(['cover_image']);
+        $this->assertDatabaseMissing('services', [
+            'namalayanan' => 'Layanan XSS SVG',
         ]);
     }
 }

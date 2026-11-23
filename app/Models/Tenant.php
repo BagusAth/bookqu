@@ -2,23 +2,52 @@
 
 namespace App\Models;
 
+use App\Actions\Team\CreateOwnerMembership;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property string|null $custom_domain
+ * @property string|null $custom_domain_status `pending`, `connected` or `not_connected` (BQ-154)
+ * @property Carbon|null $custom_domain_checked_at
+ * @property Carbon|null $custom_domain_verified_at
+ * @property string|null $custom_domain_token ownership token for the `_bookqu` TXT record (BQ-154)
+ */
 class Tenant extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::saving(function (Tenant $tenant): void {
+            $enabled = $tenant->auto_complete_bookings ?? true;
+            if ($enabled && ($tenant->auto_completion_started_at === null
+                || ($tenant->isDirty('auto_complete_bookings') && ! $tenant->getOriginal('auto_complete_bookings')))) {
+                $tenant->auto_completion_started_at = now();
+            }
+        });
+        static::created(fn (Tenant $tenant) => app(CreateOwnerMembership::class)->execute($tenant));
+    }
+
+    protected $hidden = ['midtrans_sandbox_client_key', 'midtrans_sandbox_server_key', 'midtrans_prod_client_key', 'midtrans_prod_server_key'];
+
     protected $fillable = [
         'iduser',
         'namabisnis',
         'slug',
+        'custom_domain',
         'jenisbisnis',
         'alamat',
+        'business_email',
+        'map_url',
         'deskripsi',
         'logo_path',
+        'banner_path',
         'nomorhp',
         'payment_mode',
         'midtrans_status',
@@ -33,6 +62,12 @@ class Tenant extends Model
         'weekend_price_type',
         'weekend_price_value',
         'cancel_before_hours',
+        'refunds_enabled',
+        'booking_min_lead_hours',
+        'booking_max_days_ahead',
+        'slot_open_days_ahead',
+        'booking_buffer_minutes',
+        'auto_complete_bookings',
         'reschedule_before_hours',
         'theme_color',
         'button_style',
@@ -40,10 +75,43 @@ class Tenant extends Model
         'card_style',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'refunds_enabled' => 'boolean',
+            'auto_complete_bookings' => 'boolean',
+            'auto_completion_started_at' => 'datetime',
+            'booking_min_lead_hours' => 'integer',
+            'booking_max_days_ahead' => 'integer',
+            'slot_open_days_ahead' => 'integer',
+            'booking_buffer_minutes' => 'integer',
+            'midtrans_sandbox_client_key' => 'encrypted',
+            'midtrans_sandbox_server_key' => 'encrypted',
+            'midtrans_prod_client_key' => 'encrypted',
+            'midtrans_prod_server_key' => 'encrypted',
+            'booking_link_shared_at' => 'datetime',
+            'owner_guide_completed_at' => 'datetime',
+            'custom_domain_checked_at' => 'datetime',
+            'custom_domain_verified_at' => 'datetime',
+        ];
+    }
+
+    /**
+     * The landing page of a Pro business (BQ-154).
+     *
+     * @return HasOne<TenantLandingPage, $this>
+     */
+    public function landingPage(): HasOne
+    {
+        return $this->hasOne(TenantLandingPage::class, 'idtenant');
+    }
+
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'iduser');
     }
+
     public function services(): HasMany
     {
         return $this->hasMany(Service::class, 'idtenant');
@@ -64,6 +132,7 @@ class Tenant extends Model
         return $this->hasMany(Subscription::class, 'idtenant');
     }
 
+    /** @return HasOne<Subscription, $this> */
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class, 'idtenant')->latestOfMany();
@@ -74,9 +143,19 @@ class Tenant extends Model
         return $this->hasMany(OwnerBlockedDate::class, 'idtenant');
     }
 
+    public function openingHours(): HasMany
+    {
+        return $this->hasMany(OpeningHour::class, 'idtenant');
+    }
+
     public function payouts(): HasMany
     {
         return $this->hasMany(OwnerPayout::class, 'idtenant');
+    }
+
+    public function payoutAccounts(): HasMany
+    {
+        return $this->hasMany(TenantPayoutAccount::class, 'idtenant');
     }
 
     public function getLogoUrlAttribute(): ?string
@@ -87,7 +166,8 @@ class Tenant extends Model
         if (str_starts_with($this->logo_path, 'http://') || str_starts_with($this->logo_path, 'https://') || str_starts_with($this->logo_path, '/')) {
             return $this->logo_path;
         }
-        return \Illuminate\Support\Facades\Storage::url($this->logo_path);
+
+        return Storage::url($this->logo_path);
     }
 
     public function getBannerUrlAttribute(): ?string
@@ -98,6 +178,7 @@ class Tenant extends Model
         if (str_starts_with($this->banner_path, 'http://') || str_starts_with($this->banner_path, 'https://') || str_starts_with($this->banner_path, '/')) {
             return $this->banner_path;
         }
-        return \Illuminate\Support\Facades\Storage::url($this->banner_path);
+
+        return Storage::url($this->banner_path);
     }
 }

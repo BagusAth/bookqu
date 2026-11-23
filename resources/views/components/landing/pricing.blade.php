@@ -1,7 +1,7 @@
-<section id="pricing" class="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50">
+<section id="pricing" class="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50" x-data="{ activeMobileTab: 1 }">
     <div class="max-w-7xl mx-auto">
         <!-- Header Section -->
-        <div class="text-center mb-16 animate-fade-in">
+        <div class="text-center mb-12 sm:mb-16 animate-fade-in">
             <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
                 Pilih Paket Sesuai Kebutuhan
             </h2>
@@ -10,10 +10,41 @@
             </p>
         </div>
 
+        <!-- Mobile Segmented Tab Switcher (< 1024px) -->
+        <div class="block lg:hidden max-w-sm mx-auto mb-8 px-2">
+            <div class="bg-slate-200/90 p-1.5 rounded-2xl flex items-center justify-between gap-1 shadow-inner border border-slate-300/50">
+                <button 
+                    type="button" 
+                    @click="activeMobileTab = 0; $dispatch('set-active-pricing', 0)"
+                    :class="activeMobileTab === 0 ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 font-medium hover:text-slate-900'"
+                    class="flex-1 py-2.5 px-3 text-xs sm:text-sm rounded-xl transition-all duration-200 text-center cursor-pointer">
+                    Small
+                </button>
+                <button 
+                    type="button" 
+                    @click="activeMobileTab = 1; $dispatch('set-active-pricing', 1)"
+                    :class="activeMobileTab === 1 ? 'bg-white text-[#4F46E5] shadow-sm font-bold' : 'text-slate-600 font-medium hover:text-slate-900'"
+                    class="flex-1 py-2.5 px-3 text-xs sm:text-sm rounded-xl transition-all duration-200 text-center cursor-pointer flex items-center justify-center gap-1">
+                    <span>Medium</span>
+                    <span class="text-amber-500 text-xs">★</span>
+                </button>
+                <button 
+                    type="button" 
+                    @click="activeMobileTab = 2; $dispatch('set-active-pricing', 2)"
+                    :class="activeMobileTab === 2 ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-slate-600 font-medium hover:text-slate-900'"
+                    class="flex-1 py-2.5 px-3 text-xs sm:text-sm rounded-xl transition-all duration-200 text-center cursor-pointer">
+                    Pro
+                </button>
+            </div>
+        </div>
+
         <!-- Pricing Cards Container -->
-        <div class="pricing-container grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto mt-12 items-stretch" id="pricing-grid">
+        <div class="pricing-container grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto mt-6 lg:mt-12 items-stretch" id="pricing-grid">
             <!-- CARD 1: Small -->
-            <div class="pricing-card rounded-[2rem] p-7 sm:p-9 flex flex-col justify-between" data-index="0">
+            <div 
+                class="pricing-card rounded-[2rem] p-7 sm:p-9 flex-col justify-between" 
+                :class="activeMobileTab === 0 ? 'flex' : 'hidden lg:flex'" 
+                data-index="0">
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-bold text-gray-900 tracking-tight">Small</h3>
@@ -23,7 +54,7 @@
                     </div>
 
                     <div class="flex items-baseline mb-4">
-                        <span class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Rp149.000</span>
+                        <span class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Rp{{ number_format($plans->get('small')?->hargabulanan ?? 149000, 0, ',', '.') }}</span>
                         <span class="text-gray-500 font-medium ml-1.5 text-sm">/ bulan</span>
                     </div>
 
@@ -44,58 +75,29 @@
                         <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3.5">
                             Semua kebutuhan booking dasar
                         </p>
-                        <ul class="space-y-2.5 text-xs sm:text-sm text-gray-600 mb-6">
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>&lt;300 booking/bulan</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>1 bisnis / 1 lokasi</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>5 layanan</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>1 admin + 2 staff</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Customer booking page</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Calendar & automatic slots</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Email notification</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Basic dashboard</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Automatic invoice</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Pembayaran via BookQu</span>
-                            </li>
-                        </ul>
+                        <x-plan-features :plan="$plans->get('small')" plan-key="small" class="text-gray-600 mb-6" />
                     </div>
                 </div>
 
-                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-center">
-                    Mulai Sekarang
-                </a>
+                <div class="mt-auto pt-6">
+                    <a href="{{ $smallAction['url'] }}" class="{{ $smallAction['class'] }}">
+                        {{ $smallAction['label'] }}
+                    </a>
+                    @if ($smallAction['show_login'])
+                        <div class="mt-2.5 text-center">
+                            <a href="{{ route('login') }}" class="text-xs text-slate-500 hover:text-indigo-600 font-medium transition-colors">
+                                Sudah punya akun? Masuk
+                            </a>
+                        </div>
+                    @endif
+                </div>
             </div>
 
             <!-- CARD 2: Medium (Popular) - Default Active -->
-            <div class="pricing-card is-active rounded-[2rem] p-7 sm:p-9 flex flex-col justify-between relative" data-index="1">
+            <div 
+                class="pricing-card is-active rounded-[2rem] p-7 sm:p-9 flex-col justify-between relative" 
+                :class="activeMobileTab === 1 ? 'flex' : 'hidden lg:flex'" 
+                data-index="1">
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-bold text-gray-900 tracking-tight">Medium</h3>
@@ -106,7 +108,7 @@
                     </div>
 
                     <div class="flex items-baseline mb-4">
-                        <span class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Rp299.000</span>
+                        <span class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Rp{{ number_format($plans->get('medium')?->hargabulanan ?? 299000, 0, ',', '.') }}</span>
                         <span class="text-gray-500 font-medium ml-1.5 text-sm">/ bulan</span>
                     </div>
 
@@ -114,7 +116,7 @@
                         Bisnismu berkembang, sistemnya ikut berkembang.
                     </p>
                     <p class="text-xs sm:text-sm text-gray-600 leading-relaxed min-h-[40px]">
-                        Kelola booking, customer, tim, dan operasional bisnis dalam satu tempat dengan lebih otomatis.
+                        Kelola booking, pelanggan, dan jadwal bisnis dalam satu tempat.
                     </p>
 
                     <!-- Target Cocok untuk -->
@@ -127,72 +129,39 @@
                         <p class="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-3.5">
                             Lebih banyak kontrol, lebih sedikit pekerjaan manual
                         </p>
-                        <ul class="space-y-2.5 text-xs sm:text-sm text-gray-600 mb-6">
-                            <li class="flex items-start gap-2.5 font-medium text-gray-900">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>&lt;500 booking/bulan</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 font-medium text-indigo-700">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Semua fitur Small</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Unlimited services</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Hingga 15 staff</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Role management</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Customer CRM</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>WhatsApp & email reminders</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Promo & voucher</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Complete analytics</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Export Excel / CSV</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>BYOPG + platform payment</span>
-                            </li>
-                        </ul>
+                        <x-plan-features :plan="$plans->get('medium')" plan-key="medium" class="text-gray-600 mb-6" />
                     </div>
                 </div>
 
-                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-center">
-                    Pilih Medium
-                </a>
+                <div class="mt-auto pt-6">
+                    <a href="{{ $mediumAction['url'] }}" class="{{ $mediumAction['class'] }}">
+                        {{ $mediumAction['label'] }}
+                    </a>
+                    @if ($mediumAction['show_login'])
+                        <div class="mt-2.5 text-center">
+                            <a href="{{ route('login') }}" class="text-xs text-slate-500 hover:text-indigo-600 font-medium transition-colors">
+                                Sudah punya akun? Masuk
+                            </a>
+                        </div>
+                    @endif
+                </div>
             </div>
 
             <!-- CARD 3: Pro -->
-            <div class="pricing-card rounded-[2rem] p-7 sm:p-9 flex flex-col justify-between" data-index="2">
+            <div 
+                class="pricing-card rounded-[2rem] p-7 sm:p-9 flex-col justify-between" 
+                :class="activeMobileTab === 2 ? 'flex' : 'hidden lg:flex'" 
+                data-index="2">
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-bold text-gray-900 tracking-tight">Pro</h3>
                         <span class="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
-                            Enterprise
+                            Tanpa batas
                         </span>
                     </div>
 
                     <div class="flex items-baseline mb-4">
-                        <span class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Rp499.000</span>
+                        <span class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Rp{{ number_format($plans->get('pro')?->hargabulanan ?? 499000, 0, ',', '.') }}</span>
                         <span class="text-gray-500 font-medium ml-1.5 text-sm">/ bulan</span>
                     </div>
 
@@ -205,7 +174,7 @@
 
                     <!-- Target Cocok untuk -->
                     <div class="mt-4 rounded-xl p-3 text-xs leading-relaxed bg-purple-50 border border-purple-100 text-purple-950">
-                        <span class="font-bold text-purple-900">Cocok untuk:</span> bisnis multi-cabang atau bisnis dengan volume booking tinggi.
+                        <span class="font-bold text-purple-900">Cocok untuk:</span> bisnis dengan booking tinggi, beberapa lapangan atau ruangan, dan tim yang lebih besar.
                     </div>
 
                     <!-- Features -->
@@ -213,58 +182,22 @@
                         <p class="text-xs font-bold uppercase tracking-wider text-purple-600 mb-3.5">
                             Booking tanpa batas & kontrol penuh
                         </p>
-                        <ul class="space-y-2.5 text-xs sm:text-sm text-gray-600 mb-6">
-                            <li class="flex items-start gap-2.5 font-medium text-gray-900">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Unlimited booking</span>
-                            </li>
-                            <li class="flex items-start gap-2.5 font-medium text-purple-700">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Semua fitur Medium</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Unlimited staff</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Multi-location</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Custom domain</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Landing page builder</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Advanced permission</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>White-label</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Advanced analytics</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Automation workflow</span>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Priority support</span>
-                            </li>
-                        </ul>
+                        <x-plan-features :plan="$plans->get('pro')" plan-key="pro" class="text-gray-600 mb-6" />
                     </div>
                 </div>
 
-                <a href="{{ route('register') }}" class="btn-paket w-full py-3.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm mt-auto focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-center">
-                    Pilih Pro
-                </a>
+                <div class="mt-auto pt-6">
+                    <a href="{{ $proAction['url'] }}" class="{{ $proAction['class'] }}">
+                        {{ $proAction['label'] }}
+                    </a>
+                    @if ($proAction['show_login'])
+                        <div class="mt-2.5 text-center">
+                            <a href="{{ route('login') }}" class="text-xs text-slate-500 hover:text-indigo-600 font-medium transition-colors">
+                                Sudah punya akun? Masuk
+                            </a>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

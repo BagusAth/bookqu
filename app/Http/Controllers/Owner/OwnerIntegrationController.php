@@ -4,77 +4,83 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Owner;
 
+use App\Actions\Integrations\ManageGoogleCalendar;
+use App\Actions\Integrations\SaveStorefrontTracking;
+use App\Domain\Integrations\CalendarIntegrationFailed;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Owner\SaveTrackingSettingsRequest;
+use App\Models\Tenant;
 use App\Traits\ResolvesOwnerTenant;
-use Illuminate\View\View;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
-class OwnerIntegrationController extends Controller
+final class OwnerIntegrationController extends Controller
 {
     use ResolvesOwnerTenant;
 
-    public function index(): View
+    public function index(): RedirectResponse
     {
-        $tenant = $this->resolveTenant();
-        if (!$tenant) {
-            abort(404, 'Tenant tidak ditemukan.');
+        return redirect()->route('owner.settings', ['tab' => 'integrasi'], 301);
+    }
+
+    public function saveTracking(SaveTrackingSettingsRequest $request, SaveStorefrontTracking $action): RedirectResponse
+    {
+        $action->execute($this->tenant(), $request->validated());
+
+        return back()->with('sukses', 'Pengaturan pelacakan tersimpan.');
+    }
+
+    public function beginCalendar(Request $request, ManageGoogleCalendar $action): RedirectResponse
+    {
+        $url = $action->begin($this->tenant(), (int) $request->user()?->id, $request->session());
+
+        return redirect()->away($url);
+    }
+
+    public function connectCalendar(Request $request, ManageGoogleCalendar $action): RedirectResponse
+    {
+        try {
+            $action->connect($this->tenant(), (int) $request->user()?->id, $request->session(),
+                $request->string('state')->toString(), $request->string('code')->toString());
+        } catch (CalendarIntegrationFailed|LockTimeoutException) {
+            return $this->connectionError();
         }
 
-        $midtransConfigured = !empty($tenant->midtrans_server_key) || !empty(config('midtrans.server_key'));
-        $mailConfigured = !empty(config('mail.default'));
+        return redirect()->route('owner.settings', ['tab' => 'integrasi'])->with('sukses', 'Google Calendar terhubung.')
+            ->header('Referrer-Policy', 'no-referrer');
+    }
 
-        $integrations = [
-            [
-                'id'           => 'midtrans',
-                'name'         => 'Midtrans Payment Gateway',
-                'category'     => 'Payments',
-                'description'  => 'Memproses pembayaran otomatis menggunakan QRIS, Virtual Account Bank (BCA, Mandiri, BNI, BRI), dan E-Wallet.',
-                'status'       => $midtransConfigured ? 'connected' : 'disconnected',
-                'is_active'    => true,
-                'action_url'   => route('owner.settings.payment-setting'),
-                'action_label' => 'Konfigurasi Midtrans',
-            ],
-            [
-                'id'           => 'email',
-                'name'         => 'Email SMTP & Notifications',
-                'category'     => 'Communication',
-                'description'  => 'Kirim email invoice, tiket reservasi otomatis, dan konfirmasi reschedule kepada customer.',
-                'status'       => $mailConfigured ? 'connected' : 'disconnected',
-                'is_active'    => true,
-                'action_url'   => null,
-                'action_label' => 'Aktif dari Sistem',
-            ],
-            [
-                'id'           => 'whatsapp',
-                'name'         => 'WhatsApp Automated Reminders',
-                'category'     => 'Messaging',
-                'description'  => 'Kirim notifikasi pengingat H-1 atau H-2 jam sebelum jadwal sesi reservasi customer via WhatsApp Gateway.',
-                'status'       => 'coming_soon',
-                'is_active'    => false,
-                'action_url'   => null,
-                'action_label' => 'Segera Hadir',
-            ],
-            [
-                'id'           => 'gcal',
-                'name'         => 'Google Calendar Sync',
-                'category'     => 'Calendar',
-                'description'  => 'Sinkronisasi dua arah setiap booking yang masuk langsung ke kalender Google pribadi atau kalender tim.',
-                'status'       => 'coming_soon',
-                'is_active'    => false,
-                'action_url'   => null,
-                'action_label' => 'Segera Hadir',
-            ],
-            [
-                'id'           => 'analytics',
-                'name'         => 'Google Analytics & Meta Pixel',
-                'category'     => 'Tracking',
-                'description'  => 'Lacak kunjungan halaman booking, konversi reservasi, dan optimalkan kampanye iklan digital Anda.',
-                'status'       => 'coming_soon',
-                'is_active'    => false,
-                'action_url'   => null,
-                'action_label' => 'Segera Hadir',
-            ],
-        ];
+    public function testCalendar(ManageGoogleCalendar $action): RedirectResponse
+    {
+        try {
+            $action->updateConnection($this->tenant(), false);
+        } catch (CalendarIntegrationFailed|LockTimeoutException) {
+            return $this->connectionError();
+        }
 
-        return view('owner.integrations', compact('tenant', 'integrations'));
+        return redirect()->route('owner.settings', ['tab' => 'integrasi'])->with('sukses', 'Koneksi Google Calendar berfungsi.');
+    }
+
+    public function disconnectCalendar(ManageGoogleCalendar $action): RedirectResponse
+    {
+        try {
+            $action->updateConnection($this->tenant(), true);
+        } catch (CalendarIntegrationFailed|LockTimeoutException) {
+            return $this->connectionError();
+        }
+
+        return redirect()->route('owner.settings', ['tab' => 'integrasi'])->with('sukses', 'Google Calendar diputus.');
+    }
+
+    private function connectionError(): RedirectResponse
+    {
+        return redirect()->route('owner.settings', ['tab' => 'integrasi'])->withErrors(['calendar' => 'Google Calendar belum dapat dihubungi. Coba lagi.'])
+            ->header('Referrer-Policy', 'no-referrer');
+    }
+
+    private function tenant(): Tenant
+    {
+        return $this->resolveTenant() ?? abort(404);
     }
 }

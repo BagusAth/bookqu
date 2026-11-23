@@ -1,217 +1,129 @@
 <!doctype html>
 <html lang="id">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>@yield('title', 'Booking') — {{ $tenant->namabisnis ?? 'BookQu' }}</title>
-        <!-- Favicon -->
-        <link rel="icon" type="image/png" href="{{ asset('logo_icon.png') }}">
-        @vite('resources/css/app.css')
-        <link rel="stylesheet" href="{{ asset('css/booking-program.css') }}" />
-        @yield('head')
-        @if(isset($tenant))
-            @php
-                $themeColor = $tenant->theme_color ?: '#4F46E5';
-                $fontFamily = $tenant->font_family ?: 'Plus Jakarta Sans';
-                $buttonRadius = match($tenant->button_style) {
-                    'rounded-md' => '0.375rem',
-                    'rounded-full', 'pill' => '9999px',
-                    default => '0.75rem',
-                };
-                $cardShadow = match($tenant->card_style) {
-                    'elevated' => '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
-                    'bordered' => 'none',
-                    'flat' => 'none',
-                    default => '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                };
-                $cardBorder = match($tenant->card_style) {
-                    'bordered' => '2px solid #CBD5E1',
-                    default => '1px solid #E2E8F0',
-                };
-            @endphp
-            <link rel="preconnect" href="https://fonts.googleapis.com">
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-            <link href="https://fonts.googleapis.com/css2?family={{ str_replace(' ', '+', $fontFamily) }}:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-            <style>
-                :root {
-                    --bq-primary: {{ $themeColor }};
-                    --bq-primary-hover: {{ $themeColor }};
-                    --color-primary-600: {{ $themeColor }};
-                    --color-primary-700: {{ $themeColor }};
-                }
-                body.booking-page, .booking-shell {
-                    font-family: '{{ $fontFamily }}', system-ui, -apple-system, sans-serif !important;
-                }
-                button[type="submit"], .btn-primary, button.bg-\[\#4F46E5\], a.bg-\[\#4F46E5\] {
-                    border-radius: {{ $buttonRadius }} !important;
-                    background-color: {{ $themeColor }} !important;
-                }
-                .booking-card {
-                    box-shadow: {{ $cardShadow }} !important;
-                    border: {{ $cardBorder }} !important;
-                }
-                .booking-card--selected {
-                    border-color: {{ $themeColor }} !important;
-                    outline-color: {{ $themeColor }} !important;
-                }
-                .bg-\[\#4F46E5\] {
-                    background-color: {{ $themeColor }} !important;
-                }
-                .text-\[\#4F46E5\] {
-                    color: {{ $themeColor }} !important;
-                }
-                .border-\[\#4F46E5\] {
-                    border-color: {{ $themeColor }} !important;
-                }
-                .ring-\[\#4F46E5\] {
-                    --tw-ring-color: {{ $themeColor }} !important;
-                }
-            </style>
-        @endif
-    </head>
-    <body class="booking-page min-h-screen flex flex-col bg-[#F8FAFC]">
-        {{-- Clean, Focused Booking Header --}}
-        <header class="sticky top-0 z-40 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md shadow-xs">
-            <div class="booking-shell mx-auto flex w-full max-w-[1280px] items-center justify-between px-4 sm:px-6 py-3.5">
-                {{-- Business & Platform Identity --}}
-                <div class="flex items-center gap-3">
-                    <a href="{{ isset($tenant) && $tenant ? route(\App\Support\CustomerBookingRoutes::name('customer.booking.program'), $tenant->slug) : url('/') }}" class="flex items-center gap-2.5 transition hover:opacity-90">
-                        @if(isset($tenant) && $tenant->logo_path)
-                            <img src="{{ Storage::url($tenant->logo_path) }}" alt="{{ $tenant->namabisnis }}" class="h-9 w-9 rounded-xl object-cover border border-[#E2E8F0] shadow-xs" />
-                        @else
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4F46E5] text-white font-bold text-sm shadow-xs">
-                                {{ strtoupper(substr($tenant->namabisnis ?? 'BQ', 0, 2)) }}
-                            </div>
-                        @endif
-                        <div class="flex flex-col">
-                            <span class="text-sm font-bold text-[#0F172A] leading-tight">{{ $tenant->namabisnis ?? 'BookQu' }}</span>
-                            <span class="text-[11px] font-medium text-[#64748B]">Reservasi Online Resmi</span>
-                        </div>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', 'Reservasi') — {{ $tenant->namabisnis ?? 'BookQu' }}</title>
+    @unless (View::hasSection('minimal'))
+        <link rel="icon" href="{{ asset('logo_icon.png') }}">
+    @endunless
+    @vite('resources/css/app.css')
+    @yield('head')
+    @isset ($branding)
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family={{ str_replace(' ', '+', $branding['font']) }}:wght@400;500;600;700&display=swap" rel="stylesheet">
+        {{-- Every value comes from StorefrontBranding, which normalises what the owner saved (design A §2–§3). --}}
+        <style>
+            .customer-shell {
+                --sf-primary: {{ $branding['color'] }};
+                --sf-primary-hover: {{ $branding['hover'] }};
+                --sf-on-primary: {{ $branding['onPrimary'] }};
+                --sf-on-primary-soft: {{ $branding['onPrimarySoft'] }};
+                --sf-on-primary-faint: {{ $branding['onPrimaryFaint'] }};
+                --sf-on-primary-line: {{ $branding['onPrimaryLine'] }};
+                --sf-primary-text: {{ $branding['primaryText'] }};
+                --sf-tint: {{ $branding['tint'] }};
+                --sf-tint-strong: {{ $branding['tintStrong'] }};
+                --sf-radius-control: {{ $branding['shape']['control'] }};
+                --sf-radius-tile: {{ $branding['shape']['tile'] }};
+                --sf-radius-area: {{ $branding['shape']['area'] }};
+                --sf-radius-chip: {{ $branding['shape']['chip'] }};
+                --sf-radius-card: {{ $branding['shape']['card'] }};
+                --sf-radius-card-small: {{ $branding['shape']['cardSmall'] }};
+                --sf-shadow-card: {{ $branding['surface']['card'] }};
+                --sf-shadow-raised: {{ $branding['surface']['raised'] }};
+                --sf-font: '{{ $branding['font'] }}';
+                {{-- The Pro landing section (BQ-154, out of BQ-165 scope) still uses bq-* classes in the business colour. --}}
+                --bq-primary: {{ $branding['color'] }};
+                --bq-primary-hover: {{ $branding['hover'] }};
+                --bq-primary-light: {{ $branding['light'] }};
+                --bq-primary-border: {{ $branding['border'] }};
+                --bq-on-primary: {{ $branding['onPrimary'] }};
+            }
+        </style>
+    @endisset
+</head>
+<body class="customer-shell booking-page flex min-h-screen flex-col bg-sf-page text-sf-text antialiased" @isset($branding) data-branded data-button-style="{{ $branding['buttonStyle'] }}" data-card-style="{{ $branding['cardStyle'] }}" @endisset @yield('body_attributes')>
+    @php
+        // Design A pages (BQ-165) draw their own hero or step header and use the full width.
+        $immersive = View::hasSection('immersive');
+    @endphp
+
+    @unless ($immersive)
+    <header class="no-print sticky top-0 z-40 border-b border-sf-divider bg-sf-surface">
+        <div class="booking-shell mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-6">
+            <a href="{{ $storefrontUrl ?? url('/') }}" class="flex min-w-0 items-center gap-3 rounded-sf-card-small">
+                @if ($businessLogo ?? null)
+                    <img src="{{ $businessLogo }}" alt="" class="size-10 shrink-0 rounded-sf-card-small object-cover">
+                @else
+                    <span aria-hidden="true" class="grid size-10 shrink-0 place-items-center rounded-sf-card-small bg-sf-primary font-semibold text-sf-on-primary">{{ $businessInitials ?? 'BQ' }}</span>
+                @endif
+                <span class="truncate font-semibold" title="{{ $tenant->namabisnis ?? 'BookQu' }}">{{ $tenant->namabisnis ?? 'BookQu' }}</span>
+            </a>
+            <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+                @hasSection('back_url')
+                    <a href="{{ trim($__env->yieldContent('back_url')) }}" class="sf-btn-secondary sf-btn-sm min-w-11" aria-label="@yield('back_label', 'Kembali')">
+                        <x-customer.icon name="chevron-left" :size="18" :stroke="2" />
+                        <span class="hidden sm:inline">@yield('back_label', 'Kembali')</span>
                     </a>
-                </div>
+                @endif
+                <x-customer.help-link :href="$merchantWaUrl ?? null" />
+                @yield('header_actions')
+            </div>
+        </div>
+    </header>
 
-                {{-- Contextual Back & Support Actions --}}
-                <div class="flex items-center gap-2 sm:gap-4">
-                    @hasSection('back_url')
-                        <a href="@yield('back_url')" class="inline-flex items-center gap-1.5 rounded-xl border border-[#E2E8F0] bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-[#475569] shadow-2xs transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] hover:text-[#0F172A]">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                            </svg>
-                            <span class="hidden sm:inline">@yield('back_label', 'Kembali')</span>
-                        </a>
+    @endunless
+
+    <main @class([
+        'grow' => $immersive,
+        'booking-shell mx-auto w-full max-w-7xl grow space-y-4 px-4 py-6 sm:px-6 sm:py-8' => ! $immersive,
+        'pb-28 sm:pb-24' => ! $immersive && ! View::hasSection('minimal'),
+    ])>
+        @unless (View::hasSection('minimal'))
+            @if (session('info') || session('success') || session('error'))
+                <div @class(['space-y-2', 'mx-auto max-w-[1240px] px-4 pt-4 md:px-8 lg:px-14' => $immersive]) role="status">
+                    @if (session('info'))
+                        <x-customer.status-note>{{ session('info') }}</x-customer.status-note>
                     @endif
-
-                    @if(isset($tenant) && $tenant->nomorhp)
-                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $tenant->nomorhp) }}?text=Halo%20{{ urlencode($tenant->namabisnis) }},%20saya%20butuh%20bantuan%20mengenai%20booking"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           class="inline-flex items-center gap-1.5 rounded-xl border border-transparent px-3 py-1.5 text-xs sm:text-sm font-medium text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#0F172A]"
-                           title="Butuh bantuan? Chat WhatsApp">
-                            <svg class="h-4 w-4 text-[#10B981]" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.969.54 1.761.817 2.796.817 3.182 0 5.768-2.587 5.768-5.766.001-3.181-2.585-5.766-5.768-5.766zm0 10.42c-.93 0-1.636-.26-2.527-.79l-.18-.108-1.58.414.421-1.54-.118-.188c-.604-.962-.976-1.745-.976-2.61 0-2.678 2.181-4.857 4.86-4.857 2.677 0 4.857 2.18 4.857 4.858 0 2.677-2.18 4.857-4.857 4.857z"/>
-                            </svg>
-                            <span class="hidden sm:inline">Bantuan</span>
-                        </a>
+                    @if (session('success'))
+                        <x-customer.status-note tone="success">{{ session('success') }}</x-customer.status-note>
+                    @endif
+                    @if (session('error'))
+                        <x-customer.status-note tone="danger">{{ session('error') }}</x-customer.status-note>
                     @endif
                 </div>
-            </div>
-        </header>
+            @endif
+        @endunless
+        @yield('content')
+    </main>
 
-        {{-- Optional Banner Image for Tenant --}}
-        @if(isset($tenant) && $tenant->banner_path && Request::routeIs('customer.booking.program', 'customer.booking.slug.program'))
-            <div class="w-full bg-[#0F172A] relative h-40 sm:h-56 overflow-hidden">
-                <img src="{{ Storage::url($tenant->banner_path) }}" alt="Banner {{ $tenant->namabisnis }}" class="w-full h-full object-cover opacity-85">
-                <div class="absolute inset-0 bg-gradient-to-t from-[#0F172A]/70 via-transparent to-transparent"></div>
+    <footer @class(['no-print mt-auto border-t border-sf-divider text-[13px] text-sf-muted', 'px-4 py-5 text-center' => ! $immersive, 'mx-auto mt-9 w-full max-w-[1240px] px-4 pb-7 pt-5 md:px-8 lg:px-14' => $immersive, 'sf-footer-bar' => $immersive && View::hasSection('bottom_bar'), 'sf-footer-bar-always' => $immersive && trim(View::yieldContent('bottom_bar')) === 'always'])>
+        @if ($immersive)
+            <div class="flex flex-wrap justify-between gap-x-6 gap-y-2">
+                <span><a href="{{ $storefrontUrl ?? url('/') }}" class="font-semibold text-sf-text hover:underline">{{ $tenant->namabisnis ?? 'BookQu' }}</a>@if (filled($tenant->alamat ?? null)) · {{ $tenant->alamat }}@endif</span>
+                <span>Reservasi melalui BookQu</span>
             </div>
+        @else
+            © {{ date('Y') }} {{ $tenant->namabisnis ?? 'BookQu' }} · Didukung oleh BookQu
         @endif
+    </footer>
 
-        {{-- Stepper Progress Bar (Step 1-6) --}}
-        @hasSection('current_step')
-            <section class="border-b border-[#E2E8F0] bg-white py-3.5 sm:py-4">
-                <div class="booking-shell mx-auto w-full max-w-[1280px] px-4 sm:px-6">
-                    <x-customer.progress-header :current="intval($__env->yieldContent('current_step', 1))" />
-                </div>
-            </section>
-        @endif
-
-        {{-- Main Page Content --}}
-        <main class="booking-shell mx-auto w-full max-w-[1280px] px-4 sm:px-6 pb-28 sm:pb-24 pt-6 sm:pt-8 flex-grow">
-            {{-- Flash Messages --}}
-            @if(session('info'))
-                <div class="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs sm:text-sm text-blue-800 shadow-2xs flex items-center gap-2">
-                    <svg class="h-4 w-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{{ session('info') }}</span>
-                </div>
-            @endif
-            @if(session('success'))
-                <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs sm:text-sm text-emerald-800 shadow-2xs flex items-center gap-2">
-                    <svg class="h-4 w-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>{{ session('success') }}</span>
-                </div>
-            @endif
-            @if(session('error'))
-                <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-800 shadow-2xs flex items-center gap-2">
-                    <svg class="h-4 w-4 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <span>{{ session('error') }}</span>
-                </div>
-            @endif
-
-            @yield('content')
-        </main>
-
-        {{-- Minimalist Trust Footer --}}
-        <footer class="mt-auto border-t border-[#E2E8F0] bg-white py-6 text-center text-xs text-[#64748B]">
-            <div class="booking-shell mx-auto flex w-full max-w-[1280px] flex-col items-center justify-between gap-3 px-4 sm:flex-row sm:px-6">
-                <p>&copy; {{ date('Y') }} {{ $tenant->namabisnis ?? 'BookQu' }}. Hak cipta dilindungi.</p>
-                <div class="flex items-center gap-4 text-[#64748B]">
-                    <span class="inline-flex items-center gap-1.5 text-emerald-600 font-medium">
-                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        Transaksi Aman &amp; Terenkripsi
-                    </span>
-                    <span>&bull;</span>
-                    <span>Didukung oleh <strong>BookQu</strong></span>
-                </div>
-            </div>
-        </footer>
-
+    @unless (View::hasSection('minimal'))
         <script>
-            window.addEventListener('pageshow', function (event) {
+            window.addEventListener('pageshow', event => {
+                if (event.persisted) {
+                    window.location.reload();
+                    return;
+                }
                 window.dispatchEvent(new CustomEvent('booking-reset-submitting'));
-                const main = document.querySelector('main.booking-shell');
-                if (main) {
-                    main.style.opacity = '1';
-                }
-            });
-
-            // Smooth fade-out before navigation on form submit (G1)
-            document.addEventListener('submit', function (e) {
-                if (!e.defaultPrevented) {
-                    const main = document.querySelector('main.booking-shell');
-                    if (main) {
-                        main.style.opacity = '0.4';
-                        main.style.transition = 'opacity 0.2s ease';
-                    }
-                }
-            });
-
-            // Auto-scroll to error banner on mobile/desktop (G3)
-            document.addEventListener('DOMContentLoaded', function () {
-                const errorBanner = document.querySelector('[role="alert"], .border-red-200, .bg-red-50');
-                if (errorBanner) {
-                    errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    errorBanner.classList.add('animate-pulse');
-                    setTimeout(() => errorBanner.classList.remove('animate-pulse'), 2500);
-                }
             });
         </script>
-        @yield('scripts')
-    </body>
+    @endunless
+    @yield('scripts')
+    @unless (View::hasSection('minimal'))
+        @vite('resources/js/customer.js')
+    @endunless
+</body>
 </html>

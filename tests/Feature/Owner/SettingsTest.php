@@ -3,8 +3,10 @@
 namespace Tests\Feature\Owner;
 
 use App\Models\Tenant;
+use App\Models\TenantPayoutAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class SettingsTest extends TestCase
@@ -12,6 +14,7 @@ class SettingsTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Tenant $tenant;
 
     protected function setUp(): void
@@ -34,7 +37,7 @@ class SettingsTest extends TestCase
     {
         $response = $this->actingAs($this->user)->get('/owner/settings');
         $response->assertStatus(200);
-        $response->assertSee('Business Profile');
+        $response->assertSeeText('Profil bisnis');
     }
 
     public function test_owner_can_update_business_profile(): void
@@ -57,43 +60,75 @@ class SettingsTest extends TestCase
         ]);
     }
 
-    public function test_owner_can_update_payment_settings(): void
+    public function test_business_slug_and_contact_fields_can_change_independently_of_the_name(): void
     {
-        $response = $this->actingAs($this->user)->post('/owner/settings/payment', [
+        $oldSlug = $this->tenant->slug;
+        $payload = [
+            'namabisnis' => $this->tenant->namabisnis,
+            'jenisbisnis' => $this->tenant->jenisbisnis,
+            'alamat' => $this->tenant->alamat,
+            'nomorhp' => $this->tenant->nomorhp,
+            'slug' => 'alamat-booking-baru',
+            'business_email' => 'bisnis@example.test',
+            'map_url' => 'https://maps.example.test/123',
+        ];
+        $this->actingAs($this->user)->post(route('owner.settings.profile'), $payload)
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('tenants', ['id' => $this->tenant->id, 'slug' => $payload['slug'],
+            'business_email' => $payload['business_email'], 'map_url' => $payload['map_url']]);
+        $this->get('/'.$oldSlug)->assertNotFound();
+        $this->post(route('owner.settings.profile'), array_replace($payload, ['slug' => 'owner']))
+            ->assertSessionHasErrors('slug');
+    }
+
+    public function test_gateway_settings_can_no_longer_be_saved_from_the_owner_portal(): void
+    {
+        // D-016, BQ-141 (AC-PAY-05): the gateway form is removed, even where the module is released.
+        config(['modules.direct-payment' => 'released']);
+        $before = $this->tenant->fresh()->payment_mode;
+
+        $this->actingAs($this->user)->post('/owner/settings/payment', [
             'payment_mode' => 'owner',
             'midtrans_environment' => 'sandbox',
             'midtrans_sandbox_merchant_id' => 'G123456789',
             'midtrans_sandbox_client_key' => 'SB-Mid-client-XXXX',
             'midtrans_sandbox_server_key' => 'SB-Mid-server-YYYY',
-        ]);
+        ])->assertNotFound();
 
-        $response->assertRedirect('/owner/settings');
-        $response->assertSessionHas('sukses');
-
-        $this->assertDatabaseHas('tenants', [
-            'id' => $this->tenant->id,
-            'payment_mode' => 'owner',
-            'midtrans_environment' => 'sandbox',
-            'midtrans_sandbox_merchant_id' => 'G123456789',
-        ]);
+        $this->assertSame($before, $this->tenant->fresh()->payment_mode);
+        $this->assertDatabaseMissing('tenants', ['id' => $this->tenant->id, 'midtrans_sandbox_merchant_id' => 'G123456789']);
     }
 
     public function test_owner_can_request_payout(): void
     {
-        $response = $this->actingAs($this->user)->post('/owner/payouts', [
-            'jumlah' => 200000,
-            'bank_nama' => 'BCA',
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.balance' => 'released']);
+
+        $account = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'Bank Central Asia (BCA)',
             'nomor_rekening' => '1234567890',
             'nama_pemilik_rekening' => 'John Doe',
+            'is_default' => true,
+            'changed_at' => now(),
         ]);
 
-        $response->assertRedirect('/owner/settings');
+        $response = $this->actingAs($this->user)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
+            'jumlah' => 200000,
+            'payout_account_id' => $account->id,
+        ]);
+
+        $response->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
         $response->assertSessionHas('sukses');
 
         $this->assertDatabaseHas('owner_payouts', [
             'idtenant' => $this->tenant->id,
             'jumlah' => 200000,
             'status' => 'pending',
+            'payout_account_id' => $account->id,
+            'bank_kode' => 'BCA',
         ]);
 
         // Saldo deducted
@@ -103,10 +138,69 @@ class SettingsTest extends TestCase
         ]);
     }
 
+    public function test_owner_cannot_request_payout_above_available_balance(): void
+    {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.balance' => 'released']);
+
+        $account = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'Bank Central Asia (BCA)',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
+            'is_default' => true,
+            'changed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->user)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
+            'jumlah' => 600000,
+            'payout_account_id' => $account->id,
+        ]);
+
+        $response->assertSessionHasErrors('jumlah');
+        $this->assertDatabaseMissing('owner_payouts', ['idtenant' => $this->tenant->id]);
+        $this->assertDatabaseHas('tenants', [
+            'id' => $this->tenant->id,
+            'saldo_platform' => 500000,
+        ]);
+    }
+
+    public function test_owner_cannot_request_payout_with_more_than_two_decimal_places(): void
+    {
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.balance' => 'released']);
+
+        $account = TenantPayoutAccount::create([
+            'idtenant' => $this->tenant->id,
+            'bank_kode' => 'BCA',
+            'bank_nama' => 'Bank Central Asia (BCA)',
+            'nomor_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'John Doe',
+            'is_default' => true,
+            'changed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->user)->post('/owner/payouts', [
+            'request_key' => (string) Str::uuid(),
+            'jumlah' => 10000.001,
+            'payout_account_id' => $account->id,
+        ]);
+
+        $response->assertSessionHasErrors('jumlah');
+        $this->assertDatabaseMissing('owner_payouts', ['idtenant' => $this->tenant->id]);
+        $this->assertDatabaseHas('tenants', [
+            'id' => $this->tenant->id,
+            'saldo_platform' => 500000,
+        ]);
+    }
+
     public function test_owner_cannot_delete_account_without_matching_confirmation(): void
     {
         $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
             'confirm_account' => 'wrong-input@example.com',
+            'delete_password' => 'password',
         ]);
 
         $response->assertSessionHasErrors('confirm_account');
@@ -116,11 +210,14 @@ class SettingsTest extends TestCase
 
     public function test_owner_can_delete_account_with_matching_email_confirmation(): void
     {
+        $this->tenant->update(['saldo_platform' => 0]);
+
         $userId = $this->user->id;
         $tenantId = $this->tenant->id;
 
         $response = $this->actingAs($this->user)->delete('/owner/settings/account', [
             'confirm_account' => $this->user->email,
+            'delete_password' => 'password',
         ]);
 
         $response->assertRedirect('/');
@@ -129,5 +226,76 @@ class SettingsTest extends TestCase
 
         $this->assertDatabaseMissing('users', ['id' => $userId]);
         $this->assertDatabaseMissing('tenants', ['id' => $tenantId]);
+    }
+
+    public function test_owner_can_complete_profile_with_normalized_phone(): void
+    {
+        $newOwner = User::factory()->create([
+            'role' => 'owner',
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this->actingAs($newOwner)->post('/owner/profile/complete', [
+            'namabisnis' => 'Studio Cantik Alami',
+            'jenisbisnis' => 'Kecantikan',
+            'nomorhp' => '+62 812 3456 7890',
+            'alamat' => 'Jl. Flamboyan No. 10',
+        ]);
+
+        $response->assertRedirect(route('owner.dashboard'));
+        $response->assertSessionHas('sukses');
+
+        $this->assertDatabaseHas('tenants', [
+            'iduser' => $newOwner->id,
+            'namabisnis' => 'Studio Cantik Alami',
+            'nomorhp' => '081234567890',
+        ]);
+    }
+
+    public function test_phone_normalization_handles_various_formats(): void
+    {
+        $formats = [
+            '+62081234567891' => '081234567891',
+            '6281234567892' => '081234567892',
+            '81234567893' => '081234567893',
+            '0812-3456-7894' => '081234567894',
+        ];
+
+        foreach ($formats as $inputPhone => $expectedPhone) {
+            $user = User::factory()->create([
+                'role' => 'owner',
+                'email_verified_at' => now(),
+            ]);
+
+            $this->actingAs($user)->post('/owner/profile/complete', [
+                'namabisnis' => 'Bisnis '.uniqid(),
+                'jenisbisnis' => 'Jasa',
+                'nomorhp' => $inputPhone,
+                'alamat' => 'Jl. Contoh No. 1',
+            ])->assertRedirect(route('owner.dashboard'));
+
+            $this->assertDatabaseHas('tenants', [
+                'iduser' => $user->id,
+                'nomorhp' => $expectedPhone,
+            ]);
+        }
+    }
+
+    public function test_owner_profile_completion_validation_failure_preserves_old_input(): void
+    {
+        $newOwner = User::factory()->create([
+            'role' => 'owner',
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this->actingAs($newOwner)->from('/owner/dashboard')->post('/owner/profile/complete', [
+            'namabisnis' => '',
+            'jenisbisnis' => 'Kecantikan',
+            'nomorhp' => '081234567890',
+            'alamat' => 'Jl. Flamboyan No. 10',
+        ]);
+
+        $response->assertRedirect('/owner/dashboard');
+        $response->assertSessionHasErrors('namabisnis');
     }
 }

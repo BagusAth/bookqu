@@ -1,189 +1,112 @@
-{{-- State: PENDING (Primary Payment Card adhering strictly to Section 9 Information Hierarchy) --}}
-<div id="state-pending-card" class="{{ $currentState === 'pending' ? 'block' : 'hidden' }}">
-    {{-- Header Content --}}
-    <div class="text-center mb-6">
-        <h1 class="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">Selesaikan Pembayaran</h1>
-        <p class="mt-1 text-sm text-[#64748B]">Selesaikan pembayaran sebelum batas waktu agar reservasi Anda tetap aktif.</p>
-    </div>
+{{--
+    Waiting for payment (design A §7.4). The element ids are the contract of partials/payment/scripts
+    (countdown, status pill, check button, feedback banner, overlay); keep them when changing the markup.
+--}}
+@php
+    $firstBooking = $displayBookings->first();
+    $countdownTotal = max(900, (int) $paymentSeconds);
+@endphp
 
-    <div class="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-8 shadow-sm mb-6">
-        {{-- 1. Total Tagihan & Prominent Countdown (S5.1) --}}
-        <div class="text-center pb-6 border-b border-[#F1F5F9]">
-            <p class="text-xs font-bold uppercase tracking-wider text-[#64748B] mb-1">Total Tagihan</p>
-            <p class="text-3xl sm:text-4xl font-black text-[#4F46E5]">Rp {{ number_format($payment->jumlah, 0, ',', '.') }}</p>
-            
-            @php
-                $expiredTime = $payment->expired_at ? \Carbon\Carbon::parse($payment->expired_at)->timezone('Asia/Jakarta') : now('Asia/Jakarta')->addMinutes(15);
-            @endphp
-            <div id="countdown-card" class="mt-4 mx-auto max-w-sm rounded-2xl border border-amber-200 bg-amber-50/70 p-3 sm:p-4 transition-all duration-300">
-                <p id="countdown-title" class="text-[11px] font-bold uppercase tracking-wider text-amber-800 flex items-center justify-center gap-1.5">
-                    <span id="countdown-dot" class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-                    <span id="countdown-title-text">Selesaikan Pembayaran Dalam:</span>
-                </p>
-                <div class="mt-2.5 flex items-center justify-center gap-2">
-                    <div class="flex flex-col items-center">
-                        <span id="countdown-min" class="inline-flex h-11 w-12 items-center justify-center rounded-xl bg-amber-600 text-white font-mono text-xl sm:text-2xl font-black shadow-xs transition-colors">00</span>
-                        <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider mt-1">Menit</span>
-                    </div>
-                    <span id="countdown-colon" class="text-2xl font-black text-amber-600 -mt-4 transition-colors">:</span>
-                    <div class="flex flex-col items-center">
-                        <span id="countdown-sec" class="inline-flex h-11 w-12 items-center justify-center rounded-xl bg-amber-600 text-white font-mono text-xl sm:text-2xl font-black shadow-xs transition-colors">00</span>
-                        <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider mt-1">Detik</span>
-                    </div>
-                </div>
-                <p class="text-[11px] text-[#64748B] mt-2">
-                    Bayar sebelum: <strong class="text-[#0F172A]">{{ $expiredTime->format('H:i') }} WIB</strong>
-                </p>
-            </div>
-        </div>
-
-        {{-- 2. Primary CTA & Step Guide (S5.2) --}}
-        <div class="py-6 border-b border-[#F1F5F9]">
-            {{-- Quick Step Guide (S5.2) --}}
-            <div class="rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 mb-4 text-xs text-[#475569]">
-                <p class="font-bold text-[#0F172A] text-xs mb-2">Panduan Pembayaran Cepat:</p>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div class="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-[#F1F5F9]">
-                        <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white text-[10px] font-bold mt-0.5">1</span>
-                        <span>Klik <strong>"Bayar Sekarang"</strong></span>
-                    </div>
-                    <div class="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-[#F1F5F9]">
-                        <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white text-[10px] font-bold mt-0.5">2</span>
-                        <span>Pilih metode (QRIS, VA, E-Wallet)</span>
-                    </div>
-                    <div class="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-[#F1F5F9]">
-                        <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4F46E5] text-white text-[10px] font-bold mt-0.5">3</span>
-                        <span>Selesai, e-ticket otomatis terbit</span>
-                    </div>
-                </div>
+<section id="state-pending-card" class="{{ $currentState === 'pending' ? 'block' : 'hidden' }} relative space-y-4">
+    <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-6">
+        <div id="countdown-card" class="sf-card-raised relative -mt-10 overflow-hidden p-[18px] md:p-7">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <span id="payment-status-pill" class="sf-pill" data-tone="warning" role="status"><span id="payment-status-text">Menunggu pembayaran</span></span>
+                <span class="sf-num text-[13px] text-sf-muted">No. {{ $payment->order_id }}</span>
             </div>
 
-            <button
-                id="pay-button"
-                type="button"
-                class="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#4F46E5] px-6 py-4 text-base font-bold text-white shadow-lg shadow-[#4F46E5]/25 transition-all hover:bg-[#4338CA] hover:shadow-xl hover:shadow-[#4F46E5]/30 active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4F46E5]"
-            >
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-                <span>Bayar Sekarang</span>
-            </button>
-            <p class="mt-2.5 text-center text-xs text-[#94A3B8]">
-                Mendukung QRIS, GoPay, ShopeePay, Virtual Account BCA/Mandiri/BNI/BRI &amp; E-Wallet
-            </p>
-
-            {{-- Inline Feedback Notice (replaces window.alert) --}}
-            <div id="inline-feedback-banner" class="hidden mt-4 rounded-xl p-3 text-xs border" role="alert" aria-live="polite">
-                <div class="flex items-center gap-2">
-                    <span id="inline-feedback-icon" class="shrink-0"></span>
-                    <span id="inline-feedback-text" class="flex-1 font-medium"></span>
-                    <button type="button" onclick="hideInlineFeedback()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
+            <div class="mt-[18px] grid gap-3.5 md:grid-cols-2 md:gap-6">
+                <div>
+                    <p class="text-sm text-sf-muted">Total pembayaran</p>
+                    <p class="sf-num mt-0.5 text-[34px] font-bold leading-[1.1] tracking-[-0.8px] md:text-[42px]">{{ $paymentTotal }}</p>
+                </div>
+                <div>
+                    <p id="countdown-title" class="text-sm text-sf-muted"><span id="countdown-title-text">Sisa waktu</span></p>
+                    <p class="mt-0.5 flex items-baseline gap-1.5" aria-hidden="true">
+                        <span class="sf-countdown-value sf-num text-[34px] font-bold leading-[1.1] tracking-[-0.5px] text-sf-primary-text md:text-[42px]"><span id="countdown-min">00</span><span id="countdown-colon">:</span><span id="countdown-sec">00</span></span>
+                        <span class="text-[13px] text-sf-muted">menit</span>
+                    </p>
                 </div>
             </div>
-        </div>
-
-        {{-- 3. Detail Reservasi (Layanan, Tanggal, Sesi Range) --}}
-        <div class="py-6 border-b border-[#F1F5F9]">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-[#64748B] mb-3">Detail Reservasi</h2>
-            @if ($displayBookings->isNotEmpty())
-                <div class="space-y-2.5">
-                    @foreach ($displayBookings as $bItem)
-                        @php
-                            $slotStart = \Carbon\Carbon::parse(($bItem->tanggalbooking ? \Carbon\Carbon::parse($bItem->tanggalbooking)->format('Y-m-d') : now()->format('Y-m-d')) . ' ' . $bItem->jam);
-                            $slotEnd = (clone $slotStart)->addMinutes($durasiMenit);
-                        @endphp
-                        <div class="rounded-xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
-                            <div class="flex items-center gap-2.5">
-                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                    </svg>
-                                </div>
-                                <div class="min-w-0">
-                                    <span class="text-[#64748B] text-xs block">Layanan</span>
-                                    <strong class="text-[#0F172A] font-semibold truncate block">{{ $bItem->layanan->namalayanan ?? 'Layanan' }}</strong>
-                                </div>
-                            </div>
-                            <div class="flex items-center sm:justify-end gap-2.5">
-                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-                                <div class="sm:text-right">
-                                    <span class="text-[#64748B] text-xs block">Tanggal &amp; Waktu</span>
-                                    <strong class="text-[#0F172A] font-semibold">
-                                        {{ \Carbon\Carbon::parse($bItem->tanggalbooking)->translatedFormat('d M Y') }},
-                                        <span class="font-mono text-[#4F46E5]">{{ $slotStart->format('H:i') }} – {{ $slotEnd->format('H:i') }}</span> WIB
-                                    </strong>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-
-        {{-- 4. Secondary Metadata: Order ID & Status --}}
-        <div class="pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-            <div>
-                <span class="text-xs font-semibold uppercase tracking-wider text-[#64748B] block mb-1">Order ID</span>
-                <div class="flex items-center gap-2">
-                    <span class="font-mono text-sm font-bold text-[#0F172A]">{{ $payment->order_id }}</span>
-                    <button
-                        type="button"
-                        @click="navigator.clipboard.writeText('{{ $payment->order_id }}'); copied = true; setTimeout(() => copied = false, 2000)"
-                        class="inline-flex items-center gap-1 rounded-lg bg-slate-100 hover:bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-[#475569] transition-colors cursor-pointer"
-                        title="Salin Order ID"
-                    >
-                        <svg x-show="!copied" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                        </svg>
-                        <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span x-text="copied ? 'Tersalin' : 'Salin'">Salin</span>
-                    </button>
-                </div>
+            <div id="countdown-progress" role="progressbar" aria-label="Sisa waktu pembayaran" aria-valuemin="0"
+                aria-valuemax="{{ $countdownTotal }}" aria-valuenow="{{ (int) $paymentSeconds }}" class="sf-meter mt-3.5">
+                <span style="width: {{ round(min(100, max(0, $paymentSeconds / $countdownTotal * 100))) }}%"></span>
             </div>
-            <div class="sm:text-right">
-                <span class="text-xs font-semibold uppercase tracking-wider text-[#64748B] block mb-1">Status</span>
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700 border border-amber-200/70">
-                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                    Menunggu Pembayaran
+            <p class="mt-2 text-[13px] text-sf-muted">Bayar sebelum <strong class="sf-num text-sf-text">{{ $paymentDeadline }} WIB</strong>. Setelah itu jadwal dilepas.</p>
+
+            <div class="mt-[22px] hidden flex-wrap gap-2.5 md:flex">
+                <button type="button" id="pay-button" data-pay-button class="sf-btn sf-btn-lg min-h-[54px] flex-[2_1_220px] text-base">Bayar sekarang</button>
+                <button type="button" id="check-status-btn" data-check-status aria-busy="false" class="sf-btn-secondary min-h-[54px] flex-[1_1_180px]">Periksa status</button>
+            </div>
+            <button type="button" data-check-status aria-busy="false" class="sf-btn-secondary mt-4 w-full md:hidden">Periksa status</button>
+
+            <div class="mt-[18px] rounded-sf-card-small bg-sf-tint px-4 py-3.5 text-sm leading-[21px]">
+                <strong>Cara bayar:</strong> pilih Bayar sekarang, pilih metode dan ikuti petunjuknya, lalu kembali ke halaman ini. Status berubah sendiri saat pembayaran diterima.
+            </div>
+
+            <div id="inline-feedback-banner" class="hidden" role="alert">
+                <span id="inline-feedback-icon" aria-hidden="true"></span>
+                <span id="inline-feedback-text" class="min-w-0 flex-1"></span>
+                <button type="button" onclick="hideInlineFeedback()" aria-label="Tutup pesan" class="sf-btn-icon grid min-h-11 place-items-center">
+                    <x-customer.icon name="x" :size="16" :stroke="2" />
+                </button>
+            </div>
+
+            <div class="mt-3.5 flex flex-wrap items-center justify-between gap-2">
+                <span class="inline-flex items-center gap-2.5 text-[13px] text-sf-muted">
+                    <span class="size-2 rounded-full bg-sf-success shadow-[0_0_0_4px_var(--sf-success-bg)]" aria-hidden="true"></span>
+                    <span id="realtime-status-text" role="status">Status dipantau otomatis.</span>
                 </span>
+                @include('customer.partials.payment.action-buttons')
+            </div>
+
+            <div id="loading-overlay" class="absolute inset-0 z-30 hidden items-center justify-center bg-sf-surface/95 p-4 text-center" aria-live="polite">
+                <div>
+                    <p id="loading-spinner" class="text-[13px] text-sf-muted">Mohon tunggu…</p>
+                    <span id="success-icon" class="hidden justify-center text-sf-success" aria-hidden="true"><x-customer.icon name="check" :size="28" :stroke="2.4" /></span>
+                    <h2 id="overlay-title" class="text-lg font-bold">Membuka pembayaran</h2>
+                    <p id="overlay-desc" class="mt-1 text-sm text-sf-muted">Tunggu hingga halaman siap.</p>
+                </div>
             </div>
         </div>
 
-        {{-- Realtime Auto-Detect Status Monitoring (Section 10 Standard Copy) --}}
-        <div class="mt-6 pt-4 border-t border-[#F1F5F9] flex items-center justify-center gap-2 text-xs text-[#64748B]" aria-live="polite">
-            <span class="relative flex h-2 w-2">
-                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-            </span>
-            <span class="sr-only">Sistem memantau pembayaran Anda secara otomatis</span>
-            <span id="realtime-status-text">Kami sedang memantau status pembayaran Anda.</span>
-        </div>
-
-        {{-- Loading & Success Overlay --}}
-        <div id="loading-overlay" class="absolute inset-0 z-20 hidden flex-col items-center justify-center bg-white/95 backdrop-blur-sm p-6 text-center transition-all" aria-live="polite">
-            <div id="loading-spinner" class="loader mb-4"></div>
-            <div id="success-icon" class="hidden mb-4 h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 animate-bounce">
-                <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+        <aside aria-label="Rincian reservasi" class="sf-card mt-3 overflow-hidden md:mt-4 lg:-mt-10" x-data="{ detailsOpen: false }">
+            <button type="button" class="flex min-h-[52px] w-full items-center justify-between gap-3 bg-sf-tint px-4 text-left md:hidden"
+                x-on:click="detailsOpen = !detailsOpen" x-bind:aria-expanded="detailsOpen.toString()" aria-controls="rincian-pembayaran">
+                <span class="text-[15px] font-bold">Rincian reservasi</span>
+                <span class="text-[13px] text-sf-primary-text" x-text="detailsOpen ? 'Tutup' : 'Lihat'">Lihat</span>
+            </button>
+            <div class="hidden bg-sf-tint px-5 py-4 md:block">
+                <p class="text-xs font-bold text-sf-primary-text">Rincian reservasi</p>
+                <p class="mt-1 text-base font-bold">{{ $firstBooking?->layanan?->namalayanan ?? 'Reservasi' }}</p>
             </div>
-            <h3 id="overlay-title" class="text-base sm:text-lg font-bold text-[#0F172A]">
-                Memverifikasi pembayaran...
-            </h3>
-            <p id="overlay-desc" class="mt-1 text-xs text-[#64748B]">
-                Mohon jangan tutup halaman ini.
-            </p>
-        </div>
+            <dl id="rincian-pembayaran" class="flex-col gap-2.5 px-5 py-4 text-sm md:flex" x-bind:class="detailsOpen ? 'flex' : 'hidden'">
+                <div class="flex justify-between gap-3">
+                    <dt class="text-sf-muted">Nomor pesanan</dt>
+                    <dd class="sf-num text-right font-semibold">{{ $payment->order_id }}</dd>
+                </div>
+                @foreach ($displayBookings as $booking)
+                    <div class="flex justify-between gap-3">
+                        <dt class="text-sf-muted">{{ $loop->count > 1 ? ($booking->layanan?->namalayanan ?? 'Sesi') : 'Jadwal' }}</dt>
+                        <dd class="sf-num text-right font-semibold">{{ $sessionRanges[$booking->id]->start->locale('id')->translatedFormat('D, d M Y') }} · {{ $sessionRanges[$booking->id]->displayLabel() }} WIB</dd>
+                    </div>
+                @endforeach
+                @if ($firstBooking?->namapelanggan)
+                    <div class="flex justify-between gap-3">
+                        <dt class="text-sf-muted">Pemesan</dt>
+                        <dd class="text-right font-semibold">{{ $firstBooking->namapelanggan }}</dd>
+                    </div>
+                @endif
+                <div class="flex justify-between gap-3 border-t border-sf-divider pt-2.5">
+                    <dt class="text-sf-muted">Total</dt>
+                    <dd class="sf-num text-right font-bold">{{ $paymentTotal }}</dd>
+                </div>
+            </dl>
+        </aside>
     </div>
 
-    {{-- Bottom Action Buttons --}}
-    @include('customer.partials.payment.action-buttons')
-</div>
+    {{-- The bar sits inside the section, so it shows only while this state is shown. --}}
+    <x-customer.bottom-bar class="md:hidden" aria-label="Bayar">
+        <button type="button" data-pay-button class="sf-btn sf-btn-lg w-full">Bayar sekarang · <span class="sf-num">{{ $paymentTotal }}</span></button>
+    </x-customer.bottom-bar>
+</section>

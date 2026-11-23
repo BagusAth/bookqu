@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Owner\GetBalanceLedger;
+use App\Actions\Team\CreateOwnerMembership;
 use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
@@ -10,18 +12,21 @@ use App\Models\CustomerNote;
 use App\Models\OwnerBlockedDate;
 use App\Models\Payment;
 use App\Models\Plan;
-use App\Models\Resource;
 use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Models\TenantMember;
+use App\Models\Unit;
 use App\Models\User;
 use App\Models\Voucher;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BramaStudioSeeder extends Seeder
@@ -51,10 +56,10 @@ class BramaStudioSeeder extends Seeder
         $ownerBramantyo = User::updateOrCreate(
             ['email' => 'bramantyo989@gmail.com'],
             [
-                'namalengkap'       => 'Bramantyo (Brama Digital)',
-                'password'          => Hash::make('password'),
-                'nomorhp'           => '081299887766',
-                'role'              => 'owner',
+                'namalengkap' => 'Bramantyo (Brama Digital)',
+                'password' => Hash::make('password'),
+                'nomorhp' => '081299887766',
+                'role' => 'owner',
                 'email_verified_at' => now(),
             ]
         );
@@ -62,10 +67,10 @@ class BramaStudioSeeder extends Seeder
         $ownerBramaTest = User::updateOrCreate(
             ['email' => 'brama@bookqu.test'],
             [
-                'namalengkap'       => 'Brama Digital Owner',
-                'password'          => Hash::make('password'),
-                'nomorhp'           => '081299887766',
-                'role'              => 'owner',
+                'namalengkap' => 'Brama Digital Owner',
+                'password' => Hash::make('password'),
+                'nomorhp' => '081299887766',
+                'role' => 'owner',
                 'email_verified_at' => now(),
             ]
         );
@@ -73,10 +78,10 @@ class BramaStudioSeeder extends Seeder
         $ownerSilver = User::updateOrCreate(
             ['email' => 'silverdrgn6661@gmail.com'],
             [
-                'namalengkap'       => 'Brama Digital Admin',
-                'password'          => Hash::make('password'),
-                'nomorhp'           => '081299887766',
-                'role'              => 'owner',
+                'namalengkap' => 'Brama Digital Admin',
+                'password' => Hash::make('password'),
+                'nomorhp' => '081299887766',
+                'role' => 'owner',
                 'email_verified_at' => now(),
             ]
         );
@@ -84,10 +89,10 @@ class BramaStudioSeeder extends Seeder
         $adminUser = User::updateOrCreate(
             ['email' => 'admin@bookqu.com'],
             [
-                'namalengkap'       => 'Admin BookQu',
-                'password'          => Hash::make('password'),
-                'nomorhp'           => '080000000000',
-                'role'              => 'admin',
+                'namalengkap' => 'Admin BookQu',
+                'password' => Hash::make('password'),
+                'nomorhp' => '080000000000',
+                'role' => 'admin',
                 'email_verified_at' => now(),
             ]
         );
@@ -97,23 +102,22 @@ class BramaStudioSeeder extends Seeder
         $tenantBrama = Tenant::updateOrCreate(
             ['slug' => 'brama-digital'],
             [
-                'iduser'                 => $ownerBramantyo->id,
-                'namabisnis'             => 'Brama Digital Studio',
-                'jenisbisnis'            => 'Creative Studio & Production',
-                'alamat'                 => 'Jl. Senopati No. 88, Kebayoran Baru, Jakarta Selatan',
-                'deskripsi'              => 'Studio kreatif terpadu untuk fotografi profesional, rekaman podcast, videografi 4K green screen, dan live streaming broadcast.',
-                'nomorhp'                => '081299887766',
-                'payment_mode'           => 'platform',
-                'midtrans_status'        => 'approved',
-                'midtrans_environment'   => 'sandbox',
-                'saldo_platform'         => 34500000,
-                'weekend_price_type'     => 'multiplier',
-                'weekend_price_value'    => 1.10,
-                'cancel_before_hours'    => 24,
-                'reschedule_before_hours'=> 12,
-                'theme_color'            => 'purple',
-                'button_style'           => 'rounded-xl',
-                'card_style'             => 'modern',
+                'iduser' => $ownerBramantyo->id,
+                'namabisnis' => 'Brama Digital Studio',
+                'jenisbisnis' => 'Creative Studio & Production',
+                'alamat' => 'Jl. Senopati No. 88, Kebayoran Baru, Jakarta Selatan',
+                'deskripsi' => 'Studio kreatif terpadu untuk fotografi profesional, rekaman podcast, videografi 4K green screen, dan live streaming broadcast.',
+                'nomorhp' => '081299887766',
+                'payment_mode' => 'platform',
+                'midtrans_status' => 'approved',
+                'midtrans_environment' => 'sandbox',
+                'weekend_price_type' => 'multiplier',
+                'weekend_price_value' => 1.10,
+                'cancel_before_hours' => 24,
+                'reschedule_before_hours' => 12,
+                'theme_color' => 'purple',
+                'button_style' => 'rounded-xl',
+                'card_style' => 'modern',
             ]
         );
 
@@ -121,21 +125,20 @@ class BramaStudioSeeder extends Seeder
         $tenantStudio = Tenant::updateOrCreate(
             ['slug' => 'brama-studio'],
             [
-                'iduser'                 => $ownerBramaTest->id,
-                'namabisnis'             => 'Brama Studio Creative',
-                'jenisbisnis'            => 'Creative Studio',
-                'alamat'                 => 'Jl. Senopati No. 88, Jakarta Selatan',
-                'deskripsi'              => 'Studio kreatif foto dan video profesional.',
-                'nomorhp'                => '081299887766',
-                'payment_mode'           => 'platform',
-                'saldo_platform'         => 18500000,
-                'weekend_price_type'     => 'multiplier',
-                'weekend_price_value'    => 1.10,
-                'cancel_before_hours'    => 24,
-                'reschedule_before_hours'=> 12,
-                'theme_color'            => 'purple',
-                'button_style'           => 'rounded-xl',
-                'card_style'             => 'modern',
+                'iduser' => $ownerBramaTest->id,
+                'namabisnis' => 'Brama Studio Creative',
+                'jenisbisnis' => 'Creative Studio',
+                'alamat' => 'Jl. Senopati No. 88, Jakarta Selatan',
+                'deskripsi' => 'Studio kreatif foto dan video profesional.',
+                'nomorhp' => '081299887766',
+                'payment_mode' => 'platform',
+                'weekend_price_type' => 'multiplier',
+                'weekend_price_value' => 1.10,
+                'cancel_before_hours' => 24,
+                'reschedule_before_hours' => 12,
+                'theme_color' => 'purple',
+                'button_style' => 'rounded-xl',
+                'card_style' => 'modern',
             ]
         );
 
@@ -143,25 +146,33 @@ class BramaStudioSeeder extends Seeder
         $tenantSilver = Tenant::updateOrCreate(
             ['slug' => 'brama-agency'],
             [
-                'iduser'                 => $ownerSilver->id,
-                'namabisnis'             => 'Brama Creative Agency',
-                'jenisbisnis'            => 'Creative Studio & Production',
-                'alamat'                 => 'Jl. Senopati No. 88, Kebayoran Baru, Jakarta Selatan',
-                'deskripsi'              => 'Studio kreatif terpadu untuk fotografi komersial, rekaman podcast, dan live streaming broadcast.',
-                'nomorhp'                => '081299887766',
-                'payment_mode'           => 'platform',
-                'midtrans_status'        => 'approved',
-                'midtrans_environment'   => 'sandbox',
-                'saldo_platform'         => 28500000,
-                'weekend_price_type'     => 'multiplier',
-                'weekend_price_value'    => 1.10,
-                'cancel_before_hours'    => 24,
-                'reschedule_before_hours'=> 12,
-                'theme_color'            => 'purple',
-                'button_style'           => 'rounded-xl',
-                'card_style'             => 'modern',
+                'iduser' => $ownerSilver->id,
+                'namabisnis' => 'Brama Creative Agency',
+                'jenisbisnis' => 'Creative Studio & Production',
+                'alamat' => 'Jl. Senopati No. 88, Kebayoran Baru, Jakarta Selatan',
+                'deskripsi' => 'Studio kreatif terpadu untuk fotografi komersial, rekaman podcast, dan live streaming broadcast.',
+                'nomorhp' => '081299887766',
+                'payment_mode' => 'platform',
+                'midtrans_status' => 'approved',
+                'midtrans_environment' => 'sandbox',
+                'weekend_price_type' => 'multiplier',
+                'weekend_price_value' => 1.10,
+                'cancel_before_hours' => 24,
+                'reschedule_before_hours' => 12,
+                'theme_color' => 'purple',
+                'button_style' => 'rounded-xl',
+                'card_style' => 'modern',
             ]
         );
+
+        // Owner memberships: DatabaseSeeder runs with WithoutModelEvents, which mutes Tenant::created.
+        $createOwnerMembership = app(CreateOwnerMembership::class);
+        foreach ([$tenantBrama, $tenantStudio, $tenantSilver] as $tenant) {
+            $createOwnerMembership->execute($tenant);
+        }
+
+        // Demo team for brama@bookqu.test so the Manajer and Kasir views can be checked locally.
+        $this->seedDemoTeam($tenantStudio);
 
         // Seed full rich suite for Brama Digital
         $this->seedTenantFullSuite($tenantBrama, $planPro);
@@ -176,61 +187,150 @@ class BramaStudioSeeder extends Seeder
     }
 
     /**
+     * Verified Manajer and Kasir accounts in the tenant's team (password `password`).
+     */
+    protected function seedDemoTeam(Tenant $tenant): void
+    {
+        $members = [
+            'manajer' => ['email' => 'manajer@bookqu.test', 'name' => 'Manajer Brama Studio', 'phone' => '081299887701'],
+            'kasir' => ['email' => 'kasir@bookqu.test', 'name' => 'Kasir Brama Studio', 'phone' => '081299887702'],
+        ];
+
+        foreach ($members as $role => $member) {
+            $user = User::updateOrCreate(
+                ['email' => $member['email']],
+                [
+                    'namalengkap' => $member['name'],
+                    'password' => Hash::make('password'),
+                    'nomorhp' => $member['phone'],
+                    'role' => 'owner',
+                    'email_verified_at' => now(),
+                ]
+            );
+
+            // scope-bypass: seeding runs without a tenant context; the row is written for this tenant only.
+            TenantMember::withoutGlobalScopes()->updateOrCreate(
+                ['idtenant' => $tenant->id, 'iduser' => $user->id],
+                ['role' => $role, 'invited_by' => $tenant->iduser, 'invited_at' => now(), 'accepted_at' => now(), 'revoked_at' => null]
+            );
+        }
+    }
+
+    /**
+     * Credit every successful booking payment to the platform balance, as the payment lifecycle does
+     * (TenantBalanceLedger::creditPaidBooking), and take the balance from the ledger (T-33). Before,
+     * the seeder wrote a fixed saldo_platform with no credited payment behind it, so Pembayaran showed
+     * a balance next to an empty ledger and a refund of a seeded payment did not lower the balance.
+     */
+    protected function seedBalance(Tenant $tenant): void
+    {
+        Payment::where('idtenant', $tenant->id)->where('tipe', 'booking')->where('status', 'sukses')
+            ->whereNull('balance_credited_at')
+            ->update(['balance_credited_at' => DB::raw('COALESCE(updated_at, created_at)')]);
+
+        $tenant->forceFill(['saldo_platform' => app(GetBalanceLedger::class)->execute($tenant)['total']])->save();
+    }
+
+    /**
+     * Tag successful booking payments with each voucher's promo, as checkout would, so Promo's
+     * "dipakai" and discount figures (read from price_breakdown) agree with the cards' used_count.
+     */
+    protected function seedPromoUsage(Tenant $tenant): void
+    {
+        $payments = Payment::where('idtenant', $tenant->id)->where('tipe', 'booking')->where('status', 'sukses')
+            ->whereNull('price_breakdown')->orderBy('id')->get();
+
+        foreach (Voucher::where('idtenant', $tenant->id)->orderBy('id')->get() as $voucher) {
+            $used = $payments->splice(0, (int) $voucher->used_count);
+            foreach ($used as $payment) {
+                $amount = (float) $payment->jumlah;
+                $discount = $voucher->discount_type === 'percentage'
+                    ? min($amount * (float) $voucher->discount_value / 100, (float) ($voucher->max_discount ?: $amount))
+                    : min((float) $voucher->discount_value, $amount);
+                $payment->forceFill(['price_breakdown' => ['promo' => [
+                    'id' => (int) $voucher->id, 'code' => $voucher->code, 'discount' => (int) round($discount),
+                ]]])->save();
+            }
+            $voucher->forceFill(['used_count' => $used->count()])->save();
+        }
+    }
+
+    /**
+     * Write a plain-colour stand-in image for a seeded gallery asset so its picture loads (T-22).
+     * The gallery holds images only (FR-ASSET-005), so every seeded asset is a JPEG or PNG.
+     */
+    protected function ensurePlaceholderFile(string $path, string $mime, ?string $dimensions): void
+    {
+        $disk = Storage::disk('public');
+        if ($disk->exists($path) || ! function_exists('imagecreatetruecolor')) {
+            return;
+        }
+
+        [$width, $height] = array_map('intval', explode('x', $dimensions ?: '600x400'));
+        $image = imagecreatetruecolor(max(1, $width), max(1, $height));
+        imagefill($image, 0, 0, (int) imagecolorallocate($image, 56, 33, 134));
+        ob_start();
+        $mime === 'image/png' ? imagepng($image) : imagejpeg($image, null, 80);
+        $disk->put($path, (string) ob_get_clean());
+        imagedestroy($image);
+    }
+
+    /**
      * Populate full suite of business data for a tenant.
      */
     protected function seedTenantFullSuite(Tenant $tenant, Plan $plan): void
     {
         // Set TenantContext so models using BelongsToTenant scope properly during seeding
-        app(\App\Support\TenantContext::class)->setTenantId($tenant->id);
+        app(TenantContext::class)->setTenantId($tenant->id);
 
         // Active Pro Subscription
         Subscription::updateOrCreate(
             ['idtenant' => $tenant->id],
             [
-                'idplan'             => $plan->id,
-                'status'             => 'active',
-                'langganan_mulai'    => Carbon::now()->subMonths(6),
+                'idplan' => $plan->id,
+                'status' => 'active',
+                'langganan_mulai' => Carbon::now()->subMonths(6),
                 'langganan_berakhir' => Carbon::now()->addMonths(6),
-                'trial_berakhir'     => null,
+                'trial_berakhir' => null,
             ]
         );
 
         // ── 4. Categories ────────────────────────────────────────────────────
         $categoriesData = [
             [
-                'name'        => 'Fotografi & Portrait Studio',
-                'slug'        => 'fotografi-portrait-studio',
+                'name' => 'Fotografi & Portrait Studio',
+                'slug' => 'fotografi-portrait-studio',
                 'description' => 'Sesi foto personal, wisuda, keluarga, dan photoshoot tematik dengan lighting studio lengkap.',
-                'color'       => 'purple',
-                'is_active'   => true,
+                'color' => 'purple',
+                'is_active' => true,
             ],
             [
-                'name'        => 'Podcast & Audio Production',
-                'slug'        => 'podcast-audio-production',
+                'name' => 'Podcast & Audio Production',
+                'slug' => 'podcast-audio-production',
                 'description' => 'Ruang kedap suara akustik dengan perlengkapan mic Shure & Rode, mixer, dan multi-kamera podcast.',
-                'color'       => 'indigo',
-                'is_active'   => true,
+                'color' => 'indigo',
+                'is_active' => true,
             ],
             [
-                'name'        => 'Videografi & Green Screen',
-                'slug'        => 'videografi-green-screen',
+                'name' => 'Videografi & Green Screen',
+                'slug' => 'videografi-green-screen',
                 'description' => 'Studio video luas dengan background green screen full-body 4K, lighting video profesional, dan teleprompter.',
-                'color'       => 'emerald',
-                'is_active'   => true,
+                'color' => 'emerald',
+                'is_active' => true,
             ],
             [
-                'name'        => 'Commercial & Product Shoot',
-                'slug'        => 'commercial-product-shoot',
+                'name' => 'Commercial & Product Shoot',
+                'slug' => 'commercial-product-shoot',
                 'description' => 'Pemotretan produk katalog, lookbook fashion, dan commercial branding brand Anda.',
-                'color'       => 'amber',
-                'is_active'   => true,
+                'color' => 'amber',
+                'is_active' => true,
             ],
             [
-                'name'        => 'Live Streaming & Broadcast',
-                'slug'        => 'live-streaming-broadcast',
+                'name' => 'Live Streaming & Broadcast',
+                'slug' => 'live-streaming-broadcast',
                 'description' => 'Hub penyiaran live streaming YouTube, TikTok, dan webinar interaktif dengan internet dedicated 200 Mbps.',
-                'color'       => 'rose',
-                'is_active'   => true,
+                'color' => 'rose',
+                'is_active' => true,
             ],
         ];
 
@@ -246,134 +346,134 @@ class BramaStudioSeeder extends Seeder
         // ── 5. Services ──────────────────────────────────────────────────────
         $servicesData = [
             [
-                'namalayanan'   => 'Studio Foto Basic (1 Jam)',
+                'namalayanan' => 'Studio Foto Basic (1 Jam)',
                 'category_slug' => 'fotografi-portrait-studio',
-                'harga'         => 150000,
-                'durasi'        => 60,
-                'deskripsi'     => 'Sewa studio foto dengan background polos standar (putih/hitam/abu-abu). Include 2 lighting Godox dan trigger.',
-                'satuan_harga'  => 'jam',
+                'harga' => 150000,
+                'durasi' => 60,
+                'deskripsi' => 'Sewa studio foto dengan background polos standar (putih/hitam/abu-abu). Include 2 lighting Godox dan trigger.',
+                'satuan_harga' => 'jam',
                 'satuan_durasi' => 'menit',
-                'is_active'     => true,
-                'is_popular'    => true,
-                'kapasitas'     => 5,
-                'image_url'     => 'https://placehold.co/1200x675/EEF2FF/382186?text=Studio+Foto+Basic',
+                'is_active' => true,
+                'is_popular' => true,
+                'kapasitas' => 5,
+                'image_url' => 'https://placehold.co/1200x675/EEF2FF/382186?text=Studio+Foto+Basic',
             ],
             [
-                'namalayanan'   => 'Studio Foto Tematik VIP (2 Jam)',
+                'namalayanan' => 'Studio Foto Tematik VIP (2 Jam)',
                 'category_slug' => 'fotografi-portrait-studio',
-                'harga'         => 350000,
-                'durasi'        => 120,
-                'deskripsi'     => 'Sesi foto background tematik vintage & loft, softbox lighting premium, sofa set, dan ruang ganti privat.',
-                'satuan_harga'  => 'sesi',
+                'harga' => 350000,
+                'durasi' => 120,
+                'deskripsi' => 'Sesi foto background tematik vintage & loft, softbox lighting premium, sofa set, dan ruang ganti privat.',
+                'satuan_harga' => 'sesi',
                 'satuan_durasi' => 'menit',
-                'is_active'     => true,
-                'is_popular'    => true,
-                'kapasitas'     => 8,
-                'image_url'     => 'https://placehold.co/1200x675/EEF2FF/382186?text=Studio+Tematik+VIP',
+                'is_active' => true,
+                'is_popular' => true,
+                'kapasitas' => 8,
+                'image_url' => 'https://placehold.co/1200x675/EEF2FF/382186?text=Studio+Tematik+VIP',
             ],
             [
-                'namalayanan'   => 'Graduation & Family Photoshoot',
+                'namalayanan' => 'Graduation & Family Photoshoot',
                 'category_slug' => 'fotografi-portrait-studio',
-                'harga'         => 500000,
-                'durasi'        => 90,
-                'deskripsi'     => 'Paket lengkap foto keluarga atau wisuda termasuk fotografer pendamping profesional dan 15 foto hasil edit warna.',
-                'satuan_harga'  => 'sesi',
+                'harga' => 500000,
+                'durasi' => 90,
+                'deskripsi' => 'Paket lengkap foto keluarga atau wisuda termasuk fotografer pendamping profesional dan 15 foto hasil edit warna.',
+                'satuan_harga' => 'sesi',
                 'satuan_durasi' => 'menit',
-                'is_active'     => true,
-                'is_popular'    => true,
-                'kapasitas'     => 10,
-                'image_url'     => 'https://placehold.co/1200x675/EEF2FF/382186?text=Graduation+Family',
+                'is_active' => true,
+                'is_popular' => true,
+                'kapasitas' => 10,
+                'image_url' => 'https://placehold.co/1200x675/EEF2FF/382186?text=Graduation+Family',
             ],
             [
-                'namalayanan'   => 'Studio Podcast Multi-Mic 4 Orang (2 Jam)',
+                'namalayanan' => 'Studio Podcast Multi-Mic 4 Orang (2 Jam)',
                 'category_slug' => 'podcast-audio-production',
-                'harga'         => 300000,
-                'durasi'        => 120,
-                'deskripsi'     => 'Studio podcast kedap suara akustik dengan 4 mic Shure SM7B, mixer Rodecaster Pro, dan multi-kamera Sony 4K.',
-                'satuan_harga'  => 'sesi',
+                'harga' => 300000,
+                'durasi' => 120,
+                'deskripsi' => 'Studio podcast kedap suara akustik dengan 4 mic Shure SM7B, mixer Rodecaster Pro, dan multi-kamera Sony 4K.',
+                'satuan_harga' => 'sesi',
                 'satuan_durasi' => 'menit',
-                'is_active'     => true,
-                'is_popular'    => true,
-                'kapasitas'     => 4,
-                'image_url'     => 'https://placehold.co/1200x675/EEF2FF/382186?text=Studio+Podcast',
+                'is_active' => true,
+                'is_popular' => true,
+                'kapasitas' => 4,
+                'image_url' => 'https://placehold.co/1200x675/EEF2FF/382186?text=Studio+Podcast',
             ],
             [
-                'namalayanan'   => 'Audio Voice Over & Dubbing Session (1 Jam)',
+                'namalayanan' => 'Audio Voice Over & Dubbing Session (1 Jam)',
                 'category_slug' => 'podcast-audio-production',
-                'harga'         => 200000,
-                'durasi'        => 60,
-                'deskripsi'     => 'Booth vokal akustik terisolasi untuk rekaman VO iklan, audiobook, dubbing video, dan podcast solo.',
-                'satuan_harga'  => 'jam',
+                'harga' => 200000,
+                'durasi' => 60,
+                'deskripsi' => 'Booth vokal akustik terisolasi untuk rekaman VO iklan, audiobook, dubbing video, dan podcast solo.',
+                'satuan_harga' => 'jam',
                 'satuan_durasi' => 'menit',
-                'is_active'     => true,
-                'is_popular'    => false,
-                'kapasitas'     => 2,
-                'image_url'     => 'https://placehold.co/1200x675/EEF2FF/382186?text=Voice+Over',
+                'is_active' => true,
+                'is_popular' => false,
+                'kapasitas' => 2,
+                'image_url' => 'https://placehold.co/1200x675/EEF2FF/382186?text=Voice+Over',
             ],
             [
-                'namalayanan'   => 'Studio Video Green Screen 4K (2 Jam)',
+                'namalayanan' => 'Studio Video Green Screen 4K (2 Jam)',
                 'category_slug' => 'videografi-green-screen',
-                'harga'         => 450000,
-                'durasi'        => 120,
-                'deskripsi'     => 'Studio video khusus dengan green screen lantai-dinding tanpa bayangan, lampu continuous Aputure, dan teleprompter.',
-                'satuan_harga'  => 'sesi',
+                'harga' => 450000,
+                'durasi' => 120,
+                'deskripsi' => 'Studio video khusus dengan green screen lantai-dinding tanpa bayangan, lampu continuous Aputure, dan teleprompter.',
+                'satuan_harga' => 'sesi',
                 'satuan_durasi' => 'menit',
-                'is_active'     => true,
-                'is_popular'    => false,
-                'kapasitas'     => 8,
-                'image_url'     => 'https://placehold.co/1200x675/EEF2FF/382186?text=Green+Screen+4K',
+                'is_active' => true,
+                'is_popular' => false,
+                'kapasitas' => 8,
+                'image_url' => 'https://placehold.co/1200x675/EEF2FF/382186?text=Green+Screen+4K',
             ],
             [
-                'namalayanan'   => 'Creative Music Video Production (Half Day)',
+                'namalayanan' => 'Creative Music Video Production (Half Day)',
                 'category_slug' => 'videografi-green-screen',
-                'harga'         => 1500000,
-                'durasi'        => 240,
-                'deskripsi'     => 'Akses studio lengkap 4 jam untuk produksi video musik indie, creative dance cover, dan video klip sinematik.',
-                'satuan_harga'  => 'sesi',
+                'harga' => 1500000,
+                'durasi' => 240,
+                'deskripsi' => 'Akses studio lengkap 4 jam untuk produksi video musik indie, creative dance cover, dan video klip sinematik.',
+                'satuan_harga' => 'sesi',
                 'satuan_durasi' => 'menit',
-                'is_active'     => true,
-                'is_popular'    => true,
-                'kapasitas'     => 15,
-                'image_url'     => 'https://placehold.co/1200x675/EEF2FF/382186?text=Music+Video+Set',
+                'is_active' => true,
+                'is_popular' => true,
+                'kapasitas' => 15,
+                'image_url' => 'https://placehold.co/1200x675/EEF2FF/382186?text=Music+Video+Set',
             ],
             [
-                'namalayanan'   => 'Product & Catalog Commercial Shoot',
+                'namalayanan' => 'Product & Catalog Commercial Shoot',
                 'category_slug' => 'commercial-product-shoot',
-                'harga'         => 600000,
-                'durasi'        => 120,
-                'deskripsi'     => 'Pemotretan produk fashion, kosmetik, atau makanan dengan meja turntable 360°, macro lens, dan lighting presisi.',
-                'satuan_harga'  => 'sesi',
+                'harga' => 600000,
+                'durasi' => 120,
+                'deskripsi' => 'Pemotretan produk fashion, kosmetik, atau makanan dengan meja turntable 360°, macro lens, dan lighting presisi.',
+                'satuan_harga' => 'sesi',
                 'satuan_durasi' => 'menit',
-                'is_active'     => true,
-                'is_popular'    => false,
-                'kapasitas'     => 6,
-                'image_url'     => 'https://placehold.co/1200x675/EEF2FF/382186?text=Product+Shoot',
+                'is_active' => true,
+                'is_popular' => false,
+                'kapasitas' => 6,
+                'image_url' => 'https://placehold.co/1200x675/EEF2FF/382186?text=Product+Shoot',
             ],
             [
-                'namalayanan'   => 'Live Streaming Broadcast Hub (3 Jam)',
+                'namalayanan' => 'Live Streaming Broadcast Hub (3 Jam)',
                 'category_slug' => 'live-streaming-broadcast',
-                'harga'         => 850000,
-                'durasi'        => 180,
-                'deskripsi'     => 'Studio live streaming siap pakai dengan ATEM Mini Pro switcher, audio mixer, multi-lighting, dan koneksi internet redundant.',
-                'satuan_harga'  => 'sesi',
+                'harga' => 850000,
+                'durasi' => 180,
+                'deskripsi' => 'Studio live streaming siap pakai dengan ATEM Mini Pro switcher, audio mixer, multi-lighting, dan koneksi internet redundant.',
+                'satuan_harga' => 'sesi',
                 'satuan_durasi' => 'menit',
-                'is_active'     => true,
-                'is_popular'    => true,
-                'kapasitas'     => 6,
-                'image_url'     => 'https://placehold.co/1200x675/EEF2FF/382186?text=Live+Streaming+Hub',
+                'is_active' => true,
+                'is_popular' => true,
+                'kapasitas' => 6,
+                'image_url' => 'https://placehold.co/1200x675/EEF2FF/382186?text=Live+Streaming+Hub',
             ],
             [
-                'namalayanan'   => 'Webinar & Corporate Broadcast Room (2 Jam)',
+                'namalayanan' => 'Webinar & Corporate Broadcast Room (2 Jam)',
                 'category_slug' => 'live-streaming-broadcast',
-                'harga'         => 750000,
-                'durasi'        => 120,
-                'deskripsi'     => 'Studio broadcast profesional untuk presentasi webinar korporat, training daring, dan townhall meeting perusahaan.',
-                'satuan_harga'  => 'sesi',
+                'harga' => 750000,
+                'durasi' => 120,
+                'deskripsi' => 'Studio broadcast profesional untuk presentasi webinar korporat, training daring, dan townhall meeting perusahaan.',
+                'satuan_harga' => 'sesi',
                 'satuan_durasi' => 'menit',
-                'is_active'     => true,
-                'is_popular'    => false,
-                'kapasitas'     => 10,
-                'image_url'     => 'https://placehold.co/1200x675/EEF2FF/382186?text=Corporate+Webinar',
+                'is_active' => true,
+                'is_popular' => false,
+                'kapasitas' => 10,
+                'image_url' => 'https://placehold.co/1200x675/EEF2FF/382186?text=Corporate+Webinar',
             ],
         ];
 
@@ -390,131 +490,55 @@ class BramaStudioSeeder extends Seeder
             $services[$sData['namalayanan']] = $service;
         }
 
-        // ── 6. Staff & Pivots ────────────────────────────────────────────────
-        $staffData = [
-            [
-                'name'                  => 'Bramantyo',
-                'role'                  => 'Lead Creative Director',
-                'email'                 => 'bramantyo@bramadigital.com',
-                'phone'                 => '081299887766',
-                'availability_schedule' => 'Shift Pagi & Siang (08:00 - 17:00)',
-                'is_active'             => true,
-                'service_names'         => ['Studio Foto Tematik VIP (2 Jam)', 'Creative Music Video Production (Half Day)', 'Product & Catalog Commercial Shoot'],
-            ],
-            [
-                'name'                  => 'Bella Kartika',
-                'role'                  => 'Senior Studio Photographer',
-                'email'                 => 'bella@bramadigital.com',
-                'phone'                 => '081299887711',
-                'availability_schedule' => 'Shift Fleksibel (09:00 - 18:00)',
-                'is_active'             => true,
-                'service_names'         => ['Studio Foto Basic (1 Jam)', 'Studio Foto Tematik VIP (2 Jam)', 'Graduation & Family Photoshoot'],
-            ],
-            [
-                'name'                  => 'Dimas Audio',
-                'role'                  => 'Sound Engineer & Podcast Specialist',
-                'email'                 => 'dimas@bramadigital.com',
-                'phone'                 => '081299887722',
-                'availability_schedule' => 'Shift Siang & Malam (13:00 - 21:00)',
-                'is_active'             => true,
-                'service_names'         => ['Studio Podcast Multi-Mic 4 Orang (2 Jam)', 'Audio Voice Over & Dubbing Session (1 Jam)', 'Webinar & Corporate Broadcast Room (2 Jam)'],
-            ],
-            [
-                'name'                  => 'Rian Videographer',
-                'role'                  => 'Video Production Specialist',
-                'email'                 => 'rian@bramadigital.com',
-                'phone'                 => '081299887733',
-                'availability_schedule' => 'Shift Pagi & Siang (08:00 - 17:00)',
-                'is_active'             => true,
-                'service_names'         => ['Studio Video Green Screen 4K (2 Jam)', 'Creative Music Video Production (Half Day)', 'Live Streaming Broadcast Hub (3 Jam)'],
-            ],
-            [
-                'name'                  => 'Siti Wardrobe & MUA',
-                'role'                  => 'Stylist & Makeup Artist',
-                'email'                 => 'siti@bramadigital.com',
-                'phone'                 => '081299887744',
-                'availability_schedule' => 'Shift Penuh (08:00 - 18:00)',
-                'is_active'             => true,
-                'service_names'         => ['Studio Foto Tematik VIP (2 Jam)', 'Graduation & Family Photoshoot'],
-            ],
-            [
-                'name'                  => 'Fajar Broadcast Tech',
-                'role'                  => 'Streaming & Broadcast Operator',
-                'email'                 => 'fajar@bramadigital.com',
-                'phone'                 => '081299887755',
-                'availability_schedule' => 'Shift Malam (15:00 - 22:00)',
-                'is_active'             => true,
-                'service_names'         => ['Live Streaming Broadcast Hub (3 Jam)', 'Webinar & Corporate Broadcast Room (2 Jam)'],
-            ],
-        ];
-
-        foreach ($staffData as $st) {
-            $sNames = $st['service_names'];
-            unset($st['service_names']);
-
-            $staffObj = Staff::updateOrCreate(
-                ['idtenant' => $tenant->id, 'name' => $st['name']],
-                array_merge($st, ['idtenant' => $tenant->id])
-            );
-
-            $targetServiceIds = [];
-            foreach ($sNames as $sName) {
-                if (isset($services[$sName])) {
-                    $targetServiceIds[] = $services[$sName]->id;
-                }
-            }
-            $staffObj->services()->sync($targetServiceIds);
-        }
-
         // ── 7. Physical Resources & Rooms ────────────────────────────────────
         $resourcesData = [
             [
-                'name'                => 'Studio Foto A (White Cyclorama)',
-                'type'                => 'Cyclorama Studio',
-                'capacity'            => 10,
+                'name' => 'Studio Foto A (White Cyclorama)',
+                'type' => 'Cyclorama Studio',
+                'capacity' => 10,
                 'availability_status' => 'available',
-                'is_active'           => true,
-                'service_names'       => ['Studio Foto Basic (1 Jam)', 'Studio Foto Tematik VIP (2 Jam)', 'Product & Catalog Commercial Shoot'],
+                'is_active' => true,
+                'service_names' => ['Studio Foto Basic (1 Jam)', 'Studio Foto Tematik VIP (2 Jam)', 'Product & Catalog Commercial Shoot'],
             ],
             [
-                'name'                => 'Studio Foto B (Thematic Vintage Loft)',
-                'type'                => 'Thematic Room',
-                'capacity'            => 8,
+                'name' => 'Studio Foto B (Thematic Vintage Loft)',
+                'type' => 'Thematic Room',
+                'capacity' => 8,
                 'availability_status' => 'available',
-                'is_active'           => true,
-                'service_names'       => ['Studio Foto Tematik VIP (2 Jam)', 'Graduation & Family Photoshoot'],
+                'is_active' => true,
+                'service_names' => ['Studio Foto Tematik VIP (2 Jam)', 'Graduation & Family Photoshoot'],
             ],
             [
-                'name'                => 'Podcast Suite 1 (Acoustic Treated)',
-                'type'                => 'Soundproof Room',
-                'capacity'            => 4,
+                'name' => 'Podcast Suite 1 (Acoustic Treated)',
+                'type' => 'Soundproof Room',
+                'capacity' => 4,
                 'availability_status' => 'available',
-                'is_active'           => true,
-                'service_names'       => ['Studio Podcast Multi-Mic 4 Orang (2 Jam)', 'Audio Voice Over & Dubbing Session (1 Jam)'],
+                'is_active' => true,
+                'service_names' => ['Studio Podcast Multi-Mic 4 Orang (2 Jam)', 'Audio Voice Over & Dubbing Session (1 Jam)'],
             ],
             [
-                'name'                => 'Green Screen Stage 4K',
-                'type'                => 'Video Production Stage',
-                'capacity'            => 12,
+                'name' => 'Green Screen Stage 4K',
+                'type' => 'Video Production Stage',
+                'capacity' => 12,
                 'availability_status' => 'available',
-                'is_active'           => true,
-                'service_names'       => ['Studio Video Green Screen 4K (2 Jam)', 'Creative Music Video Production (Half Day)'],
+                'is_active' => true,
+                'service_names' => ['Studio Video Green Screen 4K (2 Jam)', 'Creative Music Video Production (Half Day)'],
             ],
             [
-                'name'                => 'Live Streaming Control Room',
-                'type'                => 'Broadcast Hub',
-                'capacity'            => 6,
+                'name' => 'Live Streaming Control Room',
+                'type' => 'Broadcast Hub',
+                'capacity' => 6,
                 'availability_status' => 'available',
-                'is_active'           => true,
-                'service_names'       => ['Live Streaming Broadcast Hub (3 Jam)', 'Webinar & Corporate Broadcast Room (2 Jam)'],
+                'is_active' => true,
+                'service_names' => ['Live Streaming Broadcast Hub (3 Jam)', 'Webinar & Corporate Broadcast Room (2 Jam)'],
             ],
             [
-                'name'                => 'VIP Lounge & Private Dressing Room',
-                'type'                => 'Hospitality Area',
-                'capacity'            => 6,
+                'name' => 'VIP Lounge & Private Dressing Room',
+                'type' => 'Hospitality Area',
+                'capacity' => 6,
                 'availability_status' => 'available',
-                'is_active'           => true,
-                'service_names'       => ['Studio Foto Tematik VIP (2 Jam)', 'Graduation & Family Photoshoot', 'Creative Music Video Production (Half Day)'],
+                'is_active' => true,
+                'service_names' => ['Studio Foto Tematik VIP (2 Jam)', 'Graduation & Family Photoshoot', 'Creative Music Video Production (Half Day)'],
             ],
         ];
 
@@ -522,9 +546,9 @@ class BramaStudioSeeder extends Seeder
             $rNames = $rd['service_names'];
             unset($rd['service_names']);
 
-            $resObj = Resource::updateOrCreate(
+            $unit = Unit::updateOrCreate(
                 ['idtenant' => $tenant->id, 'name' => $rd['name']],
-                array_merge($rd, ['idtenant' => $tenant->id])
+                ['type' => $rd['type'], 'kapasitas' => max(1, (int) $rd['capacity']), 'is_active' => $rd['is_active']]
             );
 
             $targetServiceIds = [];
@@ -533,81 +557,81 @@ class BramaStudioSeeder extends Seeder
                     $targetServiceIds[] = $services[$rName]->id;
                 }
             }
-            $resObj->services()->sync($targetServiceIds);
+            $unit->services()->sync($targetServiceIds);
         }
 
         // ── 8. Additional Items / Add-ons ────────────────────────────────────
         $addonsData = [
             [
-                'name'          => 'Extra Lighting Godox SL-60W Set',
-                'description'   => 'Tambahan 2 lampu continuous Godox dengan softbox octagon 90cm.',
-                'price'         => 50000,
-                'stock'         => 5,
-                'is_unlimited'  => false,
-                'is_active'     => true,
+                'name' => 'Extra Lighting Godox SL-60W Set',
+                'description' => 'Tambahan 2 lampu continuous Godox dengan softbox octagon 90cm.',
+                'price' => 50000,
+                'stock' => 5,
+                'is_unlimited' => false,
+                'is_active' => true,
                 'service_names' => ['Studio Foto Basic (1 Jam)', 'Studio Foto Tematik VIP (2 Jam)', 'Studio Video Green Screen 4K (2 Jam)'],
             ],
             [
-                'name'          => 'Wireless Mic Rode Wireless GO II (Dual Kit)',
-                'description'   => 'Set mic nirkabel dual channel untuk rekaman wawancara atau vlog bergerak.',
-                'price'         => 75000,
-                'stock'         => 2, // Kritis (2 unit)
-                'is_unlimited'  => false,
-                'is_active'     => true,
+                'name' => 'Wireless Mic Rode Wireless GO II (Dual Kit)',
+                'description' => 'Set mic nirkabel dual channel untuk rekaman wawancara atau vlog bergerak.',
+                'price' => 75000,
+                'stock' => 2, // Kritis (2 unit)
+                'is_unlimited' => false,
+                'is_active' => true,
                 'service_names' => ['Studio Podcast Multi-Mic 4 Orang (2 Jam)', 'Studio Video Green Screen 4K (2 Jam)', 'Live Streaming Broadcast Hub (3 Jam)'],
             ],
             [
-                'name'          => 'Lensa Sony G-Master 24-70mm f/2.8',
-                'description'   => 'Sewa lensa zoom profesional ketajaman tinggi untuk kamera mirrorless Sony E-Mount.',
-                'price'         => 120000,
-                'stock'         => 0, // Habis (0 unit)
-                'is_unlimited'  => false,
-                'is_active'     => true,
+                'name' => 'Lensa Sony G-Master 24-70mm f/2.8',
+                'description' => 'Sewa lensa zoom profesional ketajaman tinggi untuk kamera mirrorless Sony E-Mount.',
+                'price' => 120000,
+                'stock' => 0, // Habis (0 unit)
+                'is_unlimited' => false,
+                'is_active' => true,
                 'service_names' => ['Studio Foto Basic (1 Jam)', 'Studio Foto Tematik VIP (2 Jam)', 'Graduation & Family Photoshoot'],
             ],
             [
-                'name'          => 'Smoke Machine Atmospheric FX',
-                'description'   => 'Efek kabut panggung sinematik untuk photoshoot dramatis atau video klip musik.',
-                'price'         => 65000,
-                'stock'         => 3, // Kritis (3 unit)
-                'is_unlimited'  => false,
-                'is_active'     => true,
+                'name' => 'Smoke Machine Atmospheric FX',
+                'description' => 'Efek kabut panggung sinematik untuk photoshoot dramatis atau video klip musik.',
+                'price' => 65000,
+                'stock' => 3, // Kritis (3 unit)
+                'is_unlimited' => false,
+                'is_active' => true,
                 'service_names' => ['Studio Foto Tematik VIP (2 Jam)', 'Creative Music Video Production (Half Day)'],
             ],
             [
-                'name'          => 'Properti & Jubah Wisuda Lengkap',
-                'description'   => 'Peminjaman jubah wisuda standar universitas, topi toga, map ijazah, dan buket bunga.',
-                'price'         => 80000,
-                'stock'         => 10, // Tersedia normal (10 unit)
-                'is_unlimited'  => false,
-                'is_active'     => true,
+                'name' => 'Properti & Jubah Wisuda Lengkap',
+                'description' => 'Peminjaman jubah wisuda standar universitas, topi toga, map ijazah, dan buket bunga.',
+                'price' => 80000,
+                'stock' => 10, // Tersedia normal (10 unit)
+                'is_unlimited' => false,
+                'is_active' => true,
                 'service_names' => ['Graduation & Family Photoshoot'],
             ],
             [
-                'name'          => 'Asisten Studio Tambahan (Per Sesi)',
-                'description'   => 'Bantuan kru studio untuk lighting stand, penataan wardrobe, dan kontrol teleprompter.',
-                'price'         => 100000,
-                'stock'         => null, // Unlimited
-                'is_unlimited'  => true,
-                'is_active'     => true,
+                'name' => 'Asisten Studio Tambahan (Per Sesi)',
+                'description' => 'Bantuan kru studio untuk lighting stand, penataan wardrobe, dan kontrol teleprompter.',
+                'price' => 100000,
+                'stock' => null, // Unlimited
+                'is_unlimited' => true,
+                'is_active' => true,
                 'service_names' => array_keys($services),
             ],
             [
-                'name'          => 'Instant RAW to JPEG Cloud Export',
-                'description'   => 'Seluruh file foto langsung dikonversi dan diunggah ke Google Drive private dalam 15 menit.',
-                'price'         => 35000,
-                'stock'         => null, // Unlimited
-                'is_unlimited'  => true,
-                'is_active'     => true,
+                'name' => 'Instant RAW to JPEG Cloud Export',
+                'description' => 'Seluruh file foto langsung dikonversi dan diunggah ke Google Drive private dalam 15 menit.',
+                'price' => 35000,
+                'stock' => null, // Unlimited
+                'is_unlimited' => true,
+                'is_active' => true,
                 'service_names' => array_keys($services),
             ],
             [
-                'name'          => 'Fast Delivery Retouch Foto (1x24 Jam)',
-                'description'   => 'Layanan kilat editing warna, penghalusan kulit, dan penyesuaian framing selesai besoknya.',
-                'price'         => 150000,
-                'stock'         => null, // Unlimited
-                'is_unlimited'  => true,
-                'is_active'     => true,
+                'name' => 'Fast Delivery Retouch Foto (1x24 Jam)',
+                'description' => 'Layanan kilat editing warna, penghalusan kulit, dan penyesuaian framing selesai besoknya.',
+                'price' => 150000,
+                'stock' => null, // Unlimited
+                'is_unlimited' => true,
+                'is_active' => true,
                 'service_names' => ['Studio Foto Basic (1 Jam)', 'Studio Foto Tematik VIP (2 Jam)', 'Graduation & Family Photoshoot'],
             ],
         ];
@@ -632,7 +656,8 @@ class BramaStudioSeeder extends Seeder
 
         // ── 9. Blocked Dates ─────────────────────────────────────────────────
         OwnerBlockedDate::updateOrCreate(
-            ['idtenant' => $tenant->id, 'tanggal' => Carbon::today()->addDays(3)->toDateString()],
+            // Past the seeded bookings (they reach 14 days ahead), so a closed date never holds active bookings (T-40).
+            ['idtenant' => $tenant->id, 'tanggal' => Carbon::today()->addDays(21)->toDateString()],
             ['alasan' => 'Maintenance Peralatan & Kalibrasi Lighting Studio']
         );
         OwnerBlockedDate::updateOrCreate(
@@ -643,43 +668,43 @@ class BramaStudioSeeder extends Seeder
         // ── 10. Vouchers ─────────────────────────────────────────────────────
         $vouchers = [
             [
-                'code'                => 'HAPPYHOUR',
-                'discount_type'       => 'percentage',
-                'discount_value'      => 20,
-                'min_spending'        => 200000,
-                'max_discount'        => 75000,
-                'usage_limit'         => 100,
-                'used_count'          => 14,
-                'start_date'          => Carbon::now()->subDays(15)->toDateString(),
-                'end_date'            => Carbon::now()->addDays(45)->toDateString(),
+                'code' => 'HAPPYHOUR',
+                'discount_type' => 'percentage',
+                'discount_value' => 20,
+                'min_spending' => 200000,
+                'max_discount' => 75000,
+                'usage_limit' => 100,
+                'used_count' => 14,
+                'start_date' => Carbon::now()->subDays(15)->toDateString(),
+                'end_date' => Carbon::now()->addDays(45)->toDateString(),
                 'applicable_services' => 'all',
-                'is_active'           => true,
+                'is_active' => true,
             ],
             [
-                'code'                => 'BRAMA15',
-                'discount_type'       => 'percentage',
-                'discount_value'      => 15,
-                'min_spending'        => 150000,
-                'max_discount'        => 50000,
-                'usage_limit'         => 200,
-                'used_count'          => 38,
-                'start_date'          => Carbon::now()->subDays(30)->toDateString(),
-                'end_date'            => Carbon::now()->addDays(60)->toDateString(),
+                'code' => 'BRAMA15',
+                'discount_type' => 'percentage',
+                'discount_value' => 15,
+                'min_spending' => 150000,
+                'max_discount' => 50000,
+                'usage_limit' => 200,
+                'used_count' => 38,
+                'start_date' => Carbon::now()->subDays(30)->toDateString(),
+                'end_date' => Carbon::now()->addDays(60)->toDateString(),
                 'applicable_services' => 'all',
-                'is_active'           => true,
+                'is_active' => true,
             ],
             [
-                'code'                => 'POTONGAN50RB',
-                'discount_type'       => 'fixed',
-                'discount_value'      => 50000,
-                'min_spending'        => 300000,
-                'max_discount'        => 50000,
-                'usage_limit'         => 50,
-                'used_count'          => 9,
-                'start_date'          => Carbon::now()->subDays(10)->toDateString(),
-                'end_date'            => Carbon::now()->addDays(30)->toDateString(),
+                'code' => 'POTONGAN50RB',
+                'discount_type' => 'fixed',
+                'discount_value' => 50000,
+                'min_spending' => 300000,
+                'max_discount' => 50000,
+                'usage_limit' => 50,
+                'used_count' => 9,
+                'start_date' => Carbon::now()->subDays(10)->toDateString(),
+                'end_date' => Carbon::now()->addDays(30)->toDateString(),
                 'applicable_services' => 'all',
-                'is_active'           => true,
+                'is_active' => true,
             ],
         ];
 
@@ -706,7 +731,7 @@ class BramaStudioSeeder extends Seeder
         // ── 12. Dummy Assets ─────────────────────────────────────────────────
         $dummyAssets = [
             ['title' => 'Logo Brama Digital Studio HD', 'category' => 'logo', 'file_path' => 'assets/brama-logo.png', 'mime_type' => 'image/png', 'file_size' => 245000, 'dimensions' => '512x512'],
-            ['title' => 'Brosur & Ratecard Studio 2026', 'category' => 'general', 'file_path' => 'assets/ratecard-2026.pdf', 'mime_type' => 'application/pdf', 'file_size' => 1250000, 'dimensions' => null],
+            ['title' => 'Ratecard Studio 2026', 'category' => 'general', 'file_path' => 'assets/ratecard-2026.jpg', 'mime_type' => 'image/jpeg', 'file_size' => 380000, 'dimensions' => '1080x1350'],
             ['title' => 'Banner Promo Happy Hour.jpg', 'category' => 'cover', 'file_path' => 'assets/banner-promo.jpg', 'mime_type' => 'image/jpeg', 'file_size' => 450000, 'dimensions' => '1200x630'],
         ];
         foreach ($dummyAssets as $da) {
@@ -714,6 +739,7 @@ class BramaStudioSeeder extends Seeder
                 ['idtenant' => $tenant->id, 'title' => $da['title']],
                 array_merge($da, ['idtenant' => $tenant->id])
             );
+            $this->ensurePlaceholderFile($da['file_path'], $da['mime_type'], $da['dimensions']);
         }
 
         // ── 13. Comprehensive Schedules, Bookings & Payments ─────────────────
@@ -773,12 +799,12 @@ class BramaStudioSeeder extends Seeder
             $endH = sprintf('%02d:%s', min(23, $startH + $durHours), $startM);
 
             $sched = Schedule::create([
-                'idtenant'       => $tenant->id,
-                'idlayanan'      => $ts['svc']->id,
-                'tanggal'        => $today->toDateString(),
-                'jam_mulai'      => $ts['hour'],
-                'jam_selesai'    => $endH,
-                'status'         => 'tersedia',
+                'idtenant' => $tenant->id,
+                'idlayanan' => $ts['svc']->id,
+                'tanggal' => $today->toDateString(),
+                'jam_mulai' => $ts['hour'],
+                'jam_selesai' => $endH,
+                'status' => 'tersedia',
                 'harga_override' => $ts['svc']->harga,
             ]);
 
@@ -786,34 +812,34 @@ class BramaStudioSeeder extends Seeder
                 $payId = null;
                 if (in_array($ts['status'], ['paid', 'completed'])) {
                     $payment = Payment::create([
-                        'idtenant'       => $tenant->id,
-                        'tipe'           => 'booking',
-                        'jumlah'         => $ts['svc']->harga,
-                        'status'         => 'sukses',
-                        'metode'         => $paymentMethods[array_rand($paymentMethods)],
-                        'external_id'    => 'PAY-' . strtoupper(Str::random(10)),
-                        'nama_pembayar'  => $ts['cust']['name'],
+                        'idtenant' => $tenant->id,
+                        'tipe' => 'booking',
+                        'jumlah' => $ts['svc']->harga,
+                        'status' => 'sukses',
+                        'metode' => $paymentMethods[array_rand($paymentMethods)],
+                        'external_id' => 'PAY-'.strtoupper(Str::random(10)),
+                        'nama_pembayar' => $ts['cust']['name'],
                         'email_pembayar' => $ts['cust']['email'],
-                        'hp_pembayar'    => $ts['cust']['phone'],
+                        'hp_pembayar' => $ts['cust']['phone'],
                     ]);
                     $payId = $payment->id;
                 }
 
                 $booking = Booking::create([
-                    'idtenant'           => $tenant->id,
-                    'idlayanan'          => $ts['svc']->id,
-                    'idschedule'         => $sched->id,
-                    'namapelanggan'      => $ts['cust']['name'],
-                    'nomorhp'            => $ts['cust']['phone'],
-                    'email'              => $ts['cust']['email'],
-                    'tanggalbooking'     => $today->toDateString(),
-                    'jam'                => $ts['hour'],
-                    'status'             => $ts['status'],
-                    'idpayment'          => $payId,
-                    'catatan'            => 'Booking operasional hari ini.',
-                    'booking_code'       => 'BKG-' . strtoupper(Str::random(8)),
+                    'idtenant' => $tenant->id,
+                    'idlayanan' => $ts['svc']->id,
+                    'idschedule' => $sched->id,
+                    'namapelanggan' => $ts['cust']['name'],
+                    'nomorhp' => $ts['cust']['phone'],
+                    'email' => $ts['cust']['email'],
+                    'tanggalbooking' => $today->toDateString(),
+                    'jam' => $ts['hour'],
+                    'status' => $ts['status'],
+                    'idpayment' => $payId,
+                    'catatan' => 'Booking operasional hari ini.',
+                    'booking_code' => 'BKG-'.strtoupper(Str::random(8)),
                     'cancellation_token' => Str::random(32),
-                    'reschedule_token'   => Str::random(32),
+                    'reschedule_token' => Str::random(32),
                 ]);
 
                 if ($payId) {
@@ -845,12 +871,12 @@ class BramaStudioSeeder extends Seeder
                 $endH = sprintf('%02d:00', min(23, $startH + $durHours));
 
                 $sched = Schedule::create([
-                    'idtenant'       => $tenant->id,
-                    'idlayanan'      => $service->id,
-                    'tanggal'        => $currentDay->toDateString(),
-                    'jam_mulai'      => $hour,
-                    'jam_selesai'    => $endH,
-                    'status'         => 'tersedia',
+                    'idtenant' => $tenant->id,
+                    'idlayanan' => $service->id,
+                    'tanggal' => $currentDay->toDateString(),
+                    'jam_mulai' => $hour,
+                    'jam_selesai' => $endH,
+                    'status' => 'tersedia',
                     'harga_override' => $service->harga,
                 ]);
 
@@ -868,15 +894,15 @@ class BramaStudioSeeder extends Seeder
                 $payId = null;
                 if (in_array($status, ['paid', 'completed'])) {
                     $payment = Payment::create([
-                        'idtenant'       => $tenant->id,
-                        'tipe'           => 'booking',
-                        'jumlah'         => $service->harga,
-                        'status'         => 'sukses',
-                        'metode'         => $paymentMethods[array_rand($paymentMethods)],
-                        'external_id'    => 'PAY-' . strtoupper(Str::random(10)),
-                        'nama_pembayar'  => $cust['name'],
+                        'idtenant' => $tenant->id,
+                        'tipe' => 'booking',
+                        'jumlah' => $service->harga,
+                        'status' => 'sukses',
+                        'metode' => $paymentMethods[array_rand($paymentMethods)],
+                        'external_id' => 'PAY-'.strtoupper(Str::random(10)),
+                        'nama_pembayar' => $cust['name'],
                         'email_pembayar' => $cust['email'],
-                        'hp_pembayar'    => $cust['phone'],
+                        'hp_pembayar' => $cust['phone'],
                     ]);
                     $payment->created_at = $currentDay;
                     $payment->save();
@@ -884,20 +910,20 @@ class BramaStudioSeeder extends Seeder
                 }
 
                 $booking = Booking::create([
-                    'idtenant'           => $tenant->id,
-                    'idlayanan'          => $service->id,
-                    'idschedule'         => $sched->id,
-                    'namapelanggan'      => $cust['name'],
-                    'nomorhp'            => $cust['phone'],
-                    'email'              => $cust['email'],
-                    'tanggalbooking'     => $currentDay->toDateString(),
-                    'jam'                => $hour,
-                    'status'             => $status,
-                    'idpayment'          => $payId,
-                    'catatan'            => null,
-                    'booking_code'       => 'BKG-' . strtoupper(Str::random(8)),
+                    'idtenant' => $tenant->id,
+                    'idlayanan' => $service->id,
+                    'idschedule' => $sched->id,
+                    'namapelanggan' => $cust['name'],
+                    'nomorhp' => $cust['phone'],
+                    'email' => $cust['email'],
+                    'tanggalbooking' => $currentDay->toDateString(),
+                    'jam' => $hour,
+                    'status' => $status,
+                    'idpayment' => $payId,
+                    'catatan' => null,
+                    'booking_code' => 'BKG-'.strtoupper(Str::random(8)),
                     'cancellation_token' => Str::random(32),
-                    'reschedule_token'   => Str::random(32),
+                    'reschedule_token' => Str::random(32),
                 ]);
                 $booking->created_at = $currentDay;
                 $booking->save();
@@ -924,12 +950,12 @@ class BramaStudioSeeder extends Seeder
                 $endH = sprintf('%02d:00', min(23, $startH + $durHours));
 
                 $sched = Schedule::create([
-                    'idtenant'       => $tenant->id,
-                    'idlayanan'      => $service->id,
-                    'tanggal'        => $futureDate->toDateString(),
-                    'jam_mulai'      => $fHour,
-                    'jam_selesai'    => $endH,
-                    'status'         => 'tersedia',
+                    'idtenant' => $tenant->id,
+                    'idlayanan' => $service->id,
+                    'tanggal' => $futureDate->toDateString(),
+                    'jam_mulai' => $fHour,
+                    'jam_selesai' => $endH,
+                    'status' => 'tersedia',
                     'harga_override' => $service->harga,
                 ]);
 
@@ -941,34 +967,34 @@ class BramaStudioSeeder extends Seeder
                     $payId = null;
                     if ($status === 'paid') {
                         $payment = Payment::create([
-                            'idtenant'       => $tenant->id,
-                            'tipe'           => 'booking',
-                            'jumlah'         => $service->harga,
-                            'status'         => 'sukses',
-                            'metode'         => $paymentMethods[array_rand($paymentMethods)],
-                            'external_id'    => 'PAY-' . strtoupper(Str::random(10)),
-                            'nama_pembayar'  => $cust['name'],
+                            'idtenant' => $tenant->id,
+                            'tipe' => 'booking',
+                            'jumlah' => $service->harga,
+                            'status' => 'sukses',
+                            'metode' => $paymentMethods[array_rand($paymentMethods)],
+                            'external_id' => 'PAY-'.strtoupper(Str::random(10)),
+                            'nama_pembayar' => $cust['name'],
                             'email_pembayar' => $cust['email'],
-                            'hp_pembayar'    => $cust['phone'],
+                            'hp_pembayar' => $cust['phone'],
                         ]);
                         $payId = $payment->id;
                     }
 
                     $booking = Booking::create([
-                        'idtenant'           => $tenant->id,
-                        'idlayanan'          => $service->id,
-                        'idschedule'         => $sched->id,
-                        'namapelanggan'      => $cust['name'],
-                        'nomorhp'            => $cust['phone'],
-                        'email'              => $cust['email'],
-                        'tanggalbooking'     => $futureDate->toDateString(),
-                        'jam'                => $fHour,
-                        'status'             => $status,
-                        'idpayment'          => $payId,
-                        'catatan'            => 'Pemesanan di muka (advance booking).',
-                        'booking_code'       => 'BKG-' . strtoupper(Str::random(8)),
+                        'idtenant' => $tenant->id,
+                        'idlayanan' => $service->id,
+                        'idschedule' => $sched->id,
+                        'namapelanggan' => $cust['name'],
+                        'nomorhp' => $cust['phone'],
+                        'email' => $cust['email'],
+                        'tanggalbooking' => $futureDate->toDateString(),
+                        'jam' => $fHour,
+                        'status' => $status,
+                        'idpayment' => $payId,
+                        'catatan' => 'Pemesanan di muka (advance booking).',
+                        'booking_code' => 'BKG-'.strtoupper(Str::random(8)),
                         'cancellation_token' => Str::random(32),
-                        'reschedule_token'   => Str::random(32),
+                        'reschedule_token' => Str::random(32),
                     ]);
 
                     if ($payId) {
@@ -995,15 +1021,15 @@ class BramaStudioSeeder extends Seeder
                 $endHourStr = sprintf('%02d:00', min(23, $hourInt + $durHours));
 
                 $sched = Schedule::create([
-                    'idtenant'       => $tenant->id,
-                    'idlayanan'      => $service->id,
-                    'tanggal'        => $randDate->toDateString(),
-                    'jam_mulai'      => $hourStr,
-                    'jam_selesai'    => $endHourStr,
-                    'status'         => 'tersedia',
+                    'idtenant' => $tenant->id,
+                    'idlayanan' => $service->id,
+                    'tanggal' => $randDate->toDateString(),
+                    'jam_mulai' => $hourStr,
+                    'jam_selesai' => $endHourStr,
+                    'status' => 'tersedia',
                     'harga_override' => $service->harga,
-                    'created_at'     => $randDate,
-                    'updated_at'     => $randDate,
+                    'created_at' => $randDate,
+                    'updated_at' => $randDate,
                 ]);
 
                 $statusChoice = ['completed', 'completed', 'completed', 'paid', 'cancelled'];
@@ -1013,38 +1039,38 @@ class BramaStudioSeeder extends Seeder
                 $payId = null;
                 if (in_array($status, ['completed', 'paid'])) {
                     $payment = Payment::create([
-                        'idtenant'       => $tenant->id,
-                        'tipe'           => 'booking',
-                        'jumlah'         => $service->harga,
-                        'status'         => 'sukses',
-                        'metode'         => $paymentMethods[array_rand($paymentMethods)],
-                        'external_id'    => 'PAY-' . strtoupper(Str::random(10)),
-                        'nama_pembayar'  => $cust['name'],
+                        'idtenant' => $tenant->id,
+                        'tipe' => 'booking',
+                        'jumlah' => $service->harga,
+                        'status' => 'sukses',
+                        'metode' => $paymentMethods[array_rand($paymentMethods)],
+                        'external_id' => 'PAY-'.strtoupper(Str::random(10)),
+                        'nama_pembayar' => $cust['name'],
                         'email_pembayar' => $cust['email'],
-                        'hp_pembayar'    => $cust['phone'],
-                        'created_at'     => $randDate,
-                        'updated_at'     => $randDate,
+                        'hp_pembayar' => $cust['phone'],
+                        'created_at' => $randDate,
+                        'updated_at' => $randDate,
                     ]);
                     $payId = $payment->id;
                 }
 
                 $booking = Booking::create([
-                    'idtenant'           => $tenant->id,
-                    'idlayanan'          => $service->id,
-                    'idschedule'         => $sched->id,
-                    'namapelanggan'      => $cust['name'],
-                    'nomorhp'            => $cust['phone'],
-                    'email'              => $cust['email'],
-                    'tanggalbooking'     => $randDate->toDateString(),
-                    'jam'                => $hourStr,
-                    'status'             => $status,
-                    'idpayment'          => $payId,
-                    'catatan'            => null,
-                    'booking_code'       => 'BKG-' . strtoupper(Str::random(8)),
+                    'idtenant' => $tenant->id,
+                    'idlayanan' => $service->id,
+                    'idschedule' => $sched->id,
+                    'namapelanggan' => $cust['name'],
+                    'nomorhp' => $cust['phone'],
+                    'email' => $cust['email'],
+                    'tanggalbooking' => $randDate->toDateString(),
+                    'jam' => $hourStr,
+                    'status' => $status,
+                    'idpayment' => $payId,
+                    'catatan' => null,
+                    'booking_code' => 'BKG-'.strtoupper(Str::random(8)),
                     'cancellation_token' => Str::random(32),
-                    'reschedule_token'   => Str::random(32),
-                    'created_at'         => $randDate,
-                    'updated_at'         => $randDate,
+                    'reschedule_token' => Str::random(32),
+                    'created_at' => $randDate,
+                    'updated_at' => $randDate,
                 ]);
 
                 if ($payId) {
@@ -1053,35 +1079,41 @@ class BramaStudioSeeder extends Seeder
             }
         }
 
+        // ── 13b. Promo usage behind each voucher's used_count (T-21) ─────────
+        $this->seedPromoUsage($tenant);
+
+        // ── 13c. Platform balance from the paid bookings (T-33) ──────────────
+        $this->seedBalance($tenant);
+
         // ── 14. Customer Reviews ─────────────────────────────────────────────
         $reviewSamples = [
             [
-                'rating'       => 5,
-                'komentar'     => 'Studio podcastnya mantap sekali! Audio treatmennya kedap sempurna dan mic Shure SM7B suaranya renyah. Sangat recommended!',
-                'balasan'      => 'Terima kasih banyak Kak Arif! Senang bisa mendukung produksi konten podcast Kakak. Ditunggu sesi berikutnya!',
+                'rating' => 5,
+                'komentar' => 'Studio podcastnya mantap sekali! Audio treatmennya kedap sempurna dan mic Shure SM7B suaranya renyah. Sangat recommended!',
+                'balasan' => 'Terima kasih banyak Kak Arif! Senang bisa mendukung produksi konten podcast Kakak. Ditunggu sesi berikutnya!',
                 'dibalas_pada' => Carbon::now()->subDays(2),
-                'is_hidden'    => false,
+                'is_hidden' => false,
             ],
             [
-                'rating'       => 5,
-                'komentar'     => 'Photoshoot wisuda keluarga hasilnya luar biasa bagus. Kak Bella fotografernya sangat sabar dan mengarahkan pose dengan ramah.',
-                'balasan'      => 'Terima kasih Kak Bunga! Selamat atas wisudanya ya, semoga sukses selalu untuk keluarga tercinta!',
+                'rating' => 5,
+                'komentar' => 'Photoshoot wisuda keluarga hasilnya luar biasa bagus. Kak Bella fotografernya sangat sabar dan mengarahkan pose dengan ramah.',
+                'balasan' => 'Terima kasih Kak Bunga! Selamat atas wisudanya ya, semoga sukses selalu untuk keluarga tercinta!',
                 'dibalas_pada' => Carbon::now()->subDays(3),
-                'is_hidden'    => false,
+                'is_hidden' => false,
             ],
             [
-                'rating'       => 5,
-                'komentar'     => 'Green screen 4K sangat rapi tanpa lipatan. Lighting Aputure merata bikin keying di Premiere Pro langsung bersih.',
-                'balasan'      => 'Mantap Kak Deni! Tim kami selalu memastikan green screen terbentang presisi dan terkalibrasi dengan baik.',
+                'rating' => 5,
+                'komentar' => 'Green screen 4K sangat rapi tanpa lipatan. Lighting Aputure merata bikin keying di Premiere Pro langsung bersih.',
+                'balasan' => 'Mantap Kak Deni! Tim kami selalu memastikan green screen terbentang presisi dan terkalibrasi dengan baik.',
                 'dibalas_pada' => Carbon::now()->subDays(1),
-                'is_hidden'    => false,
+                'is_hidden' => false,
             ],
             [
-                'rating'       => 4,
-                'komentar'     => 'Ruangannya sejuk, tempat parkir luas, dan staf standby sigap bantu setup kamera.',
-                'balasan'      => 'Terima kasih reviewnya Kak Gita! Kami akan terus menjaga kenyamanan dan fasilitas terbaik untuk customer.',
+                'rating' => 4,
+                'komentar' => 'Ruangannya sejuk, tempat parkir luas, dan staf standby sigap bantu setup kamera.',
+                'balasan' => 'Terima kasih reviewnya Kak Gita! Kami akan terus menjaga kenyamanan dan fasilitas terbaik untuk customer.',
                 'dibalas_pada' => Carbon::now()->subHours(12),
-                'is_hidden'    => false,
+                'is_hidden' => false,
             ],
         ];
 
@@ -1092,19 +1124,19 @@ class BramaStudioSeeder extends Seeder
                 Review::updateOrCreate(
                     ['idbooking' => $fb->id],
                     [
-                        'idtenant'     => $tenant->id,
-                        'idbooking'    => $fb->id,
-                        'rating'       => $rev['rating'],
-                        'komentar'     => $rev['komentar'],
-                        'balasan'      => $rev['balasan'],
+                        'idtenant' => $tenant->id,
+                        'idbooking' => $fb->id,
+                        'rating' => $rev['rating'],
+                        'komentar' => $rev['komentar'],
+                        'balasan' => $rev['balasan'],
                         'dibalas_pada' => $rev['dibalas_pada'],
-                        'is_hidden'    => $rev['is_hidden'],
+                        'is_hidden' => $rev['is_hidden'],
                     ]
                 );
             }
         }
 
         // Clear TenantContext after finishing tenant seed
-        app(\App\Support\TenantContext::class)->clear();
+        app(TenantContext::class)->clear();
     }
 }

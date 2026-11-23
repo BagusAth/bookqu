@@ -2,8 +2,57 @@
 
 namespace App\Providers;
 
+use App\Actions\Customer\GetCustomerPanel;
+use App\Actions\CustomerAccess\CustomerAccessLinks;
+use App\Actions\Owner\GetOwnerShell;
+use App\Actions\Subscription\GetPublicPlanCards;
+use App\Actions\Team\TeamNotificationAccess;
+use App\Actions\Tenant\GetStorefrontTenant;
+use App\Contracts\Payments\PaymentGatewayInterface;
+use App\Domain\Integrations\BookingIntegrationEvent;
+use App\Domain\Modules\ModuleRelease;
+use App\Domain\Notifications\NotificationPreferences;
+use App\Infrastructure\Payments\PaymentGatewayManager;
+use App\Jobs\DeliverGoogleCalendarEvent;
+use App\Models\AdditionalItem;
+use App\Models\Asset;
+use App\Models\Booking;
+use App\Models\BookingLog;
+use App\Models\Category;
+use App\Models\CustomerNote;
+use App\Models\OwnerBlockedDate;
+use App\Models\OwnerIntegration;
+use App\Models\OwnerPayout;
+use App\Models\Payment;
+use App\Models\Review;
+use App\Models\Schedule;
+use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Models\TenantMember;
+use App\Models\TenantPayoutAccount;
+use App\Models\Unit;
+use App\Models\User;
+use App\Models\Voucher;
+use App\Observers\BookingIntegrationObserver;
+use App\Policies\TenantResourcePolicy;
+use App\Support\CustomerBookingRoutes;
+use App\Support\StorefrontBranding;
+use App\Support\TenantActor;
+use App\Support\TenantContext;
+use Carbon\Carbon;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\Events\DiagnosingHealth;
+use Illuminate\Http\Request;
+use Illuminate\Notifications\Events\NotificationSending;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,8 +63,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->scoped(\App\Support\TenantContext::class, function () {
-            return new \App\Support\TenantContext();
+        $this->app->scoped(TenantActor::class);
+        $this->app->scoped(TenantContext::class, function () {
+            return new TenantContext;
+        });
+
+        $this->app->singleton(PaymentGatewayManager::class, function () {
+            return new PaymentGatewayManager;
+        });
+
+        $this->app->bind(PaymentGatewayInterface::class, function ($app) {
+            return $app->make(PaymentGatewayManager::class)->driver();
         });
     }
 
@@ -24,40 +82,142 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Carbon\Carbon::setLocale(config('app.locale', 'id'));
+        RateLimiter::for('current-password', fn (Request $request): Limit => Limit::perMinute(5)
+            ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip())));
 
-        // Share Pro subscription status with the sidebar
-        View::composer('components.owner.sidebar', function ($view) {
-            $userId = auth()->id();
-            $tenantId = app(\App\Support\TenantContext::class)->getTenantId();
-            $tenant = null;
+        Event::listen(DiagnosingHealth::class, function (DiagnosingHealth $event): void {
+            $heartbeat = Cache::get('ops:scheduler-heartbeat');
 
-            if (is_numeric($tenantId)) {
-                $tenant = Tenant::find($tenantId);
-                if ($tenant && $tenant->iduser !== $userId) {
-                    $tenant = null;
-                }
+            if ($heartbeat !== null && now()->timestamp - (int) $heartbeat > 300) {
+                throw new \RuntimeException('Scheduler heartbeat is stale.');
+            }
+        });
+
+        Event::listen(NotificationSending::class, function (NotificationSending $event): bool {
+            if (! app(TeamNotificationAccess::class)->allows($event->notifiable, $event->notification)) {
+                return false;
             }
 
-            if (!$tenant && $userId) {
-                $tenant = Tenant::where('iduser', $userId)->first();
+            return $event->channel !== 'mail' || ! $event->notifiable instanceof User
+                || NotificationPreferences::allowsMail($event->notifiable, $event->notification);
+        });
+        Gate::define('tenant-ability', fn (User $user, ?string $ability) => app(TenantResourcePolicy::class)->ability($user, $ability));
+        foreach ([Booking::class, Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class, Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class, Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class, TenantMember::class, Unit::class] as $resource) {
+            Gate::policy($resource, 'App\\Policies\\'.class_basename($resource).'Policy');
+        }
+
+        Booking::observe(BookingIntegrationObserver::class);
+        Event::listen(BookingIntegrationEvent::class, function (BookingIntegrationEvent $event): void {
+            if (ModuleRelease::state('integrations') !== 'released') {
+                return;
             }
 
-            $adalahpro = false;
-
-            if ($tenant) {
-                $langganan = Subscription::where('idtenant', $tenant->id)
-                    ->with('plan')
-                    ->where('status', '!=', 'expired')
-                    ->latest()
-                    ->first();
-
-                if ($langganan && $langganan->plan) {
-                    $adalahpro = str_contains(strtolower($langganan->plan->namapaket), 'pro');
-                }
+            if (app(TenantContext::class)->run($event->tenantId,
+                fn (): bool => OwnerIntegration::whereNotNull('google_refresh_token')->exists())) {
+                DeliverGoogleCalendarEvent::dispatch($event);
             }
+        });
 
-            $view->with('adalahpro', $adalahpro);
+        Event::listen('eloquent.created: '.Booking::class, function (Booking $booking): void {
+            BookingLog::record($booking->id, 'created', 'Booking dibuat.', [
+                'actor' => request()->routeIs('customer.*') ? 'customer' : 'system',
+            ]);
+        });
+
+        foreach ([Service::class, Category::class, Schedule::class, OwnerBlockedDate::class, CustomerNote::class,
+            Review::class, OwnerPayout::class, TenantPayoutAccount::class, Tenant::class,
+            Asset::class, Voucher::class, AdditionalItem::class, Payment::class, Subscription::class] as $record) {
+            foreach (['created', 'updated', 'deleted'] as $event) {
+                Event::listen("eloquent.{$event}: {$record}", fn ($model) => app(TenantActor::class)->record($model, $event));
+            }
+        }
+
+        View::composer('components.landing.pricing', fn ($view) => $view->with(app(GetPublicPlanCards::class)->execute(auth()->user())));
+
+        // Design A pages (BQ-165) draw the business hero themselves, so they get the same display data as the shell.
+        View::composer(['customer.layouts.booking-shell', 'customer.booking.program-selection', 'customer.booking.schedule-selection', 'customer.booking.checkout', 'customer.booking.payment', 'customer.booking.invoice', 'customer.manage.details', 'customer.manage.reschedule'], function (\Illuminate\View\View $view): void {
+            $data = $view->getData();
+            $tenant = $data['tenant'] ?? null;
+            if ($tenant instanceof Tenant) {
+                $view->with([
+                    'branding' => StorefrontBranding::for($tenant),
+                    'businessInitials' => mb_strtoupper(mb_substr($tenant->namabisnis, 0, 2)),
+                    'businessLogo' => $tenant->logo_path ? Storage::url($tenant->logo_path) : null,
+                    'businessBanner' => $tenant->banner_path ? Storage::url($tenant->banner_path) : null,
+                    'storefrontUrl' => CustomerBookingRoutes::url('customer.booking.program', $tenant->slug),
+                    'merchantWaUrl' => $data['merchantWaUrl'] ?? GetCustomerPanel::whatsAppUrl(
+                        (string) $tenant->nomorhp,
+                        "Halo {$tenant->namabisnis}, saya butuh bantuan mengenai reservasi.",
+                    ),
+                ]);
+            }
+        });
+
+        View::composer('errors.customer', function (\Illuminate\View\View $view): void {
+            $data = $view->getData();
+            $storefrontTenants = app(GetStorefrontTenant::class);
+            $tenant = ($data['private'] ?? false) ? null : request()->attributes->get('storefront_tenant');
+            $candidate = request()->segment(1);
+            $slug = ($data['publicNotFound'] ?? false) && ! $tenant instanceof Tenant && is_string($candidate)
+                && ! request()->is('manage', 'manage/*', 'access', 'access/*')
+                ? $storefrontTenants->knownSlug($candidate)
+                : null;
+            $slugRoute = request()->routeIs('customer.booking.slug.*');
+            $storefrontUrl = match (true) {
+                ! $tenant instanceof Tenant => null,
+                $slugRoute => CustomerBookingRoutes::canonical('customer.booking.program', ['slug_usaha' => $tenant->slug]),
+                default => CustomerBookingRoutes::url('customer.booking.program', $tenant->slug),
+            };
+            $brandedTenant = $tenant instanceof Tenant && request()->routeIs('customer.booking.*')
+                && $storefrontTenants->canBrandError($tenant, customDomain: ! $slugRoute)
+                ? $tenant : null;
+
+            $view->with([
+                'branding' => $brandedTenant === null ? null : StorefrontBranding::for($brandedTenant),
+                'businessName' => $brandedTenant === null ? 'BookQu' : $brandedTenant->namabisnis,
+                'storefrontUrl' => ($brandedTenant !== null ? $storefrontUrl : null) ?? app(CustomerAccessLinks::class)->canonical('/'),
+            ]);
+
+            $view->with('recoveryUrl', match (true) {
+                ($data['owner'] ?? false) && auth()->check() => url('/owner/dashboard'),
+                $storefrontUrl !== null => $storefrontUrl,
+                $slug !== null => CustomerBookingRoutes::canonical('customer.booking.program', ['slug_usaha' => $slug]),
+                default => url('/'),
+            });
+        });
+
+        Carbon::setLocale(config('app.locale', 'id'));
+
+        $this->buildMailedAuthLinksFromAppUrl();
+
+        // The owner app shell (sidebar, top bar, phone navigation) is prepared once per request (BQ-128).
+        View::composer('layouts.owner-layout', function ($view): void {
+            $view->with('shell', app(GetOwnerShell::class)->execute(auth()->user(), request()->route()?->getName()));
+        });
+    }
+
+    /**
+     * Password reset and email verification links are mailed from a web request, where URLs
+     * follow the Host header. A forged Host would mail the reset token to the attacker's
+     * host (BQ-173), so both links are built from APP_URL instead.
+     */
+    private function buildMailedAuthLinksFromAppUrl(): void
+    {
+        ResetPassword::createUrlUsing(fn (object $user, string $token): string => app(CustomerAccessLinks::class)
+            ->canonical(route('password.reset', ['token' => $token, 'email' => $user->getEmailForPasswordReset()], false)));
+
+        VerifyEmail::createUrlUsing(function (object $user): string {
+            // The signature covers the absolute URL, so it is signed on the APP_URL origin it is opened at.
+            URL::forceRootUrl(app(CustomerAccessLinks::class)->canonical(''));
+
+            try {
+                return URL::temporarySignedRoute('verification.verify', now()->addMinutes((int) config('auth.verification.expire', 60)), [
+                    'id' => $user->getKey(),
+                    'hash' => sha1($user->getEmailForVerification()),
+                ]);
+            } finally {
+                URL::forceRootUrl(null);
+            }
         });
     }
 }

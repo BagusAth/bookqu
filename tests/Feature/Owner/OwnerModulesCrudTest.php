@@ -2,23 +2,22 @@
 
 namespace Tests\Feature\Owner;
 
+use App\Actions\Subscription\CreateTrialSubscription;
 use App\Models\AdditionalItem;
 use App\Models\Asset;
 use App\Models\Booking;
 use App\Models\Category;
-use App\Models\CustomerNote;
-use App\Models\Resource;
+use App\Models\Payment;
 use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Service;
-use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Voucher;
-use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Js;
 use Tests\TestCase;
 
 class OwnerModulesCrudTest extends TestCase
@@ -26,9 +25,13 @@ class OwnerModulesCrudTest extends TestCase
     use RefreshDatabase;
 
     protected User $userA;
+
     protected Tenant $tenantA;
+
     protected User $userB;
+
     protected Tenant $tenantB;
+
     protected Service $serviceA;
 
     protected function setUp(): void
@@ -49,6 +52,8 @@ class OwnerModulesCrudTest extends TestCase
             'nomorhp' => '0811111111',
             'saldo_platform' => 500000,
         ]);
+        app(CreateTrialSubscription::class)->execute($this->tenantA)->forceFill(['created_at' => now()->subMinute()])->save();
+
         $this->serviceA = Service::create([
             'idtenant' => $this->tenantA->id,
             'namalayanan' => 'Foto Wisuda A',
@@ -151,78 +156,18 @@ class OwnerModulesCrudTest extends TestCase
     // ──────────────────────────────────────────
     // 2. STAFF & RESOURCES TEST
     // ──────────────────────────────────────────
-    public function test_owner_can_crud_staff_and_resources(): void
+    public function test_retired_staff_and_resource_routes_are_gone(): void
     {
-        // View page
-        $res = $this->actingAs($this->userA)->get(route('owner.staff-resources'));
-        $res->assertStatus(200);
-
-        // Create Staff
-        $res = $this->actingAs($this->userA)->post(route('owner.staff.store'), [
-            'name' => 'Andi Fotografer',
-            'role' => 'Lead Photographer',
-            'phone' => '081299998888',
-            'service_ids' => [$this->serviceA->id],
-        ]);
-        $res->assertRedirect();
-        $this->assertDatabaseHas('staff', [
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Andi Fotografer',
-        ]);
-        
-        $staff = Staff::withoutGlobalScopes()->where('idtenant', $this->tenantA->id)->first();
-        $this->assertNotNull($staff);
-        $this->assertDatabaseHas('service_staff', [
-            'idstaff' => $staff->id,
-            'idservice' => $this->serviceA->id,
-        ]);
-
-        // Create Resource
-        $res = $this->actingAs($this->userA)->post(route('owner.resources.store'), [
-            'name' => 'Studio Room 1',
-            'type' => 'Studio Ruangan',
-            'capacity' => 10,
-            'service_ids' => [$this->serviceA->id],
-        ]);
-        $res->assertRedirect();
-        $this->assertDatabaseHas('resources', [
-            'idtenant' => $this->tenantA->id,
-            'name' => 'Studio Room 1',
-        ]);
-        
-        $resource = Resource::withoutGlobalScopes()->where('idtenant', $this->tenantA->id)->first();
-        $this->assertNotNull($resource);
-        $this->assertDatabaseHas('service_resource', [
-            'idresource' => $resource->id,
-            'idservice' => $this->serviceA->id,
-        ]);
-
-        // Delete Staff & Resource
-        $this->actingAs($this->userA)->delete(route('owner.staff.destroy', $staff->id));
-        $this->assertDatabaseMissing('staff', ['id' => $staff->id]);
-
-        $this->actingAs($this->userA)->delete(route('owner.resources.destroy', $resource->id));
-        $this->assertDatabaseMissing('resources', ['id' => $resource->id]);
-    }
-
-    public function test_staff_and_resource_tenant_isolation(): void
-    {
-        $staffB = Staff::create([
-            'idtenant' => $this->tenantB->id,
-            'name' => 'Barber Budi',
-            'role' => 'Barber',
-        ]);
-
-        // Owner A cannot update or delete Owner B's staff
-        $res = $this->actingAs($this->userA)->put(route('owner.staff.update', $staffB->id), [
-            'name' => 'Hacked Staff',
-            'role' => 'Hacked',
-            'is_active' => 1,
-        ]);
-        $res->assertStatus(404);
-
-        $res = $this->actingAs($this->userA)->delete(route('owner.staff.destroy', $staffB->id));
-        $res->assertStatus(404);
+        $this->actingAs($this->userA)->get('/owner/resources')->assertNotFound();
+        $this->delete('/owner/resources/1')->assertNotFound();
+        $this->get('/owner/staff-resources')->assertRedirect(route('owner.settings', ['tab' => 'tim']));
+        foreach (['payments', 'payment-setting'] as $oldPage) {
+            $this->get('/owner/settings/'.$oldPage)->assertStatus(301)->assertRedirect(route('owner.payments'));
+            $this->get('/owner/settings/'.$oldPage.'?tab=saldo')
+                ->assertStatus(301)->assertRedirect(route('owner.payments', ['tab' => 'saldo']));
+        }
+        $this->post('/owner/staff', ['name' => 'Nama lama'])->assertNotFound();
+        $this->delete('/owner/staff/1')->assertNotFound();
     }
 
     // ──────────────────────────────────────────
@@ -230,16 +175,19 @@ class OwnerModulesCrudTest extends TestCase
     // ──────────────────────────────────────────
     public function test_owner_can_crud_additional_items(): void
     {
-        $res = $this->actingAs($this->userA)->get(route('owner.additional-items'));
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.additional-items' => 'released']);
+
+        $res = $this->actingAs($this->userA)->get(route('owner.services', ['tab' => 'add-ons']));
         $res->assertStatus(200);
 
-        $res = $this->actingAs($this->userA)->post(route('owner.additional-items.store'), [
+        $res = $this->actingAs($this->userA)->post(route('owner.services.add-ons.store'), [
             'name' => 'Cetak Foto 10R',
             'price' => 35000,
             'stock' => 50,
             'service_ids' => [$this->serviceA->id],
         ]);
-        $res->assertRedirect(route('owner.additional-items'));
+        $res->assertRedirect(route('owner.services', ['tab' => 'add-ons']));
         $this->assertDatabaseHas('additional_items', [
             'idtenant' => $this->tenantA->id,
             'name' => 'Cetak Foto 10R',
@@ -254,27 +202,67 @@ class OwnerModulesCrudTest extends TestCase
         ]);
 
         // Delete
-        $res = $this->actingAs($this->userA)->delete(route('owner.additional-items.destroy', $item->id));
-        $res->assertRedirect(route('owner.additional-items'));
+        $res = $this->actingAs($this->userA)->delete(route('owner.services.add-ons.destroy', $item->id));
+        $res->assertRedirect(route('owner.services', ['tab' => 'add-ons']));
         $this->assertDatabaseMissing('additional_items', ['id' => $item->id]);
+    }
+
+    public function test_add_on_sold_count_uses_only_paid_booking_quantities_for_the_current_tenant(): void
+    {
+        $item = AdditionalItem::create([
+            'idtenant' => $this->tenantA->id, 'name' => 'Cetak Foto', 'price' => 35000,
+            'is_unlimited' => true, 'is_active' => true,
+        ]);
+        foreach ([[$this->tenantA, 'sukses', 3], [$this->tenantA, 'pending', 2], [$this->tenantB, 'sukses', 4]] as [$tenant, $status, $quantity]) {
+            Payment::factory()->create([
+                'idtenant' => $tenant->id, 'tipe' => 'booking', 'status' => $status,
+                'price_breakdown' => ['add_ons' => [['id' => $item->id, 'quantity' => $quantity, 'unlimited' => true]]],
+            ]);
+        }
+        $this->actingAs($this->userA)->get(route('owner.services', ['tab' => 'add-ons']))
+            ->assertOk()->assertSeeText('Terjual 3');
     }
 
     // ──────────────────────────────────────────
     // 4. VOUCHERS TEST
     // ──────────────────────────────────────────
+    public function test_every_promo_form_control_has_a_label(): void
+    {
+        config(['modules.vouchers' => 'released']);
+
+        $html = (string) $this->actingAs($this->userA)->get(route('owner.promos'))->assertOk()->getContent();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML('<?xml encoding="utf-8"?>'.$html);
+        $xpath = new \DOMXPath($dom);
+        $names = ['code', 'discount_type', 'discount_value', 'min_order_amount', 'usage_limit', 'start_date', 'end_date'];
+        foreach (['form-add-voucher', 'form-edit-voucher'] as $formId) {
+            foreach ($names as $name) {
+                $control = $xpath->query("//form[@id='{$formId}']//*[@name='{$name}']")->item(0);
+                $this->assertInstanceOf(\DOMElement::class, $control, "{$formId} has no {$name}");
+                $id = $control->getAttribute('id');
+                $this->assertNotSame('', $id, "{$formId} {$name} has no id");
+                $this->assertSame(1, $xpath->query("//label[@for='{$id}']")->length, "{$formId} {$name} has no label");
+            }
+        }
+    }
+
     public function test_owner_can_crud_vouchers(): void
     {
-        $res = $this->actingAs($this->userA)->get(route('owner.vouchers'));
+        // Staged module under test is released explicitly (ADR-0011)
+        config(['modules.vouchers' => 'released']);
+
+        $res = $this->actingAs($this->userA)->get(route('owner.promos'));
         $res->assertStatus(200);
 
-        $res = $this->actingAs($this->userA)->post(route('owner.vouchers.store'), [
+        $res = $this->actingAs($this->userA)->post(route('owner.promos.store'), [
             'code' => 'PROMO50',
             'discount_type' => 'percentage',
             'discount_value' => 50,
             'min_order_amount' => 100000,
             'usage_limit' => 20,
         ]);
-        $res->assertRedirect(route('owner.vouchers'));
+        $res->assertRedirect(route('owner.promos'));
         $this->assertDatabaseHas('vouchers', [
             'idtenant' => $this->tenantA->id,
             'code' => 'PROMO50',
@@ -285,17 +273,103 @@ class OwnerModulesCrudTest extends TestCase
         $this->assertNotNull($voucher);
 
         // Toggle Status
-        $res = $this->actingAs($this->userA)->post(route('owner.vouchers.toggle', $voucher->id));
-        $res->assertRedirect(route('owner.vouchers'));
+        $res = $this->actingAs($this->userA)->post(route('owner.promos.toggle', $voucher->id));
+        $res->assertRedirect(route('owner.promos'));
         $this->assertDatabaseHas('vouchers', [
             'id' => $voucher->id,
             'is_active' => false,
         ]);
 
         // Delete
-        $res = $this->actingAs($this->userA)->delete(route('owner.vouchers.destroy', $voucher->id));
-        $res->assertRedirect(route('owner.vouchers'));
+        $res = $this->actingAs($this->userA)->delete(route('owner.promos.destroy', $voucher->id));
+        $res->assertRedirect(route('owner.promos'));
         $this->assertDatabaseMissing('vouchers', ['id' => $voucher->id]);
+    }
+
+    public function test_promo_update_with_legacy_form_fields_keeps_discount_cap_and_services(): void
+    {
+        $otherService = Service::factory()->create(['idtenant' => $this->tenantA->id]);
+        $serviceIds = $this->serviceA->id.','.$otherService->id;
+        $voucher = Voucher::create([
+            'idtenant' => $this->tenantA->id,
+            'code' => 'REBATE',
+            'discount_type' => 'percentage',
+            'discount_value' => 15,
+            'max_discount' => 20000,
+            'applicable_services' => $serviceIds,
+        ]);
+
+        $this->actingAs($this->userA)->put(route('owner.promos.update', $voucher), [
+            'code' => 'REBATE',
+            'discount_type' => 'percentage',
+            'discount_value' => 20,
+            'is_active' => 1,
+        ])->assertRedirect(route('owner.promos'))->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('vouchers', [
+            'id' => $voucher->id,
+            'discount_value' => 20,
+            'max_discount' => 20000,
+            'applicable_services' => $serviceIds,
+        ]);
+    }
+
+    public function test_promo_forms_save_and_clear_discount_cap_and_service_selection(): void
+    {
+        $payload = [
+            'code' => 'REBATE',
+            'discount_type' => 'percentage',
+            'discount_value' => 20,
+            'max_discount_amount' => 20000,
+            'applicable_services' => [$this->serviceA->id],
+            'is_active' => 1,
+        ];
+
+        $this->actingAs($this->userA)->post(route('owner.promos.store'), $payload)
+            ->assertRedirect(route('owner.promos'))->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('vouchers', [
+            'code' => 'REBATE',
+            'max_discount' => 20000,
+            'applicable_services' => (string) $this->serviceA->id,
+        ]);
+
+        $voucher = Voucher::withoutGlobalScopes()->where('idtenant', $this->tenantA->id)->where('code', 'REBATE')->firstOrFail();
+        $this->put(route('owner.promos.update', $voucher), array_replace($payload, [
+            'max_discount_amount' => '',
+            'applicable_services' => '',
+        ]))->assertRedirect(route('owner.promos'))->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('vouchers', [
+            'id' => $voucher->id,
+            'max_discount' => null,
+            'applicable_services' => 'all',
+        ]);
+    }
+
+    public function test_promo_rejects_another_tenants_service_and_percentage_above_one_hundred(): void
+    {
+        $otherService = Service::factory()->create(['idtenant' => $this->tenantB->id]);
+        $this->actingAs($this->userA)->post(route('owner.promos.store'), [
+            'code' => 'REBATE',
+            'discount_type' => 'percentage',
+            'discount_value' => 101,
+            'applicable_services' => [$otherService->id],
+        ])->assertSessionHasErrors(['discount_value', 'applicable_services.0']);
+
+        $this->assertDatabaseMissing('vouchers', ['code' => 'REBATE']);
+    }
+
+    public function test_promo_delete_confirmation_escapes_a_legacy_code_with_a_quote(): void
+    {
+        $voucher = Voucher::create([
+            'idtenant' => $this->tenantA->id,
+            'code' => "REBATE'S",
+            'discount_type' => 'percentage',
+            'discount_value' => 15,
+        ]);
+
+        $this->actingAs($this->userA)->get(route('owner.promos'))
+            ->assertOk()
+            ->assertSee("Yakin ingin menghapus promo ' + ".Js::from($voucher->code), false);
     }
 
     public function test_voucher_tenant_isolation(): void
@@ -307,7 +381,7 @@ class OwnerModulesCrudTest extends TestCase
             'discount_value' => 10000,
         ]);
 
-        $res = $this->actingAs($this->userA)->delete(route('owner.vouchers.destroy', $voucherB->id));
+        $res = $this->actingAs($this->userA)->delete(route('owner.promos.destroy', $voucherB->id));
         $res->assertStatus(404);
         $this->assertDatabaseHas('vouchers', ['id' => $voucherB->id]);
     }
@@ -367,46 +441,49 @@ class OwnerModulesCrudTest extends TestCase
     {
         // Create a booking so the IDOR guard passes (customer_identifier must exist in this tenant's bookings)
         $schedule = Schedule::factory()->create([
-            'idtenant'  => $this->tenantA->id,
+            'idtenant' => $this->tenantA->id,
             'idlayanan' => $this->serviceA->id,
         ]);
         Booking::factory()->create([
-            'idtenant'   => $this->tenantA->id,
-            'idlayanan'  => $this->serviceA->id,
+            'idtenant' => $this->tenantA->id,
+            'idlayanan' => $this->serviceA->id,
             'idschedule' => $schedule->id,
-            'nomorhp'    => '081234567890',
-            'email'      => '',
-            'status'     => 'paid',
+            'nomorhp' => '081234567890',
+            'email' => '',
+            'status' => 'paid',
         ]);
 
         $res = $this->actingAs($this->userA)->postJson(route('owner.customers.note'), [
             'customer_identifier' => '081234567890',
-            'notes'               => 'Customer VIP, minta lighting hangat.',
+            'notes' => 'Customer VIP, minta lighting hangat.',
         ]);
         $res->assertOk()->assertJsonFragment(['success' => true]);
         $this->assertDatabaseHas('customer_notes', [
-            'idtenant'            => $this->tenantA->id,
+            'idtenant' => $this->tenantA->id,
             'customer_identifier' => '081234567890',
-            'notes'               => 'Customer VIP, minta lighting hangat.',
+            'notes' => 'Customer VIP, minta lighting hangat.',
         ]);
     }
-
 
     // ──────────────────────────────────────────
     // 6. ASSETS & APPEARANCE TEST
     // ──────────────────────────────────────────
     public function test_owner_can_upload_and_delete_assets(): void
     {
+        // Staged module under test is released explicitly (ADR-0011)
+        // BQ-142: the gallery lives in Halaman Booking (owner-portal.md §8.9).
+        config(['modules.booking-page' => 'released']);
+
         Storage::fake('public');
 
         $file = UploadedFile::fake()->create('banner.jpg', 100, 'image/jpeg');
 
-        $res = $this->actingAs($this->userA)->post(route('owner.settings.assets.store'), [
+        $res = $this->actingAs($this->userA)->post(route('owner.booking-page.media.store'), [
             'file' => $file,
             'title' => 'Banner Promosi',
             'category' => 'cover',
         ]);
-        $res->assertRedirect(route('owner.settings.assets'));
+        $res->assertRedirect(route('owner.booking-page', ['section' => 'galeri']));
 
         $asset = Asset::withoutGlobalScopes()->where('idtenant', $this->tenantA->id)->first();
         $this->assertNotNull($asset);
@@ -415,29 +492,33 @@ class OwnerModulesCrudTest extends TestCase
         Storage::disk('public')->assertExists($asset->file_path);
 
         // Delete
-        $res = $this->actingAs($this->userA)->delete(route('owner.settings.assets.destroy', $asset->id));
-        $res->assertRedirect(route('owner.settings.assets'));
+        $res = $this->actingAs($this->userA)->delete(route('owner.booking-page.media.destroy', $asset->id));
+        $res->assertRedirect(route('owner.booking-page', ['section' => 'galeri']));
         $this->assertDatabaseMissing('assets', ['id' => $asset->id]);
         Storage::disk('public')->assertMissing($asset->file_path);
     }
 
     public function test_owner_can_update_appearance_settings(): void
     {
-        $res = $this->actingAs($this->userA)->post(route('owner.settings.appearance.update'), [
+        // Staged module under test is released explicitly (ADR-0011)
+        // BQ-142: Tampilan lives in Halaman Booking; card styles are elevated, outline and soft.
+        config(['modules.booking-page' => 'released']);
+
+        $res = $this->actingAs($this->userA)->post(route('owner.booking-page.appearance'), [
             'theme_color' => '#10B981',
             'button_style' => 'pill',
             'font_family' => 'Outfit',
-            'card_style' => 'bordered',
+            'card_style' => 'outline',
             'deskripsi' => 'Studio foto modern profesional.',
         ]);
 
-        $res->assertRedirect(route('owner.settings.appearance'));
+        $res->assertRedirect(route('owner.booking-page', ['section' => 'tampilan']));
         $this->assertDatabaseHas('tenants', [
             'id' => $this->tenantA->id,
             'theme_color' => '#10B981',
             'button_style' => 'pill',
             'font_family' => 'Outfit',
-            'card_style' => 'bordered',
+            'card_style' => 'outline',
         ]);
     }
 }

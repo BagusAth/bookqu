@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Refund extends Model
 {
     protected $fillable = [
+        'cause',
+        'refund_request_id',
         'booking_id',
         'payment_id',
         'jumlah',
@@ -33,8 +35,14 @@ class Refund extends Model
         return $this->belongsTo(Payment::class, 'payment_id');
     }
 
+    /** @return BelongsTo<RefundRequest, $this> */
+    public function refundRequest(): BelongsTo
+    {
+        return $this->belongsTo(RefundRequest::class);
+    }
+
     public function getJumlahFormattedAttribute(): string
     {
-        return 'Rp ' . number_format((float) $this->jumlah, 0, ',', '.');
+        return 'Rp '.number_format((float) $this->jumlah, 0, ',', '.');
     }
 }

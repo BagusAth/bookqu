@@ -12,10 +12,22 @@ class OwnerPayout extends Model
 
     protected $fillable = [
         'idtenant',
+        'request_key',
+        'payout_account_id',
+        'bank_kode',
         'jumlah',
         'status',
         'requested_at',
+        'approved_at',
+        'approved_by',
         'processed_at',
+        'bank_nama',
+        'nomor_rekening',
+        'nama_pemilik_rekening',
+        'rejection_reason',
+        'transfer_reference',
+        'proof_path',
+        'processed_by',
     ];
 
     protected function casts(): array
@@ -23,6 +35,7 @@ class OwnerPayout extends Model
         return [
             'jumlah' => 'decimal:2',
             'requested_at' => 'datetime',
+            'approved_at' => 'datetime',
             'processed_at' => 'datetime',
         ];
     }
@@ -30,5 +43,10 @@ class OwnerPayout extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, 'idtenant');
+    }
+
+    public function payoutAccount(): BelongsTo
+    {
+        return $this->belongsTo(TenantPayoutAccount::class, 'payout_account_id')->withTrashed();
     }
 }

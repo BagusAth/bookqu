@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Subscription;
 
+use App\Domain\Payment\PaymentState;
+use App\Domain\Subscription\EntitlementRules;
 use App\Domain\Subscription\PlanCapability;
 use App\Domain\Subscription\SubscriptionState;
 use App\Domain\Subscription\SubscriptionUsage;
@@ -11,6 +13,10 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Models\TenantMember;
+use App\Support\Rupiah;
+use App\Support\StatusBadge;
+use App\Support\TenantContext;
 use Illuminate\Support\Collection;
 
 class GetSubscriptionOverview
@@ -20,18 +26,15 @@ class GetSubscriptionOverview
      *
      * @return array{
      *     langgananaktif: ?Subscription,
+     *     recommendedPlanId: mixed,
      *     semuapaket: Collection<int, Plan>,
      *     jumlahlayanan: int,
      *     jumlahbookingbulanini: int,
-     *     jumlahstaff: int,
      *     maxlayanan: int,
      *     maxbooking: int,
-     *     maxstaff: int,
      *     isunlimited: bool,
-     *     isunlimitedstaff: bool,
      *     persenlayanan: int,
      *     persenbooking: int,
-     *     persenstaff: int,
      *     statustrial: bool,
      *     sisahari: int,
      *     riwayatpembayaran: Collection<int, Payment>
@@ -41,84 +44,129 @@ class GetSubscriptionOverview
     {
         if ($tenant === null) {
             return [
-                'langgananaktif'        => null,
-                'semuapaket'            => Plan::all(),
-                'jumlahlayanan'         => 0,
+                'langgananaktif' => null,
+                'recommendedPlanId' => Plan::where('namapaket', PlanCapability::PLAN_MEDIUM)->value('id'),
+                'semuapaket' => Plan::orderBy('hargabulanan')->get(),
+                'jumlahlayanan' => 0,
                 'jumlahbookingbulanini' => 0,
-                'jumlahstaff'           => 0,
-                'maxlayanan'            => 0,
-                'maxbooking'            => 0,
-                'maxstaff'              => 0,
-                'isunlimited'           => false,
-                'isunlimitedstaff'      => false,
-                'persenlayanan'         => 0,
-                'persenbooking'         => 0,
-                'persenstaff'           => 0,
-                'statustrial'           => false,
-                'sisahari'              => 0,
-                'riwayatpembayaran'     => collect(),
+                'maxlayanan' => 0,
+                'maxbooking' => 0,
+                'isunlimited' => false,
+                'persenlayanan' => 0,
+                'persenbooking' => 0,
+                'statustrial' => false,
+                'sisahari' => 0,
+                'riwayatpembayaran' => collect(),
+                'statusLabel' => 'Berakhir',
+                'endDate' => null,
+                'daysRemaining' => 0,
+                'usage' => ['services' => ['used' => 0, 'limit' => 0], 'bookings' => ['used' => 0, 'limit' => 0], 'team' => ['used' => 0, 'limit' => 0]],
+                'history' => [],
             ];
         }
 
+        return app(TenantContext::class)->run((int) $tenant->id, fn (): array => $this->forTenant($tenant));
+    }
+
+    /** @return array<string, mixed> */
+    private function forTenant(Tenant $tenant): array
+    {
         $idtenant = $tenant->id;
 
         /** @var Subscription|null $langgananaktif */
-        $langgananaktif = Subscription::withoutGlobalScopes()
+        $langgananaktif = Subscription::query()
             ->where('idtenant', $idtenant)
             ->with('plan')
-            ->latest()
+            ->latest('id')
             ->first();
 
-        $semuapaket = Plan::all();
+        $semuapaket = Plan::orderBy('hargabulanan')->get();
 
         $jumlahlayanan = SubscriptionUsage::countServices($idtenant);
         $jumlahbookingbulanini = SubscriptionUsage::countMonthlyBookings($idtenant);
-        $jumlahstaff = SubscriptionUsage::countStaff($idtenant);
 
         $isTrial = $langgananaktif !== null
             && $langgananaktif->status === SubscriptionState::STATUS_TRIAL
-            && !SubscriptionState::isExpired($langgananaktif);
+            && ! SubscriptionState::isExpired($langgananaktif);
 
-        $plan = $langgananaktif?->plan;
-        $planName = strtolower(trim((string) ($plan?->namapaket ?? PlanCapability::PLAN_SMALL)));
-        $isunlimited = (bool) ($plan?->isunlimited ?? false);
+        $serviceQuota = EntitlementRules::canCreateService($langgananaktif, 0);
+        $bookingQuota = EntitlementRules::canCreateBooking($langgananaktif, 0);
+        $maxlayanan = $serviceQuota['maxServices'];
+        $maxbooking = $bookingQuota['maxBooking'];
+        $isunlimited = $bookingQuota['isUnlimited'];
 
-        $maxlayanan = PlanCapability::getServiceLimit($plan, $isTrial);
-        $maxbooking = PlanCapability::getBookingLimit($plan, $isTrial);
-        $isunlimitedstaff = $isunlimited || $planName === PlanCapability::PLAN_PRO || $isTrial;
-        $maxstaff = PlanCapability::getStaffLimit($planName, $isTrial, $isunlimited);
-
-        $persenlayanan = SubscriptionUsage::calculatePercentage($jumlahlayanan, $maxlayanan, $isunlimited || $isTrial);
-        $persenbooking = SubscriptionUsage::calculatePercentage($jumlahbookingbulanini, $maxbooking, $isunlimited || $planName === PlanCapability::PLAN_PRO || $isTrial);
-        $persenstaff = SubscriptionUsage::calculatePercentage($jumlahstaff, $maxstaff, $isunlimitedstaff);
+        $persenlayanan = SubscriptionUsage::calculatePercentage($jumlahlayanan, $maxlayanan, $serviceQuota['isUnlimited']);
+        $persenbooking = SubscriptionUsage::calculatePercentage($jumlahbookingbulanini, $maxbooking, $bookingQuota['isUnlimited']);
 
         $sisahari = SubscriptionState::getRemainingTrialDays($langgananaktif);
         $statustrial = $isTrial && $langgananaktif?->trial_berakhir !== null;
 
-        $riwayatpembayaran = Payment::withoutGlobalScopes()
+        $riwayatpembayaran = Payment::query()
             ->where('idtenant', $idtenant)
             ->where('tipe', 'subscription')
             ->orderByDesc('created_at')
             ->limit(10)
             ->get();
 
+        // BQ-145 (owner-portal.md §8.15): status, end date, the three usage figures and billing rows.
+        $teamUsed = TenantMember::query()->where('idtenant', $idtenant)->whereNotNull('accepted_at')->count();
+        $periodEnd = $langgananaktif !== null ? SubscriptionState::periodEnd($langgananaktif)?->timezone('Asia/Jakarta') : null;
+
         return [
-            'langgananaktif'        => $langgananaktif,
-            'semuapaket'            => $semuapaket,
-            'jumlahlayanan'         => $jumlahlayanan,
+            'langgananaktif' => $langgananaktif,
+            'statusLabel' => $this->statusLabel($langgananaktif),
+            'endDate' => $periodEnd?->locale('id')->translatedFormat($periodEnd->isCurrentYear() ? 'j M' : 'j M Y'),
+            'daysRemaining' => $periodEnd !== null && EntitlementRules::hasEffectivePlan($langgananaktif)
+                ? (int) max(0, ceil(now()->diffInDays($periodEnd, false)))
+                : 0,
+            'usage' => [
+                'services' => ['used' => $jumlahlayanan, 'limit' => $serviceQuota['isUnlimited'] ? null : $maxlayanan],
+                'bookings' => ['used' => $jumlahbookingbulanini, 'limit' => $bookingQuota['isUnlimited'] ? null : $maxbooking],
+                'team' => ['used' => $teamUsed, 'limit' => EntitlementRules::teamLimit($langgananaktif)],
+            ],
+            'history' => $riwayatpembayaran->map(fn (Payment $payment): array => $this->historyRow($payment))->values()->all(),
+            'recommendedPlanId' => $semuapaket->firstWhere('namapaket', PlanCapability::PLAN_MEDIUM)?->id,
+            'semuapaket' => $semuapaket,
+            'jumlahlayanan' => $jumlahlayanan,
             'jumlahbookingbulanini' => $jumlahbookingbulanini,
-            'jumlahstaff'           => $jumlahstaff,
-            'maxlayanan'            => $maxlayanan,
-            'maxbooking'            => $maxbooking,
-            'maxstaff'              => $maxstaff,
-            'isunlimited'           => $isunlimited,
-            'isunlimitedstaff'      => $isunlimitedstaff,
-            'persenlayanan'         => $persenlayanan,
-            'persenbooking'         => $persenbooking,
-            'persenstaff'           => $persenstaff,
-            'statustrial'           => $statustrial,
-            'sisahari'              => $sisahari,
-            'riwayatpembayaran'     => $riwayatpembayaran,
+            'maxlayanan' => $maxlayanan,
+            'maxbooking' => $maxbooking,
+            'isunlimited' => $isunlimited,
+            'persenlayanan' => $persenlayanan,
+            'persenbooking' => $persenbooking,
+            'statustrial' => $statustrial,
+            'sisahari' => $sisahari,
+            'riwayatpembayaran' => $riwayatpembayaran,
+        ];
+    }
+
+    private function statusLabel(?Subscription $subscription): string
+    {
+        if ($subscription === null || ! EntitlementRules::hasEffectivePlan($subscription)) {
+            return 'Berakhir';
+        }
+
+        return $subscription->status === SubscriptionState::STATUS_TRIAL ? 'Uji coba' : 'Aktif';
+    }
+
+    /**
+     * A billing row: the invoice of a paid plan, or "Bayar sekarang" while the payment is open (§8.15).
+     *
+     * @return array<string, mixed>
+     */
+    private function historyRow(Payment $payment): array
+    {
+        $orderId = (string) $payment->order_id;
+
+        $date = $payment->created_at?->timezone('Asia/Jakarta')->locale('id');
+
+        return [
+            'orderId' => $orderId,
+            'date' => $date?->locale('id')->translatedFormat($date->isCurrentYear() ? 'j M' : 'j M Y'),
+            'amount' => Rupiah::format($payment->jumlah),
+            'status' => array_combine(['label', 'tone'], StatusBadge::for('payment', (string) $payment->status)),
+            'invoiceUrl' => $payment->status === PaymentState::STATUS_SUKSES && $orderId !== '' ? route('owner.checkout.invoice', $orderId) : null,
+            'payUrl' => $payment->status === PaymentState::STATUS_PENDING && $orderId !== '' ? route('owner.checkout.payment', $orderId) : null,
         ];
     }
 }

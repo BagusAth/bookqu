@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Service;
 
+use App\Actions\Unit\AssignServiceUnits;
+use App\Domain\Subscription\EntitlementRules;
 use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -11,6 +13,7 @@ use App\Models\UsageLog;
 use App\Support\TenantContext;
 use App\Traits\ClearsBookingCache;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -21,51 +24,61 @@ class CreateService
     /**
      * Create a new service under tenant with limits, relationships, and cache invalidation.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
+     *
      * @throws ValidationException
      */
     public function execute(Tenant $tenant, array $data, ?UploadedFile $coverImage = null): Service
     {
         app(TenantContext::class)->setTenantId($tenant->id);
 
-        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest()->first();
+        $subscription = Subscription::with('plan')->where('idtenant', $tenant->id)->latest('id')->first();
         $currentServices = Service::where('idtenant', $tenant->id)->count();
-        $serviceQuota = \App\Domain\Subscription\EntitlementRules::canCreateService($subscription, $currentServices);
-        if (!$serviceQuota['allowed'] && $serviceQuota['message']) {
+        $serviceQuota = EntitlementRules::canCreateService($subscription, $currentServices);
+        if (! $serviceQuota['allowed'] && $serviceQuota['message']) {
             throw ValidationException::withMessages([
                 'namalayanan' => $serviceQuota['message'],
             ]);
         }
 
-        $imageUrl = null;
-        if ($coverImage) {
-            $imageUrl = $coverImage->store('programs', 'public');
-        }
+        // BQ-142 (FR-ASSET-005): the image comes from the gallery, or a new upload goes into it.
+        $imageUrl = app(ResolveServiceImage::class)->execute($tenant, $data['image_asset_id'] ?? null, $coverImage);
 
         $service = Service::create([
-            'idtenant'    => $tenant->id,
+            'idtenant' => $tenant->id,
             'namalayanan' => $data['namalayanan'],
-            'harga'       => $data['harga'],
-            'durasi'      => $data['durasi'],
-            'idcategory'  => $data['idcategory'] ?? null,
-            'deskripsi'   => $data['deskripsi'] ?? null,
-            'image_url'   => $imageUrl,
+            'harga' => $data['harga'],
+            'durasi' => $data['durasi'],
+            'idcategory' => $data['idcategory'] ?? null,
+            'deskripsi' => $data['deskripsi'] ?? null,
+            'satuan_harga' => ($data['satuan_harga'] ?? null) ?: 'sesi',
+            'satuan_durasi' => ($data['satuan_durasi'] ?? null) ?: 'menit',
+            'is_popular' => (bool) ($data['is_popular'] ?? false),
+            'auto_open_slots' => (bool) ($data['auto_open_slots'] ?? false),
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'image_url' => $imageUrl,
+            'kapasitas' => max(1, (int) ($data['kapasitas'] ?? 1)),
         ]);
 
-        if (!empty($data['staff_ids'])) {
-            $service->staff()->sync($data['staff_ids']);
+        if (! empty($data['unit_ids'])) {
+            DB::transaction(fn () => app(AssignServiceUnits::class)->execute($tenant, $service, $data['unit_ids']));
         }
-        if (!empty($data['resource_ids'])) {
-            $service->resources()->sync($data['resource_ids']);
-        }
-        if (!empty($data['additional_item_ids'])) {
+
+        if (! empty($data['additional_item_ids'])) {
             $service->additionalItems()->sync($data['additional_item_ids']);
         }
 
         try {
             UsageLog::record($tenant->id, 'layanan');
         } catch (\Exception $e) {
-            Log::error('Gagal catat usage log layanan: ' . $e->getMessage());
+            // BQ-077: log the exception type and location, never its message.
+            Log::error('CreateService: Failed to record service usage', [
+                'tenant_id' => $tenant->id,
+                'service_id' => $service->id,
+                'exception_type' => $e::class,
+                'exception_file' => $e->getFile(),
+                'exception_line' => $e->getLine(),
+            ]);
         }
 
         $this->clearServiceCache($tenant->id, $service->id);

@@ -7,7 +7,7 @@ namespace App\Domain\Subscription;
 use App\Domain\Booking\BookingState;
 use App\Models\Booking;
 use App\Models\Service;
-use App\Models\Staff;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 
 final class SubscriptionUsage
@@ -29,15 +29,7 @@ final class SubscriptionUsage
      */
     public static function countServices(int $tenantId): int
     {
-        return Service::withoutGlobalScopes()->where('idtenant', $tenantId)->count();
-    }
-
-    /**
-     * Count staff currently configured for the tenant.
-     */
-    public static function countStaff(int $tenantId): int
-    {
-        return Staff::withoutGlobalScopes()->where('idtenant', $tenantId)->count();
+        return app(TenantContext::class)->run($tenantId, fn (): int => Service::count());
     }
 
     /**
@@ -47,11 +39,10 @@ final class SubscriptionUsage
     {
         $date = $date ?? Carbon::now();
 
-        return Booking::withoutGlobalScopes()
-            ->where('idtenant', $tenantId)
+        return app(TenantContext::class)->run($tenantId, fn (): int => Booking::query()
             ->whereYear('tanggalbooking', $date->year)
             ->whereMonth('tanggalbooking', $date->month)
-            ->whereIn('status', [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED])
-            ->count();
+            ->whereIn('status', [BookingState::STATUS_PENDING, BookingState::STATUS_PAID, BookingState::STATUS_COMPLETED, BookingState::STATUS_NO_SHOW])
+            ->count());
     }
 }
